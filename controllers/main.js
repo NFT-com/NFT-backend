@@ -568,4 +568,4 @@ async function mintFor(user, profile) {
 
 // testPermit();
 
-// mintFor('0xd760056E0A5939F54608d3891FF7F2C057EC32b3', 'halo');
+// mintFor('0x59495589849423692778a8c5aaCA62CA80f875a4', 'jesus');
