@@ -10,6 +10,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
 const cookieParser = require("cookie-parser");
 const { ws } = require("./websocket");
+const config = require('./config')
 
 const limiter = rateLimit({
   max: 100000, // max requests
@@ -37,19 +38,21 @@ app.use(express.static("public"));
 
 const production = process.env.NODE_ENV === "PRODUCTION";
 const DB_URL = production
-  ? process.env.IMMUTABLE_PROD_DB
-  : process.env.IMMUTABLE_SANDBOX_DB;
+  ? process.env.DB_URI
+  : `mongodb://${config.db.username}:${config.db.password}@${config.db.host}:${config.db.port}`;
 
 mongoose
   .connect(DB_URL, {
     useNewUrlParser: true,
-    autoIndex: false,
-    useFindAndModify: false
+    autoCreate: true,
+    autoIndex: true,
+    useFindAndModify: false,
+    dbName: config.db.database,
   })
   .then(
     () => {
       console.log(
-        `Database connected with production: ${production.toString()}`
+        `Database connected with ${DB_URL}/${config.db.database}`
       );
     },
     err => {
@@ -80,11 +83,9 @@ app.use(function(req, res, next) {
   next();
 });
 
-const port = process.env.PORT || 9999;
-
 const server = require("http").createServer(app);
 
-server.listen(port);
+server.listen(config.serverPort);
 
 function print(path, layer) {
   if (layer.route) {

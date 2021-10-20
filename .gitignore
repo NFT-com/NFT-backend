@@ -1,8 +1,19 @@
+# system files
+.idea
+.DS_Store
+Thumbs.db
+
+# compiled / dependencies
+node_modules
 .env
-env/
-*env
-node_modules/
-.env
+dist
+.husky
 yarn.lock
 package-lock.json
+
+# logging file
+log-debug
+yarn-*.log
+
+# others
 scripts/
