@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon ./app.js",
     "precommit": "prettier --write --tab-width 2 \"config.js\" && prettier --write --tab-width 2 \"websocket.js\" && prettier --write --tab-width 2 \"app.js\" && prettier --write --tab-width 2 \"routes/**/*.js\" && prettier --write --tab-width 2 \"middleware/**/*.js\" && prettier --write --tab-width 2 \"controllers/**/*.js\" && prettier --write --tab-width 2 \"models/**/*.js\"",
     "go": "git add . && git commit -m 'new' && git push origin master"
