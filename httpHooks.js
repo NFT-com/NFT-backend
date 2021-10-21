@@ -1,4 +1,3 @@
-const { request } = require("graphql-request");
 const config = require("./config");
 const { ethers } = require("ethers");
 const { provider } = require("./provider");

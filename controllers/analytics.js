@@ -11,7 +11,6 @@ const crypto = require("crypto");
 const { provider } = require("../provider");
 sgMail.setApiKey(process.env.SG_API_KEY);
 const { sort } = require("fast-sort");
-const fromExponential = require("from-exponential");
 const { BigNumber } = require("@ethersproject/bignumber");
 const cache = require("memory-cache");
 const axios = require("axios");
@@ -469,7 +468,7 @@ const isOwnerHelper = async (account, uri) => {
       let owner = await nftProfileContract.ownerOf(tokenId);
 
       let ownerBool = account.toLowerCase() === owner.toLowerCase();
-    
+
       let returnObject = { ownerBool, owner };
 
       cache.put(key, returnObject, 1000 * 60); // half a minute

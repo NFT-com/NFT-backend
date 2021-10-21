@@ -4,16 +4,15 @@
 
 ### 1. Requirements
 
-1. Node.js version 14.18.1
+1. Node.js version >=16
 2. Docker
-3. Yarn
 
 ### 2. Build and Start
 
-1. `yarn install`
+1. `npm install`
 2. `cp .env.sample .env`; modify this file if needs be
 3. `docker-compose up -d`
-4. `yarn dev`
+4. `npm run dev`
 
 Server will start at `localhost:10080`.
 

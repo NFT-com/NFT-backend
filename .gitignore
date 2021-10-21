@@ -13,7 +13,7 @@ package-lock.json
 
 # logging file
 log-debug
-yarn-*.log
+*.log
 
 # others
 scripts/
