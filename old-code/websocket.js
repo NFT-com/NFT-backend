@@ -48,6 +48,7 @@ const profileAuction = new ethers.Contract(
 
 // ************************************************************
 
+// TODO deprecated
 const getPastNewBids = async () => {
   let eventFilter = profileAuction.filters.NewBid();
 
@@ -85,6 +86,7 @@ const getPastNewBids = async () => {
   }
 };
 
+// TODO deprecated
 profileAuction.on("NewBid", async (user, profileURI, amount, event) => {
   console.log(
     chalk.green(

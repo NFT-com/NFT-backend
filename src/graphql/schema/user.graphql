@@ -1,0 +1,24 @@
+type User {
+    id: ID!
+    chainId: Int!
+    address: String!
+    username: String
+    name: String
+    twitter: String
+}
+
+input UserInput {
+    username: String!
+    name: String
+    twitter: String
+}
+
+extend type Query {
+    user(id: ID!): User!
+    me: User!
+}
+
+extend type Mutation {
+    signUp(input: UserInput!): User!
+    updateMe(input: UserInput!): User!
+}

@@ -1,5 +1,7 @@
 # NFT.com backend
 
+NFT.com platform's GraphQL server and worker to sync Blockchain data.
+
 ## Getting Started
 
 ### 1. Requirements
@@ -14,6 +16,6 @@
 3. `docker-compose up -d`
 4. `npm run dev`
 
-Server will start at `localhost:10080`.
+The GraphQL server is available at `localhost:10010`.
 
-Admin portal of local Mongo is available at `localhost:10070`.
+The Redis UI is available at `localhost:10015`.

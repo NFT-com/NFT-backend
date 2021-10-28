@@ -1,0 +1,24 @@
+[
+  {
+    "name": "default",
+    "type": "postgres",
+    "host": "localhost",
+    "database": "app",
+    "port": 10030,
+    "username": "app",
+    "password": "password",
+    "migrationsRun": true,
+    "migrations": [
+      "src/db/migration/*.ts"
+    ],
+    "cli": {
+      "migrationsDir": "src/db/migration"
+    },
+    "dropSchema": false,
+    "synchronize": false,
+    "logging": false,
+    "entities": [
+      "src/db/entity/user.entity.ts"
+    ]
+  }
+]

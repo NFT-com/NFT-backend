@@ -1,61 +1,46 @@
 version: "3.7"
 
 services:
-#  redis:
-#    image: redis:alpine
-#    container_name: nftcom-redis
-#    environment:
-#      - REDIS_REPLICATION_MODE=master
-#    networks:
-#      - nftcom
-#    ports:
-#      - "6379:6379"
-#    volumes:
-#      - "nftcom-redis:/var/lib/redis"
-#      - "nftcom-redis:/usr/local/etc/redis/redis.conf"
-#    restart: unless-stopped
-#
-#  redis-web:
-#    image: rediscommander/redis-commander:latest
-#    container_name: nftcom-redis-web
-#    environment:
-#      - REDIS_HOSTS=local:redis:6379
-#    networks:
-#      - nftcom
-#    ports:
-#      - "9060:8081"
-#    depends_on:
-#      - redis
-#    restart: unless-stopped
-
-  mongo:
-    image: mongo:latest
-    container_name: nftcom-mongo
+  redis:
+    image: redis:alpine
+    container_name: nftcom-redis
     environment:
-      - MONGO_INITDB_DATABASE=app
-      - MONGO_INITDB_ROOT_USERNAME=mongo
-      - MONGO_INITDB_ROOT_PASSWORD=password
+      - REDIS_REPLICATION_MODE=master
     networks:
       - nftcom
     ports:
-      - "27017:27017"
+      - "10020:6379"
     volumes:
-      - "mongo:/data/db:delegated"
+      - "redis:/var/lib/redis"
+      - "redis:/usr/local/etc/redis/redis.conf"
     restart: unless-stopped
 
-  mongo-web:
-    image: mongo-express:latest
-    container_name: nftcom-mongo-web
+  redis-web:
+    image: rediscommander/redis-commander:latest
+    container_name: nftcom-redis-web
     environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=mongo
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - REDIS_HOSTS=local:redis:6379
     networks:
       - nftcom
     ports:
-      - "10070:8081"
+      - "10015:8081"
     depends_on:
-      - mongo
+      - redis
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:13.4-alpine
+    container_name: nftcom-db
+    environment:
+      - POSTGRES_DB=app
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=password
+    networks:
+      - nftcom
+    ports:
+      - "10030:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data/
     restart: unless-stopped
 
 #  nftcom-server:
@@ -75,10 +60,10 @@ services:
 #    restart: unless-stopped
 
 volumes:
-  mongo:
-    name: nftcom-mongo
-#  redis:
-#    name: nftcom-redis
+  postgres:
+    name: nftcom-postgres
+  redis:
+    name: nftcom-redis
 
 networks:
   nftcom:
