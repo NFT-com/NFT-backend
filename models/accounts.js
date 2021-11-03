@@ -6,7 +6,7 @@ const accounts = new Schema({
   referredBy: { type: String }, // Ethereum Address
   emailAddress: { type: String }, // email of userAddress
   verifiedEmail: { type: Boolean, default: false },
-  authenticateCode: { type: Number }, // 4 digit code used to verify ownership of email
+  authenticateCode: { type: Number }, // 6 digit code used to verify ownership of email
   createdAt: { type: Date },
   updatedAt: { type: Date }
 });

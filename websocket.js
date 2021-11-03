@@ -383,6 +383,7 @@ const syncAlgoliaIndex = () => {
 // clean leaderboard will scan through all of the current bids
 // it will ensure that at any given moment, a user has sufficient NFT tokens in his/her account for a bid
 // if any bid > user's current balance, remove and notify user (if email exists)
+// TODO: remove bids with insufficient NFT.com tokens
 const cleanLeaderBoard = async () => {
   console.log("cleaning bids...");
 };

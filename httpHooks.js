@@ -53,12 +53,6 @@ const getContract = (token, chainId, providerOverrideBool = false, providerOverr
     providerOverrideBool ? providerOverride : provider(p)
   );
 
-  const contractWeth = new ethers.Contract(
-    getAddress("weth", chainId),
-    getABI("weth", chainId),
-    providerOverrideBool ? providerOverride : provider(p)
-  );
-
   switch (token) {
     case "nft":
       return contractNft
@@ -73,6 +67,11 @@ const getContract = (token, chainId, providerOverrideBool = false, providerOverr
     case "dai":
       return contractDai;
     case "weth":
+      const contractWeth = new ethers.Contract(
+        getAddress("weth", chainId),
+        getABI("weth", chainId),
+        providerOverrideBool ? providerOverride : provider(p)
+      );
       return contractWeth;
     default:
       return contractNft;

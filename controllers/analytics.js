@@ -484,6 +484,7 @@ const isOwnerHelper = async (account, uri) => {
 // these bids are already pre-vetted via (profileAuction.getBids)
 // just pass in amount of tokens
 // get all bids for that profile (see internal)
+// FIXME: this needs to sorted based on time weighted bid, not raw NFT.com tokens
 const getBidOrder = async (user, uri, tokens) => {
   let key = `${uri.toLowerCase()}_${user}_${tokens}_getBidOrder`;
   let val = cache.get(key);
@@ -978,7 +979,7 @@ const getUniqueBidsForURI = async uri => {
     profileStatus = 2;
   } catch (err) {
     let FoundNewClaimableProfile = await Bids.findOne({
-      profiletokenId: uri.toLowerCase(),
+      profileURI: uri.toLowerCase(),
       event: "NewClaimableProfile"
     }).exec();
 
