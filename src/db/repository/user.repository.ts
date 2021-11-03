@@ -1,7 +1,8 @@
-import { isNil } from 'lodash'
-import { BaseRepository } from './base.repository'
+import { LessThan } from 'typeorm'
+
 import { User } from '@src/db/entity'
-import { fp } from '@src/helper'
+
+import { BaseRepository } from './base.repository'
 
 export class UserRepository extends BaseRepository<User> {
 
@@ -9,9 +10,23 @@ export class UserRepository extends BaseRepository<User> {
     super(User)
   }
 
-  public findByEmail = (email): Promise<User | null> => {
+  public findByEmail = (email: string): Promise<User | undefined> => {
     return this.findOne({ where: { email } })
-      .then(fp.thruIf<User>(isNil)(fp.N))
+  }
+
+  public updateEmailConfirmation = (confirmEmailToken: number): Promise<boolean> => {
+    return this.update(
+      {
+        confirmEmailToken,
+        confirmEmailTokenExpiresAt: LessThan(new Date()),
+      },
+      {
+        isEmailConfirmed: true,
+        confirmEmailToken: null,
+        confirmEmailTokenExpiresAt: null,
+      },
+    )
+      .then((result) => result.affected === 1)
   }
 
 }

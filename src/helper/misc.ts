@@ -1,8 +1,5 @@
 import * as _ from 'lodash'
-import { skip } from 'graphql-resolvers'
-
-import { Context } from '@src/db'
-import { appError, userError } from '@src/graphql/error'
+import { FindOperator, In } from 'typeorm'
 
 export const stringListToMap = (
   str: string,
@@ -19,18 +16,17 @@ export const stringListToMap = (
 
 export const toCompositeKey = (val1: string, val2: string): string => `${val1}:${val2}`
 
-export const hasChainId = (_: any, args: any, ctx: Context): any => {
-  const { chainId } = ctx
-  return chainId ? skip : appError.buildMissingChainIdError()
-}
-
-export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
-  const { address } = ctx
-  return address ? skip : userError.buildAuthError()
-}
-
 export const parseBoolean = (str: string): boolean => {
   return _.isString(str)
     ? str === 'true' || str === '1'
     : !!str
 }
+
+export const isTrue = (v: boolean): boolean => v === true
+
+export const isFalse = (v: boolean): boolean => v === false
+
+export const isNotEmpty = <T>(v: T): boolean => !_.isEmpty(v)
+
+export const safeIn = <T>(arr: T[]): FindOperator<T> =>
+  _.isEmpty(arr) ? In([null]) : In(arr)

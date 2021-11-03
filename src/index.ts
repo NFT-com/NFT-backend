@@ -1,14 +1,14 @@
 import kill from 'kill-port'
 
-import { verifyConfiguration, serverPort } from '@src/config'
-import { server } from '@src/graphql'
+import { serverPort, verifyConfiguration } from '@src/config'
 import { db } from '@src/db'
+import { server } from '@src/graphql'
 import { fp } from '@src/helper'
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
   return db.connect()
-    .then(() => server.start(serverPort))
+    .then(() => server.start())
     .then(fp.pause(500))
     // .then(blockchain.createProviders)
     // .then(job.startAndListen)

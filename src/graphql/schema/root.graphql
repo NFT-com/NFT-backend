@@ -1,3 +1,35 @@
+scalar Address
+scalar Uint256
+scalar Bytes
+scalar DateTime
+scalar Date
+scalar JSON
+scalar JSONObject
+
+type PageInfo {
+  firstCursor: String
+  lastCursor: String
+}
+
+input PageInput {
+  first: Int
+  last: Int
+  afterCursor: String
+  beforeCursor: String
+}
+
+type Signature {
+  v: Int!
+  r: Bytes!
+  s: Bytes!
+}
+
+input SignatureInput {
+  v: Int!
+  r: Bytes!
+  s: Bytes!
+}
+
 type Query
 
 type Mutation
@@ -5,7 +37,7 @@ type Mutation
 #type Subscription
 
 schema {
-    query: Query
-    mutation: Mutation
-    # subscription: Subscription
+  query: Query
+  mutation: Mutation
+  # subscription: Subscription
 }

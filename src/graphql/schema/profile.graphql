@@ -1,0 +1,40 @@
+type FollowersOutput {
+  wallets: [Wallet!]!
+  pageInfo: PageInfo
+}
+
+input FollowersInput {
+  profileId: ID!
+  pageInput: PageInput
+}
+
+type Profile {
+  id: ID!
+  url: String!
+  creator: Wallet
+  owner: Wallet
+#  followers(input: FollowersInput): FollowersOutput
+  isFollowedByMe: Boolean
+  isOwnedByMe: Boolean
+  createdAt: DateTime!
+}
+
+input ProfilesInput {
+  pageInput: PageInput
+}
+
+type ProfilesOutput {
+  profiles: [Profile!]!
+  pageInfo: PageInfo
+}
+
+extend type Query {
+  profileFollowers(input: FollowersInput!): FollowersOutput!
+  profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
+  myProfiles(input: ProfilesInput): ProfilesOutput!
+}
+
+extend type Mutation {
+  followProfile(id: ID!): Profile!
+  unfollowProfile(id: ID!): Profile!
+}

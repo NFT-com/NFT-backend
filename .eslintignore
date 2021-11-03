@@ -2,3 +2,4 @@ node_modules
 dist
 src/defs/gql-types.ts
 old-code
+gql-naming-fn.js

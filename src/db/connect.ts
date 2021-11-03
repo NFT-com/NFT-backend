@@ -1,5 +1,6 @@
-import { dbConfig } from '@src/config'
 import { Connection, createConnection } from 'typeorm'
+
+import { dbConfig } from '@src/config'
 import * as entity from '@src/db/entity'
 
 let connection: Connection
@@ -9,7 +10,13 @@ export const connect = async (): Promise<void> => {
   }
 
   const entities = [
+    entity.Approval,
+    entity.Bid,
+    entity.Edge,
+    entity.NFT,
+    entity.Profile,
     entity.User,
+    entity.Wallet,
   ]
 
   return createConnection({

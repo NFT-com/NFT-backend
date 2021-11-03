@@ -18,7 +18,13 @@
     "synchronize": false,
     "logging": false,
     "entities": [
-      "src/db/entity/user.entity.ts"
+      "src/db/entity/approval.entity.ts",
+      "src/db/entity/bid.entity.ts",
+      "src/db/entity/edge.entity.ts",
+      "src/db/entity/nft.entity.ts",
+      "src/db/entity/profile.entity.ts",
+      "src/db/entity/user.entity.ts",
+      "src/db/entity/wallet.entity.ts"
     ]
   }
 ]

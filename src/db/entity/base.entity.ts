@@ -1,17 +1,27 @@
-import { Entity, PrimaryColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert } from 'typeorm'
 import { nanoid } from 'nanoid'
+import {
+  BeforeInsert,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 
 @Entity()
 export class Base {
 
   @PrimaryColumn()
-  id: string
+    id: string
 
   @CreateDateColumn()
-  createdAt: Date
+    createdAt: Date
 
   @UpdateDateColumn()
-  updatedAt: Date
+    updatedAt: Date
+
+  @DeleteDateColumn()
+    deletedAt?: Date
 
   @BeforeInsert()
   addId(): void {

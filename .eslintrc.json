@@ -9,7 +9,8 @@
     "sourceType": "module"
   },
   "plugins": [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "simple-import-sort"
   ],
   "extends": [
     "eslint:recommended",
@@ -37,11 +38,6 @@
         "maxEOF": 1
       }
     ],
-//    "indent": "off",
-//    "@typescript-eslint/indent": [
-//      "error",
-//      2
-//    ],
     "max-len": [
       "error",
       {
@@ -69,14 +65,6 @@
       }
     ],
     "no-use-before-define": "error",
-    // TODO maybe revisit this later
-    //    "no-shadow": [
-    //      "error",
-    //      {
-    //        "builtinGlobals": true,
-    //        "hoist": "never"
-    //      }
-    //    ],
     "no-unused-vars": "off",
     "@typescript-eslint/member-delimiter-style": [
       "error",
@@ -98,8 +86,38 @@
         "args": "after-used"
       }
     ],
-    // TODO - Enable later when stable
+    "sort-imports": "off",
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [
+          ["^\\u0000"],   // packages
+          ["^[^.]"],      // anything that does not start with dot
+          ["^@?\\w"],     // local absolute imports `@/foo`
+          ["^\\."]        // relative imports
+        ]
+      }
+    ],
+    "simple-import-sort/exports": "error",
+    "object-curly-spacing": [
+      "error",
+      "always"
+    ],
+    "array-bracket-spacing": "error",
+    // TODO - revisit these later
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-explicit-any": "off"
+    //    "indent": "off",
+    //    "@typescript-eslint/indent": [
+    //      "error",
+    //      2
+    //    ],
+    //    "no-shadow": [
+    //      "error",
+    //      {
+    //        "builtinGlobals": true,
+    //        "hoist": "never"
+    //      }
+    //    ],
   }
 }

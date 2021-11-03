@@ -1,7 +1,6 @@
 import * as typeorm from 'typeorm'
-import { isNil } from 'lodash'
 
-import { fp } from '@src/helper'
+import { isNotEmpty } from '@src/helper/misc'
 
 export class BaseRepository<T> {
 
@@ -13,12 +12,11 @@ export class BaseRepository<T> {
   }
 
   protected getRepository = (): typeorm.Repository<T> => {
-    if (this.repository)
+    if (this.repository) {
       return this.repository
-
-    const repository = typeorm.getConnection().getRepository(this.entity)
-    this.repository = repository
-    return repository
+    }
+    this.repository = typeorm.getConnection().getRepository(this.entity)
+    return this.repository
   }
 
   public delete = (opts: typeorm.FindConditions<T>): Promise<typeorm.DeleteResult> => {
@@ -33,14 +31,18 @@ export class BaseRepository<T> {
     return this.getRepository().find(opts)
   }
 
-  public findOne = (opts: typeorm.FindOneOptions<T>): Promise<T | null> => {
+  public findOne = (opts: typeorm.FindOneOptions<T>): Promise<T | undefined> => {
     return this.getRepository().findOne(opts)
-      .then(fp.thruIf<T>(isNil)(fp.N))
+    // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
-  public findById = (id: string): Promise<T | null> => {
+  public findById = (id: string): Promise<T | undefined> => {
     return this.getRepository().findOne(id)
-      .then(fp.thruIf<T>(isNil)(fp.N))
+    // .then(fp.thruIf<T>(isNil)(fp.N))
+  }
+
+  public findByUserId = (userId: string): Promise<T[]> => {
+    return this.find({ where: { userId } })
   }
 
   public save = (entity: typeorm.DeepPartial<T>, opts?: typeorm.SaveOptions): Promise<T> => {
@@ -50,8 +52,9 @@ export class BaseRepository<T> {
   public updateOneById = (
     id: string,
     entity: typeorm.DeepPartial<T>,
-  ): Promise<typeorm.UpdateResult> => {
+  ): Promise<T | undefined> => {
     return this.getRepository().update(id, entity)
+      .then(() => this.findById(id))
   }
 
   public update = (
@@ -62,7 +65,7 @@ export class BaseRepository<T> {
   }
 
   public exists = (opts: Partial<T>): Promise<boolean> => {
-    return this.find({ where: { ...opts } }).then((list) => list.length > 0)
+    return this.findOne({ where: { ...opts } }).then(isNotEmpty)
   }
 
 }

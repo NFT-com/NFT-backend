@@ -1,13 +1,12 @@
-import { ethers, Signer, Contract, utils } from 'ethers'
+import { Contract, ethers, Signer, utils } from 'ethers'
 
-import { blockchainConfig } from '@src/config'
+import { authMessage, blockchainConfig } from '@src/config'
 
-// TODO this returns any address which
-//    1) may not even exist or
-//    2) does not actually belong to the user making the request
-//  this does not verify that user actually signed the required message
-export const getAddressFromSignature = (signature: string): string => {
-  return utils.verifyMessage('', signature)
+export const getAddressFromSignature = (
+  signature: string,
+  message = authMessage,
+): string => {
+  return utils.verifyMessage(message, signature)
 }
 
 const providers: { [key: string]: ethers.providers.JsonRpcProvider } = {}

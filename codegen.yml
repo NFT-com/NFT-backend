@@ -4,4 +4,5 @@ generates:
     plugins:
       - typescript
     config:
+      namingConvention: ./gql-naming-fn
       skipTypename: true

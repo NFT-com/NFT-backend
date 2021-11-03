@@ -1,117 +1,108 @@
-import Joi, { ValidationError } from 'joi'
+import { addDays } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
+import Joi from 'joi'
+import { isEmpty } from 'lodash'
 
-import { gqlTypes } from '@src/defs'
-import { blockchain } from '@src/blockchain'
-import { helper } from '@src/helper'
-import { appError, userError } from '@src/graphql/error'
 import { Context } from '@src/db'
+import { gqlTypes } from '@src/defs'
+import { appError, userError, walletError } from '@src/graphql/error'
+import { fp } from '@src/helper'
+import { LoggerContext, LoggerFactory } from '@src/helper/logger'
 
-const getUser = ({ chainId, address, repository }: Context): Promise<gqlTypes.User> => {
-  const userId = helper.toCompositeKey(chainId, address)
-  return repository.user.findById(userId)
-    .then((user) => (user
-      ? user
-      : Promise.reject(userError.buildUserNotFound())
-    ))
-    .then((user) => ({
-      id: user.id,
-      address: 'user.address',
-      chainId: 1,
-      name: 'user.name',
-      twitter: 'user.twitter',
-      username: 'user.username',
-    }))
-}
+import { isAuthenticated } from './auth'
+import * as service from './service'
 
-const getCurrentUser = (_: any, args: any, ctx: Context): Promise<gqlTypes.User> => {
-  const { address } = ctx
-  console.log(`${address} is requesting his/her user info`)
-  return getUser(ctx)
-}
+const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.User)
 
-const getOtherUser = (
-  _: any,
-  args: gqlTypes.QueryUserArgs,
-  ctx: Context,
-): Promise<gqlTypes.User> => {
-  const schema = Joi.object().keys({
-    address: Joi.string().required().error(new Error('address is required')),
-  })
-  const { error } = schema.validate(args)
-  if (error) {
-    // console.error(`resolver.user.invalid schema: ${error}`)
-    throw appError.buildInvalidSchemaError()
-  }
+// type UserOut = gqlTypes.User & entity.User
 
-  const { address } = ctx
-  const { id } = args
-  console.log(`${address} is request user info of ${id}`)
-  return getUser(ctx)
-}
-
-const validateInput = (input: gqlTypes.UserInput): ValidationError => {
-  const schema = Joi.object().keys({
-    username: Joi.string().required().error(new Error('username is required')),
-    name: Joi.string(),
-    twitter: Joi.string(),
-  })
-  const { error } = schema.validate(input, { abortEarly: false })
-  return error
-}
-
-const toUser = (ctx: Context, username: string, name: string, twitter: string): gqlTypes.User => {
-  const { chainId, address } = ctx
-  return {
-    id: '',
-    address,
-    chainId: parseInt(chainId),
-    username,
-    name,
-    twitter,
-  }
-}
-
-const signup = (
+const signUp = (
   _: any,
   args: gqlTypes.MutationSignUpArgs,
   ctx: Context,
 ): Promise<gqlTypes.User> => {
-  const { chainId, address, repository } = ctx
-  console.log(`${address} wants to sign up`)
+  const { chain, network, repositories } = ctx
+  logger.debug('signUp', { network, chain, address: args.input.address })
 
-  const error = validateInput(args.input)
+  const schema = Joi.object().keys({
+    email: Joi.string().required(),
+    address: Joi.string().required(),
+    referredBy: Joi.string(),
+    avatarURL: Joi.string(),
+  })
+  const { error } = schema.validate(args.input, { abortEarly: false })
   if (error) {
-    // console.error(`resolver.signup.invalid schema: ${error}`)
-    throw appError.buildInvalidSchemaError()
+    throw appError.buildInvalidSchemaError(error)
   }
 
-  const { username, name, twitter } = {
-    username: args.input.username,
-    name: args.input.name || '',
-    twitter: args.input.twitter || '',
+  const { email, address, avatarURL, referredBy } = {
+    email: args.input.email,
+    address: args.input.address,
+    referredBy: args.input.referredBy || '',
+    avatarURL: args.input.avatarURL || '',
   }
-  const contract = blockchain.getContract(chainId)
-  const email = helper.toCompositeKey(chainId, username)
 
   return Promise.all([
-    repository.user.exists({ id: '' }),
-    repository.user.exists({ email }),
+    repositories.user.exists({ email }),
+    repositories.wallet.exists({ network, chainId: chain.id, address }),
   ])
-    .then(([userExists, usernameExists]) => {
+    .then(([userExists, addressExists]) => {
       if (userExists) {
-        return Promise.reject(userError.buildUserAlreadyExistsError())
+        return Promise.reject(userError.buildEmailAlreadyExistsError(email))
       }
-      if (usernameExists) {
-        return Promise.reject(userError.buildUsernameAlreadyExistsError())
+      if (addressExists) {
+        return Promise.reject(walletError.buildAddressAlreadyExistsError(network, chain, address))
       }
     })
-    .then(() => contract.createIdentity(address, username, name, twitter, blockchain.getGasConf()))
-    .catch(err => {
-      console.log(err)
-      return Promise.reject(appError.buildCustomError('Failed to create identity in Blockchain'))
+    .then(() => {
+      // Random 6 digit code and expires next day
+      const confirmEmailToken = Math.floor(100000 + Math.random() * 900000)
+      const confirmEmailTokenExpiresAt = addDays(new Date(), 1)
+      return repositories.user.save({
+        email,
+        referredBy,
+        avatarURL,
+        confirmEmailToken,
+        confirmEmailTokenExpiresAt,
+      })
+      // TODO
+      //  1) update referral count
+      //  2) email user their confirm email token
+      //  3) notify user who referred
     })
-    .then(() => toUser(ctx, username, name, twitter))
+    .then(fp.tapWait((user) => repositories.wallet.save({
+      userId: user.id,
+      network,
+      chainId: chain.id,
+      chainName: chain.name,
+      address,
+    })))
+}
+
+const confirmEmail = (
+  _: any,
+  args: gqlTypes.MutationConfirmEmailArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { repositories } = ctx
+  const { token } = args
+  if (isEmpty(token)) {
+    return Promise.reject(userError.buildEmailConfirmTokenRequiredError())
+  }
+  return repositories.user.updateEmailConfirmation(token)
+    .then(fp.tapRejectIfFalse(userError.buildInvalidEmailConfirmTokenError(token)))
+}
+
+// TODO do we need to limit this to only the logged in user?
+//  meaning do not allow people to fetch other people's addresses
+const getAddresses = (
+  parent: gqlTypes.User,
+  args: any,
+  ctx: Context,
+): Promise<gqlTypes.Wallet[]> => {
+  const { user, repositories } = ctx
+  logger.debug('getAddresses', { userId: parent.id, loggedInUserId: user.id })
+  return repositories.wallet.findByUserId(parent.id)
 }
 
 const updateMe = (
@@ -119,51 +110,39 @@ const updateMe = (
   args: gqlTypes.MutationUpdateMeArgs,
   ctx: Context,
 ): Promise<gqlTypes.User> => {
-  const { chainId, address, repository } = ctx
-  console.log(`${address} wants to update his/her user info`)
+  const { user, repositories } = ctx
+  logger.debug('updateMe', { loggedInUserId: user.id, input: args.input })
 
-  const error = validateInput(args.input)
+  const schema = Joi.object().keys({
+    referredBy: Joi.string(),
+    avatarURL: Joi.string(),
+  })
+  const { error } = schema.validate(args.input, { abortEarly: false })
   if (error) {
-    // console.error(`resolver.updateMe.invalid schema: ${error}`)
-    throw appError.buildInvalidSchemaError()
+    throw appError.buildInvalidSchemaError(error)
   }
 
-  const email = helper.toCompositeKey(chainId, args.input.username)
-  const contract = blockchain.getContract(chainId)
-
-  return repository.user.exists({ email })
-    .then((exists) => (exists
-      ? Promise.reject(userError.buildUsernameAlreadyExistsError())
-      : Promise.resolve()
-    ))
-    .then(() => repository.user.findById(''))
-    .then((existingUser) => {
-      if (!existingUser) {
-        return Promise.reject(userError.buildUserNotFound())
-      }
-
-      const { username, name, twitter } = {
-        username: args.input.username,
-        name: args.input.name || existingUser.email,
-        twitter: args.input.twitter || existingUser.email,
-      }
-      return contract.updateIdentity(address, username, name, twitter, blockchain.getGasConf())
-        .catch(err => {
-          console.log(err)
-          const msg = appError.buildCustomError('Failed to update identity in Blockchain')
-          return Promise.reject(msg)
-        })
-        .then(() => toUser(ctx, username, name, twitter))
-    })
+  const { avatarURL, referredBy } = {
+    referredBy: args.input.referredBy || '',
+    avatarURL: args.input.avatarURL || '',
+  }
+  // TODO
+  //  1) notify user who's referral was used
+  //  2) do we need to notify user who got updated?
+  return repositories.user.updateOneById(user.id, { referredBy, avatarURL })
 }
 
 export default {
   Query: {
-    me: combineResolvers(helper.hasChainId, helper.isAuthenticated, getCurrentUser),
-    user: combineResolvers(helper.hasChainId, helper.isAuthenticated, getOtherUser),
+    me: combineResolvers(isAuthenticated, service.resolveEntityFromContext('user')),
+    // user: combineResolvers(auth.isAuthenticated, getUser),
   },
   Mutation: {
-    signUp: combineResolvers(helper.hasChainId, helper.isAuthenticated, signup),
-    updateMe: combineResolvers(helper.hasChainId, helper.isAuthenticated, updateMe),
+    signUp: signUp,
+    confirmEmail,
+    updateMe: combineResolvers(isAuthenticated, updateMe),
+  },
+  User: {
+    addresses: getAddresses,
   },
 }

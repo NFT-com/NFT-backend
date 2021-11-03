@@ -1,28 +1,46 @@
 import { ApolloError } from 'apollo-server'
 
+import { HTTP } from './http.code'
+
 enum ErrorType {
   AuthenticationRequired = 'AUTHENTICATION_REQUIRED',
-  UsernameAlreadyExists = 'USERNAME_ALREADY_EXISTS',
   UserNotFound = 'USER_NOT_FOUND',
-  UserAlreadyExists = 'USER_ALREADY_EXISTS',
+  EmailAlreadyExists = 'EMAIL_ALREADY_EXISTS',
+  EmailConfirmTokenRequired = 'EMAIL_CONFIRM_TOKEN_REQUIRED',
+  InvalidEmailConfirmToken = 'INVALID_EMAIL_CONFIRM_TOKEN',
 }
 
-export const buildAuthError = (): ApolloError => new ApolloError(
-  'You must be signed in',
-  ErrorType.AuthenticationRequired,
-)
+export const buildAuthError = (): ApolloError =>
+  new ApolloError(
+    'You must be signed in',
+    HTTP.Unauthorized,
+    { errorKey: ErrorType.AuthenticationRequired },
+  )
 
-export const buildUserNotFound = (): ApolloError => new ApolloError(
-  'User not found',
-  ErrorType.UserNotFound,
-)
+export const buildUserNotFound = (): ApolloError =>
+  new ApolloError(
+    'User not found',
+    HTTP.NotFound,
+    { errorKey: ErrorType.UserNotFound },
+  )
 
-export const buildUserAlreadyExistsError = (): ApolloError => new ApolloError(
-  'User already exists',
-  ErrorType.UserAlreadyExists,
-)
+export const buildEmailAlreadyExistsError = (email: string): ApolloError =>
+  new ApolloError(
+    `User with email ${email} already exists`,
+    HTTP.Conflict,
+  { errorKey: ErrorType.EmailAlreadyExists },
+  )
 
-export const buildUsernameAlreadyExistsError = (): ApolloError => new ApolloError(
-  'Username already exists',
-  ErrorType.UsernameAlreadyExists,
-)
+export const buildEmailConfirmTokenRequiredError = (): ApolloError =>
+  new ApolloError(
+    'Email confirm token is required',
+    HTTP.BadRequest,
+  { errorKey: ErrorType.EmailConfirmTokenRequired },
+  )
+
+export const buildInvalidEmailConfirmTokenError = (token: number): ApolloError =>
+  new ApolloError(
+    `Email confirm token ${token} is invalid`,
+    HTTP.BadRequest,
+  { errorKey: ErrorType.InvalidEmailConfirmToken },
+  )

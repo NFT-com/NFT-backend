@@ -1,2 +1,7 @@
+export * from './approval.entity'
+export * from './bid.entity'
+export * from './edge.entity'
+export * from './nft.entity'
+export * from './profile.entity'
 export * from './user.entity'
-
+export * from './wallet.entity'

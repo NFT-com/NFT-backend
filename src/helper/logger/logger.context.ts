@@ -1,12 +1,15 @@
 export enum LoggerContext {
-  SendGrid = 'sendgrid',
-  User = 'user',
-  UserResolvers = 'user.resolvers',
-  PageInput = 'pageInput',
-  GraphQL = 'graphql',
+  Approval = 'approval',
+  Bid = 'bid',
   Cache = 'cache',
   CacheDataLoader = 'dataLoaderCache',
+  General = 'general',
+  GraphQL = 'graphql',
+  NFT = 'nft',
+  PageInput = 'pageInput',
   PubSub = 'pubsub',
-  Auth = 'auth',
-  General = 'general'
+  Profile = 'profile',
+  SendGrid = 'sendgrid',
+  User = 'user',
+  Wallet = 'wallet',
 }

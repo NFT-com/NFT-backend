@@ -1,0 +1,44 @@
+enum NFTType {
+  ERC721
+  ERC1155
+  Profile
+}
+
+type NFTMetadata {
+  tokenId: String!
+  name: String
+  description: String
+  imageURL: String
+  txHash: String!
+}
+
+type NFT {
+  id: ID!
+  contract: String
+  isOwnedByMe: Boolean
+  metadata: NFTMetadata!
+  price: Uint256!
+  type: NFTType!
+#  user: User
+  wallet: Wallet
+  createdAt: DateTime!
+}
+
+input NFTsInput {
+  pageInput: PageInput
+  types: [NFTType!]
+}
+
+type NFTsOutput {
+  nfts: [NFT!]!
+  pageInfo: PageInfo
+}
+
+extend type Query {
+  nfts(input: NFTsInput): NFTsOutput!
+  myNFTs(input: NFTsInput): NFTsOutput!
+}
+
+#extend type Mutation {
+#  updateNFT(input: BidInput): Bid!
+#}

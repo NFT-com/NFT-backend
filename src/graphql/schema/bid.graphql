@@ -1,0 +1,55 @@
+enum BidStatus {
+  Executed
+  Submitted
+}
+
+#type BidMetadata {
+#  #  amount: Uint256!
+#  price: Uint256!
+#  profileURL: String
+#  signature: Signature!
+#  stakeWeightedSeconds: Int
+#  #  txHash: String
+#}
+
+type Bid {
+  id: ID!
+  nftType: NFTType!
+  price: Uint256!
+  profile: Profile
+  signature: Signature!
+  stakeWeightedSeconds: Int
+  status: BidStatus!
+#  metadata: BidMetadata!
+#  user: User
+  wallet: Wallet
+  createdAt: DateTime!
+}
+
+input BidInput {
+  nftType: NFTType!
+#  amount: Uint256!
+  wallet: WalletInput!
+  price: Uint256!
+  profileURL: String
+  signature: SignatureInput!
+}
+
+input BidsInput {
+  pageInput: PageInput
+  profileId: ID
+}
+
+type BidsOutput {
+  bids: [Bid!]!
+  pageInfo: PageInfo
+}
+
+extend type Query {
+  bids(input: BidsInput): BidsOutput!
+  myBids(input: BidsInput): BidsOutput!
+}
+
+extend type Mutation {
+  bid(input: BidInput!): Bid!
+}

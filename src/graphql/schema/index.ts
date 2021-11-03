@@ -1,7 +1,7 @@
-import path from 'path'
+import { gql } from 'apollo-server'
 import fs from 'fs'
 import { DocumentNode } from 'graphql'
-import { gql } from 'apollo-server'
+import path from 'path'
 
 const readGraphQLFile = (file: string): string => {
   const filePath = path.join(__dirname, file)

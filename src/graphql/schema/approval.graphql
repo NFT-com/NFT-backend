@@ -1,0 +1,38 @@
+type Approval {
+  id: ID!
+  amount: Uint256!
+  deadline: String!
+  nonce: Int!
+  signature: Signature!
+  txHash: String!
+#  user: User
+  wallet: Wallet
+  createdAt: DateTime!
+}
+
+# TODO do we need to record what the approval is for e.g., which token?
+input ApprovalInput {
+  amount: Uint256!
+  deadline: String!
+  nonce: Int!
+  signature: SignatureInput!
+  txHash: String!
+  wallet: WalletInput!
+}
+
+input ApprovalsInput {
+  pageInput: PageInput
+}
+
+type ApprovalsOutput {
+  approvals: [Approval!]!
+  pageInfo: PageInfo
+}
+
+extend type Query {
+  myApprovals(input: ApprovalsInput): ApprovalsOutput!
+}
+
+extend type Mutation {
+  approveAmount(input: ApprovalInput!): Approval!
+}

@@ -1,7 +1,8 @@
+import { blue, Chalk, green, red, redBright, white, yellow } from 'chalk'
 import * as util from 'util'
+
 import { LoggerContext } from './logger.context'
 import { LogLevel } from './logger.level'
-import { green, yellow, white, Chalk, red, redBright, blue } from 'chalk'
 
 export class AppLogger {
 
