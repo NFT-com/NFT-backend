@@ -997,9 +997,6 @@ exports.getSortedBids = async (req, res, next) => {
 
     let { bids, profileStatus } = await getUniqueBidsForURI(uri);
 
-    console.log('uri: ', uri);
-    console.log('profileStatus: ', profileStatus);
-
     let returnObject = {
       bids,
       profileStatus // 0 = untaken, 1 = pending claim, 2 = taken
