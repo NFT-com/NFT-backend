@@ -1,6 +1,9 @@
+const serverPort = parseInt(process.env.PORT) || 10080
+
 const config = {
   debug: true,
-  debugURL: "http://localhost:9998",
+  serverPort,
+  debugURL: `http://localhost:${serverPort}`,
   productionURL: "https://z6139110241.herokuapp.com",
   nftToken: {
     rinkeby: {
@@ -107,7 +110,14 @@ const config = {
   etherscanAPI21: "NBD9XB7AEMGKGV2HHXR22915ABNRHU21SU",
   etherscanAPI22: "1DRNAZ39TR2VSYXS9BCYMS48GIIMMC4WXP",
   etherscanAPI23: "RR4BJU4GKPK53DDYN4H8KY3U2BG3BWKYMQ",
-  etherscanAPI24: "S2Y8649IS2BMFWVW51NETTNAA9C16Q4MHD"
+  etherscanAPI24: "S2Y8649IS2BMFWVW51NETTNAA9C16Q4MHD",
+  db: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 27017,
+    username: process.env.DB_USERNAME || 'mongo',
+    password: process.env.DB_PASSWORD || 'password',
+    database: process.env.DB_DATABASE || 'app',
+  }
 };
 
 module.exports = config;
