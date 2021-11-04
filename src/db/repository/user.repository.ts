@@ -14,19 +14,17 @@ export class UserRepository extends BaseRepository<User> {
     return this.findOne({ where: { email } })
   }
 
-  public updateEmailConfirmation = (confirmEmailToken: number): Promise<boolean> => {
-    return this.update(
-      {
+  public findByReferralId = (referralId: string): Promise<User | undefined> => {
+    return this.findOne({ where: { referralId } })
+  }
+
+  public findByEmailConfirmationToken = (confirmEmailToken: string): Promise<User | undefined> => {
+    return this.findOne({
+      where: {
         confirmEmailToken,
         confirmEmailTokenExpiresAt: LessThan(new Date()),
       },
-      {
-        isEmailConfirmed: true,
-        confirmEmailToken: null,
-        confirmEmailTokenExpiresAt: null,
-      },
-    )
-      .then((result) => result.affected === 1)
+    })
   }
 
 }

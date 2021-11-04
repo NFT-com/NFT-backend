@@ -41,26 +41,7 @@ const approveAmount = (
     }))
 }
 
-// TODO implement pagination
-const getMyApprovals = (
-  _: any,
-  args: gql.QueryMyApprovalsArgs,
-  ctx: Context,
-): Promise<gql.ApprovalsOutput> => {
-  const { user, repositories } = ctx
-  logger.debug('getMyApprovals', { loggedInUserId: user.id, input: args.input })
-
-  return repositories.approval.findByUserId(user.id)
-    .then((approvals) => ({
-      approvals,
-      pageInfo: null,
-    }))
-}
-
 export default {
-  Query: {
-    myApprovals: combineResolvers(isAuthenticated, getMyApprovals),
-  },
   Mutation: {
     approveAmount: combineResolvers(isAuthenticated, approveAmount),
   },

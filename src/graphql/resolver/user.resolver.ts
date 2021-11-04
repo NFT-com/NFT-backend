@@ -1,16 +1,17 @@
+import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
-import { Context } from '@src/db'
-import { gql } from '@src/defs'
+import { Context, entity } from '@src/db'
+import { gql, misc } from '@src/defs'
 import { appError, userError, walletError } from '@src/graphql/error'
 import { _logger, fp } from '@src/helper'
 
 import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
 import * as coreService from './core.service'
-import { buildWalletInputSchema,validateSchema } from './joi'
+import { buildWalletInputSchema, validateSchema } from './joi'
 
 const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.User)
 
@@ -37,9 +38,9 @@ const signUp = (
   const chain = verifyAndGetNetworkChain(network, chainId)
 
   return Promise.all([
-    repositories.user.exists({ email }),
-    repositories.wallet.exists({ network, chainId, address }),
-  ])
+      repositories.user.exists({ email }),
+      repositories.wallet.exists({ network, chainId, address }),
+    ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
         return Promise.reject(appError.buildExists(
@@ -53,22 +54,23 @@ const signUp = (
           walletError.ErrorType.AddressAlreadyExists,
         ))
       }
+      return referredBy
     })
-    .then(() => {
-      // Random 6 digit code and expires next day
-      const confirmEmailToken = Math.floor(100000 + Math.random() * 900000)
+    .then(fp.thruIfNotEmpty((refId) => repositories.user
+      .findByReferralId(refId).then((user) => user?.id),
+    ))
+    .then((referredUserId) => {
+      const confirmEmailToken = cryptoRandomString({ length: 10, type: 'url-safe' })
       const confirmEmailTokenExpiresAt = addDays(new Date(), 1)
+      const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
       return repositories.user.save({
         email,
-        referredBy,
+        referredBy: referredUserId || null,
         avatarURL,
         confirmEmailToken,
         confirmEmailTokenExpiresAt,
+        referralId,
       })
-      // TODO
-      //  1) update referral count
-      //  2) email user their confirm email token
-      //  3) notify user who referred
     })
     .then(fp.tapWait((user) => repositories.wallet.save({
       userId: user.id,
@@ -84,31 +86,49 @@ const confirmEmail = (
   args: gql.MutationConfirmEmailArgs,
   ctx: Context,
 ): Promise<boolean> => {
+  logger.debug('confirmEmail', { input: args })
   const { repositories } = ctx
-  const { token } = args
-  if (isEmpty(token)) {
-    return Promise.reject(appError.buildInvalid(
-      userError.buildEmailTokenRequiredMsg(),
-      userError.ErrorType.EmailConfirmTokenRequired,
-    ))
-  }
-  return repositories.user.updateEmailConfirmation(token)
-    .then(fp.tapRejectIfFalse(appError.buildInvalid(
-      userError.buildInvalidEmailTokenMsg(token),
-      userError.ErrorType.InvalidEmailConfirmToken,
-    )))
-}
 
-// TODO do we need to limit this to only the logged in user?
-//  meaning do not allow people to fetch other people's addresses
-const getAddresses = (
-  parent: gql.User,
-  args: any,
-  ctx: Context,
-): Promise<gql.Wallet[]> => {
-  const { user, repositories } = ctx
-  logger.debug('getAddresses', { userId: parent.id, loggedInUserId: user.id })
-  return repositories.wallet.findByUserId(parent.id)
+  const schema = Joi.object().keys({
+    token: Joi.string().required(),
+  })
+  validateSchema(schema, args)
+
+  const { token } = args
+  const invalidTokenError = appError.buildInvalid(
+    userError.buildInvalidEmailTokenMsg(token),
+    userError.ErrorType.InvalidEmailConfirmToken,
+  )
+  return repositories.user.findByEmailConfirmationToken(token)
+    .then(fp.tapRejectIfEmpty<entity.User>(invalidTokenError))
+    .then((user) => repositories.user.save({
+      ...user,
+      isEmailConfirmed: true,
+      confirmEmailToken: null,
+      confirmEmailTokenExpiresAt: null,
+    }))
+    .then((user) => {
+      if (isEmpty(user.referredBy)) {
+        return
+      }
+
+      return repositories.user.findById(user.referredBy)
+        .then(fp.tapWait((otherUser) => repositories.edge.save({
+          thisEntityId: otherUser.id,
+          thisEntityType: misc.EntityType.User,
+          thatEntityId: user.id,
+          thatEntityType: misc.EntityType.User,
+          edgeType: misc.EdgeType.Referred,
+        })))
+        .then((otherUser) => coreService.countEdges(ctx, {
+          thisEntityId: otherUser.id,
+          edgeType: misc.EdgeType.Referred,
+        }))
+    })
+    // TODO
+    //  1) update referral count
+    //  2) notify user who referred
+    .then(() => true)
 }
 
 const updateMe = (
@@ -120,22 +140,44 @@ const updateMe = (
   logger.debug('updateMe', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
-    referredBy: Joi.string(),
     avatarURL: Joi.string(),
   })
   validateSchema(schema, args.input)
 
-  const { avatarURL = '', referredBy = '' } = args.input
-  // TODO
-  //  1) notify user who's referral was used
-  //  2) do we need to notify user who got updated?
-  return repositories.user.updateOneById(user.id, { referredBy, avatarURL })
+  const { avatarURL = '' } = args.input
+  // TODO notify user?
+  return repositories.user.updateOneById(user.id, { avatarURL })
+}
+
+const getMyAddresses = (
+  parent: gql.User,
+  _: unknown,
+  ctx: Context,
+): Promise<gql.Wallet[]> => {
+  const { user, repositories } = ctx
+  logger.debug('getMyAddresses', { userId: parent.id, loggedInUserId: user.id })
+  if (user.id !== parent.id) {
+    return null
+  }
+  return repositories.wallet.findByUserId(parent.id)
+}
+
+const getMyApprovals = (
+  parent: gql.User,
+  _: unknown,
+  ctx: Context,
+): Promise<gql.Approval[]> => {
+  const { user, repositories } = ctx
+  logger.debug('getMyApprovals', { userId: parent.id, loggedInUserId: user.id })
+  if (user.id !== parent.id) {
+    return null
+  }
+  return repositories.approval.findByUserId(user.id)
 }
 
 export default {
   Query: {
     me: combineResolvers(isAuthenticated, coreService.resolveEntityFromContext('user')),
-    // user: combineResolvers(auth.isAuthenticated, getUser),
   },
   Mutation: {
     signUp,
@@ -143,6 +185,7 @@ export default {
     updateMe: combineResolvers(isAuthenticated, updateMe),
   },
   User: {
-    addresses: getAddresses,
+    myAddresses: combineResolvers(isAuthenticated, getMyAddresses),
+    myApprovals: combineResolvers(isAuthenticated, getMyApprovals),
   },
 }

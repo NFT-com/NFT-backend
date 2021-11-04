@@ -19,7 +19,7 @@ export class BaseRepository<T> {
     return this.repository
   }
 
-  public delete = (opts: typeorm.FindConditions<T>): Promise<typeorm.DeleteResult> => {
+  public delete = (opts: Partial<T>): Promise<typeorm.DeleteResult> => {
     return this.getRepository().softDelete(opts)
   }
 
@@ -58,7 +58,7 @@ export class BaseRepository<T> {
   }
 
   public update = (
-    opts: typeorm.FindConditions<T>,
+    opts: Partial<T>,
     entity: typeorm.DeepPartial<T>,
   ): Promise<typeorm.UpdateResult> => {
     return this.getRepository().update(opts, entity)
@@ -66,6 +66,10 @@ export class BaseRepository<T> {
 
   public exists = (opts: Partial<T>): Promise<boolean> => {
     return this.findOne({ where: { ...opts } }).then(isNotEmpty)
+  }
+
+  public count = (opts: Partial<T>): Promise<number> => {
+    return this.getRepository().count(opts)
   }
 
 }

@@ -80,9 +80,14 @@ export const resolveEntityById = <T>(
   parentType: misc.EntityType,
   resolvingType: misc.EntityType,
 ) => {
-  return <K>(parent: K, _: unknown, ctx: Context): Promise<T> => {
+  return <K>(parent: K, args: unknown, ctx: Context): Promise<T> => {
     return entityById(ctx, parent?.['id'], parentType)
-      .then((p) => entityById(ctx, p?.[key], resolvingType))
+      .then((p) => {
+        if (_.isEmpty(p?.[key])) {
+          return null
+        }
+        return entityById(ctx, p?.[key], resolvingType)
+      })
   }
 }
 
@@ -180,4 +185,10 @@ export const thatEntitiesOfEdgesBy = <T>(
   const { repositories } = ctx
   return edgesBy(repositories.edge, filter)
     .then(_.partialRight(thatEntitiesOfEdges, ctx))
+}
+
+// TODO use EdgeStats table
+export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<number> => {
+  const { repositories } = ctx
+  return repositories.edge.count({ ...filter, deletedAt: null })
 }

@@ -25,7 +25,7 @@ export type Context = {
   repositories: Repository
 }
 
-export const newRepositories =  (): Repository => ({
+export const newRepositories = (): Repository => ({
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
   edge: new repo.EdgeRepository(),

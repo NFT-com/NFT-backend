@@ -24,19 +24,20 @@ const bid = (
   const schema = Joi.object().keys({
     price: Joi.number().required().greater(0),
     profileURL: Joi.string(),
+    profileBannerURL: Joi.string(),
     signature: buildSignatureInputSchema(),
     wallet: buildWalletInputSchema(),
   })
   validateSchema(schema, args)
 
-  const { nftType, wallet, profileURL, price, signature } = args.input
-  if (nftType === gql.NFTType.Profile && isEmpty(profileURL)) {
+  const { input } = args
+  if (input.nftType === gql.NFTType.Profile && isEmpty(input.profileURL)) {
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
-  return coreService.getWallet(ctx, wallet)
+  return coreService.getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => {
-      if (nftType !== gql.NFTType.Profile) {
+      if (input.nftType !== gql.NFTType.Profile) {
         return { walletId, profileId: null }
       }
       // TODO what about staked weighted seconds
@@ -45,18 +46,19 @@ const bid = (
         creatorWalletId: walletId,
         ownerUserId: user.id,
         ownerWalletId: walletId,
-        url: profileURL,
+        url: input.profileURL,
+        bannerURL: input.profileBannerURL,
       })
       // create profile if it doesn't exist
-      return repositories.profile.findByURL(profileURL)
+      return repositories.profile.findByURL(input.profileURL)
         .then(fp.thruIfEmpty(createProfile))
         .then(({ id }) => ({ walletId, profileId: id }))
     })
     .then(({ profileId, walletId }) => repositories.bid.save({
-      nftType,
-      price,
+      nftType: input.nftType,
+      price: input.price,
       profileId,
-      signature,
+      signature: input.signature,
       status: gql.BidStatus.Submitted,
       userId: user.id,
       walletId,
@@ -102,7 +104,7 @@ const getMyBids = (
 
 export default {
   Query: {
-    bids: combineResolvers(isAuthenticated, getBids),
+    bids: getBids,
     myBids: combineResolvers(isAuthenticated, getMyBids),
   },
   Mutation: {

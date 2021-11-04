@@ -249,6 +249,18 @@ export const thruIfEmpty = <T>(thenFn: FnT2PromiseT<T>): FnT2PromiseT<T> => {
 }
 
 /**
+ * @example fp.thruIfNotEmpty(value => value.isNotEmpty)(value => { ...do this if true... })
+ *
+ * runs thenFn when value is not empty (e.g., null, undefined etc)
+ * @param thenFn: T => T
+ *
+ * @return fn: (T => Boolean) => (T => Promise<T>) => (T => Promise<T>)
+ */
+export const thruIfNotEmpty = <T>(thenFn: FnT2PromiseT<T>): FnT2PromiseT<T> => {
+  return (value: T): Promise<T> => helper.isNotEmpty(value) ? thenFn(value) : Promise.resolve(value)
+}
+
+/**
  * @example fp.promiseFilter(fn => fn that returns Promise<K>)(Array of T)
  *
  * @param mapper: (v: T, i: number, a: T[]) => Promise<K>

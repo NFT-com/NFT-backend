@@ -72,10 +72,13 @@ const getProfileFollowers = (
     }))
 }
 
-const getProfile = (ctx: Context, profileId: string): Promise<entity.Profile | never> => {
-  return ctx.repositories.profile.findById(profileId)
+const getProfile = (
+  lookupVal: string,
+  fbFn: (k: string) => Promise<entity.Profile>,
+): Promise<entity.Profile | never> => {
+  return fbFn(lookupVal)
     .then(fp.tapRejectIfEmpty(appError.buildNotFound(
-      profileError.buildProfileNotFoundMsg(profileId),
+      profileError.buildProfileNotFoundMsg(lookupVal),
       profileError.ErrorType.ProfileNotFound,
     )))
 }
@@ -90,7 +93,7 @@ const followProfile = (
 
   validateSchema(buildProfileInputSchema(), args)
 
-  return getProfile(ctx, args.id)
+  return getProfile(args.id, repositories.profile.findById)
     .then((profile) => {
       return repositories.edge.exists({
         collectionId: user.id,
@@ -125,7 +128,7 @@ const unfollowProfile = (
 
   validateSchema(buildProfileInputSchema(), args)
 
-  return getProfile(ctx, args.id)
+  return getProfile(args.id, repositories.profile.findById)
     .then(fp.tapWait((profile) => {
       return repositories.edge.delete({
         collectionId: user.id,
@@ -137,10 +140,25 @@ const unfollowProfile = (
     }))
 }
 
+const getProfileByURL = (
+  _: any,
+  args: gql.QueryProfileArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { user, repositories } = ctx
+  logger.debug('getProfileByURL', { loggedInUserId: user.id, input: args })
+  const schema = Joi.object().keys({
+    url: Joi.string().required(),
+  })
+  validateSchema(schema, args)
+  return getProfile(args.url, repositories.profile.findByURL)
+}
+
 export default {
   Query: {
+    profile: getProfileByURL,
     myProfiles: combineResolvers(isAuthenticated, getMyProfiles),
-    profileFollowers: combineResolvers(isAuthenticated, getProfileFollowers),
+    profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(isAuthenticated, getProfilesFollowedByMe),
   },
   Mutation: {

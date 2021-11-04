@@ -3,6 +3,7 @@ import { Column, Entity, Index } from 'typeorm'
 import { Base } from './base.entity'
 
 @Entity()
+@Index(['confirmEmailToken', 'confirmEmailTokenExpiresAt'])
 export class User extends Base {
 
   @Index()
@@ -13,7 +14,7 @@ export class User extends Base {
   isEmailConfirmed: boolean
 
   @Column({ select: false, nullable: true, unique: true })
-  confirmEmailToken: number
+  confirmEmailToken: string
 
   @Column({ select: false, nullable: true })
   confirmEmailTokenExpiresAt: Date
@@ -21,7 +22,10 @@ export class User extends Base {
   @Column({ nullable: true })
   avatarURL: string
 
-  // TODO email address or userId?
+  @Index()
+  @Column({ nullable: false })
+  referralId: string
+
   @Column({ nullable: true })
   referredBy: string
 

@@ -32,6 +32,7 @@ input BidInput {
   wallet: WalletInput!
   price: Uint256!
   profileURL: String
+  profileBannerURL: String
   signature: SignatureInput!
 }
 

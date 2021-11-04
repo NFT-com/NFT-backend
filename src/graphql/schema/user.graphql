@@ -1,30 +1,30 @@
 type User {
-    id: ID!
-    isEmailConfirmed: Boolean!
-    avatarURL: String
-    referredBy: String
-    addresses: [Wallet!]
+  id: ID!
+  isEmailConfirmed: Boolean!
+  avatarURL: String
+  referredBy: String
+  referralId: String!
+  myAddresses: [Wallet!]
+  myApprovals: [Approval!]
 }
 
 input SignUpInput {
-    avatarURL: String
-    email: String!
-    referredBy: String
-    wallet: WalletInput!
+  avatarURL: String
+  email: String!
+  referredBy: String
+  wallet: WalletInput!
 }
 
 input UpdateUserInput {
-    referredBy: String
-    avatarURL: String
+  avatarURL: String
 }
 
 extend type Query {
-#    user(id: ID!): User!
-    me: User!
+  me: User!
 }
 
 extend type Mutation {
-    signUp(input: SignUpInput!): User!
-    updateMe(input: UpdateUserInput!): User!
-    confirmEmail(token: Int!): Boolean!
+  signUp(input: SignUpInput!): User!
+  updateMe(input: UpdateUserInput!): User!
+  confirmEmail(token: String!): Boolean!
 }

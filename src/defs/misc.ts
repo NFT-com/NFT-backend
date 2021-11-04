@@ -19,4 +19,5 @@ export enum EntityType {
 
 export enum EdgeType {
   Follows = 'Follows',
+  Referred = 'Referred'
 }

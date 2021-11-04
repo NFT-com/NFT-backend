@@ -1,5 +1,7 @@
 import { Column, Entity, Index } from 'typeorm'
 
+import { gql } from '@src/defs'
+
 import { Base } from './base.entity'
 
 @Entity()
@@ -13,13 +15,24 @@ export class Profile extends Base {
   creatorUserId: string
 
   @Index()
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   ownerUserId: string
 
   @Column({ nullable: false })
   creatorWalletId: string
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   ownerWalletId: string
+
+  @Column({
+    type: 'enum',
+    enum: gql.ProfileStatus,
+    nullable: false,
+    default: gql.ProfileStatus.Available,
+  })
+  status: gql.ProfileStatus
+
+  @Column({ nullable: true })
+  bannerURL: string
 
 }

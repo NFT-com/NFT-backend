@@ -24,5 +24,5 @@ export const buildEmailExistsMsg = (email: string): string =>
 
 export const buildEmailTokenRequiredMsg = (): string => 'Email confirm token is required'
 
-export const buildInvalidEmailTokenMsg = (token: number): string =>
+export const buildInvalidEmailTokenMsg = (token: string): string =>
   `Email confirm token ${token} is invalid`

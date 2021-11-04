@@ -20,18 +20,9 @@ input ApprovalInput {
   wallet: WalletInput!
 }
 
-input ApprovalsInput {
-  pageInput: PageInput
-}
-
-type ApprovalsOutput {
-  approvals: [Approval!]!
-  pageInfo: PageInfo
-}
-
-extend type Query {
-  myApprovals(input: ApprovalsInput): ApprovalsOutput!
-}
+#extend type Query {
+#
+#}
 
 extend type Mutation {
   approveAmount(input: ApprovalInput!): Approval!

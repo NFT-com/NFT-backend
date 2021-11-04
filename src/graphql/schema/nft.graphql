@@ -27,6 +27,7 @@ type NFT {
 input NFTsInput {
   pageInput: PageInput
   types: [NFTType!]
+  profileId: ID
 }
 
 type NFTsOutput {
@@ -35,6 +36,7 @@ type NFTsOutput {
 }
 
 extend type Query {
+  nft(id: ID!): NFT!
   nfts(input: NFTsInput): NFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!
 }

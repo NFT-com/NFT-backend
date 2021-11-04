@@ -35,97 +35,22 @@ Workflow
 - self minting happens on client side
 
 
+#### TODO
 
-Blockchain sync
+**1. Blockchain sync**
 
 - minted profile
 - redeemed tokens (letting go of a profile)
 
-Entities
+**2. Impl `EdgeStats` table **
 
-- nft (populated after it is minted)
-  - walletId
-  - userId
-  - nftType
-  - contractId
-  - metadata
-    - tokenId
-    - name
-    - description
-    - imageURL
-  - price
-  - txHash
+**3. use coreService for mutation of entities **
+  - this will make it easier to implement dataloader and caching
+  - less code changes
+  
+**4. validate address checksum **
 
-- bid
-  - walletId
-  - userId
-  - type (Profile, NFT)
-  - stakeWeightedSeconds
-  - profileURL
-  - price
-  - status = [Executed, Submitted]
-  - signature
-    - v
-    - r
-    - s
-- approval
-  - userId
-  - walletId
-  - amount
-  - nonce
-  - txHash
-  - deadline
-  - signature
-      - v
-      - r
-      - s
-- edge
-  - thisEntity
-  - thisEntityId
-  - thatEntity
-  - thatEntityId
-  - edgeType
-- waitlist??
-- notification
-  - userId
+#### Testing
 
-User -> Approval -> 
-
-
-- all bids
-- my bids
-- bids of a profile
-
-type Bid
-
-- show me my minted profiles (nfts)
-- all profiles I am watching
-- all people who are watching this
-
-
-headers
-- chainId
-- network
-- authorization
-
-signUp
-  email
-  address
-  referredBy (userId, email)
-
-frontend login
-  sign a generic message "please let me in"
-  get signature back
-  has an expiry date
-
-type nft {
-  wallet
-    user -> user in our system
-    address
-    chainId
-  type: [Profile, ERC721, ERC155]
-  metadata
-    name -> URL
-    imageURL -> 
-  isOwnedByMe
-}
+**1. lodash isEmpty(null || undefined)**
+**2. fp functions: do they need to be returning promises?**
