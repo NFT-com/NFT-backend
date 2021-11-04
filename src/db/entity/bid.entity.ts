@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { BidStatus, NFTType, Signature } from '@src/defs/gql-types'
+import { BidStatus, NFTType, Signature } from '@src/defs/gql'
 
 import { Base } from './base.entity'
 

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { EdgeType, EntityType } from '@src/defs'
+import { misc } from '@src/defs'
 
 import { Base } from './base.entity'
 
@@ -21,16 +21,16 @@ export class Edge extends Base {
   @Column({ nullable: false })
   thisEntityId: string
 
-  @Column({ type: 'enum', enum: EntityType, nullable: false })
-  thisEntityType: EntityType
+  @Column({ type: 'enum', enum: misc.EntityType, nullable: false })
+  thisEntityType: misc.EntityType
 
   @Column({ nullable: false })
   thatEntityId: string
 
-  @Column({ type: 'enum', enum: EntityType, nullable: false })
-  thatEntityType: EntityType
+  @Column({ type: 'enum', enum: misc.EntityType, nullable: false })
+  thatEntityType: misc.EntityType
 
-  @Column({ type: 'enum', enum: EdgeType })
-  edgeType: EdgeType
+  @Column({ type: 'enum', enum: misc.EdgeType })
+  edgeType: misc.EdgeType
 
 }

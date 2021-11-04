@@ -4,24 +4,23 @@ import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
 import { Context } from '@src/db'
-import { gqlTypes } from '@src/defs'
+import { gql } from '@src/defs'
 import { appError, userError, walletError } from '@src/graphql/error'
-import { fp } from '@src/helper'
-import { LoggerContext, LoggerFactory } from '@src/helper/logger'
+import { _logger, fp } from '@src/helper'
 
 import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
+import * as coreService from './core.service'
 import { buildWalletInputSchema,validateSchema } from './joi'
-import * as service from './service'
 
-const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.User)
+const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.User)
 
-// type UserOut = gqlTypes.User & entity.User
+// type UserOut = gql.User & entity.User
 
 const signUp = (
   _: any,
-  args: gqlTypes.MutationSignUpArgs,
+  args: gql.MutationSignUpArgs,
   ctx: Context,
-): Promise<gqlTypes.User> => {
+): Promise<gql.User> => {
   const { repositories } = ctx
   logger.debug('signUp', { input: args.input })
 
@@ -82,7 +81,7 @@ const signUp = (
 
 const confirmEmail = (
   _: any,
-  args: gqlTypes.MutationConfirmEmailArgs,
+  args: gql.MutationConfirmEmailArgs,
   ctx: Context,
 ): Promise<boolean> => {
   const { repositories } = ctx
@@ -103,10 +102,10 @@ const confirmEmail = (
 // TODO do we need to limit this to only the logged in user?
 //  meaning do not allow people to fetch other people's addresses
 const getAddresses = (
-  parent: gqlTypes.User,
+  parent: gql.User,
   args: any,
   ctx: Context,
-): Promise<gqlTypes.Wallet[]> => {
+): Promise<gql.Wallet[]> => {
   const { user, repositories } = ctx
   logger.debug('getAddresses', { userId: parent.id, loggedInUserId: user.id })
   return repositories.wallet.findByUserId(parent.id)
@@ -114,9 +113,9 @@ const getAddresses = (
 
 const updateMe = (
   _: any,
-  args: gqlTypes.MutationUpdateMeArgs,
+  args: gql.MutationUpdateMeArgs,
   ctx: Context,
-): Promise<gqlTypes.User> => {
+): Promise<gql.User> => {
   const { user, repositories } = ctx
   logger.debug('updateMe', { loggedInUserId: user.id, input: args.input })
 
@@ -135,7 +134,7 @@ const updateMe = (
 
 export default {
   Query: {
-    me: combineResolvers(isAuthenticated, service.resolveEntityFromContext('user')),
+    me: combineResolvers(isAuthenticated, coreService.resolveEntityFromContext('user')),
     // user: combineResolvers(auth.isAuthenticated, getUser),
   },
   Mutation: {

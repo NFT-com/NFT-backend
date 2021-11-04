@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { NFTMetadata, NFTType } from '@src/defs/gql-types'
+import { NFTMetadata, NFTType } from '@src/defs/gql'
 
 import { Base } from './base.entity'
 

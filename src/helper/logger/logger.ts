@@ -1,10 +1,9 @@
 import { blue, Chalk, green, red, redBright, white, yellow } from 'chalk'
 import * as util from 'util'
 
-import { LoggerContext } from './logger.context'
-import { LogLevel } from './logger.level'
+import { LoggerContext, LogLevel } from './types'
 
-export class AppLogger {
+class AppLogger {
 
   constructor(
     private readonly name?: string,
@@ -175,3 +174,6 @@ export class AppLogger {
   }
 
 }
+
+export const Factory = (name: string, context?: LoggerContext): AppLogger =>
+  new AppLogger(name, context)

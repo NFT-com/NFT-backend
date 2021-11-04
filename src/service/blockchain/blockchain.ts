@@ -1,13 +1,6 @@
 import { Contract, ethers, Signer, utils } from 'ethers'
 
-import { authMessage, blockchainConfig } from '@src/config'
-
-export const getAddressFromSignature = (
-  signature: string,
-  message = authMessage,
-): string => {
-  return utils.verifyMessage(message, signature)
-}
+import { blockchainConfig } from '@src/config'
 
 const providers: { [key: string]: ethers.providers.JsonRpcProvider } = {}
 export const createProviders = (): void => {

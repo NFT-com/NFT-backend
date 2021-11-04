@@ -3,7 +3,7 @@ import { isEmpty } from 'lodash'
 
 import { getChain, isNetworkSupported } from '@src/config'
 import { Context } from '@src/db'
-import { Chain } from '@src/defs'
+import { misc } from '@src/defs'
 import { appError, userError, walletError } from '@src/graphql/error'
 
 export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
@@ -20,7 +20,7 @@ export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
   return skip
 }
 
-export const verifyAndGetNetworkChain = (network: string, chainId: string): Chain => {
+export const verifyAndGetNetworkChain = (network: string, chainId: string): misc.Chain => {
   if (!isNetworkSupported(network)) {
     throw walletError.buildInvalidNetwork(network)
   }

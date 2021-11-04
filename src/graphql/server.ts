@@ -3,19 +3,18 @@ import {
   ApolloServerPluginLandingPageGraphQLPlayground,
   ApolloServerPluginLandingPageProductionDefault,
 } from 'apollo-server-core'
+import { utils } from 'ethers'
 import { GraphQLError } from 'graphql'
 
-import { blockchain } from '@src/blockchain'
-import { isProduction, serverPort } from '@src/config'
+import { authMessage,isProduction, serverPort } from '@src/config'
 import { Context, entity, newRepositories } from '@src/db'
-import { Chain } from '@src/defs'
+import { misc } from '@src/defs'
 import { resolvers } from '@src/graphql/resolver'
 import { verifyAndGetNetworkChain } from '@src/graphql/resolver/auth'
 import { typeDefs } from '@src/graphql/schema'
-import { helper } from '@src/helper'
-import { LoggerContext,LoggerFactory } from '@src/helper/logger'
+import { _logger, helper } from '@src/helper'
 
-const logger = LoggerFactory(LoggerContext.General, LoggerContext.GraphQL)
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
 const chainIdHeader = 'chain-id'
 const authHeader = 'authorization'
@@ -25,6 +24,38 @@ type GQLError = {
   errorKey?: string
   message: string
   path: Array<string | number>
+}
+
+const getAddressFromSignature = (signature: string): string =>
+  utils.verifyMessage(authMessage, signature)
+
+const createContext = async (ctx): Promise<Context> => {
+  const { req, connection } = ctx
+  // * For subscription and query-mutation, gql handles headers differently 😪
+  const headers = connection && connection.context ? connection.context : req.headers
+
+  const network = headers[networkHeader] || null
+  const chainId = headers[chainIdHeader] || null
+  const authSignature = headers[authHeader] || null
+  let chain: misc.Chain = null
+  let wallet: entity.Wallet = null
+  let user: entity.User = null
+  const repositories = newRepositories()
+  if (helper.isNotEmpty(authSignature)) {
+    chain = verifyAndGetNetworkChain(network, chainId)
+    const address = getAddressFromSignature(authSignature)
+    // TODO fetch from cache
+    wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
+    user = await repositories.user.findById(wallet?.userId)
+  }
+
+  return {
+    network,
+    chain,
+    wallet,
+    user,
+    repositories,
+  }
 }
 
 const formatError = (error: GraphQLError): GQLError => {
@@ -43,35 +74,6 @@ const formatError = (error: GraphQLError): GQLError => {
     errorKey,
     message,
     path,
-  }
-}
-
-const createContext = async (ctx): Promise<Context> => {
-  const { req, connection } = ctx
-  // * For subscription and query-mutation, gql handles headers differently 😪
-  const headers = connection && connection.context ? connection.context : req.headers
-
-  const network = headers[networkHeader] || null
-  const chainId = headers[chainIdHeader] || null
-  const authSignature = headers[authHeader] || null
-  let chain: Chain = null
-  let wallet: entity.Wallet = null
-  let user: entity.User = null
-  const repositories = newRepositories()
-  if (helper.isNotEmpty(authSignature)) {
-    chain = verifyAndGetNetworkChain(network, chainId)
-    const address = blockchain.getAddressFromSignature(authSignature)
-    // TODO fetch from cache
-    wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
-    user = await repositories.user.findById(wallet?.userId)
-  }
-
-  return {
-    network,
-    chain,
-    wallet,
-    user,
-    repositories,
   }
 }
 

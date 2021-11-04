@@ -2,12 +2,11 @@ import * as _ from 'lodash'
 
 import { getChain } from '@src/config'
 import { Context, entity, repository } from '@src/db'
-import { EdgeType, EntityType, gqlTypes } from '@src/defs'
+import { gql, misc } from '@src/defs'
 import { appError, walletError } from '@src/graphql/error'
-import { fp } from '@src/helper'
-import { LoggerContext,LoggerFactory } from '@src/helper/logger'
+import { _logger, fp } from '@src/helper'
 
-const logger = LoggerFactory(LoggerContext.General, LoggerContext.GraphQL)
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
@@ -26,7 +25,7 @@ const getDefaultOrFindById = <T>(
 
 export const getWallet = (
   ctx: Context,
-  input: gqlTypes.WalletInput,
+  input: gql.WalletInput,
 ): Promise<entity.Wallet> => {
   const { network, chainId, address } = input
   const { user, repositories } = ctx
@@ -45,25 +44,25 @@ export const getWallet = (
 export const entityById = (
   ctx: Context,
   id: string,
-  entityType: EntityType,
+  entityType: misc.EntityType,
 ): Promise<any> => {
   const { repositories, user, wallet } = ctx
   logger.debug('entityById', { loggedInUserId: user.id, id, entityType })
 
   switch (entityType) {
-  case EntityType.Approval:
+  case misc.EntityType.Approval:
     return repositories.approval.findById(id)
-  case EntityType.Bid:
+  case misc.EntityType.Bid:
     return repositories.bid.findById(id)
-  case EntityType.Edge:
+  case misc.EntityType.Edge:
     return repositories.edge.findById(id)
-  case EntityType.NFT:
+  case misc.EntityType.NFT:
     return repositories.nft.findById(id)
-  case EntityType.Profile:
+  case misc.EntityType.Profile:
     return repositories.profile.findById(id)
-  case EntityType.User:
+  case misc.EntityType.User:
     return getDefaultOrFindById(user, id, repositories.user.findById)
-  case EntityType.Wallet:
+  case misc.EntityType.Wallet:
     return getDefaultOrFindById(wallet, id, repositories.wallet.findById)
   default:
     throw new Error(`Cannot resolve entityType: ${entityType}`)
@@ -78,8 +77,8 @@ export const resolveEntityFromContext = <T>(key: string) => {
 
 export const resolveEntityById = <T>(
   key: string,
-  parentType: EntityType,
-  resolvingType: EntityType,
+  parentType: misc.EntityType,
+  resolvingType: misc.EntityType,
 ) => {
   return <K>(parent: K, _: unknown, ctx: Context): Promise<T> => {
     return entityById(ctx, parent?.['id'], parentType)
@@ -90,7 +89,7 @@ export const resolveEntityById = <T>(
 export const resolveEntityOwnership = (
   key: string,
   ctxKey: string,
-  parentType: EntityType,
+  parentType: misc.EntityType,
 ) => {
   return <T>(parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
@@ -99,7 +98,7 @@ export const resolveEntityOwnership = (
   }
 }
 
-export const resolveEdgeOwnership = (ctxKey: string, edgeType: EdgeType) => {
+export const resolveEdgeOwnership = (ctxKey: string, edgeType: misc.EdgeType) => {
   return <T>(parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
     const { repositories } = ctx

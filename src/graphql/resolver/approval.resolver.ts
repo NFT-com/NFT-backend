@@ -2,20 +2,20 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context } from '@src/db'
-import { EntityType, gqlTypes } from '@src/defs'
-import { LoggerContext, LoggerFactory } from '@src/helper/logger'
+import { gql, misc } from '@src/defs'
+import { _logger } from '@src/helper'
 
 import { isAuthenticated } from './auth'
+import * as coreService from './core.service'
 import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
-import * as service from './service'
 
-const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Approval)
+const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Approval)
 
 const approveAmount = (
   _: any,
-  args: gqlTypes.MutationApproveAmountArgs,
+  args: gql.MutationApproveAmountArgs,
   ctx: Context,
-): Promise<gqlTypes.Approval> => {
+): Promise<gql.Approval> => {
   const { user, repositories } = ctx
   logger.debug('approveAmount', { loggedInUserId: user.id, input: args.input })
 
@@ -30,8 +30,8 @@ const approveAmount = (
   })
   validateSchema(schema, args)
 
-  return service.getWallet(ctx, args.input.wallet)
-    .then(({  id: walletId }) => repositories.approval.save({
+  return coreService.getWallet(ctx, args.input.wallet)
+    .then(({ id: walletId }) => repositories.approval.save({
       amount: args.input.amount,
       deadline: args.input.deadline,
       nonce: args.input.nonce,
@@ -44,9 +44,9 @@ const approveAmount = (
 // TODO implement pagination
 const getMyApprovals = (
   _: any,
-  args: gqlTypes.QueryMyApprovalsArgs,
+  args: gql.QueryMyApprovalsArgs,
   ctx: Context,
-): Promise<gqlTypes.ApprovalsOutput> => {
+): Promise<gql.ApprovalsOutput> => {
   const { user, repositories } = ctx
   logger.debug('getMyApprovals', { loggedInUserId: user.id, input: args.input })
 
@@ -65,6 +65,10 @@ export default {
     approveAmount: combineResolvers(isAuthenticated, approveAmount),
   },
   Approval: {
-    wallet: service.resolveEntityById('walletId', EntityType.Approval, EntityType.Wallet),
+    wallet: coreService.resolveEntityById(
+      'walletId',
+      misc.EntityType.Approval,
+      misc.EntityType.Wallet,
+    ),
   },
 }

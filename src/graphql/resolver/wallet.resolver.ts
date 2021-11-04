@@ -1,21 +1,21 @@
 import { combineResolvers } from 'graphql-resolvers'
 
 import { Context } from '@src/db'
-import { EntityType, gqlTypes } from '@src/defs'
+import { gql, misc } from '@src/defs'
 import { appError } from '@src/graphql/error'
-import { LoggerContext, LoggerFactory } from '@src/helper/logger'
+import { _logger } from '@src/helper'
 
 import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
+import * as coreService from './core.service'
 import { buildWalletInputSchema } from './joi'
-import * as service from './service'
 
-const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Wallet)
+const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Wallet)
 
 const addAddress = (
   _: any,
-  args: gqlTypes.MutationAddAddressArgs,
+  args: gql.MutationAddAddressArgs,
   ctx: Context,
-): Promise<gqlTypes.Wallet> => {
+): Promise<gql.Wallet> => {
   const { user, repositories } = ctx
   logger.debug('addAddress', { loggedInUserId: user.id, input: args.input })
 
@@ -27,7 +27,7 @@ const addAddress = (
 
   const { address, chainId, network } = args.input
   const chain = verifyAndGetNetworkChain(network, chainId)
-  return service.getWallet(ctx, args.input)
+  return coreService.getWallet(ctx, args.input)
     .then(() => repositories.wallet.save({
       address,
       chainId: chain.id,
@@ -41,6 +41,10 @@ export default {
     addAddress: combineResolvers(isAuthenticated, addAddress),
   },
   Wallet: {
-    user: service.resolveEntityById('userId', EntityType.Wallet, EntityType.User),
+    user: coreService.resolveEntityById(
+      'userId',
+      misc.EntityType.Wallet,
+      misc.EntityType.User,
+    ),
   },
 }

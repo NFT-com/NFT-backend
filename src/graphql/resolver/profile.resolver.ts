@@ -2,18 +2,17 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, entity } from '@src/db'
-import { EdgeType, EntityType, gqlTypes } from '@src/defs'
+import { gql, misc } from '@src/defs'
 import { appError, profileError } from '@src/graphql/error'
-import { fp } from '@src/helper'
-import { LoggerContext, LoggerFactory } from '@src/helper/logger'
+import { _logger, fp } from '@src/helper'
 
 import { isAuthenticated } from './auth'
+import * as coreService from './core.service'
 import { validateSchema } from './joi'
-import * as service from './service'
 
-const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Profile)
+const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Profile)
 
-const toProfilesOutput = (profiles: entity.Profile[]): gqlTypes.ProfilesOutput => ({
+const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
   profiles,
   pageInfo: null,
 })
@@ -21,15 +20,15 @@ const toProfilesOutput = (profiles: entity.Profile[]): gqlTypes.ProfilesOutput =
 // TODO implement pagination
 const getProfilesFollowedByMe = (
   _: any,
-  args: gqlTypes.QueryProfilesFollowedByMeArgs,
+  args: gql.QueryProfilesFollowedByMeArgs,
   ctx: Context,
-): Promise<gqlTypes.ProfilesOutput> => {
+): Promise<gql.ProfilesOutput> => {
   const { user } = ctx
   logger.debug('getProfilesFollowedByMe', { loggedInUserId: user.id, input: args.input })
-  return service.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
+  return coreService.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
       collectionId: user.id,
-      thatEntityType: EntityType.Profile,
-      edgeType: EdgeType.Follows,
+      thatEntityType: misc.EntityType.Profile,
+      edgeType: misc.EdgeType.Follows,
     })
     .then(toProfilesOutput)
 }
@@ -37,12 +36,12 @@ const getProfilesFollowedByMe = (
 // TODO implement pagination
 const getMyProfiles = (
   _: any,
-  args: gqlTypes.QueryMyProfilesArgs,
+  args: gql.QueryMyProfilesArgs,
   ctx: Context,
-): Promise<gqlTypes.ProfilesOutput> => {
+): Promise<gql.ProfilesOutput> => {
   const { user } = ctx
   logger.debug('getMyProfiles', { loggedInUserId: user.id, input: args.input })
-  return service.entitiesBy(ctx.repositories.profile, { ownerUserId: user.id })
+  return coreService.entitiesBy(ctx.repositories.profile, { ownerUserId: user.id })
     .then(toProfilesOutput)
 }
 
@@ -54,18 +53,18 @@ const buildProfileInputSchema = (): Joi.ObjectSchema =>
 // TODO implement pagination
 const getProfileFollowers = (
   _: any,
-  args: gqlTypes.QueryProfileFollowersArgs,
+  args: gql.QueryProfileFollowersArgs,
   ctx: Context,
-): Promise<gqlTypes.FollowersOutput> => {
+): Promise<gql.FollowersOutput> => {
   const { user } = ctx
   logger.debug('getProfileFollowers', { loggedInUserId: user.id, input: args.input })
 
   validateSchema(buildProfileInputSchema(), args)
 
-  return service.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
+  return coreService.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
       thatEntityId: args.input.profileId,
-      thatEntityType: EntityType.Profile,
-      edgeType: EdgeType.Follows,
+      thatEntityType: misc.EntityType.Profile,
+      edgeType: misc.EdgeType.Follows,
     })
     .then((wallets) => ({
       wallets,
@@ -83,9 +82,9 @@ const getProfile = (ctx: Context, profileId: string): Promise<entity.Profile | n
 
 const followProfile = (
   _: any,
-  args: gqlTypes.MutationFollowProfileArgs,
+  args: gql.MutationFollowProfileArgs,
   ctx: Context,
-): Promise<gqlTypes.Profile> => {
+): Promise<gql.Profile> => {
   const { user, wallet, repositories } = ctx
   logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
 
@@ -95,9 +94,9 @@ const followProfile = (
     .then((profile) => {
       return repositories.edge.exists({
         collectionId: user.id,
-        edgeType: EdgeType.Follows,
+        edgeType: misc.EdgeType.Follows,
         thatEntityId: profile.id,
-        thatEntityType: EntityType.Profile,
+        thatEntityType: misc.EntityType.Profile,
         deletedAt: null,
       })
         .then(fp.tapRejectIfTrue(appError.buildExists(
@@ -107,10 +106,10 @@ const followProfile = (
         .then(() => repositories.edge.save({
           collectionId: user.id,
           thisEntityId: wallet.id,
-          thisEntityType: EntityType.Wallet,
-          edgeType: EdgeType.Follows,
+          thisEntityType: misc.EntityType.Wallet,
+          edgeType: misc.EdgeType.Follows,
           thatEntityId: profile.id,
-          thatEntityType: EntityType.Profile,
+          thatEntityType: misc.EntityType.Profile,
         }))
         .then(() => profile)
     })
@@ -118,9 +117,9 @@ const followProfile = (
 
 const unfollowProfile = (
   _: any,
-  args: gqlTypes.MutationUnfollowProfileArgs,
+  args: gql.MutationUnfollowProfileArgs,
   ctx: Context,
-): Promise<gqlTypes.Profile> => {
+): Promise<gql.Profile> => {
   const { user, wallet, repositories } = ctx
   logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
 
@@ -130,9 +129,9 @@ const unfollowProfile = (
     .then(fp.tapWait((profile) => {
       return repositories.edge.delete({
         collectionId: user.id,
-        edgeType: EdgeType.Follows,
+        edgeType: misc.EdgeType.Follows,
         thatEntityId: profile.id,
-        thisEntityType: EntityType.Profile,
+        thisEntityType: misc.EntityType.Profile,
         deletedAt: null,
       })
     }))
@@ -149,9 +148,24 @@ export default {
     unfollowProfile,
   },
   Profile: {
-    creator: service.resolveEntityById('creatorId', EntityType.Profile, EntityType.Wallet),
-    owner: service.resolveEntityById('ownerId', EntityType.Profile, EntityType.Wallet),
-    isOwnedByMe: service.resolveEntityOwnership('ownerUserId', 'user', EntityType.Profile),
-    isFollowedByMe: service.resolveEdgeOwnership('user', EdgeType.Follows),
+    creator: coreService.resolveEntityById(
+      'creatorId',
+      misc.EntityType.Profile,
+      misc.EntityType.Wallet,
+    ),
+    owner: coreService.resolveEntityById(
+      'ownerId',
+      misc.EntityType.Profile,
+      misc.EntityType.Wallet,
+    ),
+    isOwnedByMe: coreService.resolveEntityOwnership(
+      'ownerUserId',
+      'user',
+      misc.EntityType.Profile,
+    ),
+    isFollowedByMe: coreService.resolveEdgeOwnership(
+      'user',
+      misc.EdgeType.Follows,
+    ),
   },
 }

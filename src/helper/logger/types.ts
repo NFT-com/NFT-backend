@@ -13,3 +13,12 @@ export enum LoggerContext {
   User = 'user',
   Wallet = 'wallet',
 }
+
+export enum LogLevel {
+  Trace = 'TRACE',
+  Debug = 'DEBUG',
+  Info = 'INFO',
+  Warn = 'WARN',
+  Error = 'ERROR',
+  Fatal = 'FATAL'
+}

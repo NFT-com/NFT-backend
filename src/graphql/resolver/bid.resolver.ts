@@ -3,22 +3,21 @@ import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
 import { Context, entity } from '@src/db'
-import { EntityType, gqlTypes } from '@src/defs'
+import { gql, misc } from '@src/defs'
 import { appError } from '@src/graphql/error'
-import { fp, helper } from '@src/helper'
-import { LoggerContext, LoggerFactory } from '@src/helper/logger'
+import { _logger, fp, helper } from '@src/helper'
 
 import { isAuthenticated } from './auth'
+import * as coreService from './core.service'
 import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
-import * as service from './service'
 
-const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Bid)
+const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Bid)
 
 const bid = (
   _: any,
-  args: gqlTypes.MutationBidArgs,
+  args: gql.MutationBidArgs,
   ctx: Context,
-): Promise<gqlTypes.Bid> => {
+): Promise<gql.Bid> => {
   const { user, repositories } = ctx
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
@@ -31,13 +30,13 @@ const bid = (
   validateSchema(schema, args)
 
   const { nftType, wallet, profileURL, price, signature } = args.input
-  if (nftType === gqlTypes.NFTType.Profile && isEmpty(profileURL)) {
+  if (nftType === gql.NFTType.Profile && isEmpty(profileURL)) {
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
-  return service.getWallet(ctx, wallet)
+  return coreService.getWallet(ctx, wallet)
     .then(({ id: walletId }) => {
-      if (nftType !== gqlTypes.NFTType.Profile) {
+      if (nftType !== gql.NFTType.Profile) {
         return { walletId, profileId: null }
       }
       // TODO what about staked weighted seconds
@@ -58,14 +57,14 @@ const bid = (
       price,
       profileId,
       signature,
-      status: gqlTypes.BidStatus.Submitted,
+      status: gql.BidStatus.Submitted,
       userId: user.id,
       walletId,
     }))
 }
 
-const getBidsBy = (ctx: Context, filter: Partial<entity.Bid>): Promise<gqlTypes.BidsOutput> => {
-  return service.entitiesBy(ctx.repositories.bid, filter)
+const getBidsBy = (ctx: Context, filter: Partial<entity.Bid>): Promise<gql.BidsOutput> => {
+  return coreService.entitiesBy(ctx.repositories.bid, filter)
     .then((bids) => ({
       bids,
       pageInfo: null,
@@ -75,9 +74,9 @@ const getBidsBy = (ctx: Context, filter: Partial<entity.Bid>): Promise<gqlTypes.
 // TODO implement pagination
 const getBids = (
   _: any,
-  args: gqlTypes.QueryMyBidsArgs,
+  args: gql.QueryMyBidsArgs,
   ctx: Context,
-): Promise<gqlTypes.BidsOutput> => {
+): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getBids', { loggedInUserId: user.id, input: args.input })
 
@@ -93,9 +92,9 @@ const getBids = (
 // TODO implement pagination
 const getMyBids = (
   _: any,
-  args: gqlTypes.QueryMyBidsArgs,
+  args: gql.QueryMyBidsArgs,
   ctx: Context,
-): Promise<gqlTypes.BidsOutput> => {
+): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args.input })
   return getBidsBy(ctx,  { userId: user.id })
@@ -110,6 +109,10 @@ export default {
     bid: combineResolvers(isAuthenticated, bid),
   },
   Bid: {
-    wallet: service.resolveEntityById('walletId', EntityType.Bid, EntityType.Wallet),
+    wallet: coreService.resolveEntityById(
+      'walletId',
+      misc.EntityType.Approval,
+      misc.EntityType.Wallet,
+    ),
   },
 }

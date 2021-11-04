@@ -16,4 +16,4 @@ log-debug
 *.log
 
 # others
-src/defs/gql-types.ts
+src/defs/gql.ts

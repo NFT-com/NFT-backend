@@ -1,17 +1,16 @@
 import { combineResolvers } from 'graphql-resolvers'
 
 import { Context, entity } from '@src/db'
-import { EntityType, gqlTypes } from '@src/defs'
-import { helper } from '@src/helper'
-import { LoggerContext, LoggerFactory } from '@src/helper/logger'
+import { gql, misc } from '@src/defs'
+import { _logger, helper } from '@src/helper'
 
 import { isAuthenticated } from './auth'
-import * as service from './service'
+import * as coreService from './core.service'
 
-const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.NFT)
+const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.NFT)
 
-const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gqlTypes.NFTsOutput> => {
-  return service.entitiesBy(ctx.repositories.nft, filter)
+const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gql.NFTsOutput> => {
+  return coreService.entitiesBy(ctx.repositories.nft, filter)
     .then((nfts) => ({
       nfts,
       pageInfo: null,
@@ -21,9 +20,9 @@ const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gqlTypes.
 // TODO implement pagination
 const getNFTs = (
   _: any,
-  args: gqlTypes.QueryNFTsArgs,
+  args: gql.QueryNFTsArgs,
   ctx: Context,
-): Promise<gqlTypes.NFTsOutput> => {
+): Promise<gql.NFTsOutput> => {
   const { user } = ctx
   logger.debug('getNFTs', { loggedInUserId: user.id, input: args.input })
 
@@ -39,9 +38,9 @@ const getNFTs = (
 // TODO implement pagination
 const getMyNFTs = (
   _: any,
-  args: gqlTypes.QueryNFTsArgs,
+  args: gql.QueryNFTsArgs,
   ctx: Context,
-): Promise<gqlTypes.NFTsOutput> => {
+): Promise<gql.NFTsOutput> => {
   const { user } = ctx
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args.input })
   return getNFTsBy(ctx, { userId: user.id })
@@ -53,7 +52,15 @@ export default {
     myNFTs: combineResolvers(isAuthenticated, getMyNFTs),
   },
   NFT: {
-    wallet: service.resolveEntityById('walletId', EntityType.NFT, EntityType.Wallet),
-    isOwnedByMe: service.resolveEntityOwnership('userId', 'user', EntityType.NFT),
+    wallet: coreService.resolveEntityById(
+      'walletId',
+      misc.EntityType.NFT,
+      misc.EntityType.Wallet,
+    ),
+    isOwnedByMe: coreService.resolveEntityOwnership(
+      'userId',
+      'user',
+      misc.EntityType.NFT,
+    ),
   },
 }

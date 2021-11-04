@@ -2,7 +2,7 @@
 require('dotenv').config()
 import { isString } from 'lodash'
 
-import { Chain, Network } from '@src/defs'
+import { misc } from '@src/defs'
 import { helper } from '@src/helper'
 
 export const verifyConfiguration = (): void => {
@@ -40,9 +40,9 @@ export const dbConfig = {
   migrationDirectory: process.env.DB_MIGRATION_DIR || 'dist/db/migration',
 }
 
-const toNetwork = (str: string): Network => {
+const toNetwork = (str: string): misc.Network => {
   const list = str.split('|')
-  return list.reduce((agg: Network, val: string) => {
+  return list.reduce((agg: misc.Network, val: string) => {
     const kvs = val.split(':')
     const network = kvs[0]
     agg[network] = agg[network] || []
@@ -65,5 +65,5 @@ export const blockchainConfig = {
 export const isNetworkSupported = (network: string): boolean =>
   helper.isNotEmpty(supportedNetworks[network])
 
-export const getChain = (network: string, chainId: string): Chain =>
-  supportedNetworks[network].find((chain: Chain) => chain.id === chainId)
+export const getChain = (network: string, chainId: string): misc.Chain =>
+  supportedNetworks[network].find((chain: misc.Chain) => chain.id === chainId)

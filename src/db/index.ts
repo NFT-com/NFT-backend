@@ -1,4 +1,4 @@
-import { Chain } from '@src/defs'
+import { misc } from '@src/defs'
 
 import * as entity from './entity'
 import * as repo from './repository'
@@ -19,7 +19,7 @@ export type Repository = {
 
 export type Context = {
   network: string
-  chain: Chain
+  chain: misc.Chain
   user: entity.User
   wallet: entity.Wallet
   repositories: Repository

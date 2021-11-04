@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { Signature } from '@src/defs/gql-types'
+import { Signature } from '@src/defs/gql'
 
 import { Base } from './base.entity'
 

@@ -1,4 +1,3 @@
-export * from './logger'
-export * from './logger.context'
-export * from './logger.factory'
-export * from './logger.level'
+export { Factory as Factory } from './logger'
+export { LoggerContext as Context } from './types'
+

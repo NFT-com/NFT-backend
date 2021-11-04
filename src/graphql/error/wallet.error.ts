@@ -1,6 +1,6 @@
 import { ApolloError } from 'apollo-server'
 
-import { Chain } from '@src/defs'
+import { misc } from '@src/defs'
 
 import { HTTP } from './http.code'
 
@@ -29,7 +29,7 @@ export const buildInvalidNetwork = (network: string | null): ApolloError =>
 
 export const buildAddressExistsMsg = (
   network: string,
-  chain: Chain,
+  chain: misc.Chain,
   address: string,
 ): string =>
   `Address ${address} already exists for chain ${network}:${chain.id}:${chain.name}`
