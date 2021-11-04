@@ -6,11 +6,11 @@ type User {
     addresses: [Wallet!]
 }
 
-input SingUpInput {
-    email: String!
-    address: String!
-    referredBy: String
+input SignUpInput {
     avatarURL: String
+    email: String!
+    referredBy: String
+    wallet: WalletInput!
 }
 
 input UpdateUserInput {
@@ -24,7 +24,7 @@ extend type Query {
 }
 
 extend type Mutation {
-    signUp(input: SingUpInput!): User!
+    signUp(input: SignUpInput!): User!
     updateMe(input: UpdateUserInput!): User!
     confirmEmail(token: Int!): Boolean!
 }

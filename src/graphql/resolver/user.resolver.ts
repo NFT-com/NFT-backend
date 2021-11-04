@@ -9,8 +9,8 @@ import { appError, userError, walletError } from '@src/graphql/error'
 import { fp } from '@src/helper'
 import { LoggerContext, LoggerFactory } from '@src/helper/logger'
 
-import { isAuthenticated } from './auth'
-import { validateSchema } from './joi'
+import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
+import { buildWalletInputSchema,validateSchema } from './joi'
 import * as service from './service'
 
 const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.User)
@@ -22,27 +22,24 @@ const signUp = (
   args: gqlTypes.MutationSignUpArgs,
   ctx: Context,
 ): Promise<gqlTypes.User> => {
-  const { chain, network, repositories } = ctx
-  logger.debug('signUp', { network, chain, address: args.input.address })
+  const { repositories } = ctx
+  logger.debug('signUp', { input: args.input })
 
   const schema = Joi.object().keys({
-    email: Joi.string().required(),
-    address: Joi.string().required(),
-    referredBy: Joi.string(),
     avatarURL: Joi.string(),
+    email: Joi.string().required(),
+    referredBy: Joi.string(),
+    wallet: buildWalletInputSchema(),
   })
   validateSchema(schema, args.input)
 
-  const { email, address, avatarURL, referredBy } = {
-    email: args.input.email,
-    address: args.input.address,
-    referredBy: args.input.referredBy || '',
-    avatarURL: args.input.avatarURL || '',
-  }
+  const { email, avatarURL = '', referredBy = '', wallet } = args.input
+  const { address, network, chainId } = wallet
+  const chain = verifyAndGetNetworkChain(network, chainId)
 
   return Promise.all([
     repositories.user.exists({ email }),
-    repositories.wallet.exists({ network, chainId: chain.id, address }),
+    repositories.wallet.exists({ network, chainId, address }),
   ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
@@ -129,10 +126,7 @@ const updateMe = (
   })
   validateSchema(schema, args.input)
 
-  const { avatarURL, referredBy } = {
-    referredBy: args.input.referredBy || '',
-    avatarURL: args.input.avatarURL || '',
-  }
+  const { avatarURL = '', referredBy = '' } = args.input
   // TODO
   //  1) notify user who's referral was used
   //  2) do we need to notify user who got updated?
@@ -145,7 +139,7 @@ export default {
     // user: combineResolvers(auth.isAuthenticated, getUser),
   },
   Mutation: {
-    signUp: signUp,
+    signUp,
     confirmEmail,
     updateMe: combineResolvers(isAuthenticated, updateMe),
   },
