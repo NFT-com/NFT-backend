@@ -12,16 +12,16 @@ import {
 export class Base {
 
   @PrimaryColumn()
-    id: string
+  id: string
 
   @CreateDateColumn()
-    createdAt: Date
+  createdAt: Date
 
   @UpdateDateColumn()
-    updatedAt: Date
+  updatedAt: Date
 
   @DeleteDateColumn()
-    deletedAt?: Date
+  deletedAt?: Date
 
   @BeforeInsert()
   addId(): void {

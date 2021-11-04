@@ -9,7 +9,7 @@ import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
 import * as coreService from './core.service'
 import { buildWalletInputSchema } from './joi'
 
-const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Wallet)
+const logger = _logger.Factory(_logger.Context.Wallet, _logger.Context.GraphQL)
 
 const addAddress = (
   _: any,

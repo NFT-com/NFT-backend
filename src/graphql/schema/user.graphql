@@ -1,11 +1,12 @@
 type User {
   id: ID!
-  isEmailConfirmed: Boolean!
   avatarURL: String
-  referredBy: String
-  referralId: String!
+  email: String!
+  isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]
   myApprovals: [Approval!]
+  referredBy: String
+  referralId: String!
 }
 
 input SignUpInput {

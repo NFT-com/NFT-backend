@@ -1,4 +1,4 @@
-import { LessThan } from 'typeorm'
+import { MoreThan } from 'typeorm'
 
 import { User } from '@src/db/entity'
 
@@ -22,7 +22,7 @@ export class UserRepository extends BaseRepository<User> {
     return this.findOne({
       where: {
         confirmEmailToken,
-        confirmEmailTokenExpiresAt: LessThan(new Date()),
+        confirmEmailTokenExpiresAt: MoreThan(new Date()),
       },
     })
   }

@@ -10,7 +10,7 @@ import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
 import { validateSchema } from './joi'
 
-const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.NFT)
+const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 const getNFT = (
   _: unknown,

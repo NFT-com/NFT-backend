@@ -8,12 +8,13 @@ import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
 import { appError, userError, walletError } from '@src/graphql/error'
 import { _logger, fp } from '@src/helper'
+import { sendgrid } from '@src/service'
 
 import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
 import * as coreService from './core.service'
 import { buildWalletInputSchema, validateSchema } from './joi'
 
-const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.User)
+const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
 // type UserOut = gql.User & entity.User
 
@@ -33,7 +34,7 @@ const signUp = (
   })
   validateSchema(schema, args.input)
 
-  const { email, avatarURL = '', referredBy = '', wallet } = args.input
+  const { email, avatarURL, referredBy = '', wallet } = args.input
   const { address, network, chainId } = wallet
   const chain = verifyAndGetNetworkChain(network, chainId)
 
@@ -59,7 +60,7 @@ const signUp = (
     .then(fp.thruIfNotEmpty((refId) => repositories.user
       .findByReferralId(refId).then((user) => user?.id),
     ))
-    .then((referredUserId) => {
+    .then(async (referredUserId) => {
       const confirmEmailToken = cryptoRandomString({ length: 10, type: 'url-safe' })
       const confirmEmailTokenExpiresAt = addDays(new Date(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
@@ -72,13 +73,16 @@ const signUp = (
         referralId,
       })
     })
-    .then(fp.tapWait((user) => repositories.wallet.save({
-      userId: user.id,
-      network,
-      chainId: chain.id,
-      chainName: chain.name,
-      address,
-    })))
+    .then(fp.tapWait<entity.User, unknown>((user) => Promise.all([
+      repositories.wallet.save({
+        userId: user.id,
+        network,
+        chainId: chain.id,
+        chainName: chain.name,
+        address,
+      }),
+      sendgrid.sendConfirmEmail(user),
+    ])))
 }
 
 const confirmEmail = (
@@ -113,21 +117,21 @@ const confirmEmail = (
       }
 
       return repositories.user.findById(user.referredBy)
-        .then(fp.tapWait((otherUser) => repositories.edge.save({
-          thisEntityId: otherUser.id,
-          thisEntityType: misc.EntityType.User,
-          thatEntityId: user.id,
-          thatEntityType: misc.EntityType.User,
-          edgeType: misc.EdgeType.Referred,
-        })))
-        .then((otherUser) => coreService.countEdges(ctx, {
-          thisEntityId: otherUser.id,
-          edgeType: misc.EdgeType.Referred,
-        }))
+        .then((otherUser) => {
+          return repositories.edge.save({
+            thisEntityId: otherUser.id,
+            thisEntityType: misc.EntityType.User,
+            thatEntityId: user.id,
+            thatEntityType: misc.EntityType.User,
+            edgeType: misc.EdgeType.Referred,
+          })
+            .then(() => coreService.countEdges(ctx, {
+              thisEntityId: otherUser.id,
+              edgeType: misc.EdgeType.Referred,
+            }))
+            .then((count) => sendgrid.sendReferredBy(otherUser, count))
+        })
     })
-    // TODO
-    //  1) update referral count
-    //  2) notify user who referred
     .then(() => true)
 }
 

@@ -4,7 +4,7 @@ import { entity } from '@src/db'
 import { _logger, fp } from '@src/helper'
 
 sendgrid.setApiKey(sgAPIKey)
-const logger = _logger.Factory(_logger.Context.General, _logger.Context.SendGrid)
+const logger = _logger.Factory(_logger.Context.SendGrid, _logger.Context.General)
 const from = {
   name: 'NFT.com',
   email: '<noreply@nft.com>',
@@ -26,7 +26,7 @@ export const sendConfirmEmail = (user: entity.User): Promise<unknown> => {
     from,
     to: { email: user.email },
     subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
-    text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis is a one-time code that expires in 24 hours.`,
+    text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
   })
 }
 

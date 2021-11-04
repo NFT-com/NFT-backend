@@ -9,7 +9,7 @@ import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
 import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
 
-const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Approval)
+const logger = _logger.Factory(_logger.Context.Approval, _logger.Context.GraphQL)
 
 const approveAmount = (
   _: any,

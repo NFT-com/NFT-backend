@@ -10,7 +10,7 @@ import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
 import { validateSchema } from './joi'
 
-const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Profile)
+const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
   profiles,

@@ -11,7 +11,7 @@ import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
 import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
 
-const logger = _logger.Factory(_logger.Context.GraphQL, _logger.Context.Bid)
+const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
 const bid = (
   _: any,
