@@ -1,5 +1,14 @@
 import Joi from 'joi'
 
+import { appError } from '@src/graphql/error'
+
+export const validateSchema = (schema: Joi.ObjectSchema, input: unknown): void => {
+  const { error } = schema.validate(input, { abortEarly: false })
+  if (error) {
+    throw appError.buildInvalidSchema(error)
+  }
+}
+
 export const buildWalletInputSchema = (): Joi.ObjectSchema =>
   Joi.object().keys({
     address: Joi.string().required(),

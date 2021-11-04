@@ -3,10 +3,12 @@ import Joi from 'joi'
 
 import { Context, entity } from '@src/db'
 import { EdgeType, EntityType, gqlTypes } from '@src/defs'
-import { appError } from '@src/graphql/error'
+import { appError, profileError } from '@src/graphql/error'
+import { fp } from '@src/helper'
 import { LoggerContext, LoggerFactory } from '@src/helper/logger'
 
 import { isAuthenticated } from './auth'
+import { validateSchema } from './joi'
 import * as service from './service'
 
 const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Profile)
@@ -44,6 +46,11 @@ const getMyProfiles = (
     .then(toProfilesOutput)
 }
 
+const buildProfileInputSchema = (): Joi.ObjectSchema =>
+  Joi.object().keys({
+    profileId: Joi.string().required(),
+  })
+
 // TODO implement pagination
 const getProfileFollowers = (
   _: any,
@@ -53,13 +60,7 @@ const getProfileFollowers = (
   const { user } = ctx
   logger.debug('getProfileFollowers', { loggedInUserId: user.id, input: args.input })
 
-  const schema = Joi.object().keys({
-    profileId: Joi.string().required(),
-  })
-  const { error } = schema.validate(args.input, { abortEarly: false })
-  if (error) {
-    throw appError.buildInvalidSchemaError(error)
-  }
+  validateSchema(buildProfileInputSchema(), args)
 
   return service.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
       thatEntityId: args.input.profileId,
@@ -72,11 +73,80 @@ const getProfileFollowers = (
     }))
 }
 
+const getProfile = (ctx: Context, profileId: string): Promise<entity.Profile | never> => {
+  return ctx.repositories.profile.findById(profileId)
+    .then(fp.tapRejectIfEmpty(appError.buildNotFound(
+      profileError.buildProfileNotFoundMsg(profileId),
+      profileError.ErrorType.ProfileNotFound,
+    )))
+}
+
+const followProfile = (
+  _: any,
+  args: gqlTypes.MutationFollowProfileArgs,
+  ctx: Context,
+): Promise<gqlTypes.Profile> => {
+  const { user, wallet, repositories } = ctx
+  logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
+
+  validateSchema(buildProfileInputSchema(), args)
+
+  return getProfile(ctx, args.id)
+    .then((profile) => {
+      return repositories.edge.exists({
+        collectionId: user.id,
+        edgeType: EdgeType.Follows,
+        thatEntityId: profile.id,
+        thatEntityType: EntityType.Profile,
+        deletedAt: null,
+      })
+        .then(fp.tapRejectIfTrue(appError.buildExists(
+            profileError.buildProfileFollowingMsg(profile.id),
+            profileError.ErrorType.ProfileAlreadyFollowing,
+        )))
+        .then(() => repositories.edge.save({
+          collectionId: user.id,
+          thisEntityId: wallet.id,
+          thisEntityType: EntityType.Wallet,
+          edgeType: EdgeType.Follows,
+          thatEntityId: profile.id,
+          thatEntityType: EntityType.Profile,
+        }))
+        .then(() => profile)
+    })
+}
+
+const unfollowProfile = (
+  _: any,
+  args: gqlTypes.MutationUnfollowProfileArgs,
+  ctx: Context,
+): Promise<gqlTypes.Profile> => {
+  const { user, wallet, repositories } = ctx
+  logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
+
+  validateSchema(buildProfileInputSchema(), args)
+
+  return getProfile(ctx, args.id)
+    .then(fp.tapWait((profile) => {
+      return repositories.edge.delete({
+        collectionId: user.id,
+        edgeType: EdgeType.Follows,
+        thatEntityId: profile.id,
+        thisEntityType: EntityType.Profile,
+        deletedAt: null,
+      })
+    }))
+}
+
 export default {
   Query: {
     myProfiles: combineResolvers(isAuthenticated, getMyProfiles),
     profileFollowers: combineResolvers(isAuthenticated, getProfileFollowers),
     profilesFollowedByMe: combineResolvers(isAuthenticated, getProfilesFollowedByMe),
+  },
+  Mutation: {
+    followProfile,
+    unfollowProfile,
   },
   Profile: {
     creator: service.resolveEntityById('creatorId', EntityType.Profile, EntityType.Wallet),

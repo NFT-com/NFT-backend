@@ -7,22 +7,22 @@ export class User extends Base {
 
   @Index()
   @Column({ unique: true })
-    email: string
+  email: string
 
   @Column('boolean', { default: false })
-    isEmailConfirmed: boolean
+  isEmailConfirmed: boolean
 
   @Column({ select: false, nullable: true, unique: true })
-    confirmEmailToken: number
+  confirmEmailToken: number
 
   @Column({ select: false, nullable: true })
-    confirmEmailTokenExpiresAt: Date
+  confirmEmailTokenExpiresAt: Date
 
   @Column({ nullable: true })
-    avatarURL: string
+  avatarURL: string
 
   // TODO email address or userId?
   @Column({ nullable: true })
-    referredBy: string
+  referredBy: string
 
 }

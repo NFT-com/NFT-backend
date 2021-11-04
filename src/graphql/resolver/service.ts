@@ -3,7 +3,7 @@ import * as _ from 'lodash'
 import { getChain } from '@src/config'
 import { Context, entity, repository } from '@src/db'
 import { EdgeType, EntityType, gqlTypes } from '@src/defs'
-import { walletError } from '@src/graphql/error'
+import { appError, walletError } from '@src/graphql/error'
 import { fp } from '@src/helper'
 import { LoggerContext,LoggerFactory } from '@src/helper/logger'
 
@@ -35,9 +35,10 @@ export const getWallet = (
   const chain = getChain(network, chainId)
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
-    .then(fp.tapRejectIfEmpty(
-      walletError.buildAddressAlreadyExistsError(network, chain, address),
-    ))
+    .then(fp.tapRejectIfEmpty(appError.buildExists(
+      walletError.buildAddressExistsMsg(network, chain, address),
+      walletError.ErrorType.AddressAlreadyExists,
+    )))
 }
 
 // TODO can we use generics instead of any?

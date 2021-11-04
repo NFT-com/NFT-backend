@@ -2,7 +2,7 @@ import { ApolloError } from 'apollo-server'
 
 import { HTTP } from './http.code'
 
-enum ErrorType {
+export enum ErrorType {
   AuthenticationRequired = 'AUTHENTICATION_REQUIRED',
   UserNotFound = 'USER_NOT_FOUND',
   EmailAlreadyExists = 'EMAIL_ALREADY_EXISTS',
@@ -10,37 +10,19 @@ enum ErrorType {
   InvalidEmailConfirmToken = 'INVALID_EMAIL_CONFIRM_TOKEN',
 }
 
-export const buildAuthError = (): ApolloError =>
+export const buildAuth = (): ApolloError =>
   new ApolloError(
     'You must be signed in',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationRequired },
   )
 
-export const buildUserNotFound = (): ApolloError =>
-  new ApolloError(
-    'User not found',
-    HTTP.NotFound,
-    { errorKey: ErrorType.UserNotFound },
-  )
+export const buildUserNotFoundMsg = (id: string): string => `User ${id} not found`
 
-export const buildEmailAlreadyExistsError = (email: string): ApolloError =>
-  new ApolloError(
-    `User with email ${email} already exists`,
-    HTTP.Conflict,
-  { errorKey: ErrorType.EmailAlreadyExists },
-  )
+export const buildEmailExistsMsg = (email: string): string =>
+  `User with email ${email} already exists`
 
-export const buildEmailConfirmTokenRequiredError = (): ApolloError =>
-  new ApolloError(
-    'Email confirm token is required',
-    HTTP.BadRequest,
-  { errorKey: ErrorType.EmailConfirmTokenRequired },
-  )
+export const buildEmailTokenRequiredMsg = (): string => 'Email confirm token is required'
 
-export const buildInvalidEmailConfirmTokenError = (token: number): ApolloError =>
-  new ApolloError(
-    `Email confirm token ${token} is invalid`,
-    HTTP.BadRequest,
-  { errorKey: ErrorType.InvalidEmailConfirmToken },
-  )
+export const buildInvalidEmailTokenMsg = (token: number): string =>
+  `Email confirm token ${token} is invalid`

@@ -9,7 +9,7 @@ import { fp, helper } from '@src/helper'
 import { LoggerContext, LoggerFactory } from '@src/helper/logger'
 
 import { isAuthenticated } from './auth'
-import { buildSignatureInputSchema, buildWalletInputSchema } from './joi'
+import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
 import * as service from './service'
 
 const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Bid)
@@ -28,14 +28,11 @@ const bid = (
     signature: buildSignatureInputSchema(),
     wallet: buildWalletInputSchema(),
   })
-  const { error } = schema.validate(args.input, { abortEarly: false })
-  if (error) {
-    throw appError.buildInvalidSchemaError(error)
-  }
+  validateSchema(schema, args)
 
   const { nftType, wallet, profileURL, price, signature } = args.input
   if (nftType === gqlTypes.NFTType.Profile && isEmpty(profileURL)) {
-    throw appError.buildInvalidSchemaError(error)
+    throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
   return service.getWallet(ctx, wallet)

@@ -3,11 +3,10 @@ import Joi from 'joi'
 
 import { Context } from '@src/db'
 import { EntityType, gqlTypes } from '@src/defs'
-import { appError } from '@src/graphql/error'
 import { LoggerContext, LoggerFactory } from '@src/helper/logger'
 
 import { isAuthenticated } from './auth'
-import { buildSignatureInputSchema, buildWalletInputSchema } from './joi'
+import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
 import * as service from './service'
 
 const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.Approval)
@@ -29,10 +28,7 @@ const approveAmount = (
     txHash: Joi.string().required(),
     wallet: buildWalletInputSchema(),
   })
-  const { error } = schema.validate(args.input, { abortEarly: false })
-  if (error) {
-    throw appError.buildInvalidSchemaError(error)
-  }
+  validateSchema(schema, args)
 
   return service.getWallet(ctx, args.input.wallet)
     .then(({  id: walletId }) => repositories.approval.save({

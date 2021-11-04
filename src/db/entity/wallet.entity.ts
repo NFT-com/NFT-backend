@@ -2,24 +2,24 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { Base } from './base.entity'
 
-@Index(['chainId', 'address', 'network'],{ unique: true })
+@Index(['chainId', 'address', 'network'], { unique: true })
 @Entity()
 export class Wallet extends Base {
 
   @Index()
   @Column({ nullable: false })
-    userId: string
+  userId: string
 
   @Column({ nullable: false })
-    chainId: string
+  chainId: string
 
   @Column({ nullable: false })
-    chainName: string
+  chainName: string
 
   @Column({ nullable: false })
-    network: string
+  network: string
 
   @Column({ nullable: false })
-    address: string
+  address: string
 
 }

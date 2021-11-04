@@ -22,7 +22,7 @@ const addAddress = (
   const schema = buildWalletInputSchema()
   const { error } = schema.validate(args.input, { abortEarly: false })
   if (error) {
-    throw appError.buildInvalidSchemaError(error)
+    throw appError.buildInvalidSchema(error)
   }
 
   const { address, chainId, network } = args.input

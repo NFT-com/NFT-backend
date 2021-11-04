@@ -8,30 +8,30 @@ import { Base } from './base.entity'
 export class Bid extends Base {
 
   @Column({ type: 'enum', enum: NFTType, nullable: false })
-    nftType: NFTType
+  nftType: NFTType
 
   @Column({ nullable: false })
-    price: number
+  price: number
 
   @Index()
   @Column({ nullable: true })
-    profileId: string
+  profileId: string
 
   @Column({ type: 'json', nullable: false })
-    signature: Signature
+  signature: Signature
 
   @Column({ nullable: true })
-    stakeWeightedSeconds: number
+  stakeWeightedSeconds: number
 
   @Column({ type: 'enum', enum: BidStatus })
-    status: BidStatus
+  status: BidStatus
 
   @Index()
   @Column({ nullable: false })
-    userId: string
+  userId: string
 
   @Index()
   @Column({ nullable: false })
-    walletId: string
+  walletId: string
 
 }

@@ -20,11 +20,11 @@ export class BaseRepository<T> {
   }
 
   public delete = (opts: typeorm.FindConditions<T>): Promise<typeorm.DeleteResult> => {
-    return this.getRepository().delete(opts)
+    return this.getRepository().softDelete(opts)
   }
 
   public deleteById = (id: string): Promise<typeorm.DeleteResult> => {
-    return this.getRepository().delete(id)
+    return this.getRepository().softDelete(id)
   }
 
   public find = (opts: typeorm.FindManyOptions<T>): Promise<T[]> => {

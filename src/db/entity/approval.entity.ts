@@ -8,26 +8,26 @@ import { Base } from './base.entity'
 export class Approval extends Base {
 
   @Column({ nullable: false })
-    amount: number
+  amount: number
 
   @Column({ nullable: false })
-    deadline: string
+  deadline: string
 
   @Column({ nullable: false })
-    nonce: number
+  nonce: number
 
   @Column({ type: 'json' })
-    signature: Signature
+  signature: Signature
 
   @Column({ nullable: false })
-    txHash: string
-
-  @Index()
-  @Column({ nullable: false })
-    userId: string
+  txHash: string
 
   @Index()
   @Column({ nullable: false })
-    walletId: string
+  userId: string
+
+  @Index()
+  @Column({ nullable: false })
+  walletId: string
 
 }

@@ -10,6 +10,7 @@ import { fp } from '@src/helper'
 import { LoggerContext, LoggerFactory } from '@src/helper/logger'
 
 import { isAuthenticated } from './auth'
+import { validateSchema } from './joi'
 import * as service from './service'
 
 const logger = LoggerFactory(LoggerContext.GraphQL, LoggerContext.User)
@@ -30,10 +31,7 @@ const signUp = (
     referredBy: Joi.string(),
     avatarURL: Joi.string(),
   })
-  const { error } = schema.validate(args.input, { abortEarly: false })
-  if (error) {
-    throw appError.buildInvalidSchemaError(error)
-  }
+  validateSchema(schema, args.input)
 
   const { email, address, avatarURL, referredBy } = {
     email: args.input.email,
@@ -48,10 +46,16 @@ const signUp = (
   ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
-        return Promise.reject(userError.buildEmailAlreadyExistsError(email))
+        return Promise.reject(appError.buildExists(
+          userError.buildEmailExistsMsg(email),
+          userError.ErrorType.EmailAlreadyExists,
+        ))
       }
       if (addressExists) {
-        return Promise.reject(walletError.buildAddressAlreadyExistsError(network, chain, address))
+        return Promise.reject(appError.buildExists(
+          walletError.buildAddressExistsMsg(network, chain, address),
+          walletError.ErrorType.AddressAlreadyExists,
+        ))
       }
     })
     .then(() => {
@@ -87,10 +91,16 @@ const confirmEmail = (
   const { repositories } = ctx
   const { token } = args
   if (isEmpty(token)) {
-    return Promise.reject(userError.buildEmailConfirmTokenRequiredError())
+    return Promise.reject(appError.buildInvalid(
+      userError.buildEmailTokenRequiredMsg(),
+      userError.ErrorType.EmailConfirmTokenRequired,
+    ))
   }
   return repositories.user.updateEmailConfirmation(token)
-    .then(fp.tapRejectIfFalse(userError.buildInvalidEmailConfirmTokenError(token)))
+    .then(fp.tapRejectIfFalse(appError.buildInvalid(
+      userError.buildInvalidEmailTokenMsg(token),
+      userError.ErrorType.InvalidEmailConfirmToken,
+    )))
 }
 
 // TODO do we need to limit this to only the logged in user?
@@ -117,10 +127,7 @@ const updateMe = (
     referredBy: Joi.string(),
     avatarURL: Joi.string(),
   })
-  const { error } = schema.validate(args.input, { abortEarly: false })
-  if (error) {
-    throw appError.buildInvalidSchemaError(error)
-  }
+  validateSchema(schema, args.input)
 
   const { avatarURL, referredBy } = {
     referredBy: args.input.referredBy || '',
