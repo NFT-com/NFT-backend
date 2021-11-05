@@ -16,13 +16,13 @@ class AppLogger {
 
   private getLogColorFn(level: LogLevel): Chalk {
     switch (level) {
-      case LogLevel.Trace: return blue.bind(this)
-      case LogLevel.Debug: return blue.bind(this)
-      case LogLevel.Info: return green.bind(this)
-      case LogLevel.Warn: return yellow.bind(this)
-      case LogLevel.Error: return red.bind(this)
-      case LogLevel.Fatal: return redBright.bind(this)
-      default: return white.bind(this)
+    case LogLevel.Trace: return blue.bind(this)
+    case LogLevel.Debug: return blue.bind(this)
+    case LogLevel.Info: return green.bind(this)
+    case LogLevel.Warn: return yellow.bind(this)
+    case LogLevel.Error: return red.bind(this)
+    case LogLevel.Fatal: return redBright.bind(this)
+    default: return white.bind(this)
     }
   }
 
@@ -69,19 +69,19 @@ class AppLogger {
     const systemLevel = this.systemLogLevel()
 
     switch (level) {
-      case LogLevel.Trace: return systemLevel === LogLevel.Trace
-      case LogLevel.Debug: return systemLevel === LogLevel.Trace
+    case LogLevel.Trace: return systemLevel === LogLevel.Trace
+    case LogLevel.Debug: return systemLevel === LogLevel.Trace
         || systemLevel === LogLevel.Debug
-      case LogLevel.Info: return systemLevel === LogLevel.Trace
+    case LogLevel.Info: return systemLevel === LogLevel.Trace
         || systemLevel === LogLevel.Debug
         || systemLevel === LogLevel.Info
-      case LogLevel.Warn: return systemLevel === LogLevel.Trace
+    case LogLevel.Warn: return systemLevel === LogLevel.Trace
         || systemLevel === LogLevel.Debug
         || systemLevel === LogLevel.Info
         || systemLevel === LogLevel.Warn
-      case LogLevel.Error: return systemLevel !== LogLevel.Fatal
-      case LogLevel.Fatal: return true
-      default: return false
+    case LogLevel.Error: return systemLevel !== LogLevel.Fatal
+    case LogLevel.Fatal: return true
+    default: return false
     }
   }
 

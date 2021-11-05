@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-require('dotenv').config()
+import 'dotenv/config'
+
 import { isString } from 'lodash'
 
 import { misc } from '@src/defs'

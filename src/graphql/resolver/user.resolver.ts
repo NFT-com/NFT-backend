@@ -39,9 +39,9 @@ const signUp = (
   const chain = verifyAndGetNetworkChain(network, chainId)
 
   return Promise.all([
-      repositories.user.exists({ email }),
-      repositories.wallet.exists({ network, chainId, address }),
-    ])
+    repositories.user.exists({ email }),
+    repositories.wallet.exists({ network, chainId, address }),
+  ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
         return Promise.reject(appError.buildExists(

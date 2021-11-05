@@ -26,10 +26,10 @@ const getProfilesFollowedByMe = (
   const { user } = ctx
   logger.debug('getProfilesFollowedByMe', { loggedInUserId: user.id, input: args.input })
   return coreService.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
-      collectionId: user.id,
-      thatEntityType: misc.EntityType.Profile,
-      edgeType: misc.EdgeType.Follows,
-    })
+    collectionId: user.id,
+    thatEntityType: misc.EntityType.Profile,
+    edgeType: misc.EdgeType.Follows,
+  })
     .then(toProfilesOutput)
 }
 
@@ -62,10 +62,10 @@ const getProfileFollowers = (
   validateSchema(buildProfileInputSchema(), args)
 
   return coreService.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
-      thatEntityId: args.input.profileId,
-      thatEntityType: misc.EntityType.Profile,
-      edgeType: misc.EdgeType.Follows,
-    })
+    thatEntityId: args.input.profileId,
+    thatEntityType: misc.EntityType.Profile,
+    edgeType: misc.EdgeType.Follows,
+  })
     .then((wallets) => ({
       wallets,
       pageInfo: null,
@@ -103,8 +103,8 @@ const followProfile = (
         deletedAt: null,
       })
         .then(fp.tapRejectIfTrue(appError.buildExists(
-            profileError.buildProfileFollowingMsg(profile.id),
-            profileError.ErrorType.ProfileAlreadyFollowing,
+          profileError.buildProfileFollowingMsg(profile.id),
+          profileError.ErrorType.ProfileAlreadyFollowing,
         )))
         .then(() => repositories.edge.save({
           collectionId: user.id,
