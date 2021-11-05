@@ -17,7 +17,6 @@ enum ProfileStatus {
 type Profile {
   id: ID!
   bannerURL: String
-  creator: Wallet
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
   owner: Wallet

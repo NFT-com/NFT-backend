@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
 export class AddEdgeIndex1635988485686 implements MigrationInterface {

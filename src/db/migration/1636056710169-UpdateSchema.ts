@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
 export class UpdateSchema1636056710169 implements MigrationInterface {

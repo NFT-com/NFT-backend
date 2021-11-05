@@ -42,8 +42,22 @@
       "error",
       {
         "code": 100,
+        "tabWidth": 2,
         "ignoreComments": true,
-        "ignoreTemplateLiterals": true
+        "ignoreTemplateLiterals": true,
+        "ignoreStrings": true
+      }
+    ],
+    "indent": "off",
+    "@typescript-eslint/indent": [
+      "error",
+      2,
+      {
+        "ignoredNodes": [
+          "FunctionExpression > .params[decorators.length > 0]",
+          "FunctionExpression > .params > :matches(Decorator, :not(:first-child))",
+          "ClassBody.body > PropertyDefinition[decorators.length > 0] > .key"
+        ]
       }
     ],
     "semi": [
@@ -91,7 +105,6 @@
       "error",
       {
         "groups": [
-          ["^\\u0000"],   // packages
           ["^[^.]"],      // anything that does not start with dot
           ["^@?\\w"],     // local absolute imports `@/foo`
           ["^\\."]        // relative imports
@@ -106,12 +119,8 @@
     "array-bracket-spacing": "error",
     // TODO - revisit these later
     "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-explicit-any": "off"
-    //    "indent": "off",
-    //    "@typescript-eslint/indent": [
-    //      "error",
-    //      2
-    //    ],
+    "@typescript-eslint/no-explicit-any": "off",
+    "newline-per-chained-call": "off"
     //    "no-shadow": [
     //      "error",
     //      {

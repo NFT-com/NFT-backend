@@ -166,11 +166,6 @@ export default {
     unfollowProfile,
   },
   Profile: {
-    creator: coreService.resolveEntityById(
-      'creatorId',
-      misc.EntityType.Profile,
-      misc.EntityType.Wallet,
-    ),
     owner: coreService.resolveEntityById(
       'ownerId',
       misc.EntityType.Profile,

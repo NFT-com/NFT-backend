@@ -11,15 +11,9 @@ export class Profile extends Base {
   @Column({ nullable: false })
   url: string
 
-  @Column({ nullable: false })
-  creatorUserId: string
-
   @Index()
   @Column({ nullable: true })
   ownerUserId: string
-
-  @Column({ nullable: false })
-  creatorWalletId: string
 
   @Column({ nullable: true })
   ownerWalletId: string

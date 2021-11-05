@@ -41,14 +41,11 @@ const bid = (
         return { walletId, profileId: null }
       }
       // TODO what about staked weighted seconds
-      const createProfile = (): Promise<entity.Profile> => repositories.profile.save({
-        creatorUserId: user.id,
-        creatorWalletId: walletId,
-        ownerUserId: user.id,
-        ownerWalletId: walletId,
-        url: input.profileURL,
-        bannerURL: input.profileBannerURL,
-      })
+      const createProfile = (): Promise<entity.Profile> =>
+        repositories.profile.save({
+          url: input.profileURL,
+          bannerURL: input.profileBannerURL,
+        })
       // create profile if it doesn't exist
       return repositories.profile.findByURL(input.profileURL)
         .then(fp.thruIfEmpty(createProfile))
@@ -99,7 +96,7 @@ const getMyBids = (
 ): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args.input })
-  return getBidsBy(ctx,  { userId: user.id })
+  return getBidsBy(ctx, { userId: user.id })
 }
 
 export default {
