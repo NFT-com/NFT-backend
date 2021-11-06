@@ -18,7 +18,7 @@ const getNFT = (
   ctx: Context,
 ): Promise<gql.NFT> => {
   const { user, repositories } = ctx
-  logger.debug('getNFT', { loggedInUserId: user.id, input: args })
+  logger.debug('getNFT', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     id: Joi.string().required(),
   })
@@ -41,14 +41,12 @@ const getNFTs = (
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { user } = ctx
-  logger.debug('getNFTs', { loggedInUserId: user.id, input: args.input })
-
-  const { types, profileId } = args.input
+  logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
+  const { types, profileId } = helper.safeObject(args?.input)
   const filter: Partial<entity.NFT> = omitBy({
-    type: helper.safeIn(types),
+    type: helper.safeInForOmitBy(types),
     profileId,
   }, isEmpty)
-
   return getNFTsBy(ctx, filter)
 }
 
@@ -59,8 +57,14 @@ const getMyNFTs = (
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { user } = ctx
-  logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args.input })
-  return getNFTsBy(ctx, { userId: user.id })
+  logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
+  const { types, profileId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.NFT> = omitBy({
+    type: helper.safeInForOmitBy(types),
+    userId: user.id,
+    profileId,
+  }, isEmpty)
+  return getNFTsBy(ctx, filter)
 }
 
 export default {

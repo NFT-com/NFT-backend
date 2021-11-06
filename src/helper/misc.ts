@@ -30,3 +30,9 @@ export const isNotEmpty = <T>(v: T): boolean => !_.isEmpty(v)
 
 export const safeIn = <T>(arr: T[]): FindOperator<T> =>
   _.isEmpty(arr) ? In([null]) : In(arr)
+
+export const safeInForOmitBy = <T>(arr: T[]): FindOperator<T> | null =>
+  _.isEmpty(arr) ? null : In(arr)
+
+export const safeObject = <T>(obj: T): T =>
+  _.isEmpty(obj) ? <T>{} : obj

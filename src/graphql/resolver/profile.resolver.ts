@@ -1,10 +1,11 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import { isEmpty,omitBy } from 'lodash'
 
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
 import { appError, profileError } from '@src/graphql/error'
-import { _logger, fp } from '@src/helper'
+import { _logger, fp, helper } from '@src/helper'
 
 import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
@@ -24,12 +25,14 @@ const getProfilesFollowedByMe = (
   ctx: Context,
 ): Promise<gql.ProfilesOutput> => {
   const { user } = ctx
-  logger.debug('getProfilesFollowedByMe', { loggedInUserId: user.id, input: args.input })
+  logger.debug('getProfilesFollowedByMe', { loggedInUserId: user.id, input: args?.input })
+  const { statuses } = helper.safeObject(args?.input)
   return coreService.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
     collectionId: user.id,
     thatEntityType: misc.EntityType.Profile,
     edgeType: misc.EdgeType.Follows,
   })
+    .then(fp.filterIfNotEmpty(statuses)((p) => statuses.includes(p.status)))
     .then(toProfilesOutput)
 }
 
@@ -40,8 +43,13 @@ const getMyProfiles = (
   ctx: Context,
 ): Promise<gql.ProfilesOutput> => {
   const { user } = ctx
-  logger.debug('getMyProfiles', { loggedInUserId: user.id, input: args.input })
-  return coreService.entitiesBy(ctx.repositories.profile, { ownerUserId: user.id })
+  logger.debug('getMyProfiles', { loggedInUserId: user.id, input: args?.input })
+  const { statuses } = helper.safeObject(args?.input)
+  const filter: Partial<entity.NFT> = omitBy({
+    status: helper.safeIn(statuses),
+    ownerUserId: user.id,
+  }, isEmpty)
+  return coreService.entitiesBy(ctx.repositories.profile, filter)
     .then(toProfilesOutput)
 }
 
@@ -57,7 +65,7 @@ const getProfileFollowers = (
   ctx: Context,
 ): Promise<gql.FollowersOutput> => {
   const { user } = ctx
-  logger.debug('getProfileFollowers', { loggedInUserId: user.id, input: args.input })
+  logger.debug('getProfileFollowers', { loggedInUserId: user?.id, input: args?.input })
 
   validateSchema(buildProfileInputSchema(), args)
 
@@ -146,7 +154,7 @@ const getProfileByURL = (
   ctx: Context,
 ): Promise<gql.Profile> => {
   const { user, repositories } = ctx
-  logger.debug('getProfileByURL', { loggedInUserId: user.id, input: args })
+  logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
   })

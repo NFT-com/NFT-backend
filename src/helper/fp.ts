@@ -2,16 +2,23 @@ import * as _ from 'lodash'
 
 import { helper } from '@src/helper'
 
-// TODO improve functions documentation
-
 // T => any
 type FnT2Any<T> = (value: T) => any
 
 // T => T
 type FnT2T<T> = (value: T) => T
 
+// T[] => T[]
+type FnTArray2TArray<T> = (value: T[]) => T[]
+
 // T => K
 type FnT2K<T, K> = (value: T) => K
+
+// T => T | Promise<T>
+type TOrPromiseT<T> = T | Promise<T>
+
+// T => T | Promise<T>
+type FnT2TOrPromiseT<T> = (value: T) => T | Promise<T>
 
 // T => Promise<T>
 type FnT2PromiseT<T> = (value: T) => Promise<T>
@@ -34,6 +41,13 @@ type FnPred<T> = (value: T) => boolean
 // T => Boolean
 type FnPredPromise<T> = (value: T) => Promise<boolean>
 
+// T => Apply array fn => T
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type ArrayFnT2T<T> = (v: T, i: number, a: T[]) => T
+
+// T => Apply array fn => boolean
+type ArrayFnT2Boolean<T> = (v: T, i: number, a: T[]) => boolean
+
 /**
  * runs fn (as a side effect), then returns value
  *
@@ -42,9 +56,11 @@ type FnPredPromise<T> = (value: T) => Promise<boolean>
  *         that takes a value, calls fn(value), then returns value.
  *         similar to _.tap.
  */
-export const tap = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
-  fn(value)
-  return value
+export const tap = <T>(fn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
+  return (value: T): TOrPromiseT<T> => {
+    fn(value)
+    return value
+  }
 }
 
 /**
@@ -54,8 +70,10 @@ export const tap = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
  * @param thenFn: T => any
  * @return fn: (T => Boolean) => (T => any) => (T => T)
  */
-export const tapIf = <T>(ifFn: FnPred<T>) => (thenFn: FnT2Any<T>): FnT2T<T> => {
-  return (value: T): T => ifFn(value) ? tap(thenFn)(value) : value
+export const tapIf = <T>(ifFn: FnPred<T>) => {
+  return (thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
+    return (value: T): TOrPromiseT<T> => ifFn(value) ? tap(thenFn)(value) : value
+  }
 }
 
 /**
@@ -64,13 +82,14 @@ export const tapIf = <T>(ifFn: FnPred<T>) => (thenFn: FnT2Any<T>): FnT2T<T> => {
  * @return a function: T => Promise<T>
  *         value => Promise w/ value
  */
-export const tapWait =
-  <T, K>(fn: FnT2PromiseK<T, K>): FnT2PromiseT<T> =>
-    (value: T): Promise<T> => {
-      return fn(value).then(() => value)
-      // return Promise.resolve(fn(value))
-      //   .then(() => value)
-    }
+export const tapWait = <T, K>(fn: FnT2PromiseK<T, K>): FnT2PromiseT<T> => {
+  return (value: T): Promise<T> => fn(value).then(() => value)
+}
+
+/**
+ * runs tap(fn) iff value is not empty
+ */
+export const tapIfNotEmpty = tapIf(helper.isNotEmpty)
 
 /**
  * similar to tap but catches and ignores errors produced by fn
@@ -78,20 +97,13 @@ export const tapWait =
  * @param fn: T => any
  * @return a function: T => T
  */
-export const tapCatch = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
-  Promise.resolve()
-    .then(() => fn(value))
-    .catch((err) => console.error('ERROR: tapCatch:', { value, err }))
-  return value
-}
-
-/**
- * runs tap(fn) iff value is not empty
- * @param fn: T => any
- * @return fn: T => T | null
- */
-export const tapMaybe = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
-  return helper.isNotEmpty(value) ? tap(fn)(value) : value
+export const tapCatch = <T>(fn: FnT2Any<T>): FnT2T<T> => {
+  return (value: T): T => {
+    Promise.resolve()
+      .then(() => fn(value))
+      .catch((err) => console.error('ERROR: tapCatch:', { value, err }))
+    return value
+  }
 }
 
 /**
@@ -99,9 +111,11 @@ export const tapMaybe = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
  * @param fn: T => any
  * @return fn: T => T (technically it always throws an exception)
  */
-export const tapThrow = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
-  fn(value)
-  throw value
+export const tapThrow = <T>(fn: FnT2Any<T>): FnT2T<T> => {
+  return (value: T): T => {
+    fn(value)
+    throw value
+  }
 }
 
 /**
@@ -110,38 +124,33 @@ export const tapThrow = <T>(fn: FnT2Any<T>): FnT2T<T> => (value: T): T => {
  * @param err
  * @return Promise<T> | Promise<never>
  */
-export const tapRejectIf =
-  <T>(ifFn: FnPred<T>, err: Error) =>
-    (value: T): Promise<T | never> => {
+export const tapRejectIf = <T>(ifFn: FnPred<T>) => {
+  return (err: Error): FnT2PromiseT<T> => {
+    return (value: T): Promise<T | never> => {
       return ifFn(value) ? Promise.reject(err) : Promise.resolve(value)
     }
+  }
+}
 
 /**
- * rejects promise if value is nil
- * @param err
- * @return Promise<T> | Promise<never>
+ * rejects promise if value is empty
  */
-export const tapRejectIfEmpty = <T>(err: Error) => (value: T): Promise<T | never> => {
-  return tapRejectIf<T>(_.isEmpty, err)(value)
-}
+export const tapRejectIfEmpty = tapRejectIf(_.isEmpty)
+
+/**
+ * rejects promise if value is not empty
+ */
+export const tapRejectIfNotEmpty = tapRejectIf(helper.isNotEmpty)
 
 /**
  * rejects promise if boolean value is false
- * @param err
- * @return Promise<T> | Promise<never>
  */
-export const tapRejectIfFalse = (err: Error) => (value: boolean): Promise<boolean | never> => {
-  return tapRejectIf<boolean>(helper.isFalse, err)(value)
-}
+export const tapRejectIfFalse = tapRejectIf(helper.isFalse)
 
 /**
  * rejects promise if boolean value is true
- * @param err
- * @return Promise<T> | Promise<never>
  */
-export const tapRejectIfTrue = (err: Error) => (value: boolean): Promise<boolean | never> => {
-  return tapRejectIf<boolean>(helper.isTrue, err)(value)
-}
+export const tapRejectIfTrue = tapRejectIf(helper.isTrue)
 
 /**
  * runs tap(then_fn) iff the if_fn predicate returns truthy.
@@ -151,39 +160,42 @@ export const tapRejectIfTrue = (err: Error) => (value: boolean): Promise<boolean
  * @param elseFn: T => any
  * @return fn: (T => Boolean) => (T => any) => (T => any) => (T => T)
  */
-export const tapIFElse =
-  <T>(ifFn: FnPred<T>) =>
-    (thenFn: FnT2Any<T>) =>
-      (elseFn: FnT2Any<T>): FnT2T<T> => {
-        return (value: T): T => ifFn(value)
-          ? tap(thenFn)(value)
-          : tap(elseFn)(value)
-      }
+export const tapIFElse = <T>(ifFn: FnPred<T>) => {
+  return (thenFn: FnT2Any<T>) => {
+    return (elseFn: FnT2Any<T>): FnT2T<T> => {
+      return (value: T): T => ifFn(value)
+        ? tap(thenFn)(value)
+        : tap(elseFn)(value)
+    }
+  }
+}
 
 /**
- * similar to thru but catches and ingores errors produced by fn.
+ * similar to thru but catches and ignores errors produced by fn.
  * returns null if the fn throws an error.
  * @param fn: T => U
  * @return T => Promise<U> | Promise<null>
  */
-export const thruCatch =
-  <T, U>(fn: FnT2K<T, U>): FnT2PromiseK<T, U | null> =>
-    (value: T): Promise<U | null> => {
-      return Promise.resolve()
-        .then(() => fn(value))
-        .catch((err) => {
-          console.error('ERROR: thru_catch:', { value, err })
-          return null
-        })
-    }
+export const thruCatch = <T, U>(fn: FnT2K<T, U>): FnT2PromiseK<T, U | null> => {
+  return (value: T): Promise<U | null> => {
+    return Promise.resolve()
+      .then(() => fn(value))
+      .catch((err) => {
+        console.error('ERROR: thru_catch:', { value, err })
+        return null
+      })
+  }
+}
 
 /**
  * runs fn and throws the value it returns.
  * @param fn: T => K
  * @return fn: T => K (technically it always throws an exception)
  */
-export const thruThrow = <T, K>(fn: FnT2K<T, K>): FnT2K<T, K> => (value: T): K => {
-  throw fn(value)
+export const thruThrow = <T, K>(fn: FnT2K<T, K>): FnT2K<T, K> => {
+  return (value: T): K => {
+    throw fn(value)
+  }
 }
 
 /**
@@ -192,35 +204,39 @@ export const thruThrow = <T, K>(fn: FnT2K<T, K>): FnT2K<T, K> => (value: T): K =
  * @param thenFn: T => T | Promise<T>
  * @return fn: (T => Promise<Boolean>) => (T => T | Promise<T>) => (T => Promise<T>)
  */
-export const thruAsyncIf =
-  <T>(asyncIfFn: FnPredPromise<T>) =>
-    (thenFn: FnT2T<T> | FnT2PromiseT<T>): FnT2PromiseT<T> => {
-      return (value: T): Promise<T> => Promise.resolve(asyncIfFn(value))
-        .then((boolValue) => helper.isTrue(boolValue) ? thenFn(value) : value)
-    }
+export const thruAsyncIf = <T>(asyncIfFn: FnPredPromise<T>) => {
+  return (thenFn: FnT2T<T> | FnT2PromiseT<T>): FnT2PromiseT<T> => {
+    return (value: T): Promise<T> => Promise.resolve(asyncIfFn(value))
+      .then((boolValue) => helper.isTrue(boolValue) ? thenFn(value) : value)
+  }
+}
 
 /**
  * runs thenFn iff ifFn returns truthy
  * otherwise runs elseFn.
+ *
  * @param ifFn: T => Boolean
  * @param thenFn: T => K
  * @param elseFn: T => K
  * @return fn: (T => Boolean) => (T => K) => (T => K) => (T => K)
  */
-export const thruIfElse =
-  <T, K>(ifFn: FnPred<T>) =>
-    (thenFn: FnT2K<T, K>) =>
-      (elseFn: FnT2K<T, K>): FnT2K<T, K> => {
-        return (value: T): K => ifFn(value) ? thenFn(value) : elseFn(value)
-      }
+export const thruIfElse = <T, K>(ifFn: FnPred<T>) => {
+  return (thenFn: FnT2K<T, K>) => {
+    return (elseFn: FnT2K<T, K>): FnT2K<T, K> => {
+      return (value: T): K => ifFn(value) ? thenFn(value) : elseFn(value)
+    }
+  }
+}
 
 /**
  * pauses, then returns the value
  * @param ms: milliseconds
  * @return fn: T => Promise<T>
  */
-export const pause = <T>(ms: number): FnT2PromiseT<T> => (value: T): Promise<T> => {
-  return new Promise(resolve => setTimeout(() => resolve(value), ms))
+export const pause = <T>(ms: number): FnT2PromiseT<T> => {
+  return (value: T): Promise<T> => {
+    return new Promise(resolve => setTimeout(() => resolve(value), ms))
+  }
 }
 
 /**
@@ -232,33 +248,49 @@ export const pause = <T>(ms: number): FnT2PromiseT<T> => (value: T): Promise<T> 
  *
  * @return fn: (T => Boolean) => (T => T) => (T => T)
  */
-export const thruIf = <T>(ifFn: FnPred<T>) => (thenFn: FnT2T<T>): FnT2T<T> => {
-  return (value: T): T => ifFn(value) ? thenFn(value) : value
+export const thruIf = <T>(ifFn: FnPred<T>) => {
+  return (thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
+    return (value: T): TOrPromiseT<T> => ifFn(value) ? thenFn(value) : value
+  }
 }
 
 /**
- * @example fp.thruIfEmpty(value => value.isEmpty)(value => { ...do this if true... })
- *
  * runs thenFn when value is empty (e.g., null, undefined etc)
+ */
+export const thruIfEmpty = thruIf(_.isEmpty)
+
+/**
+ * runs thenFn when value is not empty (e.g., null, undefined etc)
+ */
+export const thruIfNotEmpty = thruIf(helper.isNotEmpty)
+
+/**
+ * @example fp.thruIfOther(otherValue => otherValue.checkSomething)(value => { ...do this if true... })
+ *
+ * runs thenFn iff ifFn returns truthy
+ * @param otherValue: K
+ * @param ifFn: otherValue => Boolean
  * @param thenFn: T => T
  *
- * @return fn: (T => Boolean) => (T => Promise<T>) => (T => Promise<T>)
+ * @return fn: (otherValue => Boolean) => (T => T) => (T => T)
  */
-export const thruIfEmpty = <T>(thenFn: FnT2PromiseT<T>): FnT2PromiseT<T> => {
-  return (value: T): Promise<T> => _.isEmpty(value) ? thenFn(value) : Promise.resolve(value)
+export const thruIfOther = <K>(ifFn: FnPred<K>) => {
+  return (otherValue: K) => {
+    return <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
+      return (value: T): TOrPromiseT<T> => ifFn(otherValue) ? thenFn(value) : value
+    }
+  }
 }
 
 /**
- * @example fp.thruIfNotEmpty(value => value.isNotEmpty)(value => { ...do this if true... })
- *
- * runs thenFn when value is not empty (e.g., null, undefined etc)
- * @param thenFn: T => T
- *
- * @return fn: (T => Boolean) => (T => Promise<T>) => (T => Promise<T>)
+ * runs thenFn when other value is empty (e.g., null, undefined etc)
  */
-export const thruIfNotEmpty = <T>(thenFn: FnT2PromiseT<T>): FnT2PromiseT<T> => {
-  return (value: T): Promise<T> => helper.isNotEmpty(value) ? thenFn(value) : Promise.resolve(value)
-}
+export const thruIffEmpty = thruIfOther(_.isEmpty)
+
+/**
+ * runs thenFn when other value is empty (e.g., null, undefined etc)
+ */
+export const thruIffNotEmpty = thruIfOther(helper.isNotEmpty)
 
 /**
  * @example fp.promiseFilter(fn => fn that returns Promise<K>)(Array of T)
@@ -266,13 +298,11 @@ export const thruIfNotEmpty = <T>(thenFn: FnT2PromiseT<T>): FnT2PromiseT<T> => {
  * @param mapper: (v: T, i: number, a: T[]) => Promise<K>
  * @param list: T[]
  */
-export const promiseMap =
-  <T, K>(
-    mapper: (v: T, i: number, a: T[]) => Promise<K>,
-  ): FnT2ArrayPromiseKArray<T, K> =>
-    (list: T[]): Promise<K[]> => {
-      return Promise.all(list.map(mapper))
-    }
+export const promiseMap = <T, K>(
+  mapper: (v: T, i: number, a: T[]) => Promise<K>,
+): FnT2ArrayPromiseKArray<T, K> => {
+  return (list: T[]): Promise<K[]> => Promise.all(list.map(mapper))
+}
 
 /**
  * @example fp.promiseFilter(fn => fn that returns Promise<boolean>)(Array of T)
@@ -281,21 +311,24 @@ export const promiseMap =
  * @param negate: boolean
  * @param list: T[]
  */
-export const promiseFilter =
-  <T>(
+export const promiseFilter = <T>(negate: boolean) => {
+  return (
     filter: (v: T, i: number, a: T[]) => Promise<boolean>,
-    negate: boolean,
-  ): FnT2ArrayPromiseKArray<T, T> =>
-    (list: T[]): Promise<T[]> => {
+  ): FnT2ArrayPromiseKArray<T, T> => {
+    return (list: T[]): Promise<T[]> => {
       return Promise.resolve(list)
         .then(promiseMap(filter))
         .then(filterMap => list.filter((_, index) => negate ? !filterMap[index] : filterMap[index]))
     }
+  }
+}
 
 export const I = <T>(identity: T): T => identity
 export const N = (): null => null
 
-export const negate = <T>(fn: FnPred<T> = Boolean) => (value: T): boolean => !fn(value)
+export const negate = <T>(fn: FnPred<T> = Boolean) => {
+  return (value: T): boolean => !fn(value)
+}
 
 /**
  * @example fp.thruThrowIf(ifFn => fn that returns boolean)(fn => fn that returns Error)
@@ -303,16 +336,16 @@ export const negate = <T>(fn: FnPred<T> = Boolean) => (value: T): boolean => !fn
  * @param ifFn: T => Boolean
  * @param fn: T => new Error()
  */
-export const thruThrowIf =
-  <T>(ifFn: FnPred<T>) =>
-    (fn: () => InstanceType<typeof Error>): FnT2T<T> => {
-      return (value: T): T => {
-        if (ifFn(value)) {
-          throw fn()
-        }
-        return value
+export const thruThrowIf = <T>(ifFn: FnPred<T>) => {
+  return (fn: () => InstanceType<typeof Error>): FnT2T<T> => {
+    return (value: T): T => {
+      if (ifFn(value)) {
+        throw fn()
       }
+      return value
     }
+  }
+}
 
 /**
  * @example fp.seqAsync(fn => fn that returns Promise<T>)(Array of T)
@@ -320,11 +353,31 @@ export const thruThrowIf =
  * @param fn: T => Promise<T>
  * @param values: T[]
  */
-export const seqAsync =
-  <T>(fn: FnT2PromiseT<T>): FnTArray2PromiseT<T> =>
-    (values: T[]): Promise<T> => {
-      return values.reduce((prev: Promise<any>, value): Promise<T> => {
-        return prev.then(() => fn(value))
-      }, Promise.resolve())
-    }
+export const seqAsync = <T>(fn: FnT2PromiseT<T>): FnTArray2PromiseT<T> => {
+  return (values: T[]): Promise<T> => {
+    return values.reduce((prev: Promise<any>, value): Promise<T> => {
+      return prev.then(() => fn(value))
+    }, Promise.resolve())
+  }
+}
 
+/**
+ * @example fp.filterIf(otherValue => otherValue.checkSomething)(value => filter list by thenFn)
+ *
+ * filters list by thenFn iff ifFn returns truthy
+ * @param ifFn: otherValue => Boolean
+ * @param thenFn: T[] => T[]
+ *
+ * @return fn: (otherValue => Boolean) => (ArrayFnT2Boolean => T[]) => (T[] => T[])
+ */
+export const filterIf = <K>(ifFn: FnPred<K>) => {
+  return (otherValue: K) => {
+    return <T>(filterFn: ArrayFnT2Boolean<T>): FnTArray2TArray<T> => {
+      return (values: T[]) => ifFn(otherValue) ? values.filter(filterFn) : values
+    }
+  }
+}
+
+export const filterIfEmpty = filterIf(_.isEmpty)
+
+export const filterIfNotEmpty = filterIf(helper.isNotEmpty)

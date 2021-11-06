@@ -17,3 +17,5 @@ log-debug
 
 # others
 src/defs/gql.ts
+script/playground.ts
+

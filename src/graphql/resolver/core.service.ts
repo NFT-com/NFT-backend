@@ -29,7 +29,7 @@ export const getWallet = (
 ): Promise<entity.Wallet> => {
   const { network, chainId, address } = input
   const { user, repositories } = ctx
-  logger.debug('getWallet', { loggedInUserId: user.id, input })
+  logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
   const chain = getChain(network, chainId)
   return repositories.wallet
@@ -47,7 +47,7 @@ export const entityById = (
   entityType: misc.EntityType,
 ): Promise<any> => {
   const { repositories, user, wallet } = ctx
-  logger.debug('entityById', { loggedInUserId: user.id, id, entityType })
+  logger.debug('entityById', { loggedInUserId: user?.id, id, entityType })
 
   switch (entityType) {
   case misc.EntityType.Approval:
@@ -145,14 +145,10 @@ export const thisEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T>
   return entityById(ctx, edge.thisEntityId, edge.thisEntityType)
 }
 
-// export const thisEntitiesOfEdges = <T>(ctx: Context) => {
-//   return (edges: entity.Edge[]): Promise<T[]> => {
-//     return entitiesOfEdges<T>(ctx, edges, thisEntityOfEdge)
-//   }
-// }
-
-export const thisEntitiesOfEdges = <T>(ctx: Context, edges: entity.Edge[]): Promise<T[]> => {
-  return entitiesOfEdges<T>(ctx, edges, thisEntityOfEdge)
+export const thisEntitiesOfEdges = <T>(ctx: Context) => {
+  return (edges: entity.Edge[]): Promise<T[]> => {
+    return entitiesOfEdges<T>(ctx, edges, thisEntityOfEdge)
+  }
 }
 
 export const thisEntitiesOfEdgesBy = <T>(
@@ -161,21 +157,17 @@ export const thisEntitiesOfEdgesBy = <T>(
 ): Promise<T[]> => {
   const { repositories } = ctx
   return edgesBy(repositories.edge, filter)
-    .then(_.partialRight(thisEntitiesOfEdges, ctx))
+    .then(thisEntitiesOfEdges<T>(ctx))
 }
 
 export const thatEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
   return entityById(ctx, edge.thatEntityId, edge.thatEntityType)
 }
 
-// export const thatEntitiesOfEdges = <T>(ctx: Context) => {
-//   return (edges: entity.Edge[]): Promise<T[]> => {
-//     return entitiesOfEdges<T>(ctx, edges, thatEntityOfEdge)
-//   }
-// }
-
-export const thatEntitiesOfEdges = <T>(ctx: Context, edges: entity.Edge[]): Promise<T[]> => {
-  return entitiesOfEdges<T>(ctx, edges, thatEntityOfEdge)
+export const thatEntitiesOfEdges = <T>(ctx: Context) => {
+  return (edges: entity.Edge[]): Promise<T[]> => {
+    return entitiesOfEdges<T>(ctx, edges, thatEntityOfEdge)
+  }
 }
 
 export const thatEntitiesOfEdgesBy = <T>(
@@ -184,7 +176,7 @@ export const thatEntitiesOfEdgesBy = <T>(
 ): Promise<T[]> => {
   const { repositories } = ctx
   return edgesBy(repositories.edge, filter)
-    .then(_.partialRight(thatEntitiesOfEdges, ctx))
+    .then(thatEntitiesOfEdges(ctx))
 }
 
 // TODO use EdgeStats table

@@ -1,6 +1,6 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { isEmpty } from 'lodash'
+import { isEmpty, omitBy } from 'lodash'
 
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
@@ -77,14 +77,11 @@ const getBids = (
   ctx: Context,
 ): Promise<gql.BidsOutput> => {
   const { user } = ctx
-  logger.debug('getBids', { loggedInUserId: user.id, input: args.input })
-
-  const { profileId } = args.input
-  let filter = {}
-  if (helper.isNotEmpty(profileId)) {
-    filter = Object.assign({}, filter, { profileId })
-  }
-
+  logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
+  const { profileId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.Bid> = omitBy({
+    profileId,
+  }, isEmpty)
   return getBidsBy(ctx, filter)
 }
 
@@ -95,8 +92,13 @@ const getMyBids = (
   ctx: Context,
 ): Promise<gql.BidsOutput> => {
   const { user } = ctx
-  logger.debug('getMyBids', { loggedInUserId: user.id, input: args.input })
-  return getBidsBy(ctx, { userId: user.id })
+  logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
+  const { profileId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.Bid> = omitBy({
+    profileId,
+    userId: user.id,
+  }, isEmpty)
+  return getBidsBy(ctx, filter)
 }
 
 export default {

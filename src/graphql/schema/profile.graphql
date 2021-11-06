@@ -27,6 +27,7 @@ type Profile {
 
 input ProfilesInput {
   pageInput: PageInput
+  statuses: [ProfileStatus]
 }
 
 type ProfilesOutput {
