@@ -20,37 +20,22 @@ The GraphQL server is available at `localhost:10010`.
 
 The Redis UI is available at `localhost:10015`.
 
-Workflow
 
-- user bids on a profile
-  - approvalSignature
-  - nftMintSignature
-  - url
-  - tokenAmount
-  - address
-  - chainId
-- minting (currently manually triggered)
-  - move staked tokens to our contract
-  - user has won the bid and self mint
-- self minting happens on client side
+### 3. Auth Headers
 
+There are many gql queries/mutations that require client to provide are auth header
 
-#### TODO
+1. `network` -> network that user is connected to
+2. `chain-id` -> network chain id that user is connected to
+3. `authorization` -> signature of the signed message
 
-**1. Blockchain sync**
+#### 3.1 How to Generate Signature?
 
-- minted profile
-- redeemed tokens (letting go of a profile)
+You can use `script/gen-signature.ts` utility to generate signed signature for an address.
+This is very useful when testing GQL via playground.
 
-**2. Impl `EdgeStats` table **
+`npm run signature:gen`
 
-**3. use coreService for mutation of entities **
-  - this will make it easier to implement dataloader and caching
-  - less code changes
-  
-**4. validate address checksum **
+The script uses a hardcoded private key. But you can specify your own private key like this
 
-#### Testing
-
-**1. lodash isEmpty(null || undefined)**
-**2. fp functions: do they need to be returning promises?**
+`npm run signature:gen $YOUR_PRIVATE_KEY`

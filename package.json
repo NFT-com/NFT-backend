@@ -38,7 +38,8 @@
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli",
     "typeorm:gen": "npm run typeorm:cli -- migration:generate",
     "post:typeorm:gen": "npm run lint",
-    "playground": "ts-node script/playground.ts"
+    "playground": "ts-node script/playground.ts",
+    "signature:gen": "ts-node script/gen-signature.ts"
   },
   "dependencies": {
     "@graphql-tools/merge": "^8.2.0",
