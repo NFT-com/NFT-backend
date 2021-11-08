@@ -55,12 +55,12 @@ const signUp = (
           walletError.ErrorType.AddressAlreadyExists,
         ))
       }
-      return referredBy
     })
-    .then(fp.thruIfNotEmpty((refId) => repositories.user
-      .findByReferralId(refId).then((user) => user?.id),
-    ))
-    .then(async (referredUserId) => {
+    .then(fp.thruIfOtherNotEmpty(referredBy)((refId: string) => {
+      return repositories.user.findByReferralId(refId)
+        .then((user) => user?.id)
+    }))
+    .then((referredUserId: string) => {
       const confirmEmailToken = cryptoRandomString({ length: 10, type: 'url-safe' })
       const confirmEmailTokenExpiresAt = addDays(new Date(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
@@ -104,7 +104,7 @@ const confirmEmail = (
     userError.ErrorType.InvalidEmailConfirmToken,
   )
   return repositories.user.findByEmailConfirmationToken(token)
-    .then(fp.tapRejectIfEmpty<entity.User>(invalidTokenError))
+    .then(fp.tapRejectIfEmpty(invalidTokenError))
     .then((user) => repositories.user.save({
       ...user,
       isEmailConfirmed: true,
