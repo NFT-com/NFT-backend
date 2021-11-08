@@ -218,7 +218,8 @@ exports.cancelBid = async (req, res, next) => {
 const formatSearchObject = async (results, type) => {
   try {
     let returnArray = [];
-    let object = results[0].hits;
+    let profileURIMaxBids = new Map();
+    let object = results.hits;
 
     for (var i = 0; i < object.length; i++) {
       let hit = object[i];
@@ -235,7 +236,12 @@ const formatSearchObject = async (results, type) => {
 
           if (hit._highlightResult._profileURI.matchLevel === "full") {
             userObject.label = hit._highlightResult._profileURI.value;
-            returnArray.push(userObject);
+            if (
+              !profileURIMaxBids.has(hit._profileURI) ||
+              hit._nftTokens > profileURIMaxBids.get(hit._profileURI)._nftTokens
+            ) {
+              profileURIMaxBids.set(hit._profileURI, userObject);
+            }
           }
 
           if (hit._highlightResult._owner.matchLevel === "full") {
@@ -249,7 +255,7 @@ const formatSearchObject = async (results, type) => {
       }
     }
 
-    return returnArray;
+    return returnArray.concat(Array.from(profileURIMaxBids.values()));
   } catch (err) {
     console.log("error: ", err);
   }
@@ -263,29 +269,10 @@ exports.search = async (req, res, next) => {
       return res.send([]);
     }
 
-    const queries = [
-      {
-        indexName: `bid_${process.env.NODE_ENV}`,
-        query
-      }
-      // {
-      //   indexName: `user_${process.env.NODE_ENV}`,
-      //   query
-      // }
-    ];
-
-    let returnArray = [];
-    let hits = await client.search(queries);
-
-    let bidHits = hits.results.filter(
-      item => item.index === `bid_${process.env.NODE_ENV}`
-    );
-    let bidResults = await formatSearchObject(bidHits, "bid");
-
-    returnArray = returnArray.concat(bidResults);
-
+    let searchResult = await bidIndex.search(query);
+    let bidResults = await formatSearchObject(searchResult, "bid");
     return res.json({
-      hits: returnArray
+      hits: bidResults
     });
   } catch (err) {
     console.log("error: ", err);

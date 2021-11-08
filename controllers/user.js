@@ -179,7 +179,8 @@ exports.addUser = async (req, res, next) => {
         return res.status(400).json({
           message: "user email already exists"
         });
-      } else { // resubmit email
+      } else {
+        // resubmit email
         foundUser.authenticateCode = authCode;
 
         if (foundUser.userAddress !== userAddress) {
@@ -194,10 +195,10 @@ exports.addUser = async (req, res, next) => {
           subject: `Your NFT.com login code is ${authCode}`,
           text: `Your NFT.com login code is ${authCode}. \n\n[${new Date().toUTCString()}] \n\nThis is a one-time code that expires in 10 minutes. \n\nDo not share your code with anyone. The NFT.com team will never ask for it.`
         };
-  
+
         // send email
         await sgMail.send(msg);
-  
+
         return res.json({
           message: "success"
         });
