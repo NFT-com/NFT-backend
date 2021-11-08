@@ -10,11 +10,8 @@ const { sort } = require("fast-sort");
 const chalk = require("chalk");
 const crypto = require("crypto");
 const cache = require("memory-cache");
-const axios = require("axios");
 const { getContract, getABI, getAddress } = require("../httpHooks");
 const { provider } = require("../provider");
-const fromExponential = require("from-exponential");
-
 const algoliasearch = require("algoliasearch");
 
 const client = algoliasearch(
@@ -263,29 +260,23 @@ exports.search = async (req, res, next) => {
       return res.send([]);
     }
 
-    const queries = [
-      {
-        indexName: `bid_${process.env.NODE_ENV}`,
-        query
-      }
-      // {
-      //   indexName: `user_${process.env.NODE_ENV}`,
-      //   query
-      // }
-    ];
+    let allResults = [];
+    let hitsPromise = new Promise(() => {
+      let hits = await bidIndex.search(query);
+      let bidResults = await formatSearchObject(hits, "bid");
+      allResults = allResults.concat(bidResults);  
+    });
+    let facetsPromise = new Promise(() => {
+      let facetHits = await bidIndex.searchForFacetValues("_profileURI", query)
+      let facetResults = await formatSearchObject(facetHits, "bid");
+      allResults = allResults.concat(facetResults);
+    })
 
-    let returnArray = [];
-    let hits = await client.search(queries);
+    await Promise.all([hitsPromise, facetsPromise]);
 
-    let bidHits = hits.results.filter(
-      item => item.index === `bid_${process.env.NODE_ENV}`
-    );
-    let bidResults = await formatSearchObject(bidHits, "bid");
-
-    returnArray = returnArray.concat(bidResults);
-
+    
     return res.json({
-      hits: returnArray
+      hits: bidResults
     });
   } catch (err) {
     console.log("error: ", err);
