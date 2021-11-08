@@ -23,10 +23,10 @@ const bidIndex = client.initIndex(`bid_${process.env.NODE_ENV}`);
 
 bidIndex.setSettings({
   searchableAttributes: ["_profileURI", "_owner", "txHash"],
-  attributesToHighlight: ["_profileURI", "_owner", "txHash"]
+  attributesToHighlight: ["_profileURI", "_owner", "txHash"],
 });
 
-const isSandbox = chainId => {
+const isSandbox = (chainId) => {
   switch (Number(chainId)) {
     case 1:
       return false;
@@ -35,7 +35,7 @@ const isSandbox = chainId => {
   }
 };
 
-const isProduction = chainId => {
+const isProduction = (chainId) => {
   return !isSandbox(chainId);
 };
 
@@ -50,7 +50,7 @@ exports.getURI = async (req, res, next) => {
       return res.json(val);
     } else {
       let result = await URI.findOne({
-        profileName: uri?.toLowerCase()
+        profileName: uri?.toLowerCase(),
       }).exec();
 
       if (result) {
@@ -58,7 +58,7 @@ exports.getURI = async (req, res, next) => {
         return res.json(result.metadata);
       } else {
         return res.status(400).json({
-          message: "NFT.com profile not found"
+          message: "NFT.com profile not found",
         });
       }
     }
@@ -66,7 +66,7 @@ exports.getURI = async (req, res, next) => {
     console.log("error: ", err);
     return res.status(401).json({
       message: "error",
-      details: err
+      details: err,
     });
   }
 };
@@ -96,12 +96,12 @@ exports.storeApproval = async (req, res, next) => {
         deadline: deadline._hex,
         v,
         r,
-        s
+        s,
       }).exec();
 
       if (foundApproval) {
         return res.status(400).json({
-          message: "already exists"
+          message: "already exists",
         });
       } else {
         let newApproval = await Approvals.create({
@@ -112,25 +112,25 @@ exports.storeApproval = async (req, res, next) => {
           deadline: deadline._hex,
           v,
           r,
-          s
+          s,
         });
 
         console.log(chalk.green(`new approval item: ${newApproval._id}`));
 
         return res.json({
-          message: "success"
+          message: "success",
         });
       }
     } else {
       return res.status(400).json({
-        message: "invalid auth"
+        message: "invalid auth",
       });
     }
   } catch (err) {
     console.log("error: ", err);
     return res.status(401).json({
       message: "error",
-      details: err
+      details: err,
     });
   }
 };
@@ -151,25 +151,25 @@ exports.getBid = async (req, res, next) => {
     if (calculatedSignature === passedInSignature && _owner && _profileURI) {
       let bids = await BidSignatures.find({
         _owner,
-        _profileURI
+        _profileURI,
       }).exec();
 
-      let sortedBids = sort(bids).desc(r => Number(r._nftTokens));
+      let sortedBids = sort(bids).desc((r) => Number(r._nftTokens));
       let topBid = sortedBids[0];
 
       return res.json({
-        bid: topBid
+        bid: topBid,
       });
     } else {
       return res.status(400).json({
-        message: "invalid auth"
+        message: "invalid auth",
       });
     }
   } catch (err) {
     console.log("error: ", err);
     return res.status(401).json({
       message: "error",
-      details: err
+      details: err,
     });
   }
 };
@@ -188,7 +188,7 @@ exports.cancelBid = async (req, res, next) => {
     if (calculatedSignature === passedInSignature && _owner && _profileURI) {
       let bids = await BidSignatures.find({
         _owner: _owner.toLowerCase(),
-        _profileURI: _profileURI.toLowerCase()
+        _profileURI: _profileURI.toLowerCase(),
       }).exec();
 
       for (let i = 0; i < bids.length; i++) {
@@ -196,18 +196,18 @@ exports.cancelBid = async (req, res, next) => {
       }
 
       return res.json({
-        message: "success"
+        message: "success",
       });
     } else {
       return res.status(400).json({
-        message: "invalid auth"
+        message: "invalid auth",
       });
     }
   } catch (err) {
     console.log("error: ", err);
     return res.status(401).json({
       message: "error",
-      details: err
+      details: err,
     });
   }
 };
@@ -227,7 +227,7 @@ const formatSearchObject = async (results, type) => {
             _owner: hit._owner,
             _profileURI: hit._profileURI,
             _nftTokens: hit._nftTokens,
-            _id: hit.objectID
+            _id: hit.objectID,
           };
 
           if (hit._highlightResult._profileURI.matchLevel === "full") {
@@ -261,27 +261,29 @@ exports.search = async (req, res, next) => {
     }
 
     let allResults = [];
-    let hitsPromise = new Promise(async () => {
+    let hitsPromise = new Promise(async (resolve) => {
       let hits = await bidIndex.search(query);
       let bidResults = await formatSearchObject(hits, "bid");
       allResults = allResults.concat(bidResults);
+      resolve();
     });
-    let facetsPromise = new Promise(async () => {
+    let facetsPromise = new Promise(async (resolve) => {
       let facetHits = await bidIndex.searchForFacetValues("_profileURI", query);
       let facetResults = await formatSearchObject(facetHits, "bid");
       allResults = allResults.concat(facetResults);
+      resolve();
     });
 
     await Promise.all([hitsPromise, facetsPromise]);
 
     return res.json({
-      hits: allResults
+      hits: allResults,
     });
   } catch (err) {
     console.log("error: ", err);
     return res.status(401).json({
       message: "error",
-      details: err
+      details: err,
     });
   }
 };
@@ -299,7 +301,7 @@ exports.storeBid = async (req, res, next) => {
       existingStakeWeight,
       v,
       r,
-      s
+      s,
     } = req.body;
     const passedInSignature = req.headers["signature"];
 
@@ -320,12 +322,12 @@ exports.storeBid = async (req, res, next) => {
         _owner: _owner.toLowerCase(),
         v,
         r,
-        s
+        s,
       }).exec();
 
       if (foundBid) {
         return res.status(400).json({
-          message: "already exists"
+          message: "already exists",
         });
       } else {
         let currentTime = new Date().getTime();
@@ -360,25 +362,25 @@ exports.storeBid = async (req, res, next) => {
           _owner: _owner.toLowerCase(),
           v,
           r,
-          s
+          s,
         });
 
         console.log(chalk.green(`new bid item: ${newBid._id}`));
 
         return res.json({
-          message: "success"
+          message: "success",
         });
       }
     } else {
       return res.status(400).json({
-        message: "invalid auth"
+        message: "invalid auth",
       });
     }
   } catch (err) {
     console.log("error: ", err);
     return res.status(401).json({
       message: "error",
-      details: err
+      details: err,
     });
   }
 };
@@ -386,7 +388,7 @@ exports.storeBid = async (req, res, next) => {
 async function testPermit() {
   try {
     let approval = await Approvals.findOne({
-      txHash: undefined
+      txHash: undefined,
     }).exec();
 
     if (!approval) {
@@ -409,7 +411,7 @@ async function testPermit() {
     let overrides = {
       // The maximum units of gas for the transaction to use
       gasLimit: 1500000,
-      gasPrice: Number(10) * 1000000000 // wei
+      gasPrice: Number(10) * 1000000000, // wei
     };
 
     console.log(chalk.green("initiated permit tx 1/2"));
@@ -436,7 +438,7 @@ async function testPermit() {
     console.log(chalk.green("initiated permit tx 2/2"));
     provider(p)
       .waitForTransaction(hash)
-      .then(async receipt => {
+      .then(async (receipt) => {
         if (receipt.status === 1) {
           // success
           // update the backend DB
@@ -460,10 +462,10 @@ async function mintFor(user, profile) {
   try {
     let bids = await BidSignatures.find({
       _owner: user.toLowerCase(),
-      _profileURI: profile.toLowerCase()
+      _profileURI: profile.toLowerCase(),
     }).exec();
 
-    let sortedBids = sort(bids).desc(r => Number(r._nftTokens));
+    let sortedBids = sort(bids).desc((r) => Number(r._nftTokens));
 
     console.log("sortedBids: ", sortedBids);
     let topBid = sortedBids[0];
@@ -480,7 +482,7 @@ async function mintFor(user, profile) {
     );
 
     let approval = await Approvals.findOne({
-      owner: user.toLowerCase()
+      owner: user.toLowerCase(),
     }).exec();
 
     if (!approval) {
@@ -510,7 +512,7 @@ async function mintFor(user, profile) {
         let overrides = {
           // The maximum units of gas for the transaction to use
           gasLimit: 1500000,
-          gasPrice: Number(10) * 1000000000 // wei
+          gasPrice: Number(10) * 1000000000, // wei
         };
 
         console.log(chalk.green("initiated mint tx 1/2"));
@@ -535,7 +537,7 @@ async function mintFor(user, profile) {
         console.log(chalk.green("initiated mint tx 2/2"));
         provider(p)
           .waitForTransaction(hash)
-          .then(async receipt => {
+          .then(async (receipt) => {
             if (receipt.status === 1) {
               // success
               // update the backend DB
