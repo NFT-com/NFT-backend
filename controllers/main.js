@@ -238,7 +238,11 @@ const formatSearchObject = async (results, type) => {
             userObject.label = hit._highlightResult._profileURI.value;
             if (
               !profileURIMaxBids.has(hit._profileURI) ||
-              hit._nftTokens > profileURIMaxBids.get(hit._profileURI)._nftTokens
+              BigNumber.from(hit._nftTokens).gt(
+                BigNumber.from(
+                  profileURIMaxBids.get(hit._profileURI)._nftTokens
+                )
+              )
             ) {
               profileURIMaxBids.set(hit._profileURI, userObject);
             }
