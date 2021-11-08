@@ -1,4 +1,4 @@
-const serverPort = parseInt(process.env.PORT) || 10080
+const serverPort = parseInt(process.env.PORT) || 10080;
 
 const config = {
   debug: true,
@@ -112,11 +112,11 @@ const config = {
   etherscanAPI23: "RR4BJU4GKPK53DDYN4H8KY3U2BG3BWKYMQ",
   etherscanAPI24: "S2Y8649IS2BMFWVW51NETTNAA9C16Q4MHD",
   db: {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || "localhost",
     port: parseInt(process.env.DB_PORT) || 27017,
-    username: process.env.DB_USERNAME || 'mongo',
-    password: process.env.DB_PASSWORD || 'password',
-    database: process.env.DB_DATABASE || 'app',
+    username: process.env.DB_USERNAME || "mongo",
+    password: process.env.DB_PASSWORD || "password",
+    database: process.env.DB_DATABASE || "app"
   }
 };
 
