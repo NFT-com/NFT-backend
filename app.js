@@ -10,7 +10,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
 const cookieParser = require("cookie-parser");
 const { ws } = require("./websocket");
-const config = require('./config')
+const config = require("./config");
 
 const limiter = rateLimit({
   max: 100000, // max requests
@@ -47,13 +47,11 @@ mongoose
     autoCreate: true,
     autoIndex: true,
     useFindAndModify: false,
-    dbName: config.db.database,
+    dbName: config.db.database
   })
   .then(
     () => {
-      console.log(
-        `Database connected with ${DB_URL}/${config.db.database}`
-      );
+      console.log(`Database connected with ${DB_URL}/${config.db.database}`);
     },
     err => {
       console.log("ERROR DB: ", err);
