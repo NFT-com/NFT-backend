@@ -7,8 +7,8 @@ import { Base } from './base.entity'
 @Entity()
 export class Profile extends Base {
 
-  @Index({ unique: true })
-  @Column({ nullable: false })
+  @Index()
+  @Column({ nullable: false, unique: true })
   url: string
 
   @Index()
