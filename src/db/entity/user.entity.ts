@@ -1,10 +1,10 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Entity()
 @Index(['confirmEmailToken', 'confirmEmailTokenExpiresAt'])
-export class User extends Base {
+export class User extends BaseEntity {
 
   @Index()
   @Column({ unique: true })

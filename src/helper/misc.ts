@@ -36,3 +36,6 @@ export const safeInForOmitBy = <T>(arr: T[]): FindOperator<T> | null =>
 
 export const safeObject = <T>(obj: T): T =>
   _.isEmpty(obj) ? <T>{} : obj
+
+export const removeEmpty = <T>(obj: _.Dictionary<T>): _.Dictionary<T> =>
+  _.omitBy<T>(obj, _.isEmpty)

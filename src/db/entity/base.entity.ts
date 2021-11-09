@@ -9,7 +9,7 @@ import {
 } from 'typeorm'
 
 @Entity()
-export class Base {
+export class BaseEntity {
 
   @PrimaryColumn()
   id: string

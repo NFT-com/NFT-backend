@@ -1,3 +1,5 @@
+import { EntityFieldsNames } from 'typeorm/common/EntityFieldsNames'
+
 import { misc } from '@src/defs'
 
 import * as entity from './entity'
@@ -37,3 +39,5 @@ export const newRepositories = (): Repository => ({
 
 export type AnyEntity = entity.Approval | entity.Bid | entity.Edge
 | entity.NFT | entity.Profile | entity.User | entity.Wallet
+
+export type OrderBy<T> = { [P in EntityFieldsNames<T>]?: 'ASC' | 'DESC' | 1 | -1 }

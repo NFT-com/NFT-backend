@@ -2,14 +2,19 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { BidStatus, NFTType, Signature } from '@src/defs/gql'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Entity()
-export class Bid extends Base {
+@Index(['profileId', 'deletedAt', 'price'])
+@Index(['profileId', 'deletedAt', 'createdAt', 'walletId'])
+@Index(['walletId', 'deletedAt', 'createdAt'])
+@Index(['userId', 'deletedAt', 'createdAt', 'profileId'])
+export class Bid extends BaseEntity {
 
   @Column({ type: 'enum', enum: NFTType, nullable: false })
   nftType: NFTType
 
+  @Index()
   @Column({ nullable: false })
   price: number
 

@@ -2,10 +2,10 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { Signature } from '@src/defs/gql'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Entity()
-export class Approval extends Base {
+export class Approval extends BaseEntity {
 
   @Column({ nullable: false })
   amount: number

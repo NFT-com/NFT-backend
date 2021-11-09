@@ -1,6 +1,6 @@
 import * as typeorm from 'typeorm'
 
-import { isNotEmpty } from '@src/helper/misc'
+import { helper } from '@src/helper'
 
 export class BaseRepository<T> {
 
@@ -19,12 +19,14 @@ export class BaseRepository<T> {
     return this.repository
   }
 
-  public delete = (opts: Partial<T>): Promise<typeorm.DeleteResult> => {
-    return this.getRepository().softDelete(opts)
+  public delete = (opts: Partial<T>): Promise<boolean> => {
+    return this.getRepository().softDelete({ ...opts, deletedAt: null })
+      .then((r) => r.affected > 0)
   }
 
-  public deleteById = (id: string): Promise<typeorm.DeleteResult> => {
+  public deleteById = (id: string): Promise<boolean> => {
     return this.getRepository().softDelete(id)
+      .then((r) => r.affected === 1)
   }
 
   public find = (opts: typeorm.FindManyOptions<T>): Promise<T[]> => {
@@ -65,7 +67,7 @@ export class BaseRepository<T> {
   }
 
   public exists = (opts: Partial<T>): Promise<boolean> => {
-    return this.findOne({ where: { ...opts } }).then(isNotEmpty)
+    return this.findOne({ where: { ...opts } }).then(helper.isNotEmpty)
   }
 
   public count = (opts: Partial<T>): Promise<number> => {

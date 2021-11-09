@@ -1,6 +1,5 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { isEmpty,omitBy } from 'lodash'
 
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
@@ -45,11 +44,11 @@ const getMyProfiles = (
   const { user } = ctx
   logger.debug('getMyProfiles', { loggedInUserId: user.id, input: args?.input })
   const { statuses } = helper.safeObject(args?.input)
-  const filter: Partial<entity.NFT> = omitBy({
+  const filter: Partial<entity.NFT> = helper.removeEmpty({
     status: helper.safeIn(statuses),
     ownerUserId: user.id,
-  }, isEmpty)
-  return coreService.entitiesBy(ctx.repositories.profile, filter)
+  })
+  return coreService.entitiesBy(ctx.repositories.profile, filter, { createdAt: 'DESC' })
     .then(toProfilesOutput)
 }
 
@@ -162,6 +161,17 @@ const getProfileByURL = (
   return getProfile(args.url, repositories.profile.findByURL)
 }
 
+const getPrice = (
+  parent: gql.Profile,
+  _: unknown,
+  ctx: Context,
+): Promise<number> => {
+  const { user, repositories } = ctx
+  logger.debug('getPrice', { loggedInUserId: user?.id })
+  return repositories.bid.findTopBidByProfile(parent.id)
+    .then((bid) => bid.price)
+}
+
 export default {
   Query: {
     profile: getProfileByURL,
@@ -188,5 +198,6 @@ export default {
       'user',
       misc.EdgeType.Follows,
     ),
+    price: getPrice,
   },
 }

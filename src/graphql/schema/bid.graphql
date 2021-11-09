@@ -24,6 +24,7 @@ type Bid {
 #  user: User
   wallet: Wallet
   createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 input BidInput {
@@ -39,6 +40,7 @@ input BidInput {
 input BidsInput {
   pageInput: PageInput
   profileId: ID
+  walletId: ID
 }
 
 type BidsOutput {
@@ -46,11 +48,18 @@ type BidsOutput {
   pageInfo: PageInfo
 }
 
+input TopBidsInput {
+  pageInput: PageInput
+  profileId: ID
+}
+
 extend type Query {
   bids(input: BidsInput): BidsOutput!
   myBids(input: BidsInput): BidsOutput!
+  topBids(input: TopBidsInput): BidsOutput!
 }
 
 extend type Mutation {
   bid(input: BidInput!): Bid!
+  cancelBid(id: ID!): Boolean!
 }

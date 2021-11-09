@@ -2,16 +2,16 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { gql } from '@src/defs'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Entity()
-export class Profile extends Base {
+@Index(['ownerUserId', 'deletedAt', 'createdAt', 'status'])
+export class Profile extends BaseEntity {
 
   @Index()
   @Column({ nullable: false, unique: true })
   url: string
 
-  @Index()
   @Column({ nullable: true })
   ownerUserId: string
 

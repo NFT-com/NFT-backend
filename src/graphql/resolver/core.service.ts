@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import { getChain } from '@src/config'
-import { Context, entity, repository } from '@src/db'
+import { Context, entity, OrderBy,repository } from '@src/db'
 import { gql, misc } from '@src/defs'
 import { appError, walletError } from '@src/graphql/error'
 import { _logger, fp } from '@src/helper'
@@ -120,10 +120,11 @@ export const entitiesBy = <T>(
   // ctx: Context,
   repo: repository.BaseRepository<T>,
   filter: Partial<T>,
+  orderBy?: OrderBy<T>,
 ): Promise<T[]> => {
   // const { user } = ctx
   // logger.debug('entitiesBy', { loggedInUserId: user.id })
-  return repo.find({ where: { ...filter } })
+  return repo.find({ where: { ...filter, deletedAt: null }, order: orderBy })
 }
 
 export const edgesBy = (

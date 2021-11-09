@@ -1,6 +1,5 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { isEmpty,omitBy } from 'lodash'
 
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
@@ -27,7 +26,7 @@ const getNFT = (
 }
 
 const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gql.NFTsOutput> => {
-  return coreService.entitiesBy(ctx.repositories.nft, filter)
+  return coreService.entitiesBy(ctx.repositories.nft, filter, { createdAt: 'DESC' })
     .then((nfts) => ({
       nfts,
       pageInfo: null,
@@ -43,10 +42,10 @@ const getNFTs = (
   const { user } = ctx
   logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
   const { types, profileId } = helper.safeObject(args?.input)
-  const filter: Partial<entity.NFT> = omitBy({
+  const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     profileId,
-  }, isEmpty)
+  })
   return getNFTsBy(ctx, filter)
 }
 
@@ -59,11 +58,11 @@ const getMyNFTs = (
   const { user } = ctx
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
   const { types, profileId } = helper.safeObject(args?.input)
-  const filter: Partial<entity.NFT> = omitBy({
+  const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     userId: user.id,
     profileId,
-  }, isEmpty)
+  })
   return getNFTsBy(ctx, filter)
 }
 

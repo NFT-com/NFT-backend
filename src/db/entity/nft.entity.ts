@@ -2,10 +2,13 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { NFTMetadata, NFTType } from '@src/defs/gql'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Entity()
-export class NFT extends Base {
+@Index(['type', 'deletedAt', 'createdAt', 'profileId'])
+@Index(['userId', 'deletedAt', 'createdAt', 'type', 'profileId'])
+@Index(['walletId', 'deletedAt', 'createdAt', 'type'])
+export class NFT extends BaseEntity {
 
   @Column({ nullable: true })
   contract: string
@@ -16,18 +19,15 @@ export class NFT extends Base {
   @Column({ nullable: false })
   price: number
 
-  @Index()
   @Column({ nullable: true })
   profileId: string
 
   @Column({ type: 'enum', enum: NFTType, nullable: false })
   type: NFTType
 
-  @Index()
   @Column({ nullable: false })
   userId: string
 
-  @Index()
   @Column({ nullable: false })
   walletId: string
 

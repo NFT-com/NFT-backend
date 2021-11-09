@@ -1,4 +1,5 @@
 export * from './approval.entity'
+export * from './base.entity'
 export * from './bid.entity'
 export * from './edge.entity'
 export * from './nft.entity'

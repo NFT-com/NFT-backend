@@ -1,10 +1,10 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Index(['chainId', 'address', 'network'], { unique: true })
 @Entity()
-export class Wallet extends Base {
+export class Wallet extends BaseEntity {
 
   @Index()
   @Column({ nullable: false })

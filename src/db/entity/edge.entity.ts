@@ -2,7 +2,7 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { misc } from '@src/defs'
 
-import { Base } from './base.entity'
+import { BaseEntity } from './base.entity'
 
 @Index(['collectionId', 'edgeType', 'thatEntityId', 'thisEntityId'], { unique: true })
 @Index(['collectionId', 'edgeType', 'deletedAt', 'createdAt'])
@@ -12,7 +12,7 @@ import { Base } from './base.entity'
 @Index(['thatEntityId', 'edgeType', 'deletedAt', 'createdAt'])
 @Index(['thisEntityId', 'thatEntityId', 'edgeType', 'deletedAt'])
 @Entity()
-export class Edge extends Base {
+export class Edge extends BaseEntity {
 
   // multiple edges can have the same collectionId+thisEntityId combination
   @Column({ nullable: true })

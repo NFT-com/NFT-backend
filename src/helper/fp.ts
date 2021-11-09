@@ -48,6 +48,14 @@ type ArrayFnT2T<T> = (v: T, i: number, a: T[]) => T
 // T => Apply array fn => boolean
 type ArrayFnT2Boolean<T> = (v: T, i: number, a: T[]) => boolean
 
+export const I = <T>(identity: T): T => identity
+
+export const N = (): null => null
+
+export const negate = <T>(fn: FnPred<T> = Boolean) => {
+  return (value: T): boolean => !fn(value)
+}
+
 /**
  * runs fn (as a side effect), then returns value
  *
@@ -441,13 +449,6 @@ export const promiseFilter = <T>(negate: boolean) => {
         .then(filterMap => list.filter((_, index) => negate ? !filterMap[index] : filterMap[index]))
     }
   }
-}
-
-export const I = <T>(identity: T): T => identity
-export const N = (): null => null
-
-export const negate = <T>(fn: FnPred<T> = Boolean) => {
-  return (value: T): boolean => !fn(value)
 }
 
 /**
