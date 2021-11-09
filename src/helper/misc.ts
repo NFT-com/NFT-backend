@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In } from 'typeorm'
 
@@ -39,3 +40,23 @@ export const safeObject = <T>(obj: T): T =>
 
 export const removeEmpty = <T>(obj: _.Dictionary<T>): _.Dictionary<T> =>
   _.omitBy<T>(obj, _.isEmpty)
+
+export const getUTCDate = (date = new Date()): Date => {
+  const d = new Date(date)
+  return new Date(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    d.getUTCHours(),
+    d.getUTCMinutes(),
+    d.getUTCSeconds(),
+  )
+}
+
+export const bigNumber = BigNumber.from
+
+export const bigNumberToHex = (v: unknown): string => bigNumber(v)._hex
+
+export const bigNumberToNumber = (v: unknown): number => Number(bigNumber(v))
+
+export const tokenDecimals = BigNumber.from(10).pow(18)

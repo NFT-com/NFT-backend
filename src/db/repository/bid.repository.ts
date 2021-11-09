@@ -25,4 +25,11 @@ export class BidRepository extends BaseRepository<Bid> {
     })
   }
 
+  public findRecentBidByProfileUser = (profileId: string, userId: string): Promise<Bid> => {
+    return this.findOne({
+      where: { profileId, userId, deletedAt: null },
+      order: { updatedAt: 'DESC' },
+    })
+  }
+
 }

@@ -7,7 +7,7 @@ import { isEmpty } from 'lodash'
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
 import { appError, userError, walletError } from '@src/graphql/error'
-import { _logger, fp } from '@src/helper'
+import { _logger, fp, helper } from '@src/helper'
 import { sendgrid } from '@src/service'
 
 import { isAuthenticated, verifyAndGetNetworkChain } from './auth'
@@ -63,7 +63,7 @@ const signUp = (
     }))
     .then((referredUserId: string) => {
       const confirmEmailToken = cryptoRandomString({ length: 10, type: 'url-safe' })
-      const confirmEmailTokenExpiresAt = addDays(new Date(), 1)
+      const confirmEmailTokenExpiresAt = addDays(helper.getUTCDate(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
       return repositories.user.save({
         email,

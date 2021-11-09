@@ -64,9 +64,9 @@ const getProfileFollowers = (
   ctx: Context,
 ): Promise<gql.FollowersOutput> => {
   const { user } = ctx
-  logger.debug('getProfileFollowers', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('getProfileFollowers', { loggedInUserId: user?.id, input: args.input })
 
-  validateSchema(buildProfileInputSchema('profileId'), args)
+  validateSchema(buildProfileInputSchema('profileId'), args.input)
 
   return coreService.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
     thatEntityId: args.input.profileId,

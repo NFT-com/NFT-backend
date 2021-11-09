@@ -1,4 +1,4 @@
-import { ethers } from 'ethers'
+import { BigNumber,ethers } from 'ethers'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
@@ -31,3 +31,11 @@ export const buildSignatureInputSchema = (): Joi.ObjectSchema =>
     r: Joi.binary().required(),
     s: Joi.binary().required(),
   })
+
+export const buildBigNumber = (value: string, helpers): number => {
+  const v = BigNumber.from(value)
+  if (isEmpty(v) || v.lte(BigNumber.from(0))) {
+    return helpers.error('invalid price/amount')
+  }
+  return Number(v._hex)
+}

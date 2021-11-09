@@ -3,11 +3,16 @@ import Joi from 'joi'
 
 import { Context } from '@src/db'
 import { gql, misc } from '@src/defs'
-import { _logger } from '@src/helper'
+import { _logger, helper } from '@src/helper'
 
 import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
-import { buildSignatureInputSchema, buildWalletInputSchema, validateSchema } from './joi'
+import {
+  buildBigNumber,
+  buildSignatureInputSchema,
+  buildWalletInputSchema,
+  validateSchema,
+} from './joi'
 
 const logger = _logger.Factory(_logger.Context.Approval, _logger.Context.GraphQL)
 
@@ -20,7 +25,7 @@ const approveAmount = (
   logger.debug('approveAmount', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
-    amount: Joi.number().required().greater(0),
+    amount: Joi.required().custom(buildBigNumber),
     deadline: Joi.string().required(),
     nonce: Joi.number().required(),
     signature: buildSignatureInputSchema(),
@@ -28,14 +33,15 @@ const approveAmount = (
     txHash: Joi.string().required(),
     wallet: buildWalletInputSchema(),
   })
-  validateSchema(schema, args)
+  const { input } = args
+  validateSchema(schema, input)
 
-  return coreService.getWallet(ctx, args.input.wallet)
+  return coreService.getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => repositories.approval.save({
-      amount: args.input.amount,
-      deadline: args.input.deadline,
-      nonce: args.input.nonce,
-      signature: args.input.signature,
+      amount: helper.bigNumberToNumber(input.amount),
+      deadline: input.deadline,
+      nonce: input.nonce,
+      signature: input.signature,
       userId: user.id,
       walletId,
     }))
