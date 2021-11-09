@@ -16,8 +16,7 @@
   },
   "_moduleAliasIgnoreWarning": true,
   "lint-staged": {
-    "*.(js|ts)": "eslint --color . --ext .ts,.mjs --cache --fix",
-    "**/*.ts": "tsc -p tsconfig.json --noEmit"
+    "*.(js|ts)": "eslint --color . --ext .ts,.mjs --cache --fix"
   },
   "commitlint": {
     "extends": [

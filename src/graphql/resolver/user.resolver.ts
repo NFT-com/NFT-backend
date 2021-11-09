@@ -55,8 +55,9 @@ const signUp = (
           walletError.ErrorType.AddressAlreadyExists,
         ))
       }
+      return referredBy
     })
-    .then(fp.thruIfOtherNotEmpty(referredBy)((refId: string) => {
+    .then(fp.thruIfNotEmpty((refId: string) => {
       return repositories.user.findByReferralId(refId)
         .then((user) => user?.id)
     }))

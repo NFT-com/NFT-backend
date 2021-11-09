@@ -328,13 +328,13 @@ export const pause = <T>(ms: number): FnT2PromiseT<T> => {
  * runs thenFn iff ifFn returns truthy
  *
  * @param ifFn: T => Boolean
- * @param thenFn: T => T
+ * @param thenFn: FnT2Any
  *
- * @return fn: (T => Boolean) => (T => T) => (T => T)
+ * @return fn: (T => Boolean) => (T => FnT2Any) => (T => any)
  */
 export const thruIf = <T>(ifFn: FnPred<T>) => {
-  return (thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-    return (value: T): TOrPromiseT<T> => ifFn(value) ? thenFn(value) : value
+  return (thenFn: FnT2Any<T>): FnT2Any<T> => {
+    return (value: T) => ifFn(value) ? thenFn(value) : value
   }
 }
 
@@ -343,13 +343,13 @@ export const thruIf = <T>(ifFn: FnPred<T>) => {
  *
  * runs thenFn when value is empty (e.g., null, undefined etc)
  *
- * @param thenFn: T => FnT2TOrPromiseT
- * @param value: T => TOrPromiseT
+ * @param thenFn: FnT2Any
+ * @param value: T => any
  *
- * @return fn: (T => TOrPromiseT) => (T => TOrPromiseT)
+ * @return fn: (T => FnT2Any) => (T => any)
  */
-export const thruIfEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-  return (value: T): TOrPromiseT<T> => _.isEmpty(value) ? tap(thenFn)(value) : value
+export const thruIfEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
+  return (value: T) => _.isEmpty(value) ? thenFn(value) : value
 }
 
 /**
@@ -357,13 +357,13 @@ export const thruIfEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> =
  *
  * runs thenFn when value is not empty (e.g., null, undefined etc)
  *
- * @param thenFn: T => FnT2TOrPromiseT
- * @param value: T => TOrPromiseT
+ * @param thenFn: T => FnT2Any
+ * @param value: T => any
  *
- * @return fn: (T => TOrPromiseT) => (T => TOrPromiseT)
+ * @return fn: (T => FnT2Any) => (T => any)
  */
-export const thruIfNotEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-  return (value: T): TOrPromiseT<T> => helper.isNotEmpty(value) ? tap(thenFn)(value) : value
+export const thruIfNotEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
+  return (value: T) => helper.isNotEmpty(value) ? thenFn(value) : value
 }
 
 /**
@@ -373,14 +373,15 @@ export const thruIfNotEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T
  *
  * @param otherValue: K
  * @param ifFn: otherValue => Boolean
- * @param thenFn: T => T
+ * @param thenFn: T => FnT2Any
+ * @param value: T => any
  *
- * @return fn: (otherValue => Boolean) => (T => T) => (T => T)
+ * @return fn: (otherValue => Boolean) => (T => FnT2Any) => (T => any)
  */
 export const thruIfOther = <K>(ifFn: FnPred<K>) => {
   return (otherValue: K) => {
-    return <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-      return (value: T): TOrPromiseT<T> => ifFn(otherValue) ? thenFn(value) : value
+    return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
+      return (value: T) => ifFn(otherValue) ? thenFn(value) : value
     }
   }
 }
@@ -391,13 +392,14 @@ export const thruIfOther = <K>(ifFn: FnPred<K>) => {
  * runs thenFn iff other value is empty
  *
  * @param otherValue: K
- * @param ifFn: otherValue => Boolean
+ * @param thenFn: T => FnT2Any
+ * @param value: T => any
  *
- * @return fn: (T => FnT2TOrPromiseT) => (T => TOrPromiseT)
+ * @return fn: (otherValue => Boolean) => (T => FnT2Any) => (T => any)
  */
 export const thruIfOtherEmpty = <K>(otherValue: K) => {
-  return <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-    return (value: T): TOrPromiseT<T> => _.isEmpty(otherValue) ? thenFn(value) : value
+  return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
+    return (value: T) => _.isEmpty(otherValue) ? thenFn(value) : value
   }
 }
 
@@ -407,13 +409,14 @@ export const thruIfOtherEmpty = <K>(otherValue: K) => {
  * runs thenFn iff other value is not empty
  *
  * @param otherValue: K
- * @param ifFn: otherValue => Boolean
+ * @param thenFn: T => FnT2Any
+ * @param value: T => any
  *
- * @return fn: (T => FnT2TOrPromiseT) => (T => TOrPromiseT)
+ * @return fn: (T => FnT2Any) => (T => any)
  */
 export const thruIfOtherNotEmpty = <K>(otherValue: K) => {
-  return <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-    return (value: T): TOrPromiseT<T> => helper.isNotEmpty(otherValue) ? thenFn(value) : value
+  return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
+    return (value: T) => helper.isNotEmpty(otherValue) ? thenFn(value) : value
   }
 }
 /**

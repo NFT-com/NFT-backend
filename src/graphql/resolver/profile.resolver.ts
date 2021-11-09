@@ -52,9 +52,9 @@ const getMyProfiles = (
     .then(toProfilesOutput)
 }
 
-const buildProfileInputSchema = (): Joi.ObjectSchema =>
+const buildProfileInputSchema = (profileIdKey = 'id'): Joi.ObjectSchema =>
   Joi.object().keys({
-    profileId: Joi.string().required(),
+    [profileIdKey]: Joi.string().required(),
   })
 
 // TODO implement pagination
@@ -66,7 +66,7 @@ const getProfileFollowers = (
   const { user } = ctx
   logger.debug('getProfileFollowers', { loggedInUserId: user?.id, input: args?.input })
 
-  validateSchema(buildProfileInputSchema(), args)
+  validateSchema(buildProfileInputSchema('profileId'), args)
 
   return coreService.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
     thatEntityId: args.input.profileId,

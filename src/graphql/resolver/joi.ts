@@ -1,4 +1,6 @@
+import { ethers } from 'ethers'
 import Joi from 'joi'
+import { isEmpty } from 'lodash'
 
 import { appError } from '@src/graphql/error'
 
@@ -11,7 +13,14 @@ export const validateSchema = (schema: Joi.ObjectSchema, input: unknown): void =
 
 export const buildWalletInputSchema = (): Joi.ObjectSchema =>
   Joi.object().keys({
-    address: Joi.string().required(),
+    address: Joi.string().required()
+      .custom((value: string, helpers) => {
+        const address = ethers.utils.getAddress(value)
+        if (isEmpty(address)) {
+          return helpers.error('invalid address')
+        }
+        return address
+      }),
     chainId: Joi.string().required(),
     network: Joi.string().required(),
   })

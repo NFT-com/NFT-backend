@@ -141,7 +141,7 @@ export default {
   Bid: {
     wallet: coreService.resolveEntityById(
       'walletId',
-      misc.EntityType.Approval,
+      misc.EntityType.Bid,
       misc.EntityType.Wallet,
     ),
   },
