@@ -15,11 +15,9 @@
     "@src": "./dist"
   },
   "_moduleAliasIgnoreWarning": true,
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
+  "lint-staged": {
+    "*.(js|ts)": "eslint --color . --ext .ts,.mjs --cache --fix",
+    "**/*.ts": "tsc -p tsconfig.json --noEmit"
   },
   "commitlint": {
     "extends": [
