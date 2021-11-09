@@ -26,6 +26,7 @@ const approveAmount = (
 
   const schema = Joi.object().keys({
     amount: Joi.required().custom(buildBigNumber),
+    currency: Joi.string().required(),
     deadline: Joi.string().required(),
     nonce: Joi.number().required(),
     signature: buildSignatureInputSchema(),
@@ -39,6 +40,7 @@ const approveAmount = (
   return coreService.getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => repositories.approval.save({
       amount: helper.bigNumberToNumber(input.amount),
+      currency: input.currency,
       deadline: input.deadline,
       nonce: input.nonce,
       signature: input.signature,

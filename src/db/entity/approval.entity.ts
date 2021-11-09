@@ -11,6 +11,9 @@ export class Approval extends BaseEntity {
   amount: number
 
   @Column({ nullable: false })
+  currency: string
+
+  @Column({ nullable: false })
   deadline: string
 
   @Column({ nullable: false })

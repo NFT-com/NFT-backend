@@ -10,9 +10,9 @@ type Approval {
   createdAt: DateTime!
 }
 
-# TODO do we need to record what the approval is for e.g., which token?
 input ApprovalInput {
   amount: Uint256!
+  currency: Address!
   deadline: String!
   nonce: Int!
   signature: SignatureInput!
