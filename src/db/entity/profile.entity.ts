@@ -4,6 +4,7 @@ import { gql } from '@src/defs'
 
 import { BaseEntity } from './base.entity'
 
+// TODO recheck indexes after some data is available
 @Entity()
 @Index(['ownerUserId', 'deletedAt', 'createdAt', 'status'])
 export class Profile extends BaseEntity {

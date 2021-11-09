@@ -4,10 +4,11 @@ import { NFTMetadata, NFTType } from '@src/defs/gql'
 
 import { BaseEntity } from './base.entity'
 
+// TODO recheck indexes after some data is available
 @Entity()
 @Index(['type', 'deletedAt', 'createdAt', 'profileId'])
-@Index(['userId', 'deletedAt', 'createdAt', 'type', 'profileId'])
-@Index(['walletId', 'deletedAt', 'createdAt', 'type'])
+@Index(['userId', 'deletedAt', 'createdAt'])
+@Index(['walletId', 'deletedAt', 'createdAt'])
 export class NFT extends BaseEntity {
 
   @Column({ nullable: true })

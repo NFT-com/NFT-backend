@@ -4,17 +4,17 @@ import { BidStatus, NFTType, Signature } from '@src/defs/gql'
 
 import { BaseEntity } from './base.entity'
 
+// TODO recheck indexes after some data is available
 @Entity()
 @Index(['profileId', 'deletedAt', 'price'])
-@Index(['profileId', 'deletedAt', 'createdAt', 'walletId'])
+@Index(['profileId', 'deletedAt', 'createdAt'])
 @Index(['walletId', 'deletedAt', 'createdAt'])
-@Index(['userId', 'deletedAt', 'createdAt', 'profileId'])
+@Index(['userId', 'deletedAt', 'createdAt'])
 export class Bid extends BaseEntity {
 
   @Column({ type: 'enum', enum: NFTType, nullable: false })
   nftType: NFTType
 
-  @Index()
   @Column({ nullable: false })
   price: number
 
