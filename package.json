@@ -42,6 +42,7 @@
     "@graphql-tools/merge": "^8.2.0",
     "@sendgrid/mail": "^7.6.0",
     "apollo-server": "^3.4.0",
+    "apollo-server-core": "^3.5.0",
     "bull": "^3.29.3",
     "chalk": "^4.1.2",
     "crypto-random-string": "^3.3.1",
