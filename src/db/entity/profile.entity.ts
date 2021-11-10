@@ -30,4 +30,10 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   bannerURL: string
 
+  @Column({ nullable: true })
+  photoURL: string
+
+  @Column({ nullable: true })
+  description: string
+
 }

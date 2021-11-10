@@ -28,7 +28,7 @@ const signUp = (
 
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
-    email: Joi.string().required(),
+    email: Joi.string().required().email(),
     referredBy: Joi.string(),
     wallet: buildWalletInputSchema(),
   })
@@ -105,7 +105,7 @@ const confirmEmail = (
     userError.ErrorType.InvalidEmailConfirmToken,
   )
   return repositories.user.findByEmailConfirmationToken(token)
-    .then(fp.tapRejectIfEmpty(invalidTokenError))
+    .then(fp.rejectIfEmpty(invalidTokenError))
     .then((user) => repositories.user.save({
       ...user,
       isEmailConfirmed: true,

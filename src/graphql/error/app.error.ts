@@ -48,3 +48,10 @@ export const buildInvalid = (message: string, errorKey: string): ApolloError =>
     HTTP.BadRequest,
     { errorKey },
   )
+
+export const buildForbidden = (message: string, errorKey: string): ApolloError =>
+  new ApolloError(
+    message,
+    HTTP.Forbidden,
+    { errorKey },
+  )

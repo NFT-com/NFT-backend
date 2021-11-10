@@ -84,7 +84,7 @@ const getProfile = (
   fbFn: (k: string) => Promise<entity.Profile>,
 ): Promise<entity.Profile | never> => {
   return fbFn(lookupVal)
-    .then(fp.tapRejectIfEmpty(appError.buildNotFound(
+    .then(fp.rejectIfEmpty(appError.buildNotFound(
       profileError.buildProfileNotFoundMsg(lookupVal),
       profileError.ErrorType.ProfileNotFound,
     )))
@@ -109,7 +109,7 @@ const followProfile = (
         thatEntityType: misc.EntityType.Profile,
         deletedAt: null,
       })
-        .then(fp.tapRejectIfTrue(appError.buildExists(
+        .then(fp.rejectIfTrue(appError.buildExists(
           profileError.buildProfileFollowingMsg(profile.id),
           profileError.ErrorType.ProfileAlreadyFollowing,
         )))
@@ -171,6 +171,38 @@ const getWinningBid = (
   return repositories.bid.findTopBidByProfile(parent.id)
 }
 
+const updateProfile = (
+  _: any,
+  args: gql.MutationUpdateProfileArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { user, repositories } = ctx
+  logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
+
+  const schema = Joi.object().keys({
+    id: Joi.string().required(),
+    bannerURL: Joi.string().uri(),
+    description: Joi.string(),
+    photoURL: Joi.string().uri(),
+  })
+  validateSchema(schema, args.input)
+
+  const notOwner = (p: entity.Profile): boolean => p.ownerUserId !== user.id
+  const { id } = args.input
+
+  return getProfile(id, repositories.profile.findById)
+    .then(fp.rejectIf(notOwner)(appError.buildForbidden(
+      profileError.buildProfileNotOwnedMsg(id),
+      profileError.ErrorType.ProfileNotOwned,
+    )))
+    .then((p) => {
+      p.bannerURL = args.input.bannedURL || p.bannerURL
+      p.description = args.input.description || p.description
+      p.photoURL = args.input.photoURL || p.photoURL
+      return repositories.profile.save(p)
+    })
+}
+
 export default {
   Query: {
     profile: getProfileByURL,
@@ -179,8 +211,9 @@ export default {
     profilesFollowedByMe: combineResolvers(isAuthenticated, getProfilesFollowedByMe),
   },
   Mutation: {
-    followProfile,
-    unfollowProfile,
+    followProfile: combineResolvers(isAuthenticated, followProfile),
+    unfollowProfile: combineResolvers(isAuthenticated, unfollowProfile),
+    updateProfile: combineResolvers(isAuthenticated, updateProfile),
   },
   Profile: {
     owner: coreService.resolveEntityById(

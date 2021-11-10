@@ -162,7 +162,7 @@ export const tapThrow = <T>(fn: FnT2Any<T>): FnT2T<T> => {
  *
  * @return fn: (T => boolean) => (err => FnT2PromiseT) => (T => Promise<T | never>)
  */
-export const tapRejectIf = <T>(ifFn: FnPred<T>) => {
+export const rejectIf = <T>(ifFn: FnPred<T>) => {
   return (err: Error): FnT2PromiseT<T> => {
     return (value: T): Promise<T | never> => {
       return ifFn(value) ? Promise.reject(err) : Promise.resolve(value)
@@ -178,7 +178,7 @@ export const tapRejectIf = <T>(ifFn: FnPred<T>) => {
  *
  * @return fn: (err => FnT2PromiseT) => (T => Promise<T | never>)
  */
-export const tapRejectIfEmpty = <T>(err: Error): FnT2PromiseT<T> => {
+export const rejectIfEmpty = <T>(err: Error): FnT2PromiseT<T> => {
   return (value: T): Promise<T | never> => {
     return _.isEmpty(value) ? Promise.reject(err) : Promise.resolve(value)
   }
@@ -192,7 +192,7 @@ export const tapRejectIfEmpty = <T>(err: Error): FnT2PromiseT<T> => {
  *
  * @return fn: (err => FnT2PromiseT) => (T => Promise<T | never>)
  */
-export const tapRejectIfNotEmpty = <T>(err: Error): FnT2PromiseT<T> => {
+export const rejectIfNotEmpty = <T>(err: Error): FnT2PromiseT<T> => {
   return (value: T): Promise<T | never> => {
     return helper.isNotEmpty(value) ? Promise.reject(err) : Promise.resolve(value)
   }
@@ -206,7 +206,7 @@ export const tapRejectIfNotEmpty = <T>(err: Error): FnT2PromiseT<T> => {
  *
  * @return fn: (err => FnT2PromiseT) => (T => Promise<T | never>)
  */
-export const tapRejectIfFalse = (err: Error): FnT2PromiseT<boolean> => {
+export const rejectIfFalse = (err: Error): FnT2PromiseT<boolean> => {
   return (value: boolean): Promise<boolean | never> => {
     return helper.isFalse(value) ? Promise.reject(err) : Promise.resolve(value)
   }
@@ -220,7 +220,7 @@ export const tapRejectIfFalse = (err: Error): FnT2PromiseT<boolean> => {
  *
  * @return fn: (err => FnT2PromiseT) => (T => Promise<T | never>)
  */
-export const tapRejectIfTrue = (err: Error): FnT2PromiseT<boolean> => {
+export const rejectIfTrue = (err: Error): FnT2PromiseT<boolean> => {
   return (value: boolean): Promise<boolean | never> => {
     return helper.isTrue(value) ? Promise.reject(err) : Promise.resolve(value)
   }

@@ -34,7 +34,7 @@ export const getWallet = (
   const chain = getChain(network, chainId)
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
-    .then(fp.tapRejectIfEmpty(appError.buildExists(
+    .then(fp.rejectIfEmpty(appError.buildExists(
       walletError.buildAddressExistsMsg(network, chain, address),
       walletError.ErrorType.AddressAlreadyExists,
     )))
