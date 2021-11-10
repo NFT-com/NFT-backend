@@ -497,7 +497,7 @@ const getBidOrder = async (user, uri, tokens) => {
     let i;
     for (i = 0; i < bids.length; i++) {
       let bid = bids?.[i];
-      if (bid?._nftTokens?._hex === tokens._hex) break;
+      if (bid?._nftTokens?._hex === tokens?._hex) break;
     }
 
     let returnObject = {
@@ -798,12 +798,12 @@ exports.getIndividualBids = async (req, res, next) => {
           let structHash =
             index % 2 === 0
               ? await profileAuctionContract.getStructHash(
-                  i._nftTokens,
+                  i._nftTokens ?? BigNumber.from(0),
                   i._profileURI,
                   i._owner
                 )
               : await profileAuctionContract2.getStructHash(
-                  i._nftTokens,
+                  i._nftTokens ?? BigNumber.from(0),
                   i._profileURI,
                   i._owner
                 );

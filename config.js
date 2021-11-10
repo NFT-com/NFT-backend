@@ -1,4 +1,4 @@
-const serverPort = parseInt(process.env.PORT) || 10080;
+const serverPort = parseInt(process.env.PORT) || 10010;
 
 const config = {
   debug: true,

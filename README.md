@@ -14,6 +14,6 @@
 3. `docker-compose up -d`
 4. `npm run dev`
 
-Server will start at `localhost:10080`.
+Server will start at `localhost:10010`.
 
 Admin portal of local Mongo is available at `localhost:10070`.

@@ -1,32 +1,32 @@
 version: "3.7"
 
 services:
-#  redis:
-#    image: redis:alpine
-#    container_name: nftcom-redis
-#    environment:
-#      - REDIS_REPLICATION_MODE=master
-#    networks:
-#      - nftcom
-#    ports:
-#      - "6379:6379"
-#    volumes:
-#      - "nftcom-redis:/var/lib/redis"
-#      - "nftcom-redis:/usr/local/etc/redis/redis.conf"
-#    restart: unless-stopped
-#
-#  redis-web:
-#    image: rediscommander/redis-commander:latest
-#    container_name: nftcom-redis-web
-#    environment:
-#      - REDIS_HOSTS=local:redis:6379
-#    networks:
-#      - nftcom
-#    ports:
-#      - "9060:8081"
-#    depends_on:
-#      - redis
-#    restart: unless-stopped
+  #  redis:
+  #    image: redis:alpine
+  #    container_name: nftcom-redis
+  #    environment:
+  #      - REDIS_REPLICATION_MODE=master
+  #    networks:
+  #      - nftcom
+  #    ports:
+  #      - "6379:6379"
+  #    volumes:
+  #      - "nftcom-redis:/var/lib/redis"
+  #      - "nftcom-redis:/usr/local/etc/redis/redis.conf"
+  #    restart: unless-stopped
+  #
+  #  redis-web:
+  #    image: rediscommander/redis-commander:latest
+  #    container_name: nftcom-redis-web
+  #    environment:
+  #      - REDIS_HOSTS=local:redis:6379
+  #    networks:
+  #      - nftcom
+  #    ports:
+  #      - "9060:8081"
+  #    depends_on:
+  #      - redis
+  #    restart: unless-stopped
 
   mongo:
     image: mongo:latest
@@ -66,7 +66,7 @@ services:
 #    networks:
 #      - nftcom
 #    ports:
-#      - "10080:9080"
+#      - "10010:9080"
 #    volumes:
 #      - "./src:/app/nftcom/src:cached"
 #    depends_on:
