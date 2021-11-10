@@ -161,15 +161,14 @@ const getProfileByURL = (
   return getProfile(args.url, repositories.profile.findByURL)
 }
 
-const getPrice = (
+const getWinningBid = (
   parent: gql.Profile,
   _: unknown,
   ctx: Context,
-): Promise<number> => {
+): Promise<gql.Bid> => {
   const { user, repositories } = ctx
-  logger.debug('getPrice', { loggedInUserId: user?.id })
+  logger.debug('getWinningBid', { loggedInUserId: user?.id })
   return repositories.bid.findTopBidByProfile(parent.id)
-    .then((bid) => bid.price)
 }
 
 export default {
@@ -198,6 +197,6 @@ export default {
       'user',
       misc.EdgeType.Follows,
     ),
-    price: getPrice,
+    winningBid: getWinningBid,
   },
 }

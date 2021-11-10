@@ -20,9 +20,9 @@ type Profile {
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
   owner: Wallet
-  price: Uint256
   status: ProfileStatus
   url: String!
+  winningBid: Bid
   createdAt: DateTime!
 }
 
