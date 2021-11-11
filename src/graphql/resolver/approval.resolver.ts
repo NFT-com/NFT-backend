@@ -39,7 +39,7 @@ const approveAmount = (
 
   return coreService.getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => repositories.approval.save({
-      amount: helper.bigNumberToNumber(input.amount),
+      amount: helper.bigNumberToHex(input.amount),
       currency: input.currency,
       deadline: input.deadline,
       nonce: input.nonce,

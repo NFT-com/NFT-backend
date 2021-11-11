@@ -28,9 +28,9 @@ const bid = (
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
+    nftType: Joi.string().required().valid(Object.values(gql.NFTType)),
     price: Joi.required().custom(buildBigNumber),
     profileURL: Joi.string(),
-    profileBannerURL: Joi.string(),
     signature: buildSignatureInputSchema(),
     wallet: buildWalletInputSchema(),
   })
@@ -48,13 +48,8 @@ const bid = (
       }
 
       // create profile if it doesn't exist
-      const createProfile = (): Promise<entity.Profile> =>
-        repositories.profile.save({
-          url: input.profileURL,
-          bannerURL: input.profileBannerURL,
-        })
       return repositories.profile.findByURL(input.profileURL)
-        .then(fp.thruIfEmpty(createProfile))
+        .then(fp.thruIfEmpty(() => coreService.createProfile(ctx, { url: input.profileURL })))
         .then(({ id }) => ({ walletId, profileId: id }))
     })
     .then(({ profileId, walletId }) => {
@@ -72,8 +67,7 @@ const bid = (
           const curSeconds = isEqual(now, existingUpdateTime)
             ? 0
             : differenceInSeconds(now, existingUpdateTime)
-          const bigNumStake = existingStake / 1E18
-          // const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
+          const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
           const stakeWeight = existingStakeWeight + curSeconds * Number(bigNumStake)
           return { walletId, profileId, stakeWeight }
         })
@@ -81,7 +75,7 @@ const bid = (
     .then(({ profileId, walletId, stakeWeight }) => {
       return repositories.bid.save({
         nftType: input.nftType,
-        price: helper.bigNumberToNumber(input.price),
+        price: helper.bigNumberToHex(input.price),
         profileId,
         signature: input.signature,
         stakeWeightedSeconds: stakeWeight,

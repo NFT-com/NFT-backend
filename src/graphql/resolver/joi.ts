@@ -32,10 +32,10 @@ export const buildSignatureInputSchema = (): Joi.ObjectSchema =>
     s: Joi.binary().required(),
   })
 
-export const buildBigNumber = (value: string, helpers): number => {
+export const buildBigNumber = (value: string, helpers): string => {
   const v = BigNumber.from(value)
   if (isEmpty(v) || v.lte(BigNumber.from(0))) {
     return helpers.error('invalid price/amount')
   }
-  return Number(v._hex)
+  return v._hex
 }

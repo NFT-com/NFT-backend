@@ -131,7 +131,7 @@ export const edgesBy = (
   edgeRepo: repository.EdgeRepository,
   filter: Partial<entity.Edge>,
 ): Promise<entity.Edge[]> => {
-  return edgeRepo.find({ where: { ...filter, deleteAt: null } })
+  return edgeRepo.find({ where: { ...filter, deletedAt: null } })
 }
 
 const entitiesOfEdges = <T>(
@@ -184,4 +184,11 @@ export const thatEntitiesOfEdgesBy = <T>(
 export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<number> => {
   const { repositories } = ctx
   return repositories.edge.count({ ...filter, deletedAt: null })
+}
+
+export const createProfile = (
+  ctx: Context,
+  profile: Partial<entity.Profile>,
+): Promise<entity.Profile> => {
+  return ctx.repositories.profile.save(profile)
 }

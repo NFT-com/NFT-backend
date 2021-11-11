@@ -16,7 +16,7 @@ export class Bid extends BaseEntity {
   nftType: NFTType
 
   @Column({ nullable: false })
-  price: number
+  price: string
 
   @Index()
   @Column({ nullable: true })

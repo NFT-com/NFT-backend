@@ -54,7 +54,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  followProfile(id: ID!): Profile!
+  followProfile(url: String): Profile!
   unfollowProfile(id: ID!): Profile!
   updateProfile(input: UpdateProfileInput!): Profile!
 }

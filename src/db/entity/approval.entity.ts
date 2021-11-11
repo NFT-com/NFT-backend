@@ -8,7 +8,7 @@ import { BaseEntity } from './base.entity'
 export class Approval extends BaseEntity {
 
   @Column({ nullable: false })
-  amount: number
+  amount: string
 
   @Column({ nullable: false })
   currency: string

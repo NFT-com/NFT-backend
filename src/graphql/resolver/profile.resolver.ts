@@ -79,17 +79,6 @@ const getProfileFollowers = (
     }))
 }
 
-const getProfile = (
-  lookupVal: string,
-  fbFn: (k: string) => Promise<entity.Profile>,
-): Promise<entity.Profile | never> => {
-  return fbFn(lookupVal)
-    .then(fp.rejectIfEmpty(appError.buildNotFound(
-      profileError.buildProfileNotFoundMsg(lookupVal),
-      profileError.ErrorType.ProfileNotFound,
-    )))
-}
-
 const followProfile = (
   _: any,
   args: gql.MutationFollowProfileArgs,
@@ -98,9 +87,12 @@ const followProfile = (
   const { user, wallet, repositories } = ctx
   logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
 
-  validateSchema(buildProfileInputSchema(), args)
+  const schema = Joi.object().keys({ url: Joi.string() })
+  validateSchema(schema, args)
 
-  return getProfile(args.id, repositories.profile.findById)
+  const { url } = args
+  return repositories.profile.findById(url)
+    .then(fp.thruIfEmpty(() => coreService.createProfile(ctx, { url })))
     .then((profile) => {
       return repositories.edge.exists({
         collectionId: user.id,
@@ -123,6 +115,17 @@ const followProfile = (
         }))
         .then(() => profile)
     })
+}
+
+const getProfile = (
+  lookupVal: string,
+  fbFn: (k: string) => Promise<entity.Profile>,
+): Promise<entity.Profile | never> => {
+  return fbFn(lookupVal)
+    .then(fp.rejectIfEmpty(appError.buildNotFound(
+      profileError.buildProfileNotFoundMsg(lookupVal),
+      profileError.ErrorType.ProfileNotFound,
+    )))
 }
 
 const unfollowProfile = (
