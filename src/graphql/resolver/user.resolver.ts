@@ -44,25 +44,35 @@ const signUp = (
   ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
-        return Promise.reject(appError.buildExists(
-          userError.buildEmailExistsMsg(email),
-          userError.ErrorType.EmailAlreadyExists,
-        ))
+        return Promise.reject(
+          appError.buildExists(
+            userError.buildEmailExistsMsg(email),
+            userError.ErrorType.EmailAlreadyExists,
+          ),
+        )
       }
       if (addressExists) {
-        return Promise.reject(appError.buildExists(
-          walletError.buildAddressExistsMsg(network, chain, address),
-          walletError.ErrorType.AddressAlreadyExists,
-        ))
+        return Promise.reject(
+          appError.buildExists(
+            walletError.buildAddressExistsMsg(network, chain, address),
+            walletError.ErrorType.AddressAlreadyExists,
+          ),
+        )
       }
       return referredBy
     })
-    .then(fp.thruIfNotEmpty((refId: string) => {
-      return repositories.user.findByReferralId(refId)
-        .then((user) => user?.id)
-    }))
+    .then(
+      fp.thruIfNotEmpty((refId: string) => {
+        return repositories.user
+          .findByReferralId(refId)
+          .then((user) => user?.id)
+      }),
+    )
     .then((referredUserId: string) => {
-      const confirmEmailToken = cryptoRandomString({ length: 10, type: 'url-safe' })
+      const confirmEmailToken = cryptoRandomString({
+        length: 6,
+        type: 'numeric',
+      })
       const confirmEmailTokenExpiresAt = addDays(helper.getUTCDate(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
       return repositories.user.save({
@@ -74,16 +84,20 @@ const signUp = (
         referralId,
       })
     })
-    .then(fp.tapWait<entity.User, unknown>((user) => Promise.all([
-      repositories.wallet.save({
-        userId: user.id,
-        network,
-        chainId: chain.id,
-        chainName: chain.name,
-        address,
-      }),
-      sendgrid.sendConfirmEmail(user),
-    ])))
+    .then(
+      fp.tapWait<entity.User, unknown>((user) =>
+        Promise.all([
+          repositories.wallet.save({
+            userId: user.id,
+            network,
+            chainId: chain.id,
+            chainName: chain.name,
+            address,
+          }),
+          sendgrid.sendConfirmEmail(user),
+        ]),
+      ),
+    )
 }
 
 const confirmEmail = (
@@ -104,34 +118,39 @@ const confirmEmail = (
     userError.buildInvalidEmailTokenMsg(token),
     userError.ErrorType.InvalidEmailConfirmToken,
   )
-  return repositories.user.findByEmailConfirmationToken(token)
+  return repositories.user
+    .findByEmailConfirmationToken(token)
     .then(fp.rejectIfEmpty(invalidTokenError))
-    .then((user) => repositories.user.save({
-      ...user,
-      isEmailConfirmed: true,
-      confirmEmailToken: null,
-      confirmEmailTokenExpiresAt: null,
-    }))
+    .then((user) =>
+      repositories.user.save({
+        ...user,
+        isEmailConfirmed: true,
+        confirmEmailToken: null,
+        confirmEmailTokenExpiresAt: null,
+      }),
+    )
     .then((user) => {
       if (isEmpty(user.referredBy)) {
         return
       }
 
-      return repositories.user.findById(user.referredBy)
-        .then((otherUser) => {
-          return repositories.edge.save({
+      return repositories.user.findById(user.referredBy).then((otherUser) => {
+        return repositories.edge
+          .save({
             thisEntityId: otherUser.id,
             thisEntityType: misc.EntityType.User,
             thatEntityId: user.id,
             thatEntityType: misc.EntityType.User,
             edgeType: misc.EdgeType.Referred,
           })
-            .then(() => coreService.countEdges(ctx, {
+          .then(() =>
+            coreService.countEdges(ctx, {
               thisEntityId: otherUser.id,
               edgeType: misc.EdgeType.Referred,
-            }))
-            .then((count) => sendgrid.sendReferredBy(otherUser, count))
-        })
+            }),
+          )
+          .then((count) => sendgrid.sendReferredBy(otherUser, count))
+      })
     })
     .then(() => true)
 }
@@ -160,7 +179,10 @@ const getMyAddresses = (
   ctx: Context,
 ): Promise<gql.Wallet[]> => {
   const { user, repositories } = ctx
-  logger.debug('getMyAddresses', { userId: parent.id, loggedInUserId: user.id })
+  logger.debug('getMyAddresses', {
+    userId: parent.id,
+    loggedInUserId: user.id,
+  })
   if (user.id !== parent.id) {
     return null
   }
@@ -173,7 +195,10 @@ const getMyApprovals = (
   ctx: Context,
 ): Promise<gql.Approval[]> => {
   const { user, repositories } = ctx
-  logger.debug('getMyApprovals', { userId: parent.id, loggedInUserId: user.id })
+  logger.debug('getMyApprovals', {
+    userId: parent.id,
+    loggedInUserId: user.id,
+  })
   if (user.id !== parent.id) {
     return null
   }
@@ -182,7 +207,10 @@ const getMyApprovals = (
 
 export default {
   Query: {
-    me: combineResolvers(isAuthenticated, coreService.resolveEntityFromContext('user')),
+    me: combineResolvers(
+      isAuthenticated,
+      coreService.resolveEntityFromContext('user'),
+    ),
   },
   Mutation: {
     signUp,

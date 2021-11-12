@@ -28,7 +28,9 @@ const bid = (
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
-    nftType: Joi.string().required().valid(Object.values(gql.NFTType)),
+    nftType: Joi.string()
+      .required()
+      .valid(...Object.values(gql.NFTType)),
     price: Joi.required().custom(buildBigNumber),
     profileURL: Joi.string(),
     signature: buildSignatureInputSchema(),
@@ -41,15 +43,21 @@ const bid = (
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
-  return coreService.getWallet(ctx, input.wallet)
+  return coreService
+    .getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => {
       if (input.nftType !== gql.NFTType.Profile) {
         return { walletId, profileId: null }
       }
 
       // create profile if it doesn't exist
-      return repositories.profile.findByURL(input.profileURL)
-        .then(fp.thruIfEmpty(() => coreService.createProfile(ctx, { url: input.profileURL })))
+      return repositories.profile
+        .findByURL(input.profileURL)
+        .then(
+          fp.thruIfEmpty(() =>
+            coreService.createProfile(ctx, { url: input.profileURL }),
+          ),
+        )
         .then(({ id }) => ({ walletId, profileId: id }))
     })
     .then(({ profileId, walletId }) => {
@@ -58,7 +66,8 @@ const bid = (
       }
 
       // calculate stake weight seconds
-      return repositories.bid.findRecentBidByProfileUser(profileId, user.id)
+      return repositories.bid
+        .findRecentBidByProfileUser(profileId, user.id)
         .then((bid) => {
           const now = helper.getUTCDate()
           const existingUpdateTime = bid?.updatedAt || now
@@ -67,8 +76,11 @@ const bid = (
           const curSeconds = isEqual(now, existingUpdateTime)
             ? 0
             : differenceInSeconds(now, existingUpdateTime)
-          const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
-          const stakeWeight = existingStakeWeight + curSeconds * Number(bigNumStake)
+          const bigNumStake = helper
+            .bigNumber(existingStake)
+            .div(helper.tokenDecimals)
+          const stakeWeight =
+            existingStakeWeight + curSeconds * Number(bigNumStake)
           return { walletId, profileId, stakeWeight }
         })
     })
@@ -86,8 +98,12 @@ const bid = (
     })
 }
 
-const getBidsBy = (ctx: Context, filter: Partial<entity.Bid>): Promise<gql.BidsOutput> => {
-  return coreService.entitiesBy(ctx.repositories.bid, filter, { createdAt: 'DESC' })
+const getBidsBy = (
+  ctx: Context,
+  filter: Partial<entity.Bid>,
+): Promise<gql.BidsOutput> => {
+  return coreService
+    .entitiesBy(ctx.repositories.bid, filter, { createdAt: 'DESC' })
     .then((bids) => ({
       bids,
       pageInfo: null,
@@ -145,11 +161,10 @@ const getTopBids = (
   const filter = helper.removeEmpty({
     profileId,
   })
-  return repositories.bid.findTopBidsBy(filter)
-    .then((bids) => ({
-      bids,
-      pageInfo: null,
-    }))
+  return repositories.bid.findTopBidsBy(filter).then((bids) => ({
+    bids,
+    pageInfo: null,
+  }))
 }
 
 export default {
@@ -163,6 +178,11 @@ export default {
     cancelBid: combineResolvers(isAuthenticated, cancelBid),
   },
   Bid: {
+    profile: coreService.resolveEntityById(
+      'profileId',
+      misc.EntityType.Bid,
+      misc.EntityType.Profile,
+    ),
     wallet: coreService.resolveEntityById(
       'walletId',
       misc.EntityType.Bid,

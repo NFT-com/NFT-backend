@@ -1,12 +1,15 @@
 import * as _ from 'lodash'
 
 import { getChain } from '@src/config'
-import { Context, entity, OrderBy,repository } from '@src/db'
+import { Context, entity, OrderBy, repository } from '@src/db'
 import { gql, misc } from '@src/defs'
 import { appError, walletError } from '@src/graphql/error'
 import { _logger, fp } from '@src/helper'
 
-const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
+const logger = _logger.Factory(
+  _logger.Context.General,
+  _logger.Context.GraphQL,
+)
 
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
@@ -17,7 +20,7 @@ const getDefaultOrFindById = <T>(
   findFn: (id: string) => Promise<T>,
   key = 'id',
 ): Promise<T> => {
-  if (_.isEmpty(id) || obj[key] === id) {
+  if (_.isEmpty(id) || (obj && obj[key] === id)) {
     return Promise.resolve(obj)
   }
   return findFn(id)
@@ -34,10 +37,14 @@ export const getWallet = (
   const chain = getChain(network, chainId)
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
-    .then(fp.rejectIfEmpty(appError.buildExists(
-      walletError.buildAddressExistsMsg(network, chain, address),
-      walletError.ErrorType.AddressAlreadyExists,
-    )))
+    .then(
+      fp.rejectIfEmpty(
+        appError.buildExists(
+          walletError.buildAddressExistsMsg(network, chain, address),
+          walletError.ErrorType.AddressAlreadyExists,
+        ),
+      ),
+    )
 }
 
 // TODO can we use generics instead of any?
@@ -47,7 +54,11 @@ export const entityById = (
   entityType: misc.EntityType,
 ): Promise<any> => {
   const { repositories, user, wallet } = ctx
-  logger.debug('entityById', { loggedInUserId: user?.id, id, entityType })
+  logger.debug('entityById', {
+    loggedInUserId: user?.id,
+    id,
+    entityType,
+  })
 
   switch (entityType) {
   case misc.EntityType.Approval:
@@ -81,13 +92,12 @@ export const resolveEntityById = <T>(
   resolvingType: misc.EntityType,
 ) => {
   return <K>(parent: K, args: unknown, ctx: Context): Promise<T> => {
-    return entityById(ctx, parent?.['id'], parentType)
-      .then((p) => {
-        if (_.isEmpty(p?.[key])) {
-          return null
-        }
-        return entityById(ctx, p?.[key], resolvingType)
-      })
+    return entityById(ctx, parent?.['id'], parentType).then((p) => {
+      if (_.isEmpty(p?.[key])) {
+        return null
+      }
+      return entityById(ctx, p?.[key], resolvingType)
+    })
   }
 }
 
@@ -98,12 +108,16 @@ export const resolveEntityOwnership = (
 ) => {
   return <T>(parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
-    return entityById(ctx, parent?.['id'], parentType)
-      .then((p) => ctxObj?.['id'] === p?.[key])
+    return entityById(ctx, parent?.['id'], parentType).then(
+      (p) => ctxObj?.['id'] === p?.[key],
+    )
   }
 }
 
-export const resolveEdgeOwnership = (ctxKey: string, edgeType: misc.EdgeType) => {
+export const resolveEdgeOwnership = (
+  ctxKey: string,
+  edgeType: misc.EdgeType,
+) => {
   return <T>(parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
     const { repositories } = ctx
@@ -142,7 +156,10 @@ const entitiesOfEdges = <T>(
   return fp.promiseMap<entity.Edge, T>((edge) => mapper<T>(ctx, edge))(edges)
 }
 
-export const thisEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
+export const thisEntityOfEdge = <T>(
+  ctx: Context,
+  edge: entity.Edge,
+): Promise<T> => {
   return entityById(ctx, edge.thisEntityId, edge.thisEntityType)
 }
 
@@ -157,11 +174,13 @@ export const thisEntitiesOfEdgesBy = <T>(
   filter: Partial<entity.Edge>,
 ): Promise<T[]> => {
   const { repositories } = ctx
-  return edgesBy(repositories.edge, filter)
-    .then(thisEntitiesOfEdges<T>(ctx))
+  return edgesBy(repositories.edge, filter).then(thisEntitiesOfEdges<T>(ctx))
 }
 
-export const thatEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
+export const thatEntityOfEdge = <T>(
+  ctx: Context,
+  edge: entity.Edge,
+): Promise<T> => {
   return entityById(ctx, edge.thatEntityId, edge.thatEntityType)
 }
 
@@ -176,12 +195,14 @@ export const thatEntitiesOfEdgesBy = <T>(
   filter: Partial<entity.Edge>,
 ): Promise<T[]> => {
   const { repositories } = ctx
-  return edgesBy(repositories.edge, filter)
-    .then(thatEntitiesOfEdges(ctx))
+  return edgesBy(repositories.edge, filter).then(thatEntitiesOfEdges(ctx))
 }
 
 // TODO use EdgeStats table
-export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<number> => {
+export const countEdges = (
+  ctx: Context,
+  filter: Partial<entity.Edge>,
+): Promise<number> => {
   const { repositories } = ctx
   return repositories.edge.count({ ...filter, deletedAt: null })
 }
