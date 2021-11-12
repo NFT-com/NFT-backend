@@ -75,7 +75,7 @@ const bid = (
     .then(({ profileId, walletId, stakeWeight }) => {
       return repositories.bid.save({
         nftType: input.nftType,
-        price: helper.bigNumberToHex(input.price),
+        price: helper.bigNumberToString(input.price),
         profileId,
         signature: input.signature,
         stakeWeightedSeconds: stakeWeight,

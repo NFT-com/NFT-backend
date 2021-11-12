@@ -3,8 +3,8 @@ scalar Uint256
 scalar Bytes
 scalar DateTime
 scalar Date
-scalar JSON
-scalar JSONObject
+#scalar JSON
+#scalar JSONObject
 
 type PageInfo {
   firstCursor: String

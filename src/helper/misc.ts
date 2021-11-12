@@ -1,6 +1,7 @@
-import { BigNumber } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In } from 'typeorm'
+
+import { BigNumber } from '@ethersproject/bignumber'
 
 export const stringListToMap = (
   str: string,
@@ -56,6 +57,8 @@ export const getUTCDate = (date = new Date()): Date => {
 export const bigNumber = BigNumber.from
 
 export const bigNumberToHex = (v: unknown): string => bigNumber(v)._hex
+
+export const bigNumberToString = (v: unknown): string => bigNumber(v).toString()
 
 export const bigNumberToNumber = (v: unknown): number => Number(bigNumber(v))
 

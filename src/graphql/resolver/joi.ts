@@ -1,7 +1,7 @@
-import { BigNumber,ethers } from 'ethers'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
+import { BigNumber } from '@ethersproject/bignumber'
 import { appError } from '@src/graphql/error'
 
 export const validateSchema = (schema: Joi.ObjectSchema, input: unknown): void => {
@@ -13,14 +13,7 @@ export const validateSchema = (schema: Joi.ObjectSchema, input: unknown): void =
 
 export const buildWalletInputSchema = (): Joi.ObjectSchema =>
   Joi.object().keys({
-    address: Joi.string().required()
-      .custom((value: string, helpers) => {
-        const address = ethers.utils.getAddress(value)
-        if (isEmpty(address)) {
-          return helpers.error('invalid address')
-        }
-        return address
-      }),
+    address: Joi.string().required(),
     chainId: Joi.string().required(),
     network: Joi.string().required(),
   })

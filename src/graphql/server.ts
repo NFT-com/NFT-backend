@@ -3,9 +3,9 @@ import {
   ApolloServerPluginLandingPageGraphQLPlayground,
   ApolloServerPluginLandingPageProductionDefault,
 } from 'apollo-server-core'
-import { utils } from 'ethers'
 import { GraphQLError } from 'graphql'
 
+import { verifyMessage } from '@ethersproject/wallet'
 import { authMessage,isProduction, serverPort } from '@src/config'
 import { Context, entity, newRepositories } from '@src/db'
 import { misc } from '@src/defs'
@@ -27,7 +27,7 @@ type GQLError = {
 }
 
 const getAddressFromSignature = (signature: string): string =>
-  utils.verifyMessage(authMessage, signature)
+  verifyMessage(authMessage, signature)
 
 const createContext = async (ctx): Promise<Context> => {
   const { req, connection } = ctx
