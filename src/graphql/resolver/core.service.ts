@@ -17,7 +17,7 @@ const getDefaultOrFindById = <T>(
   findFn: (id: string) => Promise<T>,
   key = 'id',
 ): Promise<T> => {
-  if (_.isEmpty(id) || obj[key] === id) {
+  if (_.isEmpty(id) || obj?.[key] === id) {
     return Promise.resolve(obj)
   }
   return findFn(id)

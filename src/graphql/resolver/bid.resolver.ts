@@ -28,7 +28,7 @@ const bid = (
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
-    nftType: Joi.string().required().valid(Object.values(gql.NFTType)),
+    nftType: Joi.string().required().valid(...Object.values(gql.NFTType)),
     price: Joi.required().custom(buildBigNumber),
     profileURL: Joi.string(),
     signature: buildSignatureInputSchema(),
@@ -163,6 +163,11 @@ export default {
     cancelBid: combineResolvers(isAuthenticated, cancelBid),
   },
   Bid: {
+    profile: coreService.resolveEntityById(
+      'profileId',
+      misc.EntityType.Bid,
+      misc.EntityType.Profile,
+    ),
     wallet: coreService.resolveEntityById(
       'walletId',
       misc.EntityType.Bid,
