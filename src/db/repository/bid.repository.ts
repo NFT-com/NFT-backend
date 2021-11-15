@@ -1,4 +1,5 @@
 import { Bid } from '@src/db/entity'
+import { PageInput } from '@src/defs/gql'
 
 import { BaseRepository } from './base.repository'
 
@@ -8,14 +9,16 @@ export class BidRepository extends BaseRepository<Bid> {
     super(Bid)
   }
 
-  public findTopBidsBy = (filter: Partial<Bid>): Promise<Bid[]> => {
+  public findTopBidsBy = (filter: Partial<Bid>, pageInput: PageInput): Promise<[Bid[], number]> => {
     return this.getRepository()
       .createQueryBuilder('bid')
       .where({ ...filter, deletedAt: null })
+      .skip(pageInput.first)
+      .take(Number(pageInput.afterCursor))
       .distinctOn(['bid.profileId'])
       .orderBy({ 'bid.price': 'DESC' })
       .cache(true)
-      .getMany()
+      .getManyAndCount()
   }
 
   public findTopBidByProfile = (profileId: string): Promise<Bid> => {

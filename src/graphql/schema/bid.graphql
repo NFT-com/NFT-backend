@@ -43,6 +43,7 @@ input BidsInput {
 }
 
 type BidsOutput {
+  totalCount: Int
   bids: [Bid!]!
   pageInfo: PageInfo
 }

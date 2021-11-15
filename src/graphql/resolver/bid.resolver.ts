@@ -5,6 +5,7 @@ import { isEmpty } from 'lodash'
 
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
+import { Maybe, PageInput } from '@src/defs/gql'
 import { appError } from '@src/graphql/error'
 import { _logger, fp, helper } from '@src/helper'
 
@@ -86,11 +87,26 @@ const bid = (
     })
 }
 
-const getBidsBy = (ctx: Context, filter: Partial<entity.Bid>): Promise<gql.BidsOutput> => {
-  return coreService.entitiesBy(ctx.repositories.bid, filter, { createdAt: 'DESC' })
-    .then((bids) => ({
+const getBidsBy = (
+  ctx: Context,
+  filter: Partial<entity.Bid>,
+  pageInput: Maybe<PageInput>,
+): Promise<gql.BidsOutput> => {
+  return coreService
+    .paginatedEntitiesBy(
+      ctx.repositories.bid,
+      filter,
+      { createdAt: 'DESC' },
+      { skip: Number(pageInput?.afterCursor), take: pageInput?.first },
+    )
+    .then(([bids, bidsCount]) => ({
       bids,
-      pageInfo: null,
+      pageInfo: {
+        firstCursor: String(Number(pageInput.afterCursor) + pageInput.first),
+        hasNextPage:
+          bidsCount > Number(pageInput.afterCursor) + pageInput.first,
+      },
+      totalCount: bidsCount,
     }))
 }
 
@@ -102,7 +118,10 @@ const toBidFilter = (input: gql.BidsInput): Partial<entity.Bid> => {
   })
 }
 
-// TODO implement pagination
+const toBidPageInput = (input: Maybe<gql.BidsInput>) : PageInput => {
+  return input?.pageInput ?? { first: 20, afterCursor: '0' }
+}
+
 const getBids = (
   _: any,
   args: gql.QueryMyBidsArgs,
@@ -110,10 +129,9 @@ const getBids = (
 ): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
-  return getBidsBy(ctx, toBidFilter(args?.input))
+  return getBidsBy(ctx, toBidFilter(args?.input), toBidPageInput(args?.input))
 }
 
-// TODO implement pagination
 const getMyBids = (
   _: any,
   args: gql.QueryMyBidsArgs,
@@ -121,7 +139,7 @@ const getMyBids = (
 ): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
-  return getBidsBy(ctx, toBidFilter(args?.input))
+  return getBidsBy(ctx, toBidFilter(args?.input), toBidPageInput(args?.input))
 }
 
 const cancelBid = (
@@ -145,10 +163,15 @@ const getTopBids = (
   const filter = helper.removeEmpty({
     profileId,
   })
-  return repositories.bid.findTopBidsBy(filter)
-    .then((bids) => ({
+  const pageInput = toBidPageInput(args?.input)
+  return repositories.bid.findTopBidsBy(filter, pageInput)
+    .then(([bids, bidsCount]) => ({
       bids,
-      pageInfo: null,
+      pageInfo: {
+        firstCursor: String(Number(pageInput.afterCursor) + pageInput.first),
+        hasNextPage: bidsCount > Number(pageInput.afterCursor) + pageInput.first,
+      },
+      totalCount: bidsCount,
     }))
 }
 
