@@ -1,7 +1,6 @@
+import { BigNumber, Signature, utils } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In } from 'typeorm'
-
-import { BigNumber } from '@ethersproject/bignumber'
 
 export const stringListToMap = (
   str: string,
@@ -63,3 +62,5 @@ export const bigNumberToString = (v: unknown): string => bigNumber(v).toString()
 export const bigNumberToNumber = (v: unknown): number => Number(bigNumber(v))
 
 export const tokenDecimals = BigNumber.from(10).pow(18)
+
+export const toSignature = (sig: string): Signature => utils.splitSignature(sig)

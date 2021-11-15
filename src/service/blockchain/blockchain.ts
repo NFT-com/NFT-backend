@@ -1,41 +1,42 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { ethers,utils } from 'ethers'
+
 import { blockchainConfig } from '@src/config'
 
-const providers: { [key: string]: JsonRpcProvider } = {}
+const providers: { [key: string]: ethers.providers.JsonRpcProvider } = {}
 export const createProviders = (): void => {
   blockchainConfig.networksURI.forEach((val: string, key: string) => {
-    providers[key] = new JsonRpcProvider(val)
+    providers[key] = new ethers.providers.JsonRpcProvider(val)
   })
 }
 
-// export const getSigner = (chainId: string): Signer => {
-//   const provider = providers[chainId]
-//   return new Wallet(blockchainConfig.contractAccountPK, provider)
-// }
-//
-// export const getContract = (chainId: string): Contract => {
-//   const signer = getSigner(chainId)
-//   const contractAddress = blockchainConfig.contractIds.get(chainId)
-//   return new Contract(contractAddress, 'contractABI', signer)
-// }
+export const getSigner = (chainId: string): ethers.Signer => {
+  const provider = providers[chainId]
+  return new ethers.Wallet(blockchainConfig.contractAccountPK, provider)
+}
 
-// export const getABIInterface = (): Interface => {
-//   return new Interface('contractABI')
-// }
-//
-// export const toGasUnits = (val: string): BigNumber => {
-//   return parseUnits(val, 'gwei')
-// }
+export const getContract = (chainId: string): ethers.Contract => {
+  const signer = getSigner(chainId)
+  const contractAddress = blockchainConfig.contractIds.get(chainId)
+  return new ethers.Contract(contractAddress, 'contractABI', signer)
+}
 
-// type ContractOptions = {
-//   gasLimit: BigNumber
-//   gasPrice: BigNumber
-// }
+export const getABIInterface = (): utils.Interface => {
+  return new utils.Interface('contractABI')
+}
 
-// export const getGasConf = (
-//   gasLimit = '0.01',
-//   gasPrice = '20.0',
-// ): ContractOptions => ({
-//   gasLimit: toGasUnits(gasLimit),
-//   gasPrice: toGasUnits(gasPrice),
-// })
+export const toGasUnits = (val: string): ethers.BigNumber => {
+  return utils.parseUnits(val, 'gwei')
+}
+
+type ContractOptions = {
+  gasLimit: ethers.BigNumber
+  gasPrice: ethers.BigNumber
+}
+
+export const getGasConf = (
+  gasLimit = '0.01',
+  gasPrice = '20.0',
+): ContractOptions => ({
+  gasLimit: toGasUnits(gasLimit),
+  gasPrice: toGasUnits(gasPrice),
+})

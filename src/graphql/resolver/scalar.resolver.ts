@@ -1,8 +1,7 @@
+import { BigNumber, utils } from 'ethers'
 import { GraphQLScalarType, GraphQLScalarTypeConfig,Kind } from 'graphql'
 import { DateResolver, DateTimeResolver } from 'graphql-scalars'
 
-import { getAddress } from '@ethersproject/address'
-import { BigNumber } from '@ethersproject/bignumber'
 import { appError } from '@src/graphql/error'
 import { helper } from '@src/helper'
 
@@ -13,7 +12,7 @@ const invalidAddressError = appError.buildInvalid(
 
 const validateAddress = (value: string): string => {
   if (value.startsWith('0x') && value.length === 42) {
-    return getAddress(value)
+    return utils.getAddress(value)
   }
   throw invalidAddressError
 }

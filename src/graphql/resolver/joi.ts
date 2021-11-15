@@ -1,7 +1,7 @@
+import { BigNumber } from 'ethers'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
-import { BigNumber } from '@ethersproject/bignumber'
 import { appError } from '@src/graphql/error'
 
 export const validateSchema = (schema: Joi.ObjectSchema, input: unknown): void => {
