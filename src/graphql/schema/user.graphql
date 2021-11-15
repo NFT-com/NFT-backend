@@ -17,6 +17,7 @@ input SignUpInput {
 }
 
 input UpdateUserInput {
+  email: String
   avatarURL: String
 }
 
@@ -28,4 +29,5 @@ extend type Mutation {
   signUp(input: SignUpInput!): User!
   updateMe(input: UpdateUserInput!): User!
   confirmEmail(token: String!): Boolean!
+  resendEmailConfirm: User!
 }

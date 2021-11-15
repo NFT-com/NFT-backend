@@ -1,10 +1,11 @@
 import cryptoRandomString from 'crypto-random-string'
-import { addDays } from 'date-fns'
+import { addDays, isBefore } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
 
 import { Context, entity } from '@src/db'
+import { User } from '@src/db/entity'
 import { gql, misc } from '@src/defs'
 import { appError, userError, walletError } from '@src/graphql/error'
 import { _logger, fp, helper } from '@src/helper'
@@ -146,12 +147,37 @@ const updateMe = (
 
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
+    email: Joi.string(),
   })
   validateSchema(schema, args.input)
 
-  const { avatarURL = '' } = args.input
+  const { avatarURL = '', email } = args.input
   // TODO notify user?
-  return repositories.user.updateOneById(user.id, { avatarURL })
+  return repositories.user.updateOneById(user.id, { avatarURL, email })
+}
+
+const resendEmailConfirm = (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<User> => {
+  const { user, repositories } = ctx
+  logger.debug('resendEmailConfirm', { loggedInUserId: user.id })
+  return Promise.resolve(isBefore(user.confirmEmailTokenExpiresAt, helper.getUTCDate()))
+    .then((expired: boolean) => {
+      if (expired) {
+        const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+        const confirmEmailTokenExpiresAt = addDays(helper.getUTCDate(), 1)
+        return repositories.user.save({
+          ...user,
+          confirmEmailToken,
+          confirmEmailTokenExpiresAt,
+        })
+      } else {
+        return user
+      }
+    })
+    .then(fp.tapWait((user) => sendgrid.sendConfirmEmail(user)))
 }
 
 const getMyAddresses = (
@@ -188,6 +214,7 @@ export default {
     signUp,
     confirmEmail,
     updateMe: combineResolvers(isAuthenticated, updateMe),
+    resendEmailConfirm: combineResolvers(isAuthenticated, resendEmailConfirm),
   },
   User: {
     myAddresses: combineResolvers(isAuthenticated, getMyAddresses),
