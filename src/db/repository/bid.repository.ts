@@ -1,5 +1,6 @@
 import { Bid } from '@src/db/entity'
 import { PageInput } from '@src/defs/gql'
+import { getSkip, getTake } from '@src/helper/pagination'
 
 import { BaseRepository } from './base.repository'
 
@@ -13,8 +14,8 @@ export class BidRepository extends BaseRepository<Bid> {
     return this.getRepository()
       .createQueryBuilder('bid')
       .where({ ...filter, deletedAt: null })
-      .skip(pageInput.first)
-      .take(Number(pageInput.afterCursor))
+      .skip(getSkip(pageInput))
+      .take(getTake(pageInput))
       .distinctOn(['bid.profileId'])
       .orderBy({ 'bid.price': 'DESC' })
       .cache(true)

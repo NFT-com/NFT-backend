@@ -8,6 +8,7 @@ import { gql, misc } from '@src/defs'
 import { Maybe, PageInput } from '@src/defs/gql'
 import { appError } from '@src/graphql/error'
 import { _logger, fp, helper } from '@src/helper'
+import { getSkip, getTake, paginatedResponse, toBidsOutput } from '@src/helper/pagination'
 
 import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
@@ -97,17 +98,13 @@ const getBidsBy = (
       ctx.repositories.bid,
       filter,
       { createdAt: 'DESC' },
-      { skip: Number(pageInput?.afterCursor), take: pageInput?.first },
-    )
-    .then(([bids, bidsCount]) => ({
-      bids,
-      pageInfo: {
-        firstCursor: String(Number(pageInput.afterCursor) + pageInput.first),
-        hasNextPage:
-          bidsCount > Number(pageInput.afterCursor) + pageInput.first,
+      {
+        skip: getSkip(pageInput),
+        take: getTake(pageInput),
       },
-      totalCount: bidsCount,
-    }))
+    )
+    .then(paginatedResponse(pageInput))
+    .then(toBidsOutput)
 }
 
 const toBidFilter = (input: gql.BidsInput): Partial<entity.Bid> => {
@@ -165,14 +162,8 @@ const getTopBids = (
   })
   const pageInput = toBidPageInput(args?.input)
   return repositories.bid.findTopBidsBy(filter, pageInput)
-    .then(([bids, bidsCount]) => ({
-      bids,
-      pageInfo: {
-        firstCursor: String(Number(pageInput.afterCursor) + pageInput.first),
-        hasNextPage: bidsCount > Number(pageInput.afterCursor) + pageInput.first,
-      },
-      totalCount: bidsCount,
-    }))
+    .then(paginatedResponse(pageInput))
+    .then(toBidsOutput)
 }
 
 export default {

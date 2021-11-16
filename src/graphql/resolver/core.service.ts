@@ -121,16 +121,10 @@ export const entitiesBy = <T>(
   repo: repository.BaseRepository<T>,
   filter: Partial<T>,
   orderBy?: OrderBy<T>,
-  pageOptions?: {skip: number; take: number},
 ): Promise<T[]> => {
   // const { user } = ctx
   // logger.debug('entitiesBy', { loggedInUserId: user.id })
-  return repo.find({
-    where: { ...filter, deletedAt: null },
-    order: orderBy,
-    skip: pageOptions?.skip,
-    take: pageOptions?.take,
-  })
+  return repo.find({ where: { ...filter, deletedAt: null }, order: orderBy })
 }
 
 export const paginatedEntitiesBy = <T>(
@@ -147,6 +141,7 @@ export const paginatedEntitiesBy = <T>(
     take: pageOptions?.take,
   })
 }
+
 export const edgesBy = (
   edgeRepo: repository.EdgeRepository,
   filter: Partial<entity.Edge>,

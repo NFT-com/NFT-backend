@@ -9,7 +9,6 @@ scalar Date
 type PageInfo {
   firstCursor: String
   lastCursor: String
-  hasNextPage: Boolean
 }
 
 input PageInput {

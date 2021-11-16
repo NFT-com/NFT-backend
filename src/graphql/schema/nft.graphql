@@ -33,6 +33,7 @@ input NFTsInput {
 type NFTsOutput {
   nfts: [NFT!]!
   pageInfo: PageInfo
+  totalCount: Int
 }
 
 extend type Query {
