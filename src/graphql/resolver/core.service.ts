@@ -131,8 +131,8 @@ export const paginatedEntitiesBy = <T>(
   // ctx: Context,
   repo: repository.BaseRepository<T>,
   filter: Partial<T>,
+  pageOptions: { skip: number; take: number },
   orderBy?: OrderBy<T>,
-  pageOptions?: { skip: number; take: number },
 ): Promise<[T[], number]> => {
   return repo.findAndCount({
     where: { ...filter, deletedAt: null },
@@ -149,12 +149,34 @@ export const edgesBy = (
   return edgeRepo.find({ where: { ...filter, deletedAt: null } })
 }
 
+export const paginatedEdgesBy = (
+  edgeRepo: repository.EdgeRepository,
+  filter: Partial<entity.Edge>,
+  pageOptions: {take: number; skip: number},
+): Promise<[entity.Edge[], number]> => {
+  return edgeRepo.findAndCount({
+    where: { ...filter, deletedAt: null },
+    take: pageOptions?.take,
+    skip: pageOptions?.skip,
+  })
+}
+
 const entitiesOfEdges = <T>(
   ctx: Context,
   edges: entity.Edge[],
   mapper: <T>(ctx: Context, edge: entity.Edge) => Promise<T>,
 ): Promise<T[]> => {
   return fp.promiseMap<entity.Edge, T>((edge) => mapper<T>(ctx, edge))(edges)
+}
+
+const entitiesOfPaginatedEdges = <T>(
+  ctx: Context,
+  edges: entity.Edge[],
+  mapper: <T>(ctx: Context, edge: entity.Edge) => Promise<T>,
+  count: number,
+): Promise<[T[], number]> => {
+  return fp.promiseMap<entity.Edge, T>((edge) => mapper<T>(ctx, edge))(edges)
+    .then(results => [results, count])
 }
 
 export const thisEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
@@ -167,6 +189,12 @@ export const thisEntitiesOfEdges = <T>(ctx: Context) => {
   }
 }
 
+export const thisEntitiesOfPaginatedEdges = <T>(ctx: Context) => {
+  return (paginatedEdges: [entity.Edge[], number]): Promise<[T[], number]> => {
+    return entitiesOfPaginatedEdges<T>(ctx, paginatedEdges[0], thisEntityOfEdge, paginatedEdges[1])
+  }
+}
+
 export const thisEntitiesOfEdgesBy = <T>(
   ctx: Context,
   filter: Partial<entity.Edge>,
@@ -174,6 +202,16 @@ export const thisEntitiesOfEdgesBy = <T>(
   const { repositories } = ctx
   return edgesBy(repositories.edge, filter)
     .then(thisEntitiesOfEdges<T>(ctx))
+}
+
+export const paginatedThisEntitiesOfEdgesBy = <T>(
+  ctx: Context,
+  filter: Partial<entity.Edge>,
+  pageOptions: {skip: number; take: number },
+): Promise<[T[], number]> => {
+  const { repositories } = ctx
+  return paginatedEdgesBy(repositories.edge, filter, pageOptions)
+    .then(thisEntitiesOfPaginatedEdges(ctx))
 }
 
 export const thatEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
@@ -186,6 +224,12 @@ export const thatEntitiesOfEdges = <T>(ctx: Context) => {
   }
 }
 
+export const thatEntitiesOfPaginatedEdges = <T>(ctx: Context) => {
+  return (paginatedEdges: [entity.Edge[], number]): Promise<[T[], number]> => {
+    return entitiesOfPaginatedEdges<T>(ctx, paginatedEdges[0], thatEntityOfEdge, paginatedEdges[1])
+  }
+}
+
 export const thatEntitiesOfEdgesBy = <T>(
   ctx: Context,
   filter: Partial<entity.Edge>,
@@ -193,6 +237,16 @@ export const thatEntitiesOfEdgesBy = <T>(
   const { repositories } = ctx
   return edgesBy(repositories.edge, filter)
     .then(thatEntitiesOfEdges(ctx))
+}
+
+export const paginatedThatEntitiesOfEdgesBy = <T>(
+  ctx: Context,
+  filter: Partial<entity.Edge>,
+  pageOptions: { skip: number; take: number },
+): Promise<[T[], number]> => {
+  const { repositories } = ctx
+  return paginatedEdgesBy(repositories.edge, filter, pageOptions)
+    .then(thatEntitiesOfPaginatedEdges(ctx))
 }
 
 // TODO use EdgeStats table
