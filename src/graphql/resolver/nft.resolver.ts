@@ -3,7 +3,9 @@ import Joi from 'joi'
 
 import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
+import { PageInput } from '@src/defs/gql'
 import { _logger, helper } from '@src/helper'
+import { getSkip, getTake, paginatedResponse, toNFTsOutput, toNFTsPageInput } from '@src/helper/pagination'
 
 import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
@@ -25,15 +27,21 @@ const getNFT = (
   return repositories.nft.findById(args.id)
 }
 
-const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gql.NFTsOutput> => {
-  return coreService.entitiesBy(ctx.repositories.nft, filter, { createdAt: 'DESC' })
-    .then((nfts) => ({
-      nfts,
-      pageInfo: null,
-    }))
+const getNFTsBy = (
+  ctx: Context,
+  filter: Partial<entity.NFT>,
+  pageInput: PageInput,
+): Promise<gql.NFTsOutput> => {
+  return coreService.paginatedEntitiesBy(
+    ctx.repositories.nft,
+    filter,
+    { skip: getSkip(pageInput), take: getTake(pageInput) },
+    { createdAt: 'DESC' },
+  )
+    .then(paginatedResponse(pageInput))
+    .then(toNFTsOutput)
 }
 
-// TODO implement pagination
 const getNFTs = (
   p: unknown,
   args: gql.QueryNFTsArgs,
@@ -46,10 +54,10 @@ const getNFTs = (
     type: helper.safeInForOmitBy(types),
     profileId,
   })
-  return getNFTsBy(ctx, filter)
+  const pageInput = toNFTsPageInput(args?.input)
+  return getNFTsBy(ctx, filter, pageInput)
 }
 
-// TODO implement pagination
 const getMyNFTs = (
   _: unknown,
   args: gql.QueryNFTsArgs,
@@ -63,7 +71,8 @@ const getMyNFTs = (
     userId: user.id,
     profileId,
   })
-  return getNFTsBy(ctx, filter)
+  const pageInput = toNFTsPageInput(args?.input)
+  return getNFTsBy(ctx, filter, pageInput)
 }
 
 export default {
