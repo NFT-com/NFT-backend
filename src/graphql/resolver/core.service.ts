@@ -132,7 +132,7 @@ export const paginatedEntitiesBy = <T>(
   repo: repository.BaseRepository<T>,
   filter: Partial<T>,
   orderBy?: OrderBy<T>,
-  pageOptions?: {skip: number; take: number},
+  pageOptions?: { skip: number; take: number },
 ): Promise<[T[], number]> => {
   return repo.findAndCount({
     where: { ...filter, deletedAt: null },
