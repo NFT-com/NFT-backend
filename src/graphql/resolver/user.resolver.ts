@@ -1,5 +1,5 @@
 import cryptoRandomString from 'crypto-random-string'
-import { addDays, isBefore } from 'date-fns'
+import { addDays } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
@@ -163,21 +163,14 @@ const resendEmailConfirm = (
 ): Promise<User> => {
   const { user, repositories } = ctx
   logger.debug('resendEmailConfirm', { loggedInUserId: user.id })
-  return Promise.resolve(isBefore(user.confirmEmailTokenExpiresAt, helper.getUTCDate()))
-    .then((expired: boolean) => {
-      if (expired) {
-        const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
-        const confirmEmailTokenExpiresAt = addDays(helper.getUTCDate(), 1)
-        return repositories.user.save({
-          ...user,
-          confirmEmailToken,
-          confirmEmailTokenExpiresAt,
-        })
-      } else {
-        return user
-      }
-    })
-    .then(fp.tapWait((user) => sendgrid.sendConfirmEmail(user)))
+  const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+  const confirmEmailTokenExpiresAt = addDays(helper.getUTCDate(), 1)
+  return repositories.user.save({
+    ...user,
+    confirmEmailToken,
+    confirmEmailTokenExpiresAt,
+  })
+    .then(fp.tapWait(sendgrid.sendConfirmEmail))
 }
 
 const getMyAddresses = (

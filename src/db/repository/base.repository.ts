@@ -33,6 +33,10 @@ export class BaseRepository<T> {
     return this.getRepository().find(opts)
   }
 
+  public findAndCount = (opts: typeorm.FindManyOptions<T>): Promise<[T[], number]> => {
+    return this.getRepository().findAndCount(opts)
+  }
+
   public findOne = (opts: typeorm.FindOneOptions<T>): Promise<T | undefined> => {
     return this.getRepository().findOne(opts)
     // .then(fp.thruIf<T>(isNil)(fp.N))

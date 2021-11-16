@@ -127,6 +127,21 @@ export const entitiesBy = <T>(
   return repo.find({ where: { ...filter, deletedAt: null }, order: orderBy })
 }
 
+export const paginatedEntitiesBy = <T>(
+  // ctx: Context,
+  repo: repository.BaseRepository<T>,
+  filter: Partial<T>,
+  orderBy?: OrderBy<T>,
+  pageOptions?: { skip: number; take: number },
+): Promise<[T[], number]> => {
+  return repo.findAndCount({
+    where: { ...filter, deletedAt: null },
+    order: orderBy,
+    skip: pageOptions?.skip,
+    take: pageOptions?.take,
+  })
+}
+
 export const edgesBy = (
   edgeRepo: repository.EdgeRepository,
   filter: Partial<entity.Edge>,
