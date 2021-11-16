@@ -17,7 +17,9 @@ enum ProfileStatus {
 type Profile {
   id: ID!
   bannerURL: String
+  createdAt: DateTime!
   description: String
+  followersCount: Int
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
   owner: Wallet
@@ -25,7 +27,6 @@ type Profile {
   status: ProfileStatus
   url: String!
   winningBid: Bid
-  createdAt: DateTime!
 }
 
 input ProfilesInput {
