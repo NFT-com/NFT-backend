@@ -1,7 +1,7 @@
 type FollowersOutput {
   wallets: [Wallet!]!
   pageInfo: PageInfo
-  totalCount: Int
+  totalItems: Int
 }
 
 input FollowersInput {
@@ -37,7 +37,7 @@ input ProfilesInput {
 type ProfilesOutput {
   profiles: [Profile!]!
   pageInfo: PageInfo
-  totalCount: Int
+  totalItems: Int
 }
 
 input UpdateProfileInput {

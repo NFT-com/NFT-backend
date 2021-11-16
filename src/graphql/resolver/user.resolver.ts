@@ -170,7 +170,7 @@ const resendEmailConfirm = (
     confirmEmailToken,
     confirmEmailTokenExpiresAt,
   })
-    .then(fp.tapWait((user) => sendgrid.sendConfirmEmail(user)))
+    .then(fp.tapWait(sendgrid.sendConfirmEmail))
 }
 
 const getMyAddresses = (
