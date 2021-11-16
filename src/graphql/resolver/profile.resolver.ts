@@ -206,6 +206,17 @@ const updateProfile = (
     })
 }
 
+const getFollowersCount = (
+  parent: gql.Profile,
+  _: unknown,
+  ctx: Context,
+): Promise<number> => {
+  return coreService.countEdges(ctx, {
+    thatEntityId: parent.id,
+    edgeType: misc.EdgeType.Follows,
+  })
+}
+
 export default {
   Query: {
     profile: getProfileByURL,
@@ -219,6 +230,7 @@ export default {
     updateProfile: combineResolvers(isAuthenticated, updateProfile),
   },
   Profile: {
+    followersCount: getFollowersCount,
     owner: coreService.resolveEntityById(
       'ownerId',
       misc.EntityType.Profile,
