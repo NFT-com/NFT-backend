@@ -8,7 +8,7 @@ import { gql, misc } from '@src/defs'
 import { Maybe, PageInput } from '@src/defs/gql'
 import { appError } from '@src/graphql/error'
 import { _logger, fp, helper } from '@src/helper'
-import { getSkip, getTake, paginatedResponse, toBidsOutput } from '@src/helper/pagination'
+import { getSkip, getTake, paginatedResponse, toBidPageInput, toBidsOutput } from '@src/helper/pagination'
 
 import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
@@ -97,11 +97,11 @@ const getBidsBy = (
     .paginatedEntitiesBy(
       ctx.repositories.bid,
       filter,
-      { createdAt: 'DESC' },
       {
         skip: getSkip(pageInput),
         take: getTake(pageInput),
       },
+      { createdAt: 'DESC' },
     )
     .then(paginatedResponse(pageInput))
     .then(toBidsOutput)
@@ -113,10 +113,6 @@ const toBidFilter = (input: gql.BidsInput): Partial<entity.Bid> => {
     profileId,
     walletId,
   })
-}
-
-const toBidPageInput = (input: Maybe<gql.BidsInput>) : PageInput => {
-  return input?.pageInput ?? { first: 20, afterCursor: '0' }
 }
 
 const getBids = (

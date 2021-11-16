@@ -5,6 +5,7 @@ import { Context, entity } from '@src/db'
 import { gql, misc } from '@src/defs'
 import { appError, profileError } from '@src/graphql/error'
 import { _logger, fp, helper } from '@src/helper'
+import { filterPaginatedResponse, getSkip, getTake, paginatedResponse, toFollowersOutput, toFollowersPageInput, toProfilePageInput, toProfilesOutput } from '@src/helper/pagination'
 
 import { isAuthenticated } from './auth'
 import * as coreService from './core.service'
@@ -12,12 +13,6 @@ import { validateSchema } from './joi'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
-const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
-  profiles,
-  pageInfo: null,
-})
-
-// TODO implement pagination
 const getProfilesFollowedByMe = (
   _: any,
   args: gql.QueryProfilesFollowedByMeArgs,
@@ -26,16 +21,23 @@ const getProfilesFollowedByMe = (
   const { user } = ctx
   logger.debug('getProfilesFollowedByMe', { loggedInUserId: user.id, input: args?.input })
   const { statuses } = helper.safeObject(args?.input)
-  return coreService.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
-    collectionId: user.id,
-    thatEntityType: misc.EntityType.Profile,
-    edgeType: misc.EdgeType.Follows,
-  })
-    .then(fp.filterIfNotEmpty(statuses)((p) => statuses.includes(p.status)))
+  const pageInput = toProfilePageInput(args?.input)
+  return coreService.paginatedThatEntitiesOfEdgesBy<entity.Profile>(
+    ctx,
+    {
+      collectionId: user.id,
+      thatEntityType: misc.EntityType.Profile,
+      edgeType: misc.EdgeType.Follows,
+    },
+    { take: getTake(pageInput), skip: getSkip(pageInput) },
+  )
+    .then(paginatedResponse(pageInput))
+    .then(fp.thruIfOtherNotEmpty(statuses)(
+      filterPaginatedResponse((item: entity.Profile) => statuses.includes(item.status)),
+    ))
     .then(toProfilesOutput)
 }
 
-// TODO implement pagination
 const getMyProfiles = (
   _: any,
   args: gql.QueryMyProfilesArgs,
@@ -48,7 +50,15 @@ const getMyProfiles = (
     status: helper.safeIn(statuses),
     ownerUserId: user.id,
   })
-  return coreService.entitiesBy(ctx.repositories.profile, filter, { createdAt: 'DESC' })
+  const pageInput = toProfilePageInput(args?.input)
+  return coreService
+    .paginatedEntitiesBy(
+      ctx.repositories.profile,
+      filter,
+      { skip: getSkip(pageInput), take: getTake(pageInput) },
+      { createdAt: 'DESC' },
+    )
+    .then(paginatedResponse(pageInput))
     .then(toProfilesOutput)
 }
 
@@ -57,7 +67,6 @@ const buildProfileInputSchema = (profileIdKey = 'id'): Joi.ObjectSchema =>
     [profileIdKey]: Joi.string().required(),
   })
 
-// TODO implement pagination
 const getProfileFollowers = (
   _: any,
   args: gql.QueryProfileFollowersArgs,
@@ -68,15 +77,19 @@ const getProfileFollowers = (
 
   validateSchema(buildProfileInputSchema('profileId'), args.input)
 
-  return coreService.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
-    thatEntityId: args.input.profileId,
-    thatEntityType: misc.EntityType.Profile,
-    edgeType: misc.EdgeType.Follows,
-  })
-    .then((wallets) => ({
-      wallets,
-      pageInfo: null,
-    }))
+  const pageInput = toFollowersPageInput(args?.input)
+
+  return coreService.paginatedThisEntitiesOfEdgesBy<entity.Wallet>(
+    ctx,
+    {
+      thatEntityId: args.input.profileId,
+      thatEntityType: misc.EntityType.Profile,
+      edgeType: misc.EdgeType.Follows,
+    },
+    { skip: getSkip(pageInput), take: getTake(pageInput) },
+  )
+    .then(paginatedResponse(pageInput))
+    .then(toFollowersOutput)
 }
 
 const followProfile = (

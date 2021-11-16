@@ -1,6 +1,6 @@
 import { entity } from '@src/db'
 import { gql } from '@src/defs'
-import { PageInfo, PageInput } from '@src/defs/gql'
+import { Maybe, PageInfo, PageInput } from '@src/defs/gql'
 import { buildInvalid } from '@src/graphql/error/app.error'
 
 export type PaginatedResponse<T> = {
@@ -36,6 +36,8 @@ export function getTake(input: PageInput): number {
 
 type FnPaginatedResult2Response<T> =
     (result: [T[], number]) => PaginatedResponse<T>
+type FnPaginatedResponse2Response<T> =
+  (response: PaginatedResponse<T>) => PaginatedResponse<T>
 
 /** 
  * @returns a function which will construct a PaginatedResponse
@@ -65,6 +67,19 @@ export function paginatedResponse<T>(pageInput: PageInput): FnPaginatedResult2Re
   }
 }
 
+export function filterPaginatedResponse<T>(
+  filter: (item: T) => boolean,
+): FnPaginatedResponse2Response<T> {
+  return (response: PaginatedResponse<T>) => ({
+    ...response,
+    items: response.items.filter(filter),
+  })
+}
+
+export const toBidPageInput = (input: Maybe<gql.BidsInput>): PageInput => {
+  return input?.pageInput ?? { first: 20, afterCursor: '0' }
+}
+
 export const toBidsOutput: (response: PaginatedResponse<entity.Bid>) => Promise<gql.BidsOutput>
     = (response: PaginatedResponse<entity.Bid>) => {
       return new Promise((resolve) => resolve({
@@ -73,3 +88,45 @@ export const toBidsOutput: (response: PaginatedResponse<entity.Bid>) => Promise<
         pageInfo: response.pageInfo,
       }))
     }
+
+export const toProfilePageInput = (input: Maybe<gql.ProfilesInput>): PageInput => {
+  return input?.pageInput ?? { first: 20, afterCursor: '0' }
+}
+
+export const toProfilesOutput:
+(response: PaginatedResponse<entity.Profile>) => Promise<gql.ProfilesOutput>
+    = (response: PaginatedResponse<entity.Profile>) => {
+      return new Promise((resolve) => resolve({
+        profiles: response.items,
+        totalItems: response.totalItems,
+        pageInfo: response.pageInfo,
+      }))
+    }
+
+export const toFollowersPageInput = (input: Maybe<gql.FollowersInput>): PageInput => {
+  return input?.pageInput ?? { first: 20, afterCursor: '0' }
+}
+
+export const toFollowersOutput:
+(response: PaginatedResponse<entity.Wallet>) => Promise<gql.FollowersOutput>
+    = (response: PaginatedResponse<entity.Wallet>) => {
+      return new Promise((resolve) => resolve({
+        wallets: response.items,
+        totalItems: response.totalItems,
+        pageInfo: response.pageInfo,
+      }))
+    }
+
+export const toNFTsPageInput = (input: Maybe<gql.NFTsInput>): PageInput => {
+  return input?.pageInput ?? { first: 20, afterCursor: '0' }
+}
+
+export const toNFTsOutput:
+(response: PaginatedResponse<entity.NFT>) => Promise<gql.NFTsOutput>
+  = (response: PaginatedResponse<entity.NFT>) => {
+    return new Promise((resolve) => resolve({
+      nfts: response.items,
+      totalItems: response.totalItems,
+      pageInfo: response.pageInfo,
+    }))
+  }
