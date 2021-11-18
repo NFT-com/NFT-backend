@@ -69,7 +69,7 @@ export const toBidsOutput: (response: PaginatedResponse<entity.Bid>) => Promise<
     = (response: PaginatedResponse<entity.Bid>) => {
       return new Promise((resolve) => resolve({
         bids: response.items,
-        totalCount: response.totalItems,
+        totalItems: response.totalItems,
         pageInfo: response.pageInfo,
       }))
     }

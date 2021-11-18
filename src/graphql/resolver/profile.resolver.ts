@@ -242,7 +242,7 @@ export default {
       misc.EntityType.Profile,
     ),
     isFollowedByMe: coreService.resolveEdgeOwnership(
-      'user',
+      'wallet',
       misc.EdgeType.Follows,
     ),
     winningBid: getWinningBid,
