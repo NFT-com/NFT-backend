@@ -1,0 +1,70 @@
+import { Connection, createConnection } from 'typeorm'
+
+import * as entity from '@nftcom/shared/db/entity'
+import * as repo from '@nftcom/shared/db/repository'
+import { DBConfig } from '@nftcom/shared/defs'
+
+let connection: Connection
+export const connect = async (dbConfig: DBConfig): Promise<void> => {
+  if (connection) {
+    return
+  }
+
+  const entities = [
+    entity.Approval,
+    entity.Bid,
+    entity.Edge,
+    entity.NFT,
+    entity.Profile,
+    entity.User,
+    entity.Wallet,
+  ]
+
+  return createConnection({
+    type: 'postgres',
+    host: dbConfig.host,
+    port: dbConfig.port,
+    username: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database,
+    synchronize: false,
+    logging: dbConfig.logging,
+    migrationsRun: true,
+    migrations: [
+      `${dbConfig.migrationDirectory}/*.ts`,
+      `${dbConfig.migrationDirectory}/*.js`,
+    ],
+    entities,
+  })
+    .then((con) => {
+      connection = con
+      console.log('Connected to database :)!!')
+    })
+}
+
+export const disconnect = async (): Promise<void> => {
+  if (!connection) {
+    return
+  }
+  return connection.close()
+}
+
+export type Repository = {
+  approval: repo.ApprovalRepository
+  bid: repo.BidRepository
+  edge: repo.EdgeRepository
+  nft: repo.NFTRepository
+  profile: repo.ProfileRepository
+  user: repo.UserRepository
+  wallet: repo.WalletRepository
+}
+
+export const newRepositories = (): Repository => ({
+  approval: new repo.ApprovalRepository(),
+  bid: new repo.BidRepository(),
+  edge: new repo.EdgeRepository(),
+  nft: new repo.NFTRepository(),
+  profile: new repo.ProfileRepository(),
+  user: new repo.UserRepository(),
+  wallet: new repo.WalletRepository(),
+})

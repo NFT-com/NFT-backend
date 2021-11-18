@@ -5,17 +5,18 @@ Thumbs.db
 
 # compiled / dependencies
 node_modules
-.env
-dist
-yarn.lock
-package-lock.json
+packages/*/node_modules
+packages/*/.env
+packages/*/tsconfig.build.tsbuildinfo
+packages/*/dist
 .eslintcache
+package-lock.json
+packages/*/package-lock.json
 
-# logging file
+# logs
 log-debug
 *.log
 
 # others
-src/defs/gql.ts
+packages/gql/src/defs/gql.ts
 script/playground.ts
-

@@ -1,5 +1,6 @@
-node_modules
-dist
-src/defs/gql.ts
+.pnp.cjs
+.pnp.loader.mjs
 old-code
 gql-naming-fn.js
+packages/*/dist
+packages/gql/src/defs/gql.ts
