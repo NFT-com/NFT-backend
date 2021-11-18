@@ -144,7 +144,7 @@ const unfollowProfile = (
         collectionId: user.id,
         edgeType: misc.EdgeType.Follows,
         thatEntityId: profile.id,
-        thisEntityType: misc.EntityType.Profile,
+        thatEntityType: misc.EntityType.Profile,
         deletedAt: null,
       })
     }))
