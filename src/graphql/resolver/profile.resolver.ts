@@ -91,7 +91,7 @@ const followProfile = (
   validateSchema(schema, args)
 
   const { url } = args
-  return repositories.profile.findById(url)
+  return repositories.profile.findByURL(url)
     .then(fp.thruIfEmpty(() => coreService.createProfile(ctx, { url })))
     .then((profile) => {
       return repositories.edge.exists({
