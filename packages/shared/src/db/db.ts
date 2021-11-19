@@ -31,8 +31,8 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     logging: dbConfig.logging,
     migrationsRun: true,
     migrations: [
-      `${dbConfig.migrationDirectory}/*.ts`,
-      `${dbConfig.migrationDirectory}/*.js`,
+      `${__dirname}/migration/*.ts`,
+      `${__dirname}/migration/*.js`,
     ],
     entities,
   })

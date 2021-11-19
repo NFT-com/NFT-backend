@@ -7,7 +7,6 @@
     "build": "npm run clean && npm run compile",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "compile": "tsc && tsc-alias",
-    "post:typeorm:gen": "npm run lint",
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli",
     "typeorm:gen": "npm run typeorm:cli -- migration:generate"
   },
