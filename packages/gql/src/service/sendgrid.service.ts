@@ -19,7 +19,7 @@ const send = (
     .catch(fp.tapThrow((err) => logger.error('send', { message, err })))
 }
 
-export const sendConfirmEmail = (user: entity.User): Promise<unknown> => {
+export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   logger.debug('sendConfirmEmail', { user })
   return send({
     from,
@@ -27,9 +27,10 @@ export const sendConfirmEmail = (user: entity.User): Promise<unknown> => {
     subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
     text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
   })
+    .then(() => true)
 }
 
-export const sendReferredBy = (user: entity.User, totalReferrals: number): Promise<unknown> => {
+export const sendReferredBy = (user: entity.User, totalReferrals: number): Promise<boolean> => {
   logger.debug('sendReferredBy', { user })
   return send({
     from,
@@ -37,4 +38,5 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
     subject: `New NFT.com Referral! ${new Date().toUTCString()}`,
     text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
   })
+    .then(() => true)
 }

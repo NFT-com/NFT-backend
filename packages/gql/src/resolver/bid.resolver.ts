@@ -155,12 +155,12 @@ export default {
     cancelBid: combineResolvers(auth.isAuthenticated, cancelBid),
   },
   Bid: {
-    profile: core.resolveEntityById(
+    profile: core.resolveEntityById<gql.Bid, entity.Profile>(
       'profileId',
       defs.EntityType.Bid,
       defs.EntityType.Profile,
     ),
-    wallet: core.resolveEntityById(
+    wallet: core.resolveEntityById<gql.Bid, entity.Wallet>(
       'walletId',
       defs.EntityType.Bid,
       defs.EntityType.Wallet,

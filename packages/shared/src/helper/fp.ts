@@ -30,7 +30,7 @@ type FnTArray2PromiseT<T> = (values: T[]) => Promise<T>
 // type FnT2PromiseAny<T> = (value: T) => Promise<unknown>
 
 // T => Promise<U>
-type FnT2PromiseK<T, K> = (value: T) => Promise<K>
+export type FnT2PromiseK<T, K> = (value: T) => Promise<K>
 
 // T[] => Promise<K[]>
 type FnT2ArrayPromiseKArray<T, K> = (value: T[]) => Promise<K[]>
@@ -364,6 +364,34 @@ export const thruIfEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
  */
 export const thruIfNotEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
   return (value: T) => isNotEmpty(value) ? thenFn(value) : value
+}
+
+/**
+ * @example fp.thruIfTrue(value => isNotEmpty)(value => { ...do this if true... })
+ *
+ * runs thenFn when value is true
+ *
+ * @param thenFn: T => FnT2Any
+ * @param value: T => any
+ *
+ * @return fn: (T => FnT2Any) => (T => any)
+ */
+export const thruIfTrue = (thenFn: FnT2Any<boolean>): FnT2Any<boolean> => {
+  return (value: boolean) => isTrue(value) ? thenFn(value) : value
+}
+
+/**
+ * @example fp.thruIfFalse(value => isFalse)(value => { ...do this if true... })
+ *
+ * runs thenFn when value is false
+ *
+ * @param thenFn: T => FnT2Any
+ * @param value: T => any
+ *
+ * @return fn: (T => FnT2Any) => (T => any)
+ */
+export const thruIfFalse = (thenFn: FnT2Any<boolean>): FnT2Any<boolean> => {
+  return (value: boolean) => isFalse(value) ? thenFn(value) : value
 }
 
 /**

@@ -70,12 +70,12 @@ export default {
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
   },
   NFT: {
-    wallet: core.resolveEntityById(
+    wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
       'walletId',
       defs.EntityType.NFT,
       defs.EntityType.Wallet,
     ),
-    isOwnedByMe: core.resolveEntityOwnership(
+    isOwnedByMe: core.resolveEntityOwnership<gql.NFT>(
       'userId',
       'user',
       defs.EntityType.NFT,

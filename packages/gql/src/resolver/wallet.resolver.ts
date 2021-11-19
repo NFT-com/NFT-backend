@@ -4,7 +4,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, defs } from '@nftcom/shared'
+import { _logger, defs, entity } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Wallet, _logger.Context.GraphQL)
 
@@ -38,7 +38,7 @@ export default {
     addAddress: combineResolvers(auth.isAuthenticated, addAddress),
   },
   Wallet: {
-    user: core.resolveEntityById(
+    user: core.resolveEntityById<gql.Wallet, entity.User>(
       'userId',
       defs.EntityType.Wallet,
       defs.EntityType.User,

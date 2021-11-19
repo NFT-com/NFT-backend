@@ -74,12 +74,12 @@ export const resolveEntityFromContext = <T>(key: string) => {
   }
 }
 
-export const resolveEntityById = <T>(
+export const resolveEntityById = <T, K>(
   key: string,
   parentType: defs.EntityType,
   resolvingType: defs.EntityType,
 ) => {
-  return <K>(parent: K, args: unknown, ctx: Context): Promise<T> => {
+  return (parent: T, args: unknown, ctx: Context): Promise<K> => {
     return entityById(ctx, parent?.['id'], parentType)
       .then((p) => {
         if (_.isEmpty(p?.[key])) {
@@ -90,20 +90,20 @@ export const resolveEntityById = <T>(
   }
 }
 
-export const resolveEntityOwnership = (
+export const resolveEntityOwnership = <T>(
   key: string,
   ctxKey: string,
   parentType: defs.EntityType,
 ) => {
-  return <T>(parent: T, _: unknown, ctx: Context): Promise<boolean> => {
+  return (parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
     return entityById(ctx, parent?.['id'], parentType)
       .then((p) => ctxObj?.['id'] === p?.[key])
   }
 }
 
-export const resolveEdgeOwnership = (ctxKey: string, edgeType: defs.EdgeType) => {
-  return <T>(parent: T, _: unknown, ctx: Context): Promise<boolean> => {
+export const resolveEdgeOwnership = <T>(ctxKey: string, edgeType: defs.EdgeType) => {
+  return (parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
     const { repositories } = ctx
     return repositories.edge.exists({
@@ -205,4 +205,11 @@ export const createProfile = (
   profile: Partial<entity.Profile>,
 ): Promise<entity.Profile> => {
   return ctx.repositories.profile.save(profile)
+}
+
+export const createEdge = (
+  ctx: Context,
+  edge: Partial<entity.Edge>,
+): Promise<entity.Edge> => {
+  return ctx.repositories.edge.save(edge)
 }

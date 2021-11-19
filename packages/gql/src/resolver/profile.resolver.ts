@@ -76,6 +76,27 @@ const getProfileFollowers = (
     }))
 }
 
+const createFollowEdge = (ctx: Context) => {
+  return (profile: entity.Profile): Promise<entity.Edge | boolean> => {
+    const { user, wallet, repositories } = ctx
+    return repositories.edge.exists({
+      collectionId: user.id,
+      edgeType: defs.EdgeType.Follows,
+      thatEntityId: profile.id,
+      thatEntityType: defs.EntityType.Profile,
+      deletedAt: null,
+    })
+      .then(fp.thruIfFalse(() => core.createEdge(ctx,  {
+        collectionId: user.id,
+        thisEntityId: wallet.id,
+        thisEntityType: defs.EntityType.Wallet,
+        edgeType: defs.EdgeType.Follows,
+        thatEntityId: profile.id,
+        thatEntityType: defs.EntityType.Profile,
+      })))
+  }
+}
+
 const followProfile = (
   _: any,
   args: gql.MutationFollowProfileArgs,
@@ -90,28 +111,7 @@ const followProfile = (
   const { url } = args
   return repositories.profile.findByURL(url)
     .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url })))
-    .then((profile) => {
-      return repositories.edge.exists({
-        collectionId: user.id,
-        edgeType: defs.EdgeType.Follows,
-        thatEntityId: profile.id,
-        thatEntityType: defs.EntityType.Profile,
-        deletedAt: null,
-      })
-        .then(fp.rejectIfTrue(appError.buildExists(
-          profileError.buildProfileFollowingMsg(profile.id),
-          profileError.ErrorType.ProfileAlreadyFollowing,
-        )))
-        .then(() => repositories.edge.save({
-          collectionId: user.id,
-          thisEntityId: wallet.id,
-          thisEntityType: defs.EntityType.Wallet,
-          edgeType: defs.EdgeType.Follows,
-          thatEntityId: profile.id,
-          thatEntityType: defs.EntityType.Profile,
-        }))
-        .then(() => profile)
-    })
+    .then(fp.tapWait(createFollowEdge(ctx)))
 }
 
 const getProfile = (
@@ -228,17 +228,17 @@ export default {
   },
   Profile: {
     followersCount: getFollowersCount,
-    owner: core.resolveEntityById(
+    owner: core.resolveEntityById<gql.Profile, entity.Wallet>(
       'ownerId',
       defs.EntityType.Profile,
       defs.EntityType.Wallet,
     ),
-    isOwnedByMe: core.resolveEntityOwnership(
+    isOwnedByMe: core.resolveEntityOwnership<gql.Profile>(
       'ownerUserId',
       'user',
       defs.EntityType.Profile,
     ),
-    isFollowedByMe: core.resolveEdgeOwnership(
+    isFollowedByMe: core.resolveEdgeOwnership<gql.Profile>(
       'wallet',
       defs.EdgeType.Follows,
     ),

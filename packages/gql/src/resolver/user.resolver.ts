@@ -80,6 +80,24 @@ const signUp = (
     ])))
 }
 
+const updateReferral = (ctx: Context) => {
+  return (otherUser: entity.User): Promise<boolean> => {
+    const { user } = ctx
+    return core.createEdge(ctx,{
+      thisEntityId: otherUser.id,
+      thisEntityType: defs.EntityType.User,
+      thatEntityId: user.id,
+      thatEntityType: defs.EntityType.User,
+      edgeType: defs.EdgeType.Referred,
+    })
+      .then(() => core.countEdges(ctx, {
+        thisEntityId: otherUser.id,
+        edgeType: defs.EdgeType.Referred,
+      }))
+      .then((count) => sendgrid.sendReferredBy(otherUser, count))
+  }
+}
+
 const confirmEmail = (
   _: any,
   args: gql.MutationConfirmEmailArgs,
@@ -108,24 +126,10 @@ const confirmEmail = (
     }))
     .then((user) => {
       if (isEmpty(user.referredBy)) {
-        return
+        return user
       }
-
       return repositories.user.findById(user.referredBy)
-        .then((otherUser) => {
-          return repositories.edge.save({
-            thisEntityId: otherUser.id,
-            thisEntityType: defs.EntityType.User,
-            thatEntityId: user.id,
-            thatEntityType: defs.EntityType.User,
-            edgeType: defs.EdgeType.Referred,
-          })
-            .then(() => core.countEdges(ctx, {
-              thisEntityId: otherUser.id,
-              edgeType: defs.EdgeType.Referred,
-            }))
-            .then((count) => sendgrid.sendReferredBy(otherUser, count))
-        })
+        .then(fp.tap(updateReferral(ctx)))
     })
     .then(() => true)
 }

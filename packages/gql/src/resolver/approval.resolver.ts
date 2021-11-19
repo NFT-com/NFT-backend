@@ -4,7 +4,7 @@ import Joi from 'joi'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, defs, helper } from '@nftcom/shared'
+import { _logger, defs, entity, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Approval, _logger.Context.GraphQL)
 
@@ -46,7 +46,7 @@ export default {
     approveAmount: combineResolvers(auth.isAuthenticated, approveAmount),
   },
   Approval: {
-    wallet: core.resolveEntityById(
+    wallet: core.resolveEntityById<gql.Approval, entity.Wallet>(
       'walletId',
       defs.EntityType.Approval,
       defs.EntityType.Wallet,

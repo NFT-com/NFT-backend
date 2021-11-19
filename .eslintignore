@@ -1,5 +1,3 @@
-.pnp.cjs
-.pnp.loader.mjs
 old-code
 gql-naming-fn.js
 packages/*/dist
