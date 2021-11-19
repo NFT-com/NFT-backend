@@ -1,19 +1,16 @@
 {
   "extends": "../../tsconfig.json",
-  // TODO not sure why this is needed even though proper paths is declared
-  //  in ../../tsconfig.build.json
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
-    "paths": {
-      "@nftcom/gql/*": [
-        "src/*"
-      ]
-    }
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "references": [
     {
-      "path": "../shared/tsconfig.json"
+      "path": "../shared"
     }
+  ],
+  "include": [
+    "src/**/*.ts"
   ]
 }

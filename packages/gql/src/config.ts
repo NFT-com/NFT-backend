@@ -31,7 +31,7 @@ export const redisConfig = {
   port: parseInt(process.env.REDIS_PORT) || 6379,
 }
 
-export const dbConfig: defs.DBConfig = {
+export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,
   user: process.env.DB_USERNAME || 'app',
