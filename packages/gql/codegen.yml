@@ -1,0 +1,8 @@
+schema: ./src/schema/*.graphql
+generates:
+  ./src/defs/gql.ts:
+    plugins:
+      - typescript
+    config:
+      namingConvention: ./gql-naming-fn
+      skipTypename: true
