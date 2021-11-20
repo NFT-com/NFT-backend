@@ -9,19 +9,24 @@ NFT.com platform's GraphQL server and worker to sync Blockchain data.
 1. Node.js version >=16
 2. Docker
 
-### 2. Build and Start
+### 2. Start Docker and Install Workspaces
 
-1. `npm install`
-2. `cp .env.sample .env`; modify this file if needs be
-3. `docker-compose up -d`
-4. `npm run dev`
-
-The GraphQL server is available at `localhost:10010`.
+1. `docker-compose up -d`
+2. `npm install`
 
 The Redis UI is available at `localhost:10015`.
 
+The Postgres instance is available at `localhost:10030`.
 
-### 3. Auth Headers
+## 3. Start GQL Server
+
+1. `cd packages/gql`
+2. `cp .env.sample .env`; modify this file if needs be
+3. `npm run dev`
+
+The GraphQL server is available at `localhost:10010`.
+
+#### 3.1. Auth Headers
 
 There are many gql queries/mutations that require client to provide are auth header
 
@@ -29,7 +34,7 @@ There are many gql queries/mutations that require client to provide are auth hea
 2. `chain-id` -> network chain id that user is connected to
 3. `authorization` -> signature of the signed message
 
-#### 3.1 How to Generate Signature?
+#### 3.2 How to Generate Signature?
 
 You can use `script/gen-signature.ts` utility to generate signed signature for an address.
 This is very useful when testing GQL via playground.

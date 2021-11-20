@@ -6,6 +6,7 @@ Thumbs.db
 # compiled / dependencies
 node_modules
 packages/*/node_modules
+!.env
 packages/*/.env
 packages/*/tsconfig.build.tsbuildinfo
 packages/*/dist
