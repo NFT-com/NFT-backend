@@ -2,6 +2,7 @@
 .idea
 .DS_Store
 Thumbs.db
+.vscode
 
 # compiled / dependencies
 node_modules
