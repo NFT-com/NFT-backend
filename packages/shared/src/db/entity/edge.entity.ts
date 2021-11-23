@@ -4,7 +4,7 @@ import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
-@Index(['collectionId', 'edgeType', 'thatEntityId', 'thisEntityId'], { unique: true })
+@Index(['collectionId', 'edgeType', 'thatEntityId', 'thisEntityId', 'deletedAt'], { unique: true })
 @Index(['collectionId', 'edgeType', 'deletedAt', 'createdAt'])
 @Index(['collectionId', 'edgeType', 'thatEntityType', 'deletedAt'])
 @Index(['collectionId', 'edgeType', 'thatEntityType', 'thatEntityId', 'deletedAt'])
