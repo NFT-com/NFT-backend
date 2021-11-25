@@ -2,6 +2,7 @@ name: Deploy Env
 description: Deploys the infrastrcuture and apps to an environment
 inputs:
   stage:
+    description: Environment to deploy on
     required: true
     default: dev
 runs:
