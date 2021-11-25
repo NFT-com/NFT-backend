@@ -11,15 +11,19 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Parse Secrets JSON
+      id: parse
+      shell: bash
+      run: echo "::set-output name=secret::$${{ fromJson(inputs.secrets) }}"
     - uses: actions/setup-node@v2
       with:
         node-version: 16.x
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ inputs.secrets.AWS_ACCESS_KEY_ID }}
-        aws-region: ${{ inputs.secrets.AWS_REGION }}
-        aws-secret-access-key: ${{ inputs.secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ steps.parse.secret.AWS_ACCESS_KEY_ID }}
+        aws-region: ${{ steps.parse.secret.AWS_REGION }}
+        aws-secret-access-key: ${{ steps.parse.secret.AWS_SECRET_ACCESS_KEY }}
     - name: Login to AWS ECR
       id: login_ecr
       uses: aws-actions/amazon-ecr-login@v1
@@ -38,15 +42,15 @@ runs:
       env:
         STAGE: ${{ inputs.stage }}
         PULUMI_CONFIG_PASSPHRASE: ""
-        AWS_ACCOUNT_ID: ${{ inputs.secrets.AWS_ACCOUNT_ID }}
-        DB_PASSWORD: ${{ inputs.secrets.DB_PASSWORD }}
+        AWS_ACCOUNT_ID: ${{ steps.parse.secret.AWS_ACCOUNT_ID }}
+        DB_PASSWORD: ${{ steps.parse.secret.DB_PASSWORD }}
       run: npm run deploy:shared
     - name: Build GQL Env File
       shell: bash
       working-directory: infra
       env:
         STAGE: ${{ inputs.stage }}
-        DB_PASSWORD: ${{ inputs.secrets.DB_PASSWORD }}
+        DB_PASSWORD: ${{ steps.parse.secret.DB_PASSWORD }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
@@ -69,6 +73,6 @@ runs:
       env:
         STAGE: ${{ inputs.stage }}
         PULUMI_CONFIG_PASSPHRASE: ""
-        AWS_ACCOUNT_ID: ${{ inputs.secrets.AWS_ACCOUNT_ID }}
+        AWS_ACCOUNT_ID: ${{ steps.parse.secret.AWS_ACCOUNT_ID }}
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
       run: npm run deploy:gql
