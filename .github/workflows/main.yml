@@ -9,6 +9,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
         with:
+          secrets: ${{ toJson(secrets) }}
           stage: dev
   deploy-staging:
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
