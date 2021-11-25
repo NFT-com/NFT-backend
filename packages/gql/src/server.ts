@@ -6,12 +6,13 @@ import {
 import { utils } from 'ethers'
 import { GraphQLError } from 'graphql'
 
-import { authMessage, isProduction, serverPort } from '@nftcom/gql/config'
-import { Context } from '@nftcom/gql/defs'
-import { auth } from '@nftcom/gql/helper'
-import { resolvers } from '@nftcom/gql/resolver'
-import { typeDefs } from '@nftcom/gql/schema'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
+
+import { authMessage, isProduction, serverPort } from './config'
+import { Context } from './defs'
+import { auth } from './helper'
+import { resolvers } from './resolver'
+import { typeDefs } from './schema'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'

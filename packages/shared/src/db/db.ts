@@ -1,9 +1,10 @@
 import * as fs from 'fs'
 import { Connection, createConnection } from 'typeorm'
 
-import * as entity from '@nftcom/shared/db/entity'
-import * as repo from '@nftcom/shared/db/repository'
 import { DBConfig } from '@nftcom/shared/defs'
+
+import * as entity from './entity'
+import * as repo from './repository'
 
 let connection: Connection
 export const connect = async (dbConfig: DBConfig): Promise<void> => {

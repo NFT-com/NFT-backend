@@ -8,6 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
+        name: Deploy env
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev

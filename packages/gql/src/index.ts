@@ -1,8 +1,9 @@
 import kill from 'kill-port'
 
-import { dbConfig, serverPort, verifyConfiguration } from '@nftcom/gql/config'
-import * as server from '@nftcom/gql/server'
 import { db, fp } from '@nftcom/shared'
+
+import { dbConfig, serverPort, verifyConfiguration } from './config'
+import * as server from './server'
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
