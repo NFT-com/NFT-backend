@@ -91,7 +91,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['LOG_LEVEL'] = stackConfig['logLevel'] || parsedFile['LOG_LEVEL']
   parsedFile['AUTH_MESSAGE'] = process.env.AUTH_MESSAGE || parsedFile['']
   parsedFile['SG_API_KEY'] = process.env.SG_API_KEY || parsedFile['SG_API_KEY']
-  // console.log(JSON.stringify(parsedFile))
+  console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')
   fs.writeFileSync(targetFile, envfile.stringify(parsedFile))
