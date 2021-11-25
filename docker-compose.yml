@@ -48,7 +48,6 @@ services:
 #      context: .
 #      dockerfile: gql.Dockerfile
 #    container_name: nftcom-gql
-#    env_file: packages/gql/.env
 #    environment:
 #      - DB_HOST=postgres
 #      - DB_PORT=5432

@@ -56,4 +56,5 @@ export type DBConfig = {
   database: string
   logging: boolean
   migrationDirectory: string
+  useSSL: boolean
 }

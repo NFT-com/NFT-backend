@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import { Connection, createConnection } from 'typeorm'
 
 import * as entity from '@nftcom/shared/db/entity'
@@ -20,6 +21,10 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.Wallet,
   ]
 
+  const ssl = dbConfig.useSSL
+    ? { ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString() }
+    : null
+
   return createConnection({
     type: 'postgres',
     host: dbConfig.host,
@@ -34,6 +39,7 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
       `${__dirname}/migration/*.ts`,
       `${__dirname}/migration/*.js`,
     ],
+    ssl,
     entities,
   })
     .then((con) => {

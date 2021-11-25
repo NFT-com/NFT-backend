@@ -8,6 +8,7 @@
     "allowJs": false,
     "checkJs": false,
     "skipLibCheck": true,
+    "inlineSources": true,
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -17,9 +18,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
-    "inlineSources": true,
     "incremental": true,
     "allowSyntheticDefaultImports": true,
+    "pretty": true,
     // "strict": false,                       /* Enable all strict type-checking options. */
     // "noImplicitAny": true,                 /* Raise error on expressions and declarations with an implied 'any' type. */
     // "strictNullChecks": true,              /* Enable strict null checks. */

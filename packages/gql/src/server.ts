@@ -86,6 +86,7 @@ export const start = async (): Promise<void> => {
     ? ApolloServerPluginLandingPageProductionDefault()
     : ApolloServerPluginLandingPageGraphQLPlayground()
   server = new ApolloServer({
+    introspection: helper.isFalse(isProduction()),
     cors: true,
     resolvers: resolvers,
     typeDefs: typeDefs(),

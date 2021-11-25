@@ -1,0 +1,63 @@
+name: NFT.com github actions
+on: [push]
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: nftcom_dev
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Login to AWS ECR
+        id: login_ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Install Pulumi CLI
+        uses: pulumi/setup-pulumi@v2
+      - name: Login to Pulumi backend
+        run: pulumi login s3://nftcom-pulumi-state
+      - name: Install Infra Deps
+        working-directory: infra
+        run: npm install
+      - name: Deploy Shared Infra
+        working-directory: infra
+        env:
+          STAGE: dev
+          PULUMI_CONFIG_PASSPHRASE: ""
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: npm run deploy:shared
+      - name: Build GQL Env File
+        working-directory: infra
+        env:
+          STAGE: dev
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: npm run build:gql:env
+      - name: Build and Push GQL Image
+        env:
+          REPO: ${{ steps.login_ecr.outputs.registry }}/dev-gql
+        run: |
+          export DOCKER_BUILDKIT=1
+          docker pull ${{ env.REPO }}:deps || true
+          docker pull ${{ env.REPO }}:build || true
+          docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target deps --cache-from ${{ env.REPO }}:deps -t ${{ env.REPO }}:deps
+          docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target build --cache-from ${{ env.REPO }}:deps --cache-from ${{ env.REPO }}:build -t ${{ env.REPO }}:build
+          docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target release --cache-from ${{ env.REPO }}:deps --cache-from ${{ env.REPO }}:build -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
+          docker push ${{ env.REPO }}:deps
+          docker push ${{ env.REPO }}:build
+          docker push ${{ env.REPO }}:latest
+          docker push ${{ env.REPO }}:${{ github.sha }}
+      - name: Deploy GQL Infra
+        working-directory: infra
+        env:
+          STAGE: dev
+          PULUMI_CONFIG_PASSPHRASE: ""
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        run: npm run deploy:gql
