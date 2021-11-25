@@ -6,14 +6,12 @@ Thumbs.db
 
 # compiled / dependencies
 node_modules
-packages/*/node_modules
+dist
+package-lock.json
+tsconfig.tsbuildinfo
 !.env
 packages/*/.env
-packages/*/tsconfig.build.tsbuildinfo
-packages/*/dist
 .eslintcache
-package-lock.json
-packages/*/package-lock.json
 
 # logs
 log-debug
@@ -21,4 +19,4 @@ log-debug
 
 # others
 packages/gql/src/defs/gql.ts
-script/playground.ts
+*.zip

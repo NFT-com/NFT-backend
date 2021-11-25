@@ -39,6 +39,7 @@ export const dbConfig = {
   database: process.env.DB_DATABASE || 'app',
   logging: helper.parseBoolean(process.env.DB_LOGGING) || false,
   migrationDirectory: process.env.DB_MIGRATION_DIR || 'dist/db/migration',
+  useSSL: helper.parseBoolean(process.env.DB_USE_SSL),
 }
 
 const toNetwork = (str: string): defs.Network => {

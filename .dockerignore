@@ -1,3 +1,6 @@
 node_modules
+infra
 packages/gql/dist
+packages/gql/node_modules
 packages/shared/dist
+packages/shared/node_modules
