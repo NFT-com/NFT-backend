@@ -14,7 +14,8 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix"
+    "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix",
+    "prepare": "husky install"
   },
   "commitlint": {
     "extends": [
