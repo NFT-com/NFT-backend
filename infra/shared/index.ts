@@ -18,11 +18,12 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const sgs = await createSecurityGroups(config, vpc)
   const { main: dbMain } = createAuroraClusters(config, vpc, sgs.aurora, zones)
   const { main: cacheMain } = createCacheClusters(config, vpc, sgs.redis, zones)
-  const { asset, deployApp } = createBuckets()
+  const { asset, assetRole, deployApp } = createBuckets()
   const { gql } = createRepositories()
 
   return {
     assetBucket: asset.bucket,
+    assetBucketRole: assetRole.arn,
     dbHost: dbMain.endpoint,
     deployAppBucket: deployApp.bucket,
     gqlECRRepo: gql.name,

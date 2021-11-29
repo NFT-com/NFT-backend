@@ -69,3 +69,8 @@ export const isNetworkSupported = (network: string): boolean =>
 
 export const getChain = (network: string, chainId: string): defs.Chain =>
   supportedNetworks[network].find((chain: defs.Chain) => chain.id === chainId)
+
+export const assetBucket = {
+  name: lookupEnvKeyOrThrow('ASSET_BUCKET'),
+  role: lookupEnvKeyOrThrow('ASSET_BUCKET_ROLE'),
+}

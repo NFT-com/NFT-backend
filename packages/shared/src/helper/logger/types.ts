@@ -6,6 +6,7 @@ export enum LoggerContext {
   General = 'general',
   GraphQL = 'graphql',
   NFT = 'nft',
+  Misc = 'misc',
   PageInput = 'pageInput',
   PubSub = 'pubsub',
   Profile = 'profile',

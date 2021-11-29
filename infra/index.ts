@@ -11,6 +11,7 @@ import { createSharedInfra } from './shared'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
   const assetBucket = outMap.assetBucket.value
+  const assetBucketRole = outMap.assetBucketRole.value
   const dbHost = outMap.dbHost.value
   const deployAppBucket = outMap.deployAppBucket.value
   const gqlECRRepo = outMap.gqlECRRepo.value
@@ -20,6 +21,7 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
   const webSGId = outMap.webSGId.value
   const sharedOutput: SharedInfraOutput = {
     assetBucket,
+    assetBucketRole,
     dbHost,
     deployAppBucket,
     gqlECRRepo,

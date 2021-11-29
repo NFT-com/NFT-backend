@@ -70,6 +70,10 @@ export const toDate = (date = ''): Date => {
   return _.isEmpty(date) ? toUTCDate() : toUTCDate(new Date(date))
 }
 
+export const toIsoDateString = (date = new Date()): string => {
+  return toUTCDate(date).toISOString()
+}
+
 export const bigNumber = BigNumber.from
 
 export const bigNumberToHex = (v: unknown): string => bigNumber(v)._hex
