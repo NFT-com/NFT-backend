@@ -89,7 +89,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
   parsedFile['SUPPORTED_NETWORKS'] = stackConfig['supportedNetworks'] || parsedFile['SUPPORTED_NETWORKS']
   parsedFile['LOG_LEVEL'] = stackConfig['logLevel'] || parsedFile['LOG_LEVEL']
-  parsedFile['AUTH_MESSAGE'] = process.env.AUTH_MESSAGE || parsedFile['']
+  parsedFile['AUTH_MESSAGE'] = process.env.AUTH_MESSAGE || parsedFile['AUTH_MESSAGE']
   parsedFile['SG_API_KEY'] = process.env.SG_API_KEY || parsedFile['SG_API_KEY']
   parsedFile['ASSET_BUCKET'] = infraOutput.assetBucket
   parsedFile['ASSET_BUCKET_ROLE'] = infraOutput.assetBucketRole
