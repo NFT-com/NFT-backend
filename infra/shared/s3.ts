@@ -32,6 +32,13 @@ const createAssetRole = (bucketName: string): aws.iam.Role => {
             Service: 'ec2.amazonaws.com',
           },
         },
+        {
+          Action: 'sts:AssumeRole',
+          Effect: 'Allow',
+          Principal: {
+            AWS: `arn:aws:iam::${process.env.AWS_ACCOUNT_ID}:root`,
+          },
+        },
       ],
     },
     inlinePolicies: [

@@ -74,6 +74,10 @@ export const toIsoDateString = (date = new Date()): string => {
   return toUTCDate(date).toISOString()
 }
 
+export const toTimestamp = (date = new Date()): number => {
+  return toUTCDate(date).getTime()
+}
+
 export const bigNumber = BigNumber.from
 
 export const bigNumberToHex = (v: unknown): string => bigNumber(v)._hex

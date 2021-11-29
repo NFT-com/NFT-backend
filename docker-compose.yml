@@ -43,26 +43,26 @@ services:
       - postgres:/var/lib/postgresql/data/
     restart: unless-stopped
 
-#  gql:
-#    build:
-#      context: .
-#      dockerfile: gql.Dockerfile
-#    container_name: nftcom-gql
-#    environment:
-#      - DB_HOST=postgres
-#      - DB_PORT=5432
-#      - REDIS_HOST=redis
-#      - REDIS_PORT=6379
-#    networks:
-#      - nftcom
-#    ports:
-#      - "10010:10010"
-##    volumes:
-##      - "./src:/app/nftcom/src:cached"
-#    depends_on:
-#      - redis
-#      - mongo
-#    restart: unless-stopped
+  gql:
+    build:
+      context: .
+      dockerfile: gql.Dockerfile
+    container_name: nftcom-gql
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - nftcom
+    ports:
+      - "10010:10010"
+#    volumes:
+#      - "./src:/app/nftcom/src:cached"
+    depends_on:
+      - redis
+      - mongo
+    restart: unless-stopped
 
 volumes:
   postgres:

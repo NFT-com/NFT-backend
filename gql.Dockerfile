@@ -5,20 +5,16 @@ WORKDIR /app
 COPY package.json .
 COPY .npmrc .
 COPY tsconfig.json .
-COPY packages/shared ./packages/shared
-COPY packages/gql ./packages/gql
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/gql/package.json ./packages/gql/package.json
 
-WORKDIR /app/packages/shared
-RUN rm -fr node_modules package-lock.json
-
-WORKDIR /app/packages/gql
-RUN rm -fr node_modules package-lock.json
-
-WORKDIR /app
 RUN npm set progress=false
 RUN npm install --production
 RUN cp -R node_modules prod_node_modules
 RUN npm install
+
+COPY packages/shared ./packages/shared
+COPY packages/gql ./packages/gql
 
 FROM deps as build
 

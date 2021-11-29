@@ -175,5 +175,5 @@ class AppLogger {
 
 }
 
-export const Factory = (name: string, context?: LoggerContext): AppLogger =>
+export const LoggerFactory = (name: string, context?: LoggerContext): AppLogger =>
   new AppLogger(name, context)

@@ -1,6 +1,12 @@
 node_modules
 infra
+
 packages/gql/dist
 packages/gql/node_modules
+packages/gql/package-lock.json
+packages/gql/tsconfig.tsbuildinfo
+
 packages/shared/dist
 packages/shared/node_modules
+packages/shared/package-lock.json
+packages/shared/tsconfig.tsbuildinfo
