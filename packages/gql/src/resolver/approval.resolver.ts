@@ -38,7 +38,10 @@ const approveAmount = (
       signature: input.signature,
       userId: user.id,
       walletId,
-    }))
+      spender: input.spender,
+      txHash: input.txHash,
+    }),
+    )
 }
 
 export default {
