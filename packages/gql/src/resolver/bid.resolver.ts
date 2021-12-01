@@ -46,7 +46,7 @@ const bid = (
     })
     .then(({ profileId, walletId }) => {
       if (input.nftType !== gql.NFTType.Profile) {
-        return { walletId, profileId, stakeWeight: null }
+        return { walletId, profileId, stakeWeight: null, bid: null }
       }
 
       // calculate stake weight seconds
@@ -61,11 +61,12 @@ const bid = (
             : differenceInSeconds(now, existingUpdateTime)
           const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
           const stakeWeight = existingStakeWeight + curSeconds * Number(bigNumStake)
-          return { walletId, profileId, stakeWeight }
+          return { walletId, profileId, stakeWeight, bid }
         })
     })
-    .then(({ profileId, walletId, stakeWeight }) => {
+    .then(({ profileId, walletId, stakeWeight, bid }) => {
       return repositories.bid.save({
+        id: bid?.id,
         nftType: input.nftType,
         price: helper.bigNumberToString(input.price),
         profileId,
