@@ -232,26 +232,6 @@ export const createEBInstance = (
         name: 'SSLPolicy',
         value: 'ELBSecurityPolicy-2016-08',
       },
-      // {
-      //   namespace: 'aws:elbv2:listenerrule:https',
-      //   name: 'PathPatterns',
-      //   value: '/api',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listener:443',
-      //   name: 'Rules',
-      //   value: 'https',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listenerrule:http',
-      //   name: 'PathPatterns',
-      //   value: '/api',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listener:80',
-      //   name: 'Rules',
-      //   value: 'http',
-      // },
       {
         namespace: 'aws:elasticbeanstalk:environment:process:default',
         name: 'Protocol',
@@ -352,36 +332,6 @@ export const createEBInstance = (
         namespace: 'aws:autoscaling:trigger',
         name: 'UpperThreshold',
         value: '80',
-      },
-      {
-        namespace: 'aws:elasticbeanstalk:cloudwatch:logs',
-        name: 'StreamLogs',
-        value: 'true',
-      },
-      {
-        namespace: 'aws:elasticbeanstalk:cloudwatch:logs',
-        name: 'DeleteOnTerminate',
-        value: 'true',
-      },
-      {
-        namespace: 'aws:elasticbeanstalk:cloudwatch:logs',
-        name: 'RetentionInDays',
-        value: '7',
-      },
-      {
-        namespace: 'aws:elasticbeanstalk:cloudwatch:logs:health',
-        name: 'HealthStreamingEnabled',
-        value: 'false',
-      },
-      {
-        namespace: 'aws:elasticbeanstalk:cloudwatch:logs:health',
-        name: 'DeleteOnTerminate',
-        value: 'true',
-      },
-      {
-        namespace: 'aws:elasticbeanstalk:cloudwatch:logs:health',
-        name: 'RetentionInDays',
-        value: '7',
       },
     ],
   })
