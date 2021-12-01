@@ -145,12 +145,17 @@ const updateMe = (
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
     email: Joi.string(),
+    preferences: joi.buildPreferencesInputSchema(),
   })
   joi.validateSchema(schema, args.input)
 
-  const { avatarURL = '', email } = args.input
+  const {
+    avatarURL = user.avatarURL,
+    email = user.email,
+    preferences = user.preferences,
+  } = args.input
   // TODO notify user?
-  return repositories.user.updateOneById(user.id, { avatarURL, email })
+  return repositories.user.updateOneById(user.id, { avatarURL, email, preferences })
 }
 
 const resendEmailConfirm = (

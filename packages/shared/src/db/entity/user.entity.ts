@@ -1,5 +1,7 @@
 import { Column, Entity, Index } from 'typeorm'
 
+import { UserPreferences } from '@nftcom/shared/defs'
+
 import { BaseEntity } from './base.entity'
 
 @Entity()
@@ -28,5 +30,14 @@ export class User extends BaseEntity {
 
   @Column({ nullable: true })
   referredBy: string
+
+  @Column('json', { nullable: false, default: {
+    bidActivityNotifications: true,
+    priceChangeNotifications: true,
+    outbidNotifications: true,
+    purchaseSuccessNotifications: true,
+    promotionalNotifications: true,
+  } })
+  preferences: UserPreferences
 
 }
