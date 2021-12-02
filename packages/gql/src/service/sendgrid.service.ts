@@ -1,4 +1,4 @@
-import { ethers } from 'packages/shared/node_modules/ethers/lib'
+import { utils } from 'ethers'
 
 import { sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp } from '@nftcom/shared'
@@ -50,7 +50,7 @@ export const sendBidConfirmEmail =
       from,
       to: { email: user.email },
       subject: 'New NFT.com bid!',
-      text: 'Your bid is confirmed! ' + ethers.utils.formatUnits(bid.price, 18) + ' for nft.com/' + profileURL,
+      text: 'Your bid is confirmed! ' + utils.formatUnits(bid.price, 18) + ' for nft.com/' + profileURL,
     }).then(() => true)
   }
 
