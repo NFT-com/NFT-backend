@@ -11,6 +11,9 @@ const from = {
   email: '<noreply@nft.com>',
 }
 
+const BID_CONFIRM_TEMPLATE_ID = 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7'
+const OUTBID_TEMPLATE_ID = 'd-6e92bafc43194eb5a1c8725ecbaaba14'
+
 // TODO use templates
 
 const send = (
@@ -49,8 +52,11 @@ export const sendBidConfirmEmail =
     return send({
       from,
       to: { email: user.email },
-      subject: 'New NFT.com bid!',
-      text: 'Your bid is confirmed! ' + utils.formatUnits(bid.price, 18) + ' for nft.com/' + profileURL,
+      dynamicTemplateData: {
+        bidPrice: utils.formatUnits(bid.price, 18),
+        profileURL,
+      },
+      templateId: BID_CONFIRM_TEMPLATE_ID,
     }).then(() => true)
   }
 
@@ -60,7 +66,9 @@ export const sendOutbidEmail =
     return send({
       from,
       to: { email: user.email },
-      subject: 'You were outbid!',
-      text: 'Your bid for nft.com/' + profileURL + ' is now losing',
+      dynamicTemplateData: {
+        profileURL,
+      },
+      templateId: OUTBID_TEMPLATE_ID,
     }).then(() => true)
   }
