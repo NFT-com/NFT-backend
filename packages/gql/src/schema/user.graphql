@@ -1,0 +1,33 @@
+type User {
+  id: ID!
+  avatarURL: String
+  email: String!
+  isEmailConfirmed: Boolean!
+  myAddresses: [Wallet!]
+  myApprovals: [Approval!]
+  referredBy: String
+  referralId: String!
+}
+
+input SignUpInput {
+  avatarURL: String
+  email: String!
+  referredBy: String
+  wallet: WalletInput!
+}
+
+input UpdateUserInput {
+  email: String
+  avatarURL: String
+}
+
+extend type Query {
+  me: User!
+}
+
+extend type Mutation {
+  signUp(input: SignUpInput!): User!
+  updateMe(input: UpdateUserInput!): User!
+  confirmEmail(token: String!): Boolean!
+  resendEmailConfirm: User!
+}

@@ -2,18 +2,21 @@
 .idea
 .DS_Store
 Thumbs.db
+.vscode
 
 # compiled / dependencies
 node_modules
-.env
 dist
-.husky
-yarn.lock
 package-lock.json
+tsconfig.tsbuildinfo
+!.env
+packages/*/.env
+.eslintcache
 
-# logging file
+# logs
 log-debug
 *.log
 
 # others
-scripts/
+packages/gql/src/defs/gql.ts
+*.zip

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "default",
+    "type": "postgres",
+    "host": "oregon-postgres.render.com",
+    "database": "testnft",
+    "port": 5432,
+    "username": "gavinmai",
+    "password": "I5itpK5txUAb3sjcsLvb2WDNGXut8ZG6",
+    "migrationsRun": true,
+    "migrations": [
+      "src/db/migration/*.ts"
+    ],
+    "cli": {
+      "migrationsDir": "src/db/migration"
+    },
+    "dropSchema": false,
+    "synchronize": false,
+    "logging": false,
+    "entities": [
+      "src/db/entity/approval.entity.ts",
+      "src/db/entity/bid.entity.ts",
+      "src/db/entity/edge.entity.ts",
+      "src/db/entity/nft.entity.ts",
+      "src/db/entity/nftRaw.entity.ts",
+      "src/db/entity/nftTrade.entity.ts",
+      "src/db/entity/profile.entity.ts",
+      "src/db/entity/user.entity.ts",
+      "src/db/entity/wallet.entity.ts"
+    ],
+    "ssl": true,
+    "extra": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    }
+  }
+]
