@@ -144,7 +144,7 @@ const getTopBids = (
     { price: 'DESC' },
     ['profileId'],
   )
-    .then(pagination.toPageable(pageInput))
+    .then(pagination.toPageable(pageInput, 'price'))
 }
 
 export default {
