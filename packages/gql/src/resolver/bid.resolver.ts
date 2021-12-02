@@ -9,8 +9,6 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
 
-import { Maybe } from '../defs/gql'
-
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
 const bid = (
@@ -49,7 +47,7 @@ const bid = (
     .then(({ profileId, walletId }) => {
       if (input.nftType !== gql.NFTType.Profile) {
         // TODO: find bid and prevTopBid for non-profile NFTs too.
-        return { walletId, profileId, stakeWeight: null, bid: null, prevTopBid: null }
+        return { walletId, profileId, stakeWeight: null, bid: null, prevTopBidOwner: null }
       }
 
       // calculate stake weight seconds
@@ -69,11 +67,13 @@ const bid = (
             profileId,
             stakeWeight,
             bid,
-            prevTopBid: repositories.bid.findTopBidByProfile(profileId),
+            prevTopBidOwner: repositories.bid.findTopBidByProfile(profileId)
+              .then(fp.thruIfNotEmpty(
+                (prevTopBid) => repositories.user.findById(prevTopBid.userId))),
           }
         })
     })
-    .then(({ profileId, walletId, stakeWeight, bid, prevTopBid }) => {
+    .then(({ profileId, walletId, stakeWeight, bid, prevTopBidOwner }) => {
       return Promise.all([
         repositories.bid.save({
           id: bid?.id,
@@ -86,19 +86,16 @@ const bid = (
           userId: user.id,
           walletId,
         }),
-        prevTopBid,
+        prevTopBidOwner,
       ])
     })
-    .then(fp.tapIf(() => user.preferences.bidActivityNotifications)(( [newBid] ) =>
-      sendgrid.sendBidConfirmEmail(newBid, user, input.profileURL)))
-    .then(fp.tapIf(([, prevTopBid]) => prevTopBid != null)(
-      ([, prevTopBid]) =>
-        repositories.user.findById(prevTopBid.userId)
-          .then(fp.thruIf(
-            (prevTopBidOwner: Maybe<entity.User>) =>
-              prevTopBidOwner?.preferences?.outbidNotifications)(
-            (prevTopBidOwner) =>
-              sendgrid.sendOutbidEmail(prevTopBid, prevTopBidOwner, input.profileURL))),
+    .then(fp.tapIf(
+      () => user.preferences.bidActivityNotifications)(
+      ([newBid]) => sendgrid.sendBidConfirmEmail(newBid, user, input.profileURL),
+    ))
+    .then(fp.tapIf(
+      ([, prevTopBidOwner]) => prevTopBidOwner.preferences.outbidNotifications)(
+      ([, prevTopBidOwner]) => sendgrid.sendOutbidEmail(prevTopBidOwner, input.profileURL),
     ))
     .then(([newBid]) => newBid)
 }

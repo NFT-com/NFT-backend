@@ -55,8 +55,8 @@ export const sendBidConfirmEmail =
   }
 
 export const sendOutbidEmail =
-  (bid: entity.Bid, user: entity.User, profileURL: string ): Promise<boolean> => {
-    logger.debug('sendOutbid', { bid, user })
+  (user: entity.User, profileURL: string ): Promise<boolean> => {
+    logger.debug('sendOutbid', { user })
     return send({
       from,
       to: { email: user.email },
