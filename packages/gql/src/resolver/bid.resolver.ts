@@ -6,8 +6,10 @@ import { isEmpty } from 'lodash'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
+
+import { Maybe } from '../defs/gql'
 
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
@@ -46,7 +48,8 @@ const bid = (
     })
     .then(({ profileId, walletId }) => {
       if (input.nftType !== gql.NFTType.Profile) {
-        return { walletId, profileId, stakeWeight: null, bid: null }
+        // TODO: find bid and prevTopBid for non-profile NFTs too.
+        return { walletId, profileId, stakeWeight: null, bid: null, prevTopBid: null }
       }
 
       // calculate stake weight seconds
@@ -61,22 +64,43 @@ const bid = (
             : differenceInSeconds(now, existingUpdateTime)
           const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
           const stakeWeight = existingStakeWeight + curSeconds * Number(bigNumStake)
-          return { walletId, profileId, stakeWeight, bid }
+          return {
+            walletId,
+            profileId,
+            stakeWeight,
+            bid,
+            prevTopBid: repositories.bid.findTopBidByProfile(profileId),
+          }
         })
     })
-    .then(({ profileId, walletId, stakeWeight, bid }) => {
-      return repositories.bid.save({
-        id: bid?.id,
-        nftType: input.nftType,
-        price: helper.bigNumberToString(input.price),
-        profileId,
-        signature: input.signature,
-        stakeWeightedSeconds: stakeWeight,
-        status: gql.BidStatus.Submitted,
-        userId: user.id,
-        walletId,
-      })
+    .then(({ profileId, walletId, stakeWeight, bid, prevTopBid }) => {
+      return Promise.all([
+        repositories.bid.save({
+          id: bid?.id,
+          nftType: input.nftType,
+          price: helper.bigNumberToString(input.price),
+          profileId,
+          signature: input.signature,
+          stakeWeightedSeconds: stakeWeight,
+          status: gql.BidStatus.Submitted,
+          userId: user.id,
+          walletId,
+        }),
+        prevTopBid,
+      ])
     })
+    .then(fp.tapIf(() => user.preferences.bidActivityNotifications)(( [newBid] ) =>
+      sendgrid.sendBidConfirmEmail(newBid, user, input.profileURL)))
+    .then(fp.tapIf(([, prevTopBid]) => prevTopBid != null)(
+      ([, prevTopBid]) =>
+        repositories.user.findById(prevTopBid.userId)
+          .then(fp.thruIf(
+            (prevTopBidOwner: Maybe<entity.User>) =>
+              prevTopBidOwner?.preferences?.outbidNotifications)(
+            (prevTopBidOwner) =>
+              sendgrid.sendOutbidEmail(prevTopBid, prevTopBidOwner, input.profileURL))),
+    ))
+    .then(([newBid]) => newBid)
 }
 
 // TODO pagination is broken

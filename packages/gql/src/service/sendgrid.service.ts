@@ -1,3 +1,5 @@
+import { ethers } from 'packages/shared/node_modules/ethers/lib'
+
 import { sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
@@ -40,3 +42,25 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
   })
     .then(() => true)
 }
+
+export const sendBidConfirmEmail =
+  ( bid: entity.Bid, user: entity.User, profileURL: string ): Promise<boolean> => {
+    logger.debug('sendBidConfirm', { bid, user })
+    return send({
+      from,
+      to: { email: user.email },
+      subject: 'New NFT.com bid!',
+      text: 'Your bid is confirmed! ' + ethers.utils.formatUnits(bid.price, 18) + ' for nft.com/' + profileURL,
+    }).then(() => true)
+  }
+
+export const sendOutbidEmail =
+  (bid: entity.Bid, user: entity.User, profileURL: string ): Promise<boolean> => {
+    logger.debug('sendOutbid', { bid, user })
+    return send({
+      from,
+      to: { email: user.email },
+      subject: 'You were outbid!',
+      text: 'Your bid for nft.com/' + profileURL + ' is now losing',
+    }).then(() => true)
+  }
