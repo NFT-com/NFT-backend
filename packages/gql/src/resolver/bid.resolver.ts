@@ -11,6 +11,16 @@ import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
+const sendBidNotifications = (
+  newBid: entity.Bid,
+  prevTopBidOwner: entity.User,
+  newBidOwner: entity.User,
+  profileURL: string,
+): Promise<[boolean, boolean]> => Promise.all([
+  sendgrid.sendBidConfirmEmail(newBid, newBidOwner, profileURL),
+  sendgrid.sendOutbidEmail(prevTopBidOwner, profileURL),
+])
+
 const bid = (
   _: any,
   args: gql.MutationBidArgs,
@@ -89,14 +99,10 @@ const bid = (
         prevTopBidOwner,
       ])
     })
-    .then(fp.tapIf(
-      () => user.preferences.bidActivityNotifications)(
-      ([newBid]) => sendgrid.sendBidConfirmEmail(newBid, user, input.profileURL),
-    ))
-    .then(fp.tapIf(
-      ([, prevTopBidOwner]) => prevTopBidOwner.preferences.outbidNotifications)(
-      ([, prevTopBidOwner]) => sendgrid.sendOutbidEmail(prevTopBidOwner, input.profileURL),
-    ))
+    .then(fp.tap<[entity.Bid, entity.User]>(
+      ([newBid, prevTopBidOwner]) =>
+        sendBidNotifications(newBid, prevTopBidOwner, user, input.profileURL)),
+    )
     .then(([newBid]) => newBid)
 }
 

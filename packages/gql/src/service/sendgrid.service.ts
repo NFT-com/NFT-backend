@@ -1,7 +1,7 @@
 import { utils } from 'ethers'
 
 import { sgAPIKey } from '@nftcom/gql/config'
-import { _logger, entity, fp } from '@nftcom/shared'
+import { _logger, entity, fp, helper } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
 
 sendgrid.setApiKey(sgAPIKey)
@@ -46,29 +46,44 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
     .then(() => true)
 }
 
-export const sendBidConfirmEmail =
-  ( bid: entity.Bid, user: entity.User, profileURL: string ): Promise<boolean> => {
-    logger.debug('sendBidConfirm', { bid, user })
-    return send({
-      from,
-      to: { email: user.email },
-      dynamicTemplateData: {
-        bidPrice: utils.formatUnits(bid.price, 18),
-        profileURL,
-      },
-      templateId: BID_CONFIRM_TEMPLATE_ID,
-    }).then(() => true)
+export const sendBidConfirmEmail = (
+  bid: entity.Bid,
+  user: entity.User,
+  profileURL: string,
+): Promise<boolean> => {
+  logger.debug('sendBidConfirm', { bid, user })
+
+  if (helper.isFalse(user.preferences.bidActivityNotifications)) {
+    return Promise.resolve(false)
   }
 
-export const sendOutbidEmail =
-  (user: entity.User, profileURL: string ): Promise<boolean> => {
-    logger.debug('sendOutbid', { user })
-    return send({
-      from,
-      to: { email: user.email },
-      dynamicTemplateData: {
-        profileURL,
-      },
-      templateId: OUTBID_TEMPLATE_ID,
-    }).then(() => true)
+  return send({
+    from,
+    to: { email: user.email },
+    dynamicTemplateData: {
+      bidPrice: utils.formatUnits(bid.price, 18),
+      profileURL,
+    },
+    templateId: BID_CONFIRM_TEMPLATE_ID,
+  }).then(() => true)
+}
+
+export const sendOutbidEmail = (
+  user: entity.User,
+  profileURL: string,
+): Promise<boolean> => {
+  logger.debug('sendOutbid', { user })
+
+  if (helper.isFalse(user.preferences.outbidNotifications)) {
+    return Promise.resolve(false)
   }
+
+  return send({
+    from,
+    to: { email: user.email },
+    dynamicTemplateData: {
+      profileURL,
+    },
+    templateId: OUTBID_TEMPLATE_ID,
+  }).then(() => true)
+}
