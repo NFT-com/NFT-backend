@@ -23,7 +23,7 @@ const getNFT = (
 }
 
 const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gql.NFTsOutput> => {
-  return core.entitiesBy(ctx.repositories.nft, filter, { createdAt: 'DESC' })
+  return core.entitiesBy(ctx.repositories.nft, filter)
     .then((nfts) => ({
       nfts,
       pageInfo: null,

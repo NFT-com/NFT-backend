@@ -1,6 +1,6 @@
-import { BigNumber, Signature, utils } from 'ethers'
+import { BigNumber, FixedNumber,Signature, utils } from 'ethers'
 import * as _ from 'lodash'
-import { FindOperator, In } from 'typeorm'
+import { FindOperator, In, LessThan } from 'typeorm'
 
 export const stringListToMap = (
   str: string,
@@ -70,13 +70,29 @@ export const toDate = (date = ''): Date => {
   return _.isEmpty(date) ? toUTCDate() : toUTCDate(new Date(date))
 }
 
-export const toIsoDateString = (date = new Date()): string => {
+export const toDateIsoString = (date = new Date()): string => {
   return toUTCDate(date).toISOString()
 }
 
 export const toTimestamp = (date = new Date()): number => {
   return toUTCDate(date).getTime()
 }
+
+// Postgres will return records that **equal** the timestamp, despite
+// the strictly-greater-than filter in the SQL.  This ends up returning
+// dup records to the frontend.  Workaround: add 1 ms to the timestamp.
+export const addMs = (d: Date, add_ms = 1): Date => {
+  d.setMilliseconds(d.getMilliseconds() + add_ms)
+  return d
+}
+
+export const lessThan = <T>(v: T): FindOperator<T> => LessThan(v)
+
+export const moreThan = <T>(v: T): FindOperator<T> => LessThan(v)
+
+export const lessThanDate = (date: string): FindOperator<Date> => lessThan(toDate(date))
+
+export const moreThanDate = (date: string): FindOperator<Date> => moreThan(addMs(toDate(date)))
 
 export const bigNumber = BigNumber.from
 
@@ -89,3 +105,18 @@ export const bigNumberToNumber = (v: unknown): number => Number(bigNumber(v))
 export const tokenDecimals = BigNumber.from(10).pow(18)
 
 export const toSignature = (sig: string): Signature => utils.splitSignature(sig)
+
+export const shortenAddress = (address: string, chars = 4): string => {
+  if (_.isEmpty(address)) {
+    return address
+  }
+  const parsed = utils.getAddress(address)
+  return `${parsed.substring(0, chars + 2)}...${parsed.substring(42 - chars)}`
+}
+
+// TODO this is a naive approach to convert to
+//  fixed value by using 6 decimals denominator
+export const toFixedValue = (price: string): FixedNumber => {
+  const denominator = FixedNumber.from(BigNumber.from(10).pow(6))
+  return FixedNumber.from(BigNumber.from(price)).divUnsafe(denominator)
+}

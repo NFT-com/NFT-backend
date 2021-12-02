@@ -1,5 +1,6 @@
 import * as typeorm from 'typeorm'
 
+import { PageableQuery, PageableResult } from '@nftcom/shared/defs'
 import { helper } from '@nftcom/shared/helper'
 
 export class BaseRepository<T> {
@@ -33,8 +34,25 @@ export class BaseRepository<T> {
     return this.getRepository().find(opts)
   }
 
-  public findAndCount = (opts: typeorm.FindManyOptions<T>): Promise<[T[], number]> => {
-    return this.getRepository().findAndCount(opts)
+  public findPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
+    return this.getRepository()
+      .findAndCount({
+        where: query.filter,
+        order: query.orderBy,
+        take: query.take,
+        cache: true,
+      })
+  }
+
+  public findDistinctPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
+    return this.getRepository()
+      .createQueryBuilder()
+      .where(query.filter)
+      .distinctOn(query.distinctOn)
+      .orderBy(query.orderBy)
+      .take(query.take)
+      .cache(true)
+      .getManyAndCount()
   }
 
   public findOne = (opts: typeorm.FindOneOptions<T>): Promise<T | undefined> => {

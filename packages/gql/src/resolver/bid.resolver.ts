@@ -79,20 +79,16 @@ const bid = (
     })
 }
 
-// TODO pagination is broken
 const getBidsBy = (
   ctx: Context,
   filter: Partial<entity.Bid>,
   pageInput: gql.PageInput,
 ): Promise<Pageable<entity.Bid>> => {
+  const pageableFilter = pagination.toPageableFilter(pageInput, filter)
   return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    filter,
-    { createdAt: 'DESC' },
-    {
-      skip: 0,
-      take: 20,
-    },
+    ctx.repositories.bid.findPageable,
+    pageInput,
+    pageableFilter,
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -131,7 +127,6 @@ const cancelBid = (
   return repositories.bid.deleteById(args.id)
 }
 
-// TODO pagination is broken
 const getTopBids = (
   _: any,
   args: gql.QueryTopBidsArgs,
@@ -141,7 +136,14 @@ const getTopBids = (
   logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = pagination.safeInput(args?.input?.pageInput)
   const filter = helper.inputT2SafeK(args?.input)
-  return repositories.bid.findTopBidsBy(filter, 0, 20)
+  const pageableFilter = pagination.toPageableFilter(pageInput, filter, 'price', false)
+  return core.paginatedEntitiesBy(
+    repositories.bid.findDistinctPageable,
+    pageInput,
+    pageableFilter,
+    { price: 'DESC' },
+    ['profileId'],
+  )
     .then(pagination.toPageable(pageInput))
 }
 

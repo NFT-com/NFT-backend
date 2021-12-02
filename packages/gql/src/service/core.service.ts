@@ -3,6 +3,7 @@ import * as _ from 'lodash'
 import { getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, walletError } from '@nftcom/gql/error'
+import { pagination } from '@nftcom/gql/helper'
 import { _logger, defs, entity, fp, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -119,25 +120,68 @@ export const entitiesBy = <T>(
   // ctx: Context,
   repo: repository.BaseRepository<T>,
   filter: Partial<T>,
-  orderBy?: defs.OrderBy<T>,
+  orderBy: defs.OrderBy = { createdAt: 'DESC' },
 ): Promise<T[]> => {
   // const { user } = ctx
   // logger.debug('entitiesBy', { loggedInUserId: user.id })
   return repo.find({ where: { ...filter, deletedAt: null }, order: orderBy })
 }
 
+/**
+ * Cursor based pagination and by default it is sorted based on time desc
+ * "before" and "after" in page terms refers to "later" and "earlier" respectively
+ *
+ *                                cursor
+ *               |<-- last n before | first n after -->|
+ * 12pm  11am  10am  9am  8am  7am  6am  5am  4am  3am  2am  1am
+ */
 export const paginatedEntitiesBy = <T>(
   // ctx: Context,
-  repo: repository.BaseRepository<T>,
+  findFn: defs.FindPageableFn<T>,
+  pageInput: gql.PageInput,
   filter: Partial<T>,
-  orderBy?: defs.OrderBy<T>,
-  pageOptions?: { skip: number; take: number },
-): Promise<[T[], number]> => {
-  return repo.findAndCount({
-    where: { ...filter, deletedAt: null },
-    order: orderBy,
-    skip: pageOptions?.skip,
-    take: pageOptions?.take,
+  orderBy: defs.OrderBy = { createdAt: 'DESC' },
+  distinctOn?: defs.DistinctOn<T>,
+): Promise<defs.PageableResult<T>> => {
+  const reveredOrderBy = Object.keys(orderBy)
+    .reduce((agg, k) =>{
+      const v = orderBy[k]
+      if (v === 'DESC') {
+        return {
+          ...agg,
+          [k]: 'ASC',
+        }
+      }
+      return {
+        ...agg,
+        [k]: 'DESC',
+      }
+    }, {})
+  return pagination.resolvePage<T>(pageInput, {
+    firstAfter: () => findFn({
+      filter,
+      orderBy,
+      take: pageInput.first,
+      distinctOn,
+    }),
+    firstBefore: () => findFn({
+      filter,
+      orderBy,
+      take: pageInput.first,
+      distinctOn,
+    }),
+    lastAfter: () => findFn({
+      filter,
+      orderBy: reveredOrderBy,
+      take: pageInput.last,
+      distinctOn,
+    }).then(pagination.reverseResult),
+    lastBefore: () => findFn({
+      filter,
+      orderBy: reveredOrderBy,
+      take: pageInput.last,
+      distinctOn,
+    }).then(pagination.reverseResult),
   })
 }
 

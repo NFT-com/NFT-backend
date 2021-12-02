@@ -45,7 +45,7 @@ const getMyProfiles = (
     status: helper.safeIn(statuses),
     ownerUserId: user.id,
   })
-  return core.entitiesBy(ctx.repositories.profile, filter, { createdAt: 'DESC' })
+  return core.entitiesBy(ctx.repositories.profile, filter)
     .then(toProfilesOutput)
 }
 

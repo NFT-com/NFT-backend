@@ -1,4 +1,5 @@
 import { EntityFieldsNames } from 'typeorm/common/EntityFieldsNames'
+import { OrderByCondition } from 'typeorm/find-options/OrderByCondition'
 
 export enum EntityType {
   Approval = 'Approval',
@@ -46,7 +47,7 @@ export type Signature = {
   s: string
 }
 
-export type OrderBy<T> = { [P in EntityFieldsNames<T>]?: 'ASC' | 'DESC' | 1 | -1 }
+export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition
 
 export type DBConfig = {
   host: string
@@ -58,3 +59,16 @@ export type DBConfig = {
   migrationDirectory: string
   useSSL: boolean
 }
+
+export type PageableResult<T> = [T[], number]
+
+export type DistinctOn<T> = Extract<keyof T, string>[]
+
+export type PageableQuery<T> = {
+  filter: Partial<T>
+  orderBy: OrderBy
+  take: number
+  distinctOn?: DistinctOn<T>
+}
+
+export type FindPageableFn<T> = (query: PageableQuery<T>) => Promise<PageableResult<T>>
