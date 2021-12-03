@@ -15,9 +15,7 @@ const getNFT = (
 ): Promise<gql.NFT> => {
   const { user, repositories } = ctx
   logger.debug('getNFT', { loggedInUserId: user?.id, input: args })
-  const schema = Joi.object().keys({
-    id: Joi.string().required(),
-  })
+  const schema = Joi.object().keys({ id: Joi.string().required() })
   joi.validateSchema(schema, args)
   return repositories.nft.findById(args.id)
 }

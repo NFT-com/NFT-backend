@@ -50,9 +50,7 @@ const getMyProfiles = (
 }
 
 const buildProfileInputSchema = (profileIdKey = 'id'): Joi.ObjectSchema =>
-  Joi.object().keys({
-    [profileIdKey]: Joi.string().required(),
-  })
+  Joi.object().keys({ [profileIdKey]: Joi.string().required() })
 
 // TODO implement pagination
 const getProfileFollowers = (
@@ -86,7 +84,7 @@ const createFollowEdge = (ctx: Context) => {
       thatEntityType: defs.EntityType.Profile,
       deletedAt: null,
     })
-      .then(fp.thruIfFalse(() => core.createEdge(ctx,  {
+      .then(fp.thruIfFalse(() => core.createEdge(ctx, {
         collectionId: user.id,
         thisEntityId: wallet.id,
         thisEntityType: defs.EntityType.Wallet,
@@ -154,9 +152,7 @@ const getProfileByURL = (
 ): Promise<gql.Profile> => {
   const { user, repositories } = ctx
   logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
-  const schema = Joi.object().keys({
-    url: Joi.string().required(),
-  })
+  const schema = Joi.object().keys({ url: Joi.string().required() })
   joi.validateSchema(schema, args)
   return getProfile(args.url, repositories.profile.findByURL)
 }

@@ -35,9 +35,7 @@ const createAndUploadEBDeployFile = async (
   const fileName = `${getResourceName('qql')}-${new Date().toISOString()}.zip`
   const file = upath.joinSafe(__dirname, fileName)
   const output = fs.createWriteStream(file)
-  const archive = archiver.create('zip', {
-    zlib: { level: 9 },
-  })
+  const archive = archiver.create('zip', { zlib: { level: 9 } })
   archive.pipe(output)
   archive.append(JSON.stringify(dockerFile), { name: 'Dockerrun.aws.json' })
   await archive.finalize()

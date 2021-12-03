@@ -9,15 +9,11 @@ export type RepositoryOut = {
 export const createGQLRepository = (): aws.ecr.Repository => {
   return new aws.ecr.Repository('ecr_gql', {
     name: getResourceName('gql'),
-    imageScanningConfiguration: {
-      scanOnPush: true,
-    },
+    imageScanningConfiguration: { scanOnPush: true },
   })
 }
 
 export const createRepositories = (): RepositoryOut => {
   const gqlRepo = createGQLRepository()
-  return {
-    gql: gqlRepo,
-  }
+  return { gql: gqlRepo }
 }

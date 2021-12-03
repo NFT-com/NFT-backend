@@ -22,7 +22,8 @@ const signUp = (
 
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
-    email: Joi.string().required().email(),
+    email: Joi.string().required()
+      .email(),
     referredBy: Joi.string(),
     wallet: joi.buildWalletInputSchema(),
   })
@@ -106,9 +107,7 @@ const confirmEmail = (
   logger.debug('confirmEmail', { input: args })
   const { repositories } = ctx
 
-  const schema = Joi.object().keys({
-    token: Joi.string().required(),
-  })
+  const schema = Joi.object().keys({ token: Joi.string().required() })
   joi.validateSchema(schema, args)
 
   const { token } = args
@@ -197,9 +196,7 @@ const getMyApprovals = (
 }
 
 export default {
-  Query: {
-    me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
-  },
+  Query: { me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')) },
   Mutation: {
     signUp,
     confirmEmail,

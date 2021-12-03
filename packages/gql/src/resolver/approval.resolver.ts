@@ -45,9 +45,7 @@ const approveAmount = (
 }
 
 export default {
-  Mutation: {
-    approveAmount: combineResolvers(auth.isAuthenticated, approveAmount),
-  },
+  Mutation: { approveAmount: combineResolvers(auth.isAuthenticated, approveAmount) },
   Approval: {
     wallet: core.resolveEntityById<gql.Approval, entity.Wallet>(
       'walletId',

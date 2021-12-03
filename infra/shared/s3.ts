@@ -28,9 +28,7 @@ const createAssetRole = (bucketName: string): aws.iam.Role => {
         {
           Action: 'sts:AssumeRole',
           Effect: 'Allow',
-          Principal: {
-            AWS: '*',
-          },
+          Principal: { AWS: '*' },
         },
       ],
     },

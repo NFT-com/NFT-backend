@@ -42,7 +42,7 @@ type FnPred<T> = (value: T) => boolean
 type FnPredPromise<T> = (value: T) => Promise<boolean>
 
 // T => Apply array fn => T
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line unused-imports/no-unused-vars
 type ArrayFnT2T<T> = (v: T, i: number, a: T[]) => T
 
 // T => Apply array fn => boolean

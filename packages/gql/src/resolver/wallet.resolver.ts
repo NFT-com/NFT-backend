@@ -34,9 +34,7 @@ const addAddress = (
 }
 
 export default {
-  Mutation: {
-    addAddress: combineResolvers(auth.isAuthenticated, addAddress),
-  },
+  Mutation: { addAddress: combineResolvers(auth.isAuthenticated, addAddress) },
   Wallet: {
     user: core.resolveEntityById<gql.Wallet, entity.User>(
       'userId',

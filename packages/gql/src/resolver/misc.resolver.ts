@@ -31,7 +31,8 @@ const getFileUploadSession = (
     RoleSessionName: sessionName,
   }
 
-  return getSTS().assumeRole(params).promise()
+  return getSTS().assumeRole(params)
+    .promise()
     .then((response) => ({
       accessKey: response.Credentials.AccessKeyId,
       bucket: assetBucket.name,
@@ -42,6 +43,7 @@ const getFileUploadSession = (
 
 export default {
   Mutation: {
-    uploadFileSession: combineResolvers(auth.isAuthenticated, getFileUploadSession),
+    uploadFileSession: combineResolvers(auth.isAuthenticated,
+      getFileUploadSession),
   },
 }

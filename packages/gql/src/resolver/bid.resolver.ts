@@ -20,7 +20,8 @@ const bid = (
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
-    nftType: Joi.string().required().valid(...Object.values(gql.NFTType)),
+    nftType: Joi.string().required()
+      .valid(...Object.values(gql.NFTType)),
     price: Joi.required().custom(joi.buildBigNumber),
     profileURL: Joi.string(),
     signature: joi.buildSignatureInputSchema(),

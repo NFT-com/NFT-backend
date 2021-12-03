@@ -14,9 +14,7 @@ const createEBRole = (): aws.iam.Role => {
         {
           Action: 'sts:AssumeRole',
           Effect: 'Allow',
-          Principal: {
-            Service: 'elasticbeanstalk.amazonaws.com',
-          },
+          Principal: { Service: 'elasticbeanstalk.amazonaws.com' },
         },
       ],
     },
@@ -44,16 +42,12 @@ const createInstanceProfileRole = (): aws.iam.Role => {
         {
           Action: 'sts:AssumeRole',
           Effect: 'Allow',
-          Principal: {
-            Service: 'ec2.amazonaws.com',
-          },
+          Principal: { Service: 'ec2.amazonaws.com' },
         },
         {
           Action: 'sts:AssumeRole',
           Effect: 'Allow',
-          Principal: {
-            Service: 'ssm.amazonaws.com',
-          },
+          Principal: { Service: 'ssm.amazonaws.com' },
         },
       ],
     },
@@ -88,9 +82,7 @@ const createInstanceProfile = (): aws.iam.InstanceProfile => {
 }
 
 const createApplication = (): aws.elasticbeanstalk.Application => {
-  return new aws.elasticbeanstalk.Application('application_gql', {
-    name: getResourceName('gql'),
-  })
+  return new aws.elasticbeanstalk.Application('application_gql', { name: getResourceName('gql') })
 }
 
 const createApplicationVersion = (
