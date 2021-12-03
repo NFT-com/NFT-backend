@@ -25,15 +25,6 @@ export const buildSignatureInputSchema = (): Joi.ObjectSchema =>
     s: Joi.binary().required(),
   })
 
-export const buildPreferencesInputSchema = (): Joi.ObjectSchema =>
-  Joi.object().keys({
-    bidActivityNotifications: Joi.boolean().required(),
-    priceChangeNotifications: Joi.boolean().required(),
-    outbidNotifications: Joi.boolean().required(),
-    purchaseSuccessNotifications: Joi.boolean().required(),
-    promotionalNotifications: Joi.boolean().required(),
-  })
-
 export const buildBigNumber = (value: string, helpers): string => {
   const v = BigNumber.from(value)
   if (isEmpty(v) || v.lte(BigNumber.from(0))) {

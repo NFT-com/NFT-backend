@@ -11,8 +11,8 @@ const from = {
   email: '<noreply@nft.com>',
 }
 
-const BID_CONFIRM_TEMPLATE_ID = 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7'
-const OUTBID_TEMPLATE_ID = 'd-6e92bafc43194eb5a1c8725ecbaaba14'
+const bidConfirmTemplateId = 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7'
+const outbidTemplateId = 'd-6e92bafc43194eb5a1c8725ecbaaba14'
 
 // TODO use templates
 
@@ -64,7 +64,7 @@ export const sendBidConfirmEmail = (
       bidPrice: utils.formatUnits(bid.price, 18),
       profileURL,
     },
-    templateId: BID_CONFIRM_TEMPLATE_ID,
+    templateId: bidConfirmTemplateId,
   }).then(() => true)
 }
 
@@ -84,6 +84,6 @@ export const sendOutbidEmail = (
     dynamicTemplateData: {
       profileURL,
     },
-    templateId: OUTBID_TEMPLATE_ID,
+    templateId: outbidTemplateId,
   }).then(() => true)
 }
