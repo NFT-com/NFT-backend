@@ -1,6 +1,4 @@
-import * as _ from 'lodash'
-
-import { isFalse, isNotEmpty, isTrue } from './misc'
+import { isEmpty, isFalse, isNotEmpty, isTrue } from './misc'
 
 // T => any
 type FnT2Any<T> = (value: T) => any
@@ -120,7 +118,7 @@ export const tapIfNotEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T>
  * @return fn: (T => TOrPromiseT) => (T => TOrPromiseT)
  */
 export const tapIfEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-  return (value: T): TOrPromiseT<T> => _.isEmpty(value) ? tap(thenFn)(value) : value
+  return (value: T): TOrPromiseT<T> => isEmpty(value) ? tap(thenFn)(value) : value
 }
 
 /**
@@ -180,7 +178,7 @@ export const rejectIf = <T>(ifFn: FnPred<T>) => {
  */
 export const rejectIfEmpty = <T>(err: Error): FnT2PromiseT<T> => {
   return (value: T): Promise<T | never> => {
-    return _.isEmpty(value) ? Promise.reject(err) : Promise.resolve(value)
+    return isEmpty(value) ? Promise.reject(err) : Promise.resolve(value)
   }
 }
 
@@ -349,7 +347,7 @@ export const thruIf = <T>(ifFn: FnPred<T>) => {
  * @return fn: (T => FnT2Any) => (T => any)
  */
 export const thruIfEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-  return (value: T) => _.isEmpty(value) ? thenFn(value) : value
+  return (value: T) => isEmpty(value) ? thenFn(value) : value
 }
 
 /**
@@ -427,7 +425,7 @@ export const thruIfOther = <K>(ifFn: FnPred<K>) => {
  */
 export const thruIfOtherEmpty = <K>(otherValue: K) => {
   return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-    return (value: T) => _.isEmpty(otherValue) ? thenFn(value) : value
+    return (value: T) => isEmpty(otherValue) ? thenFn(value) : value
   }
 }
 
@@ -546,7 +544,7 @@ export const filterIf = <K>(ifFn: FnPred<K>) => {
  */
 export const filterIfEmpty = <K>(otherValue: K) => {
   return <T>(filterFn: ArrayFnT2Boolean<T>): FnTArray2TArray<T> => {
-    return (values: T[]) => _.isEmpty(otherValue) ? values.filter(filterFn) : values
+    return (values: T[]) => isEmpty(otherValue) ? values.filter(filterFn) : values
   }
 }
 

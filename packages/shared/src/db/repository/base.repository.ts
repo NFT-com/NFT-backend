@@ -44,12 +44,25 @@ export class BaseRepository<T> {
       })
   }
 
+  // TODO this doesn't work when distinctOn column does not match with orderBy columns
+  //  solution is to use outer query to sort and sub query to find non-dupes/distinct
   public findDistinctPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
+    const alias = 'tbl'
+    const distinctOn = query.distinctOn.map((k) => `${alias}.${k}`)
+    const orderBy = Object.keys(query.orderBy)
+      .reduce((agg, k) => {
+        const nk = `${alias}.${k}`
+        return {
+          ...agg,
+          [nk]: query.orderBy[k],
+        }
+      }, {})
+
     return this.getRepository()
-      .createQueryBuilder()
+      .createQueryBuilder(alias)
       .where(query.filter)
-      .distinctOn(query.distinctOn)
-      .orderBy(query.orderBy)
+      .distinctOn(distinctOn)
+      .orderBy(orderBy)
       .take(query.take)
       .cache(true)
       .getManyAndCount()

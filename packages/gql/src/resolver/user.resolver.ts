@@ -2,7 +2,6 @@ import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { isEmpty } from 'lodash'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, userError, walletError } from '@nftcom/gql/error'
@@ -125,7 +124,7 @@ const confirmEmail = (
       confirmEmailTokenExpiresAt: null,
     }))
     .then((user) => {
-      if (isEmpty(user.referredBy)) {
+      if (helper.isEmpty(user.referredBy)) {
         return user
       }
       return repositories.user.findById(user.referredBy)

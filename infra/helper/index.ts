@@ -1,7 +1,7 @@
 import { exec } from 'child_process'
 import * as console from 'console'
 import * as fs from 'fs'
-import { isEmpty } from 'lodash'
+import * as _ from 'lodash'
 import * as upath from 'upath'
 import * as util from 'util'
 
@@ -35,9 +35,16 @@ export const pulumiOutToValue = <T>(output: pulumi.Output<T>): Promise<T> => {
 
 export const isProduction = (): boolean => getStage() === 'prod'
 
-export const isNotEmpty = <T>(v: T): boolean => !isEmpty(v)
-
 export const isFalse = (v: boolean): boolean => v === false
+
+export const isEmpty = <T>(v: T): boolean => {
+  if (_.isNumber(v)) {
+    return _.isNil(v)
+  }
+  return _.isEmpty(v)
+}
+
+export const isNotEmpty = <T>(v: T): boolean => isFalse(isEmpty(v))
 
 export const deployInfra = async (
   stackName: string,

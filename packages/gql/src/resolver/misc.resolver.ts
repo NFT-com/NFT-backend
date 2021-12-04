@@ -1,6 +1,5 @@
 import STS from 'aws-sdk/clients/sts'
 import { combineResolvers } from 'graphql-resolvers'
-import { isEmpty } from 'lodash'
 
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
@@ -11,7 +10,7 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 let cachedSTS: STS = null
 const getSTS = (): STS => {
-  if (isEmpty(cachedSTS)) {
+  if (helper.isEmpty(cachedSTS)) {
     cachedSTS = new STS()
   }
   return cachedSTS

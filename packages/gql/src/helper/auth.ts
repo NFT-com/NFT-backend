@@ -1,20 +1,19 @@
 import { skip } from 'graphql-resolvers'
-import { isEmpty } from 'lodash'
 
 import { getChain, isNetworkSupported } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
 import { appError, userError, walletError } from '@nftcom/gql/error'
-import { defs } from '@nftcom/shared'
+import { defs, helper } from '@nftcom/shared'
 
 export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
   const { wallet, user } = ctx
-  if (isEmpty(wallet)) {
+  if (helper.isEmpty(wallet)) {
     return appError.buildNotFound(
       walletError.buildAddressNotFoundMsg(),
       walletError.ErrorType.AddressNotFound,
     )
   }
-  if (isEmpty(user)) {
+  if (helper.isEmpty(user)) {
     return userError.buildAuth()
   }
   return skip
@@ -25,7 +24,7 @@ export const verifyAndGetNetworkChain = (network: string, chainId: string): defs
     throw walletError.buildInvalidNetwork(network)
   }
   const chain = getChain(network, chainId)
-  if (isEmpty(chain)) {
+  if (helper.isEmpty(chain)) {
     throw walletError.buildInvalidChainId(network, chainId)
   }
   return chain

@@ -1,10 +1,8 @@
-import * as _ from 'lodash'
-
 import { getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
-import { _logger, defs, entity, fp, repository } from '@nftcom/shared'
+import { _logger, defs, entity, fp, helper, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
@@ -17,7 +15,7 @@ const getDefaultOrFindById = <T>(
   findFn: (id: string) => Promise<T>,
   key = 'id',
 ): Promise<T> => {
-  if (_.isEmpty(id) || obj?.[key] === id) {
+  if (helper.isEmpty(id) || obj?.[key] === id) {
     return Promise.resolve(obj)
   }
   return findFn(id)
@@ -83,7 +81,7 @@ export const resolveEntityById = <T, K>(
   return (parent: T, args: unknown, ctx: Context): Promise<K> => {
     return entityById(ctx, parent?.['id'], parentType)
       .then((p) => {
-        if (_.isEmpty(p?.[key])) {
+        if (helper.isEmpty(p?.[key])) {
           return null
         }
         return entityById(ctx, p?.[key], resolvingType)

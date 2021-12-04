@@ -1,7 +1,6 @@
 import { differenceInSeconds, isEqual } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { isEmpty } from 'lodash'
 
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
@@ -29,7 +28,7 @@ const bid = (
   const { input } = args
   joi.validateSchema(schema, input)
 
-  if (input.nftType === gql.NFTType.Profile && isEmpty(input.profileURL)) {
+  if (input.nftType === gql.NFTType.Profile && helper.isEmpty(input.profileURL)) {
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
@@ -134,15 +133,14 @@ const getTopBids = (
 ): Promise<Pageable<entity.Bid>> => {
   const { user, repositories } = ctx
   logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput)
+  const pageInput = pagination.safeInput(args?.input?.pageInput, pagination.getDefaultCursor(false))
   const filter = helper.inputT2SafeK(args?.input)
   const pageableFilter = pagination.toPageableFilter(pageInput, filter, 'price', false)
   return core.paginatedEntitiesBy(
-    repositories.bid.findDistinctPageable,
+    repositories.bid.findPageable,
     pageInput,
     pageableFilter,
     { price: 'DESC' },
-    ['profileId'],
   )
     .then(pagination.toPageable(pageInput, 'price'))
 }
