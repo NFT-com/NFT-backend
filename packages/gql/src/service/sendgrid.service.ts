@@ -1,5 +1,7 @@
+import { utils } from 'ethers'
+
 import { sgAPIKey } from '@nftcom/gql/config'
-import { _logger, entity, fp } from '@nftcom/shared'
+import { _logger, entity, fp, helper } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
 
 sendgrid.setApiKey(sgAPIKey)
@@ -8,6 +10,9 @@ const from = {
   name: 'NFT.com',
   email: '<noreply@nft.com>',
 }
+
+const bidConfirmTemplateId = 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7'
+const outbidTemplateId = 'd-6e92bafc43194eb5a1c8725ecbaaba14'
 
 // TODO use templates
 
@@ -39,4 +44,46 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
     text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
   })
     .then(() => true)
+}
+
+export const sendBidConfirmEmail = (
+  bid: entity.Bid,
+  user: entity.User,
+  profileURL: string,
+): Promise<boolean> => {
+  logger.debug('sendBidConfirm', { bid, user })
+
+  if (helper.isFalse(user.preferences.bidActivityNotifications)) {
+    return Promise.resolve(false)
+  }
+
+  return send({
+    from,
+    to: { email: user.email },
+    dynamicTemplateData: {
+      bidPrice: utils.formatUnits(bid.price, 18),
+      profileURL,
+    },
+    templateId: bidConfirmTemplateId,
+  }).then(() => true)
+}
+
+export const sendOutbidEmail = (
+  user: entity.User,
+  profileURL: string,
+): Promise<boolean> => {
+  logger.debug('sendOutbid', { user })
+
+  if (helper.isFalse(user.preferences.outbidNotifications)) {
+    return Promise.resolve(false)
+  }
+
+  return send({
+    from,
+    to: { email: user.email },
+    dynamicTemplateData: {
+      profileURL,
+    },
+    templateId: outbidTemplateId,
+  }).then(() => true)
 }

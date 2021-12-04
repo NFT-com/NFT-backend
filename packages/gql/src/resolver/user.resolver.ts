@@ -134,6 +134,15 @@ const confirmEmail = (
     .then(() => true)
 }
 
+const buildPreferencesInputSchema = (): Joi.ObjectSchema =>
+  Joi.object().keys({
+    bidActivityNotifications: Joi.boolean().required(),
+    priceChangeNotifications: Joi.boolean().required(),
+    outbidNotifications: Joi.boolean().required(),
+    purchaseSuccessNotifications: Joi.boolean().required(),
+    promotionalNotifications: Joi.boolean().required(),
+  })
+
 const updateMe = (
   _: any,
   args: gql.MutationUpdateMeArgs,
@@ -145,12 +154,17 @@ const updateMe = (
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
     email: Joi.string(),
+    preferences: buildPreferencesInputSchema(),
   })
   joi.validateSchema(schema, args.input)
 
-  const { avatarURL = '', email } = args.input
+  const {
+    avatarURL = user.avatarURL,
+    email = user.email,
+    preferences = user.preferences,
+  } = args.input
   // TODO notify user?
-  return repositories.user.updateOneById(user.id, { avatarURL, email })
+  return repositories.user.updateOneById(user.id, { avatarURL, email, preferences })
 }
 
 const resendEmailConfirm = (
