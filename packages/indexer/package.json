@@ -9,7 +9,7 @@
     "build": "npm run clean && npm run compile && npm run copy:schema",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "compile": "tsc && tsc-alias",
-    "copy:schema": "cp -r ./src/schema/*.graphql ./dist/schema/",
+    "copy:schema": "cp -r ../gql/src/schema/*.graphql ./dist/schema/",
     "dev": "concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",

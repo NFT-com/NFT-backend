@@ -122,9 +122,9 @@ const is1155 = async (address: string): Promise<boolean> => {
     const contract = new ethers.Contract(
       address,
       supportsInterfaceABI,
-      new ethers.providers.AlchemyProvider(
+      new ethers.providers.InfuraProvider(
         'homestead',
-        process.env.ALCHEMY_API,
+        process.env.INFURA_API,
       ),
     )
 
@@ -143,9 +143,9 @@ const is721 = async (address: string): Promise<boolean> => {
     const contract = new ethers.Contract(
       address,
       supportsInterfaceABI,
-      new ethers.providers.AlchemyProvider(
+      new ethers.providers.InfuraProvider(
         'homestead',
-        process.env.ALCHEMY_API,
+        process.env.INFURA_API,
       ),
     )
 
@@ -161,104 +161,108 @@ const is721 = async (address: string): Promise<boolean> => {
 }
 
 const getImplementationDetails = async(): Promise<void> => {
-  console.log('@implementation')
-  const nullContracts = await repositories.contractInfo.find({
-    where: {
-      abi: null,
-    },
-  })
+  try {
+    console.log('@implementation')
+    const nullContracts = await repositories.contractInfo.find({
+      where: {
+        abi: null,
+      },
+    })
 
-  for (let i = 0; i < nullContracts.length; i++) {
-    const proxyResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${nullContracts[i].contract}&apikey=${provider()}`)
-        
-    if (etherscanError.includes(proxyResult.data.result)) {
-      console.log(etherscanError[etherscanError.indexOf(proxyResult.data.result)] + ' ' + nullContracts[i].contract)
-      if (proxyResult.data.result === 'Contract source code not verified') {
-        await repositories.contractInfo.update(
-          {
-            id: nullContracts[i].id,
-          },
-          {
-            abi: 'Contract source code not verified',
-          },
-        )
-      }
-    } else {
-      const implementation = proxyResult.data.result[0].Implementation
-      if (!implementation) {
-        const abiResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${nullContracts[i].contract}&apikey=${provider()}`)
-
-        if (etherscanError.includes(abiResult.data.result)) {
-          console.log(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract)
-          if (abiResult.data.result === 'Contract source code not verified') {
-            await repositories.contractInfo.update(
-              {
-                id: nullContracts[i].id,
-              },
-              {
-                abi: 'Contract source code not verified',
-              },
-            )
-          }
-        } else {
+    for (let i = 0; i < nullContracts.length; i++) {
+      const proxyResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${nullContracts[i].contract}&apikey=${provider()}`)
+          
+      if (etherscanError.includes(proxyResult.data.result)) {
+        console.log(etherscanError[etherscanError.indexOf(proxyResult.data.result)] + ' ' + nullContracts[i].contract)
+        if (proxyResult.data.result === 'Contract source code not verified') {
           await repositories.contractInfo.update(
             {
               id: nullContracts[i].id,
             },
             {
-              abi: abiResult.data.result,
-              proxy: false,
-              contractName: proxyResult.data.result[0].ContractName,
+              abi: 'Contract source code not verified',
             },
           )
-          console.log(`^ updated ${nullContracts[i].contract} with abi`)
         }
       } else {
-        const abiResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${nullContracts[i].contract}&apikey=${provider()}`)
-        const abiResultImp = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${implementation}&apikey=${provider()}`)
+        const implementation = proxyResult.data.result[0].Implementation
+        if (!implementation) {
+          const abiResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${nullContracts[i].contract}&apikey=${provider()}`)
 
-        if (etherscanError.includes(abiResult.data.result)) {
-          console.log(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract)
-          if (abiResult.data.result === 'Contract source code not verified') {
+          if (etherscanError.includes(abiResult.data.result)) {
+            console.log(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract)
+            if (abiResult.data.result === 'Contract source code not verified') {
+              await repositories.contractInfo.update(
+                {
+                  id: nullContracts[i].id,
+                },
+                {
+                  abi: 'Contract source code not verified',
+                },
+              )
+            }
+          } else {
             await repositories.contractInfo.update(
               {
                 id: nullContracts[i].id,
               },
               {
-                abi: 'Contract source code not verified',
+                abi: abiResult.data.result,
+                proxy: false,
+                contractName: proxyResult.data.result[0].ContractName,
               },
             )
-          }
-        } else if (etherscanError.includes(abiResultImp.data.result)) {
-          console.log('imp error: ' + etherscanError[etherscanError.indexOf(abiResultImp.data.result)] + ' ' + implementation)
-          if (abiResultImp.data.result === 'Contract source code not verified') {
-            await repositories.contractInfo.update(
-              {
-                id: nullContracts[i].id,
-              },
-              {
-                implementationAbi: 'Contract source code not verified',
-              },
-            )
+            console.log(`^ updated ${nullContracts[i].contract} with abi`)
           }
         } else {
-          await repositories.contractInfo.update(
-            {
-              id: nullContracts[i].id,
-            },
-            {
-              abi: abiResult.data.result,
-              proxy: true,
-              implementation: implementation,
-              implementationAbi: abiResultImp.data.result,
-              contractName: proxyResult.data.result[0].ContractName,
-              implementationName: abiResultImp.data.result[0].ContractName,
-            },
-          )
-          console.log(`^ updated ${nullContracts[i].contract} with proxy/imp abi`)
+          const abiResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${nullContracts[i].contract}&apikey=${provider()}`)
+          const abiResultImp = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${implementation}&apikey=${provider()}`)
+
+          if (etherscanError.includes(abiResult.data.result)) {
+            console.log(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract)
+            if (abiResult.data.result === 'Contract source code not verified') {
+              await repositories.contractInfo.update(
+                {
+                  id: nullContracts[i].id,
+                },
+                {
+                  abi: 'Contract source code not verified',
+                },
+              )
+            }
+          } else if (etherscanError.includes(abiResultImp.data.result)) {
+            console.log('imp error: ' + etherscanError[etherscanError.indexOf(abiResultImp.data.result)] + ' ' + implementation)
+            if (abiResultImp.data.result === 'Contract source code not verified') {
+              await repositories.contractInfo.update(
+                {
+                  id: nullContracts[i].id,
+                },
+                {
+                  implementationAbi: 'Contract source code not verified',
+                },
+              )
+            }
+          } else {
+            await repositories.contractInfo.update(
+              {
+                id: nullContracts[i].id,
+              },
+              {
+                abi: abiResult.data.result,
+                proxy: true,
+                implementation: implementation,
+                implementationAbi: abiResultImp.data.result,
+                contractName: proxyResult.data.result[0].ContractName,
+                implementationName: abiResultImp.data.result[0].ContractName,
+              },
+            )
+            console.log(`^ updated ${nullContracts[i].contract} with proxy/imp abi`)
+          }
         }
       }
     }
+  } catch (err) {
+    console.log('error while pulling etherscan: ', err)
   }
 }
 
