@@ -1,5 +1,6 @@
 import * as typeorm from 'typeorm'
 
+import { PageableQuery, PageableResult } from '@nftcom/shared/defs'
 import { helper } from '@nftcom/shared/helper'
 
 export class BaseRepository<T> {
@@ -33,8 +34,38 @@ export class BaseRepository<T> {
     return this.getRepository().find(opts)
   }
 
-  public findAndCount = (opts: typeorm.FindManyOptions<T>): Promise<[T[], number]> => {
-    return this.getRepository().findAndCount(opts)
+  public findPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
+    return this.getRepository()
+      .findAndCount({
+        where: query.filter,
+        order: query.orderBy,
+        take: query.take,
+        cache: true,
+      })
+  }
+
+  // TODO this doesn't work when distinctOn column does not match with orderBy columns
+  //  solution is to use outer query to sort and sub query to find non-dupes/distinct
+  public findDistinctPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
+    const alias = 'tbl'
+    const distinctOn = query.distinctOn.map((k) => `${alias}.${k}`)
+    const orderBy = Object.keys(query.orderBy)
+      .reduce((agg, k) => {
+        const nk = `${alias}.${k}`
+        return {
+          ...agg,
+          [nk]: query.orderBy[k],
+        }
+      }, {})
+
+    return this.getRepository()
+      .createQueryBuilder(alias)
+      .where(query.filter)
+      .distinctOn(distinctOn)
+      .orderBy(orderBy)
+      .take(query.take)
+      .cache(true)
+      .getManyAndCount()
   }
 
   public findOne = (opts: typeorm.FindOneOptions<T>): Promise<T | undefined> => {

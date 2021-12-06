@@ -1,8 +1,26 @@
-import { isEmpty } from 'lodash'
+import * as _ from 'lodash'
 
 import { gql, Pageable } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
-import { helper } from '@nftcom/shared'
+import { _logger, defs, helper } from '@nftcom/shared'
+
+type PageResolvers<T> = {
+  firstAfter: () => Promise<defs.PageableResult<T>>
+  firstBefore: () => Promise<defs.PageableResult<T>>
+  lastAfter?: () => Promise<defs.PageableResult<T>>
+  lastBefore?: () => Promise<defs.PageableResult<T>>
+}
+
+type DefaultCursor = {
+  afterCursor?: string
+  beforeCursor?: string
+}
+
+type FnResult2Pageable = <T>(result: defs.PageableResult<T>) => Pageable<T>
+
+const logger = _logger.Factory(_logger.Context.PageInput, _logger.Context.GraphQL)
+
+const defaultNumItems = 20
 
 export const hasAfter = (input: gql.PageInput): boolean => helper.isNotEmpty(input.afterCursor)
 
@@ -12,7 +30,35 @@ export const hasFirst = (input: gql.PageInput): boolean => helper.isNotEmpty(inp
 
 export const hasLast = (input: gql.PageInput): boolean => helper.isNotEmpty(input.last)
 
-export const DEFAULT_CURSOR_VALUE = new Date('2021-01-01').toISOString()
+export const reverseResult = <T>(result: defs.PageableResult<T>): defs.PageableResult<T> => {
+  const [list, total] = result
+  const reverseList = _.reverse(list)
+  return [reverseList, total]
+}
+
+export const resolvePage = <T>(
+  pageInput: gql.PageInput,
+  pageResolvers: PageResolvers<T>,
+): Promise<defs.PageableResult<T>> => {
+  logger.debug('resolvePage', { pageInput })
+  if (hasAfter(pageInput)) {
+    return hasFirst(pageInput)
+      ? pageResolvers.firstAfter()
+      : pageResolvers.lastAfter()
+  }
+  return hasFirst(pageInput)
+    ? pageResolvers.firstBefore()
+    : pageResolvers.lastBefore()
+}
+
+const isOrderByDate = (orderKey: string): boolean =>
+  ['createdAt', 'updatedAt', 'deletedAt'].includes(orderKey)
+
+export const getDefaultCursor = (orderBy: string): DefaultCursor => {
+  return isOrderByDate(orderBy)
+    ? { afterCursor: helper.toDateIsoString() }
+    : { beforeCursor: '0' }
+}
 
 /**
  * Returns a safe page input by validating the given page input
@@ -23,17 +69,15 @@ export const DEFAULT_CURSOR_VALUE = new Date('2021-01-01').toISOString()
  *
  * @param input
  * @param cursor
- * @param numItems
  */
-export const safeInput = (
+const safeInput = (
   input: gql.PageInput,
-  cursor = DEFAULT_CURSOR_VALUE,
-  numItems = 20,
+  cursor: DefaultCursor,
 ): gql.PageInput => {
-  if (isEmpty(input)) {
+  if (helper.isEmpty(input)) {
     return {
-      first: numItems,
-      afterCursor: cursor,
+      first: defaultNumItems,
+      ...cursor,
     }
   }
   const newInput = helper.removeEmpty(input)
@@ -46,41 +90,91 @@ export const safeInput = (
     throw appError.buildInvalid('Invalid pagination input', 'INVALID_AFTER_BEFORE')
   }
 
-  if (helper.isFalse(hasFirst(input)) && helper.isFalse(hasBefore(input))) {
-    return { ...newInput, first: numItems }
+  if (helper.isFalse(hasFirst(input)) && helper.isFalse(hasLast(input))) {
+    return { ...newInput, first: defaultNumItems }
   }
 
   if (helper.isFalse(hasAfter(input)) && helper.isFalse(hasBefore(input))) {
-    return { ...newInput, afterCursor: cursor }
+    return { ...newInput, ...cursor }
   }
 
   return newInput
 }
 
-type FnResult2Pageable = <T>(result: [T[], number]) => Pageable<T>
+/**
+ * Cursor based pagination filter and by default it is sorted based on time desc
+ * "before" and "after" in page terms refers to "later" and "earlier" respectively
+ *
+ *                                cursor
+ *               |<-- last n before | first n after -->|
+ * 12pm  11am  10am  9am  8am  7am  6am  5am  4am  3am  2am  1am
+ */
+export const toPageableFilter = <T>(
+  pageInput: gql.PageInput,
+  filter: Partial<T>,
+  orderKey = 'createdAt',
+  cursor: (orderBy: string) => DefaultCursor = getDefaultCursor,
+): Partial<T> => {
+  const sagePageInput = safeInput(pageInput, cursor(orderKey))
+  let cursorValue = null
+  if (isOrderByDate) {
+    cursorValue = hasAfter(sagePageInput)
+      ? helper.lessThanDate(sagePageInput.afterCursor)
+      : helper.moreThanDate(sagePageInput.beforeCursor)
+  } else {
+    cursorValue = hasAfter(sagePageInput)
+      ? helper.lessThan(sagePageInput.afterCursor)
+      : helper.moreThan(sagePageInput.beforeCursor)
+  }
+  return { ...filter, deletedAt: null, [orderKey]: cursorValue }
+}
+
+const parseCursorValue = (v: Date | string | number): string => {
+  if (_.isDate(v)) {
+    return helper.toDateIsoString(v)
+  }
+  if (_.isNumber(v)) {
+    return v.toString()
+  }
+  return v
+}
+
+export const toPageInfo = <T>(
+  result: defs.PageableResult<T>,
+  pageInput: gql.PageInput,
+  orderKey: string,
+  cursorValueFn: (v: Date | string | number) => string,
+): gql.PageInfo => {
+  const [values, total] = result
+  const numRequested = pageInput.last || pageInput.first
+  const firstValue = _.first(values)
+  const lastValue = total <= numRequested ? null : _.last(values)
+  return {
+    firstCursor: cursorValueFn(firstValue?.[orderKey]),
+    lastCursor: cursorValueFn(lastValue?.[orderKey]),
+  }
+}
 
 /**
  * @param pageInput: gql.PageInput
+ * @param orderKey: string -> cursor key name
+ * @param cursorValueFn: (v: Date|string|number): string -> cursor value parsing function
  * @param result: [T[], number]
  *
  * @returns fn: (pageInput) => ([T[], number]) => Pageable<T>
  * Pageable<T>.pageInfo should contain *either* afterCursor+first *or* beforeCursor+last
  */
-export const toPageable = (pageInput: gql.PageInput): FnResult2Pageable => {
-  return <T>(result: [T[], number]): Pageable<T> => {
-    const firstCursor = hasFirst(pageInput)
-      ? pageInput.afterCursor
-      : String(Math.max(0, Number(pageInput.beforeCursor) - result[0].length))
-    const lastCursor = hasFirst(pageInput)
-      ? String(Number(pageInput.afterCursor) + result[0].length)
-      : pageInput.beforeCursor
+export const toPageable = (
+  pageInput: gql.PageInput,
+  orderKey = 'createdAt',
+  cursorValueFn = (v: Date | string | number): string => parseCursorValue(v),
+): FnResult2Pageable => {
+  return <T>(result: defs.PageableResult<T>): Pageable<T> => {
+    const pageInfo = toPageInfo(result, pageInput, orderKey, cursorValueFn)
     return {
       items: result[0],
       totalItems: result[1],
-      pageInfo: {
-        firstCursor: firstCursor,
-        lastCursor: lastCursor,
-      },
+      pageInfo,
     }
   }
 }

@@ -31,7 +31,7 @@ input NFTsInput {
 }
 
 type NFTsOutput {
-  nfts: [NFT!]!
+  items: [NFT!]!
   pageInfo: PageInfo
   totalItems: Int
 }

@@ -43,9 +43,9 @@ input BidsInput {
 }
 
 type BidsOutput {
-  totalItems: Int
   items: [Bid!]!
   pageInfo: PageInfo
+  totalItems: Int
 }
 
 input TopBidsInput {
