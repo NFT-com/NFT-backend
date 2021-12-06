@@ -2,7 +2,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi } from '@nftcom/gql/helper'
+import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, helper } from '@nftcom/shared'
 
@@ -22,31 +22,27 @@ const getNFT = (
   return repositories.nft.findById(args.id)
 }
 
-const getNFTsBy = (ctx: Context, filter: Partial<entity.NFT>): Promise<gql.NFTsOutput> => {
-  return core.entitiesBy(ctx.repositories.nft, filter)
-    .then((nfts) => ({
-      nfts,
-      pageInfo: null,
-    }))
-}
-
-// TODO implement pagination
 const getNFTs = (
-  p: unknown,
+  _: unknown,
   args: gql.QueryNFTsArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { user } = ctx
   logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
+  const pageInput = args?.input?.pageInput
   const { types, profileId } = helper.safeObject(args?.input)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     profileId,
   })
-  return getNFTsBy(ctx, filter)
+  return core.paginatedEntitiesBy(
+    ctx.repositories.nft,
+    pageInput,
+    filter,
+  )
+    .then(pagination.toPageable(pageInput))
 }
 
-// TODO implement pagination
 const getMyNFTs = (
   _: unknown,
   args: gql.QueryNFTsArgs,
@@ -54,13 +50,19 @@ const getMyNFTs = (
 ): Promise<gql.NFTsOutput> => {
   const { user } = ctx
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
+  const pageInput = args?.input?.pageInput
   const { types, profileId } = helper.safeObject(args?.input)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     userId: user.id,
     profileId,
   })
-  return getNFTsBy(ctx, filter)
+  return core.paginatedEntitiesBy(
+    ctx.repositories.nft,
+    pageInput,
+    filter,
+  )
+    .then(pagination.toPageable(pageInput))
 }
 
 export default {

@@ -2,7 +2,7 @@ import { differenceInSeconds, isEqual } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, gql, Pageable } from '@nftcom/gql/defs'
+import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
@@ -78,42 +78,38 @@ const bid = (
     })
 }
 
-const getBidsBy = (
-  ctx: Context,
-  filter: Partial<entity.Bid>,
-  pageInput: gql.PageInput,
-): Promise<Pageable<entity.Bid>> => {
-  const pageableFilter = pagination.toPageableFilter(pageInput, filter)
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid.findPageable,
-    pageInput,
-    pageableFilter,
-  )
-    .then(pagination.toPageable(pageInput))
-}
-
 const getBids = (
   _: any,
   args: gql.QueryMyBidsArgs,
   ctx: Context,
-): Promise<Pageable<entity.Bid>> => {
+): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput)
+  const pageInput = args?.input?.pageInput
   const filter = helper.inputT2SafeK(args?.input)
-  return getBidsBy(ctx, filter, pageInput)
+  return core.paginatedEntitiesBy(
+    ctx.repositories.bid,
+    pageInput,
+    filter,
+  )
+    .then(pagination.toPageable(pageInput))
 }
 
 const getMyBids = (
   _: any,
   args: gql.QueryMyBidsArgs,
   ctx: Context,
-): Promise<Pageable<entity.Bid>> => {
+): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput)
+  const pageInput = args?.input?.pageInput
   const filter = helper.inputT2SafeK<entity.Bid>(args?.input, { userId: user.id })
-  return getBidsBy(ctx, filter, pageInput)
+  return core.paginatedEntitiesBy(
+    ctx.repositories.bid,
+    pageInput,
+    filter,
+  )
+    .then(pagination.toPageable(pageInput))
 }
 
 const cancelBid = (
@@ -130,17 +126,16 @@ const getTopBids = (
   _: any,
   args: gql.QueryTopBidsArgs,
   ctx: Context,
-): Promise<Pageable<entity.Bid>> => {
-  const { user, repositories } = ctx
+): Promise<gql.BidsOutput> => {
+  const { user } = ctx
   logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput, pagination.getDefaultCursor(false))
+  const pageInput = args?.input?.pageInput
   const filter = helper.inputT2SafeK(args?.input)
-  const pageableFilter = pagination.toPageableFilter(pageInput, filter, 'price', false)
   return core.paginatedEntitiesBy(
-    repositories.bid.findPageable,
+    ctx.repositories.bid,
     pageInput,
-    pageableFilter,
-    { price: 'DESC' },
+    filter,
+    'price',
   )
     .then(pagination.toPageable(pageInput, 'price'))
 }

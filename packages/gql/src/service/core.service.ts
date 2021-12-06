@@ -134,60 +134,44 @@ export const entitiesBy = <T>(
  * 12pm  11am  10am  9am  8am  7am  6am  5am  4am  3am  2am  1am
  */
 export const paginatedEntitiesBy = <T>(
-  // ctx: Context,
-  findFn: defs.FindPageableFn<T>,
+  repo: repository.BaseRepository<T>,
   pageInput: gql.PageInput,
   filter: Partial<T>,
-  orderBy: defs.OrderBy = { createdAt: 'DESC' },
+  orderKey= 'createdAt',
+  orderDirection = 'DESC',
   distinctOn?: defs.DistinctOn<T>,
 ): Promise<defs.PageableResult<T>> => {
-  const reveredOrderBy = Object.keys(orderBy)
-    .reduce((agg, k) =>{
-      const v = orderBy[k]
-      if (v === 'DESC') {
-        return {
-          ...agg,
-          [k]: 'ASC',
-        }
-      }
-      return {
-        ...agg,
-        [k]: 'DESC',
-      }
-    }, {})
+  const pageableFilter = pagination.toPageableFilter(pageInput, filter, orderKey)
+  const orderBy = <defs.OrderBy>{ [orderKey]: orderDirection }
+  const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
+  const reveredOrderBy = <defs.OrderBy>{ [orderKey]: reversedOrderDirection }
+
   return pagination.resolvePage<T>(pageInput, {
-    firstAfter: () => findFn({
-      filter,
+    firstAfter: () => repo.findPageable({
+      filter: pageableFilter,
       orderBy,
       take: pageInput.first,
       distinctOn,
     }),
-    firstBefore: () => findFn({
-      filter,
+    firstBefore: () => repo.findPageable({
+      filter: pageableFilter,
       orderBy,
       take: pageInput.first,
       distinctOn,
     }),
-    lastAfter: () => findFn({
-      filter,
+    lastAfter: () => repo.findPageable({
+      filter: pageableFilter,
       orderBy: reveredOrderBy,
       take: pageInput.last,
       distinctOn,
     }).then(pagination.reverseResult),
-    lastBefore: () => findFn({
-      filter,
+    lastBefore: () => repo.findPageable({
+      filter: pageableFilter,
       orderBy: reveredOrderBy,
       take: pageInput.last,
       distinctOn,
     }).then(pagination.reverseResult),
   })
-}
-
-export const edgesBy = (
-  edgeRepo: repository.EdgeRepository,
-  filter: Partial<entity.Edge>,
-): Promise<entity.Edge[]> => {
-  return edgeRepo.find({ where: { ...filter, deletedAt: null } })
 }
 
 const entitiesOfEdges = <T>(
@@ -213,7 +197,7 @@ export const thisEntitiesOfEdgesBy = <T>(
   filter: Partial<entity.Edge>,
 ): Promise<T[]> => {
   const { repositories } = ctx
-  return edgesBy(repositories.edge, filter)
+  return entitiesBy(repositories.edge, filter)
     .then(thisEntitiesOfEdges<T>(ctx))
 }
 
@@ -232,7 +216,7 @@ export const thatEntitiesOfEdgesBy = <T>(
   filter: Partial<entity.Edge>,
 ): Promise<T[]> => {
   const { repositories } = ctx
-  return edgesBy(repositories.edge, filter)
+  return entitiesBy(repositories.edge, filter)
     .then(thatEntitiesOfEdges(ctx))
 }
 

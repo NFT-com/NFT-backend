@@ -96,7 +96,7 @@ export const lessThan = <T>(v: T): FindOperator<T> => LessThan(v)
 
 export const moreThan = <T>(v: T): FindOperator<T> => MoreThan(v)
 
-export const lessThanDate = (date: string): FindOperator<Date> => lessThan(toDate(date))
+export const lessThanDate = (date: string): FindOperator<Date> => lessThan(addMs(toDate(date)))
 
 export const moreThanDate = (date: string): FindOperator<Date> => moreThan(addMs(toDate(date)))
 
