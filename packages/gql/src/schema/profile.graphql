@@ -1,0 +1,63 @@
+type FollowersOutput {
+  items: [Wallet!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input FollowersInput {
+  profileId: ID!
+  pageInput: PageInput
+}
+
+enum ProfileStatus {
+  Available
+  Pending
+  Owned
+}
+
+type Profile {
+  id: ID!
+  bannerURL: String
+  createdAt: DateTime!
+  description: String
+  followersCount: Int
+  isFollowedByMe: Boolean
+  isOwnedByMe: Boolean
+  owner: Wallet
+  photoURL: String
+  status: ProfileStatus
+  url: String!
+  winningBid: Bid
+}
+
+input ProfilesInput {
+  pageInput: PageInput
+  statuses: [ProfileStatus]
+}
+
+type ProfilesOutput {
+  items: [Profile!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input UpdateProfileInput {
+  id: ID!
+  bannedURL: String
+  description: String
+  photoURL: String
+}
+
+extend type Query {
+  # TODO do we need to gate this?
+  profileFollowers(input: FollowersInput!): FollowersOutput!
+  profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
+  myProfiles(input: ProfilesInput): ProfilesOutput!
+  profile(url: String!): Profile!
+}
+
+extend type Mutation {
+  followProfile(url: String): Profile!
+  unfollowProfile(id: ID!): Profile!
+  updateProfile(input: UpdateProfileInput!): Profile!
+}

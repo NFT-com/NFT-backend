@@ -1,0 +1,32 @@
+type Approval {
+  id: ID!
+  amount: Uint256!
+  currency: Address!
+  deadline: String!
+  nonce: Int!
+  signature: Signature!
+  txHash: String!
+#  user: User
+  wallet: Wallet
+  spender: String
+  createdAt: DateTime!
+}
+
+input ApprovalInput {
+  amount: Uint256!
+  currency: Address!
+  deadline: String!
+  nonce: Int!
+  signature: SignatureInput!
+  spender: String!
+  txHash: String!
+  wallet: WalletInput!
+}
+
+#extend type Query {
+#
+#}
+
+extend type Mutation {
+  approveAmount(input: ApprovalInput!): Approval!
+}

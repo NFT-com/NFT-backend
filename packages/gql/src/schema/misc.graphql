@@ -1,0 +1,10 @@
+type FileUploadOutput {
+  bucket: String!
+  accessKey: String!
+  secretKey: String!
+  sessionToken: String!
+}
+
+extend type Mutation {
+  uploadFileSession: FileUploadOutput!
+}

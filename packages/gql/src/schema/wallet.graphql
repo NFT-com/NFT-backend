@@ -1,0 +1,19 @@
+type Wallet {
+  id: ID!
+  address: Address!
+  chainId: String!
+  chainName: String!
+  network: String!
+  user: User
+  createdAt: DateTime!
+}
+
+input WalletInput {
+  address: Address!
+  chainId: String!
+  network: String!
+}
+
+extend type Mutation {
+  addAddress(input: WalletInput!): Wallet!
+}
