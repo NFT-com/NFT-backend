@@ -7,7 +7,7 @@ import cron from 'node-cron'
 // import { defs } from '@nftcom/shared'
 import { db, fp } from '@nftcom/shared'
 
-import { dbConfig, provider, serverPort, verifyConfiguration } from './config'
+import { dbConfig, infuraProvider, provider, serverPort, verifyConfiguration } from './config'
 import * as server from './server'
 
 const repositories = db.newRepositories()
@@ -124,14 +124,14 @@ const is1155 = async (address: string): Promise<boolean> => {
       supportsInterfaceABI,
       new ethers.providers.InfuraProvider(
         'homestead',
-        process.env.INFURA_API,
+        infuraProvider(),
       ),
     )
 
     // makes sure no revert
-    await contract.estimateGas.supportsInterface(erc1155Bytes)
+    await contract.estimateGas.supportsInterface(erc1155Bytes[0])
 
-    return await contract.supportsInterface(erc1155Bytes)
+    return await contract.supportsInterface(erc1155Bytes[0])
   } catch (err) {
     return false
   }
@@ -145,7 +145,7 @@ const is721 = async (address: string): Promise<boolean> => {
       supportsInterfaceABI,
       new ethers.providers.InfuraProvider(
         'homestead',
-        process.env.INFURA_API,
+        infuraProvider(),
       ),
     )
 
@@ -327,11 +327,7 @@ const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<voi
     }
   }
 
-  console.log('filtered NFT total: ', nftArray.length)
-  let newNfts = 0
-
   nftArray.map(async data => {
-    newNfts += 1
     await repositories.contractInfo.save({
       network: 'Ethereum',
       contract: data.address,
@@ -341,7 +337,7 @@ const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<voi
     console.log(`*** SAVED *** ${data.address}, 721=${data.bool721}, 1155=${data.bool1155}`)
   })
 
-  console.log(`${newNfts}/${nftArray.length} new NFTs found`)
+  console.log(`${nftArray.length} new NFTs found`)
 }
 
 const startCron = (): Promise<void> => {

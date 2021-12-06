@@ -28,6 +28,16 @@ export const provider = (): string => {
   return etherscanArray[randomIndex]
 }
 
+export const infuraProvider = (): string => {
+  const infuraArray = process.env.INFURA_API.split(',')
+
+  const maxIndex = infuraArray.length - 1
+  const minIndex = 0
+
+  const randomIndex = (Math.random() * (maxIndex - minIndex + 1)) << 0
+  return infuraArray[randomIndex]
+}
+
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,
