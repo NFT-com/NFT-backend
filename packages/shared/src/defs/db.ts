@@ -34,6 +34,14 @@ export type NFTMetadata = {
   txHash: string
 }
 
+export type UserPreferences = {
+  bidActivityNotifications: boolean
+  priceChangeNotifications: boolean
+  outbidNotifications: boolean
+  purchaseSuccessNotifications: boolean
+  promotionalNotifications: boolean
+}
+
 export enum ProfileStatus {
   Available = 'Available',
   Pending = 'Pending',
