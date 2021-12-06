@@ -87,8 +87,13 @@ export const toTimestamp = (date = new Date()): number =>
 // Postgres will return records that **equal** the timestamp, despite
 // the strictly-greater-than filter in the SQL.  This ends up returning
 // dup records to the frontend.  Workaround: add 1 ms to the timestamp.
-export const addMs = (d: Date, add_ms = 1): Date => {
-  d.setMilliseconds(d.getMilliseconds() + add_ms)
+export const addMs = (d: Date, ms = 1): Date => {
+  d.setMilliseconds(d.getMilliseconds() + ms)
+  return d
+}
+
+export const subtractMs = (d: Date, ms = 1): Date => {
+  d.setMilliseconds(d.getMilliseconds() - ms)
   return d
 }
 
@@ -96,7 +101,7 @@ export const lessThan = <T>(v: T): FindOperator<T> => LessThan(v)
 
 export const moreThan = <T>(v: T): FindOperator<T> => MoreThan(v)
 
-export const lessThanDate = (date: string): FindOperator<Date> => lessThan(addMs(toDate(date)))
+export const lessThanDate = (date: string): FindOperator<Date> => lessThan(subtractMs(toDate(date)))
 
 export const moreThanDate = (date: string): FindOperator<Date> => moreThan(addMs(toDate(date)))
 
