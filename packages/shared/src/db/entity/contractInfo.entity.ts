@@ -11,7 +11,30 @@ export class ContractInfo extends BaseEntity {
   @Column({ nullable: false })
   contract: string
 
-  @Column({ nullable: false })
+  // these are nullable since we can run extended queries at a later time
+  @Column({ nullable: true })
+  bool721: boolean
+
+  @Column({ nullable: true })
+  bool1155: boolean
+
+  @Column({ nullable: true })
+  contractName: string
+
+  @Column({ nullable: true })
   abi: string
+
+  // optional fields for implementation contracts
+  @Column({ nullable: true })
+  proxy: boolean
+
+  @Column({ nullable: true })
+  implementation: string
+
+  @Column({ nullable: true })
+  implementationAbi: string
+
+  @Column({ nullable: true })
+  implementationName: string
 
 }
