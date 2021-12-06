@@ -68,7 +68,7 @@ const createAsset = (): { bucket: aws.s3.Bucket; role: aws.iam.Role } => {
     },
     corsRules: [
       {
-        allowedMethods: ['HEAD', 'OPTIONS', 'GET', 'PUT'],
+        allowedMethods: ['HEAD', 'GET', 'PUT'],
         allowedOrigins: ['*'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         maxAgeSeconds: 3000,
