@@ -107,12 +107,15 @@ const bid = (
 
 const getBids = (
   _: any,
-  args: gql.QueryMyBidsArgs,
+  args: gql.QueryBidsArgs,
   ctx: Context,
 ): Promise<gql.BidsOutput> => {
   const { user, repositories } = ctx
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
+
+  // TODO (eddie): add support for querying all public 
+  // bids for a user, given one of their wallet's details.
 
   return Promise.resolve(args?.input?.wallet)
     .then(fp.thruIfNotEmpty((walletInput) => {
