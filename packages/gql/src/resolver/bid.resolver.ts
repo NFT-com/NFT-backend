@@ -8,8 +8,6 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
 
-import { Maybe } from '../defs/gql'
-
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
 const sendBidNotifications = (
@@ -124,7 +122,7 @@ const getBids = (
         walletInput.address,
       )
     }))
-    .then((wallet: Maybe<entity.Wallet>) => {
+    .then((wallet: entity.Wallet) => {
       const inputFilters = {
         profileId: args?.input?.profileId,
         walletId: wallet?.id,
