@@ -1,13 +1,20 @@
 import axios from 'axios'
+import base64 from 'base-64'
+import chalk from 'chalk'
 import { ethers } from 'ethers'
+import { defaultAbiCoder } from 'ethers/lib/utils'
+import isBase64 from 'is-base64'
+import isIPFS from 'is-ipfs'
+import isUrl from 'is-url'
 import kill from 'kill-port'
 import cron from 'node-cron'
 
+// import Web3 from'web3'
 // import AbiCoder from 'web3-eth-abi/src'
-// import { defs } from '@nftcom/shared'
+import { defs } from '@nftcom/shared'
 import { db, fp } from '@nftcom/shared'
 
-import { dbConfig, infuraProvider, provider, serverPort, verifyConfiguration } from './config'
+import { dbConfig, infuraProvider, MAX_LOOPS, provider, serverPort, verifyConfiguration } from './config'
 import * as server from './server'
 
 const repositories = db.newRepositories()
@@ -117,6 +124,63 @@ const supportsInterfaceABI = `[{
   "type": "function"
 }]`
 
+const nftInterface = `[{
+  "inputs": [],
+  "name": "totalSupply",
+  "outputs": [
+    {
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+},
+{
+  "inputs": [
+    {
+      "internalType": "uint256",
+      "name": "tokenId_",
+      "type": "uint256"
+    }
+  ],
+  "name": "tokenInfo",
+  "outputs": [
+    {
+      "internalType": "uint256",
+      "name": "tokenSupply",
+      "type": "uint256"
+    },
+    {
+      "internalType": "string",
+      "name": "tokenUri",
+      "type": "string"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+},
+{
+  "inputs": [
+    {
+      "internalType": "uint256",
+      "name": "tokenId",
+      "type": "uint256"
+    }
+  ],
+  "name": "tokenURI",
+  "outputs": [
+    {
+      "internalType": "string",
+      "name": "",
+      "type": "string"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+}]`
+
 const is1155 = async (address: string): Promise<boolean> => {
   try {
     const contract = new ethers.Contract(
@@ -160,6 +224,263 @@ const is721 = async (address: string): Promise<boolean> => {
   }
 }
 
+const getTokenUri = async(
+  network: string,
+  tokenId: number,
+  contractAddress: string,
+): Promise<string> => {
+  const contract = new ethers.Contract(
+    contractAddress,
+    nftInterface,
+    new ethers.providers.InfuraProvider(
+      'homestead',
+      infuraProvider(),
+    ),
+  )
+  
+  try {
+    return await contract.tokenURI(tokenId)
+  } catch (err) {
+    try {
+      const result = await contract.tokenInfo(tokenId)
+      return result.tokenUri
+    } catch (err2) {
+      console.log(chalk.red(`revert getting token uri (${err2.code}): ${contract.address}, tokenId=${tokenId}`))
+
+      await repositories.nftRaw.save({
+        network: network,
+        contract: contract.address,
+        tokenId: tokenId,
+        type: defs.NFTType.ERC721,
+        error: true,
+        errorReason: err.code ?? err2.code,
+        metadataURL: null,
+        metadata: null,
+      })
+      return undefined
+    }
+  }
+}
+
+const getMetaData = async(tokenUri: string): Promise<any> => {
+  try {
+    if (isBase64(tokenUri)) {
+      console.log(chalk.green('^base64'))
+      return base64.decode(tokenUri)
+    } else if (isIPFS.multihash(tokenUri)) {
+      console.log(chalk.green('^multihash', tokenUri))
+      const result = await axios.get(`https://cloudflare-ipfs.com/ipfs/${tokenUri}`)
+      return result.data
+    } else if (isIPFS.url(tokenUri)) {
+      console.log(chalk.green('^url', tokenUri))
+      const result = await axios.get(`${tokenUri}`)
+      return result.data
+    } else if (isIPFS.ipfsUrl(tokenUri)) {
+      console.log(chalk.green('^ipfs url', tokenUri))
+      const result = await axios.get(`${tokenUri}`)
+      return result.data
+    } else if (tokenUri.indexOf('ipfs://') != -1) {
+      console.log(chalk.green('^ipfs resource', tokenUri))
+      const result = await axios.get(`https://cloudflare-ipfs.com/${tokenUri.replace('ipfs://', 'ipfs/')}`)
+      return result.data
+    } else if (isUrl(tokenUri)) {
+      console.log(chalk.green('^regular url: ', tokenUri))
+      const result = await axios.get(tokenUri)
+      return result.data
+    } else {
+      if (tokenUri.indexOf('data:application/json;base64,') != -1) {
+        const base64Parse = tokenUri.replace('data:application/json;base64,', '')
+
+        if (isBase64(base64Parse)) {
+          console.log(chalk.green('^base64'))
+          return base64.decode(base64Parse)
+        } else {
+          console.log(chalk.yellow(`^metadata non-conforming: ${tokenUri}`))
+          return undefined
+        }
+      } else {
+        console.log(chalk.yellow(`^metadata non-conforming: ${tokenUri}`))
+        return undefined
+      }
+    }
+  } catch (err) {
+    console.log('^error while getting metadata: ', err)
+    return undefined
+  }
+}
+
+const encodedTransferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+
+// const getTimestampFromBlock = async (block: number): Promise<number> => {
+//   const web3 = new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${infuraProvider()}`))
+//   const result = await web3.eth.getBlock(block)
+//   return Number(result.timestamp) * 1000 // for milliseconds
+// }
+
+// TODO looping through tokenIds from 0 -> totalSupply is bad since some tokenIds don't have metadata yet
+// TODO better way is to filter tokenIds by mint (0x0 tx => address)
+const populateTokenIds = async(): Promise<void> => {
+  try {
+    console.log('@populating token ids')
+    const ethContracts = await repositories.contractInfo.find({
+      where: {
+        network: 'Ethereum',
+        bool721: true,
+      },
+    })
+
+    // TODO maybe just get all the addresses in contractInfo
+    // and add to all the repos and save all at once
+
+    for (let i = 0; i < ethContracts.length; i++) {
+      const combinedFilter = {
+        address: ethContracts[i].contract,
+        topics: [
+          [encodedTransferTopic],
+        ],
+        fromBlock: 0, // TODO optimize call later by remember which blocks we've seen?
+      }
+      
+      try {
+        const result = await new ethers.providers.InfuraProvider(
+          'homestead',
+          infuraProvider(),
+        ).getLogs(combinedFilter)
+
+        console.log(chalk.green(`====> filtered logs ${ethContracts[i].contract}`))
+
+        // make sure tokenId hasn't been seen before
+        const allNftRaw = await repositories.nftRaw.find({
+          where: {
+            contract: ethContracts[i].contract,
+          },
+        })
+
+        const allNftTrade = await repositories.nftTrade.find({
+          where: {
+            contract: ethContracts[i].contract,
+          },
+        })
+
+        const tokenIds: string[] = [...new Set(allNftRaw.map(i => i.tokenId.toString()))]
+        const nftTrades: string[] = [...new Set(allNftTrade.map(i => i.transactionHash))]
+
+        // seenMap is a birds eye view of every unique tokenId and transferHash given a contract address at the time of call
+        const seenMap = tokenIds.concat(nftTrades).reduce(function(map, obj) {
+          map[obj] = true
+          return map
+        }, {})
+
+        const bulkSaveNftRaw = []
+        const bulkSaveNftTrade = []
+
+        for (let j = 0; j < result.length; j++) {
+          const topics = result[j].topics
+
+          const from = defaultAbiCoder.decode(['address'] , topics[1]).toString()
+          const to = defaultAbiCoder.decode(['address'] , topics[2]).toString()
+          const tokenId = Number(defaultAbiCoder.decode(['uint256'] , topics[3]).toString())
+
+          if (!seenMap[tokenId.toString()]) {
+            bulkSaveNftRaw.push({
+              network: ethContracts[i].network,
+              contract: ethContracts[i].contract,
+              tokenId: tokenId,
+              type: defs.NFTType.ERC721,
+            })
+            
+            seenMap[tokenId.toString()] = true
+          }
+
+          if (!seenMap[result[j].transactionHash]) {
+            // TODO add to cron timestamp => const timestamp = await getTimestampFromBlock(Number(result[j].blockNumber))
+            // save quickly for later cron job (to update metadata)
+            bulkSaveNftTrade.push({
+              network: ethContracts[i].network,
+              contract: ethContracts[i].contract,
+              transactionHash: result[j].transactionHash,
+              from: from,
+              to: to,
+              tokenId: tokenId,
+              blockNumber: Number(result[j].blockNumber),
+            })
+
+            seenMap[result[j].transactionHash] = true
+          }
+        }
+
+        if (bulkSaveNftTrade.length > 0) {
+          await repositories.nftTrade.saveMany(
+            bulkSaveNftTrade,
+          )
+
+          console.log(chalk.cyan(`*** SAVED *** ${bulkSaveNftTrade.length} nftTrade`))
+        } else {
+          console.log(chalk.cyan('no new nftTrades'))
+        }
+
+        if (bulkSaveNftRaw.length > 0) {
+          await repositories.nftRaw.saveMany(
+            bulkSaveNftRaw,
+          )
+    
+          console.log(chalk.cyan(`*** SAVED *** ${bulkSaveNftRaw.length} nftRaws`))
+        } else {
+          console.log(chalk.cyan('no new nftRaws'))
+        }
+      } catch (errLogs) {
+        console.log('errLog: ', errLogs.body)
+      }
+    }
+  } catch (err) {
+    console.log('populateTokenIds err: ', err.body)
+  }
+}
+
+const importMetaData = async(): Promise<void> => {
+  try {
+    const nullTokens = await repositories.nftRaw.find({
+      where: {
+        metadataURL: null,
+      },
+    })
+
+    let loop = 0
+    for (let i = 0; i < nullTokens.length && loop < MAX_LOOPS; i++) {
+      const tokenUri = await getTokenUri(
+        nullTokens[i].network,
+        Number(nullTokens[i].tokenId),
+        nullTokens[i].contract,
+      )
+
+      if (tokenUri) {
+        const jsonMetaData = await getMetaData(tokenUri)
+  
+        if (jsonMetaData) {
+          await repositories.nftRaw.save({
+            network: nullTokens[i].network,
+            contract: nullTokens[i].contract,
+            tokenId: nullTokens[i].tokenId,
+            type: defs.NFTType.ERC721,
+            metadataURL: tokenUri,
+            metadata: jsonMetaData,
+          })
+  
+          console.log(
+            chalk.yellow(
+              `*** SAVED *** RawNft: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
+            ),
+          )
+        }
+      }
+
+      loop += 1
+    }
+  } catch (err) {
+    console.log('error importing metadata: ', err)
+  }
+}
+
 const getImplementationDetails = async(): Promise<void> => {
   try {
     console.log('@implementation')
@@ -169,7 +490,8 @@ const getImplementationDetails = async(): Promise<void> => {
       },
     })
 
-    for (let i = 0; i < nullContracts.length; i++) {
+    let loop = 0
+    for (let i = 0; i < nullContracts.length && loop < MAX_LOOPS; i++) {
       const proxyResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${nullContracts[i].contract}&apikey=${provider()}`)
           
       if (etherscanError.includes(proxyResult.data.result)) {
@@ -260,6 +582,8 @@ const getImplementationDetails = async(): Promise<void> => {
           }
         }
       }
+
+      loop += 1
     }
   } catch (err) {
     console.log('error while pulling etherscan: ', err)
@@ -301,21 +625,24 @@ const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<voi
       const bool1155 = await is1155(rawArray[i])
       if (bool721 && bool1155) {
         nftArray.push({
-          address: rawArray[i],
+          network: 'Ethereum',
+          contract: rawArray[i],
           bool721: true,
           bool1155: true,
         })
         console.log(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`)
       } else if (bool721) {
         nftArray.push({
-          address: rawArray[i],
+          network: 'Ethereum',
+          contract: rawArray[i],
           bool721: true,
           bool1155: false,
         })
         console.log(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`)
       } else if (bool1155) {
         nftArray.push({
-          address: rawArray[i],
+          network: 'Ethereum',
+          contract: rawArray[i],
           bool721: false,
           bool1155: true,
         })
@@ -327,17 +654,8 @@ const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<voi
     }
   }
 
-  nftArray.map(async data => {
-    await repositories.contractInfo.save({
-      network: 'Ethereum',
-      contract: data.address,
-      bool721: data.bool721,
-      bool1155: data.bool1155,
-    })
-    console.log(`*** SAVED *** ${data.address}, 721=${data.bool721}, 1155=${data.bool1155}`)
-  })
-
-  console.log(`${nftArray.length} new NFTs found`)
+  await repositories.contractInfo.saveMany(nftArray)
+  console.log(chalk.green(`*** SAVED ${nftArray.length} New NFTs ***`))
 }
 
 const startCron = (): Promise<void> => {
@@ -358,6 +676,18 @@ const startCron = (): Promise<void> => {
     '0 */3 * * * *',
     () => {
       getImplementationDetails()
+      importMetaData()
+    },
+    {
+      scheduled: true,
+      timezone: 'America/Chicago',
+    },
+  )
+
+  cron.schedule(
+    '0 */2 * * * *',
+    () => {
+      populateTokenIds()
     },
     {
       scheduled: true,

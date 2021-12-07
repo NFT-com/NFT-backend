@@ -29,12 +29,19 @@ export class NFTRaw extends BaseEntity {
   @Column({ nullable: true })
   tokenId: number
 
+  // true if this tokenId has an error
+  @Column({ nullable: true })
+  error: boolean
+
+  @Column({ nullable: true })
+  errorReason: string
+
   // IPFS hash, or centralized URL
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   metadataURL: string
 
   // metadata json object
-  @Column({ type: 'json', nullable: false })
+  @Column({ type: 'json', nullable: true })
   metadata: NFTMetadata
 
   @OneToMany(() => NFTTrade, nftTrade => nftTrade.nftRaw)

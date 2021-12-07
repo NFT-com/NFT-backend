@@ -28,6 +28,8 @@ export const provider = (): string => {
   return etherscanArray[randomIndex]
 }
 
+export const MAX_LOOPS = 10
+
 export const infuraProvider = (): string => {
   const infuraArray = process.env.INFURA_API.split(',')
 

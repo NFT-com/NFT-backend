@@ -10,18 +10,36 @@ export class NFTTrade extends BaseEntity {
   @Column({ nullable: false })
   network: string
 
+  @Column({ nullable: false })
+  contract: string
+
   // for trace tracking
   @Column({ nullable: false })
   transactionHash: string
 
+  @Column({ nullable: false })
+  from: string
+
+  @Column({ nullable: false })
+  to: string
+
+  @Column({ nullable: false })
+  tokenId: number
+
+  // TODO add other data later like USD value of swap
+
   // for tracking which exchange
   // have ENUM for opensea, rarible, etc...
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   contractExecution: string
 
   // unix timestamp for trade for fair ordering
-  @Column({ nullable: false })
-  unixTimestamp: number
+  @Column({ nullable: true })
+  blockNumber: number
+
+  // unix timestamp for trade for fair ordering
+  @Column({ nullable: true, type: 'timestamptz' })
+  unixTimestamp: Date
 
   /**
    * @dev make sure to have info in the future about the trade itself
