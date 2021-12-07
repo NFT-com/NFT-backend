@@ -8,6 +8,8 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
 
+import { Maybe } from '../defs/gql'
+
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
 const sendBidNotifications = (
@@ -110,15 +112,30 @@ const getBids = (
   args: gql.QueryMyBidsArgs,
   ctx: Context,
 ): Promise<gql.BidsOutput> => {
-  const { user } = ctx
+  const { user, repositories } = ctx
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK(args?.input)
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    pageInput,
-    filter,
-  )
+
+  return Promise.resolve(args?.input?.wallet)
+    .then(fp.thruIfNotEmpty((walletInput) => {
+      return repositories.wallet.findByNetworkChainAddress(
+        walletInput.network,
+        walletInput.chainId,
+        walletInput.address,
+      )
+    }))
+    .then((wallet: Maybe<entity.Wallet>) => {
+      const inputFilters = {
+        profileId: args?.input?.profileId,
+        walletId: wallet?.id,
+      }
+      const filter = helper.inputT2SafeK(inputFilters)
+      return core.paginatedEntitiesBy(
+        ctx.repositories.bid,
+        pageInput,
+        filter,
+      )
+    })
     .then(pagination.toPageable(pageInput))
 }
 
