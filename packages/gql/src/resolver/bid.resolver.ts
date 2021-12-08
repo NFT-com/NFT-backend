@@ -107,18 +107,36 @@ const bid = (
 
 const getBids = (
   _: any,
-  args: gql.QueryMyBidsArgs,
+  args: gql.QueryBidsArgs,
   ctx: Context,
 ): Promise<gql.BidsOutput> => {
-  const { user } = ctx
+  const { user, repositories } = ctx
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK(args?.input)
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    pageInput,
-    filter,
-  )
+
+  // TODO (eddie): add support for querying all public 
+  // bids for a user, given one of their wallet's details.
+
+  return Promise.resolve(args?.input?.wallet)
+    .then(fp.thruIfNotEmpty((walletInput) => {
+      return repositories.wallet.findByNetworkChainAddress(
+        walletInput.network,
+        walletInput.chainId,
+        walletInput.address,
+      )
+    }))
+    .then((wallet: entity.Wallet) => {
+      const inputFilters = {
+        profileId: args?.input?.profileId,
+        walletId: wallet?.id,
+      }
+      const filter = helper.inputT2SafeK(inputFilters)
+      return core.paginatedEntitiesBy(
+        ctx.repositories.bid,
+        pageInput,
+        filter,
+      )
+    })
     .then(pagination.toPageable(pageInput))
 }
 
