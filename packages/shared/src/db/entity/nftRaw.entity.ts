@@ -1,15 +1,16 @@
-import { Column, Entity, OneToMany } from 'typeorm'
+import { Column, Entity, Index } from 'typeorm'
 
 import { NFTMetadata, NFTType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
-import { NFTTrade } from './nftTrade.entity'
 
 /**
  * @dev this entity tracks an internal db of NFT contracts
  * @dev a different entity will track trades
  */
 
+@Index(['network', 'contract'])
+@Index(['network', 'contract', 'tokenId'], { unique: true })
 @Entity()
 export class NFTRaw extends BaseEntity {
 
@@ -43,8 +44,5 @@ export class NFTRaw extends BaseEntity {
   // metadata json object
   @Column({ type: 'json', nullable: true })
   metadata: NFTMetadata
-
-  @OneToMany(() => NFTTrade, nftTrade => nftTrade.nftRaw)
-  trades: NFTTrade[]
   
 }

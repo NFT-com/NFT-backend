@@ -1,7 +1,8 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, Index } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
+@Index(['network', 'contract', 'bool721', 'bool1155'], { unique: true })
 @Entity()
 export class ContractInfo extends BaseEntity {
 

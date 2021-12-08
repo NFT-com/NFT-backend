@@ -9,8 +9,6 @@ import isUrl from 'is-url'
 import kill from 'kill-port'
 import cron from 'node-cron'
 
-// import Web3 from'web3'
-// import AbiCoder from 'web3-eth-abi/src'
 import { defs } from '@nftcom/shared'
 import { db, fp } from '@nftcom/shared'
 
@@ -25,84 +23,6 @@ const erc721Bytes = [
   '0x5b5e139f', // 721_meta
 ]
 const erc1155Bytes = ['0xd9b67a26']
-// // keccak256('TransferSingle(address,address,address,uint256,uint256)')
-// const TransferSingleHash = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
-// const TransferSingleInput = '[{"indexed":true,"internalType":"address","name":"_operator","type":"address"},{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":false,"internalType":"uint256","name":"_id","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}]'
-// // keccak256('TransferBatch(address,address,address,uint256[],uint256[])')
-// const TransferBatchHash = '0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'
-// const TransferBatchInput = '[{"indexed":true,"internalType":"address","name":"_operator","type":"address"},{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":false,"internalType":"uint256[]","name":"_ids","type":"uint256[]"},{"indexed":false,"internalType":"uint256[]","name":"_values","type":"uint256[]"}]'
-// const erc1155topic0 = [TransferSingleHash, TransferBatchHash]
-// const erc1155inputs = [TransferSingleInput, TransferBatchInput]
-
-// const get1155Input = (hash: string): string => {
-//   switch (hash) {
-//   case erc1155topic0[0]:
-//     return erc1155inputs[0]
-//   case erc1155topic0[1]:
-//     return erc1155inputs[1]
-//   default:
-//     throw new Error('Invalid')
-//   }
-// }
-
-// const parse = (log: any, abi: any): defs.ParsedEthLog => {
-//   const validNames = ['Transfer', 'TransferBatch', 'TransferSingle']
-//   const events = abi.filter(e => e.type === 'event' && validNames.includes(e.name) && e.anonymous === false)
-
-//   const signature = log.topics[0]
-//   const event = events.find(e => AbiCoder.encodeEventSignature(e) === signature)
-
-//   if (event) {
-//     const rawReturnValues = AbiCoder.decodeLog(event.inputs, log.data, log.topics.slice(1))
-//     const returnValues = Object.keys(rawReturnValues)
-//       .filter((key: any) => isNaN(key) && key !== '__length__')
-//       .reduce((obj, key) => ({ ...obj, [key]: rawReturnValues[key] }), {})
-
-//     return {
-//       event: event.name,
-//       signature: signature,
-//       address: log.address,
-//       blockHash: log.blockHash,
-//       blockNumber: log.blockNumber,
-//       transactionHash: log.transactionHash,
-//       transactionIndex: log.transactionIndex,
-//       logIndex: log.logIndex,
-//       raw: {
-//         data: log.data,
-//         topics: log.topics,
-//       },
-//       returnValues: returnValues,
-//     }
-//   } else {
-//     // if not found, try 1155s (if not verified)
-//     const event1155 = erc1155topic0.find(e => e === signature)
-//     if (event1155) {
-//       const rawReturnValues = AbiCoder.decodeLog(
-//         JSON.parse(get1155Input(event1155)), log.data, log.topics.slice(1))
-//       const returnValues = Object.keys(rawReturnValues)
-//         .filter((key: any) => isNaN(key) && key !== '__length__')
-//         .reduce((obj, key) => ({ ...obj, [key]: rawReturnValues[key] }), {})
-
-//       return {
-//         event: event.name,
-//         signature: signature,
-//         address: log.address,
-//         blockHash: log.blockHash,
-//         blockNumber: log.blockNumber,
-//         transactionHash: log.transactionHash,
-//         transactionIndex: log.transactionIndex,
-//         logIndex: log.logIndex,
-//         raw: {
-//           data: log.data,
-//           topics: log.topics,
-//         },
-//         returnValues: returnValues,
-//       }
-//     } else {
-//       console.log('Cannot parse unknown event')
-//     }
-//   }
-// }
 
 const supportsInterfaceABI = `[{
   "inputs": [
@@ -192,9 +112,6 @@ const is1155 = async (address: string): Promise<boolean> => {
       ),
     )
 
-    // makes sure no revert
-    await contract.estimateGas.supportsInterface(erc1155Bytes[0])
-
     return await contract.supportsInterface(erc1155Bytes[0])
   } catch (err) {
     return false
@@ -213,9 +130,6 @@ const is721 = async (address: string): Promise<boolean> => {
       ),
     )
 
-    // makes sure no revert
-    await contract.estimateGas.supportsInterface(erc721Bytes[0])
-
     return await contract.supportsInterface(erc721Bytes[0]) ||
             await contract.supportsInterface(erc721Bytes[1]) ||
             await contract.supportsInterface(erc721Bytes[2])
@@ -225,9 +139,9 @@ const is721 = async (address: string): Promise<boolean> => {
 }
 
 const getTokenUri = async(
-  network: string,
   tokenId: number,
   contractAddress: string,
+  existingId: string,
 ): Promise<string> => {
   const contract = new ethers.Contract(
     contractAddress,
@@ -241,22 +155,25 @@ const getTokenUri = async(
   try {
     return await contract.tokenURI(tokenId)
   } catch (err) {
+    console.log(chalk.red(`revert getting token id (${err.code}): ${contract.address}, tokenId=${tokenId}`))
     try {
       const result = await contract.tokenInfo(tokenId)
       return result.tokenUri
     } catch (err2) {
-      console.log(chalk.red(`revert getting token uri (${err2.code}): ${contract.address}, tokenId=${tokenId}`))
+      console.log(chalk.red(`revert getting token info (${err2.code}): ${contract.address}, tokenId=${tokenId}`))
 
-      await repositories.nftRaw.save({
-        network: network,
-        contract: contract.address,
-        tokenId: tokenId,
-        type: defs.NFTType.ERC721,
-        error: true,
-        errorReason: err.code ?? err2.code,
-        metadataURL: null,
-        metadata: null,
-      })
+      await repositories.nftRaw.update(
+        {
+          id: existingId,
+        },
+        {
+          error: true,
+          errorReason: err.code ?? err2.code,
+          metadataURL: null,
+          metadata: null,
+        },
+      )
+
       return undefined
     }
   }
@@ -269,7 +186,7 @@ const getMetaData = async(tokenUri: string): Promise<any> => {
       return base64.decode(tokenUri)
     } else if (isIPFS.multihash(tokenUri)) {
       console.log(chalk.green('^multihash', tokenUri))
-      const result = await axios.get(`https://cloudflare-ipfs.com/ipfs/${tokenUri}`)
+      const result = await axios.get(`https://nft-llc.mypinata.cloud/ipfs/${tokenUri}`)
       return result.data
     } else if (isIPFS.url(tokenUri)) {
       console.log(chalk.green('^url', tokenUri))
@@ -281,7 +198,7 @@ const getMetaData = async(tokenUri: string): Promise<any> => {
       return result.data
     } else if (tokenUri.indexOf('ipfs://') != -1) {
       console.log(chalk.green('^ipfs resource', tokenUri))
-      const result = await axios.get(`https://cloudflare-ipfs.com/${tokenUri.replace('ipfs://', 'ipfs/')}`)
+      const result = await axios.get(`https://nft-llc.mypinata.cloud/${tokenUri.replace('ipfs://', 'ipfs/')}`)
       return result.data
     } else if (isUrl(tokenUri)) {
       console.log(chalk.green('^regular url: ', tokenUri))
@@ -311,12 +228,6 @@ const getMetaData = async(tokenUri: string): Promise<any> => {
 
 const encodedTransferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
-// const getTimestampFromBlock = async (block: number): Promise<number> => {
-//   const web3 = new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${infuraProvider()}`))
-//   const result = await web3.eth.getBlock(block)
-//   return Number(result.timestamp) * 1000 // for milliseconds
-// }
-
 // TODO looping through tokenIds from 0 -> totalSupply is bad since some tokenIds don't have metadata yet
 // TODO better way is to filter tokenIds by mint (0x0 tx => address)
 const populateTokenIds = async(): Promise<void> => {
@@ -333,6 +244,7 @@ const populateTokenIds = async(): Promise<void> => {
     // and add to all the repos and save all at once
 
     for (let i = 0; i < ethContracts.length; i++) {
+      console.log(chalk.cyan(`tokenId => ${i}/${ethContracts.length - 1}`))
       const combinedFilter = {
         address: ethContracts[i].contract,
         topics: [
@@ -342,14 +254,14 @@ const populateTokenIds = async(): Promise<void> => {
       }
       
       try {
+        console.log(chalk.cyan(`====> filtered transfer logs ${ethContracts[i].contract}`))
+
         const result = await new ethers.providers.InfuraProvider(
           'homestead',
           infuraProvider(),
         ).getLogs(combinedFilter)
 
-        console.log(chalk.green(`====> filtered logs ${ethContracts[i].contract}`))
-
-        // make sure tokenId hasn't been seen before
+        // make sure tokenId hasn't been seen before 
         const allNftRaw = await repositories.nftRaw.find({
           where: {
             contract: ethContracts[i].contract,
@@ -364,9 +276,10 @@ const populateTokenIds = async(): Promise<void> => {
 
         const tokenIds: string[] = [...new Set(allNftRaw.map(i => i.tokenId.toString()))]
         const nftTrades: string[] = [...new Set(allNftTrade.map(i => i.transactionHash))]
+        const totalView: string[] = tokenIds.concat(nftTrades)
 
         // seenMap is a birds eye view of every unique tokenId and transferHash given a contract address at the time of call
-        const seenMap = tokenIds.concat(nftTrades).reduce(function(map, obj) {
+        const seenMap = totalView.reduce(function(map, obj) {
           map[obj] = true
           return map
         }, {})
@@ -379,21 +292,20 @@ const populateTokenIds = async(): Promise<void> => {
 
           const from = defaultAbiCoder.decode(['address'] , topics[1]).toString()
           const to = defaultAbiCoder.decode(['address'] , topics[2]).toString()
-          const tokenId = Number(defaultAbiCoder.decode(['uint256'] , topics[3]).toString())
+          const tokenId = defaultAbiCoder.decode(['uint256'] , topics[3]).toString()
 
-          if (!seenMap[tokenId.toString()]) {
+          if (!seenMap[tokenId]) {
             bulkSaveNftRaw.push({
               network: ethContracts[i].network,
               contract: ethContracts[i].contract,
-              tokenId: tokenId,
+              tokenId: Number(tokenId),
               type: defs.NFTType.ERC721,
             })
             
-            seenMap[tokenId.toString()] = true
+            seenMap[tokenId] = true
           }
 
           if (!seenMap[result[j].transactionHash]) {
-            // TODO add to cron timestamp => const timestamp = await getTimestampFromBlock(Number(result[j].blockNumber))
             // save quickly for later cron job (to update metadata)
             bulkSaveNftTrade.push({
               network: ethContracts[i].network,
@@ -401,7 +313,7 @@ const populateTokenIds = async(): Promise<void> => {
               transactionHash: result[j].transactionHash,
               from: from,
               to: to,
-              tokenId: tokenId,
+              tokenId: Number(tokenId),
               blockNumber: Number(result[j].blockNumber),
             })
 
@@ -429,11 +341,11 @@ const populateTokenIds = async(): Promise<void> => {
           console.log(chalk.cyan('no new nftRaws'))
         }
       } catch (errLogs) {
-        console.log('errLog: ', errLogs.body)
+        console.log(chalk.cyan('errLog: ', errLogs.body ?? errLogs.detail ?? errLogs))
       }
     }
   } catch (err) {
-    console.log('populateTokenIds err: ', err.body)
+    console.log('populateTokenIds err: ', err.body ?? err)
   }
 }
 
@@ -448,27 +360,28 @@ const importMetaData = async(): Promise<void> => {
     let loop = 0
     for (let i = 0; i < nullTokens.length && loop < MAX_LOOPS; i++) {
       const tokenUri = await getTokenUri(
-        nullTokens[i].network,
         Number(nullTokens[i].tokenId),
         nullTokens[i].contract,
+        nullTokens[i].id,
       )
 
       if (tokenUri) {
         const jsonMetaData = await getMetaData(tokenUri)
   
         if (jsonMetaData) {
-          await repositories.nftRaw.save({
-            network: nullTokens[i].network,
-            contract: nullTokens[i].contract,
-            tokenId: nullTokens[i].tokenId,
-            type: defs.NFTType.ERC721,
-            metadataURL: tokenUri,
-            metadata: jsonMetaData,
-          })
+          await repositories.nftRaw.update(
+            {
+              id: nullTokens[i].id,
+            },
+            {
+              metadataURL: tokenUri,
+              metadata: jsonMetaData,
+            },
+          )
   
           console.log(
             chalk.yellow(
-              `*** SAVED *** RawNft: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
+              `Updated MetaData: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
             ),
           )
         }
@@ -483,7 +396,7 @@ const importMetaData = async(): Promise<void> => {
 
 const getImplementationDetails = async(): Promise<void> => {
   try {
-    console.log('@implementation')
+    console.log(chalk.yellow('@implementation'))
     const nullContracts = await repositories.contractInfo.find({
       where: {
         abi: null,
@@ -495,7 +408,7 @@ const getImplementationDetails = async(): Promise<void> => {
       const proxyResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${nullContracts[i].contract}&apikey=${provider()}`)
           
       if (etherscanError.includes(proxyResult.data.result)) {
-        console.log(etherscanError[etherscanError.indexOf(proxyResult.data.result)] + ' ' + nullContracts[i].contract)
+        console.log(chalk.yellow(etherscanError[etherscanError.indexOf(proxyResult.data.result)] + ' ' + nullContracts[i].contract))
         if (proxyResult.data.result === 'Contract source code not verified') {
           await repositories.contractInfo.update(
             {
@@ -512,7 +425,7 @@ const getImplementationDetails = async(): Promise<void> => {
           const abiResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${nullContracts[i].contract}&apikey=${provider()}`)
 
           if (etherscanError.includes(abiResult.data.result)) {
-            console.log(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract)
+            console.log(chalk.yellow(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract))
             if (abiResult.data.result === 'Contract source code not verified') {
               await repositories.contractInfo.update(
                 {
@@ -534,14 +447,14 @@ const getImplementationDetails = async(): Promise<void> => {
                 contractName: proxyResult.data.result[0].ContractName,
               },
             )
-            console.log(`^ updated ${nullContracts[i].contract} with abi`)
+            console.log(chalk.yellow(`^ updated ${nullContracts[i].contract} with abi`))
           }
         } else {
           const abiResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${nullContracts[i].contract}&apikey=${provider()}`)
           const abiResultImp = await axios.get(`https://api.etherscan.io/api?module=contract&action=getabi&address=${implementation}&apikey=${provider()}`)
 
           if (etherscanError.includes(abiResult.data.result)) {
-            console.log(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract)
+            console.log(chalk.yellow(etherscanError[etherscanError.indexOf(abiResult.data.result)] + ' ' + nullContracts[i].contract))
             if (abiResult.data.result === 'Contract source code not verified') {
               await repositories.contractInfo.update(
                 {
@@ -553,7 +466,7 @@ const getImplementationDetails = async(): Promise<void> => {
               )
             }
           } else if (etherscanError.includes(abiResultImp.data.result)) {
-            console.log('imp error: ' + etherscanError[etherscanError.indexOf(abiResultImp.data.result)] + ' ' + implementation)
+            console.log(chalk.yellow('imp error: ' + etherscanError[etherscanError.indexOf(abiResultImp.data.result)] + ' ' + implementation))
             if (abiResultImp.data.result === 'Contract source code not verified') {
               await repositories.contractInfo.update(
                 {
@@ -578,7 +491,7 @@ const getImplementationDetails = async(): Promise<void> => {
                 implementationName: abiResultImp.data.result[0].ContractName,
               },
             )
-            console.log(`^ updated ${nullContracts[i].contract} with proxy/imp abi`)
+            console.log(chalk.yellow(`^ updated ${nullContracts[i].contract} with proxy/imp abi`))
           }
         }
       }
@@ -586,82 +499,101 @@ const getImplementationDetails = async(): Promise<void> => {
       loop += 1
     }
   } catch (err) {
-    console.log('error while pulling etherscan: ', err)
+    console.log(chalk.yellow('error while pulling etherscan: ', err))
   }
 }
 
 const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<void> => {
-  const result = await axios.post(
-    `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API}`,
-    {
-      jsonrpc: '2.0',
-      method: 'eth_getLogs',
-      params: [{
-        fromBlock,
-        toBlock,
-      }],
-      id: 0,
-    },
-  )
-
-  const nftArray = []
-  const filteredResults: string[] = result.data.result
-    .filter(data => data.topics.length > 0)
-    .map(item => item.address)
-
-  const rawArray: string[] = [...new Set(filteredResults)]
-
-  console.log('filtered: ', rawArray.length)
-
-  for (let i = 0; i < rawArray.length; i++) {
-    const foundInfo = await repositories.contractInfo.findOne({
-      where: {
-        contract: rawArray[i],
+  try {
+    const result = await axios.post(
+      `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API}`,
+      {
+        jsonrpc: '2.0',
+        method: 'eth_getLogs',
+        params: [{
+          fromBlock,
+          toBlock,
+        }],
+        id: 0,
       },
-    })
+    )
 
-    if (!foundInfo) {
-      const bool721 = await is721(rawArray[i])
-      const bool1155 = await is1155(rawArray[i])
-      if (bool721 && bool1155) {
-        nftArray.push({
-          network: 'Ethereum',
-          contract: rawArray[i],
-          bool721: true,
-          bool1155: true,
-        })
-        console.log(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`)
-      } else if (bool721) {
-        nftArray.push({
-          network: 'Ethereum',
-          contract: rawArray[i],
-          bool721: true,
-          bool1155: false,
-        })
-        console.log(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`)
-      } else if (bool1155) {
-        nftArray.push({
-          network: 'Ethereum',
-          contract: rawArray[i],
-          bool721: false,
-          bool1155: true,
-        })
-        console.log(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`)
-      } else {
-        // neither => maybe non-standard NFT
-        // TODO run extra tests perhaps
+    const nftArray = []
+    const filteredResults: string[] = result.data.result
+      .filter(data => data.topics.length > 0)
+      .map(item => item.address)
+
+    const rawArray: string[] = [...new Set(filteredResults)]
+
+    console.log(chalk.green('filtered: ', rawArray.length))
+
+    const foundInfo = await repositories.contractInfo.find({})
+    const existingKeys = foundInfo.map(i => `${i.network}_${i.contract}`)
+    const seenMap = existingKeys.reduce(function(map, obj) {
+      map[obj] = true
+      return map
+    }, {})
+
+    let loop = 0
+    for (let i = 0; i < rawArray.length && loop < MAX_LOOPS; i++) {
+      if (!seenMap[`Ethereum_${rawArray[i]}`]) {
+        const bool721 = await is721(rawArray[i])
+        const bool1155 = await is1155(rawArray[i])
+        if (bool721 && bool1155) {
+          nftArray.push({
+            network: 'Ethereum',
+            contract: rawArray[i],
+            bool721: true,
+            bool1155: true,
+          })
+          console.log(chalk.green(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`))
+
+          seenMap[`Ethereum_${rawArray[i]}`] = true
+          loop += 1
+        } else if (bool721) {
+          nftArray.push({
+            network: 'Ethereum',
+            contract: rawArray[i],
+            bool721: true,
+            bool1155: false,
+          })
+          console.log(chalk.green(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`))
+
+          seenMap[`Ethereum_${rawArray[i]}`] = true
+          loop += 1
+        } else if (bool1155) {
+          nftArray.push({
+            network: 'Ethereum',
+            contract: rawArray[i],
+            bool721: false,
+            bool1155: true,
+          })
+          console.log(chalk.green(`====> ${i + 1}/${rawArray.length}: ${rawArray[i]}`))
+
+          seenMap[`Ethereum_${rawArray[i]}`] = true
+          loop += 1
+        } else {
+          // neither => maybe non-standard NFT
+          // TODO run extra tests perhaps
+        }
       }
     }
-  }
 
-  await repositories.contractInfo.saveMany(nftArray)
-  console.log(chalk.green(`*** SAVED ${nftArray.length} New NFTs ***`))
+    if (nftArray.length > 0) {
+      await repositories.contractInfo.saveMany(nftArray)
+      console.log(chalk.green(`*** SAVED ${nftArray.length} New NFTs ***`))
+    } else {
+      console.log(chalk.green('no new nfts'))
+    }
+  } catch (err) {
+    console.log(`getNftLogs: ${err.body ?? err.detail ?? err}`)
+  }
 }
 
 const startCron = (): Promise<void> => {
-  // 30 seconds
+  // 1 minute
   cron.schedule(
-    '*/30 * * * * *',
+    '0 */1 * * * *',
     () => {
       getNftLogs()
     },
@@ -677,16 +609,6 @@ const startCron = (): Promise<void> => {
     () => {
       getImplementationDetails()
       importMetaData()
-    },
-    {
-      scheduled: true,
-      timezone: 'America/Chicago',
-    },
-  )
-
-  cron.schedule(
-    '0 */2 * * * *',
-    () => {
       populateTokenIds()
     },
     {
@@ -702,6 +624,7 @@ const bootstrap = (): Promise<void> => {
   verifyConfiguration()
   return db.connect(dbConfig)
     .then(() => server.start())
+    .then(() => getNftLogs())
     .then(startCron)
     .then(fp.pause(500))
 }

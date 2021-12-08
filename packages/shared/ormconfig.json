@@ -3,10 +3,10 @@
     "name": "default",
     "type": "postgres",
     "host": "oregon-postgres.render.com",
-    "database": "testnft",
+    "database": "nft_test",
     "port": 5432,
-    "username": "gavinmai",
-    "password": "I5itpK5txUAb3sjcsLvb2WDNGXut8ZG6",
+    "username": "nft_test_user",
+    "password": "5zn6DiC85dvbpcV7gOXvdpxw8u91kTgo",
     "migrationsRun": true,
     "migrations": [
       "src/db/migration/*.ts"

@@ -1,8 +1,9 @@
-import { Column, Entity, ManyToOne } from 'typeorm'
+import { Column, Entity, Index } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
-import { NFTRaw } from './nftRaw.entity'
 
+@Index(['network', 'contract'])
+@Index(['network', 'contract', 'tokenId', 'transactionHash'], { unique: true })
 @Entity()
 export class NFTTrade extends BaseEntity {
 
@@ -40,14 +41,5 @@ export class NFTTrade extends BaseEntity {
   // unix timestamp for trade for fair ordering
   @Column({ nullable: true, type: 'timestamptz' })
   unixTimestamp: Date
-
-  /**
-   * @dev make sure to have info in the future about the trade itself
-   * @dev e.g. make/take assets, quantity, oracle price in USD
-   * @dev if NFT <> NFT exchange, use prevailing value of NFT at the previous trade
-   */
-
-  @ManyToOne(() => NFTRaw, nftRaw => nftRaw.trades)
-  nftRaw: NFTRaw
     
 }
