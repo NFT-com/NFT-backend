@@ -13,7 +13,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
   deploy-staging:
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     environment: nftcom_staging
     steps:
