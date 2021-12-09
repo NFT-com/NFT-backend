@@ -62,6 +62,7 @@ export const createINDEXERServer = (
   preview?: boolean,
 ): Promise<pulumi.automation.OutputMap> => {
   const stackName = `${process.env.STAGE}.indexer.${process.env.AWS_REGION}`
+  console.log('stackName: ', stackName)
   const workDir = upath.joinSafe(__dirname, 'stack')
   return deployInfra(stackName, workDir, pulumiProgram, preview)
 }
@@ -95,7 +96,7 @@ export const updateINDEXEREnvFile = (): void => {
   parsedFile['SG_API_KEY'] = process.env.SG_API_KEY || parsedFile['SG_API_KEY']
   parsedFile['ASSET_BUCKET'] = infraOutput.assetBucket
   parsedFile['ASSET_BUCKET_ROLE'] = infraOutput.assetBucketRole
-  // console.log(JSON.stringify(parsedFile))
+  console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')
   fs.writeFileSync(targetFile, envfile.stringify(parsedFile))
