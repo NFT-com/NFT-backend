@@ -87,6 +87,7 @@ export const updateIndexerEnvFile = (): void => {
   parsedFile['DB_HOST'] = infraOutput.dbHost
   parsedFile['DB_PASSWORD'] = process.env.DB_PASSWORD || ''
   parsedFile['ETHERSCAN_APIS'] = process.env.ETHERSCAN_APIS || ''
+  parsedFile['ALCHEMY_API'] = process.env.ALCHEMY_API || ''
   parsedFile['INFURA_API'] = process.env.INFURA_API || ''
   parsedFile['DB_USE_SSL'] = 'true'
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
