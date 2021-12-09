@@ -2,6 +2,6 @@ encryptionsalt: v1:I1aoraT9FrI=:v1:eSVOwdMPviifzwoh:ODyZsOeruKooPCuWfx/lD3vzEb8B
 config:
   nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
   nftcom:ebInstance: t3.medium
-  nftcom:ebAutoScaleMax: 1
+  nftcom:ebAutoScaleMax: 3
   nftcom:nodeEnv: production
   nftcom:logLevel: INFO
