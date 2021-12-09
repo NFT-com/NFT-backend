@@ -66,7 +66,7 @@ const getTokenUri = async(
       infuraProvider(),
     ),
   )
-  
+
   try {
     return await contract.tokenURI(tokenId)
   } catch (err) {
@@ -167,7 +167,7 @@ export const populateTokenIds = async(): Promise<void> => {
         ],
         fromBlock: 0, // TODO optimize call later by remember which blocks we've seen?
       }
-      
+
       try {
         console.log(chalk.cyan(`====> filtered transfer logs ${ethContracts[i].contract}`))
 
@@ -176,7 +176,7 @@ export const populateTokenIds = async(): Promise<void> => {
           infuraProvider(),
         ).getLogs(combinedFilter)
 
-        // make sure tokenId hasn't been seen before 
+        // make sure tokenId hasn't been seen before
         const allNftRaw = await repositories.nftRaw.find({
           where: {
             contract: ethContracts[i].contract,
@@ -216,7 +216,7 @@ export const populateTokenIds = async(): Promise<void> => {
               tokenId: Number(tokenId),
               type: defs.NFTType.ERC721,
             })
-            
+
             seenMap[tokenId] = true
           }
 
@@ -250,7 +250,7 @@ export const populateTokenIds = async(): Promise<void> => {
           await repositories.nftRaw.saveMany(
             bulkSaveNftRaw,
           )
-    
+
           console.log(chalk.cyan(`*** SAVED *** ${bulkSaveNftRaw.length} nftRaws`))
         } else {
           console.log(chalk.cyan('no new nftRaws'))
@@ -282,7 +282,7 @@ export const importMetaData = async(): Promise<void> => {
 
       if (tokenUri) {
         const jsonMetaData = await getMetaData(tokenUri)
-  
+
         if (jsonMetaData) {
           await repositories.nftRaw.update(
             {
@@ -293,7 +293,7 @@ export const importMetaData = async(): Promise<void> => {
               metadata: jsonMetaData,
             },
           )
-  
+
           console.log(
             chalk.yellow(
               `Updated MetaData: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
@@ -321,7 +321,7 @@ export const getImplementationDetails = async(): Promise<void> => {
     let loop = 0
     for (let i = 0; i < nullContracts.length && loop < MAX_LOOPS; i++) {
       const proxyResult = await axios.get(`https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${nullContracts[i].contract}&apikey=${provider()}`)
-          
+
       if (etherscanError.includes(proxyResult.data.result)) {
         console.log(chalk.yellow(etherscanError[etherscanError.indexOf(proxyResult.data.result)] + ' ' + nullContracts[i].contract))
         if (proxyResult.data.result === 'Contract source code not verified') {
@@ -507,6 +507,7 @@ export const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Prom
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
+  console.log('dbConfig', JSON.stringify(dbConfig))
   return db.connect(dbConfig)
     .then(() => server.start())
     .then(fp.pause(500))
