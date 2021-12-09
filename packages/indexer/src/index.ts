@@ -507,7 +507,7 @@ export const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Prom
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
-  console.log('dbConfig', JSON.stringify(dbConfig))
+  // console.log('dbConfig', JSON.stringify(dbConfig))
   return db.connect(dbConfig)
     .then(() => server.start())
     .then(fp.pause(500))
