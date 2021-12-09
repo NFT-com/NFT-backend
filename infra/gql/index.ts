@@ -82,13 +82,13 @@ export const updateGQLEnvFile = (): void => {
   const envFileStr = fs.readFileSync(sourceFile).toString()
   let parsedFile = envfile.parse(envFileStr)
   parsedFile = omit(parsedFile, 'PORT', 'DB_PORT', 'REDIS_PORT')
-  parsedFile['NODE_ENV'] = stackConfig['nodeEnv']
+  parsedFile['NODE_ENV'] = stackConfig['nftcom:nodeEnv']
   parsedFile['DB_HOST'] = infraOutput.dbHost
   parsedFile['DB_PASSWORD'] = process.env.DB_PASSWORD || ''
   parsedFile['DB_USE_SSL'] = 'true'
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
-  parsedFile['SUPPORTED_NETWORKS'] = stackConfig['supportedNetworks'] || parsedFile['SUPPORTED_NETWORKS']
-  parsedFile['LOG_LEVEL'] = stackConfig['logLevel'] || parsedFile['LOG_LEVEL']
+  parsedFile['SUPPORTED_NETWORKS'] = stackConfig['nftcom:supportedNetworks'] || parsedFile['SUPPORTED_NETWORKS']
+  parsedFile['LOG_LEVEL'] = stackConfig['nftcom:logLevel'] || parsedFile['LOG_LEVEL']
   parsedFile['AUTH_MESSAGE'] = process.env.AUTH_MESSAGE || parsedFile['AUTH_MESSAGE']
   parsedFile['SG_API_KEY'] = process.env.SG_API_KEY || parsedFile['SG_API_KEY']
   parsedFile['ASSET_BUCKET'] = infraOutput.assetBucket

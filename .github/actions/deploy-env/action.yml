@@ -79,6 +79,7 @@ runs:
         STAGE: ${{ inputs.stage }}
         INFURA_API: ${{ fromJSON(inputs.secrets).INFURA_API }}
         ETHERSCAN_APIS: ${{ fromJSON(inputs.secrets).ETHERSCAN_APIS }}
+        DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
       run: npm run build:indexer:env
     - name: Build and Push Indexer Image
       shell: bash

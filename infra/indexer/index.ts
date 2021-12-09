@@ -83,14 +83,14 @@ export const updateIndexerEnvFile = (): void => {
   const envFileStr = fs.readFileSync(sourceFile).toString()
   let parsedFile = envfile.parse(envFileStr)
   parsedFile = omit(parsedFile, 'PORT', 'DB_PORT', 'REDIS_PORT')
-  parsedFile['NODE_ENV'] = stackConfig['nodeEnv']
+  parsedFile['NODE_ENV'] = stackConfig['nftcom:nodeEnv']
   parsedFile['DB_HOST'] = infraOutput.dbHost
   parsedFile['DB_PASSWORD'] = process.env.DB_PASSWORD || ''
   parsedFile['ETHERSCAN_APIS'] = process.env.ETHERSCAN_APIS || ''
   parsedFile['INFURA_API'] = process.env.INFURA_API || ''
   parsedFile['DB_USE_SSL'] = 'true'
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
-  parsedFile['LOG_LEVEL'] = stackConfig['logLevel'] || parsedFile['LOG_LEVEL']
+  parsedFile['LOG_LEVEL'] = stackConfig['nftcom:logLevel'] || parsedFile['LOG_LEVEL']
   console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')
