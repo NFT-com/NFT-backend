@@ -40,6 +40,91 @@ export const infuraProvider = (): string => {
   return infuraArray[randomIndex]
 }
 
+export const etherscanError = ['Contract source code not verified', 'Max rate limit reached', 'Invalid API Key']
+export const erc721Bytes = [
+  '0x80ac58cd', // 721
+  '0x780e9d63', // 721_enum
+  '0x5b5e139f', // 721_meta
+]
+export const erc1155Bytes = ['0xd9b67a26']
+
+export const supportsInterfaceABI = `[{
+  "inputs": [
+    {
+      "internalType": "bytes4",
+      "name": "interfaceId",
+      "type": "bytes4"
+    }
+  ],
+  "name": "supportsInterface",
+  "outputs": [
+    {
+      "internalType": "bool",
+      "name": "",
+      "type": "bool"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+}]`
+
+export const nftInterface = `[{
+  "inputs": [],
+  "name": "totalSupply",
+  "outputs": [
+    {
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+},
+{
+  "inputs": [
+    {
+      "internalType": "uint256",
+      "name": "tokenId_",
+      "type": "uint256"
+    }
+  ],
+  "name": "tokenInfo",
+  "outputs": [
+    {
+      "internalType": "uint256",
+      "name": "tokenSupply",
+      "type": "uint256"
+    },
+    {
+      "internalType": "string",
+      "name": "tokenUri",
+      "type": "string"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+},
+{
+  "inputs": [
+    {
+      "internalType": "uint256",
+      "name": "tokenId",
+      "type": "uint256"
+    }
+  ],
+  "name": "tokenURI",
+  "outputs": [
+    {
+      "internalType": "string",
+      "name": "",
+      "type": "string"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+}]`
+
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,

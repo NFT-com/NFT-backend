@@ -7,99 +7,14 @@ import isBase64 from 'is-base64'
 import isIPFS from 'is-ipfs'
 import isUrl from 'is-url'
 import kill from 'kill-port'
-import cron from 'node-cron'
 
 import { defs } from '@nftcom/shared'
 import { db, fp } from '@nftcom/shared'
 
-import { dbConfig, infuraProvider, MAX_LOOPS, provider, serverPort, verifyConfiguration } from './config'
+import { dbConfig, erc721Bytes, erc1155Bytes, etherscanError,infuraProvider, MAX_LOOPS, nftInterface, provider, serverPort, supportsInterfaceABI, verifyConfiguration } from './config'
 import * as server from './server'
 
 const repositories = db.newRepositories()
-const etherscanError = ['Contract source code not verified', 'Max rate limit reached', 'Invalid API Key']
-const erc721Bytes = [
-  '0x80ac58cd', // 721
-  '0x780e9d63', // 721_enum
-  '0x5b5e139f', // 721_meta
-]
-const erc1155Bytes = ['0xd9b67a26']
-
-const supportsInterfaceABI = `[{
-  "inputs": [
-    {
-      "internalType": "bytes4",
-      "name": "interfaceId",
-      "type": "bytes4"
-    }
-  ],
-  "name": "supportsInterface",
-  "outputs": [
-    {
-      "internalType": "bool",
-      "name": "",
-      "type": "bool"
-    }
-  ],
-  "stateMutability": "view",
-  "type": "function"
-}]`
-
-const nftInterface = `[{
-  "inputs": [],
-  "name": "totalSupply",
-  "outputs": [
-    {
-      "internalType": "uint256",
-      "name": "",
-      "type": "uint256"
-    }
-  ],
-  "stateMutability": "view",
-  "type": "function"
-},
-{
-  "inputs": [
-    {
-      "internalType": "uint256",
-      "name": "tokenId_",
-      "type": "uint256"
-    }
-  ],
-  "name": "tokenInfo",
-  "outputs": [
-    {
-      "internalType": "uint256",
-      "name": "tokenSupply",
-      "type": "uint256"
-    },
-    {
-      "internalType": "string",
-      "name": "tokenUri",
-      "type": "string"
-    }
-  ],
-  "stateMutability": "view",
-  "type": "function"
-},
-{
-  "inputs": [
-    {
-      "internalType": "uint256",
-      "name": "tokenId",
-      "type": "uint256"
-    }
-  ],
-  "name": "tokenURI",
-  "outputs": [
-    {
-      "internalType": "string",
-      "name": "",
-      "type": "string"
-    }
-  ],
-  "stateMutability": "view",
-  "type": "function"
-}]`
 
 const is1155 = async (address: string): Promise<boolean> => {
   try {
@@ -230,7 +145,7 @@ const encodedTransferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a116
 
 // TODO looping through tokenIds from 0 -> totalSupply is bad since some tokenIds don't have metadata yet
 // TODO better way is to filter tokenIds by mint (0x0 tx => address)
-const populateTokenIds = async(): Promise<void> => {
+export const populateTokenIds = async(): Promise<void> => {
   try {
     console.log('@populating token ids')
     const ethContracts = await repositories.contractInfo.find({
@@ -349,7 +264,7 @@ const populateTokenIds = async(): Promise<void> => {
   }
 }
 
-const importMetaData = async(): Promise<void> => {
+export const importMetaData = async(): Promise<void> => {
   try {
     const nullTokens = await repositories.nftRaw.find({
       where: {
@@ -394,7 +309,7 @@ const importMetaData = async(): Promise<void> => {
   }
 }
 
-const getImplementationDetails = async(): Promise<void> => {
+export const getImplementationDetails = async(): Promise<void> => {
   try {
     console.log(chalk.yellow('@implementation'))
     const nullContracts = await repositories.contractInfo.find({
@@ -503,7 +418,7 @@ const getImplementationDetails = async(): Promise<void> => {
   }
 }
 
-const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<void> => {
+export const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<void> => {
   try {
     const result = await axios.post(
       `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API}`,
@@ -590,42 +505,10 @@ const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<voi
   }
 }
 
-const startCron = (): Promise<void> => {
-  // 1 minute
-  cron.schedule(
-    '0 */1 * * * *',
-    () => {
-      getNftLogs()
-    },
-    {
-      scheduled: true,
-      timezone: 'America/Chicago',
-    },
-  )
-
-  // 3 minutes
-  cron.schedule(
-    '0 */3 * * * *',
-    () => {
-      getImplementationDetails()
-      importMetaData()
-      populateTokenIds()
-    },
-    {
-      scheduled: true,
-      timezone: 'America/Chicago',
-    },
-  )
-
-  return
-}
-
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
   return db.connect(dbConfig)
     .then(() => server.start())
-    .then(() => getNftLogs())
-    .then(startCron)
     .then(fp.pause(500))
 }
 
