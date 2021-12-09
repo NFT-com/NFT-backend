@@ -58,7 +58,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   createEBInstance(config, sharedInfraOutput, appFileName)
 }
 
-export const createGQLServer = (
+export const createINDEXERServer = (
   preview?: boolean,
 ): Promise<pulumi.automation.OutputMap> => {
   const stackName = `${process.env.STAGE}.indexer.${process.env.AWS_REGION}`
@@ -66,7 +66,7 @@ export const createGQLServer = (
   return deployInfra(stackName, workDir, pulumiProgram, preview)
 }
 
-export const updateGQLEnvFile = (): void => {
+export const updateINDEXEREnvFile = (): void => {
   console.log('Read shared infra output from file...')
   const infraOutput = getSharedInfraOutput()
 

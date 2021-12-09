@@ -7,6 +7,7 @@ import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer, updateGQLEnvFile } from './gql'
+import { createINDEXERServer, updateINDEXEREnvFile } from './indexer'
 import { createSharedInfra } from './shared'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
@@ -61,14 +62,12 @@ const main = async (): Promise<any> => {
   }
 
   if (buildIndexerEnv) {
-    // TODO change this to indexer env file builder fn
-    updateGQLEnvFile()
+    updateINDEXEREnvFile()
     return
   }
 
   if (deployIndexer) {
-    // TODO same as above comment
-    return createGQLServer()
+    return createINDEXERServer()
   }
 }
 
