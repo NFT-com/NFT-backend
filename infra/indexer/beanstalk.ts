@@ -157,13 +157,6 @@ export const createEBInstance = (
         name: 'RootVolumeType',
         value: 'gp2',
       },
-      // TODO don't think this is needed because by default it hits /
-      //  and you have your express route at /
-      {
-        namespace: 'aws:elasticbeanstalk:environment:process:default',
-        name: 'HealthCheckPath',
-        value: '/.well-known/apollo/server-health',
-      },
       {
         namespace: 'aws:elbv2:loadbalancer',
         name: 'SecurityGroups',
