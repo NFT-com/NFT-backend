@@ -9,9 +9,6 @@
     {
       "path": "../shared",
     },
-    {
-      "path": "../gql",
-    }
   ],
   "include": [
     "src/**/*.ts"

@@ -15,7 +15,7 @@ RUN cp -R node_modules prod_node_modules
 RUN npm install
 
 COPY packages/shared ./packages/shared
-#COPY packages/gql ./packages/gql
+COPY packages/gql ./packages/gql
 COPY packages/indexer ./packages/indexer
 
 FROM deps as build

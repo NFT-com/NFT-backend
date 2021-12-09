@@ -2,11 +2,11 @@
   {
     "name": "default",
     "type": "postgres",
-    "host": "oregon-postgres.render.com",
-    "database": "nft_test",
-    "port": 5432,
-    "username": "nft_test_user",
-    "password": "5zn6DiC85dvbpcV7gOXvdpxw8u91kTgo",
+    "host": "localhost",
+    "database": "app",
+    "port": 10030,
+    "username": "app",
+    "password": "password",
     "migrationsRun": true,
     "migrations": [
       "src/db/migration/*.ts"
@@ -29,11 +29,6 @@
       "src/db/entity/user.entity.ts",
       "src/db/entity/wallet.entity.ts"
     ],
-    "ssl": true,
-    "extra": {
-      "ssl": {
-        "rejectUnauthorized": false
-      }
-    }
+    "ssl": false
   }
 ]
