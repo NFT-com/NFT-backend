@@ -114,8 +114,8 @@ export const createEBInstance = (
   const profile = createInstanceProfile()
   const application = createApplication()
   const applicationVersion = createApplicationVersion(infraOutput, application, appFileName)
-  const instance = config.require('ebGQLInstance')
-  const autoScaleMax = config.require('ebGQLAutoScaleMax')
+  const instance = config.require('ebInstance')
+  const autoScaleMax = config.require('ebAutoScaleMax')
 
   return new aws.elasticbeanstalk.Environment('environment_gql', {
     name: getResourceName('gql'),
@@ -232,26 +232,6 @@ export const createEBInstance = (
         name: 'SSLPolicy',
         value: 'ELBSecurityPolicy-2016-08',
       },
-      // {
-      //   namespace: 'aws:elbv2:listenerrule:https',
-      //   name: 'PathPatterns',
-      //   value: '/api',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listener:443',
-      //   name: 'Rules',
-      //   value: 'https',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listenerrule:http',
-      //   name: 'PathPatterns',
-      //   value: '/api',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listener:80',
-      //   name: 'Rules',
-      //   value: 'http',
-      // },
       {
         namespace: 'aws:elasticbeanstalk:environment:process:default',
         name: 'Protocol',

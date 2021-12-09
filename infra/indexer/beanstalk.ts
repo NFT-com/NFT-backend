@@ -7,7 +7,7 @@ import { getResourceName } from '../helper'
 const createEBRole = (): aws.iam.Role => {
   const role = new aws.iam.Role('role_indexer_eb', {
     name: getResourceName('indexer-eb.us-east-1'),
-    description: 'Role for INDEXER Elasticbeanstalk',
+    description: 'Role for Indexer Elasticbeanstalk',
     assumeRolePolicy: {
       Version: '2012-10-17',
       Statement: [
@@ -37,7 +37,7 @@ const createEBRole = (): aws.iam.Role => {
 const createInstanceProfileRole = (): aws.iam.Role => {
   const role = new aws.iam.Role('role_indexer_ec2eb', {
     name: getResourceName('indexer-eb-ec2.us-east-1'),
-    description: 'Role for INDEXER EC2 instance managed by EB',
+    description: 'Role for Indexer EC2 instance managed by EB',
     assumeRolePolicy: {
       Version: '2012-10-17',
       Statement: [
@@ -114,12 +114,12 @@ export const createEBInstance = (
   const profile = createInstanceProfile()
   const application = createApplication()
   const applicationVersion = createApplicationVersion(infraOutput, application, appFileName)
-  const instance = config.require('ebINDEXERInstance')
-  const autoScaleMax = config.require('ebINDEXERAutoScaleMax')
+  const instance = config.require('ebInstance')
+  const autoScaleMax = config.require('ebAutoScaleMax')
 
   return new aws.elasticbeanstalk.Environment('environment_indexer', {
     name: getResourceName('indexer'),
-    description: 'INDEXER server environment',
+    description: 'Indexer server environment',
     application: application.name,
     version: applicationVersion,
     tier: 'WebServer',
@@ -157,6 +157,8 @@ export const createEBInstance = (
         name: 'RootVolumeType',
         value: 'gp2',
       },
+      // TODO don't think this is needed because by default it hits /
+      //  and you have your express route at /
       {
         namespace: 'aws:elasticbeanstalk:environment:process:default',
         name: 'HealthCheckPath',
@@ -232,26 +234,6 @@ export const createEBInstance = (
         name: 'SSLPolicy',
         value: 'ELBSecurityPolicy-2016-08',
       },
-      // {
-      //   namespace: 'aws:elbv2:listenerrule:https',
-      //   name: 'PathPatterns',
-      //   value: '/api',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listener:443',
-      //   name: 'Rules',
-      //   value: 'https',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listenerrule:http',
-      //   name: 'PathPatterns',
-      //   value: '/api',
-      // },
-      // {
-      //   namespace: 'aws:elbv2:listener:80',
-      //   name: 'Rules',
-      //   value: 'http',
-      // },
       {
         namespace: 'aws:elasticbeanstalk:environment:process:default',
         name: 'Protocol',
