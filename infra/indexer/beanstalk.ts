@@ -158,6 +158,11 @@ export const createEBInstance = (
         value: 'gp2',
       },
       {
+        namespace: 'aws:elasticbeanstalk:environment:process:default',
+        name: 'HealthCheckPath',
+        value: '/health',
+      },
+      {
         namespace: 'aws:elbv2:loadbalancer',
         name: 'SecurityGroups',
         value: infraOutput.webSGId,
