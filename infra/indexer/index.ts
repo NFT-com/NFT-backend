@@ -92,7 +92,7 @@ export const updateIndexerEnvFile = (): void => {
   parsedFile['DB_USE_SSL'] = 'true'
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
   parsedFile['LOG_LEVEL'] = stackConfig['nftcom:logLevel'] || parsedFile['LOG_LEVEL']
-  console.log(JSON.stringify(parsedFile))
+  // console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')
   fs.writeFileSync(targetFile, envfile.stringify(parsedFile))
