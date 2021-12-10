@@ -20,7 +20,7 @@ const createAndUploadEBDeployFile = async (
 ): Promise<string> => {
   await pulumi.log.info('Create Elasticbeanstalk archive file with Dockerrun.aws.json...')
 
-  const ecrImage = `${process.env.ECR_REGISTRY}/${infraOutput.gqlECRRepo}:latest`
+  const ecrImage = `${process.env.ECR_REGISTRY}/${infraOutput.indexerECRRepo}:latest`
   const dockerFile = {
     AWSEBDockerrunVersion: '1',
     Image: {
@@ -32,7 +32,7 @@ const createAndUploadEBDeployFile = async (
       HostPort: '80',
     }],
   }
-  const fileName = `${getResourceName('qql')}-${new Date().toISOString()}.zip`
+  const fileName = `${getResourceName('indexer')}-${new Date().toISOString()}.zip`
   const file = upath.joinSafe(__dirname, fileName)
   const output = fs.createWriteStream(file)
   const archive = archiver.create('zip', {
@@ -58,26 +58,27 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   createEBInstance(config, sharedInfraOutput, appFileName)
 }
 
-export const createGQLServer = (
+export const createIndexerServer = (
   preview?: boolean,
 ): Promise<pulumi.automation.OutputMap> => {
-  const stackName = `${process.env.STAGE}.gql.${process.env.AWS_REGION}`
+  const stackName = `${process.env.STAGE}.indexer.${process.env.AWS_REGION}`
+  console.log('stackName: ', stackName)
   const workDir = upath.joinSafe(__dirname, 'stack')
   return deployInfra(stackName, workDir, pulumiProgram, preview)
 }
 
-export const updateGQLEnvFile = (): void => {
+export const updateIndexerEnvFile = (): void => {
   console.log('Read shared infra output from file...')
   const infraOutput = getSharedInfraOutput()
 
   console.log('Read stack yaml file...')
-  const ymlFileName = `Pulumi.${process.env.STAGE}.gql.${process.env.AWS_REGION}.yaml`
+  const ymlFileName = `Pulumi.${process.env.STAGE}.indexer.${process.env.AWS_REGION}.yaml`
   const ymlFile = upath.joinSafe(__dirname, 'stack', ymlFileName)
   const ymlDoc = jyml.load(fs.readFileSync(ymlFile).toString()) as { [key: string]: any }
   const stackConfig = ymlDoc.config as { [key: string]: string }
 
   console.log('Update server environment file...')
-  const workDir = upath.joinSafe(__dirname, '..', '..', 'packages', 'gql')
+  const workDir = upath.joinSafe(__dirname, '..', '..', 'packages', 'indexer')
   const sourceFile = upath.joinSafe(workDir, '.env.example')
   const envFileStr = fs.readFileSync(sourceFile).toString()
   let parsedFile = envfile.parse(envFileStr)
@@ -85,14 +86,12 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['NODE_ENV'] = stackConfig['nftcom:nodeEnv']
   parsedFile['DB_HOST'] = infraOutput.dbHost
   parsedFile['DB_PASSWORD'] = process.env.DB_PASSWORD || ''
+  parsedFile['ETHERSCAN_APIS'] = process.env.ETHERSCAN_APIS || ''
+  parsedFile['ALCHEMY_API'] = process.env.ALCHEMY_API || ''
+  parsedFile['INFURA_API'] = process.env.INFURA_API || ''
   parsedFile['DB_USE_SSL'] = 'true'
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
-  parsedFile['SUPPORTED_NETWORKS'] = stackConfig['nftcom:supportedNetworks'] || parsedFile['SUPPORTED_NETWORKS']
   parsedFile['LOG_LEVEL'] = stackConfig['nftcom:logLevel'] || parsedFile['LOG_LEVEL']
-  parsedFile['AUTH_MESSAGE'] = process.env.AUTH_MESSAGE || parsedFile['AUTH_MESSAGE']
-  parsedFile['SG_API_KEY'] = process.env.SG_API_KEY || parsedFile['SG_API_KEY']
-  parsedFile['ASSET_BUCKET'] = infraOutput.assetBucket
-  parsedFile['ASSET_BUCKET_ROLE'] = infraOutput.assetBucketRole
   // console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')

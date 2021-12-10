@@ -15,8 +15,11 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
   const entities = [
     entity.Approval,
     entity.Bid,
+    entity.ContractInfo,
     entity.Edge,
     entity.NFT,
+    entity.NFTRaw,
+    entity.NFTTrade,
     entity.Profile,
     entity.User,
     entity.Wallet,
@@ -41,6 +44,9 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
       `${__dirname}/migration/*.js`,
     ],
     ssl,
+    // extra: {
+    //   ssl: true,
+    // },
     entities,
   })
     .then((con) => {
@@ -59,8 +65,11 @@ export const disconnect = async (): Promise<void> => {
 export type Repository = {
   approval: repo.ApprovalRepository
   bid: repo.BidRepository
+  contractInfo: repo.ContractInfoRepository
   edge: repo.EdgeRepository
   nft: repo.NFTRepository
+  nftRaw: repo.NFTRawRepository
+  nftTrade: repo.NFTTradeRepository
   profile: repo.ProfileRepository
   user: repo.UserRepository
   wallet: repo.WalletRepository
@@ -69,8 +78,11 @@ export type Repository = {
 export const newRepositories = (): Repository => ({
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
+  contractInfo: new repo.ContractInfoRepository(),
   edge: new repo.EdgeRepository(),
   nft: new repo.NFTRepository(),
+  nftRaw: new repo.NFTRawRepository(),
+  nftTrade: new repo.NFTTradeRepository(),
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
   wallet: new repo.WalletRepository(),

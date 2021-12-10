@@ -86,6 +86,13 @@ export class BaseRepository<T> {
     return this.getRepository().save(this.getRepository().create(entity), opts)
   }
 
+  public saveMany = (
+    entities: typeorm.DeepPartial<T>[],
+    opts?: typeorm.SaveOptions,
+  ): Promise<T[]> => {
+    return this.getRepository().save(this.getRepository().create(entities), opts)
+  }
+
   public updateOneById = (
     id: string,
     entity: typeorm.DeepPartial<T>,

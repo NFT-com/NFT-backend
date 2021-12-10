@@ -1,4 +1,4 @@
-encryptionsalt: v1:xIdtaFa/9Dw=:v1:8S+jrVg+vndXvmYs:Z1GTbFq1bNaWqhBgPxlyLHDLac3ktA==
+encryptionsalt: v1:I1aoraT9FrI=:v1:eSVOwdMPviifzwoh:ODyZsOeruKooPCuWfx/lD3vzEb8BsQ==
 config:
   nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
   nftcom:ebInstance: t3.medium

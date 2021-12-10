@@ -5,9 +5,9 @@ import { SharedInfraOutput } from '../defs'
 import { getResourceName } from '../helper'
 
 const createEBRole = (): aws.iam.Role => {
-  const role = new aws.iam.Role('role_gql_eb', {
-    name: getResourceName('gql-eb.us-east-1'),
-    description: 'Role for GQL Elasticbeanstalk',
+  const role = new aws.iam.Role('role_indexer_eb', {
+    name: getResourceName('indexer-eb.us-east-1'),
+    description: 'Role for Indexer Elasticbeanstalk',
     assumeRolePolicy: {
       Version: '2012-10-17',
       Statement: [
@@ -22,11 +22,11 @@ const createEBRole = (): aws.iam.Role => {
     },
   })
 
-  new aws.iam.RolePolicyAttachment('policy_gql_eb_health', {
+  new aws.iam.RolePolicyAttachment('policy_indexer_eb_health', {
     role: role.name,
     policyArn: 'arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth',
   })
-  new aws.iam.RolePolicyAttachment('policy_gql_eb_service', {
+  new aws.iam.RolePolicyAttachment('policy_indexer_eb_service', {
     role: role.name,
     policyArn: 'arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService',
   })
@@ -35,9 +35,9 @@ const createEBRole = (): aws.iam.Role => {
 }
 
 const createInstanceProfileRole = (): aws.iam.Role => {
-  const role = new aws.iam.Role('role_gql_ec2eb', {
-    name: getResourceName('gql-eb-ec2.us-east-1'),
-    description: 'Role for GQL EC2 instance managed by EB',
+  const role = new aws.iam.Role('role_indexer_ec2eb', {
+    name: getResourceName('indexer-eb-ec2.us-east-1'),
+    description: 'Role for Indexer EC2 instance managed by EB',
     assumeRolePolicy: {
       Version: '2012-10-17',
       Statement: [
@@ -59,19 +59,19 @@ const createInstanceProfileRole = (): aws.iam.Role => {
     },
   })
 
-  new aws.iam.RolePolicyAttachment('policy_gql_ec2eb_ecr', {
+  new aws.iam.RolePolicyAttachment('policy_indexer_ec2eb_ecr', {
     role: role.name,
     policyArn: 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly',
   })
-  new aws.iam.RolePolicyAttachment('policy_gql_ec2e_ebweb', {
+  new aws.iam.RolePolicyAttachment('policy_indexer_ec2e_ebweb', {
     role: role.name,
     policyArn: 'arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier',
   })
-  new aws.iam.RolePolicyAttachment('policy_gql_ec2eb_ssm', {
+  new aws.iam.RolePolicyAttachment('policy_indexer_ec2eb_ssm', {
     role: role.name,
     policyArn: 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore',
   })
-  new aws.iam.RolePolicyAttachment('policy_gql_ec2eb_ssmauto', {
+  new aws.iam.RolePolicyAttachment('policy_indexer_ec2eb_ssmauto', {
     role: role.name,
     policyArn: 'arn:aws:iam::aws:policy/service-role/AmazonSSMAutomationRole',
   })
@@ -81,15 +81,15 @@ const createInstanceProfileRole = (): aws.iam.Role => {
 
 const createInstanceProfile = (): aws.iam.InstanceProfile => {
   const role = createInstanceProfileRole()
-  return new aws.iam.InstanceProfile('profile_gql_ebec2', {
-    name: getResourceName('gql-eb-ec2'),
+  return new aws.iam.InstanceProfile('profile_indexer_ebec2', {
+    name: getResourceName('indexer-eb-ec2'),
     role: role.name,
   })
 }
 
 const createApplication = (): aws.elasticbeanstalk.Application => {
-  return new aws.elasticbeanstalk.Application('application_gql', {
-    name: getResourceName('gql'),
+  return new aws.elasticbeanstalk.Application('application_indexer', {
+    name: getResourceName('indexer'),
   })
 }
 
@@ -98,7 +98,7 @@ const createApplicationVersion = (
   application: aws.elasticbeanstalk.Application,
   appFilName: string,
 ): aws.elasticbeanstalk.ApplicationVersion => {
-  return new aws.elasticbeanstalk.ApplicationVersion('app_version_gql', {
+  return new aws.elasticbeanstalk.ApplicationVersion('app_version_indexer', {
     application,
     bucket: infraOutput.deployAppBucket,
     key: appFilName,
@@ -117,9 +117,9 @@ export const createEBInstance = (
   const instance = config.require('ebInstance')
   const autoScaleMax = config.require('ebAutoScaleMax')
 
-  return new aws.elasticbeanstalk.Environment('environment_gql', {
-    name: getResourceName('gql'),
-    description: 'GQL server environment',
+  return new aws.elasticbeanstalk.Environment('environment_indexer', {
+    name: getResourceName('indexer'),
+    description: 'Indexer server environment',
     application: application.name,
     version: applicationVersion,
     tier: 'WebServer',
@@ -160,7 +160,7 @@ export const createEBInstance = (
       {
         namespace: 'aws:elasticbeanstalk:environment:process:default',
         name: 'HealthCheckPath',
-        value: '/.well-known/apollo/server-health',
+        value: '/health',
       },
       {
         namespace: 'aws:elbv2:loadbalancer',
