@@ -273,8 +273,7 @@ export const importMetaData = async(): Promise<void> => {
       },
     })
 
-    let loop = 0
-    for (let i = 0; i < nullTokens.length && loop < MAX_LOOPS; i++) {
+    for (let i = 0; i < nullTokens.length; i++) {
       const tokenUri = await getTokenUri(
         Number(nullTokens[i].tokenId),
         nullTokens[i].contract,
@@ -302,8 +301,6 @@ export const importMetaData = async(): Promise<void> => {
           )
         }
       }
-
-      loop += 1
     }
   } catch (err) {
     console.log('error importing metadata: ', err)
