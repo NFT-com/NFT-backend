@@ -86,8 +86,10 @@ export class BaseRepository<T> {
     return this.getRepository().save(this.getRepository().create(entity), opts)
   }
 
-  // eslint-disable-next-line max-len
-  public saveMany = (entities: T[], opts?: typeorm.SaveOptions): Promise<DeepPartial<T>[]> => {
+  public saveMany = (
+    entities: typeorm.DeepPartial<T>[],
+    opts?: typeorm.SaveOptions,
+  ): Promise<T[]> => {
     return this.getRepository().save(this.getRepository().create(entities), opts)
   }
 
