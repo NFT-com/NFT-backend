@@ -94,50 +94,50 @@ const getTokenUri = async(
   }
 }
 
-const getMetaData = async(tokenUri: string): Promise<any> => {
+const getMetaData = async(id: string, contract: string, tokenUri: string): Promise<any> => {
   try {
     if (isBase64(tokenUri)) {
       console.log(chalk.green('^base64'))
-      return base64.decode(tokenUri)
+      return { id, contract, metadata: base64.decode(tokenUri) }
     } else if (isIPFS.multihash(tokenUri)) {
       console.log(chalk.green('^multihash', tokenUri))
       const result = await axios.get(`https://nft-llc.mypinata.cloud/ipfs/${tokenUri}`)
-      return result.data
+      return { id, contract, metadata: result.data }
     } else if (isIPFS.url(tokenUri)) {
       console.log(chalk.green('^url', tokenUri))
       const result = await axios.get(`${tokenUri}`)
-      return result.data
+      return { id, contract, metadata: result.data }
     } else if (isIPFS.ipfsUrl(tokenUri)) {
       console.log(chalk.green('^ipfs url', tokenUri))
       const result = await axios.get(`${tokenUri}`)
-      return result.data
+      return { id, contract, metadata: result.data }
     } else if (tokenUri.indexOf('ipfs://') != -1) {
       console.log(chalk.green('^ipfs resource', tokenUri))
       const result = await axios.get(`https://nft-llc.mypinata.cloud/${tokenUri.replace('ipfs://', 'ipfs/')}`)
-      return result.data
+      return { id, contract, metadata: result.data }
     } else if (isUrl(tokenUri)) {
       console.log(chalk.green('^regular url: ', tokenUri))
       const result = await axios.get(tokenUri)
-      return result.data
+      return { id, contract, metadata: result.data }
     } else {
       if (tokenUri.indexOf('data:application/json;base64,') != -1) {
         const base64Parse = tokenUri.replace('data:application/json;base64,', '')
 
         if (isBase64(base64Parse)) {
           console.log(chalk.green('^base64'))
-          return base64.decode(base64Parse)
+          return { id, contract, metadata: base64.decode(base64Parse) }
         } else {
           console.log(chalk.yellow(`^metadata non-conforming: ${tokenUri}`))
-          return undefined
+          return { id, contract, metadata: undefined }
         }
       } else {
         console.log(chalk.yellow(`^metadata non-conforming: ${tokenUri}`))
-        return undefined
+        return { id, contract, metadata: undefined }
       }
     }
   } catch (err) {
     console.log('^error while getting metadata: ', err)
-    return undefined
+    return { id, contract, metadata: undefined }
   }
 }
 
@@ -266,6 +266,47 @@ export const populateTokenIds = async(): Promise<void> => {
 
 export const importMetaData = async(): Promise<void> => {
   try {
+    console.log('import meta data')
+    const validURLs = await repositories.nftRaw.find({
+      where: {
+        metadataURL: !null,
+        metadata: null,
+        error: null,
+      },
+    })
+
+    console.log('validURLs: ', validURLs)
+
+    const requests = validURLs.map((object) => getMetaData(
+      object.id, object.contract, object.metadataURL),
+    )
+
+    const result = await Promise.all(requests)
+
+    // posts are ready. accumulate all the posts without duplicates
+    result.map(async (data) => {
+      await repositories.nftRaw.update(
+        {
+          id: data.id,
+        },
+        {
+          metadata: data.metadata,
+        },
+      )
+
+      console.log(
+        chalk.yellow(
+          `Updated MetaData DATA: ${data.id}, contract: ${data.contract}`,
+        ),
+      )
+    })
+  } catch (err) {
+    console.log('error importing metadata: ', err)
+  }
+}
+
+export const importMetaDataURL = async(): Promise<void> => {
+  try {
     const nullTokens = await repositories.nftRaw.find({
       where: {
         metadataURL: null,
@@ -281,25 +322,20 @@ export const importMetaData = async(): Promise<void> => {
       )
 
       if (tokenUri) {
-        const jsonMetaData = await getMetaData(tokenUri)
+        await repositories.nftRaw.update(
+          {
+            id: nullTokens[i].id,
+          },
+          {
+            metadataURL: tokenUri,
+          },
+        )
 
-        if (jsonMetaData) {
-          await repositories.nftRaw.update(
-            {
-              id: nullTokens[i].id,
-            },
-            {
-              metadataURL: tokenUri,
-              metadata: jsonMetaData,
-            },
-          )
-
-          console.log(
-            chalk.yellow(
-              `Updated MetaData: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
-            ),
-          )
-        }
+        console.log(
+          chalk.yellow(
+            `Updated MetaData URL: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
+          ),
+        )
       }
     }
   } catch (err) {

@@ -2,7 +2,7 @@ import express from 'express'
 import cron from 'node-cron'
 
 import { isProduction, serverPort } from './config'
-import { getImplementationDetails, getNftLogs, importMetaData, populateTokenIds } from './index'
+import { getImplementationDetails, getNftLogs, importMetaData, importMetaDataURL, populateTokenIds } from './index'
   
 let server
 export const start = async (): Promise<void> => {
@@ -16,9 +16,10 @@ export const start = async (): Promise<void> => {
   let cron2, cron2Bool = false
   let cron3, cron3Bool = false
   let cron4, cron4Bool = false
+  let cron5, cron5Bool = false
 
   app.get('/health', (req, res) => {
-    return res.json(`server up, cron1=${cron1Bool}, cron2=${cron2Bool}, cron3=${cron3Bool}, cron4=${cron4Bool}`)
+    return res.json(`server up, cron1=${cron1Bool}, cron2=${cron2Bool}, cron3=${cron3Bool}, cron4=${cron4Bool}, cron5=${cron5Bool}`)
   })
 
   app.get('/1/:minutes', (req, res) => {
@@ -74,12 +75,12 @@ export const start = async (): Promise<void> => {
   app.get('/3/:minutes', (req, res) => {
     try {
       if (cron3 && cron3Bool) {
-        return res.json('import metadata already running')
+        return res.json('import metadata url already running')
       } else {
         cron3 = cron.schedule(
           `0 */${req.params.minutes} * * * *`,
           () => {
-            importMetaData()
+            importMetaDataURL()
           },
           {
             scheduled: true,
@@ -87,7 +88,7 @@ export const start = async (): Promise<void> => {
           },
         )
         cron3Bool = true
-        return res.json('import metadata ok')
+        return res.json('import metadata url ok')
       }
     } catch (err) {
       return res.json({
@@ -99,9 +100,34 @@ export const start = async (): Promise<void> => {
   app.get('/4/:minutes', (req, res) => {
     try {
       if (cron4 && cron4Bool) {
-        return res.json('populate tokenIds already running')
+        return res.json('import metadata json already running')
       } else {
         cron4 = cron.schedule(
+          `0 */${req.params.minutes} * * * *`,
+          () => {
+            importMetaData()
+          },
+          {
+            scheduled: true,
+            timezone: 'America/Chicago',
+          },
+        )
+        cron4Bool = true
+        return res.json('import metadata json ok')
+      }
+    } catch (err) {
+      return res.json({
+        error: err,
+      })
+    }
+  })
+
+  app.get('/5/:minutes', (req, res) => {
+    try {
+      if (cron5 && cron5Bool) {
+        return res.json('populate tokenIds already running')
+      } else {
+        cron5 = cron.schedule(
           `0 */${req.params.minutes} * * * *`,
           () => {
             populateTokenIds()
@@ -111,7 +137,7 @@ export const start = async (): Promise<void> => {
             timezone: 'America/Chicago',
           },
         )
-        cron4Bool = true
+        cron5Bool = true
         return res.json('populate tokenIds ok')
       }
     } catch (err) {
@@ -145,6 +171,12 @@ export const start = async (): Promise<void> => {
         cron4.stop()
 
         cron4Bool = false
+      }
+
+      if (cron5Bool) {
+        cron5.stop()
+
+        cron5Bool = false
       }
 
       return res.json('ok')

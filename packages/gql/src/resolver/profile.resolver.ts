@@ -10,8 +10,9 @@ import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
-  profiles,
+  items: profiles,
   pageInfo: null,
+  totalItems: profiles.length,
 })
 
 // TODO implement pagination
@@ -45,7 +46,7 @@ const getMyProfiles = (
     status: helper.safeIn(statuses),
     ownerUserId: user.id,
   })
-  return core.entitiesBy(ctx.repositories.profile, filter, { createdAt: 'DESC' })
+  return core.entitiesBy(ctx.repositories.profile, filter)
     .then(toProfilesOutput)
 }
 
@@ -71,8 +72,9 @@ const getProfileFollowers = (
     edgeType: defs.EdgeType.Follows,
   })
     .then((wallets) => ({
-      wallets,
+      items: wallets,
       pageInfo: null,
+      totalItems: wallets.length,
     }))
 }
 

@@ -38,6 +38,7 @@ export const dbConfig = {
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'app',
   logging: helper.parseBoolean(process.env.DB_LOGGING) || false,
+  migrationDirectory: process.env.DB_MIGRATION_DIR || 'dist/db/migration',
   useSSL: helper.parseBoolean(process.env.DB_USE_SSL),
 }
 

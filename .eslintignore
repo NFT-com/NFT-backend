@@ -2,4 +2,3 @@ old-code
 gql-naming-fn.js
 packages/*/dist
 packages/gql/src/defs/gql.ts
-packages/indexer/src/defs/gql.ts

@@ -1,9 +1,8 @@
 import { differenceInSeconds, isEqual } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { isEmpty } from 'lodash'
 
-import { Context, gql, Pageable } from '@nftcom/gql/defs'
+import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
@@ -39,7 +38,7 @@ const bid = (
   const { input } = args
   joi.validateSchema(schema, input)
 
-  if (input.nftType === gql.NFTType.Profile && isEmpty(input.profileURL)) {
+  if (input.nftType === gql.NFTType.Profile && helper.isEmpty(input.profileURL)) {
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
@@ -106,46 +105,56 @@ const bid = (
     .then(([newBid]) => newBid)
 }
 
-// TODO pagination is broken
-const getBidsBy = (
-  ctx: Context,
-  filter: Partial<entity.Bid>,
-  pageInput: gql.PageInput,
-): Promise<Pageable<entity.Bid>> => {
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    filter,
-    { createdAt: 'DESC' },
-    {
-      skip: 0,
-      take: 20,
-    },
-  )
-    .then(pagination.toPageable(pageInput))
-}
-
 const getBids = (
   _: any,
-  args: gql.QueryMyBidsArgs,
+  args: gql.QueryBidsArgs,
   ctx: Context,
-): Promise<Pageable<entity.Bid>> => {
-  const { user } = ctx
+): Promise<gql.BidsOutput> => {
+  const { user, repositories } = ctx
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput)
-  const filter = helper.inputT2SafeK(args?.input)
-  return getBidsBy(ctx, filter, pageInput)
+  const pageInput = args?.input?.pageInput
+
+  // TODO (eddie): add support for querying all public 
+  // bids for a user, given one of their wallet's details.
+
+  return Promise.resolve(args?.input?.wallet)
+    .then(fp.thruIfNotEmpty((walletInput) => {
+      return repositories.wallet.findByNetworkChainAddress(
+        walletInput.network,
+        walletInput.chainId,
+        walletInput.address,
+      )
+    }))
+    .then((wallet: entity.Wallet) => {
+      const inputFilters = {
+        profileId: args?.input?.profileId,
+        walletId: wallet?.id,
+      }
+      const filter = helper.inputT2SafeK(inputFilters)
+      return core.paginatedEntitiesBy(
+        ctx.repositories.bid,
+        pageInput,
+        filter,
+      )
+    })
+    .then(pagination.toPageable(pageInput))
 }
 
 const getMyBids = (
   _: any,
   args: gql.QueryMyBidsArgs,
   ctx: Context,
-): Promise<Pageable<entity.Bid>> => {
+): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput)
+  const pageInput = args?.input?.pageInput
   const filter = helper.inputT2SafeK<entity.Bid>(args?.input, { userId: user.id })
-  return getBidsBy(ctx, filter, pageInput)
+  return core.paginatedEntitiesBy(
+    ctx.repositories.bid,
+    pageInput,
+    filter,
+  )
+    .then(pagination.toPageable(pageInput))
 }
 
 const cancelBid = (
@@ -158,18 +167,22 @@ const cancelBid = (
   return repositories.bid.deleteById(args.id)
 }
 
-// TODO pagination is broken
 const getTopBids = (
   _: any,
   args: gql.QueryTopBidsArgs,
   ctx: Context,
-): Promise<Pageable<entity.Bid>> => {
-  const { user, repositories } = ctx
+): Promise<gql.BidsOutput> => {
+  const { user } = ctx
   logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = pagination.safeInput(args?.input?.pageInput)
+  const pageInput = args?.input?.pageInput
   const filter = helper.inputT2SafeK(args?.input)
-  return repositories.bid.findTopBidsBy(filter, 0, 20)
-    .then(pagination.toPageable(pageInput))
+  return core.paginatedEntitiesBy(
+    ctx.repositories.bid,
+    pageInput,
+    filter,
+    'price',
+  )
+    .then(pagination.toPageable(pageInput, 'price'))
 }
 
 export default {

@@ -39,13 +39,13 @@ input BidInput {
 input BidsInput {
   pageInput: PageInput
   profileId: ID
-  walletId: ID
+  wallet: WalletInput
 }
 
 type BidsOutput {
-  totalItems: Int
   items: [Bid!]!
   pageInfo: PageInfo
+  totalItems: Int
 }
 
 input TopBidsInput {
