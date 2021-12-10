@@ -44,9 +44,6 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
       `${__dirname}/migration/*.js`,
     ],
     ssl,
-    // extra: {
-    //   ssl: true,
-    // },
     entities,
   })
     .then((con) => {
