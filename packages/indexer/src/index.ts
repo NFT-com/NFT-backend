@@ -269,6 +269,7 @@ export const importMetaData = async(): Promise<void> => {
     const nullTokens = await repositories.nftRaw.find({
       where: {
         metadataURL: null,
+        error: null,
       },
     })
 

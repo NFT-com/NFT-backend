@@ -21,13 +21,13 @@ export const start = async (): Promise<void> => {
     return res.json(`server up, cron1=${cron1Bool}, cron2=${cron2Bool}, cron3=${cron3Bool}, cron4=${cron4Bool}`)
   })
 
-  app.get('/start1', (req, res) => {
+  app.get('/1/:minutes', (req, res) => {
     try {
       if (cron1 && cron1Bool) {
         return res.json('nft logs already running')
       } else {
         cron1 = cron.schedule(
-          '0 */1 * * * *',
+          `0 */${req.params.minutes} * * * *`,
           () => {
             getNftLogs()
           },
@@ -46,13 +46,13 @@ export const start = async (): Promise<void> => {
     }
   })
 
-  app.get('/start2', (req, res) => {
+  app.get('/2/:minutes', (req, res) => {
     try {
       if (cron2 && cron2Bool) {
         return res.json('impDetails already running')
       } else {
         cron2 = cron.schedule(
-          '0 */1 * * * *',
+          `0 */${req.params.minutes} * * * *`,
           () => {
             getImplementationDetails()
           },
@@ -71,13 +71,13 @@ export const start = async (): Promise<void> => {
     }
   })
 
-  app.get('/start3', (req, res) => {
+  app.get('/3/:minutes', (req, res) => {
     try {
       if (cron3 && cron3Bool) {
         return res.json('import metadata already running')
       } else {
         cron3 = cron.schedule(
-          '0 */1 * * * *',
+          `0 */${req.params.minutes} * * * *`,
           () => {
             importMetaData()
           },
@@ -96,13 +96,13 @@ export const start = async (): Promise<void> => {
     }
   })
 
-  app.get('/start4', (req, res) => {
+  app.get('/4/:minutes', (req, res) => {
     try {
       if (cron4 && cron4Bool) {
         return res.json('populate tokenIds already running')
       } else {
         cron4 = cron.schedule(
-          '0 */1 * * * *',
+          `0 */${req.params.minutes} * * * *`,
           () => {
             populateTokenIds()
           },
@@ -121,7 +121,7 @@ export const start = async (): Promise<void> => {
     }
   })
 
-  app.get('/stop-all', (req, res) => {
+  app.get('/stop', (req, res) => {
     try {
       if (cron1Bool) {
         cron1.stop()
