@@ -418,6 +418,21 @@ export const getImplementationDetails = async(): Promise<void> => {
   }
 }
 
+// TODO add in for contractName = null
+// {
+//   "inputs": [],
+//   "name": "name",
+//   "outputs": [
+//     {
+//       "internalType": "string",
+//       "name": "",
+//       "type": "string"
+//     }
+//   ],
+//   "stateMutability": "view",
+//   "type": "function"
+// }
+
 export const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Promise<void> => {
   try {
     const result = await axios.post(
