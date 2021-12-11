@@ -282,7 +282,7 @@ export const populateTokenIds = async(): Promise<void> => {
   }
 }
 
-export const importMetaData = async(limit = 25): Promise<void> => {
+export const importMetaData = async(limit = 50): Promise<void> => {
   try {
     console.log('import meta data JSON')
     const validURLs = await repositories.nftRaw.find({

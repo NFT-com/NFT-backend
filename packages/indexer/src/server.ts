@@ -26,7 +26,7 @@ export const start = async (): Promise<void> => {
     try {
       if (!cron1 || !cron1Bool) {
         cron1 = cron.schedule(
-          `0 */${req.params.minutes} * * * *`,
+          '0 */1 * * * *',
           () => {
             getNftLogs()
           },
@@ -70,7 +70,7 @@ export const start = async (): Promise<void> => {
         cron4 = cron.schedule(
           `0 */${req.params.minutes} * * * *`,
           () => {
-            importMetaData(25)
+            importMetaData(50)
           },
           {
             scheduled: true,
@@ -185,7 +185,7 @@ export const start = async (): Promise<void> => {
         cron4 = cron.schedule(
           `0 */${req.params.minutes} * * * *`,
           () => {
-            importMetaData(Number(req.params.limit) ?? 25)
+            importMetaData(Number(req.params.limit) ?? 50)
           },
           {
             scheduled: true,
