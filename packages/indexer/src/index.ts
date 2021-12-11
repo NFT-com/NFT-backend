@@ -119,23 +119,23 @@ const getMetaData = async(id: string, contract: string, tokenUri: string): Promi
       return { id, contract, metadata: base64.decode(tokenUri) }
     } else if (isIPFS.multihash(tokenUri)) {
       console.log(chalk.green('^multihash', tokenUri))
-      const result = await axios.get(`https://nft-llc.mypinata.cloud/ipfs/${tokenUri}`)
+      const result = await axios.get(`https://nft-llc2.mypinata.cloud/ipfs/${tokenUri}`)
       return { id, contract, metadata: result.data }
     } else if (isIPFS.url(tokenUri)) {
       console.log(chalk.green('^url', tokenUri))
-      const result = await axios.get(`${tokenUri.replace('gateway.pinata.cloud', 'nft-llc.mypinata.cloud')}`)
+      const result = await axios.get(`${tokenUri.replace('gateway.pinata.cloud', 'nft-llc2.mypinata.cloud')}`)
       return { id, contract, metadata: result.data }
     } else if (isIPFS.ipfsUrl(tokenUri)) {
       console.log(chalk.green('^ipfs url', tokenUri))
-      const result = await axios.get(`${tokenUri.replace('gateway.pinata.cloud', 'nft-llc.mypinata.cloud')}`)
+      const result = await axios.get(`${tokenUri.replace('gateway.pinata.cloud', 'nft-llc2.mypinata.cloud')}`)
       return { id, contract, metadata: result.data }
     } else if (tokenUri.indexOf('ipfs://') != -1) {
       console.log(chalk.green('^ipfs resource', tokenUri))
-      const result = await axios.get(`https://nft-llc.mypinata.cloud/${tokenUri.replace('ipfs://', 'ipfs/')}`)
+      const result = await axios.get(`https://nft-llc2.mypinata.cloud/${tokenUri.replace('ipfs://', 'ipfs/')}`)
       return { id, contract, metadata: result.data }
     } else if (isUrl(tokenUri)) {
       console.log(chalk.green('^regular url: ', tokenUri))
-      const result = await axios.get(tokenUri.replace('gateway.pinata.cloud', 'nft-llc.mypinata.cloud'))
+      const result = await axios.get(tokenUri.replace('gateway.pinata.cloud', 'nft-llc2.mypinata.cloud'))
       return { id, contract, metadata: result.data }
     } else {
       if (tokenUri.indexOf('data:application/json;base64,') != -1) {
@@ -279,6 +279,7 @@ export const populateTokenIds = async(): Promise<void> => {
     }
   } catch (err) {
     console.log('populateTokenIds err: ', err.body ?? err)
+    throw new Error(err)
   }
 }
 
@@ -288,20 +289,32 @@ export const importMetaData = async(limit = 50): Promise<void> => {
     const validURLs = await repositories.nftRaw.find({
       where: {
         metadataURL: Not(IsNull()),
-        metadata: null,
-        error: null,
+        metadata: IsNull(),
+        error: IsNull(),
       },
     })
 
-    for (let i = 0; i < validURLs.length; i += limit) {
-      const requests = validURLs.filter((_, i) => i <= limit).map((object) => getMetaData(
-        object.id, object.contract, object.metadataURL),
-      )
+    let loop = 0
+    const seen = {}
+    for (let i = 0; i < validURLs.length && loop < MAX_LOOPS; i += limit) {
+      let seenNum = 0
+      const requests = validURLs
+        .filter(item => {
+          if (!seen[item.id] && seenNum <= limit) {
+            seenNum += 1
+            return true
+          } else {
+            return false
+          }
+        })
+        .map((object) => getMetaData(
+          object.id, object.contract, object.metadataURL),
+        )
   
       const result = await Promise.all(requests)
   
       // posts are ready. accumulate all the posts without duplicates
-      result.map(async (data) => {
+      await result.map(async (data) => {
         await repositories.nftRaw.update(
           {
             id: data.id,
@@ -310,6 +323,8 @@ export const importMetaData = async(limit = 50): Promise<void> => {
             metadata: data.metadata,
           },
         )
+
+        seen[data.id] = true
   
         console.log(
           chalk.yellow(
@@ -318,10 +333,14 @@ export const importMetaData = async(limit = 50): Promise<void> => {
         )
       })
 
-      await delay(1000)
+      await delay(500)
+      loop += 1
     }
+
+    console.log('done metadata ======>')
   } catch (err) {
     console.log('error importing metadata: ', err)
+    throw new Error(err)
   }
 }
 
@@ -419,6 +438,7 @@ export const importMetaDataURL = async(): Promise<void> => {
     }
   } catch (err) {
     console.log('error importing metadata: ', err)
+    throw new Error(err)
   }
 }
 
@@ -528,6 +548,7 @@ export const getImplementationDetails = async(): Promise<void> => {
     }
   } catch (err) {
     console.log(chalk.yellow('error while pulling etherscan: ', err))
+    throw new Error(err)
   }
 }
 
@@ -630,6 +651,7 @@ export const getNftLogs = async (fromBlock = 'latest', toBlock = 'latest'): Prom
     }
   } catch (err) {
     console.log(`getNftLogs: ${err.body ?? err.detail ?? err}`)
+    throw new Error(err)
   }
 }
 

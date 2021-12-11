@@ -10,7 +10,8 @@
     "compile": "tsc && tsc-alias",
     "dev": "concurrently -k -r \"nodemon\"",
     "signature:gen": "ts-node script/gen-signature.ts",
-    "start": "node -r source-map-support/register ./dist/index"
+    "start": "node -r source-map-support/register ./dist/index",
+    "rebuild": "docker-compose up --force-recreate --build -d"
   },
   "dependencies": {
     "axios": "^0.24.0",
