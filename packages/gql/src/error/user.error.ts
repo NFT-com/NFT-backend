@@ -8,6 +8,7 @@ export enum ErrorType {
   EmailAlreadyExists = 'EMAIL_ALREADY_EXISTS',
   EmailConfirmTokenRequired = 'EMAIL_CONFIRM_TOKEN_REQUIRED',
   InvalidEmailConfirmToken = 'INVALID_EMAIL_CONFIRM_TOKEN',
+  ForbiddenAction = 'FORBIDDEN_ACTION',
 }
 
 export const buildAuth = (): ApolloError =>
@@ -26,3 +27,5 @@ export const buildEmailTokenRequiredMsg = (): string => 'Email confirm token is 
 
 export const buildInvalidEmailTokenMsg = (token: string): string =>
   `Email confirm token ${token} is invalid`
+
+export const buildForbiddenActionMsg = (): string => 'You  may not perform this action.'

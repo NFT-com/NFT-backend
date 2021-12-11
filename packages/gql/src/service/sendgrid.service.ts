@@ -74,7 +74,7 @@ export const sendOutbidEmail = (
 ): Promise<boolean> => {
   logger.debug('sendOutbid', { user })
 
-  if (helper.isFalse(user.preferences.outbidNotifications)) {
+  if (helper.isFalse(user?.preferences?.outbidNotifications ?? false)) {
     return Promise.resolve(false)
   }
 
