@@ -137,7 +137,7 @@ const getMetaData = async(id: string, contract: string, tokenUri: string): Promi
       return { id, contract, metadata: result.data }
     } else if (isUrl(tokenUri)) {
       console.log(chalk.green('^regular url: ', tokenUri))
-      const result = await axios.get(tokenUri.replace('gateway.pinata.cloud', 'nft-llc2.mypinata.cloud'))
+      const result = await axios.get(tokenUri.replace('gateway.pinata.cloud', 'nft-llc2.mypinata.cloud').replace('http://', 'https://'))
       return { id, contract, metadata: result.data }
     } else {
       if (tokenUri.indexOf('data:application/json;base64,') != -1) {
@@ -147,11 +147,11 @@ const getMetaData = async(id: string, contract: string, tokenUri: string): Promi
           console.log(chalk.green('^base64'))
           return { id, contract, metadata: base64.decode(base64Parse) }
         } else {
-          console.log(chalk.yellow(`^metadata non-conforming: ${tokenUri}`))
+          console.log(chalk.yellow(`^1 metadata non-conforming: ${tokenUri}`))
           return { id, contract, metadata: undefined }
         }
       } else {
-        console.log(chalk.yellow(`^metadata non-conforming: ${tokenUri}`))
+        console.log(chalk.yellow(`^2 metadata non-conforming: ${tokenUri}`))
         return { id, contract, metadata: undefined }
       }
     }
@@ -317,22 +317,41 @@ export const importMetaData = async(limit = 50): Promise<void> => {
   
       // posts are ready. accumulate all the posts without duplicates
       await result.map(async (data) => {
-        await repositories.nftRaw.update(
-          {
-            id: data.id,
-          },
-          {
-            metadata: data.metadata,
-          },
-        )
+        if (data.metadata) {
+          await repositories.nftRaw.update(
+            {
+              id: data.id,
+            },
+            {
+              metadata: data.metadata,
+            },
+          )
+    
+          console.log(
+            chalk.yellow(
+              `Updated MetaData DATA ${i}-${i + limit} / ${validURLs.length}: ${data.id}, contract: ${data.contract}`,
+            ),
+          )
+        } else {
+          await repositories.nftRaw.update(
+            {
+              id: data.id,
+            },
+            {
+              metadata: data.metadata,
+              error: true,
+              errorReason: 'metadata undefined',
+            },
+          )
+
+          console.log(
+            chalk.yellow(
+              `NULL MetaData DATA ${i}-${i + limit} / ${validURLs.length}: ${data.id}, contract: ${data.contract}`,
+            ),
+          )
+        }
 
         seen[data.id] = true
-  
-        console.log(
-          chalk.yellow(
-            `Updated MetaData DATA ${i}-${i + limit} / ${validURLs.length}: ${data.id}, contract: ${data.contract}`,
-          ),
-        )
       })
 
       await delay(500)
