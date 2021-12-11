@@ -86,6 +86,8 @@ const getTokenUri = async(
           metadata: null,
         },
       )
+
+      return undefined
     }
   } catch (err) {
     console.log(chalk.red(`revert getting token id (${err.code}): ${contract.address}, tokenId=${tokenId}`))
@@ -355,11 +357,11 @@ export const importMetaDataURL = async(): Promise<void> => {
     })
 
     let loops = 0
-    for (let i = 0; i < nullTokens.length && loops < MAX_LOOPS; i++) {
+    for (let i = 0; i < nullTokens.length && loops < 10 * MAX_LOOPS; i++) {
       // get similar contract
       const filledNftRaw = await repositories.nftRaw.findOne({
         where: {
-          metadataURL: !null,
+          metadataURL: Not(IsNull()),
           contract: nullTokens[i].contract,
         },
       })
@@ -436,6 +438,8 @@ export const importMetaDataURL = async(): Promise<void> => {
         )
       }
     }
+
+    console.log('done metadata url!')
   } catch (err) {
     console.log('error importing metadata: ', err)
     throw new Error(err)
