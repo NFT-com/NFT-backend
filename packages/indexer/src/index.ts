@@ -1,12 +1,14 @@
 import axios from 'axios'
 import base64 from 'base-64'
 import chalk from 'chalk'
+import delay from 'delay'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import isBase64 from 'is-base64'
 import isIPFS from 'is-ipfs'
 import isUrl from 'is-url'
 import kill from 'kill-port'
+import { IsNull, Not } from 'typeorm'
 
 import { defs } from '@nftcom/shared'
 import { db, fp } from '@nftcom/shared'
@@ -68,7 +70,23 @@ const getTokenUri = async(
   )
 
   try {
-    return await contract.tokenURI(tokenId)
+    const uri = await contract.tokenURI(tokenId)
+
+    if (uri.length > 0) {
+      return uri
+    } else {
+      await repositories.nftRaw.update(
+        {
+          id: existingId,
+        },
+        {
+          error: true,
+          errorReason: 'uri is length 0',
+          metadataURL: null,
+          metadata: null,
+        },
+      )
+    }
   } catch (err) {
     console.log(chalk.red(`revert getting token id (${err.code}): ${contract.address}, tokenId=${tokenId}`))
     try {
@@ -105,11 +123,11 @@ const getMetaData = async(id: string, contract: string, tokenUri: string): Promi
       return { id, contract, metadata: result.data }
     } else if (isIPFS.url(tokenUri)) {
       console.log(chalk.green('^url', tokenUri))
-      const result = await axios.get(`${tokenUri}`)
+      const result = await axios.get(`${tokenUri.replace('gateway.pinata.cloud', 'nft-llc.mypinata.cloud')}`)
       return { id, contract, metadata: result.data }
     } else if (isIPFS.ipfsUrl(tokenUri)) {
       console.log(chalk.green('^ipfs url', tokenUri))
-      const result = await axios.get(`${tokenUri}`)
+      const result = await axios.get(`${tokenUri.replace('gateway.pinata.cloud', 'nft-llc.mypinata.cloud')}`)
       return { id, contract, metadata: result.data }
     } else if (tokenUri.indexOf('ipfs://') != -1) {
       console.log(chalk.green('^ipfs resource', tokenUri))
@@ -117,7 +135,7 @@ const getMetaData = async(id: string, contract: string, tokenUri: string): Promi
       return { id, contract, metadata: result.data }
     } else if (isUrl(tokenUri)) {
       console.log(chalk.green('^regular url: ', tokenUri))
-      const result = await axios.get(tokenUri)
+      const result = await axios.get(tokenUri.replace('gateway.pinata.cloud', 'nft-llc.mypinata.cloud'))
       return { id, contract, metadata: result.data }
     } else {
       if (tokenUri.indexOf('data:application/json;base64,') != -1) {
@@ -264,42 +282,44 @@ export const populateTokenIds = async(): Promise<void> => {
   }
 }
 
-export const importMetaData = async(): Promise<void> => {
+export const importMetaData = async(limit = 25): Promise<void> => {
   try {
-    console.log('import meta data')
+    console.log('import meta data JSON')
     const validURLs = await repositories.nftRaw.find({
       where: {
-        metadataURL: !null,
+        metadataURL: Not(IsNull()),
         metadata: null,
         error: null,
       },
     })
 
-    console.log('validURLs: ', validURLs)
-
-    const requests = validURLs.map((object) => getMetaData(
-      object.id, object.contract, object.metadataURL),
-    )
-
-    const result = await Promise.all(requests)
-
-    // posts are ready. accumulate all the posts without duplicates
-    result.map(async (data) => {
-      await repositories.nftRaw.update(
-        {
-          id: data.id,
-        },
-        {
-          metadata: data.metadata,
-        },
+    for (let i = 0; i < validURLs.length; i += limit) {
+      const requests = validURLs.filter((_, i) => i <= limit).map((object) => getMetaData(
+        object.id, object.contract, object.metadataURL),
       )
+  
+      const result = await Promise.all(requests)
+  
+      // posts are ready. accumulate all the posts without duplicates
+      result.map(async (data) => {
+        await repositories.nftRaw.update(
+          {
+            id: data.id,
+          },
+          {
+            metadata: data.metadata,
+          },
+        )
+  
+        console.log(
+          chalk.yellow(
+            `Updated MetaData DATA ${i}-${i + limit} / ${validURLs.length}: ${data.id}, contract: ${data.contract}`,
+          ),
+        )
+      })
 
-      console.log(
-        chalk.yellow(
-          `Updated MetaData DATA: ${data.id}, contract: ${data.contract}`,
-        ),
-      )
-    })
+      await delay(1000)
+    }
   } catch (err) {
     console.log('error importing metadata: ', err)
   }
@@ -307,6 +327,7 @@ export const importMetaData = async(): Promise<void> => {
 
 export const importMetaDataURL = async(): Promise<void> => {
   try {
+    console.log('@starting metadataURL imports')
     const nullTokens = await repositories.nftRaw.find({
       where: {
         metadataURL: null,
@@ -314,26 +335,84 @@ export const importMetaDataURL = async(): Promise<void> => {
       },
     })
 
-    for (let i = 0; i < nullTokens.length; i++) {
-      const tokenUri = await getTokenUri(
-        Number(nullTokens[i].tokenId),
-        nullTokens[i].contract,
-        nullTokens[i].id,
-      )
+    let loops = 0
+    for (let i = 0; i < nullTokens.length && loops < MAX_LOOPS; i++) {
+      // get similar contract
+      const filledNftRaw = await repositories.nftRaw.findOne({
+        where: {
+          metadataURL: !null,
+          contract: nullTokens[i].contract,
+        },
+      })
 
-      if (tokenUri) {
+      const errorNFT = await repositories.nftRaw.findOne({
+        where: {
+          error: true,
+          contract: nullTokens[i].contract,
+        },
+      })
+
+      if (errorNFT) {
         await repositories.nftRaw.update(
           {
             id: nullTokens[i].id,
           },
           {
-            metadataURL: tokenUri,
+            error: true,
+            errorReason: errorNFT.errorReason,
           },
         )
 
         console.log(
           chalk.yellow(
-            `Updated MetaData URL: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
+            `Updated ERROR MetaData URL: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, errorReason=${errorNFT.errorReason}`,
+          ),
+        )
+      } else if (!filledNftRaw || (filledNftRaw && !isUrl(filledNftRaw.metadataURL))) {
+        const tokenUri = await getTokenUri(
+          Number(nullTokens[i].tokenId),
+          nullTokens[i].contract,
+          nullTokens[i].id,
+        )
+
+        console.log(`2: ${i}/${nullTokens.length - 1}: `, tokenUri)
+  
+        if (tokenUri) {
+          await repositories.nftRaw.update(
+            {
+              id: nullTokens[i].id,
+            },
+            {
+              metadataURL: tokenUri,
+            },
+          )
+  
+          console.log(
+            chalk.yellow(
+              `Updated MetaData URL: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, tokenUri=${(isBase64(tokenUri) || tokenUri.indexOf('data:application/json;base64,') != -1) ? 'base64' : tokenUri}`,
+            ),
+          )
+        }
+
+        loops += 1
+      } else {
+        const modifiedTokenURL = filledNftRaw.metadataURL.replace(
+          filledNftRaw.tokenId.toString(),
+          nullTokens[i].tokenId.toString(),
+        )
+
+        await repositories.nftRaw.update(
+          {
+            id: nullTokens[i].id,
+          },
+          {
+            metadataURL: modifiedTokenURL,
+          },
+        )
+
+        console.log(
+          chalk.yellow(
+            `Updated MetaData URL: ${nullTokens[i].contract}, tokenId=${nullTokens[i].tokenId}, modifiedTokenURL=${modifiedTokenURL} from ${filledNftRaw.metadataURL}`,
           ),
         )
       }

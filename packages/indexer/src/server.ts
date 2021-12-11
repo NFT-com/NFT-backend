@@ -22,6 +22,86 @@ export const start = async (): Promise<void> => {
     return res.json(`server up, cron1=${cron1Bool}, cron2=${cron2Bool}, cron3=${cron3Bool}, cron4=${cron4Bool}, cron5=${cron5Bool}`)
   })
 
+  app.get('/start/:minutes', (req, res) => {
+    try {
+      if (!cron1 || !cron1Bool) {
+        cron1 = cron.schedule(
+          `0 */${req.params.minutes} * * * *`,
+          () => {
+            getNftLogs()
+          },
+          {
+            scheduled: true,
+            timezone: 'America/Chicago',
+          },
+        )
+        cron1Bool = true
+      }
+
+      if (!cron2 || !cron2Bool) {
+        cron2 = cron.schedule(
+          `0 */${req.params.minutes} * * * *`,
+          () => {
+            getImplementationDetails()
+          },
+          {
+            scheduled: true,
+            timezone: 'America/Chicago',
+          },
+        )
+        cron2Bool = true
+      }
+
+      if (!cron3 || !cron3Bool) {
+        cron3 = cron.schedule(
+          `0 */${req.params.minutes} * * * *`,
+          () => {
+            importMetaDataURL()
+          },
+          {
+            scheduled: true,
+            timezone: 'America/Chicago',
+          },
+        )
+        cron3Bool = true
+      }
+
+      if (!cron4 || !cron4Bool) {
+        cron4 = cron.schedule(
+          `0 */${req.params.minutes} * * * *`,
+          () => {
+            importMetaData(25)
+          },
+          {
+            scheduled: true,
+            timezone: 'America/Chicago',
+          },
+        )
+        cron4Bool = true
+      }
+
+      if (!cron5 || !cron5Bool) {
+        cron5 = cron.schedule(
+          `0 */${req.params.minutes} * * * *`,
+          () => {
+            populateTokenIds()
+          },
+          {
+            scheduled: true,
+            timezone: 'America/Chicago',
+          },
+        )
+        cron5Bool = true
+      }
+
+      return res.json('all start ok')
+    } catch (err) {
+      return res.json({
+        error: err,
+      })
+    }
+  })
+
   app.get('/1/:minutes', (req, res) => {
     try {
       if (cron1 && cron1Bool) {
@@ -97,7 +177,7 @@ export const start = async (): Promise<void> => {
     }
   })
 
-  app.get('/4/:minutes', (req, res) => {
+  app.get('/4/:minutes/:limit', (req, res) => {
     try {
       if (cron4 && cron4Bool) {
         return res.json('import metadata json already running')
@@ -105,7 +185,7 @@ export const start = async (): Promise<void> => {
         cron4 = cron.schedule(
           `0 */${req.params.minutes} * * * *`,
           () => {
-            importMetaData()
+            importMetaData(Number(req.params.limit) ?? 25)
           },
           {
             scheduled: true,
