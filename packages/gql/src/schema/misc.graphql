@@ -5,13 +5,13 @@ type FileUploadOutput {
   sessionToken: String!
 }
 
-type EndAuctionInput {
+input EndAuctionInput {
   profileId: String!
   walletId: String!  
 }
 
 type EndAuctionOutput {
-  minted: NFT!
+  txHash: String!
 }
 
 extend type Mutation {
