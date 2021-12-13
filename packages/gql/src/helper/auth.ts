@@ -1,7 +1,6 @@
 import { skip } from 'graphql-resolvers'
-import { utils } from 'packages/shared/node_modules/ethers/lib'
 
-import { getChain, isNetworkSupported } from '@nftcom/gql/config'
+import { getChain, isNetworkSupported, teamPassword } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
 import { appError, userError, walletError } from '@nftcom/gql/error'
 import { defs, helper } from '@nftcom/shared'
@@ -21,7 +20,7 @@ export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
 }
 
 export const isTeamAuthenticated = (_: any, args: any, ctx: Context): any => {
-  const { wallet } = ctx
+  const { wallet, teamKey } = ctx
   if (helper.isEmpty(wallet)) {
     return appError.buildNotFound(
       walletError.buildAddressNotFoundMsg(),
@@ -29,8 +28,8 @@ export const isTeamAuthenticated = (_: any, args: any, ctx: Context): any => {
     )
   }
 
-  // TODO: use team secret in local envs.
-  if (utils.getAddress(wallet.address) !== utils.getAddress('test')) {
+  // TODO (eddie): add wallet allowlist too for extra security
+  if (teamKey !== teamPassword) {
     return appError.buildForbidden(
       userError.buildForbiddenActionMsg(),
       userError.ErrorType.ForbiddenAction,

@@ -1,4 +1,5 @@
 import { Approval } from '@nftcom/shared/db/entity'
+import { nftTokenAddress } from '@nftcom/shared/helper/contracts'
 
 import { BaseRepository } from './base.repository'
 
@@ -8,14 +9,15 @@ export class ApprovalRepository extends BaseRepository<Approval> {
     super(Approval)
   }
 
-  public findMaxNFTApprovalByUserId = (userId: string): Promise<Approval> => {
-    // TODO: use actual contract address helper
-    const nftTokenAddress = '0x4DE2fE09Bc8F2145fE12e278641d2c93B9D4393A'
+  public findMaxNFTApprovalByUserId = (
+    userId: string,
+    chainId: string | number = 'mainnet',
+  ): Promise<Approval> => {
     return this.findOne({
       where: {
         userId,
         deletedAt: null,
-        currency: nftTokenAddress,
+        currency: nftTokenAddress(chainId),
       },
       order: { amount: 'DESC' },
     })

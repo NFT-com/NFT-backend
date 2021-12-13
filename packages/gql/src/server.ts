@@ -40,6 +40,7 @@ const createContext = async (ctx): Promise<Context> => {
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
+  const teamKey: string = headers['teamkey']
   const repositories = db.newRepositories()
   if (helper.isNotEmpty(authSignature)) {
     chain = auth.verifyAndGetNetworkChain(network, chainId)
@@ -55,6 +56,7 @@ const createContext = async (ctx): Promise<Context> => {
     wallet,
     user,
     repositories,
+    ...(teamKey ? { teamKey } : {}),
   }
 }
 

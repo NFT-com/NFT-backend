@@ -14,4 +14,5 @@ export type Context = {
   repositories: db.Repository
   user: entity.User
   wallet: entity.Wallet
+  teamKey?: string
 }
