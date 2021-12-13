@@ -117,7 +117,7 @@ export const toPageableFilter = <T>(
 ): Partial<T> => {
   const sagePageInput = safeInput(pageInput, cursor(orderKey))
   let cursorValue = null
-  if (isOrderByDate) {
+  if (isOrderByDate(orderKey)) {
     cursorValue = hasAfter(sagePageInput)
       ? helper.lessThanDate(sagePageInput.afterCursor)
       : helper.moreThanDate(sagePageInput.beforeCursor)
