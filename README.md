@@ -18,6 +18,8 @@ The Redis UI is available at `localhost:10015`.
 
 The Postgres instance is available at `localhost:10030`.
 
+The Indexer is available at `localhost:9999`.
+
 ## 3. Start GQL Server
 
 1. `cd packages/gql`

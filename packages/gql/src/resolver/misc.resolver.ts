@@ -1,14 +1,13 @@
 import STS from 'aws-sdk/clients/sts'
 import { Contract, Wallet } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
-import { BigNumber } from 'packages/shared/node_modules/ethers/lib'
 
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, entity,fp,helper, provider } from '@nftcom/shared'
+import { _logger, entity, fp, helper, provider } from '@nftcom/shared'
 import { ProfileStatus } from '@nftcom/shared/defs'
 import { profileAuctionABI, profileAuctionAddress } from '@nftcom/shared/helper/contracts'
 
