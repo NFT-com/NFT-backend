@@ -1,3 +1,5 @@
+import fetch from 'node-fetch'
+
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
 
 export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
@@ -31,4 +33,24 @@ export const MintedProfileTopic = '0x848fe9120700715213a041f29982f684fa481b289b4
 
 export function profileAuctionABI(): any {
   return profileAuctionABIJSON
+}
+
+export interface GasInfo {
+  limit: number
+  priceWei: number
+}
+
+export function getEthGasInfo(): Promise<GasInfo> {
+  const endpoint = 'https://data-api.defipulse.com/api/v1/egs/api/ethgasAPI.json?api-key=' + process.env.ETH_GAS_STATION_API_KEY
+  return fetch(endpoint)
+    .then((response) => response.json())
+    .then((response: any) => {
+      const limit =  1500000
+      const priceWei = response?.fast ? response?.fast / 10 : Number(10) * 1000000000
+
+      return {
+        limit,
+        priceWei,
+      }
+    })
 }

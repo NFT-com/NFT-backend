@@ -8,7 +8,7 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, entity,fp,helper, provider } from '@nftcom/shared'
+import { _logger, contracts,entity,fp,helper, provider } from '@nftcom/shared'
 import { ProfileStatus } from '@nftcom/shared/defs'
 import { profileAuctionABI, profileAuctionAddress } from '@nftcom/shared/helper/contracts'
 
@@ -96,6 +96,7 @@ const endProfileAuction = (
         Promise.resolve(wallet),
         Promise.resolve(approval),
         Promise.resolve(profile),
+        contracts.getEthGasInfo(),
         core.paginatedEntitiesBy(
           ctx.repositories.bid,
           { first: 1 },
@@ -111,7 +112,7 @@ const endProfileAuction = (
           .then((bids: Pageable<entity.Bid>) => bids.items[0]),
       ])
     })
-    .then(async ([wallet, approval, profile, topBid]) => {
+    .then(async ([wallet, approval, profile, gasInfo, topBid]) => {
       if (BigNumber.from(approval.amount).lt(BigNumber.from(topBid.price))) {
         return Promise.reject(appError.buildInvalid(
           approvalError.buildApprovalInsufficientMsg(),
@@ -124,11 +125,7 @@ const endProfileAuction = (
           mintError.ErrorType.WalletLosing,
         ))
       }
-      const overrides = {
-        // The maximum units of gas for the transaction to use
-        gasLimit: 1500000,
-        gasPrice: Number(10) * 1000000000, // wei
-      }
+    
       const signer = Wallet.fromMnemonic(process.env.MNEMONIC)
         .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
@@ -146,7 +143,7 @@ const endProfileAuction = (
         approval.signature.v,
         approval.signature.r,
         approval.signature.s,
-        overrides,
+        gasInfo,
       )
 
       topBid.status = BidStatus.Executed
