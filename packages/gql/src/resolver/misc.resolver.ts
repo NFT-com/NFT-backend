@@ -130,7 +130,7 @@ const endProfileAuction = (
         gasPrice: Number(10) * 1000000000, // wei
       }
       const signer = Wallet.fromMnemonic(process.env.MNEMONIC)
-        .connect(provider.provider(wallet.chainId))
+        .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
         profileAuctionAddress(wallet.chainId),
         profileAuctionABI(),
@@ -149,18 +149,16 @@ const endProfileAuction = (
         overrides,
       )
 
+      topBid.status = BidStatus.Executed
+      profile.ownerUserId = topBid.userId
+      profile.ownerWalletId = topBid.walletId
+      profile.status = ProfileStatus.Pending
       const hash = tx.hash
       return Promise.all([
         Promise.resolve(hash),
-        repositories.bid.save({
-          ...topBid,
-          status: BidStatus.Executed,
-        }),
-        repositories.profile.save({
-          ...profile,
-          status: ProfileStatus.Pending,
-        }),
-        provider.provider(wallet.chainId).waitForTransaction(hash),
+        repositories.bid.save(topBid),
+        repositories.profile.save(profile),
+        provider.provider(Number(wallet.chainId)).waitForTransaction(hash),
       ])
     })
     .then(([txHash]) => {
