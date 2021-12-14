@@ -10,13 +10,15 @@
     "compile": "tsc && tsc-alias",
     "dev": "concurrently -k -r \"nodemon\"",
     "signature:gen": "ts-node script/gen-signature.ts",
-    "start": "node -r source-map-support/register ./dist/index"
+    "start": "node -r source-map-support/register ./dist/index",
+    "rebuild": "docker-compose up --force-recreate --build -d"
   },
   "dependencies": {
     "axios": "^0.24.0",
     "base-64": "^1.0.0",
     "crypto-random-string": "^3.3.1",
     "date-fns": "^2.25.0",
+    "delay": "^5.0.0",
     "dotenv": "^10.0.0",
     "envfile": "^6.17.0",
     "ethers": "^5.5.2",
@@ -28,7 +30,8 @@
     "kill-port": "^1.6.1",
     "lodash": "^4.17.21",
     "node-cron": "^3.0.0",
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "typeorm": "^0.2.41"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.176",

@@ -44,5 +44,9 @@
   "engines": {
     "node": ">=16",
     "npm": ">=7"
+  },
+  "dependencies": {
+    "@sentry/node": "^6.16.1",
+    "@sentry/tracing": "^6.16.1"
   }
 }
