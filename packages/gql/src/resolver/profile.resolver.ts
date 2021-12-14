@@ -198,7 +198,7 @@ const updateProfile = (
       profileError.ErrorType.ProfileNotOwned,
     )))
     .then((p) => {
-      p.bannerURL = args.input.bannedURL || p.bannerURL
+      p.bannerURL = args.input.bannerURL || p.bannerURL
       p.description = args.input.description || p.description
       p.photoURL = args.input.photoURL || p.photoURL
       return repositories.profile.save(p)

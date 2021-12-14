@@ -37,7 +37,7 @@ const getRandomAPI = (): string => {
   return etherscanKeys[randomIndex]
 }
 
-export const provider = (chainId: number | string = 'mainnet'): ethers.providers.BaseProvider => {
+export const provider = (chainId = 1): ethers.providers.BaseProvider => {
   return ethers.getDefaultProvider(chainId, {
     etherscan: getRandomAPI(),
     infura: process.env.REACT_APP_INFURA_API_KEY,
