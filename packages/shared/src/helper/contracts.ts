@@ -27,6 +27,8 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   }
 }
 
+export const MintedProfileTopic = '0x848fe9120700715213a041f29982f684fa481b289b434ac7e2b36785af0a3826'
+
 export function profileAuctionABI(): any {
   return profileAuctionABIJSON
 }
