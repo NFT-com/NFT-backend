@@ -1,5 +1,6 @@
 import STS from 'aws-sdk/clients/sts'
 import { Contract, Wallet } from 'ethers'
+import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { assetBucket } from '@nftcom/gql/config'
