@@ -43,7 +43,7 @@ type ProfilesOutput {
 
 input UpdateProfileInput {
   id: ID!
-  bannedURL: String
+  bannerURL: String
   description: String
   photoURL: String
 }
