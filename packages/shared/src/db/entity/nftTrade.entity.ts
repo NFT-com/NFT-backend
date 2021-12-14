@@ -31,6 +31,7 @@ export class NFTTrade extends BaseEntity {
 
   // for tracking which exchange
   // have ENUM for opensea, rarible, etc...
+  // TODO delete later because not necessary
   @Column({ nullable: true })
   contractExecution: string
 

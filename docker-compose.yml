@@ -42,25 +42,26 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data/
     restart: unless-stopped
-  indexer:
-    build:
-      context: .
-      dockerfile: indexer.Dockerfile
-    container_name: nftcom-indexer
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    networks:
-      - nftcom
-    ports:
-      - "9999:9999"
-  #    volumes:
-  #      - "./src:/app/nftcom/src:cached"
-    depends_on:
-      - redis
-    restart: unless-stopped
+  # # this should be commented on production. Uncomment when testing locally
+  # indexer:
+  #   build:
+  #     context: .
+  #     dockerfile: indexer.Dockerfile
+  #   container_name: nftcom-indexer
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #   networks:
+  #     - nftcom
+  #   ports:
+  #     - "9999:9999"
+  # #    volumes:
+  # #      - "./src:/app/nftcom/src:cached"
+  #   depends_on:
+  #     - redis
+  #   restart: unless-stopped
 
 volumes:
   postgres:
