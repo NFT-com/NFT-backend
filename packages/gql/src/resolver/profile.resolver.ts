@@ -231,7 +231,7 @@ export default {
   Profile: {
     followersCount: getFollowersCount,
     owner: core.resolveEntityById<gql.Profile, entity.Wallet>(
-      'ownerId',
+      'ownerWalletId',
       defs.EntityType.Profile,
       defs.EntityType.Wallet,
     ),
