@@ -17,12 +17,13 @@
     "ethers": "^5.5.1",
     "lodash": "^4.17.21",
     "nanoid": "^3.1.30",
-    "node-fetch": "^3.1.0",
+    "node-fetch": "^2.6.6",
     "pg": "^8.7.1",
     "typeorm": "^0.2.40"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.177",
+    "@types/node-fetch": "^2.5.12",
     "rimraf": "^3.0.2",
     "tsc-alias": "^1.4.1",
     "tsconfig-paths": "^3.11.0",
