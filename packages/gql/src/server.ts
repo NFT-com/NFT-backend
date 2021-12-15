@@ -56,7 +56,7 @@ const createContext = async (ctx): Promise<Context> => {
     wallet,
     user,
     repositories,
-    ...(teamKey ? { teamKey } : {}),
+    teamKey,
   }
 }
 

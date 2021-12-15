@@ -36,21 +36,28 @@ export function profileAuctionABI(): any {
 }
 
 export interface GasInfo {
-  limit: number
-  priceWei: number
+  gasLimit: number
+  gasPrice: number
 }
 
 export function getEthGasInfo(): Promise<GasInfo> {
   const endpoint = 'https://data-api.defipulse.com/api/v1/egs/api/ethgasAPI.json?api-key=' + process.env.ETH_GAS_STATION_API_KEY
+  const gasLimit =  1500000
+  const defaultPriceWei = Number(10) * 1000000000
   return fetch(endpoint)
     .then((response) => response.json())
     .then((response: any) => {
-      const limit =  1500000
-      const priceWei = response?.fast ? response?.fast / 10 : Number(10) * 1000000000
+      const priceWei = response?.fastest ? response?.fastest / 10 : defaultPriceWei
 
       return {
-        limit,
-        priceWei,
+        gasLimit,
+        gasPrice: priceWei,
+      }
+    })
+    .catch(() => {
+      return {
+        gasLimit,
+        gasPrice: defaultPriceWei,
       }
     })
 }
