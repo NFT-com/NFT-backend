@@ -8,10 +8,7 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts, entity, fp, helper, provider } from '@nftcom/shared'
-import { ProfileStatus } from '@nftcom/shared/defs'
-
-import { BidStatus } from '../defs/gql'
+import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -145,10 +142,10 @@ const endProfileAuction = (
         gasInfo,
       )
 
-      topBid.status = BidStatus.Executed
+      topBid.status = defs.BidStatus.Executed
       profile.ownerUserId = topBid.userId
       profile.ownerWalletId = topBid.walletId
-      profile.status = ProfileStatus.Pending
+      profile.status = defs.ProfileStatus.Pending
       const hash = tx.hash
       return Promise.all([
         Promise.resolve(hash),
