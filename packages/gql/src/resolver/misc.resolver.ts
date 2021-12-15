@@ -141,17 +141,23 @@ const endProfileAuction = (
         approval.signature.s,
         gasInfo,
       )
-
+      const hash = tx.hash
+      return Promise.all([
+        Promise.resolve(hash),
+        Promise.resolve(topBid),
+        Promise.resolve(profile),
+        provider.provider(Number(wallet.chainId)).waitForTransaction(hash),
+      ])
+    })
+    .then(([hash, topBid, profile]) => {
       topBid.status = defs.BidStatus.Executed
       profile.ownerUserId = topBid.userId
       profile.ownerWalletId = topBid.walletId
       profile.status = defs.ProfileStatus.Pending
-      const hash = tx.hash
       return Promise.all([
         Promise.resolve(hash),
         repositories.bid.save(topBid),
         repositories.profile.save(profile),
-        provider.provider(Number(wallet.chainId)).waitForTransaction(hash),
       ])
     })
     .then(([txHash]) => {
