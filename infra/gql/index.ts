@@ -93,6 +93,8 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['SG_API_KEY'] = process.env.SG_API_KEY || parsedFile['SG_API_KEY']
   parsedFile['ASSET_BUCKET'] = infraOutput.assetBucket
   parsedFile['ASSET_BUCKET_ROLE'] = infraOutput.assetBucketRole
+  parsedFile['ETH_GAS_STATION_API_KEY'] = process.env.ETH_GAS_STATION_API_KEY || parsedFile['ETH_GAS_STATION_API_KEY']
+  parsedFile['PROFILE_AUCTION_END_PASSWORD'] = process.env.PROFILE_AUCTION_END_PASSWORD || parsedFile['PROFILE_AUCTION_END_PASSWORD']
   // console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')

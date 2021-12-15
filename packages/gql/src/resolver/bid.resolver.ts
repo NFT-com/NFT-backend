@@ -175,7 +175,10 @@ const getTopBids = (
   const { user } = ctx
   logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK(args?.input)
+  const inputFilters = {
+    profileId: args?.input?.profileId,
+  }
+  const filter = helper.inputT2SafeK(inputFilters)
   return core.paginatedEntitiesBy(
     ctx.repositories.bid,
     pageInput,

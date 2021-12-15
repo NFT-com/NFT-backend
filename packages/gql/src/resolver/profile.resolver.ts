@@ -1,11 +1,14 @@
+import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, profileError } from '@nftcom/gql/error'
+import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
+import { _logger, contracts,defs, entity, fp, helper } from '@nftcom/shared'
+import { provider } from '@nftcom/shared'
+import { ProfileStatus } from '@nftcom/shared/defs'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
@@ -198,7 +201,7 @@ const updateProfile = (
       profileError.ErrorType.ProfileNotOwned,
     )))
     .then((p) => {
-      p.bannerURL = args.input.bannedURL || p.bannerURL
+      p.bannerURL = args.input.bannerURL || p.bannerURL
       p.description = args.input.description || p.description
       p.photoURL = args.input.photoURL || p.photoURL
       return repositories.profile.save(p)
@@ -216,6 +219,56 @@ const getFollowersCount = (
   })
 }
 
+const profileClaimed = (
+  _: any,
+  args: gql.MutationProfileClaimedArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { repositories } = ctx
+  const { profileId, walletId, txHash } = args.input
+  logger.debug('profileClaimed', { profileId, walletId, txHash })
+
+  const profileAuction = new utils.Interface(contracts.profileAuctionABI())
+  
+  return repositories.wallet.findById(walletId)
+    .then((wallet: entity.Wallet) => Promise.all([
+      Promise.resolve(wallet),
+      repositories.profile.findById(profileId),
+      provider.provider(Number(wallet.chainId)).getTransactionReceipt(txHash),
+    ]))
+    .then(([wallet, profile, txReceipt]) => {
+      if (
+        txReceipt.from !== wallet.address ||
+        txReceipt.to !== contracts.profileAuctionAddress(wallet.chainId) ||
+        !txReceipt.logs.some((log) => {
+          try {
+            const parsed = profileAuction.parseLog(log)
+            return parsed?.topic === contracts.MintedProfileTopic && (parsed?.args['_val'] ?? '') === profile.url
+          } catch (error) {
+            // event doesn't match our definition of ProfileAuction Contract
+            return false
+          }
+        })
+      ) {
+        return appError.buildInvalid(
+          mintError.buildInvalidProfileClaimTransaction(),
+          mintError.ErrorType.ProfileClaimTransaction,
+        )
+      }
+      return profile
+    })
+    .then(fp.rejectIf((profile: entity.Profile) => profile.ownerWalletId !== walletId)(
+      appError.buildInvalid(
+        profileError.buildProfileNotOwnedMsg(profileId),
+        profileError.ErrorType.ProfileNotOwned,
+      ),
+    ))
+    .then((profile: entity.Profile) => {
+      profile.status = ProfileStatus.Owned
+      return repositories.profile.save(profile)
+    })
+}
+
 export default {
   Query: {
     profile: getProfileByURL,
@@ -227,11 +280,12 @@ export default {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
     unfollowProfile: combineResolvers(auth.isAuthenticated, unfollowProfile),
     updateProfile: combineResolvers(auth.isAuthenticated, updateProfile),
+    profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
   },
   Profile: {
     followersCount: getFollowersCount,
     owner: core.resolveEntityById<gql.Profile, entity.Wallet>(
-      'ownerId',
+      'ownerWalletId',
       defs.EntityType.Profile,
       defs.EntityType.Wallet,
     ),

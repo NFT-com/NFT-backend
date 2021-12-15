@@ -43,9 +43,15 @@ type ProfilesOutput {
 
 input UpdateProfileInput {
   id: ID!
-  bannedURL: String
+  bannerURL: String
   description: String
   photoURL: String
+}
+
+input ProfileClaimedInput {
+  profileId: ID!
+  walletId: ID!
+  txHash: String!
 }
 
 extend type Query {
@@ -60,4 +66,5 @@ extend type Mutation {
   followProfile(url: String): Profile!
   unfollowProfile(id: ID!): Profile!
   updateProfile(input: UpdateProfileInput!): Profile!
+  profileClaimed(input: ProfileClaimedInput!): Profile!
 }
