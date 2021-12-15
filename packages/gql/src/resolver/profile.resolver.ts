@@ -6,9 +6,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts,defs, entity, fp, helper } from '@nftcom/shared'
-import { provider } from '@nftcom/shared'
-import { ProfileStatus } from '@nftcom/shared/defs'
+import { _logger, contracts, defs, entity, fp, helper,provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
@@ -264,7 +262,7 @@ const profileClaimed = (
       ),
     ))
     .then((profile: entity.Profile) => {
-      profile.status = ProfileStatus.Owned
+      profile.status = defs.ProfileStatus.Owned
       return repositories.profile.save(profile)
     })
 }
