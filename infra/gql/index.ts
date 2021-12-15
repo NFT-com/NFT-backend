@@ -95,6 +95,8 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['ASSET_BUCKET_ROLE'] = infraOutput.assetBucketRole
   parsedFile['ETH_GAS_STATION_API_KEY'] = process.env.ETH_GAS_STATION_API_KEY || parsedFile['ETH_GAS_STATION_API_KEY']
   parsedFile['PROFILE_AUCTION_END_PASSWORD'] = process.env.PROFILE_AUCTION_END_PASSWORD || parsedFile['PROFILE_AUCTION_END_PASSWORD']
+  parsedFile['MNEMONIC'] = process.env.MNEMONIC || parsedFile['MNEMONIC']
+  parsedFile['MNEMONIC_RINKEBY'] = process.env.MNEMONIC_RINKEBY || parsedFile['MNEMONIC_RINKEBY']
   // console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')

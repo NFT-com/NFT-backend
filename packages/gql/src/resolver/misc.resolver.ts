@@ -8,10 +8,7 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts, entity, fp, helper, provider } from '@nftcom/shared'
-import { ProfileStatus } from '@nftcom/shared/defs'
-
-import { BidStatus } from '../defs/gql'
+import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -95,7 +92,7 @@ const endProfileAuction = (
         Promise.resolve(wallet),
         Promise.resolve(approval),
         Promise.resolve(profile),
-        contracts.getEthGasInfo(),
+        contracts.getEthGasInfo(Number(wallet.chainId)),
         core.paginatedEntitiesBy(
           ctx.repositories.bid,
           { first: 1 },
@@ -125,7 +122,7 @@ const endProfileAuction = (
         ))
       }
     
-      const signer = Wallet.fromMnemonic(process.env.MNEMONIC)
+      const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
         .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
         contracts.profileAuctionAddress(wallet.chainId),
@@ -144,17 +141,23 @@ const endProfileAuction = (
         approval.signature.s,
         gasInfo,
       )
-
-      topBid.status = BidStatus.Executed
+      const hash = tx.hash
+      return Promise.all([
+        Promise.resolve(hash),
+        Promise.resolve(topBid),
+        Promise.resolve(profile),
+        provider.provider(Number(wallet.chainId)).waitForTransaction(hash),
+      ])
+    })
+    .then(([hash, topBid, profile]) => {
+      topBid.status = defs.BidStatus.Executed
       profile.ownerUserId = topBid.userId
       profile.ownerWalletId = topBid.walletId
-      profile.status = ProfileStatus.Pending
-      const hash = tx.hash
+      profile.status = defs.ProfileStatus.Pending
       return Promise.all([
         Promise.resolve(hash),
         repositories.bid.save(topBid),
         repositories.profile.save(profile),
-        provider.provider(Number(wallet.chainId)).waitForTransaction(hash),
       ])
     })
     .then(([txHash]) => {
