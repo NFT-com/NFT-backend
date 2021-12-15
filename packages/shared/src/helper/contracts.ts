@@ -40,7 +40,10 @@ export interface GasInfo {
   gasPrice: number
 }
 
-export function getEthGasInfo(): Promise<GasInfo> {
+export function getEthGasInfo(chainId: number): Promise<GasInfo> {
+  if (chainId !== 1) {
+    return null
+  }
   const endpoint = 'https://data-api.defipulse.com/api/v1/egs/api/ethgasAPI.json?api-key=' + process.env.ETH_GAS_STATION_API_KEY
   const gasLimit =  1500000
   const defaultPriceGwei = 140
@@ -51,11 +54,11 @@ export function getEthGasInfo(): Promise<GasInfo> {
   })
     .then((response) => response.json())
     .then((response: any) => {
-      const priceWei = response?.fastest ? response?.fastest / 10 : defaultPriceGwei
+      const priceGwei = response?.fastest ? response?.fastest / 10 : defaultPriceGwei
   
       return {
         gasLimit,
-        gasPrice: priceWei,
+        gasPrice: priceGwei,
       }
     })
     .catch(() => {

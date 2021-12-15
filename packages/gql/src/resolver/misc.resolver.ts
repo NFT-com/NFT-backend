@@ -92,7 +92,7 @@ const endProfileAuction = (
         Promise.resolve(wallet),
         Promise.resolve(approval),
         Promise.resolve(profile),
-        contracts.getEthGasInfo(),
+        contracts.getEthGasInfo(Number(wallet.chainId)),
         core.paginatedEntitiesBy(
           ctx.repositories.bid,
           { first: 1 },
