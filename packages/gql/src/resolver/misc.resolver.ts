@@ -8,9 +8,8 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts,entity,fp,helper, provider } from '@nftcom/shared'
+import { _logger, contracts, entity, fp, helper, provider } from '@nftcom/shared'
 import { ProfileStatus } from '@nftcom/shared/defs'
-import { profileAuctionABI, profileAuctionAddress } from '@nftcom/shared/helper/contracts'
 
 import { BidStatus } from '../defs/gql'
 
@@ -129,8 +128,8 @@ const endProfileAuction = (
       const signer = Wallet.fromMnemonic(process.env.MNEMONIC)
         .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
-        profileAuctionAddress(wallet.chainId),
-        profileAuctionABI(),
+        contracts.profileAuctionAddress(wallet.chainId),
+        contracts.profileAuctionABI(),
         signer,
       )
       const tx = await profileAuctionContract.mintProfileFor(
