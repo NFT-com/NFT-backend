@@ -46,7 +46,10 @@ export function getEthGasInfo(): Promise<GasInfo> {
   const defaultPriceWei = Number(10) * 1000000000
   try {
     return fetch(endpoint)
-      .then((response) => response.json())
+      .then((response) => {
+        console.log({ response })
+        return response.json()
+      })
       .then((response: any) => {
         const priceWei = response?.fastest ? response?.fastest / 10 : defaultPriceWei
   
