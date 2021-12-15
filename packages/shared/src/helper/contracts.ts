@@ -43,33 +43,27 @@ export interface GasInfo {
 export function getEthGasInfo(): Promise<GasInfo> {
   const endpoint = 'https://data-api.defipulse.com/api/v1/egs/api/ethgasAPI.json?api-key=' + process.env.ETH_GAS_STATION_API_KEY
   const gasLimit =  1500000
-  const defaultPriceWei = Number(10) * 1000000000
-  try {
-    return fetch(endpoint)
-      .then((response) => {
-        console.log({ response })
-        return response.json()
-      })
-      .then((response: any) => {
-        const priceWei = response?.fastest ? response?.fastest / 10 : defaultPriceWei
+  const defaultPriceGwei = 140
+  return fetch(endpoint, {
+    headers: {
+      'Accept': 'application/json',
+    },
+  })
+    .then((response) => response.json())
+    .then((response: any) => {
+      const priceWei = response?.fastest ? response?.fastest / 10 : defaultPriceGwei
   
-        return {
-          gasLimit,
-          gasPrice: priceWei,
-        }
-      })
-      .catch(() => {
-        return {
-          gasLimit,
-          gasPrice: defaultPriceWei,
-        }
-      })
-  } catch (error) {
-    return Promise.resolve({
-      gasLimit,
-      gasPrice: defaultPriceWei,
+      return {
+        gasLimit,
+        gasPrice: priceWei,
+      }
     })
-  }
+    .catch(() => {
+      return {
+        gasLimit,
+        gasPrice: defaultPriceGwei,
+      }
+    })
 }
 
 export function getProfileAuctionMnemonic(chainId: string | number): string {
