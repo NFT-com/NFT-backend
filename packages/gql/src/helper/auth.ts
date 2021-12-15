@@ -3,7 +3,9 @@ import { skip } from 'graphql-resolvers'
 import { getChain, isNetworkSupported, teamPassword } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
 import { appError, userError, walletError } from '@nftcom/gql/error'
-import { defs, helper } from '@nftcom/shared'
+import { _logger, defs, helper } from '@nftcom/shared'
+
+const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
   const { wallet, user } = ctx
@@ -27,6 +29,8 @@ export const isTeamAuthenticated = (_: any, args: any, ctx: Context): any => {
       walletError.ErrorType.AddressNotFound,
     )
   }
+
+  logger.debug('isTeamAuthenticated', teamKey.length, teamPassword.length)
 
   // TODO (eddie): add wallet allowlist too for extra security
   if (teamKey !== teamPassword) {
