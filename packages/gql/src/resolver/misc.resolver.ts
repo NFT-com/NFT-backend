@@ -125,7 +125,7 @@ const endProfileAuction = (
         ))
       }
     
-      const signer = Wallet.fromMnemonic(process.env.MNEMONIC)
+      const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
         .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
         contracts.profileAuctionAddress(wallet.chainId),

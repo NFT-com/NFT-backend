@@ -61,3 +61,17 @@ export function getEthGasInfo(): Promise<GasInfo> {
       }
     })
 }
+
+export function getProfileAuctionMnemonic(chainId: string | number): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return process.env.MNEMONIC_RINKEBY
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return process.env.MNEMONIC
+  }
+}
