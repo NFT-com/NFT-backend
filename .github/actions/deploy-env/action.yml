@@ -53,6 +53,8 @@ runs:
         PROFILE_AUCTION_END_PASSWORD: ${{ fromJSON(inputs.secrets).PROFILE_AUCTION_END_PASSWORD }}
         MNEMONIC: ${{ fromJSON(inputs.secrets).MNEMONIC }}
         MNEMONIC_RINKEBY: ${{ fromJSON(inputs.secrets).MNEMONIC_RINKEBY }}
+        REACT_APP_INFURA_API_KEY: ${{ fromJSON(inputs.secrets).REACT_APP_INFURA_API_KEY }}
+        REACT_APP_ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).REACT_APP_ALCHEMY_API_KEY }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
