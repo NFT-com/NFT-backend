@@ -47,6 +47,10 @@ runs:
       env:
         STAGE: ${{ inputs.stage }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+        AUTH_MESSAGE: ${{ fromJSON(inputs.secrets).AUTH_MESSAGE }}
+        SG_API_KEY: ${{ fromJSON(inputs.secrets).SG_API_KEY }}
+        ETH_GAS_STATION_API_KEY: ${{ fromJSON(inputs.secrets).ETH_GAS_STATION_API_KEY }}
+        PROFILE_AUCTION_END_PASSWORD: ${{ fromJSON(inputs.secrets).PROFILE_AUCTION_END_PASSWORD }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
