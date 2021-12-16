@@ -1,6 +1,6 @@
 type CollectionItem {
     size: NFTSize
-    id: ID
+    id: ID!
 }
 
 type Collection {
