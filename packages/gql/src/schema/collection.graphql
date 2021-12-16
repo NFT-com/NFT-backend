@@ -1,0 +1,40 @@
+type CollectionItem {
+    size: NFTSize
+    id: ID
+}
+
+type Collection {
+    items: [CollectionItem!]
+}
+
+type CollectionsInput {
+    pageInput: PageInput
+    # TODO: allow querying other users' collections or filtering
+}
+
+type CollectionsOutput {
+    items: [Collection!]!
+    totalItems: Int
+    pageInfo: PageInfo
+}
+
+input UpdateCollectionInput {
+    items: [CollectionItem!]!
+}
+
+input SetCollectionInput {
+    profileId: ID!
+    collectionId: ID!
+}
+
+extend type Query {
+    myCollections(input: CollectionsInput): CollectionsOutput
+}
+
+extend type Mutation {
+    # by collection owner only
+    createCollection(input: UpdateCollectionInput!): Collection!
+    updateCollection(input: UpdateCollectionInput!): Collection!
+    # by collection + profile owner
+    setCollection(input: SetCollectionInput!): Profile!
+}

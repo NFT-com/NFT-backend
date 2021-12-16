@@ -65,11 +65,32 @@ const getMyNFTs = (
     .then(pagination.toPageable(pageInput))
 }
 
+const getCollectionNFTs = (
+  _: unknown,
+  args: gql.QueryCollectionNFTsArgs,
+  ctx: Context,
+): Promise<gql.CollectionNFTsOutput> => {
+  const { repositories } = ctx
+  logger.debug('getCollectionNFTs', { input: args?.input })
+  const { collectionId } = helper.safeObject(args?.input)
+  // TODO: paginate the results or limit the size of a collection.
+  return repositories.collection.findById(collectionId)
+    .then((collection) => Promise.all([
+      Promise.resolve(collection.items),
+      Promise.all(collection.items.map(item =>  repositories.nft.findById(item.id))),
+    ]))
+    .then(([items, nfts]) => nfts.map((nft, index) => ({ nft: nft, size: items[index].size })))
+    .then((nfts) => Promise.resolve({
+      items: nfts,
+    }))
+}
+
 export default {
   Query: {
     nft: getNFT,
     nfts: getNFTs,
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
+    collectionNFTs: getCollectionNFTs,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
