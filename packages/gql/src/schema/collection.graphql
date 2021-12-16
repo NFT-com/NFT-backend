@@ -7,7 +7,7 @@ type Collection {
     items: [CollectionItem!]
 }
 
-type CollectionsInput {
+input CollectionsInput {
     pageInput: PageInput
     # TODO: allow querying other users' collections or filtering
 }
@@ -18,8 +18,18 @@ type CollectionsOutput {
     pageInfo: PageInfo
 }
 
+input CollectionItemInput {
+    size: NFTSize
+    id: ID!
+}
+
+input CreateCollectionInput {
+    items: [CollectionItemInput!]!
+}
+
 input UpdateCollectionInput {
-    items: [CollectionItem!]!
+    id: ID!
+    items: [CollectionItemInput!]!
 }
 
 input SetCollectionInput {
@@ -28,12 +38,12 @@ input SetCollectionInput {
 }
 
 extend type Query {
-    myCollections(input: CollectionsInput): CollectionsOutput
+    myCollections(input: CollectionsInput!): CollectionsOutput
 }
 
 extend type Mutation {
     # by collection owner only
-    createCollection(input: UpdateCollectionInput!): Collection!
+    createCollection(input: CreateCollectionInput!): Collection!
     updateCollection(input: UpdateCollectionInput!): Collection!
     # by collection + profile owner
     setCollection(input: SetCollectionInput!): Profile!
