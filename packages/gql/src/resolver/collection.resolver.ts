@@ -2,7 +2,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, collectionError, profileError } from '@nftcom/gql/error'
+import { appError, collectionError, nftError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
@@ -26,6 +26,17 @@ const getMyCollections = (
     .then(pagination.toPageable(pageInput))
 }
 
+const validateNFTOwnership = (
+  ctx: Context,
+  items: defs.CollectionItem[],
+  user: entity.User,
+): Promise<boolean> => {
+  return Promise.all(
+    items.map((item: defs.CollectionItem) => ctx.repositories.nft.findById(item.id)),
+  )
+    .then((nfts: entity.NFT[]) => !nfts.some((nft) => nft?.userId !== user.id))
+}
+
 const createCollection = (
   _: any,
   args: gql.MutationCreateCollectionArgs,
@@ -34,13 +45,28 @@ const createCollection = (
   const { user, repositories } = ctx
   logger.debug('createCollection', { loggedInUserId: user?.id, input: args?.input })
 
-  const schema = Joi.object().keys({ items: Joi.array().min(1) })
+  const schema = Joi.object().keys({
+    items: Joi.array().min(1).items(
+      Joi.object().keys({
+        id: Joi.string().required(),
+        size: Joi.string().optional(),
+      })),
+  })
   joi.validateSchema(schema, args?.input)
 
-  return repositories.collection.save({
-    userId: user?.id,
-    items: args?.input?.items,
-  })
+  console.log({ items: args?.input?.items })
+
+  return validateNFTOwnership(ctx, args?.input?.items, user)
+    .then(fp.rejectIfFalse(
+      appError.buildForbidden(
+        nftError.buildNFTNotOwnedMsg(),
+        nftError.ErrorType.NFTNotOwned,
+      ),
+    ))
+    .then(() => repositories.collection.save({
+      userId: user?.id,
+      items: args?.input?.items,
+    }))
 }
 
 const updateCollection = (
@@ -51,10 +77,22 @@ const updateCollection = (
   const { user, repositories } = ctx
   logger.debug('updateCollection', { loggedInUserId: user?.id, input: args?.input })
 
-  const schema = Joi.object().keys({ items: Joi.array().min(1), id: Joi.string() })
+  const schema = Joi.object().keys({
+    id: Joi.string().required(),
+    items: Joi.array().min(1).items(
+      Joi.object().keys({
+        id: Joi.string().required(),
+        size: Joi.string().optional(),
+      })),
+  })
   joi.validateSchema(schema, args?.input)
 
-  return repositories.collection.findById(args?.input?.id)
+  return validateNFTOwnership(ctx, args?.input?.items, user)
+    .then(fp.rejectIfFalse(appError.buildForbidden(
+      nftError.buildNFTNotOwnedMsg(),
+      nftError.ErrorType.NFTNotOwned,
+    )))
+    .then(() => repositories.collection.findById(args?.input?.id))
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
         collectionError.buildCollectionNotFoundMsg(args?.input?.id),
@@ -67,12 +105,10 @@ const updateCollection = (
         collectionError.ErrorType.CollectionNotOwned,
       ),
     ))
-    .then(fp.tapWait(
-      (collection: entity.Collection) => repositories.collection.update(
-        { id: collection.id },
-        { userId: collection.userId, items: args?.input?.items },
-      ),
-    ))
+    .then((collection: entity.Collection) => repositories.collection.save({
+      ...collection,
+      items: args?.input?.items,
+    }))
 }
 
 const setCollection = (

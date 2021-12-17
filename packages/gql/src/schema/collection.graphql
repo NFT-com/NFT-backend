@@ -4,6 +4,7 @@ type CollectionItem {
 }
 
 type Collection {
+    id: ID!
     items: [CollectionItem!]
 }
 

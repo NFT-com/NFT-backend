@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { defs } from '@nftcom/shared'
+import { CollectionItem } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
@@ -10,10 +10,9 @@ export class Collection extends BaseEntity {
 
   @Column('json', {
     nullable: false,
-    array: true,
     default: [],
   })
-  items: defs.CollectionItem[]
+  items: CollectionItem[]
 
   @Column({ nullable: false })
   userId: string
