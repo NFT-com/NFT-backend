@@ -15,6 +15,7 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
   const entities = [
     entity.Approval,
     entity.Bid,
+    entity.Collection,
     entity.ContractInfo,
     entity.Edge,
     entity.NFT,
@@ -62,6 +63,7 @@ export const disconnect = async (): Promise<void> => {
 export type Repository = {
   approval: repo.ApprovalRepository
   bid: repo.BidRepository
+  collection: repo.CollectionRepository
   contractInfo: repo.ContractInfoRepository
   edge: repo.EdgeRepository
   nft: repo.NFTRepository
@@ -75,6 +77,7 @@ export type Repository = {
 export const newRepositories = (): Repository => ({
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
+  collection: new repo.CollectionRepository(),
   contractInfo: new repo.ContractInfoRepository(),
   edge: new repo.EdgeRepository(),
   nft: new repo.NFTRepository(),

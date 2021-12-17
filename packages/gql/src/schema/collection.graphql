@@ -1,0 +1,56 @@
+type CollectionItem {
+    size: NFTSize
+    id: ID!
+}
+
+type Collection {
+    id: ID!
+    items: [CollectionItem!]
+}
+
+input CollectionsInput {
+    pageInput: PageInput
+    # TODO: allow querying other users' collections or filtering
+}
+
+type CollectionsOutput {
+    items: [Collection!]!
+    totalItems: Int
+    pageInfo: PageInfo
+}
+
+input CollectionItemInput {
+    size: NFTSize
+    id: ID!
+}
+
+input CreateCollectionInput {
+    items: [CollectionItemInput!]!
+}
+
+input UpdateCollectionInput {
+    id: ID!
+    items: [CollectionItemInput!]!
+}
+
+input SetCollectionInput {
+    profileId: ID!
+    collectionId: ID!
+}
+
+input RemoveCollectionInput {
+    profileId: ID!
+}
+
+extend type Query {
+    myCollections(input: CollectionsInput!): CollectionsOutput
+}
+
+extend type Mutation {
+    # by collection owner only
+    createCollection(input: CreateCollectionInput!): Collection!
+    updateCollection(input: UpdateCollectionInput!): Collection!
+    # by collection + profile owner
+    setCollection(input: SetCollectionInput!): Profile!
+    removeCollection(input: RemoveCollectionInput!): Profile!
+}

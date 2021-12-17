@@ -4,6 +4,7 @@ import { OrderByCondition } from 'typeorm/find-options/OrderByCondition'
 export enum EntityType {
   Approval = 'Approval',
   Bid = 'Bid',
+  Collection = 'Collection',
   Edge = 'Edge',
   NFT = 'NFT',
   Profile = 'Profile',
@@ -13,7 +14,8 @@ export enum EntityType {
 
 export enum EdgeType {
   Follows = 'Follows',
-  Referred = 'Referred'
+  Referred = 'Referred',
+  Displays = 'Displays'
 }
 
 export enum BidStatus {
@@ -25,6 +27,17 @@ export enum NFTType {
   ERC721 = 'ERC721',
   ERC1155 = 'ERC1155',
   Profile = 'Profile'
+}
+
+export enum NFTSize {
+  Small = 'Small',
+  Medium = 'Medium',
+  Large = 'Large'
+}
+
+export type CollectionItem = {
+  size?: NFTSize
+  id: string
 }
 
 export type NFTMetadata = {

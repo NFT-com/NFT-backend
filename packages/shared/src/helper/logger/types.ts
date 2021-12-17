@@ -3,6 +3,7 @@ export enum LoggerContext {
   Bid = 'bid',
   Cache = 'cache',
   CacheDataLoader = 'dataLoaderCache',
+  Collection = 'collection',
   General = 'general',
   GraphQL = 'graphql',
   NFT = 'nft',

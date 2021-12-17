@@ -46,7 +46,7 @@ export function getEthGasInfo(chainId: number): Promise<GasInfo> {
   }
   const endpoint = 'https://data-api.defipulse.com/api/v1/egs/api/ethgasAPI.json?api-key=' + process.env.ETH_GAS_STATION_API_KEY
   const gasLimit =  1500000
-  const defaultPriceGwei = 140
+  const defaultPriceGwei = 200
   return fetch(endpoint, {
     headers: {
       'Accept': 'application/json',
