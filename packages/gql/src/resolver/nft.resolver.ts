@@ -26,21 +26,31 @@ const getNFTs = (
   _: unknown,
   args: gql.QueryNFTsArgs,
   ctx: Context,
-): Promise<gql.NFTsOutput> => {
-  const { user } = ctx
+): Promise<gql.CollectionNFTsOutput> => {
+  const { user, repositories } = ctx
   logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
   const { types, profileId } = helper.safeObject(args?.input)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     profileId,
   })
-  return core.paginatedEntitiesBy(
-    ctx.repositories.nft,
-    pageInput,
-    filter,
-  )
-    .then(pagination.toPageable(pageInput))
+  // TODO: implement pagination.
+  // TODO: return array of Collections once we support multiple
+  return core.thatEntitiesOfEdgesBy<entity.Collection>(ctx, {
+    thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+  })
+    .then((collections: entity.Collection[]) => Promise.all([
+      Promise.resolve(collections[0].items),
+      Promise.all(collections[0].items.map(item =>
+        repositories.nft.findOne({ where: { id: item.id, ...filter } }))),
+    ]))
+    .then(([items, nfts]) => nfts
+      .filter((nft) => nft !== null)
+      .map((nft, index) => ({ nft: nft, size: items[index].size })))
+    .then((nfts) => Promise.resolve({
+      items: nfts,
+    }))
 }
 
 const getMyNFTs = (
@@ -73,7 +83,6 @@ const getCollectionNFTs = (
   const { repositories } = ctx
   logger.debug('getCollectionNFTs', { input: args?.input })
   const { collectionId } = helper.safeObject(args?.input)
-  // TODO: paginate the results or limit the size of a collection.
   return repositories.collection.findById(collectionId)
     .then((collection) => Promise.all([
       Promise.resolve(collection.items),

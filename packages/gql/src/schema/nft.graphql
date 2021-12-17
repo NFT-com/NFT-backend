@@ -62,7 +62,7 @@ type CollectionNFTsOutput {
 
 extend type Query {
   nft(id: ID!): NFT!
-  nfts(input: NFTsInput): NFTsOutput!
+  nfts(input: NFTsInput): CollectionNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!
   collectionNFTs(input: CollectionInput): CollectionNFTsOutput!
 }
