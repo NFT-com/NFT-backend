@@ -54,8 +54,6 @@ const createCollection = (
   })
   joi.validateSchema(schema, args?.input)
 
-  console.log({ items: args?.input?.items })
-
   return validateNFTOwnership(ctx, args?.input?.items, user)
     .then(fp.rejectIfFalse(
       appError.buildForbidden(
