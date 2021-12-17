@@ -46,7 +46,7 @@ const createCollection = (
   logger.debug('createCollection', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
-    items: Joi.array().min(1).items(
+    items: Joi.array().min(1).max(100).items(
       Joi.object().keys({
         id: Joi.string().required(),
         size: Joi.string().optional(),
@@ -77,7 +77,7 @@ const updateCollection = (
 
   const schema = Joi.object().keys({
     id: Joi.string().required(),
-    items: Joi.array().min(1).items(
+    items: Joi.array().min(1).max(100).items(
       Joi.object().keys({
         id: Joi.string().required(),
         size: Joi.string().optional(),
