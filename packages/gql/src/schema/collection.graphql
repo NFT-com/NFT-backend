@@ -38,6 +38,10 @@ input SetCollectionInput {
     collectionId: ID!
 }
 
+input RemoveCollectionInput {
+    profileId: ID!
+}
+
 extend type Query {
     myCollections(input: CollectionsInput!): CollectionsOutput
 }
@@ -48,4 +52,5 @@ extend type Mutation {
     updateCollection(input: UpdateCollectionInput!): Collection!
     # by collection + profile owner
     setCollection(input: SetCollectionInput!): Profile!
+    removeCollection(input: RemoveCollectionInput!): Profile!
 }

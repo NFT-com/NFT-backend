@@ -161,6 +161,38 @@ const setCollection = (
     ))
 }
 
+const removeCollection = (
+  _: any,
+  args: gql.MutationRemoveCollectionArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { user, repositories } = ctx
+  logger.debug('removeCollection', { loggedInUserId: user?.id, input: args?.input })
+  
+  const schema = Joi.object().keys({ profileId: Joi.string() })
+  joi.validateSchema(schema, args?.input)
+
+  return repositories.profile.findById(args?.input?.profileId)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ),
+    ))
+    .then(fp.rejectIf((profile: entity.Profile) => profile.ownerUserId !== user?.id)(
+      appError.buildForbidden(
+        profileError.buildProfileNotOwnedMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotOwned,
+      ),
+    ))
+    .then(fp.tapWait(
+      (profile: entity.Profile) => repositories.edge.delete({
+        thisEntityId: profile.id,
+        edgeType: defs.EdgeType.Displays,
+      }),
+    ))
+}
+
 export default {
   Query: {
     myCollections: combineResolvers(auth.isAuthenticated, getMyCollections),
@@ -169,5 +201,6 @@ export default {
     createCollection: combineResolvers(auth.isAuthenticated, createCollection),
     updateCollection: combineResolvers(auth.isAuthenticated, updateCollection),
     setCollection: combineResolvers(auth.isAuthenticated, setCollection),
+    removeCollection: combineResolvers(auth.isAuthenticated, removeCollection),
   },
 }
