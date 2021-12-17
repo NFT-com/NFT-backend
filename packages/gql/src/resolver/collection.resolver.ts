@@ -149,6 +149,7 @@ const setCollection = (
     .then(fp.tapWait(
       (profile: entity.Profile) => repositories.edge.delete({
         thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
         edgeType: defs.EdgeType.Displays,
       }),
     ))
@@ -156,7 +157,9 @@ const setCollection = (
       (profile: entity.Profile) => repositories.edge.save({
         edgeType: defs.EdgeType.Displays,
         thatEntityId: args?.input?.collectionId,
+        thatEntityType: defs.EntityType.Collection,
         thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
       }),
     ))
 }
@@ -188,6 +191,7 @@ const removeCollection = (
     .then(fp.tapWait(
       (profile: entity.Profile) => repositories.edge.delete({
         thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
         edgeType: defs.EdgeType.Displays,
       }),
     ))

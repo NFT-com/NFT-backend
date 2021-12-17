@@ -32,12 +32,12 @@ const getNFTs = (
   const { types, profileId } = helper.safeObject(args?.input)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
-    profileId,
   })
   // TODO: implement pagination.
   // TODO: return array of Collections once we support multiple
   return core.thatEntitiesOfEdgesBy<entity.Collection>(ctx, {
     thisEntityId: profileId,
+    thisEntityType: defs.EntityType.Profile,
     edgeType: defs.EdgeType.Displays,
   })
     .then((collections: entity.Collection[]) => Promise.all([
