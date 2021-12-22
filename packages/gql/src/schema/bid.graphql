@@ -40,6 +40,7 @@ input BidsInput {
   pageInput: PageInput
   profileId: ID
   wallet: WalletInput
+  nftType: NFTType
 }
 
 type BidsOutput {

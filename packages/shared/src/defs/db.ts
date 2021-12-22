@@ -26,7 +26,8 @@ export enum BidStatus {
 export enum NFTType {
   ERC721 = 'ERC721',
   ERC1155 = 'ERC1155',
-  Profile = 'Profile'
+  Profile = 'Profile',
+  GenesisKey = 'GenesisKey'
 }
 
 export enum NFTSize {
