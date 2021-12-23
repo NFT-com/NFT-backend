@@ -98,7 +98,7 @@ const bid = (
         prevTopBidOwner,
       ])
     })
-    .then(fp.tap<[entity.Bid, entity.User]>(
+    .then(fp.tapIf(([newBid]) => newBid.nftType === defs.NFTType.Profile)(
       ([newBid, prevTopBidOwner]) =>
         sendBidNotifications(newBid, prevTopBidOwner, user, input.profileURL)),
     )
@@ -129,6 +129,7 @@ const getBids = (
       const inputFilters = {
         profileId: args?.input?.profileId,
         walletId: wallet?.id,
+        nftType: args?.input?.nftType,
       }
       const filter = helper.inputT2SafeK(inputFilters)
       return core.paginatedEntitiesBy(
@@ -148,7 +149,7 @@ const getMyBids = (
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK<entity.Bid>(args?.input, { userId: user.id })
+  const filter = helper.inputT2SafeK<entity.Bid>({ ...args?.input, userId: user.id })
   return core.paginatedEntitiesBy(
     ctx.repositories.bid,
     pageInput,
