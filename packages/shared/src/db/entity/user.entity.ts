@@ -8,9 +8,11 @@ import { BaseEntity } from './base.entity'
 @Index(['confirmEmailToken', 'confirmEmailTokenExpiresAt'])
 export class User extends BaseEntity {
 
-  @Index()
-  @Column({ unique: true })
+  @Column({ nullable: true, unique: true })
   email: string
+
+  @Column({ nullable: true, unique: true })
+  username: string
 
   @Column('boolean', { default: false })
   isEmailConfirmed: boolean

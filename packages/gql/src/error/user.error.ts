@@ -5,7 +5,9 @@ import { HTTP } from './http.code'
 export enum ErrorType {
   AuthenticationRequired = 'AUTHENTICATION_REQUIRED',
   UserNotFound = 'USER_NOT_FOUND',
+  UsernameNotFound = 'USERNAME_NOT_FOUND',
   EmailAlreadyExists = 'EMAIL_ALREADY_EXISTS',
+  UsernameAlreadyExists = 'USERNAME_ALREADY_EXISTS',
   EmailConfirmTokenRequired = 'EMAIL_CONFIRM_TOKEN_REQUIRED',
   InvalidEmailConfirmToken = 'INVALID_EMAIL_CONFIRM_TOKEN',
   ForbiddenAction = 'FORBIDDEN_ACTION',
@@ -20,6 +22,11 @@ export const buildAuth = (): ApolloError =>
 
 export const buildUserNotFoundMsg = (id: string): string => `User ${id} not found`
 
+export const buildUsernameNotFoundMsg = (username: string): string => `Username ${username} not found`
+
+export const buildUsernameExistsMsg = (username: string): string =>
+  `User with username ${username} already exists`
+  
 export const buildEmailExistsMsg = (email: string): string =>
   `User with email ${email} already exists`
 

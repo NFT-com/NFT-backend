@@ -1,7 +1,8 @@
 type User {
   id: ID!
   avatarURL: String
-  email: String!
+  email: String
+  username: String!
   isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]
   myApprovals: [Approval!]
@@ -28,7 +29,8 @@ input UserPreferencesInput {
 
 input SignUpInput {
   avatarURL: String
-  email: String!
+  email: String
+  username: String!
   referredBy: String
   wallet: WalletInput!
 }
@@ -39,6 +41,11 @@ input UpdateUserInput {
   preferences: UserPreferencesInput
 }
 
+input UpdateEmailInput {
+  email: String
+  username: String!
+}
+
 extend type Query {
   me: User!
 }
@@ -46,6 +53,7 @@ extend type Query {
 extend type Mutation {
   signUp(input: SignUpInput!): User!
   updateMe(input: UpdateUserInput!): User!
+  updateEmail(input: UpdateEmailInput!): User!
   confirmEmail(token: String!): Boolean!
   resendEmailConfirm: User!
 }
