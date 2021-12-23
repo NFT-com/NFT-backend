@@ -86,38 +86,26 @@ const updateEmail = (
   _: any,
   args: gql.MutationSignUpArgs,
   ctx: Context,
-): Promise<gql.User> => {
-  const { repositories } = ctx
+): Promise<entity.User> => {
+  const { user, repositories } = ctx
   logger.debug('updateEmail', { input: args.input })
 
   const schema = Joi.object().keys({
     email: Joi.string().email().required(),
-    username: Joi.string().required(),
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, username } = args.input
+  const { email } = args.input
 
-  return Promise.all([
-    repositories.user.exists({ username }),
-  ])
-    .then(([userExists]) => {
-      if (!userExists) {
-        return Promise.reject(appError.buildExists(
-          userError.buildUsernameNotFoundMsg(username),
-          userError.ErrorType.UsernameNotFound,
-        ))
-      }
-      return username
-    })
-    .then(fp.thruIfNotEmpty((username: string) => {
-      return repositories.user.findByUsername(username)
-        .then((user) => user?.id)
-    }))
-    .then((userId: string) => {
-      return repositories.user.updateOneById(userId, { email })
-    })
-    .then(fp.tapWait<entity.User, unknown>((user) => sendgrid.sendConfirmEmail(user)))
+  const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+  const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
+  return repositories.user.save({
+    ...user,
+    email,
+    confirmEmailToken,
+    confirmEmailTokenExpiresAt,
+  })
+    .then(fp.tapWait(sendgrid.sendConfirmEmail))
 }
 
 const updateReferral = (ctx: Context) => {

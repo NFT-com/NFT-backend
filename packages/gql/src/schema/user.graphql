@@ -42,8 +42,7 @@ input UpdateUserInput {
 }
 
 input UpdateEmailInput {
-  email: String
-  username: String!
+  email: String!
 }
 
 extend type Query {
