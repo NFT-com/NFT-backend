@@ -21,25 +21,26 @@ const signUp = (
 
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
-    email: Joi.string().required().email(),
+    email: Joi.string().email(),
+    username: Joi.string().required(),
     referredBy: Joi.string(),
     wallet: joi.buildWalletInputSchema(),
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, avatarURL, referredBy = '', wallet } = args.input
+  const { email, username, avatarURL, referredBy = '', wallet } = args.input
   const { address, network, chainId } = wallet
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
   return Promise.all([
-    repositories.user.exists({ email }),
+    repositories.user.exists({ username }),
     repositories.wallet.exists({ network, chainId, address }),
   ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
         return Promise.reject(appError.buildExists(
-          userError.buildEmailExistsMsg(email),
-          userError.ErrorType.EmailAlreadyExists,
+          userError.buildUsernameExistsMsg(username),
+          userError.ErrorType.UsernameAlreadyExists,
         ))
       }
       if (addressExists) {
@@ -58,8 +59,10 @@ const signUp = (
       const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
       const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
+
       return repositories.user.save({
         email,
+        username,
         referredBy: referredUserId || null,
         avatarURL,
         confirmEmailToken,
@@ -77,6 +80,32 @@ const signUp = (
       }),
       sendgrid.sendConfirmEmail(user),
     ])))
+}
+
+const updateEmail = (
+  _: any,
+  args: gql.MutationSignUpArgs,
+  ctx: Context,
+): Promise<entity.User> => {
+  const { user, repositories } = ctx
+  logger.debug('updateEmail', { input: args.input })
+
+  const schema = Joi.object().keys({
+    email: Joi.string().email().required(),
+  })
+  joi.validateSchema(schema, args.input)
+
+  const { email } = args.input
+
+  const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+  const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
+  return repositories.user.save({
+    ...user,
+    email,
+    confirmEmailToken,
+    confirmEmailTokenExpiresAt,
+  })
+    .then(fp.tapWait(sendgrid.sendConfirmEmail))
 }
 
 const updateReferral = (ctx: Context) => {
@@ -152,9 +181,10 @@ const updateMe = (
 
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
-    email: Joi.string(),
+    email: Joi.string().email(),
     preferences: buildPreferencesInputSchema(),
   })
+
   joi.validateSchema(schema, args.input)
 
   const {
@@ -216,6 +246,7 @@ export default {
   Mutation: {
     signUp,
     confirmEmail,
+    updateEmail,
     updateMe: combineResolvers(auth.isAuthenticated, updateMe),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
   },

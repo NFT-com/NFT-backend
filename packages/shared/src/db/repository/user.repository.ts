@@ -14,6 +14,10 @@ export class UserRepository extends BaseRepository<User> {
     return this.findOne({ where: { email } })
   }
 
+  public findByUsername = (username: string): Promise<User | undefined> => {
+    return this.findOne({ where: { username } })
+  }
+
   public findByReferralId = (referralId: string): Promise<User | undefined> => {
     return this.findOne({ where: { referralId } })
   }

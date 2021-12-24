@@ -7,7 +7,6 @@ import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer, updateGQLEnvFile } from './gql'
-import { createIndexerServer, updateIndexerEnvFile } from './indexer'
 import { createSharedInfra } from './shared'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
@@ -16,7 +15,6 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
   const dbHost = outMap.dbHost.value
   const deployAppBucket = outMap.deployAppBucket.value
   const gqlECRRepo = outMap.gqlECRRepo.value
-  const indexerECRRepo = outMap.indexerECRRepo.value
   const redisHost = outMap.redisHost.value
   const publicSubnets = outMap.publicSubnetIds.value
   const vpcId = outMap.vpcId.value
@@ -27,7 +25,6 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
     dbHost,
     deployAppBucket,
     gqlECRRepo,
-    indexerECRRepo,
     redisHost,
     publicSubnets,
     vpcId,
@@ -42,8 +39,6 @@ const main = async (): Promise<any> => {
   const deployShared = args?.[0] === 'deploy:shared' || false
   const deployGQL = args?.[0] === 'deploy:gql' || false
   const buildGQLEnv = args?.[0] === 'gql:env' || false
-  const deployIndexer = args?.[0] === 'deploy:indexer' || false
-  const buildIndexerEnv = args?.[0] === 'indexer:env' || false
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 
@@ -59,15 +54,6 @@ const main = async (): Promise<any> => {
 
   if (deployGQL) {
     return createGQLServer()
-  }
-
-  if (buildIndexerEnv) {
-    updateIndexerEnvFile()
-    return
-  }
-
-  if (deployIndexer) {
-    return createIndexerServer()
   }
 }
 
