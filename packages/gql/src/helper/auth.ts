@@ -7,6 +7,7 @@ import { defs, helper } from '@nftcom/shared'
 
 export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
   const { wallet, user } = ctx
+
   if (helper.isEmpty(wallet)) {
     return appError.buildNotFound(
       walletError.buildAddressNotFoundMsg(),

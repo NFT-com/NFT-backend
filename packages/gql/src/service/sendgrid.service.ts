@@ -11,10 +11,10 @@ const from = {
   email: '<noreply@nft.com>',
 }
 
-const bidConfirmTemplateId = 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7'
-const outbidTemplateId = 'd-6e92bafc43194eb5a1c8725ecbaaba14'
-
-// TODO use templates
+const templates = {
+  confirmBid: 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7',
+  outbid: 'd-6e92bafc43194eb5a1c8725ecbaaba14',
+}
 
 const send = (
   message: sendgrid.MailDataRequired | sendgrid.MailDataRequired[],
@@ -25,25 +25,30 @@ const send = (
 }
 
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
-  logger.debug('sendConfirmEmail', { user })
-  return send({
-    from,
-    to: { email: user.email },
-    subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
-    text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
-  })
-    .then(() => true)
+  if (user?.email) {
+    logger.debug('sendConfirmEmail', { user })
+
+    return send({
+      from,
+      to: { email: user.email },
+      subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
+      text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
+    })
+      .then(() => true)
+  }
 }
 
 export const sendReferredBy = (user: entity.User, totalReferrals: number): Promise<boolean> => {
-  logger.debug('sendReferredBy', { user })
-  return send({
-    from,
-    to: { email: user.email },
-    subject: `New NFT.com Referral! ${new Date().toUTCString()}`,
-    text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
-  })
-    .then(() => true)
+  if (user?.email) {
+    logger.debug('sendReferredBy', { user })
+    return send({
+      from,
+      to: { email: user.email },
+      subject: `New NFT.com Referral! ${new Date().toUTCString()}`,
+      text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
+    })
+      .then(() => true)
+  }
 }
 
 export const sendBidConfirmEmail = (
@@ -51,39 +56,43 @@ export const sendBidConfirmEmail = (
   user: entity.User,
   profileURL: string,
 ): Promise<boolean> => {
-  logger.debug('sendBidConfirm', { bid, user })
+  if (user?.email) {
+    logger.debug('sendBidConfirm', { bid, user })
 
-  if (helper.isFalse(user.preferences.bidActivityNotifications)) {
-    return Promise.resolve(false)
+    if (helper.isFalse(user.preferences.bidActivityNotifications)) {
+      return Promise.resolve(false)
+    }
+
+    return send({
+      from,
+      to: { email: user.email },
+      dynamicTemplateData: {
+        bidPrice: utils.formatUnits(bid.price, 18),
+        profileURL,
+      },
+      templateId: templates.confirmBid,
+    }).then(() => true)
   }
-
-  return send({
-    from,
-    to: { email: user.email },
-    dynamicTemplateData: {
-      bidPrice: utils.formatUnits(bid.price, 18),
-      profileURL,
-    },
-    templateId: bidConfirmTemplateId,
-  }).then(() => true)
 }
 
 export const sendOutbidEmail = (
   user: entity.User,
   profileURL: string,
 ): Promise<boolean> => {
-  logger.debug('sendOutbid', { user })
+  if (user?.email) {
+    logger.debug('sendOutbid', { user })
 
-  if (helper.isFalse(user?.preferences?.outbidNotifications ?? false)) {
-    return Promise.resolve(false)
+    if (helper.isFalse(user?.preferences?.outbidNotifications ?? false)) {
+      return Promise.resolve(false)
+    }
+
+    return send({
+      from,
+      to: { email: user.email },
+      dynamicTemplateData: {
+        profileURL,
+      },
+      templateId: templates.outbid,
+    }).then(() => true)
   }
-
-  return send({
-    from,
-    to: { email: user.email },
-    dynamicTemplateData: {
-      profileURL,
-    },
-    templateId: outbidTemplateId,
-  }).then(() => true)
 }
