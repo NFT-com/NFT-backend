@@ -56,10 +56,10 @@ const endProfileAuction = (
   args: gql.MutationEndProfileAuctionArgs,
   ctx: Context,
 ): Promise<gql.EndAuctionOutput> => {
-  const { repositories } = ctx
+  const { repositories, user } = ctx
   const { input } = args
   
-  logger.debug('endProfileAuction', { profileId: input?.profileId, walletId: input?.walletId })
+  logger.debug('endProfileAuction', { profileId: input?.profileId, walletId: input?.walletId, user: user.id })
 
   return repositories.wallet.findById(input?.walletId)
     .then(fp.rejectIfEmpty(appError.buildNotFound(
@@ -131,7 +131,6 @@ const endProfileAuction = (
           mintError.ErrorType.WalletLosing,
         ))
       }
-    
       const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
         .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
@@ -151,6 +150,7 @@ const endProfileAuction = (
         approval.signature.s,
         gasInfo,
       )
+
       return Promise.all([
         Promise.resolve(topBid),
         Promise.resolve(profile),
@@ -173,6 +173,7 @@ const endProfileAuction = (
       ([topBid, user, profile]) =>
         sendWinNotification(topBid, user, profile.url)),
     )
+    .then(([topBid]) => topBid)
 }
 
 export default {
