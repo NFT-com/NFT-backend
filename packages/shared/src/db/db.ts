@@ -16,11 +16,8 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.Approval,
     entity.Bid,
     entity.Collection,
-    entity.ContractInfo,
     entity.Edge,
     entity.NFT,
-    entity.NFTRaw,
-    entity.NFTTrade,
     entity.Profile,
     entity.User,
     entity.Wallet,
@@ -64,11 +61,8 @@ export type Repository = {
   approval: repo.ApprovalRepository
   bid: repo.BidRepository
   collection: repo.CollectionRepository
-  contractInfo: repo.ContractInfoRepository
   edge: repo.EdgeRepository
   nft: repo.NFTRepository
-  nftRaw: repo.NFTRawRepository
-  nftTrade: repo.NFTTradeRepository
   profile: repo.ProfileRepository
   user: repo.UserRepository
   wallet: repo.WalletRepository
@@ -78,11 +72,8 @@ export const newRepositories = (): Repository => ({
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
   collection: new repo.CollectionRepository(),
-  contractInfo: new repo.ContractInfoRepository(),
   edge: new repo.EdgeRepository(),
   nft: new repo.NFTRepository(),
-  nftRaw: new repo.NFTRawRepository(),
-  nftTrade: new repo.NFTTradeRepository(),
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
   wallet: new repo.WalletRepository(),
