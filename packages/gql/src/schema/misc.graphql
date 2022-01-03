@@ -11,7 +11,9 @@ input EndAuctionInput {
 }
 
 type EndAuctionOutput {
-  txHash: String!
+  id: ID!
+  price: Uint256!
+  profile: Profile
 }
 
 extend type Mutation {
