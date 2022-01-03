@@ -62,6 +62,7 @@ const getMyNFTs = (
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
   const { types, profileId } = helper.safeObject(args?.input)
+
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     userId: user.id,

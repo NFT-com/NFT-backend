@@ -14,6 +14,7 @@ const from = {
 const templates = {
   confirmBid: 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7',
   outbid: 'd-6e92bafc43194eb5a1c8725ecbaaba14',
+  winbid: 'd-9e11556ce7f34fbeb66e42f8d3803986',
 }
 
 const send = (
@@ -93,6 +94,30 @@ export const sendOutbidEmail = (
         profileURL,
       },
       templateId: templates.outbid,
+    }).then(() => true)
+  }
+}
+
+export const sendWinEmail = (
+  topBid: entity.Bid,
+  user: entity.User,
+  profileURL: string,
+): Promise<boolean> => {
+  if (user?.email) {
+    logger.debug('sendWinEmail', { user })
+
+    if (helper.isFalse(user?.preferences?.outbidNotifications ?? false)) {
+      return Promise.resolve(false)
+    }
+
+    return send({
+      from,
+      to: { email: user.email },
+      dynamicTemplateData: {
+        topBid,
+        profileURL,
+      },
+      templateId: templates.winbid,
     }).then(() => true)
   }
 }

@@ -7,7 +7,7 @@ import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -43,15 +43,23 @@ const getFileUploadSession = (
     }))
 }
 
+const sendWinNotification = (
+  topBid: entity.Bid,
+  user: entity.User,
+  profileURL: string,
+): Promise<[boolean]> => Promise.all([
+  sendgrid.sendWinEmail(topBid, user, profileURL),
+])
+
 const endProfileAuction = (
   _: unknown,
   args: gql.MutationEndProfileAuctionArgs,
   ctx: Context,
 ): Promise<gql.EndAuctionOutput> => {
-  const { repositories } = ctx
+  const { repositories, user } = ctx
   const { input } = args
   
-  logger.debug('endProfileAuction', { profileId: input?.profileId, walletId: input?.walletId })
+  logger.debug('endProfileAuction', { profileId: input?.profileId, walletId: input?.walletId, user: user.id })
 
   return repositories.wallet.findById(input?.walletId)
     .then(fp.rejectIfEmpty(appError.buildNotFound(
@@ -82,16 +90,18 @@ const endProfileAuction = (
             profileError.buildProfileNotFoundMsg(input?.profileId),
             profileError.ErrorType.ProfileNotFound,
           ))),
+        Promise.resolve(user),
       ])
     })
     .then((
-      [wallet, approval, profile]:
-      [entity.Wallet, entity.Approval, entity.Profile],
+      [wallet, approval, profile, user]:
+      [entity.Wallet, entity.Approval, entity.Profile, entity.User],
     ) => {
       return Promise.all([
         Promise.resolve(wallet),
         Promise.resolve(approval),
         Promise.resolve(profile),
+        Promise.resolve(user),
         contracts.getEthGasInfo(Number(wallet.chainId)),
         core.paginatedEntitiesBy(
           ctx.repositories.bid,
@@ -108,7 +118,7 @@ const endProfileAuction = (
           .then((bids: Pageable<entity.Bid>) => bids.items[0]),
       ])
     })
-    .then(async ([wallet, approval, profile, gasInfo, topBid]) => {
+    .then(async ([wallet, approval, profile, user, gasInfo, topBid]) => {
       if (BigNumber.from(approval.amount).lt(BigNumber.from(topBid.price))) {
         return Promise.reject(appError.buildInvalid(
           approvalError.buildApprovalInsufficientMsg(),
@@ -121,7 +131,6 @@ const endProfileAuction = (
           mintError.ErrorType.WalletLosing,
         ))
       }
-    
       const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
         .connect(provider.provider(Number(wallet.chainId)))
       const profileAuctionContract = new Contract(
@@ -141,28 +150,30 @@ const endProfileAuction = (
         approval.signature.s,
         gasInfo,
       )
-      const hash = tx.hash
+
       return Promise.all([
-        Promise.resolve(hash),
         Promise.resolve(topBid),
         Promise.resolve(profile),
-        provider.provider(Number(wallet.chainId)).waitForTransaction(hash),
+        Promise.resolve(user),
+        provider.provider(Number(wallet.chainId)).waitForTransaction(tx.hash),
       ])
     })
-    .then(([hash, topBid, profile]) => {
+    .then(([topBid, profile, user]) => {
       topBid.status = defs.BidStatus.Executed
       profile.ownerUserId = topBid.userId
       profile.ownerWalletId = topBid.walletId
       profile.status = defs.ProfileStatus.Pending
       return Promise.all([
-        Promise.resolve(hash),
         repositories.bid.save(topBid),
+        Promise.resolve(user),
         repositories.profile.save(profile),
       ])
     })
-    .then(([txHash]) => {
-      return { txHash }
-    })
+    .then(fp.tap<[entity.Bid, entity.User, entity.Profile]>(
+      ([topBid, user, profile]) =>
+        sendWinNotification(topBid, user, profile.url)),
+    )
+    .then(([topBid]) => topBid)
 }
 
 export default {
