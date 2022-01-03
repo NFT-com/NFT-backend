@@ -54,18 +54,29 @@ const bid = (
         .then(({ id }) => ({ walletId, profileId: id }))
     })
     .then(({ profileId, walletId }) => {
-      if (input.nftType !== gql.NFTType.Profile) {
+      if (input.nftType === gql.NFTType.GenesisKey) {
+        return repositories.bid.findOne({ where: {
+          nftType: gql.NFTType.GenesisKey,
+          walletId,
+        } }).then((previousGKBid) => ({
+          walletId,
+          profileId,
+          stakeWeight: null,
+          existingBid: previousGKBid,
+          prevTopBidOwner: null,
+        }))
+      } else if (input.nftType !== gql.NFTType.Profile) {
         // TODO: find bid and prevTopBid for non-profile NFTs too.
-        return { walletId, profileId, stakeWeight: null, bid: null, prevTopBidOwner: null }
+        return { walletId, profileId, stakeWeight: null, existingBid: null, prevTopBidOwner: null }
       }
 
-      // calculate stake weight seconds
+      // calculate stake weight seconds for Profile bids
       return repositories.bid.findRecentBidByProfileUser(profileId, user.id)
-        .then((bid) => {
+        .then((existingBid) => {
           const now = helper.toUTCDate()
-          const existingUpdateTime = bid?.updatedAt || now
-          const existingStake = bid?.price || 0
-          const existingStakeWeight = bid?.stakeWeightedSeconds || 0
+          const existingUpdateTime = existingBid?.updatedAt || now
+          const existingStake = existingBid?.price || 0
+          const existingStakeWeight = existingBid?.stakeWeightedSeconds || 0
           const curSeconds = isEqual(now, existingUpdateTime)
             ? 0
             : differenceInSeconds(now, existingUpdateTime)
@@ -75,17 +86,17 @@ const bid = (
             walletId,
             profileId,
             stakeWeight,
-            bid,
+            existingBid,
             prevTopBidOwner: repositories.bid.findTopBidByProfile(profileId)
               .then(fp.thruIfNotEmpty(
                 (prevTopBid) => repositories.user.findById(prevTopBid.userId))),
           }
         })
     })
-    .then(({ profileId, walletId, stakeWeight, bid, prevTopBidOwner }) => {
+    .then(({ profileId, walletId, stakeWeight, existingBid, prevTopBidOwner }) => {
       return Promise.all([
         repositories.bid.save({
-          id: bid?.id,
+          id: existingBid?.id,
           nftType: input.nftType,
           price: helper.bigNumberToString(input.price),
           profileId,
