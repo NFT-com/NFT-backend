@@ -1,7 +1,7 @@
 import { Job } from 'bull'
 import { Contract, ethers, Wallet } from 'ethers'
 
-import { contracts, db, provider } from '@nftcom/shared'
+import { contracts, db, defs, provider } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 
@@ -17,37 +17,52 @@ const getContract = (chainId: number): Contract => {
 }
 
 export const getMintedProfiles = (job: Job): Promise<any> => {
-  const { chainId } = job.data
-  const contract = getContract(chainId)
+  try {
+    const { chainId } = job.data
+    const contract = getContract(chainId)
 
-  const filter = { address: contract.address }
-  return contract.queryFilter(filter)
-    .then(events => {
-      return events.map((evt) => {
-        console.log(`Found event ${evt.event} with chainId: ${chainId} with args: ${JSON.stringify(evt.args)}`)
-        const [owner,, profileUrl,,] = evt.args
+    const filter = { address: contract.address }
+    return contract.queryFilter(filter)
+      .then(events => {
+        return events.map((evt) => {
+          // console.log(`Found event ${evt.event} with chainId: ${chainId}`)
+          const [owner,, profileUrl,,] = evt.args
 
-        switch (evt.event) {
-        case 'NewClaimableProfile':
-          if (!repositories.event.exists({
-            chainId,
-            txHash: evt.transactionHash,
-          })) {
-            return repositories.event.save(
-              {
-                chainId,
-                contract: contract.address,
-                eventName: evt.event,
-                txHash: evt.transactionHash,
-                ownerAddress: owner,
-                profileUrl: profileUrl,
-              },
-            )
+          switch (evt.event) {
+          case 'NewClaimableProfile':
+            return repositories.event.exists({
+              chainId,
+              txHash: evt.transactionHash,
+            }).then(existsBool => {
+              if (!existsBool) {
+                console.log('no event profile: ', profileUrl)
+                // find and mark profile status as minted
+                return repositories.profile.findByURL(profileUrl).then(profile => {
+                  console.log(`find by profileUrl: ${profileUrl}: ${profile}`)
+                  if (profile) {
+                    profile.status = defs.ProfileStatus.Owned
+                    repositories.profile.save(profile)
+      
+                    return repositories.event.save(
+                      {
+                        chainId,
+                        contract: contract.address,
+                        eventName: evt.event,
+                        txHash: evt.transactionHash,
+                        ownerAddress: owner,
+                        profileUrl: profileUrl,
+                      },
+                    )
+                  }
+                })
+              }
+            })
+          default:
+            return
           }
-          return
-        default:
-          return
-        }
+        })
       })
-    })
+  } catch (err) {
+    console.log('error: ', err)
+  }
 }

@@ -11,7 +11,8 @@ const queuePrefix = 'queue'
 
 const queues: { [key: string]: Bull.Queue } = {}
 
-const networks = new Map<'4', 'rinkeby'>()
+const networks = new Map()
+networks.set('4', 'rinkeby')
 
 const createQueues = (): void => {
   networks.forEach((val: string, key: string) => {
