@@ -29,7 +29,10 @@ export const getMintedProfiles = (job: Job): Promise<any> => {
 
         switch (evt.event) {
         case 'NewClaimableProfile':
-          if (!repositories.event.exists({})) {
+          if (!repositories.event.exists({
+            chainId,
+            txHash: evt.transactionHash,
+          })) {
             return repositories.event.save(
               {
                 chainId,
