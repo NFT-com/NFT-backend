@@ -22,7 +22,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x0684cb6f6dF529135E591b1F15028b57185d3195')
+    return utils.getAddress('0x2295828BBB9270cF92D29ed79bA0260d64fdF23f')
   case '0':
   case 0:
   case 'mainnet':

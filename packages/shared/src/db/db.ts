@@ -17,6 +17,7 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.Bid,
     entity.Collection,
     entity.Edge,
+    entity.Event,
     entity.NFT,
     entity.Profile,
     entity.User,
@@ -62,6 +63,7 @@ export type Repository = {
   bid: repo.BidRepository
   collection: repo.CollectionRepository
   edge: repo.EdgeRepository
+  event: repo.EventRepository
   nft: repo.NFTRepository
   profile: repo.ProfileRepository
   user: repo.UserRepository
@@ -73,6 +75,7 @@ export const newRepositories = (): Repository => ({
   bid: new repo.BidRepository(),
   collection: new repo.CollectionRepository(),
   edge: new repo.EdgeRepository(),
+  event: new repo.EventRepository(),
   nft: new repo.NFTRepository(),
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),

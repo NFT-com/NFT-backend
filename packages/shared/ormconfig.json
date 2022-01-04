@@ -22,6 +22,7 @@
       "src/db/entity/bid.entity.ts",
       "src/db/entity/collection.entity.ts",
       "src/db/entity/edge.entity.ts",
+      "src/db/entity/event.entity.ts",
       "src/db/entity/nft.entity.ts",
       "src/db/entity/profile.entity.ts",
       "src/db/entity/user.entity.ts",

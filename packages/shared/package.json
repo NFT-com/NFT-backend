@@ -9,7 +9,8 @@
     "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/db/rds-combined-ca-bundle.cer",
     "compile": "tsc && tsc-alias",
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli",
-    "typeorm:gen": "npm run typeorm:cli -- migration:generate"
+    "typeorm:gen": "npm run typeorm:cli -- migration:generate",
+    "typeorm:revert": "npm run typeorm:cli --  migration:revert"
   },
   "dependencies": {
     "chalk": "^4.1.2",
