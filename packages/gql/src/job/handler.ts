@@ -1,7 +1,7 @@
 import { Job } from 'bull'
 import { Contract, ethers, Wallet } from 'ethers'
 
-import { contracts, db, defs, provider } from '@nftcom/shared'
+import { contracts, db, defs, fp, provider } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 
@@ -37,9 +37,8 @@ export const getMintedProfiles = (job: Job): Promise<any> => {
               if (!existsBool) {
                 console.log('no event profile: ', profileUrl)
                 // find and mark profile status as minted
-                return repositories.profile.findByURL(profileUrl).then(profile => {
-                  console.log(`find by profileUrl: ${profileUrl}: ${profile}`)
-                  if (profile) {
+                return repositories.profile.findByURL(profileUrl)
+                  .then(fp.thruIfNotEmpty((profile) => {
                     profile.status = defs.ProfileStatus.Owned
                     repositories.profile.save(profile)
       
@@ -53,8 +52,8 @@ export const getMintedProfiles = (job: Job): Promise<any> => {
                         profileUrl: profileUrl,
                       },
                     )
-                  }
-                })
+                  },
+                  ))
               }
             })
           default:
