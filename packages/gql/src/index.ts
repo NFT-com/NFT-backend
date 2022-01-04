@@ -3,12 +3,14 @@ import kill from 'kill-port'
 import { db, fp } from '@nftcom/shared'
 
 import { dbConfig, serverPort, verifyConfiguration } from './config'
+import { job } from './job'
 import * as server from './server'
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
   return db.connect(dbConfig)
     .then(() => server.start())
+    .then(() => job.startAndListen())
     .then(fp.pause(500))
 }
 
@@ -31,6 +33,7 @@ const logGoodbye = (): void => {
 const cleanExit = (): Promise<void> => {
   return server.stop()
     .then(killPort)
+    .then(() => job.stopAndDisconnect())
     .then(db.disconnect)
     // .then(job.stopAndDisconnect)
     .then(fp.pause(500))

@@ -159,6 +159,7 @@ const endProfileAuction = (
       ])
     })
     .then(([topBid, profile, user]) => {
+      // TODO: make sure you can save multiple bids if one passes in multiple signatures
       topBid.status = defs.BidStatus.Executed
       profile.ownerUserId = topBid.userId
       profile.ownerWalletId = topBid.walletId

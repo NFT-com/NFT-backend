@@ -217,6 +217,8 @@ const getFollowersCount = (
   })
 }
 
+// TODO: make sure this is running on cron job -> that pull events from:
+// TODO: emit MintedProfile(_owner, _profileURI, _nftTokens, claimableBlock[hash]);
 const profileClaimed = (
   _: any,
   args: gql.MutationProfileClaimedArgs,
