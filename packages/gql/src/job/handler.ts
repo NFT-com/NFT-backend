@@ -25,31 +25,20 @@ const onlyUnique = (value, index, self: any[]): boolean => {
 }
 
 // includes bids for profiles and genesis keys
-const deleteAndFilterBids = (bids: entity.Bid[]): any => {
+const deleteAndFilterBids = (bids: entity.Bid[]): Promise<entity.Bid[]> => {
   return Promise.all([
     bids,
     repositories.profile.find({ where: { status: defs.ProfileStatus.Available } })
       .then(profiles => profiles.map((profile: entity.Profile) => profile.id)),
   ]).then(([bids, availableProfilesIds]: [entity.Bid[], string[]]) => {
-    return Promise.all([ // first promise deletes all invalid bids
-      bids
-        .filter((bid: entity.Bid) => {
-          if (bid.nftType == defs.NFTType.Profile &&
-            availableProfilesIds.indexOf(bid.profileId) == -1
-          ) {
-            return true
-          }
-        })
-        .map((bid: entity.Bid) => repositories.bid.deleteById(bid.id)),
-      bids.filter(  // second promise filters all remaining valid bids
-        (bid: entity.Bid) =>
-          (bid.nftType == defs.NFTType.Profile &&
-          availableProfilesIds.indexOf(bid.profileId) >= 0 &&
-          bid.status != defs.BidStatus.Executed) ||
-          (bid.nftType == defs.NFTType.GenesisKey &&
-          bid.status != defs.BidStatus.Executed),
-      ), // filter only non-executed bids for available handles and genesis keys
-    ])
+    return bids.filter(  // second promise filters all remaining valid bids
+      (bid: entity.Bid) =>
+        (bid.nftType == defs.NFTType.Profile &&
+        availableProfilesIds.indexOf(bid.profileId) >= 0 &&
+        bid.status != defs.BidStatus.Executed) ||
+        (bid.nftType == defs.NFTType.GenesisKey &&
+        bid.status != defs.BidStatus.Executed),
+    ) // filter only non-executed bids for available handles and genesis keys
   })
 }
 
