@@ -3,6 +3,20 @@ import fetch from 'node-fetch'
 
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
 
+export function wethAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0xc778417E063141139Fce010982780140Aa0cD5Ab')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+
 export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case 4:
