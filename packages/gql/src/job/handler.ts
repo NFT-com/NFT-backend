@@ -70,8 +70,6 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
         genesisKeyBids,
         walletIdAddressMapping,
       ]: [entity.Bid[], entity.Bid[], any]) => {
-        logger.debug('validateLiveBalances 1', { walletIdAddressMapping })
-
         return Promise.all([
           Promise.resolve(profileBids),
           Promise.resolve(genesisKeyBids),
@@ -98,11 +96,12 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
               Promise.resolve(profileBids),
               Promise.resolve(genesisKeyBids),
               Promise.resolve(walletIdAddressMapping),
-              Promise.resolve(splitAddressArrays.map(
+              Promise.all(splitAddressArrays.map(
                 splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
-                  ethers.getDefaultProvider(), // provider.provider(Number(chainId)),
+                  provider.provider(Number(chainId)),
                   splitArray,
                   [contracts.nftTokenAddress(chainId), contracts.wethAddress(chainId)],
+                  contracts.multiBalance(chainId),
                 ),
               )),
             ])
@@ -114,32 +113,26 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
             walletIdAddressMapping,
             addressBalanceMapping,
           ]: [entity.Bid[], entity.Bid[], any, any]) => {
-            logger.debug('validateLiveBalances 3', { addressBalanceMapping })
-
-            return addressBalanceMapping.then((mapping) => {
-              logger.debug('validateLiveBalances 4', { mapping })
-            
-              Promise.all([
-                profileBids.map((bid: entity.Bid) => {
-                  const balanceObj =  addressBalanceMapping[walletIdAddressMapping[bid.walletId]]
-                  const nftBalance = Number(balanceObj[contracts.nftTokenAddress(chainId)]) ?? 0
-                  logger.debug('softDeleteProfileBid', { bid, balanceObj, nftBalance })
+            return Promise.all([
+              profileBids.map((bid: entity.Bid) => {
+                const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
+                const nftBalance = Number(balanceObj[contracts.nftTokenAddress(chainId)]) ?? 0
                 
-                  if (nftBalance < Number(bid.price)) {
-                    repositories.bid.deleteById(bid.id)
-                  }
-                }),
-                genesisKeyBids.map((bid: entity.Bid) => {
-                  const balanceObj =  addressBalanceMapping[walletIdAddressMapping[bid.walletId]]
-                  const wethBalance = Number(balanceObj[contracts.wethAddress(chainId)]) ?? 0
-                  logger.debug('softDeleteGenesisBid', { bid, balanceObj, wethBalance })
+                if (nftBalance < Number(bid.price)) {
+                  logger.debug('softDeleteProfileBid', { type: bid.nftType, bidAmount: Number(bid.price), nftBalance })
+                  repositories.bid.deleteById(bid.id)
+                }
+              }),
+              genesisKeyBids.map((bid: entity.Bid) => {
+                const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
+                const wethBalance = Number(balanceObj[contracts.wethAddress(chainId)]) ?? 0
                 
-                  if (wethBalance < Number(bid.price)) {
-                    repositories.bid.deleteById(bid.id)
-                  }
-                }),
-              ])
-            })
+                if (wethBalance < Number(bid.price)) {
+                  logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), wethBalance })
+                  repositories.bid.deleteById(bid.id)
+                }
+              }),
+            ])
           },
         )
       }).then(() => true)
