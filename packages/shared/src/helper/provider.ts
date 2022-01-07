@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import Web3 from 'web3'
 
 const etherscanKeys = [
   'BTRSUQC5NP494HS3IRYC1DQVRI89TS46MD',
@@ -35,6 +36,20 @@ const getRandomAPI = (): string => {
   
   const randomIndex = (Math.random() * (maxIndex - minIndex + 1)) << 0
   return etherscanKeys[randomIndex]
+}
+
+export const web3 = (chainId: string | number = 'mainnet'): any => {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io/v3/ff54943ff46d4447a007337a563ba4f4'))
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return new Web3(new Web3.providers.HttpProvider('https://mainnet.infura.io/v3/ff54943ff46d4447a007337a563ba4f4'))
+  }
 }
 
 export const provider = (chainId = 1): ethers.providers.BaseProvider => {

@@ -33,8 +33,7 @@
     "joi": "^17.4.2",
     "kill-port": "^1.6.1",
     "lodash": "^4.17.21",
-    "source-map-support": "^0.5.21",
-    "web3": "^1.6.1"
+    "source-map-support": "^0.5.21"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^2.2.1",
