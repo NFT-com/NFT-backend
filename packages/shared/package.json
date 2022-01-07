@@ -20,8 +20,7 @@
     "nanoid": "^3.1.30",
     "node-fetch": "^2.6.6",
     "pg": "^8.7.1",
-    "typeorm": "^0.2.40",
-    "web3": "^1.6.1"
+    "typeorm": "^0.2.40"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.177",
