@@ -44,20 +44,48 @@ const filterLiveBids = (bids: entity.Bid[]): Promise<entity.Bid[]> => {
 // size of each array for balances for NFT and WETH
 const perChunk = 450
 
+const getAddressBalanceMapping = (bids: entity.Bid[], walletIdAddressMapping: any, chainId: number):
+[entity.Bid[], entity.Bid[], any, any] => {
+  const splitAddressArrays: any = Object.values(walletIdAddressMapping)
+    .reduce((resultArray, item, index) => {
+      const chunkIndex = Math.floor(index/perChunk)
+  
+      if (!resultArray[chunkIndex]) {
+        resultArray[chunkIndex] = [] // start a new chunk
+      }
+  
+      resultArray[chunkIndex].push(item)
+  
+      return resultArray
+    }, [])
+
+  const profileBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.Profile)
+  const genesisKeyBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
+  const addressBalanceMapping = splitAddressArrays.map(
+    splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
+      provider.provider(Number(chainId)),
+      splitArray,
+      [contracts.nftTokenAddress(chainId), contracts.wethAddress(chainId)],
+      contracts.multiBalance(chainId),
+    ),
+  )
+
+  return [profileBids, genesisKeyBids, walletIdAddressMapping, addressBalanceMapping]
+}
+
 // validates live balances for all the filtered bids
 const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<boolean> => {
   try {
     return Promise.all([
-      bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.Profile),
-      bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey),
+      bids,
       bids
         .map(bid => bid.walletId)
-        .filter(onlyUnique).map((bidId: string) => { return { id: bidId }}),
+        .filter(onlyUnique).map((walletId: string) => { return { id: walletId }}),
     ]).then(
-      ([profileBids, genesisKeyBids, uniqueWalletIds]: [entity.Bid[], entity.Bid[], any[]]) => {
+      ([bids, uniqueWalletIds]:
+      [entity.Bid[], Array<{ id: string }>]) => {
         return Promise.all([
-          profileBids,
-          genesisKeyBids,
+          bids,
           repositories.wallet.find({ where: uniqueWalletIds }).then((wallets: entity.Wallet[]) =>  {
             // create mapping of walletId => address
             return wallets.reduce((map, walletEntity) =>
@@ -66,76 +94,38 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
         ])
       }).then(
       ([
-        profileBids,
-        genesisKeyBids,
+        bids,
         walletIdAddressMapping,
-      ]: [entity.Bid[], entity.Bid[], any]) => {
-        return Promise.all([
-          Promise.resolve(profileBids),
-          Promise.resolve(genesisKeyBids),
-          Promise.resolve(walletIdAddressMapping),
-          Object.values(walletIdAddressMapping).reduce((resultArray, item, index) => {
-            const chunkIndex = Math.floor(index/perChunk)
-          
-            if (!resultArray[chunkIndex]) {
-              resultArray[chunkIndex] = [] // start a new chunk
-            }
-          
-            resultArray[chunkIndex].push(item)
-          
-            return resultArray
-          }, []),
-        ]).then(
-          ([
-            profileBids,
-            genesisKeyBids,
-            walletIdAddressMapping,
-            splitAddressArrays,
-          ]: [entity.Bid[], entity.Bid[], any, any]) => {
-            return Promise.all([
-              Promise.resolve(profileBids),
-              Promise.resolve(genesisKeyBids),
-              Promise.resolve(walletIdAddressMapping),
-              Promise.all(splitAddressArrays.map(
-                splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
-                  provider.provider(Number(chainId)),
-                  splitArray,
-                  [contracts.nftTokenAddress(chainId), contracts.wethAddress(chainId)],
-                  contracts.multiBalance(chainId),
-                ),
-              )),
-            ])
-          },
-        ).then(
-          ([
-            profileBids,
-            genesisKeyBids,
-            walletIdAddressMapping,
-            addressBalanceMapping,
-          ]: [entity.Bid[], entity.Bid[], any, any]) => {
-            return Promise.all([
-              profileBids.map((bid: entity.Bid) => {
-                const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-                const nftBalance = Number(balanceObj[contracts.nftTokenAddress(chainId)]) ?? 0
+      ]: [entity.Bid[], any]) => getAddressBalanceMapping(bids, walletIdAddressMapping, chainId))
+      .then(
+        ([
+          profileBids,
+          genesisKeyBids,
+          walletIdAddressMapping,
+          addressBalanceMapping,
+        ]: [entity.Bid[], entity.Bid[], any, any]) => {
+          return Promise.all([
+            profileBids.map((bid: entity.Bid) => {
+              const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
+              const nftBalance = Number(balanceObj[contracts.nftTokenAddress(chainId)]) ?? 0
                 
-                if (nftBalance < Number(bid.price)) {
-                  logger.debug('softDeleteProfileBid', { type: bid.nftType, bidAmount: Number(bid.price), nftBalance })
-                  repositories.bid.deleteById(bid.id)
-                }
-              }),
-              genesisKeyBids.map((bid: entity.Bid) => {
-                const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-                const wethBalance = Number(balanceObj[contracts.wethAddress(chainId)]) ?? 0
+              if (nftBalance < Number(bid.price)) {
+                logger.debug('softDeleteProfileBid', { type: bid.nftType, bidAmount: Number(bid.price), nftBalance })
+                repositories.bid.deleteById(bid.id)
+              }
+            }),
+            genesisKeyBids.map((bid: entity.Bid) => {
+              const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
+              const wethBalance = Number(balanceObj[contracts.wethAddress(chainId)]) ?? 0
                 
-                if (wethBalance < Number(bid.price)) {
-                  logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), wethBalance })
-                  repositories.bid.deleteById(bid.id)
-                }
-              }),
-            ])
-          },
-        )
-      }).then(() => true)
+              if (wethBalance < Number(bid.price)) {
+                logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), wethBalance })
+                repositories.bid.deleteById(bid.id)
+              }
+            }),
+          ])
+        },
+      ).then(() => true)
   } catch (err) {
     console.log('error while validateLiveBalances: ', err)
   }
