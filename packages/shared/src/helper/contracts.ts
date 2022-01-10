@@ -3,6 +3,40 @@ import fetch from 'node-fetch'
 
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
 
+export function wethAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0xc778417E063141139Fce010982780140Aa0cD5Ab')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+interface Options {
+  // Choose a custom contract address. Must be provided to run the
+  // code on non-mainnet network.
+  contractAddress?: string
+}
+
+// https://github.com/wbobeirne/eth-balance-checker (multi balance contract)
+export function multiBalance(chainId: string | number = 'mainnet'): Options {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return { contractAddress: utils.getAddress('0x3183B673f4816C94BeF53958BaF93C671B7F8Cf2') }
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return { contractAddress: utils.getAddress('0xb1f8e55c7f64d203c1400b9d8555d050f94adf39') }
+  }
+}
+
 export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case 4:

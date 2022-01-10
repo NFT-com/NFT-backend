@@ -1,7 +1,7 @@
 import Bull from 'bull'
 
 import { redisConfig } from '@nftcom/gql/config'
-import { getMintedProfiles } from '@nftcom/gql/job/handler'
+import { getEthereumEvents } from '@nftcom/gql/job/handler'
 
 const redis = {
   host: redisConfig.host,
@@ -26,7 +26,7 @@ const createQueues = (): void => {
 const listenToJobs = (): Promise<void[]> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
-    return queue.process(getMintedProfiles)
+    return queue.process(getEthereumEvents)
   }))
 }
 
