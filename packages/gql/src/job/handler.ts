@@ -1,7 +1,6 @@
 import { Job } from 'bull'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { Contract, ethers, Wallet } from 'ethers'
-import { Not } from 'typeorm'
 
 import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
 
@@ -155,11 +154,11 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     return repositories.bid.find({
       where: [{
         nftType: defs.NFTType.GenesisKey,
-        status: Not(defs.BidStatus.Executed),
+        status: defs.BidStatus.Submitted,
       },
       {
         nftType: defs.NFTType.Profile,
-        status: Not(defs.BidStatus.Executed),
+        status: defs.BidStatus.Submitted,
       }],
     }).then((bids: entity.Bid[]) => Promise.all([
       filterLiveBids(bids),
