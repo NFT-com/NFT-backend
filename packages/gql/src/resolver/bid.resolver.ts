@@ -219,6 +219,7 @@ const setProfilePreferences = (
   }
 
   // Verify they gave a valid preference array.
+  // TODO: CHECK IF ANY URIs ARE DISALLOWED
   const schema = Joi.object().keys({
     urls: Joi.array().required().min(5).max(10).items(Joi.string()),
   })
