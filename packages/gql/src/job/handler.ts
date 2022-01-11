@@ -92,7 +92,6 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
     ]).then(
       ([bids, uniqueWalletIds]:
       [entity.Bid[], Array<{ id: string }>]) => {
-        logger.debug('testing 1', { bids, uniqueWalletIds })
         return Promise.all([
           bids,
           repositories.wallet.find({ where: uniqueWalletIds }).then((wallets: entity.Wallet[]) =>  {
