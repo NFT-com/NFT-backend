@@ -1,6 +1,7 @@
 import { Job } from 'bull'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { Contract, ethers, Wallet } from 'ethers'
+import { Not } from 'typeorm'
 
 import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
 
@@ -28,20 +29,27 @@ const filterLiveBids = (bids: entity.Bid[]): Promise<entity.Bid[]> => {
   return Promise.all([
     bids,
     repositories.profile.find({ where: { status: defs.ProfileStatus.Available } })
-      .then(profiles => profiles.map((profile: entity.Profile) => profile.id)),
+      .then(profiles => profiles.map((profile: entity.Profile) => profile.id)
+        .reduce(function(map, item) {
+          map[item] = true
+          return map
+        }, {})), // returns mapping for constant lookup
   ]).then(([bids, availableProfilesIds]: [entity.Bid[], string[]]) => {
     return bids.filter(  // second promise filters all remaining valid bids
       (bid: entity.Bid) =>
-        (bid.nftType == defs.NFTType.Profile &&
-        availableProfilesIds.indexOf(bid.profileId) >= 0 &&
-        bid.status != defs.BidStatus.Executed) ||
-        (bid.nftType == defs.NFTType.GenesisKey &&
-        bid.status != defs.BidStatus.Executed),
+        (bid.nftType == defs.NFTType.Profile && availableProfilesIds[bid.profileId]) ||
+        bid.nftType == defs.NFTType.GenesisKey,
     ) // filter only non-executed bids for available handles and genesis keys
   })
 }
 
 // size of each array for balances for NFT and WETH
+// 450 is chosen as 450 x 2 (balance query for NFT and WETH) = 900
+// 900 balanceOf queries maxes sits comfortably below the 1000 maximum size limit on Ethereum
+// the size limit is mostly due to gas limits per ethereum call.
+// 
+// Even though balanceOf is a view function, it has to conform to size limits on calls via the
+// ethereum nodes
 const perChunk = 450
 
 const getAddressBalanceMapping = (bids: entity.Bid[], walletIdAddressMapping: any, chainId: number):
@@ -84,6 +92,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
     ]).then(
       ([bids, uniqueWalletIds]:
       [entity.Bid[], Array<{ id: string }>]) => {
+        logger.debug('testing 1', { bids, uniqueWalletIds })
         return Promise.all([
           bids,
           repositories.wallet.find({ where: uniqueWalletIds }).then((wallets: entity.Wallet[]) =>  {
@@ -143,8 +152,17 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     //  * are bids for an available profile (search profiles for urls for status)
 
     const filter = { address: contract.address }
-    
-    return repositories.bid.find({ where: {} }).then((bids: entity.Bid[]) => Promise.all([
+
+    return repositories.bid.find({
+      where: [{
+        nftType: defs.NFTType.GenesisKey,
+        status: Not(defs.BidStatus.Executed),
+      },
+      {
+        nftType: defs.NFTType.Profile,
+        status: Not(defs.BidStatus.Executed),
+      }],
+    }).then((bids: entity.Bid[]) => Promise.all([
       filterLiveBids(bids),
       contract.queryFilter(filter),
     ])).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
