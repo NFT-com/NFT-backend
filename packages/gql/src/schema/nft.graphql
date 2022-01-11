@@ -3,6 +3,7 @@ enum NFTType {
   ERC1155
   Profile
   GenesisKey
+  GenesisKeyProfile
 }
 
 enum NFTSize {

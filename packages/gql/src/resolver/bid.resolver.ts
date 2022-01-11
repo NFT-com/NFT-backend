@@ -2,11 +2,13 @@ import { differenceInSeconds, isEqual } from 'date-fns'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
+import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
+import { contracts, provider, typechain } from '@nftcom/shared/helper'
 
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
@@ -200,6 +202,66 @@ const getTopBids = (
     .then(pagination.toPageable(pageInput, 'price'))
 }
 
+/**
+ * Used for Genesis Key holders to set their Profile URI preferences.
+ */
+const setProfilePreferences = (
+  _: any,
+  args: gql.MutationSetProfilePreferencesArgs,
+  ctx: Context,
+): Promise<gql.Bid[]> => {
+  const { user, wallet } = ctx
+  logger.debug('setProfilePreferences', { loggedInUserId: user?.id, input: args?.input })
+
+  // Verify we're accepting preferences right now
+  if (serverConfigVar().activeGKPreferencePhase === -1) {
+    throw appError.buildForbidden('Not accepting preferences at this time.')
+  }
+
+  // Verify they gave a valid preference array.
+  const schema = Joi.object().keys({
+    urls: Joi.array().required().min(5).max(10).items(Joi.string()),
+  })
+  joi.validateSchema(schema, args.input)
+
+  const phaseWeight = serverConfigVar().activeGKPreferencePhase === 1 ? 0 : 10
+  const genesisKeyContract = typechain.GenesisKey__factory.connect(
+    contracts.genesisKeyAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+  return genesisKeyContract
+    .balanceOf(wallet.address)
+    // Verify GK ownership
+    .then(fp.rejectIf((balance) => balance === 0)(appError.buildForbidden('Not a GenesisKey owner.')))
+    // Find and Delete any previous preferences for this wallet.
+    .then(() => ctx.repositories.bid.delete({
+      nftType: gql.NFTType.GenesisKeyProfile,
+      walletId: wallet.id,
+    }))
+    // Fetch the Profiles by URLs and create Profiles that don't exist.
+    .then(() => Promise.all(
+      args.input.urls.map((url) =>
+        ctx.repositories.profile.findByURL(url)
+          .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url }))),
+      ),
+    ))
+    // Save the new Bids
+    .then((profiles: entity.Profile[]) =>
+      Promise.all(args.input.urls.map((url, index) => ctx.repositories.bid.save({
+        nftType: gql.NFTType.GenesisKeyProfile,
+        price: String(phaseWeight + index),
+        profileId: profiles[index].id,
+        signature: {
+          v: 0,
+          r: '',
+          s: '',
+        },
+        status: gql.BidStatus.Submitted,
+        walletId: wallet.id,
+        userId: user.id,
+      }))))
+}
+
 export default {
   Query: {
     bids: getBids,
@@ -209,6 +271,7 @@ export default {
   Mutation: {
     bid: combineResolvers(auth.isAuthenticated, bid),
     cancelBid: combineResolvers(auth.isAuthenticated, cancelBid),
+    setProfilePreferences: combineResolvers(auth.isAuthenticated, setProfilePreferences),
   },
   Bid: {
     profile: core.resolveEntityById<gql.Bid, entity.Profile>(

@@ -8,6 +8,7 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
 
+// TODO: migrate to Typechain
 const getContract = (chainId: number): Contract => {
   const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(chainId))
     .connect(provider.provider(Number(chainId)))
