@@ -10,7 +10,7 @@
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "compile": "tsc && tsc-alias",
     "copy:schema": "cp -r ./src/schema/*.graphql ./dist/schema/",
-    "dev": "concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
+    "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
     "start": "node -r source-map-support/register ./dist/index"
