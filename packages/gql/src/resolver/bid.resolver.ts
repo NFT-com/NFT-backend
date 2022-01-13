@@ -222,10 +222,11 @@ const setProfilePreferences = (
   // TODO: CHECK IF ANY URIs ARE DISALLOWED
   const schema = Joi.object().keys({
     urls: Joi.array().required().min(5).max(10).items(Joi.string()),
+    signature: joi.buildSignatureInputSchema(),
   })
   joi.validateSchema(schema, args.input)
 
-  const phaseWeight = serverConfigVar().activeGKPreferencePhase === 1 ? 0 : 10
+  const phaseWeight = serverConfigVar().activeGKPreferencePhase === 1 ? 10 : 0
   const genesisKeyContract = typechain.GenesisKey__factory.connect(
     contracts.genesisKeyAddress(wallet.chainId),
     provider.provider(Number(wallet.chainId)),
@@ -253,9 +254,9 @@ const setProfilePreferences = (
         price: String(phaseWeight + index),
         profileId: profiles[index].id,
         signature: {
-          v: 0,
-          r: '',
-          s: '',
+          v: args.input.signature.v,
+          r: args.input.signature.r,
+          s: args.input.signature.s,
         },
         status: gql.BidStatus.Submitted,
         walletId: wallet.id,
