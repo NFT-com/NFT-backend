@@ -222,7 +222,6 @@ const setProfilePreferences = (
   // TODO: CHECK IF ANY URIs ARE DISALLOWED
   const schema = Joi.object().keys({
     urls: Joi.array().required().min(5).max(10).items(Joi.string()),
-    signature: joi.buildSignatureInputSchema(),
   })
   joi.validateSchema(schema, args.input)
 
@@ -254,9 +253,9 @@ const setProfilePreferences = (
         price: String(phaseWeight + index),
         profileId: profiles[index].id,
         signature: {
-          v: args.input.signature.v,
-          r: args.input.signature.r,
-          s: args.input.signature.s,
+          v: 0,
+          r: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          s: '0x0000000000000000000000000000000000000000000000000000000000000000',
         },
         status: gql.BidStatus.Submitted,
         walletId: wallet.id,

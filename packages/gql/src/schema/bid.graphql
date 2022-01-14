@@ -56,7 +56,6 @@ input TopBidsInput {
 
 input ProfilePreferenceInput {
   urls: [String!]!
-  signature: SignatureInput
 }
 
 extend type Query {
