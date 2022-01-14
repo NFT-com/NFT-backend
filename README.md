@@ -44,3 +44,9 @@ This is very useful when testing GQL via playground.
 The script uses a hardcoded private key. But you can specify your own private key like this
 
 `npm run signature:gen $YOUR_PRIVATE_KEY`
+
+#### 4 Start Node Backend
+
+To start the server run from the root of the repository
+
+'node server'
