@@ -23,6 +23,17 @@ export const sgAPIKey = lookupEnvKeyOrThrow('SG_API_KEY')
 export const confirmEmailURL = lookupEnvKeyOrThrow('CONFIRM_EMAIL_URL')
 export const teamPassword = lookupEnvKeyOrThrow('PROFILE_AUCTION_END_PASSWORD')
 
+export const serverConfigVar = (): any => {
+  const defaultConfig = {
+    activeGKPreferencePhase: 1,
+  }
+  try {
+    return JSON.parse(process.env.SERVER_CONFIG) ?? defaultConfig
+  } catch (e) {
+    return defaultConfig
+  }
+}
+
 export const isProduction = (): boolean => {
   return process.env.NODE_ENV === 'production'
 }

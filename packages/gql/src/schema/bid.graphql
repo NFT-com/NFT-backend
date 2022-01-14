@@ -54,6 +54,10 @@ input TopBidsInput {
   profileId: ID
 }
 
+input ProfilePreferenceInput {
+  urls: [String!]!
+}
+
 extend type Query {
   bids(input: BidsInput): BidsOutput!
   myBids(input: BidsInput): BidsOutput!
@@ -63,4 +67,5 @@ extend type Query {
 extend type Mutation {
   bid(input: BidInput!): Bid!
   cancelBid(id: ID!): Boolean!
+  setProfilePreferences(input: ProfilePreferenceInput!): [Bid!]!
 }

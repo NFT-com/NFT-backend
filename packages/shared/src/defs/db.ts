@@ -27,7 +27,8 @@ export enum NFTType {
   ERC721 = 'ERC721',
   ERC1155 = 'ERC1155',
   Profile = 'Profile',
-  GenesisKey = 'GenesisKey'
+  GenesisKey = 'GenesisKey',
+  GenesisKeyProfile = 'GenesisKeyProfile'
 }
 
 export enum NFTSize {

@@ -97,6 +97,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['PROFILE_AUCTION_END_PASSWORD'] = process.env.PROFILE_AUCTION_END_PASSWORD || parsedFile['PROFILE_AUCTION_END_PASSWORD']
   parsedFile['MNEMONIC'] = process.env.MNEMONIC || parsedFile['MNEMONIC']
   parsedFile['MNEMONIC_RINKEBY'] = process.env.MNEMONIC_RINKEBY || parsedFile['MNEMONIC_RINKEBY']
+  parsedFile['SERVER_CONFIG'] = process.env.SERVER_CONFIG || ''
   // console.log(JSON.stringify(parsedFile))
 
   const targetFile = upath.joinSafe(workDir, '.env')
