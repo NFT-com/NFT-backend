@@ -219,7 +219,7 @@ const setProfilePreferences = (
   }
 
   // Verify they gave a valid preference array.
-  // TODO: CHECK IF ANY URIs ARE DISALLOWED
+  // TODO (eddie): CHECK IF ANY URIs ARE DISALLOWED
   const schema = Joi.object().keys({
     urls: Joi.array().required().min(5).max(10).items(Joi.string()),
   })
@@ -235,6 +235,7 @@ const setProfilePreferences = (
     // Verify GK ownership
     .then(fp.rejectIf((balance) => balance === 0)(appError.buildForbidden('Not a GenesisKey owner.')))
     // Find and Delete any previous preferences for this wallet.
+    // TODO (eddie): skip this if we decide to collect 2 rounds of preferences
     .then(() => ctx.repositories.bid.delete({
       nftType: gql.NFTType.GenesisKeyProfile,
       walletId: wallet.id,
