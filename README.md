@@ -45,7 +45,7 @@ The script uses a hardcoded private key. But you can specify your own private ke
 
 `npm run signature:gen $YOUR_PRIVATE_KEY`
 
-#### 4 Start Node Backend
+## 4 Start Node Backend
 
 To start the server run from the root of the repository
 
