@@ -52,6 +52,7 @@ type BidsOutput {
 input TopBidsInput {
   pageInput: PageInput
   profileId: ID
+  status: BidStatus
 }
 
 input ProfilePreferenceInput {

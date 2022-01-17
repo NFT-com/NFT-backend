@@ -191,6 +191,7 @@ const getTopBids = (
   const pageInput = args?.input?.pageInput
   const inputFilters = {
     profileId: args?.input?.profileId,
+    status: args?.input?.status,
   }
   const filter = helper.inputT2SafeK(inputFilters)
   return core.paginatedEntitiesBy(
