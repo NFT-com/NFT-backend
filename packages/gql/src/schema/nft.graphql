@@ -14,10 +14,10 @@ enum NFTSize {
 
 type NFTMetadata {
   tokenId: String!
-  name: String
-  description: String
+#  name: String
+#  description: String
   imageURL: String
-  txHash: String!
+#  txHash: String!
 }
 
 type NFT {

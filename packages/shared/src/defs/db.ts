@@ -44,10 +44,7 @@ export type CollectionItem = {
 
 export type NFTMetadata = {
   tokenId: string
-  name: string
-  description: string
   imageURL: string
-  txHash: string
 }
 
 export type UserPreferences = {
