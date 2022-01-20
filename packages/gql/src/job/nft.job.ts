@@ -105,13 +105,35 @@ const updateEntity = (
     })
 }
 
+const checkNFTContractAddresses = (profileId: string, owner: string): Promise<void> => {
+  const url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
+  repositories.nft.find({ where: { profileId: profileId } })
+    .then((nfts: entity.NFT[]) => {
+      nfts.map((nft: entity.NFT) => {
+        url.concat(`&contractAddresses[]=${nft.contract}`)
+      })
+    })
+  return
+}
+
 /**
  * check if NFTs of users are sold or transferred to different address
  * @param users
  */
-// const checkOwnedNFTs = (users: entity.User[]): Promise<void> => {
-//   return
-// }
+const checkOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
+  return Promise.all(
+    users.map((user: entity.User) => {
+      repositories.profile.findByOwner(user.id)
+        .then((profiles: entity.Profile[]) => {
+          return Promise.all(
+            profiles.map((profile: entity.Profile) => {
+              checkNFTContractAddresses(profile.id, profile.ownerWalletId)
+            }),
+          )
+        })
+    }),
+  )
+}
 
 /**
  * get owned NFTs of users
@@ -152,7 +174,7 @@ export const getUsersNFTs = (job: Job): Promise<any> => {
   console.log(job)
   try {
     return repositories.user.findAll().then((users: entity.User[]) => Promise.all([
-      //checkOwnedNFTs(users),
+      checkOwnedNFTs(users),
       getOwnedNFTs(users),
     ]))
   } catch (err) {
