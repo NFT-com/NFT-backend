@@ -5,7 +5,7 @@ import { db, entity } from '@nftcom/shared'
 import { NFTType } from '@nftcom/shared/defs'
 
 const repositories = db.newRepositories()
-const ALCHEMY_API_KEY = process.env.REACT_APP_ALCHEMY_API_KEY
+const ALCHEMY_API_KEY = 'wihsxPwWsaTUgmL3ejTNHGHbhDrI3Yvh'
 const ALCHEMY_API_URL = `https://eth-mainnet.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
 
 interface OwnedNFT {
@@ -82,7 +82,7 @@ const updateEntity = (
 ): Promise<void> => {
   return repositories.nft.findOne({ where: { contract: nftInfo.contract.address } })
     .then((existingNFT) => {
-      // if this NFT is not existing on the NFT table, we save nft information
+      // if this NFT is not existing on the NFT table, we save nft information...
       if (!existingNFT) {
         let type
         if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
@@ -105,19 +105,34 @@ const updateEntity = (
     })
 }
 
-const checkNFTContractAddresses = (profileId: string, owner: string): Promise<void> => {
+const checkNFTContractAddresses = (profileId: string, owner: string): Promise<void[]> => {
   const url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
+  const contractAddresses = []
   repositories.nft.find({ where: { profileId: profileId } })
     .then((nfts: entity.NFT[]) => {
       nfts.map((nft: entity.NFT) => {
-        url.concat(`&contractAddresses[]=${nft.contract}`)
+        contractAddresses.push(nft.contract)
+        url.concat(`&contractAddresses%5B%5D=${nft.contract}`)
       })
     })
-  return
+  return axios.get<OwnedNFTsResponse>(url).then((result) => {
+    const ownedNfts = result.data.ownedNfts
+    // check if user's NFTs are on his/her hand ...
+    return Promise.all(
+      contractAddresses.map((contract) => {
+        const index = ownedNfts.findIndex((nft) => nft.contract.address === contract)
+        if (index === -1)
+          repositories.nft.delete({ contract: contract })
+      }),
+    )
+  }).catch((err) => {
+    console.log('error: ', err)
+    return []
+  })
 }
 
 /**
- * check if NFTs of users are sold or transferred to different address
+ * check if NFTs of users are sold or transferred to different address...
  * @param users
  */
 const checkOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
@@ -127,7 +142,10 @@ const checkOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
         .then((profiles: entity.Profile[]) => {
           return Promise.all(
             profiles.map((profile: entity.Profile) => {
-              checkNFTContractAddresses(profile.id, profile.ownerWalletId)
+              repositories.wallet.findById(profile.ownerWalletId)
+                .then((wallet: entity.Wallet) => {
+                  checkNFTContractAddresses(profile.id, wallet.address)
+                })
             }),
           )
         })
@@ -136,7 +154,7 @@ const checkOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
 }
 
 /**
- * get owned NFTs of users
+ * get owned NFTs of users...
  * @param users
  */
 const getOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
@@ -146,22 +164,25 @@ const getOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
         .then((profiles: entity.Profile[]) => {
           return Promise.all(
             profiles.map((profile: entity.Profile) => {
-              getNFTsFromAlchemy(profile.ownerWalletId)
-                .then((ownedNFTs: OwnedNFT[]) => {
-                  return Promise.all(
-                    ownedNFTs.map((nft: OwnedNFT) => {
-                      getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
-                        .then((response) => {
-                          if (response)
-                            updateEntity(
-                              response,
-                              profile.id,
-                              profile.ownerUserId,
-                              profile.ownerWalletId,
-                            )
-                        })
-                    }),
-                  )
+              repositories.wallet.findById(profile.ownerWalletId)
+                .then((wallet: entity.Wallet) => {
+                  getNFTsFromAlchemy(wallet.address)
+                    .then((ownedNFTs: OwnedNFT[]) => {
+                      return Promise.all(
+                        ownedNFTs.map((nft: OwnedNFT) => {
+                          getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
+                            .then((response) => {
+                              if (response)
+                                updateEntity(
+                                  response,
+                                  profile.id,
+                                  profile.ownerUserId,
+                                  wallet.address,
+                                )
+                            })
+                        }),
+                      )
+                    })
                 })
             }),
           )
