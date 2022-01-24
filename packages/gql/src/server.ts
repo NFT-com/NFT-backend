@@ -1,8 +1,4 @@
 import { ApolloServer } from 'apollo-server'
-import {
-  ApolloServerPluginLandingPageGraphQLPlayground,
-  ApolloServerPluginLandingPageProductionDefault,
-} from 'apollo-server-core'
 import { utils } from 'ethers'
 import { GraphQLError } from 'graphql'
 
@@ -85,9 +81,6 @@ export const start = async (): Promise<void> => {
     return
   }
 
-  const playground = isProduction()
-    ? ApolloServerPluginLandingPageProductionDefault()
-    : ApolloServerPluginLandingPageGraphQLPlayground()
   server = new ApolloServer({
     introspection: helper.isFalse(isProduction()),
     cors: true,
@@ -95,9 +88,7 @@ export const start = async (): Promise<void> => {
     typeDefs: typeDefs(),
     context: createContext,
     formatError,
-    plugins: [
-      playground,
-    ],
+    plugins: [],
   })
   const { url } = await server.listen(serverPort)
   console.log(`🚀  Server ready at ${url}`)

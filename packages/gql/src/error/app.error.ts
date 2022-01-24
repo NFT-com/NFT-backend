@@ -5,6 +5,7 @@ import { HTTP } from './http.code'
 enum ErrorType {
   InternalError = 'INTERNAL_ERROR',
   InvalidSchema = 'INVALID_SCHEMA',
+  Forbidden = 'FORBIDDEN'
 }
 
 export const buildCustom = (message: string): ApolloError =>
@@ -49,7 +50,10 @@ export const buildInvalid = (message: string, errorKey: string): ApolloError =>
     { errorKey },
   )
 
-export const buildForbidden = (message: string, errorKey: string): ApolloError =>
+export const buildForbidden = (
+  message: string,
+  errorKey: string = ErrorType.Forbidden,
+): ApolloError =>
   new ApolloError(
     message,
     HTTP.Forbidden,

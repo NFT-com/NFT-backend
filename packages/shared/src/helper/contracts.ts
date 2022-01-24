@@ -3,6 +3,8 @@ import fetch from 'node-fetch'
 
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
 
+// TODO: move contract addresses to Doppler.
+
 export function wethAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case 4:
@@ -61,6 +63,19 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case 0:
   case 'mainnet':
     return utils.getAddress('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
+  }
+}
+
+export function genesisKeyAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '4':
+  case 'rinkeby':
+  case 4:
+    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
+  case '0':
+  case 0:
+  case 'mainnet':
+    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
   }
 }
 
