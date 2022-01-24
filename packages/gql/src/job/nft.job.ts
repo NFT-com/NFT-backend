@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { Job } from 'bull'
+import * as Lodash from 'lodash'
 
 import { db, entity } from '@nftcom/shared'
 import { NFTType } from '@nftcom/shared/defs'
@@ -15,12 +16,6 @@ interface OwnedNFT {
   id: {
     tokenId: string
   }
-}
-interface OwnedNFTsResponse {
-  ownedNfts: OwnedNFT[]
-  pageKey: string
-  totalCount: number
-  blockHash: string
 }
 interface AlternateMedia {
   uri: string
@@ -53,8 +48,33 @@ interface NFTMetaDataResponse {
 
 const getNFTsFromAlchemy = (owner: string): Promise<OwnedNFT[]> => {
   const url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
-  return axios.get<OwnedNFTsResponse>(url).then((result) => {
+  return axios.get(url).then((result) => {
     return result.data.ownedNfts as OwnedNFT[]
+  }).catch((err) => {
+    console.log('error: ', err)
+    return []
+  })
+}
+
+const filterNFTsWithAlchemy = (
+  contractChunks: string[],
+  owner: string,
+): Promise<void[]> => {
+  let url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
+  contractChunks.map((contract: string) => {
+    url = url.concat(`&contractAddresses%5B%5D=${contract}`)
+  })
+  return axios.get(url).then((result) => {
+    const ownedNfts = result.data.ownedNfts
+    // check if user's NFTs are on his/her hand ...
+    return Promise.all(
+      contractChunks.map((contract) => {
+        const index = ownedNfts.findIndex((nft) => nft.contract.address === contract)
+        // if contract owner has changed ...
+        if (index === -1)
+          repositories.nft.delete({ contract: contract })
+      }),
+    )
   }).catch((err) => {
     console.log('error: ', err)
     return []
@@ -66,8 +86,8 @@ const getNFTMetaDataFromAlchemy = (
   tokenId: string,
 ): Promise<NFTMetaDataResponse | undefined> => {
   const url = `${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${contractAddress}&tokenId=${tokenId}`
-  return axios.get<NFTMetaDataResponse>(url).then((result) => {
-    return result
+  return axios.get(url).then((result) => {
+    return result.data as NFTMetaDataResponse
   }).catch((err) => {
     console.log('error: ', err)
     return undefined
@@ -84,6 +104,7 @@ const updateEntity = (
     .then((existingNFT) => {
       // if this NFT is not existing on the NFT table, we save nft information...
       if (!existingNFT) {
+        console.log('NFT collection job updates row on NFT table')
         let type
         if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
           type = NFTType.ERC721
@@ -106,29 +127,23 @@ const updateEntity = (
 }
 
 const checkNFTContractAddresses = (profileId: string, owner: string): Promise<void[]> => {
-  const url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
   const contractAddresses = []
-  repositories.nft.find({ where: { profileId: profileId } })
+  return repositories.nft.find({ where: { profileId: profileId } })
     .then((nfts: entity.NFT[]) => {
       nfts.map((nft: entity.NFT) => {
         contractAddresses.push(nft.contract)
-        url.concat(`&contractAddresses%5B%5D=${nft.contract}`)
       })
+      if (!contractAddresses.length) return []
+      const contractsChunks = Lodash.chunk(contractAddresses, 20)
+      return Promise.all(
+        contractsChunks.map((contracts: string[]) => {
+          return filterNFTsWithAlchemy(contracts, owner)
+        }),
+      )
+    }).catch((err) => {
+      console.log('error: ', err)
+      return []
     })
-  return axios.get<OwnedNFTsResponse>(url).then((result) => {
-    const ownedNfts = result.data.ownedNfts
-    // check if user's NFTs are on his/her hand ...
-    return Promise.all(
-      contractAddresses.map((contract) => {
-        const index = ownedNfts.findIndex((nft) => nft.contract.address === contract)
-        if (index === -1)
-          repositories.nft.delete({ contract: contract })
-      }),
-    )
-  }).catch((err) => {
-    console.log('error: ', err)
-    return []
-  })
 }
 
 /**
@@ -177,7 +192,7 @@ const getOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
                                   response,
                                   profile.id,
                                   profile.ownerUserId,
-                                  wallet.address,
+                                  profile.ownerWalletId,
                                 )
                             })
                         }),
@@ -192,7 +207,7 @@ const getOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
 }
 
 export const getUsersNFTs = (job: Job): Promise<any> => {
-  console.log(job)
+  console.log(job.data)
   try {
     return repositories.user.findAll().then((users: entity.User[]) => Promise.all([
       checkOwnedNFTs(users),

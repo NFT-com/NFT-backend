@@ -2,12 +2,15 @@ import Bull from 'bull'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
+import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 
 const redis = {
   host: redisConfig.host,
   port: redisConfig.port,
 }
 const queuePrefix = 'queue'
+
+const NFT_COLLECTION_JOB = 'nft_collection'
 
 const queues: { [key: string]: Bull.Queue } = {}
 
@@ -21,25 +24,48 @@ const createQueues = (): void => {
       redis,
     })
   })
+  // add users nft collection job to queue...
+  queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
+    prefix: queuePrefix,
+    redis,
+  })
 }
 
 const listenToJobs = (): Promise<void[]> => {
-  const values = Object.values(queues)
-  return Promise.all(values.map((queue) => {
-    return queue.process(getEthereumEvents)
+  // const values = Object.values(queues)
+  // return Promise.all(values.map((queue) => {
+  //   return queue.process(getEthereumEvents)
+  // }))
+  const keys = Object.keys(queues)
+  return Promise.all(keys.map((key) => {
+    switch (key) {
+    case NFT_COLLECTION_JOB:
+      return queues[NFT_COLLECTION_JOB].process(getUsersNFTs)
+    default:
+      return queues[key].process(getEthereumEvents)
+    }
   }))
 }
 
 const publishJobs = (): Promise<Bull.Job[]> => {
-  const chainIds = Object.keys(queues)
-  return Promise.all(chainIds.map((chainId) => {
-    // console.log(chainId)
-    return queues[chainId].add({ chainId }, {
-      removeOnComplete: true,
-      removeOnFail: true,
-      // repeat every minute
-      repeat: { every: 60000 },
-    })
+  const keys = Object.keys(queues)
+  return Promise.all(keys.map((key) => {
+    switch (key) {
+    case NFT_COLLECTION_JOB:
+      return queues[NFT_COLLECTION_JOB].add({ NFT_COLLECTION_JOB }, {
+        removeOnComplete: true,
+        removeOnFail: true,
+        // repeat every 10 minutes for nft collection job
+        repeat: { every: 600000 },
+      })
+    default:
+      return queues[key].add({ key }, {
+        removeOnComplete: true,
+        removeOnFail: true,
+        // repeat every minute
+        repeat: { every: 60000 },
+      })
+    }
   }))
 }
 
