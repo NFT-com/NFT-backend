@@ -22,7 +22,8 @@ The Postgres instance is available at `localhost:10030`.
 
 1. `cd packages/gql`
 2. `cp .env.sample .env`; modify this file if needs be
-3. `npm run dev`
+3. `doppler setup`  Ask the team to be added to the doppler account
+4. `npm run dev`
 
 The GraphQL server is available at `localhost:10010`.
 
