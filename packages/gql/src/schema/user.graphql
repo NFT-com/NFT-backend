@@ -2,7 +2,7 @@ type User {
   id: ID!
   avatarURL: String
   email: String
-  username: String!
+  username: String
   isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]
   myApprovals: [Approval!]
@@ -30,7 +30,7 @@ input UserPreferencesInput {
 input SignUpInput {
   avatarURL: String
   email: String
-  username: String!
+  username: String
   referredBy: String
   wallet: WalletInput!
 }
