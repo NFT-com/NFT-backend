@@ -22,7 +22,7 @@ const signUp = (
   const schema = Joi.object().keys({
     avatarURL: Joi.string(),
     email: Joi.string().email(),
-    username: Joi.string().required(),
+    username: Joi.string(),
     referredBy: Joi.string(),
     wallet: joi.buildWalletInputSchema(),
   })
@@ -33,7 +33,7 @@ const signUp = (
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
   return Promise.all([
-    repositories.user.exists({ username }),
+    repositories.user.exists({ username, email }),
     repositories.wallet.exists({ network, chainId, address }),
   ])
     .then(([userExists, addressExists]) => {
