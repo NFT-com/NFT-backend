@@ -23,6 +23,7 @@ interface AlternateMedia {
 interface Attribute {
   trait_type: string
   value: string
+  display_type?: string
 }
 interface NFTMetaDataResponse {
   contract: {
@@ -40,6 +41,8 @@ interface NFTMetaDataResponse {
   }
   alternateMedia: AlternateMedia[]
   metadata: {
+    name: string
+    description: string
     image: string
     attributes: Attribute[]
   }
@@ -114,6 +117,8 @@ const updateEntity = (
         repositories.nft.save({
           contract: nftInfo.contract.address,
           metadata: {
+            name: nftInfo.metadata.name,
+            description: nftInfo.metadata.description,
             tokenId: nftInfo.id.tokenId,
             imageURL: nftInfo.media.uri,
           },

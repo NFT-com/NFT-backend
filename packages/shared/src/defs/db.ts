@@ -45,6 +45,13 @@ export type CollectionItem = {
 export type NFTMetadata = {
   tokenId: string
   imageURL: string
+  name: string
+  description: string
+}
+
+export type NFTTrait = {
+  type: string
+  value: string
 }
 
 export type UserPreferences = {
