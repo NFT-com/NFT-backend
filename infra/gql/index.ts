@@ -25,7 +25,7 @@ const createAndUploadEBDeployFile = async (
     AWSEBDockerrunVersion: '1',
     Image: {
       Name: ecrImage,
-      Update: true,
+      Update: 'true',
     },
     Ports: [{
       ContainerPort: '8080',
