@@ -103,8 +103,8 @@ export const start = async (): Promise<void> => {
         } else {
           return res.send({
             name: req.params.username,
-            image: profile.photoURL ?? 'https://nft-com.s3.us-east-2.amazonaws.com/default_user.svg',
-            header: profile.bannerURL ?? 'https://nft-com.s3.us-east-2.amazonaws.com/nftcomheader.png',
+            image: profile.photoURL ?? 'https://nft-com.s3.us-east-2.amazonaws.com/nullPhoto.svg',
+            header: profile.bannerURL ?? 'https://nft-com.s3.us-east-2.amazonaws.com/nullBanner.svg',
             description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
           })
         }
