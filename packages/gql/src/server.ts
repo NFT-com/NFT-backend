@@ -113,7 +113,6 @@ export const start = async (): Promise<void> => {
 
   server = new ApolloServer({
     introspection: helper.isFalse(isProduction()),
-    // cors: true,
     resolvers: resolvers,
     typeDefs: typeDefs(),
     context: createContext,
@@ -125,8 +124,6 @@ export const start = async (): Promise<void> => {
   server.applyMiddleware({ app, cors: true })
   await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
   console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
-  // const { url } = await server.listen(serverPort)
-  // console.log(`🚀  Server ready at ${url}`)
 }
 
 export const stop = (): Promise<void> => {
