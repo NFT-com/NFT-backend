@@ -17,7 +17,7 @@ export class NFT extends BaseEntity {
   @Column({ type: 'json', nullable: false })
   metadata: NFTMetadata
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   price: string
 
   @Column({ nullable: true })

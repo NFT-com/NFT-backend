@@ -34,6 +34,10 @@ export class BaseRepository<T> {
     return this.getRepository().find(opts)
   }
 
+  public findAll = (): Promise<T[]> => {
+    return this.getRepository().find()
+  }
+
   public findPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
     return this.getRepository()
       .findAndCount({
