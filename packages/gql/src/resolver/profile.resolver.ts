@@ -161,7 +161,8 @@ const getProfileByURL = (
     url: Joi.string().required(),
   })
   joi.validateSchema(schema, args)
-  return getProfile(args.url, repositories.profile.findByURL)
+  return repositories.profile.findByURL(args.url)
+    .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url })))
 }
 
 const getWinningBid = (
@@ -184,9 +185,9 @@ const updateProfile = (
 
   const schema = Joi.object().keys({
     id: Joi.string().required(),
-    bannerURL: Joi.string().uri(),
-    description: Joi.string(),
-    photoURL: Joi.string().uri(),
+    bannerURL: Joi.string().uri().allow(null),
+    description: Joi.string().allow(null),
+    photoURL: Joi.string().uri().allow(null),
   })
   joi.validateSchema(schema, args.input)
 
