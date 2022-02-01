@@ -8,10 +8,13 @@ COPY tsconfig.json .
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/gql/package.json ./packages/gql/package.json
 
-RUN npm set progress=false
-RUN npm install --production
-RUN cp -R node_modules prod_node_modules
-RUN npm install
+# add tools for native dependencies (node-gpy)
+RUN apk add --no-cache --virtual .gyp python3 make g++ \
+    && npm set progress=false \ 
+    && npm install --production \ 
+    && cp -R node_modules prod_node_modules \ 
+    && npm install \ 
+    && apk del .gyp
 
 COPY packages/shared ./packages/shared
 COPY packages/gql ./packages/gql

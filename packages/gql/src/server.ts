@@ -1,7 +1,11 @@
-import { ApolloServer } from 'apollo-server'
+import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core'
+import { ApolloServer } from 'apollo-server-express'
 import { utils } from 'ethers'
+import express from 'express'
 import { GraphQLError } from 'graphql'
+import http from 'http'
 
+import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 
 import { authMessage, isProduction, serverPort } from './config'
@@ -14,6 +18,8 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
 const chainIdHeader = 'chain-id'
 const authHeader = 'authorization'
+
+const repositories = db.newRepositories()
 
 type GQLError = {
   statusCode: string
@@ -37,7 +43,6 @@ const createContext = async (ctx): Promise<Context> => {
   let wallet: entity.Wallet = null
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
-  const repositories = db.newRepositories()
   if (helper.isNotEmpty(authSignature)) {
     chain = auth.verifyAndGetNetworkChain(network, chainId)
     const address = getAddressFromSignature(authSignature)
@@ -81,17 +86,44 @@ export const start = async (): Promise<void> => {
     return
   }
 
+  const app = express()
+  const httpServer = http.createServer(app)
+
+  // TODO: user CDN urls later for default image and header
+  app.get('/uri/:username', function (req, res) {
+    const { username } = req.params
+
+    return repositories.profile.findByURL(username.toLowerCase())
+      .then((profile: entity.Profile) => {
+        if (!profile) {
+          return Promise.reject(appError.buildExists(
+            profileError.buildProfileNotFoundMsg(username),
+            profileError.ErrorType.ProfileNotFound,
+          ))
+        } else {
+          return res.send({
+            name: req.params.username,
+            image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.svg',
+            header: profile.bannerURL ?? 'https://cdn.nft.com/nullBanner.svg',
+            description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
+          })
+        }
+      })
+  })
+
   server = new ApolloServer({
     introspection: helper.isFalse(isProduction()),
-    cors: true,
     resolvers: resolvers,
     typeDefs: typeDefs(),
     context: createContext,
     formatError,
-    plugins: [],
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
   })
-  const { url } = await server.listen(serverPort)
-  console.log(`🚀  Server ready at ${url}`)
+
+  await server.start()
+  server.applyMiddleware({ app, cors: true })
+  await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
+  console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 
 export const stop = (): Promise<void> => {

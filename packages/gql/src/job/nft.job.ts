@@ -212,7 +212,7 @@ const getOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
 }
 
 export const getUsersNFTs = (job: Job): Promise<any> => {
-  console.log(job.data)
+  console.log('getUsersNFTs: ', job)
   try {
     return repositories.user.findAll().then((users: entity.User[]) => Promise.all([
       checkOwnedNFTs(users),

@@ -106,7 +106,7 @@ export const sendWinEmail = (
   if (user?.email) {
     logger.debug('sendWinEmail', { user })
 
-    if (helper.isFalse(user?.preferences?.outbidNotifications ?? false)) {
+    if (helper.isFalse(user?.preferences?.purchaseSuccessNotifications ?? false)) {
       return Promise.resolve(false)
     }
 

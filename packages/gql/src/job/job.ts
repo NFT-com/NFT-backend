@@ -32,25 +32,21 @@ const createQueues = (): void => {
 }
 
 const listenToJobs = (): Promise<void[]> => {
-  // const values = Object.values(queues)
-  // return Promise.all(values.map((queue) => {
-  //   return queue.process(getEthereumEvents)
-  // }))
-  const keys = Object.keys(queues)
-  return Promise.all(keys.map((key) => {
-    switch (key) {
-    case NFT_COLLECTION_JOB:
-      return queues[NFT_COLLECTION_JOB].process(getUsersNFTs)
+  const values = Object.values(queues)
+  return Promise.all(values.map((queue) => {
+    switch (queue.name) {
+    case 'nft_collection':
+      return queue.process(getUsersNFTs)
     default:
-      return queues[key].process(getEthereumEvents)
+      return queue.process(getEthereumEvents)
     }
   }))
 }
 
 const publishJobs = (): Promise<Bull.Job[]> => {
-  const keys = Object.keys(queues)
-  return Promise.all(keys.map((key) => {
-    switch (key) {
+  const chainIds = Object.keys(queues)
+  return Promise.all(chainIds.map((chainId) => {
+    switch (chainId) {
     case NFT_COLLECTION_JOB:
       return queues[NFT_COLLECTION_JOB].add({ NFT_COLLECTION_JOB }, {
         removeOnComplete: true,
@@ -59,7 +55,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         repeat: { every: 600000 },
       })
     default:
-      return queues[key].add({ key }, {
+      return queues[chainId].add({ chainId }, {
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every minute

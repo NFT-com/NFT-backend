@@ -123,8 +123,8 @@ export const createEBInstance = (
     application: application.name,
     version: applicationVersion,
     tier: 'WebServer',
-    solutionStackName: '64bit Amazon Linux 2018.03 v2.17.2 running Docker 20.10.7-ce',
-    // TODO are there any default settings that we can remove from the list?
+    solutionStackName: '64bit Amazon Linux 2 v3.4.10 running Docker',
+    //  EB Command Options for Reference: 
     //  https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html#command-options-general-elbv2
     settings: [
       {

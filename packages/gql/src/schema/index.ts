@@ -1,4 +1,4 @@
-import { gql } from 'apollo-server'
+import { gql } from 'apollo-server-express'
 import fs from 'fs'
 import { DocumentNode } from 'graphql'
 import path from 'path'
