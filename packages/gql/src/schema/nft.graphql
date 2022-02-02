@@ -12,12 +12,18 @@ enum NFTSize {
   Large
 }
 
+type NFTTrait {
+  type: String!
+  value: String!
+}
+
 type NFTMetadata {
   tokenId: String!
   name: String
   description: String
   imageURL: String
-  txHash: String!
+  traits: [NFTTrait!]!
+#  txHash: String!
 }
 
 type NFT {
