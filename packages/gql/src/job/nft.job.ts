@@ -99,7 +99,6 @@ const getNFTMetaDataFromAlchemy = (
 
 const updateEntity = (
   nftInfo: NFTMetaDataResponse,
-  profileId: string,
   userId: string,
   walletId: string,
 ): Promise<void> => {
@@ -135,7 +134,6 @@ const updateEntity = (
             imageURL: nftInfo.media.uri,
             traits: traits,
           },
-          profileId: profileId,
           type: type,
           userId: userId,
           walletId: walletId,
@@ -144,9 +142,13 @@ const updateEntity = (
     })
 }
 
-const checkNFTContractAddresses = (profileId: string, owner: string): Promise<void[]> => {
+const checkNFTContractAddresses = (
+  userId: string,
+  walletId: string,
+  walletAddress: string,
+): Promise<void[]> => {
   const contractAddresses = []
-  return repositories.nft.find({ where: { profileId: profileId } })
+  return repositories.nft.find({ where: { userId: userId, walletId: walletId } })
     .then((nfts: entity.NFT[]) => {
       nfts.map((nft: entity.NFT) => {
         contractAddresses.push(nft.contract)
@@ -155,7 +157,7 @@ const checkNFTContractAddresses = (profileId: string, owner: string): Promise<vo
       const contractsChunks = Lodash.chunk(contractAddresses, 20)
       return Promise.all(
         contractsChunks.map((contracts: string[]) => {
-          return filterNFTsWithAlchemy(contracts, owner)
+          return filterNFTsWithAlchemy(contracts, walletAddress)
         }),
       )
     }).catch((err) => {
@@ -171,14 +173,11 @@ const checkNFTContractAddresses = (profileId: string, owner: string): Promise<vo
 const checkOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
   return Promise.all(
     users.map((user: entity.User) => {
-      repositories.profile.findByOwner(user.id)
-        .then((profiles: entity.Profile[]) => {
+      repositories.wallet.findByUserId(user.id)
+        .then((wallets: entity.Wallet[]) => {
           return Promise.all(
-            profiles.map((profile: entity.Profile) => {
-              repositories.wallet.findById(profile.ownerWalletId)
-                .then((wallet: entity.Wallet) => {
-                  checkNFTContractAddresses(profile.id, wallet.address)
-                })
+            wallets.map((wallet: entity.Wallet) => {
+              checkNFTContractAddresses(user.id, wallet.id, wallet.address)
             }),
           )
         })
@@ -193,29 +192,25 @@ const checkOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
 const getOwnedNFTs = (users: entity.User[]): Promise<void[]> => {
   return Promise.all(
     users.map((user: entity.User) => {
-      repositories.profile.findByOwner(user.id)
-        .then((profiles: entity.Profile[]) => {
+      repositories.wallet.findByUserId(user.id)
+        .then((wallets: entity.Wallet[]) => {
           return Promise.all(
-            profiles.map((profile: entity.Profile) => {
-              repositories.wallet.findById(profile.ownerWalletId)
-                .then((wallet: entity.Wallet) => {
-                  getNFTsFromAlchemy(wallet.address)
-                    .then((ownedNFTs: OwnedNFT[]) => {
-                      return Promise.all(
-                        ownedNFTs.map((nft: OwnedNFT) => {
-                          getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
-                            .then((response) => {
-                              if (response)
-                                updateEntity(
-                                  response,
-                                  profile.id,
-                                  profile.ownerUserId,
-                                  profile.ownerWalletId,
-                                )
-                            })
-                        }),
-                      )
-                    })
+            wallets.map((wallet: entity.Wallet) => {
+              getNFTsFromAlchemy(wallet.address)
+                .then((ownedNFTs: OwnedNFT[]) => {
+                  return Promise.all(
+                    ownedNFTs.map((nft: OwnedNFT) => {
+                      getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
+                        .then((response) => {
+                          if (response)
+                            updateEntity(
+                              response,
+                              user.id,
+                              wallet.id,
+                            )
+                        })
+                    }),
+                  )
                 })
             }),
           )
