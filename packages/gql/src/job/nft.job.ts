@@ -6,7 +6,7 @@ import { db, entity } from '@nftcom/shared'
 import { NFTType } from '@nftcom/shared/defs'
 
 const repositories = db.newRepositories()
-const ALCHEMY_API_KEY = 'wihsxPwWsaTUgmL3ejTNHGHbhDrI3Yvh'
+const ALCHEMY_API_KEY = process.env.REACT_APP_ALCHEMY_API_KEY
 const ALCHEMY_API_URL = `https://eth-mainnet.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
 
 interface OwnedNFT {
@@ -20,7 +20,7 @@ interface OwnedNFT {
 interface AlternateMedia {
   uri: string
 }
-interface Attribute {
+interface Trait {
   trait_type: string
   value: string
   display_type?: string
@@ -44,7 +44,7 @@ interface NFTMetaDataResponse {
     name: string
     description: string
     image: string
-    attributes: Attribute[]
+    attributes: Trait[]
   }
   timeLastUpdated: string
 }
@@ -113,6 +113,18 @@ const updateEntity = (
           type = NFTType.ERC721
         } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
           type = NFTType.ERC1155
+        } else {
+          console.log('Token type should be ERC721 or ERC1155')
+          return
+        }
+        const traits = []
+        if (nftInfo.metadata.attributes) {
+          nftInfo.metadata.attributes.map((trait) => {
+            traits.push(({
+              type: trait.trait_type,
+              value: trait.value,
+            }))
+          })
         }
         repositories.nft.save({
           contract: nftInfo.contract.address,
@@ -121,6 +133,7 @@ const updateEntity = (
             description: nftInfo.metadata.description,
             tokenId: nftInfo.id.tokenId,
             imageURL: nftInfo.media.uri,
+            traits: traits,
           },
           profileId: profileId,
           type: type,

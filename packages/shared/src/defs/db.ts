@@ -42,16 +42,17 @@ export type CollectionItem = {
   id: string
 }
 
+export type Trait = {
+  type: string
+  value: string
+}
+
 export type NFTMetadata = {
   tokenId: string
   imageURL: string
   name: string
   description: string
-}
-
-export type NFTTrait = {
-  type: string
-  value: string
+  traits: Trait[]
 }
 
 export type UserPreferences = {
