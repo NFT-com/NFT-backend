@@ -105,6 +105,7 @@ const updateEntity = (
   return repositories.nft.findOne({ where: { contract: nftInfo.contract.address } })
     .then((existingNFT) => {
       // if this NFT is not existing on the NFT table, we save nft information...
+      // TODO (eddie): update existing nfts too.
       if (!existingNFT) {
         console.log('NFT collection job updates row on NFT table')
         let type
@@ -131,7 +132,7 @@ const updateEntity = (
             name: nftInfo.metadata.name,
             description: nftInfo.metadata.description,
             tokenId: nftInfo.id.tokenId,
-            imageURL: nftInfo.media.uri,
+            imageURL: nftInfo.metadata.image,
             traits: traits,
           },
           type: type,
