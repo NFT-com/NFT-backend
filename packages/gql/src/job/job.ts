@@ -35,7 +35,7 @@ const listenToJobs = (): Promise<void[]> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
     switch (queue.name) {
-    case 'nft_collection':
+    case NFT_COLLECTION_JOB:
       return queue.process(getUsersNFTs)
     default:
       return queue.process(getEthereumEvents)
