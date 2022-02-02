@@ -8,4 +8,8 @@ export class NFTRepository extends BaseRepository<NFT> {
     super(NFT)
   }
 
+  findByWalletId(walletId: string): Promise<NFT[]> {
+    return this.find({ where: { walletId } })
+  }
+
 }
