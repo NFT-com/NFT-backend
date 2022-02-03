@@ -4,7 +4,7 @@ import { OrderByCondition } from 'typeorm/find-options/OrderByCondition'
 export enum EntityType {
   Approval = 'Approval',
   Bid = 'Bid',
-  Collection = 'Collection',
+  Curation = 'Curation',
   Edge = 'Edge',
   NFT = 'NFT',
   Profile = 'Profile',
@@ -37,7 +37,7 @@ export enum NFTSize {
   Large = 'Large'
 }
 
-export type CollectionItem = {
+export type CurationItem = {
   size?: NFTSize
   id: string
 }

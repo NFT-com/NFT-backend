@@ -21,6 +21,7 @@
       "src/db/entity/approval.entity.ts",
       "src/db/entity/bid.entity.ts",
       "src/db/entity/collection.entity.ts",
+      "src/db/entity/curation.entity.ts",
       "src/db/entity/edge.entity.ts",
       "src/db/entity/event.entity.ts",
       "src/db/entity/nft.entity.ts",

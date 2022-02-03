@@ -1,0 +1,56 @@
+type CurationItem {
+    size: NFTSize
+    id: ID!
+}
+
+type Curation {
+    id: ID!
+    items: [CurationItem!]
+}
+
+input CurationsInput {
+    pageInput: PageInput
+    # TODO: allow querying other users' collections or filtering
+}
+
+type CurationsOutput {
+    items: [Curation!]!
+    totalItems: Int
+    pageInfo: PageInfo
+}
+
+input CurationItemInput {
+    size: NFTSize
+    id: ID!
+}
+
+input CreateCurationInput {
+    items: [CurationItemInput!]!
+}
+
+input UpdateCurationInput {
+    id: ID!
+    items: [CurationItemInput!]!
+}
+
+input SetCurationInput {
+    profileId: ID!
+    curationId: ID!
+}
+
+input RemoveCurationInput {
+    profileId: ID!
+}
+
+extend type Query {
+    myCurations(input: CurationsInput!): CurationsOutput
+}
+
+extend type Mutation {
+    # by Curation owner only
+    createCuration(input: CreateCurationInput!): Curation!
+    updateCuration(input: UpdateCurationInput!): Curation!
+    # by Curation + profile owner
+    setCuration(input: SetCurationInput!): Profile!
+    removeCuration(input: RemoveCurationInput!): Profile!
+}

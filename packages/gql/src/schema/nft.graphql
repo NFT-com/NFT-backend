@@ -44,8 +44,8 @@ input NFTsInput {
   profileId: ID
 }
 
-input CollectionInput {
-  collectionId: ID!
+input CurationInput {
+  curationId: ID!
   pageInput: PageInput
   # TODO: add filters
 }
@@ -56,23 +56,23 @@ type NFTsOutput {
   totalItems: Int
 }
 
-type CollectionNFT {
+type CurationNFT {
   nft: NFT!
   size: NFTSize
   # TODO: add display preferences here
 }
 
-type CollectionNFTsOutput {
-  items: [CollectionNFT!]!
+type CurationNFTsOutput {
+  items: [CurationNFT!]!
   pageInfo: PageInfo
   totalItems: Int
 }
 
 extend type Query {
   nft(id: ID!): NFT!
-  nfts(input: NFTsInput!): CollectionNFTsOutput!
+  nfts(input: NFTsInput!): CurationNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!
-  collectionNFTs(input: CollectionInput!): CollectionNFTsOutput!
+  curationNFTs(input: CurationInput!): CurationNFTsOutput!
 }
 
 #extend type Mutation {
