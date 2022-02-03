@@ -16,7 +16,8 @@ export enum EntityType {
 export enum EdgeType {
   Follows = 'Follows',
   Referred = 'Referred',
-  Displays = 'Displays'
+  Displays = 'Displays',
+  Includes = 'Includes'
 }
 
 export enum BidStatus {
@@ -49,7 +50,6 @@ export type Trait = {
 }
 
 export type NFTMetadata = {
-  tokenId: string
   imageURL: string
   name: string
   description: string

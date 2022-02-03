@@ -18,7 +18,6 @@ type NFTTrait {
 }
 
 type NFTMetadata {
-  tokenId: String!
   name: String
   description: String
   imageURL: String
@@ -29,6 +28,7 @@ type NFTMetadata {
 type NFT {
   id: ID!
   contract: String
+  tokenId: String!
   isOwnedByMe: Boolean
   metadata: NFTMetadata!
   price: Uint256!

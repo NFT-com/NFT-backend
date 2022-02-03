@@ -2,8 +2,8 @@ import axios from 'axios'
 import { Job } from 'bull'
 import * as Lodash from 'lodash'
 
-import { db, entity } from '@nftcom/shared'
-import { NFTType } from '@nftcom/shared/defs'
+import { db, entity, fp } from '@nftcom/shared'
+import { EdgeType, EntityType, NFTType } from '@nftcom/shared/defs'
 
 const repositories = db.newRepositories()
 const ALCHEMY_API_KEY = process.env.REACT_APP_ALCHEMY_API_KEY
@@ -86,7 +86,7 @@ const filterNFTsWithAlchemy = async (
           const nfts = await repositories.nft.find({
             where: { contract: contract.address },
           })
-          const nft = await nfts.find((nft) => nft.metadata.tokenId === contract.tokenId)
+          const nft = await nfts.find((nft) => nft.tokenId === contract.tokenId)
           await repositories.nft.delete({ id: nft.id })
         }
       }),
@@ -116,48 +116,65 @@ const updateEntity = async (
   userId: string,
   walletId: string,
 ): Promise<void> => {
+  let newNFT
   try {
-    const nfts = await repositories.nft.find({
-      where: { contract: nftInfo.contract.address },
+    const existingNFT = await repositories.nft.findOne({
+      where: { contract: nftInfo.contract.address, tokenId: nftInfo.id.tokenId },
     })
-    const existingIndex = nfts.findIndex((nft) => nft.metadata.tokenId === nftInfo.id.tokenId)
-    // if this NFT is not existing on the NFT table, we save nft information...
-    if (existingIndex === -1) {
-      console.log('NFT collection job updates row on NFT table')
-      let type
-      if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
-        type = NFTType.ERC721
-      } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
-        type = NFTType.ERC1155
-      } else {
-        console.log('Token type should be ERC721 or ERC1155')
-        return
-      }
-      const traits = []
-      if (nftInfo.metadata.attributes) {
-        nftInfo.metadata.attributes.map((trait) => {
-          traits.push(({
-            type: trait.trait_type,
-            value: trait.value,
-          }))
-        })
-      }
-      await repositories.nft.save({
-        contract: nftInfo.contract.address,
-        metadata: {
-          name: nftInfo.metadata.name,
-          description: nftInfo.metadata.description,
-          tokenId: nftInfo.id.tokenId,
-          imageURL: nftInfo.metadata.image,
-          traits: traits,
-        },
-        type: type,
-        userId: userId,
-        walletId: walletId,
+    console.log('NFT collection job updates row on NFT table')
+    let type: NFTType
+    if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
+      type = NFTType.ERC721
+    } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
+      type = NFTType.ERC1155
+    } else {
+      console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType)
+      return
+    }
+    const traits = []
+    if (nftInfo.metadata.attributes) {
+      nftInfo.metadata.attributes.map((trait) => {
+        traits.push(({
+          type: trait.trait_type,
+          value: trait.value,
+        }))
       })
     }
+    newNFT = await repositories.nft.save({
+      ...existingNFT,
+      contract: nftInfo.contract.address,
+      tokenId: nftInfo.id.tokenId,
+      metadata: {
+        name: nftInfo.metadata.name,
+        description: nftInfo.metadata.description,
+        imageURL: nftInfo.metadata.image,
+        traits: traits,
+      },
+      type: type,
+      userId: userId,
+      walletId: walletId,
+    })
   } catch (err) {
     console.log('error: ', err)
+  }
+  if (newNFT) {
+    await repositories.collection.findOne({ where: { contract: newNFT.contract } })
+      .then(fp.thruIfEmpty(() => {
+        const collectionName = 'test'
+        return repositories.collection.save({
+          contract: newNFT.contract,
+          name: collectionName,
+        })
+      }))
+      .then((collection: entity.Collection) => {
+        repositories.edge.save({
+          thisEntityType: EntityType.Collection,
+          thatEntityType: EntityType.NFT,
+          thisEntityId: collection.id,
+          thatEntityId: newNFT.id,
+          edgeType: EdgeType.Includes,
+        })
+      })
   }
 }
 
@@ -166,18 +183,18 @@ export const checkNFTContractAddresses = async (
   walletId: string,
   walletAddress: string,
 ): Promise<void[]> => {
-  const contractAddresses: Array<Contract> = []
   try {
     const nfts = await repositories.nft.find({ where: { userId: userId, walletId: walletId } })
-    nfts.map((nft: entity.NFT) => {
-      contractAddresses.push({ address: nft.contract, tokenId: nft.metadata.tokenId })
-    })
-    if (!contractAddresses.length) return []
+    const contractAddresses: Array<Contract> =
+      nfts.map((nft: entity.NFT) => ({ address: nft.contract, tokenId: nft.tokenId }))
+
+    if (!contractAddresses.length) {
+      return []
+    }
     const contractsChunks = Lodash.chunk(contractAddresses, 20)
-    return await Promise.all(
-      contractsChunks.map(async (contracts: Contract[]) => {
-        await filterNFTsWithAlchemy(contracts, walletAddress)
-      }),
+    await Promise.all(
+      contractsChunks.map((contracts: Contract[]) =>
+        filterNFTsWithAlchemy(contracts, walletAddress)),
     )
   } catch (err) {
     console.log('error: ', err)
