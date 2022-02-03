@@ -1,0 +1,13 @@
+type Collection {
+    contract: String!
+    name: String
+}
+
+input CollectionInput {
+    contract: String
+    network: String
+}
+
+extend type Query {
+  getCollection(input: CollectionInput!): Collection
+}

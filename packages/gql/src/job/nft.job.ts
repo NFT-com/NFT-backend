@@ -48,8 +48,8 @@ interface NFTMetaDataResponse {
   }
   timeLastUpdated: string
 }
-interface Contract {
-  address: string
+interface NFT {
+  contract: string
   tokenId: string
 }
 
@@ -65,29 +65,29 @@ const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
 }
 
 const filterNFTsWithAlchemy = async (
-  contractChunks: Array<Contract>,
+  nfts: Array<NFT>,
   owner: string,
-): Promise<void[]> => {
+): Promise<any[]> => {
   let url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
-  contractChunks.map((contractInfo: Contract) => {
-    url = url.concat(`&contractAddresses%5B%5D=${contractInfo.address}`)
+  nfts.forEach((nft: NFT) => {
+    url = url.concat(`&contractAddresses%5B%5D=${nft.contract}`)
   })
   try {
     const result = await axios.get(url)
     const ownedNfts = result.data.ownedNfts
+
     return await Promise.all(
-      contractChunks.map(async (contract) => {
-        const index = ownedNfts.findIndex((nft) =>
-          nft.contract.address === contract.address &&
-          nft.id.tokenId === contract.tokenId,
+      nfts.map(async (alchemyNft: NFT) => {
+        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
+          ownedNFT.contract.address === alchemyNft.contract &&
+          ownedNFT.id.tokenId === alchemyNft.tokenId,
         )
         // if contract owner has changed ...
         if (index === -1) {
-          const nfts = await repositories.nft.find({
-            where: { contract: contract.address },
+          const nftRecord = await repositories.nft.findOne({
+            where: { contract: alchemyNft.contract, tokenId: alchemyNft.tokenId },
           })
-          const nft = await nfts.find((nft) => nft.tokenId === contract.tokenId)
-          await repositories.nft.delete({ id: nft.id })
+          await repositories.nft.delete(nftRecord)
         }
       }),
     )
@@ -185,16 +185,15 @@ export const checkNFTContractAddresses = async (
 ): Promise<void[]> => {
   try {
     const nfts = await repositories.nft.find({ where: { userId: userId, walletId: walletId } })
-    const contractAddresses: Array<Contract> =
-      nfts.map((nft: entity.NFT) => ({ address: nft.contract, tokenId: nft.tokenId }))
-
-    if (!contractAddresses.length) {
+    if (!nfts.length) {
       return []
     }
-    const contractsChunks = Lodash.chunk(contractAddresses, 20)
+    const nftsChunks: NFT[][] = Lodash.chunk(
+      nfts.map((nft: entity.NFT) => ({ contract: nft.contract, tokenId: nft.tokenId })),
+      20,
+    )
     await Promise.all(
-      contractsChunks.map((contracts: Contract[]) =>
-        filterNFTsWithAlchemy(contracts, walletAddress)),
+      nftsChunks.map((nftChunk: NFT[]) => filterNFTsWithAlchemy(nftChunk, walletAddress)),
     )
   } catch (err) {
     console.log('error: ', err)
