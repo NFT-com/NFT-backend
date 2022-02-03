@@ -52,8 +52,8 @@ export const entityById = (
     return repositories.approval.findById(id)
   case defs.EntityType.Bid:
     return repositories.bid.findById(id)
-  case defs.EntityType.Collection:
-    return repositories.collection.findById(id)
+  case defs.EntityType.Curation:
+    return repositories.curation.findById(id)
   case defs.EntityType.Edge:
     return repositories.edge.findById(id)
   case defs.EntityType.NFT:
