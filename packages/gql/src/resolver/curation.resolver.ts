@@ -2,24 +2,24 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, collectionError, nftError, profileError } from '@nftcom/gql/error'
+import { appError, curationError, nftError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
 
-const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
+const logger = _logger.Factory(_logger.Context.Curation, _logger.Context.GraphQL)
 
-const getMyCollections = (
+const getMyCurations = (
   _: any,
-  args: gql.QueryMyCollectionsArgs,
+  args: gql.QueryMyCurationsArgs,
   ctx: Context,
-): Promise<gql.CollectionsOutput> => {
+): Promise<gql.CurationsOutput> => {
   const { user, repositories } = ctx
-  logger.debug('getMyCollections', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('getMyCurations', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK<entity.Collection>(args?.input, { userId: user.id })
+  const filter = helper.inputT2SafeK<entity.Curation>(args?.input, { userId: user.id })
   return core.paginatedEntitiesBy(
-    repositories.collection,
+    repositories.curation,
     pageInput,
     filter,
   )
@@ -28,22 +28,22 @@ const getMyCollections = (
 
 const validateNFTOwnership = (
   ctx: Context,
-  items: defs.CollectionItem[],
+  items: defs.CurationItem[],
   user: entity.User,
 ): Promise<boolean> => {
   return Promise.all(
-    items.map((item: defs.CollectionItem) => ctx.repositories.nft.findById(item.id)),
+    items.map((item: defs.CurationItem) => ctx.repositories.nft.findById(item.id)),
   )
     .then((nfts: entity.NFT[]) => !nfts.some((nft) => nft?.userId !== user.id))
 }
 
-const createCollection = (
+const createCuration = (
   _: any,
-  args: gql.MutationCreateCollectionArgs,
+  args: gql.MutationCreateCurationArgs,
   ctx: Context,
-): Promise<gql.Collection> => {
+): Promise<gql.Curation> => {
   const { user, repositories } = ctx
-  logger.debug('createCollection', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('createCuration', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
     items: Joi.array().min(1).max(100).items(
@@ -61,19 +61,19 @@ const createCollection = (
         nftError.ErrorType.NFTNotOwned,
       ),
     ))
-    .then(() => repositories.collection.save({
+    .then(() => repositories.curation.save({
       userId: user?.id,
       items: args?.input?.items,
     }))
 }
 
-const updateCollection = (
+const updateCuration = (
   _: any,
-  args: gql.MutationUpdateCollectionArgs,
+  args: gql.MutationUpdateCurationArgs,
   ctx: Context,
-): Promise<gql.Collection> => {
+): Promise<gql.Curation> => {
   const { user, repositories } = ctx
-  logger.debug('updateCollection', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('updateCuration', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
     id: Joi.string().required(),
@@ -90,47 +90,47 @@ const updateCollection = (
       nftError.buildNFTNotOwnedMsg(),
       nftError.ErrorType.NFTNotOwned,
     )))
-    .then(() => repositories.collection.findById(args?.input?.id))
+    .then(() => repositories.curation.findById(args?.input?.id))
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        collectionError.buildCollectionNotFoundMsg(args?.input?.id),
-        collectionError.ErrorType.CollectionNotFound,
+        curationError.buildCurationNotFoundMsg(args?.input?.id),
+        curationError.ErrorType.CurationNotFound,
       ),
     ))
-    .then(fp.rejectIf((collection: entity.Collection) => collection.userId !== user?.id)(
+    .then(fp.rejectIf((curation: entity.Curation) => curation.userId !== user?.id)(
       appError.buildForbidden(
-        collectionError.buildCollectionNotOwnedMsg(),
-        collectionError.ErrorType.CollectionNotOwned,
+        curationError.buildCurationNotOwnedMsg(),
+        curationError.ErrorType.CurationNotOwned,
       ),
     ))
-    .then((collection: entity.Collection) => repositories.collection.save({
-      ...collection,
+    .then((curation: entity.Curation) => repositories.curation.save({
+      ...curation,
       items: args?.input?.items,
     }))
 }
 
-const setCollection = (
+const setCuration = (
   _: any,
-  args: gql.MutationSetCollectionArgs,
+  args: gql.MutationSetCurationArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
   const { user, repositories } = ctx
-  logger.debug('setCollection', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('setCuration', { loggedInUserId: user?.id, input: args?.input })
   
-  const schema = Joi.object().keys({ collectionId: Joi.string(), profileId: Joi.string() })
+  const schema = Joi.object().keys({ curationId: Joi.string(), profileId: Joi.string() })
   joi.validateSchema(schema, args?.input)
 
-  return repositories.collection.findById(args?.input?.collectionId)
+  return repositories.curation.findById(args?.input?.curationId)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        collectionError.buildCollectionNotFoundMsg(args?.input?.collectionId),
-        collectionError.ErrorType.CollectionNotFound,
+        curationError.buildCurationNotFoundMsg(args?.input?.curationId),
+        curationError.ErrorType.CurationNotFound,
       ),
     ))
-    .then(fp.rejectIf((collection: entity.Collection) => collection.userId !== user?.id)(
+    .then(fp.rejectIf((curation: entity.Curation) => curation.userId !== user?.id)(
       appError.buildForbidden(
-        collectionError.buildCollectionNotOwnedMsg(),
-        collectionError.ErrorType.CollectionNotOwned,
+        curationError.buildCurationNotOwnedMsg(),
+        curationError.ErrorType.CurationNotOwned,
       ),
     ))
     .then(() => repositories.profile.findById(args?.input?.profileId))
@@ -156,21 +156,21 @@ const setCollection = (
     .then(fp.tapWait(
       (profile: entity.Profile) => repositories.edge.save({
         edgeType: defs.EdgeType.Displays,
-        thatEntityId: args?.input?.collectionId,
-        thatEntityType: defs.EntityType.Collection,
+        thatEntityId: args?.input?.curationId,
+        thatEntityType: defs.EntityType.Curation,
         thisEntityId: profile.id,
         thisEntityType: defs.EntityType.Profile,
       }),
     ))
 }
 
-const removeCollection = (
+const removeCurations = (
   _: any,
-  args: gql.MutationRemoveCollectionArgs,
+  args: gql.MutationRemoveCurationArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
   const { user, repositories } = ctx
-  logger.debug('removeCollection', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('removeCuration', { loggedInUserId: user?.id, input: args?.input })
   
   const schema = Joi.object().keys({ profileId: Joi.string() })
   joi.validateSchema(schema, args?.input)
@@ -199,12 +199,12 @@ const removeCollection = (
 
 export default {
   Query: {
-    myCollections: combineResolvers(auth.isAuthenticated, getMyCollections),
+    myCurations: combineResolvers(auth.isAuthenticated, getMyCurations),
   },
   Mutation: {
-    createCollection: combineResolvers(auth.isAuthenticated, createCollection),
-    updateCollection: combineResolvers(auth.isAuthenticated, updateCollection),
-    setCollection: combineResolvers(auth.isAuthenticated, setCollection),
-    removeCollection: combineResolvers(auth.isAuthenticated, removeCollection),
+    createCuration: combineResolvers(auth.isAuthenticated, createCuration),
+    updateCuration: combineResolvers(auth.isAuthenticated, updateCuration),
+    setCuration: combineResolvers(auth.isAuthenticated, setCuration),
+    removeCuration: combineResolvers(auth.isAuthenticated, removeCurations),
   },
 }

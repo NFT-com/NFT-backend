@@ -2,7 +2,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, collectionError } from '@nftcom/gql/error'
+import { appError, curationError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp,helper } from '@nftcom/shared'
@@ -28,21 +28,21 @@ const getNFTs = (
   _: unknown,
   args: gql.QueryNFTsArgs,
   ctx: Context,
-): Promise<gql.CollectionNFTsOutput> => {
+): Promise<gql.CurationNFTsOutput> => {
   const { user, repositories } = ctx
   logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
   const { types, profileId } = helper.safeObject(args?.input)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
   })
-  return core.thatEntitiesOfEdgesBy<entity.Collection>(ctx, {
+  return core.thatEntitiesOfEdgesBy<entity.Curation>(ctx, {
     thisEntityId: profileId,
     thisEntityType: defs.EntityType.Profile,
     edgeType: defs.EdgeType.Displays,
-  }).then((collections) => {
-    if (collections == null || collections.length === 0) {
-      // If no collection associated with this Profile,
-      // (e.g. before user-curated collections are available)
+  }).then((curations) => {
+    if (curations == null || curations.length === 0) {
+      // If no curations associated with this Profile,
+      // (e.g. before user-curated curations are available)
       // we'll return all the owner's NFTs (at this wallet) 
       return repositories.profile.findById(profileId)
         .then((profile: entity.Profile) =>
@@ -54,14 +54,14 @@ const getNFTs = (
                   size: NFTSize.Medium, // default
                 }
               }))))
-        .then((collectionItems) => Promise.resolve({
-          items: collectionItems,
+        .then((curationItems) => Promise.resolve({
+          items: curationItems,
         }))
     } else {
       return Promise.all([
-        // TODO: return array of Collections once we support multiple
-        Promise.resolve(collections[0].items),
-        Promise.all(collections[0].items.map(item =>
+        // TODO: return array of Curations once we support multiple
+        Promise.resolve(curations[0].items),
+        Promise.all(curations[0].items.map(item =>
           repositories.nft.findOne({ where: { id: item.id, ...filter } }))),
       ]).then(([items, nfts]) => nfts
         .filter((nft) => nft !== null)
@@ -96,24 +96,24 @@ const getMyNFTs = (
     .then(pagination.toPageable(pageInput))
 }
 
-const getCollectionNFTs = (
+const getCurationNFTs = (
   _: unknown,
-  args: gql.QueryCollectionNFTsArgs,
+  args: gql.QueryCurationNFTsArgs,
   ctx: Context,
-): Promise<gql.CollectionNFTsOutput> => {
+): Promise<gql.CurationNFTsOutput> => {
   const { repositories } = ctx
-  logger.debug('getCollectionNFTs', { input: args?.input })
-  const { collectionId } = helper.safeObject(args?.input)
-  return repositories.collection.findById(collectionId)
+  logger.debug('getCurationNFTs', { input: args?.input })
+  const { curationId } = helper.safeObject(args?.input)
+  return repositories.curation.findById(curationId)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        collectionError.buildCollectionNotFoundMsg(collectionId),
-        collectionError.ErrorType.CollectionNotFound,
+        curationError.buildCurationNotFoundMsg(curationId),
+        curationError.ErrorType.CurationNotFound,
       ),
     ))
-    .then((collection) => Promise.all([
-      Promise.resolve(collection.items),
-      Promise.all(collection.items.map(item =>  repositories.nft.findById(item.id))),
+    .then((curation) => Promise.all([
+      Promise.resolve(curation.items),
+      Promise.all(curation.items.map(item =>  repositories.nft.findById(item.id))),
     ]))
     .then(([items, nfts]) => nfts.map((nft, index) => ({ nft: nft, size: items[index].size })))
     .then((nfts) => Promise.resolve({
@@ -126,7 +126,7 @@ export default {
     nft: getNFT,
     nfts: getNFTs,
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
-    collectionNFTs: getCollectionNFTs,
+    curationNFTs: getCurationNFTs,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
