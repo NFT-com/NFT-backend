@@ -48,6 +48,10 @@ interface NFTMetaDataResponse {
   }
   timeLastUpdated: string
 }
+interface Contract {
+  address: string
+  tokenId: string
+}
 
 const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   const url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
@@ -61,22 +65,30 @@ const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
 }
 
 const filterNFTsWithAlchemy = async (
-  contractChunks: string[],
+  contractChunks: Array<Contract>,
   owner: string,
 ): Promise<void[]> => {
   let url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
-  contractChunks.map((contract: string) => {
-    url = url.concat(`&contractAddresses%5B%5D=${contract}`)
+  contractChunks.map((contractInfo: Contract) => {
+    url = url.concat(`&contractAddresses%5B%5D=${contractInfo.address}`)
   })
   try {
     const result = await axios.get(url)
     const ownedNfts = result.data.ownedNfts
     return await Promise.all(
       contractChunks.map(async (contract) => {
-        const index = ownedNfts.findIndex((nft) => nft.contract.address === contract)
+        const index = ownedNfts.findIndex((nft) =>
+          nft.contract.address === contract.address &&
+          nft.id.tokenId === contract.tokenId,
+        )
         // if contract owner has changed ...
-        if (index === -1)
-          await repositories.nft.delete({ contract: contract })
+        if (index === -1) {
+          const nfts = await repositories.nft.find({
+            where: { contract: contract.address },
+          })
+          const nft = await nfts.find((nft) => nft.metadata.tokenId === contract.tokenId)
+          await repositories.nft.delete({ id: nft.id })
+        }
       }),
     )
   } catch (err) {
@@ -105,11 +117,12 @@ const updateEntity = async (
   walletId: string,
 ): Promise<void> => {
   try {
-    const existingNFT = await repositories.nft.findOne({
+    const nfts = await repositories.nft.find({
       where: { contract: nftInfo.contract.address },
     })
+    const existingIndex = nfts.findIndex((nft) => nft.metadata.tokenId === nftInfo.id.tokenId)
     // if this NFT is not existing on the NFT table, we save nft information...
-    if (!existingNFT) {
+    if (existingIndex === -1) {
       console.log('NFT collection job updates row on NFT table')
       let type
       if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
@@ -153,16 +166,16 @@ export const checkNFTContractAddresses = async (
   walletId: string,
   walletAddress: string,
 ): Promise<void[]> => {
-  const contractAddresses = []
+  const contractAddresses: Array<Contract> = []
   try {
     const nfts = await repositories.nft.find({ where: { userId: userId, walletId: walletId } })
     nfts.map((nft: entity.NFT) => {
-      contractAddresses.push(nft.contract)
+      contractAddresses.push({ address: nft.contract, tokenId: nft.metadata.tokenId })
     })
     if (!contractAddresses.length) return []
     const contractsChunks = Lodash.chunk(contractAddresses, 20)
     return await Promise.all(
-      contractsChunks.map(async (contracts: string[]) => {
+      contractsChunks.map(async (contracts: Contract[]) => {
         await filterNFTsWithAlchemy(contracts, walletAddress)
       }),
     )
