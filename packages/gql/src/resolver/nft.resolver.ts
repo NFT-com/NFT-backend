@@ -4,6 +4,7 @@ import Joi from 'joi'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, collectionError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
+import { checkNFTContractAddresses, updateWalletNFTs } from '@nftcom/gql/job/nft.job'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp,helper } from '@nftcom/shared'
 import { NFTSize } from '@nftcom/shared/defs'
@@ -121,12 +122,41 @@ const getCollectionNFTs = (
     }))
 }
 
+const refreshMyNFTs = (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<gql.RefreshMyNFTsOutput> => {
+  const { user, repositories } = ctx
+  logger.debug('refreshNFTs', { loggedInUserId: user.id })
+  return repositories.wallet.findByUserId(user.id)
+    .then((wallets: entity.Wallet[]) => {
+      return Promise.all(
+        wallets.map((wallet: entity.Wallet) => {
+          checkNFTContractAddresses(user.id, wallet.id, wallet.address)
+            .then(() => {
+              updateWalletNFTs(user.id, wallet.id, wallet.address)
+            })
+        }),
+      ).then(() => {
+        return { status: true, message: 'Your NFTs are updated!' }
+      }).catch((err) => {
+        return { status: false, message: err }
+      })
+    }).catch((err) => {
+      return { status: false, message: err }
+    })
+}
+
 export default {
   Query: {
     nft: getNFT,
     nfts: getNFTs,
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     collectionNFTs: getCollectionNFTs,
+  },
+  Mutation: {
+    refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
