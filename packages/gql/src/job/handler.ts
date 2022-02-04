@@ -4,6 +4,8 @@ import { Contract, ethers, Wallet } from 'ethers'
 
 import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
 
+import HederaConsensusService from '../service/hedera.service'
+
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
@@ -186,6 +188,10 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                   .then(fp.thruIfNotEmpty((profile) => {
                     profile.status = defs.ProfileStatus.Owned
                     repositories.profile.save(profile)
+
+                    Promise.all([
+                      HederaConsensusService.submitMessage(`Profile ${ profileUrl } was minted by address ${ owner }`),
+                    ])
       
                     return repositories.event.save(
                       {
