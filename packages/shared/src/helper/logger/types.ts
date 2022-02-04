@@ -4,6 +4,7 @@ export enum LoggerContext {
   Cache = 'cache',
   CacheDataLoader = 'dataLoaderCache',
   Curation = 'curation',
+  Collection = 'collection',
   General = 'general',
   GraphQL = 'graphql',
   NFT = 'nft',
