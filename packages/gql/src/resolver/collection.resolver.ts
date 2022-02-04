@@ -1,5 +1,5 @@
 import { Context, gql } from '@nftcom/gql/defs'
-import { _logger } from '@nftcom/shared/helper'
+import { _logger } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 
