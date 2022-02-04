@@ -68,6 +68,11 @@ type CurationNFTsOutput {
   totalItems: Int
 }
 
+type RefreshMyNFTsOutput {
+  status: Boolean!
+  message: String
+}
+
 extend type Query {
   nft(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
@@ -75,6 +80,6 @@ extend type Query {
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
 }
 
-#extend type Mutation {
-#  updateNFT(input: BidInput): Bid!
-#}
+extend type Mutation {
+  refreshMyNFTs: RefreshMyNFTsOutput!
+}
