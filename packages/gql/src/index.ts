@@ -5,6 +5,7 @@ import { db, fp } from '@nftcom/shared'
 import { dbConfig, serverPort, verifyConfiguration } from './config'
 import { job } from './job'
 import * as server from './server'
+import HederaConsensusService from './service/hedera.service'
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
@@ -31,6 +32,7 @@ const logGoodbye = (): void => {
 }
 
 const cleanExit = (): Promise<void> => {
+  HederaConsensusService.unsubscribe()
   return server.stop()
     .then(killPort)
     .then(() => job.stopAndDisconnect())
@@ -42,6 +44,9 @@ const cleanExit = (): Promise<void> => {
       process.exit()
     })
 }
+
+// subscribe to HCS to retrieve and log submitted messages
+HederaConsensusService.subscribe()
 
 process.on('SIGINT', cleanExit)
 process.on('SIGTERM', cleanExit)
