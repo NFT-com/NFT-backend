@@ -225,9 +225,10 @@ export const checkNFTContractAddresses = async (
       nfts.map((nft: entity.NFT) => ({ contract: nft.contract, tokenId: nft.tokenId })),
       20,
     )
-    await Promise.all(
-      nftsChunks.map((nftChunk: NFT[]) => filterNFTsWithAlchemy(nftChunk, walletAddress)),
-    )
+
+    nftsChunks.forEach(async (nftChunk: NFT[]) => {
+      await filterNFTsWithAlchemy(nftChunk, walletAddress)
+    })
   } catch (err) {
     console.log('error: ', err)
     return []
