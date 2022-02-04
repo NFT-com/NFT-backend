@@ -5,7 +5,7 @@ const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.Graph
 
 const getCollection = (
   _: any,
-  args: gql.QueryGetCollectionArgs,
+  args: gql.QueryCollectionArgs,
   ctx: Context,
 ): Promise<gql.Collection> => {
   logger.debug('getCollection', { input: args?.input })
@@ -19,6 +19,6 @@ const getCollection = (
 
 export default {
   Query: {
-    getCollection,
+    collection: getCollection,
   },
 }

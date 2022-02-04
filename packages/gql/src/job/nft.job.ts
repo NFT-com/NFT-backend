@@ -2,8 +2,9 @@ import axios from 'axios'
 import { Job } from 'bull'
 import * as Lodash from 'lodash'
 
-import { db, entity, fp } from '@nftcom/shared'
+import { db, entity, fp, provider } from '@nftcom/shared'
 import { EdgeType, EntityType, NFTType } from '@nftcom/shared/defs'
+import { typechain } from '@nftcom/shared/helper'
 
 const repositories = db.newRepositories()
 const ALCHEMY_API_KEY = process.env.REACT_APP_ALCHEMY_API_KEY
@@ -111,6 +112,33 @@ const getNFTMetaDataFromAlchemy = async (
   }
 }
 
+const getCollectionNameFromContract = (
+  contractAddress: string,
+  type:  NFTType,
+): Promise<string> => {
+  try {
+    if (type === NFTType.ERC721) {
+      const tokenContract = typechain.ERC721__factory.connect(
+        contractAddress,
+        provider.provider(),
+      )
+      return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
+    } else if (type === NFTType.ERC1155) {
+      const tokenContract = typechain.ERC1155__factory.connect(
+        contractAddress,
+        provider.provider(),
+      )
+      return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
+    } else {
+      console.log('Token type should be ERC721 or ERC1155, not ', type)
+      return Promise.resolve('Unknown Name')
+    }
+  } catch (error) {
+    console.log('ethers failed: ', error)
+    return Promise.resolve('Unknown Name')
+  }
+}
+
 const updateEntity = async (
   nftInfo: NFTMetaDataResponse,
   userId: string,
@@ -160,20 +188,25 @@ const updateEntity = async (
   if (newNFT) {
     await repositories.collection.findOne({ where: { contract: newNFT.contract } })
       .then(fp.thruIfEmpty(() => {
-        const collectionName = 'test'
-        return repositories.collection.save({
-          contract: newNFT.contract,
-          name: collectionName,
-        })
+        return getCollectionNameFromContract(newNFT.contract, newNFT.type)
+          .then((collectionName: string) => {
+            console.log('got name ', collectionName, ' , trying to save')
+            return repositories.collection.save({
+              contract: newNFT.contract,
+              name: collectionName,
+            })
+          })
       }))
       .then((collection: entity.Collection) => {
-        repositories.edge.save({
+        const edgeVals = {
           thisEntityType: EntityType.Collection,
           thatEntityType: EntityType.NFT,
           thisEntityId: collection.id,
           thatEntityId: newNFT.id,
           edgeType: EdgeType.Includes,
-        })
+        }
+        repositories.edge.findOne({ where: edgeVals })
+          .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
       })
   }
 }

@@ -9,5 +9,5 @@ input CollectionInput {
 }
 
 extend type Query {
-  getCollection(input: CollectionInput!): Collection
+  collection(input: CollectionInput!): Collection
 }
