@@ -189,8 +189,9 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                     profile.status = defs.ProfileStatus.Owned
                     repositories.profile.save(profile)
 
-                    // log to HCS that profile was minted
-                    await HederaConsensusService.submitMessage(`Profile ${ profileUrl } was minted by address ${ owner }`)
+                    Promise.all([
+                      HederaConsensusService.submitMessage(`Profile ${ profileUrl } was minted by address ${ owner }`),
+                    ])
       
                     return repositories.event.save(
                       {

@@ -10,6 +10,7 @@ import HederaConsensusService from './service/hedera.service'
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
   return db.connect(dbConfig)
+    .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
     .then(() => job.startAndListen())
     .then(fp.pause(500))
@@ -34,6 +35,7 @@ const logGoodbye = (): void => {
 const cleanExit = (): Promise<void> => {
   HederaConsensusService.unsubscribe()
   return server.stop()
+    .then(() => HederaConsensusService.unsubscribe())
     .then(killPort)
     .then(() => job.stopAndDisconnect())
     .then(db.disconnect)
