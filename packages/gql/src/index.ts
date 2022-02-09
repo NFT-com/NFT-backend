@@ -33,7 +33,6 @@ const logGoodbye = (): void => {
 }
 
 const cleanExit = (): Promise<void> => {
-  HederaConsensusService.unsubscribe()
   return server.stop()
     .then(() => HederaConsensusService.unsubscribe())
     .then(killPort)
@@ -46,9 +45,6 @@ const cleanExit = (): Promise<void> => {
       process.exit()
     })
 }
-
-// subscribe to HCS to retrieve and log submitted messages
-HederaConsensusService.subscribe()
 
 process.on('SIGINT', cleanExit)
 process.on('SIGTERM', cleanExit)
