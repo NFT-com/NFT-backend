@@ -41,6 +41,7 @@ class _HederaConsensusService implements IHederaConsensusService {
     // build client
     const accountId = process.env.HCS_ACCOUNT_ID
     const privateKey = process.env.HCS_PRIVATE_KEY
+
     this.client.setOperator(accountId, privateKey)
 
     // specify topic id and submit a new message to HCS
