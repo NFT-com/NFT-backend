@@ -184,27 +184,28 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
               if (!existsBool) {
                 console.log('no event profile: ', profileUrl)
                 // find and mark profile status as minted
-                return repositories.profile.findByURL(profileUrl)
-                  .then(fp.thruIfNotEmpty(async (profile) => {
-                    profile.status = defs.ProfileStatus.Owned
-                    repositories.profile.save(profile)
-
-                    Promise.all([
-                      HederaConsensusService.submitMessage(`Profile ${ profileUrl } was minted by address ${ owner }`),
-                    ])
+                return Promise.all([
+                  repositories.profile.findByURL(profileUrl)
+                    .then(fp.thruIfNotEmpty((profile) => {
+                      profile.status = defs.ProfileStatus.Owned
+                      repositories.profile.save(profile)
       
-                    return repositories.event.save(
-                      {
-                        chainId,
-                        contract: contract.address,
-                        eventName: evt.event,
-                        txHash: evt.transactionHash,
-                        ownerAddress: owner,
-                        profileUrl: profileUrl,
-                      },
-                    )
-                  },
-                  ))
+                      return repositories.event.save(
+                        {
+                          chainId,
+                          contract: contract.address,
+                          eventName: evt.event,
+                          txHash: evt.transactionHash,
+                          ownerAddress: owner,
+                          profileUrl: profileUrl,
+                        },
+                      )
+                    },
+                    )),
+                  HederaConsensusService.submitMessage(
+                    `Profile ${ profileUrl } was minted by address ${ owner }`,
+                  ),
+                ])
               }
             })
           default:
