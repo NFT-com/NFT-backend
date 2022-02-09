@@ -53,6 +53,9 @@ runs:
         PROFILE_AUCTION_END_PASSWORD: ${{ fromJSON(inputs.secrets).PROFILE_AUCTION_END_PASSWORD }}
         MNEMONIC: ${{ fromJSON(inputs.secrets).MNEMONIC }}
         MNEMONIC_RINKEBY: ${{ fromJSON(inputs.secrets).MNEMONIC_RINKEBY }}
+        HCS_TOPIC_ID: ${{ fromJSON(inputs.secrets).HCS_TOPIC_ID }}
+        HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
+        HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
         REACT_APP_INFURA_API_KEY: ${{ fromJSON(inputs.secrets).REACT_APP_INFURA_API_KEY }}
         REACT_APP_ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).REACT_APP_ALCHEMY_API_KEY }}
         SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}
