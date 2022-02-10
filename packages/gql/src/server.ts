@@ -7,6 +7,8 @@ import http from 'http'
 
 import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
+import * as Tracing from '@sentry/tracing'
 
 import { authMessage, isProduction, serverPort } from './config'
 import { Context } from './defs'
@@ -87,7 +89,26 @@ export const start = async (): Promise<void> => {
   }
 
   const app = express()
+
+  Sentry.init({
+    dsn: 'https://c85a378b6d144868956d80b10c460b5b@o1088732.ingest.sentry.io/6198744',
+    integrations: [
+      // enable HTTP calls tracing
+      new Sentry.Integrations.Http({ tracing: true }),
+      // enable Express.js middleware tracing
+      new Tracing.Integrations.Express({
+        app,
+      }),
+    ],
+    // Set tracesSampleRate to 1.0 to capture 100%
+    // of transactions for performance monitoring.
+    // We recommend adjusting this value in production
+    tracesSampleRate: 1.0,
+  })
+
   const httpServer = http.createServer(app)
+
+  app.use(Sentry.Handlers.requestHandler())
 
   // TODO: user CDN urls later for default image and header
   app.get('/uri/:username', function (req, res) {
@@ -119,6 +140,8 @@ export const start = async (): Promise<void> => {
     formatError,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
   })
+
+  app.use(Sentry.Handlers.errorHandler())
 
   await server.start()
   server.applyMiddleware({ app, cors: true })

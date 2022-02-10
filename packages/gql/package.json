@@ -35,6 +35,8 @@
     "joi": "^17.4.2",
     "kill-port": "^1.6.1",
     "lodash": "^4.17.21",
+    "@sentry/node": "^6.16.1",
+    "@sentry/tracing": "^6.16.1",
     "source-map-support": "^0.5.21"
   },
   "devDependencies": {
