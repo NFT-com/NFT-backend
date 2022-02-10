@@ -1,5 +1,5 @@
 import STS from 'aws-sdk/clients/sts'
-import { Contract, Wallet } from 'ethers'
+import { Contract, ContractTransaction, Wallet } from 'ethers'
 import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 
@@ -8,7 +8,7 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
-import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -50,6 +50,60 @@ const sendWinNotification = (
 ): Promise<[boolean]> => Promise.all([
   sendgrid.sendWinEmail(topBid, user, profileURL),
 ])
+
+const endGKBlindAuction = (
+  _: unknown,
+  args: unknown,
+  ctx: Context,
+): Promise<boolean> => {
+  const { repositories, wallet } = ctx
+
+  return repositories.bid.find({
+    where: { nftType: defs.NFTType.GenesisKey }, order:  { price: 'DESC' },
+  })
+    .then((bids: entity.Bid[]) => {
+      return Promise.all(bids.map(bid => {
+        return repositories.wallet.findById(bid.walletId)
+      }))
+        .then((wallets: entity.Wallet[]) => {
+          return contracts.getEthGasInfo(Number(wallet.chainId))
+            .then((egs: contracts.GasInfo) => [wallets, egs])
+        })
+        .then(([wallets, ethGasInfo]: [entity.Wallet[], contracts.GasInfo]) =>
+          [bids, wallets, ethGasInfo])
+    })
+    .then(([bids, wallets, ethGasInfo]: [entity.Bid[], entity.Wallet[], contracts.GasInfo]) => {
+      const filteredBids = bids.filter((bid, index) => {
+        const wethContract = typechain.Weth__factory.connect(
+          contracts.wethAddress(wallet.chainId),
+          provider.provider(Number(wallet.chainId)),
+        )
+        return wethContract.balanceOf(wallets[index]?.address ?? '')
+          .catch(() => Promise.resolve(BigNumber.from(0)))
+          .then((balance: BigNumber) => balance.gte(bid.price))
+      })
+      return [filteredBids, wallets, ethGasInfo]
+    })
+    .then(([bids, wallets, ethGasInfo]: [entity.Bid[], entity.Wallet[], contracts.GasInfo]) => {
+      const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
+        .connect(provider.provider(Number(wallet.chainId)))
+      const genesisKeyContract = typechain.GenesisKey__factory.connect(
+        contracts.genesisKeyAddress(wallet.chainId),
+        signer,
+      )
+      return genesisKeyContract.whitelistExecuteBid(
+        bids.map(bid => bid.price),
+        wallets.map(wallet => wallet.address),
+        bids.map(bid => bid.signature?.v),
+        bids.map(bid => bid.signature?.r),
+        bids.map(bid => bid.signature?.s),
+        bids.map((bid, index) => index),
+        ethGasInfo,
+      ).then((tx: ContractTransaction) => tx.wait(1))
+    })
+    .then(() => Promise.resolve(true))
+    .catch(() => Promise.resolve(false))
+}
 
 const endProfileAuction = (
   _: unknown,
@@ -181,5 +235,6 @@ export default {
   Mutation: {
     uploadFileSession: combineResolvers(auth.isAuthenticated, getFileUploadSession),
     endProfileAuction: combineResolvers(auth.isTeamAuthenticated, endProfileAuction),
+    endGKBlindAuction: combineResolvers(auth.isTeamAuthenticated, endGKBlindAuction),
   },
 }
