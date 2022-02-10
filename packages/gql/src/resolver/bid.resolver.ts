@@ -7,8 +7,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
-import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
-import { contracts, provider, typechain } from '@nftcom/shared/helper'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
