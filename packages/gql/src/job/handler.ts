@@ -4,6 +4,8 @@ import { Contract, ethers, Wallet } from 'ethers'
 
 import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
 
+import HederaConsensusService from '../service/hedera.service'
+
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
@@ -182,23 +184,28 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
               if (!existsBool) {
                 console.log('no event profile: ', profileUrl)
                 // find and mark profile status as minted
-                return repositories.profile.findByURL(profileUrl)
-                  .then(fp.thruIfNotEmpty((profile) => {
-                    profile.status = defs.ProfileStatus.Owned
-                    repositories.profile.save(profile)
+                return Promise.all([
+                  repositories.profile.findByURL(profileUrl)
+                    .then(fp.thruIfNotEmpty((profile) => {
+                      profile.status = defs.ProfileStatus.Owned
+                      repositories.profile.save(profile)
       
-                    return repositories.event.save(
-                      {
-                        chainId,
-                        contract: contract.address,
-                        eventName: evt.event,
-                        txHash: evt.transactionHash,
-                        ownerAddress: owner,
-                        profileUrl: profileUrl,
-                      },
-                    )
-                  },
-                  ))
+                      return repositories.event.save(
+                        {
+                          chainId,
+                          contract: contract.address,
+                          eventName: evt.event,
+                          txHash: evt.transactionHash,
+                          ownerAddress: owner,
+                          profileUrl: profileUrl,
+                        },
+                      )
+                    },
+                    )),
+                  HederaConsensusService.submitMessage(
+                    `Profile ${ profileUrl } was minted by address ${ owner }`,
+                  ),
+                ])
               }
             })
           default:

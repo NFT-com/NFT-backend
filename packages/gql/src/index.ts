@@ -5,10 +5,12 @@ import { db, fp } from '@nftcom/shared'
 import { dbConfig, serverPort, verifyConfiguration } from './config'
 import { job } from './job'
 import * as server from './server'
+import HederaConsensusService from './service/hedera.service'
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
   return db.connect(dbConfig)
+    .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
     .then(() => job.startAndListen())
     .then(fp.pause(500))
@@ -32,6 +34,7 @@ const logGoodbye = (): void => {
 
 const cleanExit = (): Promise<void> => {
   return server.stop()
+    .then(() => HederaConsensusService.unsubscribe())
     .then(killPort)
     .then(() => job.stopAndDisconnect())
     .then(db.disconnect)
