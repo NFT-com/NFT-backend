@@ -1,6 +1,7 @@
 import { Client, TopicMessageQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk'
 import SubscriptionHandle from '@hashgraph/sdk/lib/topic/SubscriptionHandle'
 
+import { isProduction } from '../config'
 import { IHederaConsensusService } from '../defs/hedera'
 
 class _HederaConsensusService implements IHederaConsensusService {
@@ -8,15 +9,23 @@ class _HederaConsensusService implements IHederaConsensusService {
   HCS: SubscriptionHandle
   client: Client
   topicId: string
+  mirrorNetwork: string
 
   constructor() {
-    this.client = Client.forTestnet()
+    if (isProduction()) {
+      this.client = Client.forMainnet()
+      this.mirrorNetwork = 'mainnet-public.mirrornode.hedera.com:443'
+    } else {
+      this.client = Client.forTestnet()
+      this.mirrorNetwork = 'hcs.testnet.mirrornode.hedera.com:5600'
+    }
+
     this.topicId = process.env.HCS_TOPIC_ID
   }
 
   subscribe(): void {
     // build consensus client
-    this.client.setMirrorNetwork('hcs.testnet.mirrornode.hedera.com:5600')
+    this.client.setMirrorNetwork(this.mirrorNetwork)
   
     // subscribe to topic to listen to all new messages submitted to it
     this.HCS = new TopicMessageQuery()
