@@ -9,8 +9,6 @@ import { appError, approvalError, mintError, profileError, userError, walletErro
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-import { NFTType } from '@nftcom/shared/defs'
-import { GasInfo, getEthGasInfo } from '@nftcom/shared/helper/contracts'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -61,19 +59,20 @@ const endGKBlindAuction = (
   const { repositories, wallet } = ctx
 
   return repositories.bid.find({
-    where: { nftType: NFTType.GenesisKey }, order:  { price: 'DESC' },
+    where: { nftType: defs.NFTType.GenesisKey }, order:  { price: 'DESC' },
   })
     .then((bids: entity.Bid[]) => {
       return Promise.all(bids.map(bid => {
         return repositories.wallet.findById(bid.walletId)
       }))
         .then((wallets: entity.Wallet[]) => {
-          return getEthGasInfo(Number(wallet.chainId))
-            .then((egs: GasInfo) => [wallets, egs])
+          return contracts.getEthGasInfo(Number(wallet.chainId))
+            .then((egs: contracts.GasInfo) => [wallets, egs])
         })
-        .then(([wallets, ethGasInfo]: [entity.Wallet[], GasInfo]) => [bids, wallets, ethGasInfo])
+        .then(([wallets, ethGasInfo]: [entity.Wallet[], contracts.GasInfo]) =>
+          [bids, wallets, ethGasInfo])
     })
-    .then(([bids, wallets, ethGasInfo]: [entity.Bid[], entity.Wallet[], GasInfo]) => {
+    .then(([bids, wallets, ethGasInfo]: [entity.Bid[], entity.Wallet[], contracts.GasInfo]) => {
       const filteredBids = bids.filter((bid, index) => {
         const wethContract = typechain.Weth__factory.connect(
           contracts.wethAddress(wallet.chainId),
@@ -85,7 +84,7 @@ const endGKBlindAuction = (
       })
       return [filteredBids, wallets, ethGasInfo]
     })
-    .then(([bids, wallets, ethGasInfo]: [entity.Bid[], entity.Wallet[], GasInfo]) => {
+    .then(([bids, wallets, ethGasInfo]: [entity.Bid[], entity.Wallet[], contracts.GasInfo]) => {
       const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
         .connect(provider.provider(Number(wallet.chainId)))
       const genesisKeyContract = typechain.GenesisKey__factory.connect(
