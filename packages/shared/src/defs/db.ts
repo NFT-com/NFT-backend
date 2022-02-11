@@ -44,6 +44,11 @@ export type CurationItem = {
   id: string
 }
 
+export type CurrencyType = {
+  standard: string
+  currency: string
+}
+
 export type Trait = {
   type: string
   value: string
