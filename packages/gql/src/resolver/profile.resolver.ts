@@ -331,10 +331,10 @@ const mintGKProfile = (
                           _owner: bidderWallet.address,
                           _genKey: true,
                       
-                          _nftTokens: 0,
-                          nftV: 0,
-                          nftR: '',
-                          nftS: '',
+                          _nftTokens: BigNumber.from(0),
+                          nftV: BigNumber.from(0),
+                          nftR: bid.signature.r,
+                          nftS: bid.signature.s,
                         })
                         executedBids.push(bid)
                         givenProfiles.push(profile)
