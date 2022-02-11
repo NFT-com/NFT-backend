@@ -324,17 +324,8 @@ const mintGKProfile = (
                         !givenProfileURIs.includes(profile.url)
                       ) {
                         mintArgs.push({
-                          v: bid.signature.v,
-                          r: bid.signature.r,
-                          s: bid.signature.s,
                           _profileURI: profile.url,
                           _owner: bidderWallet.address,
-                          _genKey: true,
-                      
-                          _nftTokens: BigNumber.from(0),
-                          nftV: BigNumber.from(0),
-                          nftR: bid.signature.r,
-                          nftS: bid.signature.s,
                         })
                         executedBids.push(bid)
                         givenProfiles.push(profile)
@@ -349,7 +340,7 @@ const mintGKProfile = (
     logger.debug('mintGKProfile transaction args: ', mintArgs)
 
     return contracts.getEthGasInfo(Number(wallet.chainId))
-      .then((egs) => profileAuctionContract.mintProfileFor(mintArgs, egs))
+      .then((egs) => profileAuctionContract.whitelistGenesisMint(mintArgs, egs))
       .then((tx: ContractTransaction) => tx.wait(1))
       .then((receipt: ContractReceipt) => receipt.transactionHash)
       .then(fp.tap(() => {
