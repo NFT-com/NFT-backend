@@ -305,7 +305,7 @@ const mintGKProfile = (
                       walletId: bidderWallet.id,
                       nftType: defs.NFTType.GenesisKeyProfile,
                     },
-                    order: { price: 'DESC' },
+                    order: { price: 'ASC' },
                   }),
                   Promise.resolve(bidderWallet),
                 ])
