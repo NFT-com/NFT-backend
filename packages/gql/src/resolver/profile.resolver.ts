@@ -291,7 +291,7 @@ const mintGKProfile = (
   return new Promise(() => {
     const mintArgs = []
     const executedBids = []
-    const givenProfiles = []
+    const givenProfiles: Array<{profile: entity.Profile; walletId: string; userId: string}> = []
     const givenProfileURIs = []
     Array.apply(0, Array(count)).map((z, index) => index + startIndex)
       .forEach((tokenIndex: number) => {
@@ -332,7 +332,11 @@ const mintGKProfile = (
                       _owner: bidderWallet.address,
                     })
                     executedBids.push(prefs[i])
-                    givenProfiles.push(profile)
+                    givenProfiles.push({
+                      profile,
+                      walletId: prefs[i].walletId,
+                      userId: prefs[i].userId,
+                    })
                     givenProfileURIs.push(profile.url)
                     break
                   }
@@ -350,8 +354,13 @@ const mintGKProfile = (
         Promise.all([
           ...executedBids.map((bid: entity.Bid) =>
             repositories.bid.save({ ...bid, status: defs.BidStatus.Executed })),
-          ...givenProfiles.map((profile: entity.Profile) =>
-            repositories.profile.save({ ...profile, status: defs.ProfileStatus.Pending })),
+          ...givenProfiles.map((profileWithData) =>
+            repositories.profile.save({
+              ...profileWithData.profile,
+              status: defs.ProfileStatus.Pending,
+              ownerUserId: profileWithData.userId,
+              ownerWalletId: profileWithData.walletId,
+            })),
         ])
         return receipt
       }))
