@@ -311,28 +311,32 @@ const mintGKProfile = (
                 ])
               }))
               .then(fp.thruIfNotEmpty(([prefs, bidderWallet] : [entity.Bid[], entity.Wallet]) => {
-                prefs.forEach((bid: entity.Bid) => {
-                  repositories.profile.findById(bid.profileId)
-                    .then((profile: entity.Profile) =>
-                      Promise.all([
-                        Promise.resolve(profile),
-                        Promise.resolve(bidderWallet),
-                      ]))
-                    .then(([profile, bidderWallet]: [entity.Profile, entity.Wallet]) => {
-                      if (
-                        profile.status === defs.ProfileStatus.Available &&
+                return Promise.all([
+                  Promise.resolve(prefs),
+                  Promise.resolve(bidderWallet),
+                  Promise.all(prefs.map((pref) => repositories.profile.findById(pref.profileId))),
+                ])
+              }))
+              .then(fp.thruIfNotEmpty((
+                [prefs, bidderWallet, profiles]:
+                [entity.Bid[], entity.Wallet, entity.Profile[]],
+              ) => {
+                for (let i = 0; i < prefs.length; i++) {
+                  const profile = profiles[i]
+                  if (
+                    profile.status === defs.ProfileStatus.Available &&
                         !givenProfileURIs.includes(profile.url)
-                      ) {
-                        mintArgs.push({
-                          _profileURI: profile.url,
-                          _owner: bidderWallet.address,
-                        })
-                        executedBids.push(bid)
-                        givenProfiles.push(profile)
-                        givenProfileURIs.push(profile.url)
-                      }
+                  ) {
+                    mintArgs.push({
+                      _profileURI: profile.url,
+                      _owner: bidderWallet.address,
                     })
-                })
+                    executedBids.push(prefs[i])
+                    givenProfiles.push(profile)
+                    givenProfileURIs.push(profile.url)
+                    break
+                  }
+                }
               }))
           })
       })
@@ -342,15 +346,16 @@ const mintGKProfile = (
     return contracts.getEthGasInfo(Number(wallet.chainId))
       .then((egs) => profileAuctionContract.whitelistGenesisMint(mintArgs, egs))
       .then((tx: ContractTransaction) => tx.wait(1))
-      .then((receipt: ContractReceipt) => receipt.transactionHash)
-      .then(fp.tap(() => {
+      .then(fp.tapIf((receipt: ContractReceipt) => receipt.status === 1)((receipt) => {
         Promise.all([
           ...executedBids.map((bid: entity.Bid) =>
             repositories.bid.save({ ...bid, status: defs.BidStatus.Executed })),
           ...givenProfiles.map((profile: entity.Profile) =>
             repositories.profile.save({ ...profile, status: defs.ProfileStatus.Pending })),
         ])
+        return receipt
       }))
+      .then((receipt: ContractReceipt) => receipt.transactionHash)
   })
 }
 
