@@ -55,6 +55,13 @@ export declare namespace ProfileAuctionV2 {
     nftR: string;
     nftS: string;
   };
+
+  export type WhitelistArgsStruct = { _profileURI: string; _owner: string };
+
+  export type WhitelistArgsStructOutput = [string, string] & {
+    _profileURI: string;
+    _owner: string;
+  };
 }
 
 export interface ProfileAuctionInterface extends utils.Interface {
@@ -68,6 +75,9 @@ export interface ProfileAuctionInterface extends utils.Interface {
     "claimProfile(uint256,bool,string,address,uint8,bytes32,bytes32)": FunctionFragment;
     "claimableBlock(bytes32)": FunctionFragment;
     "coldWallet()": FunctionFragment;
+    "genKeyOwner(address)": FunctionFragment;
+    "genesisKeyClaim(string)": FunctionFragment;
+    "genesisKeyClaimNumber(uint256)": FunctionFragment;
     "genesisKeyContract()": FunctionFragment;
     "genesisKeyPercent()": FunctionFragment;
     "genesisStakingContract()": FunctionFragment;
@@ -80,16 +90,20 @@ export interface ProfileAuctionInterface extends utils.Interface {
     "nftErc20Contract()": FunctionFragment;
     "nftProfile()": FunctionFragment;
     "nftProfileHelperAddress()": FunctionFragment;
+    "oneTimeGenesisKeyMint()": FunctionFragment;
     "owner()": FunctionFragment;
     "payOutNftTokens()": FunctionFragment;
     "profilesToMint()": FunctionFragment;
     "publicPoolPercent()": FunctionFragment;
     "publicStakingContract()": FunctionFragment;
+    "setGenesisMint(bool)": FunctionFragment;
     "setMinimumBid(uint256)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "upgradeTo(address)": FunctionFragment;
     "upgradeToAndCall(address,bytes)": FunctionFragment;
     "validateBid(uint256,bool,string,address,uint8,bytes32,bytes32)": FunctionFragment;
+    "whitelistGenesisClaim(string,uint256)": FunctionFragment;
+    "whitelistGenesisMint((string,address)[])": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -139,6 +153,15 @@ export interface ProfileAuctionInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "coldWallet",
     values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "genKeyOwner", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "genesisKeyClaim",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "genesisKeyClaimNumber",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "genesisKeyContract",
@@ -192,6 +215,10 @@ export interface ProfileAuctionInterface extends utils.Interface {
     functionFragment: "nftProfileHelperAddress",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "oneTimeGenesisKeyMint",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "payOutNftTokens",
@@ -208,6 +235,10 @@ export interface ProfileAuctionInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "publicStakingContract",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setGenesisMint",
+    values: [boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "setMinimumBid",
@@ -230,6 +261,14 @@ export interface ProfileAuctionInterface extends utils.Interface {
       BytesLike,
       BytesLike
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "whitelistGenesisClaim",
+    values: [string, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "whitelistGenesisMint",
+    values: [ProfileAuctionV2.WhitelistArgsStruct[]]
   ): string;
 
   decodeFunctionResult(
@@ -255,6 +294,18 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "coldWallet", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "genKeyOwner",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "genesisKeyClaim",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "genesisKeyClaimNumber",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "genesisKeyContract",
     data: BytesLike
@@ -288,6 +339,10 @@ export interface ProfileAuctionInterface extends utils.Interface {
     functionFragment: "nftProfileHelperAddress",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "oneTimeGenesisKeyMint",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "payOutNftTokens",
@@ -306,6 +361,10 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "setGenesisMint",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setMinimumBid",
     data: BytesLike
   ): Result;
@@ -317,6 +376,14 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "validateBid",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "whitelistGenesisClaim",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "whitelistGenesisMint",
     data: BytesLike
   ): Result;
 
@@ -481,6 +548,15 @@ export interface ProfileAuction extends BaseContract {
 
     coldWallet(overrides?: CallOverrides): Promise<[string]>;
 
+    genKeyOwner(_user: string, overrides?: CallOverrides): Promise<[boolean]>;
+
+    genesisKeyClaim(arg0: string, overrides?: CallOverrides): Promise<[string]>;
+
+    genesisKeyClaimNumber(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     genesisKeyContract(overrides?: CallOverrides): Promise<[string]>;
 
     genesisKeyPercent(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -525,6 +601,8 @@ export interface ProfileAuction extends BaseContract {
 
     nftProfileHelperAddress(overrides?: CallOverrides): Promise<[string]>;
 
+    oneTimeGenesisKeyMint(overrides?: CallOverrides): Promise<[boolean]>;
+
     owner(overrides?: CallOverrides): Promise<[string]>;
 
     payOutNftTokens(
@@ -536,6 +614,11 @@ export interface ProfileAuction extends BaseContract {
     publicPoolPercent(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     publicStakingContract(overrides?: CallOverrides): Promise<[string]>;
+
+    setGenesisMint(
+      _val: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
 
     setMinimumBid(
       _newBid: BigNumberish,
@@ -568,6 +651,17 @@ export interface ProfileAuction extends BaseContract {
       s: BytesLike,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
+
+    whitelistGenesisClaim(
+      _profileURI: string,
+      _tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    whitelistGenesisMint(
+      whitelistArgs: ProfileAuctionV2.WhitelistArgsStruct[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
   addProfilesToMint(
@@ -619,6 +713,15 @@ export interface ProfileAuction extends BaseContract {
 
   coldWallet(overrides?: CallOverrides): Promise<string>;
 
+  genKeyOwner(_user: string, overrides?: CallOverrides): Promise<boolean>;
+
+  genesisKeyClaim(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+  genesisKeyClaimNumber(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   genesisKeyContract(overrides?: CallOverrides): Promise<string>;
 
   genesisKeyPercent(overrides?: CallOverrides): Promise<BigNumber>;
@@ -663,6 +766,8 @@ export interface ProfileAuction extends BaseContract {
 
   nftProfileHelperAddress(overrides?: CallOverrides): Promise<string>;
 
+  oneTimeGenesisKeyMint(overrides?: CallOverrides): Promise<boolean>;
+
   owner(overrides?: CallOverrides): Promise<string>;
 
   payOutNftTokens(
@@ -674,6 +779,11 @@ export interface ProfileAuction extends BaseContract {
   publicPoolPercent(overrides?: CallOverrides): Promise<BigNumber>;
 
   publicStakingContract(overrides?: CallOverrides): Promise<string>;
+
+  setGenesisMint(
+    _val: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   setMinimumBid(
     _newBid: BigNumberish,
@@ -706,6 +816,17 @@ export interface ProfileAuction extends BaseContract {
     s: BytesLike,
     overrides?: CallOverrides
   ): Promise<boolean>;
+
+  whitelistGenesisClaim(
+    _profileURI: string,
+    _tokenId: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  whitelistGenesisMint(
+    whitelistArgs: ProfileAuctionV2.WhitelistArgsStruct[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   callStatic: {
     addProfilesToMint(
@@ -757,6 +878,15 @@ export interface ProfileAuction extends BaseContract {
 
     coldWallet(overrides?: CallOverrides): Promise<string>;
 
+    genKeyOwner(_user: string, overrides?: CallOverrides): Promise<boolean>;
+
+    genesisKeyClaim(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    genesisKeyClaimNumber(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     genesisKeyContract(overrides?: CallOverrides): Promise<string>;
 
     genesisKeyPercent(overrides?: CallOverrides): Promise<BigNumber>;
@@ -801,6 +931,8 @@ export interface ProfileAuction extends BaseContract {
 
     nftProfileHelperAddress(overrides?: CallOverrides): Promise<string>;
 
+    oneTimeGenesisKeyMint(overrides?: CallOverrides): Promise<boolean>;
+
     owner(overrides?: CallOverrides): Promise<string>;
 
     payOutNftTokens(overrides?: CallOverrides): Promise<void>;
@@ -810,6 +942,8 @@ export interface ProfileAuction extends BaseContract {
     publicPoolPercent(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicStakingContract(overrides?: CallOverrides): Promise<string>;
+
+    setGenesisMint(_val: boolean, overrides?: CallOverrides): Promise<void>;
 
     setMinimumBid(
       _newBid: BigNumberish,
@@ -839,6 +973,17 @@ export interface ProfileAuction extends BaseContract {
       s: BytesLike,
       overrides?: CallOverrides
     ): Promise<boolean>;
+
+    whitelistGenesisClaim(
+      _profileURI: string,
+      _tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    whitelistGenesisMint(
+      whitelistArgs: ProfileAuctionV2.WhitelistArgsStruct[],
+      overrides?: CallOverrides
+    ): Promise<void>;
   };
 
   filters: {
@@ -972,6 +1117,18 @@ export interface ProfileAuction extends BaseContract {
 
     coldWallet(overrides?: CallOverrides): Promise<BigNumber>;
 
+    genKeyOwner(_user: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    genesisKeyClaim(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    genesisKeyClaimNumber(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     genesisKeyContract(overrides?: CallOverrides): Promise<BigNumber>;
 
     genesisKeyPercent(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1016,6 +1173,8 @@ export interface ProfileAuction extends BaseContract {
 
     nftProfileHelperAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
+    oneTimeGenesisKeyMint(overrides?: CallOverrides): Promise<BigNumber>;
+
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     payOutNftTokens(
@@ -1027,6 +1186,11 @@ export interface ProfileAuction extends BaseContract {
     publicPoolPercent(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicStakingContract(overrides?: CallOverrides): Promise<BigNumber>;
+
+    setGenesisMint(
+      _val: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
 
     setMinimumBid(
       _newBid: BigNumberish,
@@ -1058,6 +1222,17 @@ export interface ProfileAuction extends BaseContract {
       r: BytesLike,
       s: BytesLike,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    whitelistGenesisClaim(
+      _profileURI: string,
+      _tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    whitelistGenesisMint(
+      whitelistArgs: ProfileAuctionV2.WhitelistArgsStruct[],
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
 
@@ -1114,6 +1289,21 @@ export interface ProfileAuction extends BaseContract {
 
     coldWallet(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    genKeyOwner(
+      _user: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    genesisKeyClaim(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    genesisKeyClaimNumber(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     genesisKeyContract(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -1164,6 +1354,10 @@ export interface ProfileAuction extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    oneTimeGenesisKeyMint(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     payOutNftTokens(
@@ -1176,6 +1370,11 @@ export interface ProfileAuction extends BaseContract {
 
     publicStakingContract(
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    setGenesisMint(
+      _val: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setMinimumBid(
@@ -1208,6 +1407,17 @@ export interface ProfileAuction extends BaseContract {
       r: BytesLike,
       s: BytesLike,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    whitelistGenesisClaim(
+      _profileURI: string,
+      _tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    whitelistGenesisMint(
+      whitelistArgs: ProfileAuctionV2.WhitelistArgsStruct[],
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };
 }
