@@ -13,26 +13,11 @@ type MarketBid {
   start: String!
   end: String!
   salt: String!
-  offerAcceptedAt?: String
-  acceptedAt?: String
-  rejectedAt?: String
-  rejectedReason?: String
+  offerAcceptedAt: DateTime
+  acceptedAt: DateTime
+  rejectedAt: DateTime
+  rejectedReason: String
   chainId: String!
-};
-
-type AssetType {
-  assetClass: String!
-  bytes: String!
-  contractAddress: String!
-  tokenId: String
-  allowAll: boolean!
 }
 
-type MarketplaceAsset {
-  standard: AssetType!
-  bytes: String!
-  value: Int!
-  minimumBid: Int!
-}
-
-extend type Mutation {}
+#extend type Mutation {}

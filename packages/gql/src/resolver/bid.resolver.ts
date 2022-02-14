@@ -251,7 +251,7 @@ const setProfilePreferences = (
     .then((profiles: entity.Profile[]) =>
       Promise.all(args.input.urls.map((url, index) => ctx.repositories.bid.save({
         nftType: gql.NFTType.GenesisKeyProfile,
-        price: String(phaseWeight + index),
+        price: String(phaseWeight + (10 - index)),
         profileId: profiles[index].id,
         signature: {
           v: 0,

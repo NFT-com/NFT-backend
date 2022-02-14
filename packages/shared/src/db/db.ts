@@ -70,6 +70,9 @@ export type Repository = {
   profile: repo.ProfileRepository
   user: repo.UserRepository
   wallet: repo.WalletRepository
+  marketAsk: repo.MarketAskRepository
+  marketBid: repo.MarketBidRepository
+  marketSwap: repo.MarketSwapRepository
 }
 
 export const newRepositories = (): Repository => ({
@@ -83,4 +86,7 @@ export const newRepositories = (): Repository => ({
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
   wallet: new repo.WalletRepository(),
+  marketAsk: new repo.MarketAskRepository(),
+  marketBid: new repo.MarketBidRepository(),
+  marketSwap: new repo.MarketSwapRepository(),
 })
