@@ -167,7 +167,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
       filterLiveBids(bids),
       contract.queryFilter(filter),
     ])).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
-      logger.debug('filterLiveBids', { filteredBids })
+      logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
 
       return Promise.all([
         validateLiveBalances(filteredBids, chainId),

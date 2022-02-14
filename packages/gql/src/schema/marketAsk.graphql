@@ -1,0 +1,35 @@
+type GetMarketAsk {
+  items: [MarketAsk!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type MarketAsk {
+  makerAddress: Address!
+  makerWalletId: String!
+  makeAsset: [MarketplaceAsset!]
+  takerAddress: Address
+  takeAsset: [MarketplaceAsset!]
+  start: String!
+  end: String!
+  salt: String!
+  offerAcceptedAt?: String
+  chainId: String!
+};
+
+type AssetType {
+  assetClass: String!
+  bytes: String!
+  contractAddress: String!
+  tokenId: String
+  allowAll: boolean!
+}
+
+type MarketplaceAsset {
+  standard: AssetType!
+  bytes: String!
+  value: Int!
+  minimumBid: Int!
+}
+
+extend type Mutation {}

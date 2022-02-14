@@ -91,7 +91,7 @@ export const start = async (): Promise<void> => {
   const app = express()
 
   Sentry.init({
-    dsn: 'https://c85a378b6d144868956d80b10c460b5b@o1088732.ingest.sentry.io/6198744',
+    dsn: process.env.SENTRY_DSN,
     integrations: [
       // enable HTTP calls tracing
       new Sentry.Integrations.Http({ tracing: true }),

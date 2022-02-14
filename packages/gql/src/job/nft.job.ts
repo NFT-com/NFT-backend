@@ -2,14 +2,14 @@ import axios from 'axios'
 import { Job } from 'bull'
 import * as Lodash from 'lodash'
 
-import { db, entity, fp, provider } from '@nftcom/shared'
+import { _logger, db, entity, fp, provider } from '@nftcom/shared'
 import { EdgeType, EntityType, NFTType } from '@nftcom/shared/defs'
 import { typechain } from '@nftcom/shared/helper'
 
 const repositories = db.newRepositories()
 const ALCHEMY_API_KEY = process.env.REACT_APP_ALCHEMY_API_KEY
 const ALCHEMY_API_URL = `https://eth-mainnet.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
-
+const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 interface OwnedNFT {
   contract: {
     address: string
@@ -181,32 +181,33 @@ const updateEntity = async (
       userId: userId,
       walletId: walletId,
     })
+
+    if (newNFT) {
+      await repositories.collection.findOne({ where: { contract: newNFT.contract } })
+        .then(fp.thruIfEmpty(() => {
+          return getCollectionNameFromContract(newNFT.contract, newNFT.type)
+            .then((collectionName: string) => {
+              logger.debug('new collection name', { collectionName })
+              return repositories.collection.save({
+                contract: newNFT.contract,
+                name: collectionName,
+              })
+            })
+        }))
+        .then((collection: entity.Collection) => {
+          const edgeVals = {
+            thisEntityType: EntityType.Collection,
+            thatEntityType: EntityType.NFT,
+            thisEntityId: collection.id,
+            thatEntityId: newNFT.id,
+            edgeType: EdgeType.Includes,
+          }
+          repositories.edge.findOne({ where: edgeVals })
+            .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
+        })
+    }
   } catch (err) {
     console.log('error: ', err)
-  }
-  if (newNFT) {
-    await repositories.collection.findOne({ where: { contract: newNFT.contract } })
-      .then(fp.thruIfEmpty(() => {
-        return getCollectionNameFromContract(newNFT.contract, newNFT.type)
-          .then((collectionName: string) => {
-            console.log('got name ', collectionName, ' , trying to save')
-            return repositories.collection.save({
-              contract: newNFT.contract,
-              name: collectionName,
-            })
-          })
-      }))
-      .then((collection: entity.Collection) => {
-        const edgeVals = {
-          thisEntityType: EntityType.Collection,
-          thatEntityType: EntityType.NFT,
-          thisEntityId: collection.id,
-          thatEntityId: newNFT.id,
-          edgeType: EdgeType.Includes,
-        }
-        repositories.edge.findOne({ where: edgeVals })
-          .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
-      })
   }
 }
 
@@ -295,8 +296,8 @@ const getOwnedNFTs = async (users: entity.User[]): Promise<void[]> => {
 }
 
 export const getUsersNFTs = async (job: Job): Promise<any> => {
-  console.log('getUsersNFTs: ', job)
   try {
+    logger.debug('user nft job', { job })
     const users = await repositories.user.findAll()
     await checkOwnedNFTs(users)
     return await getOwnedNFTs(users)
