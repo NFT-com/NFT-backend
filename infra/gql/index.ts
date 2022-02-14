@@ -101,6 +101,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['HCS_ACCOUNT_ID'] = process.env.HCS_ACCOUNT_ID || parsedFile['HCS_ACCOUNT_ID']
   parsedFile['HCS_PRIVATE_KEY'] = process.env.HCS_PRIVATE_KEY || parsedFile['HCS_PRIVATE_KEY']
   parsedFile['SERVER_CONFIG'] = process.env.SERVER_CONFIG || ''
+  parsedFile['REACT_APP_ALCHEMY_API_KEY'] = process.env.REACT_APP_ALCHEMY_API_KEY || parsedFile['REACT_APP_ALCHEMY_API_KEY']
 
   console.log(JSON.stringify(parsedFile))
 
