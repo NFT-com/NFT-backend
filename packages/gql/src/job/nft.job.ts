@@ -149,7 +149,6 @@ const updateEntity = async (
     const existingNFT = await repositories.nft.findOne({
       where: { contract: nftInfo.contract.address, tokenId: nftInfo.id.tokenId },
     })
-    console.log('NFT collection job updates row on NFT table')
     let type: NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
       type = NFTType.ERC721
