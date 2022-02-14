@@ -56,9 +56,10 @@ runs:
         HCS_TOPIC_ID: ${{ fromJSON(inputs.secrets).HCS_TOPIC_ID }}
         HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
         HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
-        REACT_APP_INFURA_API_KEY: ${{ fromJSON(inputs.secrets).REACT_APP_INFURA_API_KEY }}
-        REACT_APP_ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).REACT_APP_ALCHEMY_API_KEY }}
+        INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
+        ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
         SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}
+        SUPPORTED_NETWORKS: ${{ fromJSON(inputs.secrets).SUPPORTED_NETWORKS }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
