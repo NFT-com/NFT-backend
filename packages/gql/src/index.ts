@@ -9,6 +9,7 @@ import HederaConsensusService from './service/hedera.service'
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
+
   return db.connect(dbConfig)
     .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
