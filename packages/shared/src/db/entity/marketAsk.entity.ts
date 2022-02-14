@@ -4,19 +4,20 @@ import { MarketplaceAsset } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
-export class MktAsk extends BaseEntity {
+export class MarketAsk extends BaseEntity {
+
+  @Column({ nullable: false })
+  makerAddress: string
+
+  @Index()
+  @Column({ nullable: false })
+  makerWalletId: string
 
   @Column('json', {
     nullable: false,
     default: [],
   })
-  currencyOptions: MarketplaceAsset[]
-
-  @Column({ nullable: false })
-  salt: string
-
-  @Column({ nullable: false })
-  makerAddress: string
+  makeAsset: MarketplaceAsset[]
 
   @Column({ nullable: true })
   takerAddress: string
@@ -25,7 +26,7 @@ export class MktAsk extends BaseEntity {
     nullable: false,
     default: [],
   })
-  desiredCounterAsset: MarketplaceAsset[]
+  takeAsset: MarketplaceAsset[]
 
   @Column({ nullable: false })
   start: string
@@ -33,11 +34,13 @@ export class MktAsk extends BaseEntity {
   @Column({ nullable: false })
   end: string
 
-  @Index()
   @Column({ nullable: false })
-  makerWalletId: string
+  salt: string
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   offerAcceptedAt: Date
+
+  @Column( { nullable: false })
+  chainId: string
 
 }

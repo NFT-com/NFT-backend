@@ -2,7 +2,7 @@ import { Column } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
-export class MktSwap extends BaseEntity {
+export class MarketSwap extends BaseEntity {
 
   @Column({ nullable: false })
   askId: string
@@ -15,8 +15,5 @@ export class MktSwap extends BaseEntity {
 
   @Column( { nullable: false })
   blockNumber: string
-
-  @Column( { nullable: false })
-  chainId: string
 
 }
