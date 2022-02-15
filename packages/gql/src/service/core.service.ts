@@ -45,7 +45,7 @@ export const entityById = (
   entityType: defs.EntityType,
 ): Promise<any> => {
   const { repositories, user, wallet } = ctx
-  logger.debug('entityById', { loggedInUserId: user?.id, id, entityType })
+  //logger.debug('entityById', { loggedInUserId: user?.id, id, entityType })
 
   switch (entityType) {
   case defs.EntityType.Approval:

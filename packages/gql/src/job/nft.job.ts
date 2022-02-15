@@ -7,9 +7,11 @@ import { EdgeType, EntityType, NFTType } from '@nftcom/shared/defs'
 import { typechain } from '@nftcom/shared/helper'
 
 const repositories = db.newRepositories()
-const ALCHEMY_API_KEY = process.env.REACT_APP_ALCHEMY_API_KEY
-const ALCHEMY_API_URL = `https://eth-mainnet.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
+const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
+const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+
 interface OwnedNFT {
   contract: {
     address: string
