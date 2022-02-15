@@ -161,6 +161,7 @@ const getProfileByURL = (
     url: Joi.string().required(),
   })
   joi.validateSchema(schema, args)
+
   return repositories.profile.findByURL(args.url)
     .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url })))
 }
