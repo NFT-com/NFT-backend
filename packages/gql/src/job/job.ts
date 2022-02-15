@@ -69,7 +69,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every 5 minutes for nft collection job
-        repeat: { every: 300000 },
+        repeat: { every: 60000 },
       })
     default:
       return queues[chainId].add({ chainId }, {

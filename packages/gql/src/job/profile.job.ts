@@ -14,7 +14,7 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 export const syncProfileNFTs = async (job: Job): Promise<any> => {
   try {
-    logger.debug('syncing profile nfts', job.data)
+    logger.debug('syncing profile nfts', job)
 
     const profiles = await repositories.profile.findAll()
 
