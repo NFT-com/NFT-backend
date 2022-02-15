@@ -14,11 +14,13 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 export const syncProfileNFTs = async (job: Job): Promise<any> => {
   try {
+    logger.debug('syncing profile nfts', job.data)
+
     const profiles = await repositories.profile.findAll()
 
     const nftProfileContract = typechain.NftProfile__factory.connect(
-      contracts.nftProfileAddress(job.data.chainId.split(':')?.[1]),
-      provider.provider(Number(job.data.chainId.split(':')?.[1])),
+      contracts.nftProfileAddress(job.data.chainId),
+      provider.provider(Number(job.data.chainId)),
     )
 
     profiles.forEach(async (profile: entity.Profile) => {
@@ -39,7 +41,10 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
     
         const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
     
-        const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(job.data.chainId.split(':')?.[1], address)
+        const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
+          job.data.chainId,
+          address,
+        )
                 
         // wallet exists, so update user accordingly
         if (foundWallet) {

@@ -65,7 +65,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         repeat: { every: 600000 },
       })
     case PROFILE_SYNC_JOB:
-      return queues[PROFILE_SYNC_JOB].add({ PROFILE_SYNC_JOB }, {
+      return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every 5 minutes for nft collection job
