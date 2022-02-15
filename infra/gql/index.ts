@@ -102,6 +102,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['HCS_PRIVATE_KEY'] = process.env.HCS_PRIVATE_KEY || parsedFile['HCS_PRIVATE_KEY']
   parsedFile['SERVER_CONFIG'] = process.env.SERVER_CONFIG || ''
   parsedFile['ALCHEMY_API_KEY'] = process.env.ALCHEMY_API_KEY || parsedFile['ALCHEMY_API_KEY']
+  parsedFile['SENTRY_DSN'] = process.env.SENTRY_DSN || parsedFile['SENTRY_DSN']
 
   console.log(JSON.stringify(parsedFile))
 
