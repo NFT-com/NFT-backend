@@ -1,9 +1,7 @@
 import { BigNumber, ContractReceipt, ContractTransaction, utils, Wallet } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
-import Redis from 'ioredis'
 import Joi from 'joi'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
@@ -11,11 +9,6 @@ import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
-
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
   items: profiles,
@@ -162,35 +155,15 @@ const getProfileByURL = (
   args: gql.QueryProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, repositories, wallet } = ctx
+  const { user, repositories } = ctx
   logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
   })
   joi.validateSchema(schema, args)
 
-  const nftProfileContract = typechain.NftProfile__factory.connect(
-    contracts.nftProfileAddress(wallet?.chainId ?? '4'),
-    provider.provider(Number(wallet?.chainId ?? '4')),
-  )
-
-  return redis.get(args.url).then((owner?: string) => {
-    if (owner) {
-      return repositories.profile.findByURL(args.url)
-        .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url })))
-    } else {
-      return nftProfileContract.getTokenId(args.url)
-        .then((tokenId: BigNumber) => nftProfileContract.ownerOf(tokenId))
-        .then((address: string) => redis.set(args.url, address, 'ex', 60)) // store profile -> owner for 60 seconds))
-        .then(() => repositories.profile.findByURL(args.url)
-          .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url }))))
-        .catch(() =>
-          repositories.profile.findByURL(args.url)
-            .then(() => redis.set(args.url, '0x', 'ex', 60)) // cache unminted profile to prevent unncessary calls
-            .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url }))),
-        )
-    }
-  })
+  return repositories.profile.findByURL(args.url)
+    .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url })))
 }
 
 const getWinningBid = (
