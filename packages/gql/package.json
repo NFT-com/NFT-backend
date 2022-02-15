@@ -16,6 +16,7 @@
     "start": "node -r source-map-support/register ./dist/index"
   },
   "dependencies": {
+    "@alch/alchemy-web3": "^1.2.4",
     "@graphql-tools/merge": "^8.2.0",
     "@hashgraph/sdk": "^2.7.1",
     "@sendgrid/mail": "^7.6.0",
