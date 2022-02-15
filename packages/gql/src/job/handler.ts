@@ -167,7 +167,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
       filterLiveBids(bids),
       contract.queryFilter(filter),
     ])).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
-      logger.debug('filterLiveBids', { filteredBids })
+      logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
 
       return Promise.all([
         validateLiveBalances(filteredBids, chainId),
@@ -179,29 +179,29 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
           case 'NewClaimableProfile':
             return repositories.event.exists({
               chainId,
+              ownerAddress: owner,
+              profileUrl: profileUrl,
               txHash: evt.transactionHash,
             }).then(existsBool => {
               if (!existsBool) {
-                console.log('no event profile: ', profileUrl)
                 // find and mark profile status as minted
                 return Promise.all([
                   repositories.profile.findByURL(profileUrl)
                     .then(fp.thruIfNotEmpty((profile) => {
                       profile.status = defs.ProfileStatus.Owned
                       repositories.profile.save(profile)
-      
-                      return repositories.event.save(
-                        {
-                          chainId,
-                          contract: contract.address,
-                          eventName: evt.event,
-                          txHash: evt.transactionHash,
-                          ownerAddress: owner,
-                          profileUrl: profileUrl,
-                        },
-                      )
+                    }),
+                    ),
+                  repositories.event.save(
+                    {
+                      chainId,
+                      contract: contract.address,
+                      eventName: evt.event,
+                      txHash: evt.transactionHash,
+                      ownerAddress: owner,
+                      profileUrl: profileUrl,
                     },
-                    )),
+                  ),
                   HederaConsensusService.submitMessage(
                     `Profile ${ profileUrl } was minted by address ${ owner }`,
                   ),

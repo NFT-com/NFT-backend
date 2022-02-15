@@ -1,0 +1,23 @@
+type GetMarketBid {
+  items: [MarketBid!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type MarketBid {
+  makerAddress: Address!
+  makerWalletId: String!
+  makeAsset: [MarketplaceAsset!]
+  takerAddress: Address
+  takeAsset: [MarketplaceAsset!]
+  start: String!
+  end: String!
+  salt: String!
+  offerAcceptedAt: DateTime
+  acceptedAt: DateTime
+  rejectedAt: DateTime
+  rejectedReason: String
+  chainId: String!
+}
+
+#extend type Mutation {}

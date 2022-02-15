@@ -39,9 +39,32 @@ export enum NFTSize {
   Large = 'Large'
 }
 
+export enum AssetClass {
+  ETH_ASSET_CLASS = 'ETH',
+  ERC20_ASSET_CLASS = 'ERC20',
+  ERC721_ASSET_CLASS = 'ERC721',
+  ERC1155_ASSET_CLASS = 'ERC1155',
+  CRYPTO_PUNK = 'CRYPTO_PUNK',
+}
+
 export type CurationItem = {
   size?: NFTSize
   id: string
+}
+
+export type AssetType = {
+  assetClass: AssetClass
+  bytes: string
+  contractAddress: string
+  tokenId?: string
+  allowAll: boolean
+}
+
+export type MarketplaceAsset = {
+  standard: AssetType
+  bytes: string
+  value: number
+  minimumBid: number
 }
 
 export type Trait = {

@@ -15,6 +15,9 @@ export enum LoggerContext {
   SendGrid = 'sendgrid',
   User = 'user',
   Wallet = 'wallet',
+  MarketAsk = 'marketAsk',
+  MarketBid = 'marketBid',
+  MarketSwap = 'marketSwap',
 }
 
 export enum LogLevel {
