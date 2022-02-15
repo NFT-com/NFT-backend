@@ -19,6 +19,9 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.Collection,
     entity.Edge,
     entity.Event,
+    entity.MarketAsk,
+    entity.MarketBid,
+    entity.MarketSwap,
     entity.NFT,
     entity.Profile,
     entity.User,
@@ -66,13 +69,13 @@ export type Repository = {
   collection: repo.CollectionRepository
   edge: repo.EdgeRepository
   event: repo.EventRepository
+  marketAsk: repo.MarketAskRepository
+  marketBid: repo.MarketBidRepository
+  marketSwap: repo.MarketSwapRepository
   nft: repo.NFTRepository
   profile: repo.ProfileRepository
   user: repo.UserRepository
   wallet: repo.WalletRepository
-  marketAsk: repo.MarketAskRepository
-  marketBid: repo.MarketBidRepository
-  marketSwap: repo.MarketSwapRepository
 }
 
 export const newRepositories = (): Repository => ({
@@ -82,11 +85,11 @@ export const newRepositories = (): Repository => ({
   collection: new repo.CollectionRepository(),
   edge: new repo.EdgeRepository(),
   event: new repo.EventRepository(),
+  marketAsk: new repo.MarketAskRepository(),
+  marketBid: new repo.MarketBidRepository(),
+  marketSwap: new repo.MarketSwapRepository(),
   nft: new repo.NFTRepository(),
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
   wallet: new repo.WalletRepository(),
-  marketAsk: new repo.MarketAskRepository(),
-  marketBid: new repo.MarketBidRepository(),
-  marketSwap: new repo.MarketSwapRepository(),
 })
