@@ -22,36 +22,36 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
       provider.provider(Number(job.data.chainId.split(':')?.[1])),
     )
 
-    for (let i = 0; i < profiles.length; i++) {
+    profiles.forEach(async (profile: entity.Profile) => {
       try {
-        let tokenId: any = await redis.get(profiles[i].url)
+        let tokenId: any = await redis.get(profile.url)
         const cachedProfile = tokenId !== null
-
+    
         if (cachedProfile) {
           try {
-            tokenId = await nftProfileContract.getTokenId(profiles[i].url)
-            await redis.set(profiles[i].url, Number(tokenId), 'ex', 60)
+            tokenId = await nftProfileContract.getTokenId(profile.url)
+            await redis.set(profile.url, Number(tokenId), 'ex', 60)
           } catch (_) {
             // catch if profile doesn't exist
             tokenId = -1
-            await redis.set(profiles[i].url, -1, 'ex', 60)
+            await redis.set(profile.url, -1, 'ex', 60)
           }
         }
-
+    
         const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
-
+    
         const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(job.data.chainId.split(':')?.[1], address)
-            
+                
         // wallet exists, so update user accordingly
         if (foundWallet) {
           repositories.profile.save({
-            ...profiles[i],
+            ...profile,
             ownerUserId: foundWallet.userId,
             ownerWalletId: foundWallet.id,
           })
         } else {
           repositories.profile.save({
-            ...profiles[i],
+            ...profile,
             ownerUserId: null,
             ownerWalletId: null,
           })
@@ -59,7 +59,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
       } catch (err) {
         logger.error('error while syncing profiles')
       }
-    }
+    })
   } catch (err) {
     console.log('error: ', err)
   }
