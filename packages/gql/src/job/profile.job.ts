@@ -14,7 +14,7 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 export const syncProfileNFTs = async (job: Job): Promise<any> => {
   try {
-    logger.debug('syncing profile nfts', job)
+    logger.debug('syncing profile nfts', job.data)
 
     const profiles = await repositories.profile.findAll()
 
@@ -45,6 +45,8 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
           job.data.chainId,
           address,
         )
+
+        logger.debug(`address: ${address}, profile: ${profile.url}, tokenId: ${tokenId}`)
                 
         // wallet exists, so update user accordingly
         if (foundWallet) {
