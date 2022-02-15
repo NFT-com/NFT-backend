@@ -21,7 +21,7 @@ type MarketplaceAsset {
 
 type MarketAsk {
   makerAddress: Address!
-  makerWalletId: String!
+#  makerWalletId: String!
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address
   takeAsset: [MarketplaceAsset!]
@@ -33,12 +33,37 @@ type MarketAsk {
 }
 
 input AsksInput {
-  makerWalletId: String
+  makerAddress: Address
   pageInput: PageInput
+}
+
+input AssetTypeInput {
+  assetClass: String!
+  bytes: String!
+  contractAddress: String!
+  tokenId: String
+  allowAll: Boolean!
+}
+
+input MarketplaceAssetInput {
+  standard: AssetTypeInput!
+  bytes: String!
+  value: Int!
+  minimumBid: Int!
+}
+
+input CreateAskInput {
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  start: String!
+  end: String!
+  chainId: String!
 }
 
 extend type Query {
   getAsks(input: AsksInput!): GetMarketAsk!
 }
 
-#extend type Mutation {}
+extend type Mutation {
+  createAsk(input: CreateAskInput!): MarketAsk!
+}

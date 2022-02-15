@@ -28,6 +28,9 @@ export class MarketBid extends BaseEntity {
   })
   takeAsset: MarketplaceAsset[]
 
+  @Column({ type: 'text', nullable: true })
+  message: string
+
   @Column({ nullable: false })
   start: string
 

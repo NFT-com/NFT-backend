@@ -10,6 +10,7 @@ type MarketBid {
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address
   takeAsset: [MarketplaceAsset!]
+  message: String!
   start: String!
   end: String!
   salt: String!

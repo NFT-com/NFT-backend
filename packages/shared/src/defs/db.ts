@@ -54,7 +54,7 @@ export type CurationItem = {
 
 export type AssetType = {
   assetClass: AssetClass
-  bytes: string
+  bytes: string // encoded data; (address, uint256, bool) = (contract address, tokenId - only NFTs, allow all from collection - only NFTs) if allow all = true, ignore tokenId...
   contractAddress: string
   tokenId?: string
   allowAll: boolean
@@ -62,7 +62,7 @@ export type AssetType = {
 
 export type MarketplaceAsset = {
   standard: AssetType
-  bytes: string
+  bytes: string // encoded data; (uint256, uint256) = (value, minimumBid)
   value: number
   minimumBid: number
 }

@@ -16,4 +16,7 @@ export class MarketSwap extends BaseEntity {
   @Column( { nullable: false })
   blockNumber: string
 
+  @Column( { type: 'boolean', default: false })
+  private: boolean
+
 }
