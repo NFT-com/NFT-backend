@@ -19,6 +19,8 @@
     "@graphql-tools/merge": "^8.2.0",
     "@hashgraph/sdk": "^2.7.1",
     "@sendgrid/mail": "^7.6.0",
+    "@sentry/node": "^6.16.1",
+    "@sentry/tracing": "^6.16.1",
     "apollo-server-core": "^3.6.2",
     "apollo-server-express": "^3.6.2",
     "aws-sdk": "^2.1038.0",
@@ -33,11 +35,10 @@
     "graphql": "^15.8.0",
     "graphql-resolvers": "^0.4.2",
     "graphql-scalars": "^1.13.1",
+    "ioredis": "^4.28.5",
     "joi": "^17.4.2",
     "kill-port": "^1.6.1",
     "lodash": "^4.17.21",
-    "@sentry/node": "^6.16.1",
-    "@sentry/tracing": "^6.16.1",
     "source-map-support": "^0.5.21"
   },
   "devDependencies": {
