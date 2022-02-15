@@ -2,8 +2,7 @@ import { Job } from 'bull'
 import Redis from 'ioredis'
 
 import { redisConfig } from '@nftcom/gql/config'
-import { _logger, contracts, db, entity, provider } from '@nftcom/shared'
-import { typechain } from '@nftcom/shared/helper'
+import { _logger, contracts, db, entity, provider, typechain } from '@nftcom/shared'
 
 const redis = new Redis({
   port: redisConfig.port,
