@@ -1,5 +1,5 @@
 import { Job } from 'bull'
-import { ethers } from 'ethers'
+import { ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
@@ -117,18 +117,19 @@ const getNFTMetaDataFromAlchemy = async (
 const getCollectionNameFromContract = (
   contractAddress: string,
   type:  defs.NFTType,
+  network: providers.Networkish,
 ): Promise<string> => {
   try {
     if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
-        provider.provider(),
+        provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else if (type === defs.NFTType.ERC1155) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
-        provider.provider(),
+        provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
@@ -192,7 +193,7 @@ const updateEntity = async (
         contract: ethers.utils.getAddress(newNFT.contract),
       } })
         .then(fp.thruIfEmpty(() => {
-          return getCollectionNameFromContract(newNFT.contract, newNFT.type)
+          return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then((collectionName: string) => {
               logger.debug('new collection name', { collectionName })
               return repositories.collection.save({

@@ -1,4 +1,4 @@
-import { ethers } from 'ethers'
+import { ethers, providers } from 'ethers'
 
 const etherscanKeys = [
   'BTRSUQC5NP494HS3IRYC1DQVRI89TS46MD',
@@ -37,7 +37,9 @@ const getRandomAPI = (): string => {
   return etherscanKeys[randomIndex]
 }
 
-export const provider = (chainId = 1 /* mainnet */): ethers.providers.BaseProvider => {
+export const provider = (
+  chainId: providers.Networkish = 1, /* mainnet */
+): ethers.providers.BaseProvider => {
   return ethers.getDefaultProvider(chainId, {
     etherscan: getRandomAPI(),
     infura: process.env.INFURA_API_KEY,
