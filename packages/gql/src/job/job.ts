@@ -54,6 +54,7 @@ const listenToJobs = (): Promise<void[]> => {
 }
 
 const publishJobs = (): Promise<Bull.Job[]> => {
+  createQueues()
   const chainIds = Object.keys(queues)
   return Promise.all(chainIds.map((chainId) => {
     switch (chainId) {
@@ -68,8 +69,8 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
         removeOnComplete: true,
         removeOnFail: true,
-        // repeat every 5 minutes for nft collection job
-        repeat: { every: 60000 },
+        // repeat every 2 minutes for nft collection job
+        repeat: { every: 60000 * 2 },
       })
     default:
       return queues[chainId].add({ chainId }, {
@@ -83,7 +84,6 @@ const publishJobs = (): Promise<Bull.Job[]> => {
 }
 
 export const startAndListen = (): Promise<void> => {
-  createQueues()
   return publishJobs()
     .then(() => void listenToJobs())
     .then(() => console.log('🍊 listening for jobs...'))
