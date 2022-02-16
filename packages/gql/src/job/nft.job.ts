@@ -5,8 +5,9 @@ import * as Lodash from 'lodash'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
+const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
-const ALCHEMY_API_URL = `https://eth-mainnet.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
+const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 interface OwnedNFT {
   contract: {
