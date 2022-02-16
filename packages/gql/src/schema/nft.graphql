@@ -50,6 +50,11 @@ input CurationInput {
   # TODO: add filters
 }
 
+input CollectionNFTsInput {
+  collectionAddress: Address!
+  pageInput: PageInput
+}
+
 type NFTsOutput {
   items: [NFT!]!
   pageInfo: PageInfo
@@ -78,6 +83,7 @@ extend type Query {
   nfts(input: NFTsInput!): CurationNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
+  collectionNFTs(input: CollectionNFTsInput!): NFTsOutput!
 }
 
 extend type Mutation {

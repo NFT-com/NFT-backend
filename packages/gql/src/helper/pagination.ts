@@ -115,16 +115,16 @@ export const toPageableFilter = <T>(
   orderKey = 'createdAt',
   cursor: (orderBy: string) => DefaultCursor = getDefaultCursor,
 ): Partial<T> => {
-  const sagePageInput = safeInput(pageInput, cursor(orderKey))
+  const safePageInput = safeInput(pageInput, cursor(orderKey))
   let cursorValue = null
   if (isOrderByDate(orderKey)) {
-    cursorValue = hasAfter(sagePageInput)
-      ? helper.lessThanDate(sagePageInput.afterCursor)
-      : helper.moreThanDate(sagePageInput.beforeCursor)
+    cursorValue = hasAfter(safePageInput)
+      ? helper.lessThanDate(safePageInput.afterCursor)
+      : helper.moreThanDate(safePageInput.beforeCursor)
   } else {
-    cursorValue = hasAfter(sagePageInput)
-      ? helper.lessThan(sagePageInput.afterCursor)
-      : helper.moreThan(sagePageInput.beforeCursor)
+    cursorValue = hasAfter(safePageInput)
+      ? helper.lessThan(safePageInput.afterCursor)
+      : helper.moreThan(safePageInput.beforeCursor)
   }
   return { ...filter, deletedAt: null, [orderKey]: cursorValue }
 }
