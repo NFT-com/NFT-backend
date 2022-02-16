@@ -2,16 +2,13 @@ import axios from 'axios'
 import { Job } from 'bull'
 import * as Lodash from 'lodash'
 
-import { _logger, db, entity, fp, provider } from '@nftcom/shared'
-import { EdgeType, EntityType, NFTType } from '@nftcom/shared/defs'
+import { _logger, db, defs, entity, fp, provider } from '@nftcom/shared'
 import { typechain } from '@nftcom/shared/helper'
 
 const repositories = db.newRepositories()
-const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
-const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
+const ALCHEMY_API_URL = `https://eth-mainnet.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-
 interface OwnedNFT {
   contract: {
     address: string
@@ -116,16 +113,16 @@ const getNFTMetaDataFromAlchemy = async (
 
 const getCollectionNameFromContract = (
   contractAddress: string,
-  type:  NFTType,
+  type:  defs.NFTType,
 ): Promise<string> => {
   try {
-    if (type === NFTType.ERC721) {
+    if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
         provider.provider(),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
-    } else if (type === NFTType.ERC1155) {
+    } else if (type === defs.NFTType.ERC1155) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
         provider.provider(),
@@ -151,11 +148,11 @@ const updateEntity = async (
     const existingNFT = await repositories.nft.findOne({
       where: { contract: nftInfo.contract.address, tokenId: nftInfo.id.tokenId },
     })
-    let type: NFTType
+    let type: defs.NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
-      type = NFTType.ERC721
+      type = defs.NFTType.ERC721
     } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
-      type = NFTType.ERC1155
+      type = defs.NFTType.ERC1155
     } else {
       console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType)
       return
@@ -198,11 +195,11 @@ const updateEntity = async (
         }))
         .then((collection: entity.Collection) => {
           const edgeVals = {
-            thisEntityType: EntityType.Collection,
-            thatEntityType: EntityType.NFT,
+            thisEntityType: defs.EntityType.Collection,
+            thatEntityType: defs.EntityType.NFT,
             thisEntityId: collection.id,
             thatEntityId: newNFT.id,
-            edgeType: EdgeType.Includes,
+            edgeType: defs.EdgeType.Includes,
           }
           repositories.edge.findOne({ where: edgeVals })
             .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
