@@ -1,3 +1,4 @@
+import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { Context, gql } from '@nftcom/gql/defs'
@@ -26,7 +27,7 @@ const addAddress = (
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
   return core.getWallet(ctx, args.input)
     .then(() => repositories.wallet.save({
-      address,
+      address: ethers.utils.getAddress(address),
       chainId: chain.id,
       chainName: chain.name,
       network,
