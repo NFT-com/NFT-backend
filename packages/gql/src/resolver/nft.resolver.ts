@@ -129,6 +129,7 @@ const getCollectionNFTs = (
   const { repositories } = ctx
   logger.debug('getCollectionNFTs', { input: args?.input })
   const { pageInput, collectionAddress } = helper.safeObject(args?.input)
+
   return repositories.collection.findByContractAddress(collectionAddress)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
