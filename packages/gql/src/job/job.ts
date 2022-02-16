@@ -54,6 +54,7 @@ const listenToJobs = (): Promise<void[]> => {
 }
 
 const publishJobs = (): Promise<Bull.Job[]> => {
+  createQueues()
   const chainIds = Object.keys(queues)
   return Promise.all(chainIds.map((chainId) => {
     switch (chainId) {
@@ -83,7 +84,6 @@ const publishJobs = (): Promise<Bull.Job[]> => {
 }
 
 export const startAndListen = (): Promise<void> => {
-  createQueues()
   return publishJobs()
     .then(() => void listenToJobs())
     .then(() => console.log('🍊 listening for jobs...'))
