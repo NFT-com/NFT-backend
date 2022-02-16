@@ -7,7 +7,6 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { checkNFTContractAddresses, updateWalletNFTs } from '@nftcom/gql/job/nft.job'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp,helper } from '@nftcom/shared'
-import { NFTSize } from '@nftcom/shared/defs'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -52,7 +51,7 @@ const getNFTs = (
               Promise.all(nfts.map((nft: entity.NFT) => {
                 return {
                   nft,
-                  size: NFTSize.Medium, // default
+                  size: defs.NFTSize.Medium, // default
                 }
               }))))
         .then((curationItems) => Promise.resolve({
