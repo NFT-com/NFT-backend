@@ -2,8 +2,7 @@ import axios from 'axios'
 import { Job } from 'bull'
 import * as Lodash from 'lodash'
 
-import { _logger, db, defs, entity, fp, provider } from '@nftcom/shared'
-import { typechain } from '@nftcom/shared/helper'
+import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
