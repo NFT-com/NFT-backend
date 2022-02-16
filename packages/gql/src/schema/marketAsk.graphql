@@ -20,14 +20,15 @@ type MarketplaceAsset {
 }
 
 type MarketAsk {
+  structHash: String!
+  signature: Signature!
   makerAddress: Address!
-#  makerWalletId: String!
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address
   takeAsset: [MarketplaceAsset!]
   start: String!
   end: String!
-  salt: String!
+  salt: Int!
   offerAcceptedAt: DateTime
   chainId: String!
 }
@@ -53,10 +54,13 @@ input MarketplaceAssetInput {
 }
 
 input CreateAskInput {
+  structHash: String!
+  signature: SignatureInput!
   makerAddress: Address!
   makeAsset: [MarketplaceAssetInput!]
   start: String!
   end: String!
+  salt: Int!
   chainId: String!
 }
 

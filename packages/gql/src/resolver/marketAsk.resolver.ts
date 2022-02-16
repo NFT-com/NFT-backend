@@ -40,6 +40,8 @@ const createAsk = (
   logger.debug('createAsk', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
+    structHash: Joi.string().required(),
+    signature: joi.buildSignatureInputSchema(),
     makerAddress: Joi.string().required(),
     makeAsset: Joi.array().min(1).max(100).items(
       Joi.object().keys({
@@ -57,6 +59,7 @@ const createAsk = (
     ),
     start: Joi.string().required(),
     end: Joi.string().required(),
+    salt: Joi.number().required(),
     chainId: Joi.string().required(),
   })
   joi.validateSchema(schema, args?.input)
@@ -73,16 +76,20 @@ const createAsk = (
         allowAll: asset.standard.allowAll,
       },
       bytes: asset.bytes,
-      value: asset.bytes,
+      value: asset.value,
       minimumBid: asset.minimumBid,
     })
   })
 
   return repositories.marketAsk.save({
+    structHash: args?.input.structHash,
+    signature: args?.input.signature,
     makerAddress: args?.input.makerAddress,
     makeAsset: makeAssets,
     start: args?.input.start,
     end: args?.input.end,
+    salt: args?.input.salt,
+    chainId: args?.input.chainId,
   })
 }
 
