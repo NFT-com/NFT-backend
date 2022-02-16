@@ -10,11 +10,7 @@ const getCollection = (
 ): Promise<gql.Collection> => {
   logger.debug('getCollection', { input: args?.input })
 
-  return ctx.repositories.collection.findOne({
-    where: {
-      contract: args?.input?.contract,
-    },
-  })
+  return ctx.repositories.collection.findByContractAddress(args?.input?.contract)
 }
 
 export default {

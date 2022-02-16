@@ -1,8 +1,9 @@
 import { Job } from 'bull'
+import { ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { _logger, db, defs,entity, fp, provider, typechain } from '@nftcom/shared'
+import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -82,7 +83,10 @@ const filterNFTsWithAlchemy = async (
         // if contract owner has changed ...
         if (index === -1) {
           const nftRecord = await repositories.nft.findOne({
-            where: { contract: alchemyNft.contract, tokenId: alchemyNft.tokenId },
+            where: {
+              contract: ethers.utils.getAddress(alchemyNft.contract),
+              tokenId: alchemyNft.tokenId,
+            },
           })
           await repositories.nft.delete(nftRecord)
         }
@@ -113,18 +117,19 @@ const getNFTMetaDataFromAlchemy = async (
 const getCollectionNameFromContract = (
   contractAddress: string,
   type:  defs.NFTType,
+  network: providers.Networkish,
 ): Promise<string> => {
   try {
     if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
-        provider.provider(),
+        provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else if (type === defs.NFTType.ERC1155) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
-        provider.provider(),
+        provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
@@ -145,7 +150,10 @@ const updateEntity = async (
   let newNFT
   try {
     const existingNFT = await repositories.nft.findOne({
-      where: { contract: nftInfo.contract.address, tokenId: nftInfo.id.tokenId },
+      where: {
+        contract: ethers.utils.getAddress(nftInfo.contract.address),
+        tokenId: nftInfo.id.tokenId,
+      },
     })
     let type: defs.NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
@@ -167,7 +175,7 @@ const updateEntity = async (
     }
     newNFT = await repositories.nft.save({
       ...existingNFT,
-      contract: nftInfo.contract.address,
+      contract: ethers.utils.getAddress(nftInfo.contract.address),
       tokenId: nftInfo.id.tokenId,
       metadata: {
         name: nftInfo.title,
@@ -181,13 +189,15 @@ const updateEntity = async (
     })
 
     if (newNFT) {
-      await repositories.collection.findOne({ where: { contract: newNFT.contract } })
+      await repositories.collection.findOne({ where: {
+        contract: ethers.utils.getAddress(newNFT.contract),
+      } })
         .then(fp.thruIfEmpty(() => {
-          return getCollectionNameFromContract(newNFT.contract, newNFT.type)
+          return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then((collectionName: string) => {
               logger.debug('new collection name', { collectionName })
               return repositories.collection.save({
-                contract: newNFT.contract,
+                contract: ethers.utils.getAddress(newNFT.contract),
                 name: collectionName,
               })
             })
@@ -220,7 +230,10 @@ export const checkNFTContractAddresses = async (
       return []
     }
     const nftsChunks: NFT[][] = Lodash.chunk(
-      nfts.map((nft: entity.NFT) => ({ contract: nft.contract, tokenId: nft.tokenId })),
+      nfts.map((nft: entity.NFT) => ({
+        contract: ethers.utils.getAddress(nft.contract),
+        tokenId: nft.tokenId,
+      })),
       20,
     )
 
