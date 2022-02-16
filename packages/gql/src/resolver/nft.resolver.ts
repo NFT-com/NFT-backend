@@ -130,9 +130,6 @@ const getCollectionNFTs = (
   logger.debug('getCollectionNFTs', { input: args?.input })
   const { pageInput, collectionAddress } = helper.safeObject(args?.input)
 
-  logger.debug('pageInput: ', pageInput)
-  logger.debug('collectionAddress: ', collectionAddress)
-
   return repositories.collection.findByContractAddress(collectionAddress)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
