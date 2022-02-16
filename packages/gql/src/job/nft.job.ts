@@ -2,15 +2,13 @@ import { Job } from 'bull'
 import * as Lodash from 'lodash'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { _logger, db, defs,entity, fp, provider } from '@nftcom/shared'
-import { typechain } from '@nftcom/shared/helper'
+import { _logger, db, defs,entity, fp, provider, typechain } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
 const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
-
 interface OwnedNFT {
   contract: {
     address: string
