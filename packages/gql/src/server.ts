@@ -132,39 +132,6 @@ export const start = async (): Promise<void> => {
       })
   })
 
-  app.get('/checksum', async function (req, res) {
-    await repositories.collection.findAll()
-      .then(all =>
-        all.map(collection => {
-          repositories.collection.save({
-            ...collection,
-            contract: utils.getAddress(collection?.contract),
-          })
-        }),
-      )
-    
-    await repositories.nft.findAll()
-      .then(all =>
-        all.map(nft => {
-          repositories.nft.save({
-            ...nft,
-            contract: utils.getAddress(nft?.contract),
-          })
-        }),
-      )
-    await repositories.wallet.findAll()
-      .then(all =>
-        all.map(wallet => {
-          repositories.wallet.save({
-            ...wallet,
-            address: utils.getAddress(wallet?.address),
-          })
-        }),
-      )
-    
-    return res.send('ok')
-  })
-
   server = new ApolloServer({
     introspection: helper.isFalse(isProduction()),
     resolvers: resolvers,
