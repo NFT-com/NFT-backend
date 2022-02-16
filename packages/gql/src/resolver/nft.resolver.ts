@@ -1,3 +1,4 @@
+import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -130,7 +131,7 @@ const getCollectionNFTs = (
   logger.debug('getCollectionNFTs', { input: args?.input })
   const { pageInput, collectionAddress } = helper.safeObject(args?.input)
 
-  return repositories.collection.findByContractAddress(collectionAddress)
+  return repositories.collection.findByContractAddress(utils.getAddress(collectionAddress))
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
         nftError.buildNFTNotFoundMsg('collection ' + collectionAddress),
