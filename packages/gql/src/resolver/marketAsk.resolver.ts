@@ -1,7 +1,7 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, gql } from '@nftcom/gql/defs'
+import { Context, convertAssetInput, gql } from '@nftcom/gql/defs'
 import { _logger, entity, helper } from '@nftcom/shared'
 
 import { auth, joi, pagination } from '../helper'
@@ -78,10 +78,10 @@ const createAsk = (
   joi.validateSchema(schema, args?.input)
 
   const makeAssetInput = args?.input.makeAsset
-  const makeAssets = helper.convertAssetInput(makeAssetInput)
+  const makeAssets = convertAssetInput(makeAssetInput)
 
   const takeAssetInput = args?.input.takeAsset
-  const takeAssets = helper.convertAssetInput(takeAssetInput)
+  const takeAssets = convertAssetInput(takeAssetInput)
 
   return repositories.marketAsk.save({
     structHash: args?.input.structHash,

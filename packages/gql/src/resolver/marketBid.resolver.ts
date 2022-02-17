@@ -1,7 +1,7 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, gql } from '@nftcom/gql/defs'
+import { Context, convertAssetInput, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
@@ -219,10 +219,10 @@ const createBid = (
   joi.validateSchema(schema, args?.input)
 
   const makeAssetInput = args?.input.makeAsset
-  const makeAssets = helper.convertAssetInput(makeAssetInput)
+  const makeAssets = convertAssetInput(makeAssetInput)
 
   const takeAssetInput = args?.input.takeAsset
-  const takeAssets = helper.convertAssetInput(takeAssetInput)
+  const takeAssets = convertAssetInput(takeAssetInput)
 
   return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIf((marketAsk: entity.MarketAsk) => !marketAsk)(appError.buildInvalid(
