@@ -1,3 +1,10 @@
+enum AssetClass {
+  ETH
+  ERC20
+  ERC721
+  ERC1155
+}
+
 type GetMarketAsk {
   items: [MarketAsk!]
   pageInfo: PageInfo
@@ -39,7 +46,7 @@ input AsksInput {
 }
 
 input AssetTypeInput {
-  assetClass: String!
+  assetClass: AssetClass!
   bytes: String!
   contractAddress: String!
   tokenId: Uint256!

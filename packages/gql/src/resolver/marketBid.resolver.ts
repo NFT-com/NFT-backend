@@ -5,7 +5,6 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-import { AssetClass } from '@nftcom/shared/defs'
 
 import { auth, joi, pagination } from '../helper'
 import { core } from '../service'
@@ -105,6 +104,21 @@ const createBid = (
         minimumBid: Joi.required().custom(joi.buildBigNumber),
       }),
     ),
+    takerAddress: Joi.string().required(),
+    takeAsset: Joi.array().min(1).max(100).items(
+      Joi.object().keys({
+        standard: Joi.object().keys({
+          assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+          bytes: Joi.string().required(),
+          contractAddress: Joi.string().required(),
+          tokenId: Joi.required().custom(joi.buildBigNumber),
+          allowAll: Joi.boolean().required(),
+        }),
+        bytes: Joi.string().required(),
+        value: Joi.required().custom(joi.buildBigNumber),
+        minimumBid: Joi.required().custom(joi.buildBigNumber),
+      }),
+    ),
     message: Joi.string().optional(),
     start: Joi.string().required(),
     end: Joi.string().required(),
@@ -113,21 +127,10 @@ const createBid = (
   joi.validateSchema(schema, args?.input)
 
   const makeAssetInput = args?.input.makeAsset
-  const makeAssets = []
-  makeAssetInput.map((asset) => {
-    makeAssets.push({
-      standard: {
-        assetClass: asset.standard.assetClass as AssetClass,
-        bytes: asset.standard.bytes,
-        contractAddress: asset.standard.contractAddress,
-        tokenId: asset.standard.tokenId,
-        allowAll: asset.standard.allowAll,
-      },
-      bytes: asset.bytes,
-      value: asset.value,
-      minimumBid: asset.minimumBid,
-    })
-  })
+  const makeAssets = helper.convertAssetInput(makeAssetInput)
+
+  const takeAssetInput = args?.input.takeAsset
+  const takeAssets = helper.convertAssetInput(takeAssetInput)
 
   return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIf((marketAsk: entity.MarketAsk) => !marketAsk)(appError.buildInvalid(
@@ -145,6 +148,9 @@ const createBid = (
       marketAskId: args?.input.marketAskId,
       makerAddress: args?.input.makerAddress,
       makeAsset: makeAssets,
+      takerAddress: args?.input.takerAddress,
+      takeAsset: takeAssets,
+      message: args?.input.message,
       start: args?.input.start,
       end: args?.input.end,
       salt: args?.input.salt,

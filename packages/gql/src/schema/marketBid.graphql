@@ -36,6 +36,7 @@ input CreateBidInput {
   makeAsset: [MarketplaceAssetInput!]
   takerAddress: Address!
   takeAsset: [MarketplaceAssetInput!]
+  message: String
   start: String!
   end: String!
   salt: Int!

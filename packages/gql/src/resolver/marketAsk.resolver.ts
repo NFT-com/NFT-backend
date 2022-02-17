@@ -3,7 +3,6 @@ import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { _logger, entity, helper } from '@nftcom/shared'
-import { AssetClass } from '@nftcom/shared/defs'
 
 import { auth, joi, pagination } from '../helper'
 import { core } from '../service'
@@ -79,27 +78,18 @@ const createAsk = (
   joi.validateSchema(schema, args?.input)
 
   const makeAssetInput = args?.input.makeAsset
-  const makeAssets = []
-  makeAssetInput.map((asset) => {
-    makeAssets.push({
-      standard: {
-        assetClass: asset.standard.assetClass as AssetClass,
-        bytes: asset.standard.bytes,
-        contractAddress: asset.standard.contractAddress,
-        tokenId: asset.standard.tokenId,
-        allowAll: asset.standard.allowAll,
-      },
-      bytes: asset.bytes,
-      value: asset.value,
-      minimumBid: asset.minimumBid,
-    })
-  })
+  const makeAssets = helper.convertAssetInput(makeAssetInput)
+
+  const takeAssetInput = args?.input.takeAsset
+  const takeAssets = helper.convertAssetInput(takeAssetInput)
 
   return repositories.marketAsk.save({
     structHash: args?.input.structHash,
     signature: args?.input.signature,
     makerAddress: args?.input.makerAddress,
     makeAsset: makeAssets,
+    takerAddress: args?.input.takerAddress,
+    takeAsset: takeAssets,
     start: args?.input.start,
     end: args?.input.end,
     salt: args?.input.salt,

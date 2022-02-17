@@ -62,8 +62,8 @@ export type AssetType = {
 export type MarketplaceAsset = {
   standard: AssetType
   bytes: string // encoded data; (uint256, uint256) = (value, minimumBid)
-  value: number
-  minimumBid: number
+  value: string
+  minimumBid: string
 }
 
 export type Trait = {
