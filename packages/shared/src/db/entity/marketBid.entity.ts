@@ -1,9 +1,10 @@
-import { Column } from 'typeorm'
+import { Column, Entity } from 'typeorm'
 
 import { MarketplaceAsset, Signature } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
+@Entity()
 export class MarketBid extends BaseEntity {
 
   @Column({ nullable: false })
