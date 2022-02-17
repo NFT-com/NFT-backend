@@ -1,4 +1,4 @@
-import { BigNumber, Signature, utils } from 'ethers'
+import { BigNumber, constants, Signature, utils } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
@@ -13,6 +13,25 @@ export const stringListToMap = (
     agg.set(kv[0], kv[1])
     return agg
   }, new Map<string, string>())
+}
+
+export const convertToHash = (text: string): string => {
+  return utils.keccak256(utils.toUtf8Bytes(text))
+}
+
+export const ETH_ASSET_CLASS = convertToHash('ETH').substring(0, 10)
+export const ERC20_ASSET_CLASS = convertToHash('ERC20').substring(0, 10)
+export const ERC721_ASSET_CLASS = convertToHash('ERC721').substring(0, 10)
+export const ERC1155_ASSET_CLASS = convertToHash('ERC1155').substring(0, 10)
+export const COLLECTION = convertToHash('COLLECTION').substring(0, 10)
+export const CRYPTO_KITTY = convertToHash('CRYPTO_KITTY').substring(0, 10)
+
+export const encode = (types: string[], values: any[]): string => {
+  return utils.defaultAbiCoder.encode(types, values)
+}
+
+export const AddressZero = (): string => {
+  return constants.AddressZero
 }
 
 export const toCompositeKey = (val1: string, val2: string): string => `${val1}:${val2}`

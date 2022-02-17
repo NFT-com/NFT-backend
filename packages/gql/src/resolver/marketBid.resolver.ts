@@ -3,7 +3,8 @@ import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
-import { _logger, entity, fp, helper, typechain } from '@nftcom/shared'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import { AssetClass } from '@nftcom/shared/defs'
 
 import { auth, joi, pagination } from '../helper'
@@ -32,21 +33,46 @@ const getBids = (
     .then(pagination.toPageable(pageInput))
 }
 
-// estimateGas, if > 5000000, reject
-// TODO: typechain call
-// function executeSwap(
-//     LibSignature.Order calldata sellOrder,
-//     LibSignature.Order calldata buyOrder,
-//     uint8[2] calldata v,
-//     bytes32[2] calldata r,
-//     bytes32[2] calldata s
-// }
-const executionRevertSwap = (
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getAssetList = (assets: any): any => {
+  return assets.map((asset: any) => {
+    return {
+      assetType: {
+        assetClass: asset[0],
+        data: helper.encode(asset[1], asset[2]),
+      },
+      data: helper.encode(['uint256', 'uint256'], asset[3]),
+    }
+  })
+}
+
+const validOrderMatch = async (
   marketAsk: entity.MarketAsk,
   marketBidArgs: gql.MutationCreateBidArgs,
-): boolean => {
+  wallet: entity.Wallet,
+): Promise<boolean> => {
+  // const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
+  //   contracts.nftMarketplaceAddress(wallet.chainId),
+  //   provider.provider(Number(wallet.chainId)),
+  // )
+  
+  // const result: boolean = nftMarketplaceContract.validateOrder_(
+  //   [
+  //     marketBidArgs?.input.maker,
+  //     getAssetList(marketBidArgs?.input.makeAsset),
+  //     marketBidArgs?.input.taker || helper.AddressZero,
+  //     getAssetList(marketBidArgs?.input.makeAsset),
+  //     marketBidArgs?.input.salt,
+  //     marketBidArgs?.input.start,
+  //     marketBidArgs?.input.end,
+  //   ],
+  //   marketBidArgs?.input.signature.v,
+  //   marketBidArgs?.input.signature.r,
+  //   marketBidArgs?.input.signature.s,
+  // )
   logger.debug('marketAsk: ', marketAsk)
   logger.debug('marketBidArgs: ', marketBidArgs)
+  logger.debug('wallet: ', wallet)
   logger.debug('typechain: ', typechain)
   
   return false
@@ -57,7 +83,7 @@ const createBid = (
   args: gql.MutationCreateBidArgs,
   ctx: Context,
 ): Promise<gql.MarketBid> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('createBid', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
@@ -68,22 +94,21 @@ const createBid = (
     makeAsset: Joi.array().min(1).max(100).items(
       Joi.object().keys({
         standard: Joi.object().keys({
-          assetClass: Joi.string().required(),
+          assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.string().required(),
+          tokenId: Joi.required().custom(joi.buildBigNumber),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
-        value: Joi.number().required(),
-        minimumBid: Joi.number().required(),
+        value: Joi.required().custom(joi.buildBigNumber),
+        minimumBid: Joi.required().custom(joi.buildBigNumber),
       }),
     ),
     message: Joi.string().optional(),
     start: Joi.string().required(),
     end: Joi.string().required(),
     salt: Joi.number().required(),
-    chainId: Joi.string().required(),
   })
   joi.validateSchema(schema, args?.input)
 
@@ -110,7 +135,7 @@ const createBid = (
       marketBidError.ErrorType.MarketAskNotFound,
     )))
     .then(fp.rejectIf((marketAsk: entity.MarketAsk) =>
-      !executionRevertSwap(marketAsk, args))(appError.buildInvalid(
+      !validOrderMatch(marketAsk, args, wallet))(appError.buildInvalid(
       marketBidError.buildMarketBidInvalidMsg(),
       marketBidError.ErrorType.MarketBidInvalid,
     )))
@@ -123,7 +148,7 @@ const createBid = (
       start: args?.input.start,
       end: args?.input.end,
       salt: args?.input.salt,
-      chainId: args?.input.chainId,
+      chainId: wallet.chainId,
     }))
 }
 

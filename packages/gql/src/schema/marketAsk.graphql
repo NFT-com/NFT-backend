@@ -8,15 +8,15 @@ type AssetType {
   assetClass: String!
   bytes: String!
   contractAddress: String!
-  tokenId: String
+  tokenId: Uint256!
   allowAll: Boolean!
 }
 
 type MarketplaceAsset {
   standard: AssetType!
   bytes: String!
-  value: Int!
-  minimumBid: Int!
+  value: Uint256!
+  minimumBid: Uint256!
 }
 
 type MarketAsk {
@@ -42,15 +42,15 @@ input AssetTypeInput {
   assetClass: String!
   bytes: String!
   contractAddress: String!
-  tokenId: String
+  tokenId: Uint256!
   allowAll: Boolean!
 }
 
 input MarketplaceAssetInput {
   standard: AssetTypeInput!
   bytes: String!
-  value: Int!
-  minimumBid: Int!
+  value: Uint256!
+  minimumBid: Uint256!
 }
 
 input CreateAskInput {
@@ -58,6 +58,8 @@ input CreateAskInput {
   signature: SignatureInput!
   makerAddress: Address!
   makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
   start: String!
   end: String!
   salt: Int!

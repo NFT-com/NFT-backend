@@ -36,7 +36,7 @@ const createAsk = (
   args: gql.MutationCreateAskArgs,
   ctx: Context,
 ): Promise<gql.MarketAsk> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('createAsk', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
@@ -46,21 +46,35 @@ const createAsk = (
     makeAsset: Joi.array().min(1).max(100).items(
       Joi.object().keys({
         standard: Joi.object().keys({
-          assetClass: Joi.string().required(),
+          assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.string().required(),
+          tokenId: Joi.required().custom(joi.buildBigNumber),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
-        value: Joi.number().required(),
-        minimumBid: Joi.number().required(),
+        value: Joi.required().custom(joi.buildBigNumber),
+        minimumBid: Joi.required().custom(joi.buildBigNumber),
+      }),
+    ),
+    takerAddress: Joi.string().required(),
+    takeAsset: Joi.array().min(0).max(100).items(
+      Joi.object().keys({
+        standard: Joi.object().keys({
+          assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+          bytes: Joi.string().required(),
+          contractAddress: Joi.string().required(),
+          tokenId: Joi.required().custom(joi.buildBigNumber),
+          allowAll: Joi.boolean().required(),
+        }),
+        bytes: Joi.string().required(),
+        value: Joi.required().custom(joi.buildBigNumber),
+        minimumBid: Joi.required().custom(joi.buildBigNumber),
       }),
     ),
     start: Joi.string().required(),
     end: Joi.string().required(),
     salt: Joi.number().required(),
-    chainId: Joi.string().required(),
   })
   joi.validateSchema(schema, args?.input)
 
@@ -89,7 +103,7 @@ const createAsk = (
     start: args?.input.start,
     end: args?.input.end,
     salt: args?.input.salt,
-    chainId: args?.input.chainId,
+    chainId: wallet.chainId,
   })
 }
 

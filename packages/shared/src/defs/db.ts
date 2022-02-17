@@ -40,11 +40,10 @@ export enum NFTSize {
 }
 
 export enum AssetClass {
-  ETH_ASSET_CLASS = 'ETH',
-  ERC20_ASSET_CLASS = 'ERC20',
-  ERC721_ASSET_CLASS = 'ERC721',
-  ERC1155_ASSET_CLASS = 'ERC1155',
-  CRYPTO_PUNK = 'CRYPTO_PUNK',
+  ETH = 'ETH',
+  ERC20 = 'ERC20',
+  ERC721 = 'ERC721',
+  ERC1155 = 'ERC1155'
 }
 
 export type CurationItem = {
