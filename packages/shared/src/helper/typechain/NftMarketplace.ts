@@ -259,7 +259,7 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "Approval(bytes32,address,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
     "Cancel(bytes32,address,address)": EventFragment;
-    "Match(bytes32,bytes32,address,address,uint256,uint256,uint256,uint256,bool)": EventFragment;
+    "Match(bytes32,bytes32,address,address,uint256,uint256,bool)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "ProtocolFeeChange(uint256)": EventFragment;
     "ProxyChange(bytes4,address)": EventFragment;
@@ -307,17 +307,7 @@ export type CancelEvent = TypedEvent<
 export type CancelEventFilter = TypedEventFilter<CancelEvent>;
 
 export type MatchEvent = TypedEvent<
-  [
-    string,
-    string,
-    string,
-    string,
-    BigNumber,
-    BigNumber,
-    BigNumber,
-    BigNumber,
-    boolean
-  ],
+  [string, string, string, string, BigNumber, BigNumber, boolean],
   {
     makerHash: string;
     takerHash: string;
@@ -325,9 +315,7 @@ export type MatchEvent = TypedEvent<
     takerMaker: string;
     makerSalt: BigNumber;
     takerSalt: BigNumber;
-    makerStart: BigNumber;
-    makerEnd: BigNumber;
-    buyNow: boolean;
+    privateSale: boolean;
   }
 >;
 
@@ -516,7 +504,7 @@ export interface NftMarketplace extends BaseContract {
       r: BytesLike,
       s: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean]>;
+    ): Promise<[boolean, string]>;
 
     whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
   };
@@ -632,7 +620,7 @@ export interface NftMarketplace extends BaseContract {
     r: BytesLike,
     s: BytesLike,
     overrides?: CallOverrides
-  ): Promise<boolean>;
+  ): Promise<[boolean, string]>;
 
   whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -749,7 +737,7 @@ export interface NftMarketplace extends BaseContract {
       r: BytesLike,
       s: BytesLike,
       overrides?: CallOverrides
-    ): Promise<boolean>;
+    ): Promise<[boolean, string]>;
 
     whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
   };
@@ -783,16 +771,14 @@ export interface NftMarketplace extends BaseContract {
     ): CancelEventFilter;
     Cancel(hash?: null, maker?: null, taker?: null): CancelEventFilter;
 
-    "Match(bytes32,bytes32,address,address,uint256,uint256,uint256,uint256,bool)"(
+    "Match(bytes32,bytes32,address,address,uint256,uint256,bool)"(
       makerHash?: null,
       takerHash?: null,
       makerMaker?: null,
       takerMaker?: null,
       makerSalt?: null,
       takerSalt?: null,
-      makerStart?: null,
-      makerEnd?: null,
-      buyNow?: null
+      privateSale?: null
     ): MatchEventFilter;
     Match(
       makerHash?: null,
@@ -801,9 +787,7 @@ export interface NftMarketplace extends BaseContract {
       takerMaker?: null,
       makerSalt?: null,
       takerSalt?: null,
-      makerStart?: null,
-      makerEnd?: null,
-      buyNow?: null
+      privateSale?: null
     ): MatchEventFilter;
 
     "OwnershipTransferred(address,address)"(

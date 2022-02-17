@@ -133,20 +133,8 @@ const _abi = [
       },
       {
         indexed: false,
-        internalType: "uint256",
-        name: "makerStart",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "makerEnd",
-        type: "uint256",
-      },
-      {
-        indexed: false,
         internalType: "bool",
-        name: "buyNow",
+        name: "privateSale",
         type: "bool",
       },
     ],
@@ -1387,6 +1375,11 @@ const _abi = [
         internalType: "bool",
         name: "",
         type: "bool",
+      },
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
       },
     ],
     stateMutability: "view",

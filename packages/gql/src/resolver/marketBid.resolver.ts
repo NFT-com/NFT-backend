@@ -50,31 +50,53 @@ const validOrderMatch = async (
   marketBidArgs: gql.MutationCreateBidArgs,
   wallet: entity.Wallet,
 ): Promise<boolean> => {
-  // const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
-  //   contracts.nftMarketplaceAddress(wallet.chainId),
-  //   provider.provider(Number(wallet.chainId)),
-  // )
-  
-  // const result: boolean = nftMarketplaceContract.validateOrder_(
-  //   [
-  //     marketBidArgs?.input.maker,
-  //     getAssetList(marketBidArgs?.input.makeAsset),
-  //     marketBidArgs?.input.taker || helper.AddressZero,
-  //     getAssetList(marketBidArgs?.input.makeAsset),
-  //     marketBidArgs?.input.salt,
-  //     marketBidArgs?.input.start,
-  //     marketBidArgs?.input.end,
-  //   ],
-  //   marketBidArgs?.input.signature.v,
-  //   marketBidArgs?.input.signature.r,
-  //   marketBidArgs?.input.signature.s,
-  // )
-  logger.debug('marketAsk: ', marketAsk)
-  logger.debug('marketBidArgs: ', marketBidArgs)
-  logger.debug('wallet: ', wallet)
-  logger.debug('typechain: ', typechain)
-  
-  return false
+  const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
+    contracts.nftMarketplaceAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+
+  // STEP 1 basic validation of order structure (if not used before)
+  try {
+    const result = await nftMarketplaceContract.validateOrder_(
+      {
+        maker: marketBidArgs?.input.makerAddress,
+        makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        taker: marketBidArgs?.input.takerAddress || helper.AddressZero,
+        takeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        salt: marketBidArgs?.input.salt,
+        start: marketBidArgs?.input.start,
+        end: marketBidArgs?.input.end,
+      },
+      marketBidArgs?.input.signature.v,
+      marketBidArgs?.input.signature.r,
+      marketBidArgs?.input.signature.s,
+    )
+
+    console.log('result: ', result)
+
+    if (marketBidArgs?.input.structHash == result[1]) {
+      console.log('structHash matches')
+    } else {
+      throw Error('structHash mismatch')
+    }
+  } catch (err) {
+    logger.error('order validation error: ', err)
+    return false
+  }
+
+  // STEP 2 cross validation between marketAsk and potential marketBid
+  try {
+    // check time match
+    
+    // make sure marketAsk is not expired
+    // make sure marketAsk taker is valid for Bid
+    // make sure assets match
+  } catch (err) {
+    logger.error('order matching validation error: ', err)
+    return false
+  }
+
+  return true
 }
 
 const createBid = (
