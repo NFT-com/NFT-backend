@@ -4,6 +4,7 @@ import Redis from 'ioredis'
 import { redisConfig } from '@nftcom/gql/config'
 import { _logger, contracts, db, entity, provider, typechain } from '@nftcom/shared'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const redis = new Redis({
   port: redisConfig.port,
   host: redisConfig.host,
@@ -24,44 +25,38 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
     )
 
     profiles.forEach(async (profile: entity.Profile) => {
+      let tokenId
+
       try {
-        let tokenId: any = await redis.get(profile.url)
-        const cachedProfile = tokenId !== null
-    
-        if (cachedProfile) {
-          try {
-            tokenId = await nftProfileContract.getTokenId(profile.url)
-            await redis.set(profile.url, Number(tokenId), 'ex', 60)
-          } catch (_) {
-            // catch if profile doesn't exist
-            tokenId = -1
-            await redis.set(profile.url, -1, 'ex', 60)
-          }
-        }
-    
-        const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
-    
-        const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
-          job.data.chainId,
-          address,
-        )
-                
-        // wallet exists, so update user accordingly
-        if (foundWallet) {
-          repositories.profile.save({
-            ...profile,
-            ownerUserId: foundWallet.userId,
-            ownerWalletId: foundWallet.id,
-          })
-        } else {
-          repositories.profile.save({
-            ...profile,
-            ownerUserId: null,
-            ownerWalletId: null,
-          })
-        }
-      } catch (err) {
-        logger.error('error while syncing profiles')
+        tokenId = await nftProfileContract.getTokenId(profile.url)
+        logger.debug(`getTokenId ${profile.url} => ${tokenId}`)
+      } catch (getTokenIdErr) {
+        // catch if profile doesn't exist yet
+        tokenId = -1
+      }
+
+      const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
+  
+      const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
+        job.data.chainId,
+        address,
+      )
+
+      logger.debug(`address: ${address}, profile: ${profile.url}, tokenId: ${tokenId}`)
+              
+      // wallet exists, so update user accordingly
+      if (foundWallet) {
+        repositories.profile.save({
+          ...profile,
+          ownerUserId: foundWallet.userId,
+          ownerWalletId: foundWallet.id,
+        })
+      } else {
+        repositories.profile.save({
+          ...profile,
+          ownerUserId: null,
+          ownerWalletId: null,
+        })
       }
     })
   } catch (err) {

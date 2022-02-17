@@ -27,7 +27,7 @@ type NFTMetadata {
 
 type NFT {
   id: ID!
-  contract: String
+  contract: Address
   tokenId: String!
   isOwnedByMe: Boolean
   metadata: NFTMetadata!
@@ -48,6 +48,11 @@ input CurationInput {
   curationId: ID!
   pageInput: PageInput
   # TODO: add filters
+}
+
+input CollectionNFTsInput {
+  collectionAddress: Address!
+  pageInput: PageInput
 }
 
 type NFTsOutput {
@@ -78,6 +83,7 @@ extend type Query {
   nfts(input: NFTsInput!): CurationNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
+  collectionNFTs(input: CollectionNFTsInput!): NFTsOutput!
 }
 
 extend type Mutation {

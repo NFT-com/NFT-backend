@@ -1,13 +1,13 @@
+import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, gql } from '@nftcom/gql/defs'
-import { appError, curationError } from '@nftcom/gql/error'
+import { Context, gql, Pageable } from '@nftcom/gql/defs'
+import { appError, curationError, nftError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { checkNFTContractAddresses, updateWalletNFTs } from '@nftcom/gql/job/nft.job'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp,helper } from '@nftcom/shared'
-import { NFTSize } from '@nftcom/shared/defs'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -52,7 +52,7 @@ const getNFTs = (
               Promise.all(nfts.map((nft: entity.NFT) => {
                 return {
                   nft,
-                  size: NFTSize.Medium, // default
+                  size: defs.NFTSize.Medium, // default
                 }
               }))))
         .then((curationItems) => Promise.resolve({
@@ -122,6 +122,47 @@ const getCurationNFTs = (
     }))
 }
 
+const getCollectionNFTs = (
+  _: unknown,
+  args: gql.QueryCollectionNFTsArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  const { repositories } = ctx
+  logger.debug('getCollectionNFTs', { input: args?.input })
+  const { pageInput, collectionAddress } = helper.safeObject(args?.input)
+
+  return repositories.collection.findByContractAddress(utils.getAddress(collectionAddress))
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('collection ' + collectionAddress),
+        nftError.ErrorType.NFTNotFound,
+      ),
+    ))
+    .then((collection: entity.Collection) => core.paginatedEntitiesBy(
+      repositories.edge,
+      pageInput,
+      {
+        thisEntityId: collection.id,
+        thisEntityType: defs.EntityType.Collection,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Includes,
+      },
+    ))
+    .then(pagination.toPageable(pageInput))
+    .then((resultEdges: Pageable<entity.Edge>) => Promise.all([
+      Promise.all(
+        resultEdges.items.map((edge: entity.Edge) => repositories.nft.findById(edge.thatEntityId)),
+      ),
+      Promise.resolve(resultEdges.pageInfo),
+      Promise.resolve(resultEdges.totalItems),
+    ]))
+    .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => Promise.resolve({
+      items: nfts,
+      pageInfo,
+      totalItems: count,
+    }))
+}
+
 const refreshMyNFTs = (
   _: any,
   args: any,
@@ -154,6 +195,7 @@ export default {
     nfts: getNFTs,
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
+    collectionNFTs: getCollectionNFTs,
   },
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),

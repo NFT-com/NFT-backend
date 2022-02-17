@@ -1,10 +1,10 @@
 type Collection {
-    contract: String!
+    contract: Address!
     name: String
 }
 
 input CollectionInput {
-    contract: String
+    contract: Address
     network: String
 }
 

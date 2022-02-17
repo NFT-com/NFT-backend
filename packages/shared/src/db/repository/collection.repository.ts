@@ -8,4 +8,10 @@ export class CollectionRepository extends BaseRepository<Collection> {
     super(Collection)
   }
 
+  public findByContractAddress = (address: string): Promise<Collection> => {
+    return this.findOne({
+      where: { contract: address, deletedAt: null },
+    })
+  }
+
 }

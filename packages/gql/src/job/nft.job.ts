@@ -1,17 +1,15 @@
-import axios from 'axios'
 import { Job } from 'bull'
+import { ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 
-import { _logger, db, entity, fp, provider } from '@nftcom/shared'
-import { EdgeType, EntityType, NFTType } from '@nftcom/shared/defs'
-import { typechain } from '@nftcom/shared/helper'
+import { createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
-const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
-const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/${ALCHEMY_API_KEY}/v1`
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-
+const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
+const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
+const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 interface OwnedNFT {
   contract: {
     address: string
@@ -19,14 +17,6 @@ interface OwnedNFT {
   id: {
     tokenId: string
   }
-}
-interface AlternateMedia {
-  uri: string
-}
-interface Trait {
-  trait_type: string
-  value: string
-  display_type?: string
 }
 interface NFTMetaDataResponse {
   contract: {
@@ -38,16 +28,17 @@ interface NFTMetaDataResponse {
       tokenType: string
     }
   }
-  externalDomainViewUrl: string
-  media: {
-    uri: string
+  title: string
+  description: string
+  media?: {
+    uri?: {
+      raw: string
+      gateway: string
+    }
   }
-  alternateMedia: AlternateMedia[]
-  metadata: {
-    name: string
-    description: string
-    image: string
-    attributes: Trait[]
+  metadata?: {
+    image?: string
+    attributes?: Array<Record<string, any>>
   }
   timeLastUpdated: string
 }
@@ -57,10 +48,11 @@ interface NFT {
 }
 
 const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
-  const url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
   try {
-    const result = await axios.get(url)
-    return result.data.ownedNfts as OwnedNFT[]
+    const response = await web3.alchemy.getNfts({
+      owner: owner,
+    })
+    return response.ownedNfts as OwnedNFT[]
   } catch (err) {
     console.log('error: ', err)
     return []
@@ -71,13 +63,16 @@ const filterNFTsWithAlchemy = async (
   nfts: Array<NFT>,
   owner: string,
 ): Promise<any[]> => {
-  let url = `${ALCHEMY_API_URL}/getNFTs/?owner=${owner}`
+  const contracts = []
   nfts.forEach((nft: NFT) => {
-    url = url.concat(`&contractAddresses%5B%5D=${nft.contract}`)
+    contracts.push(nft.contract)
   })
   try {
-    const result = await axios.get(url)
-    const ownedNfts = result.data.ownedNfts
+    const response = await web3.alchemy.getNfts({
+      owner: owner,
+      contractAddresses: contracts,
+    })
+    const ownedNfts = response.ownedNfts
 
     return await Promise.all(
       nfts.map(async (alchemyNft: NFT) => {
@@ -88,7 +83,10 @@ const filterNFTsWithAlchemy = async (
         // if contract owner has changed ...
         if (index === -1) {
           const nftRecord = await repositories.nft.findOne({
-            where: { contract: alchemyNft.contract, tokenId: alchemyNft.tokenId },
+            where: {
+              contract: ethers.utils.getAddress(alchemyNft.contract),
+              tokenId: alchemyNft.tokenId,
+            },
           })
           await repositories.nft.delete(nftRecord)
         }
@@ -104,10 +102,12 @@ const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
 ): Promise<NFTMetaDataResponse | undefined> => {
-  const url = `${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${contractAddress}&tokenId=${tokenId}`
   try {
-    const result = await axios.get(url)
-    return result.data as NFTMetaDataResponse
+    const response = await web3.alchemy.getNftMetadata({
+      contractAddress: contractAddress,
+      tokenId: tokenId,
+    })
+    return response as NFTMetaDataResponse
   } catch (err) {
     console.log('error: ', err)
     return undefined
@@ -116,19 +116,20 @@ const getNFTMetaDataFromAlchemy = async (
 
 const getCollectionNameFromContract = (
   contractAddress: string,
-  type:  NFTType,
+  type:  defs.NFTType,
+  network: providers.Networkish,
 ): Promise<string> => {
   try {
-    if (type === NFTType.ERC721) {
+    if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
-        provider.provider(),
+        provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
-    } else if (type === NFTType.ERC1155) {
+    } else if (type === defs.NFTType.ERC1155) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
-        provider.provider(),
+        provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
@@ -149,13 +150,16 @@ const updateEntity = async (
   let newNFT
   try {
     const existingNFT = await repositories.nft.findOne({
-      where: { contract: nftInfo.contract.address, tokenId: nftInfo.id.tokenId },
+      where: {
+        contract: ethers.utils.getAddress(nftInfo.contract.address),
+        tokenId: nftInfo.id.tokenId,
+      },
     })
-    let type: NFTType
+    let type: defs.NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
-      type = NFTType.ERC721
+      type = defs.NFTType.ERC721
     } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
-      type = NFTType.ERC1155
+      type = defs.NFTType.ERC1155
     } else {
       console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType)
       return
@@ -164,18 +168,18 @@ const updateEntity = async (
     if (nftInfo.metadata.attributes) {
       nftInfo.metadata.attributes.map((trait) => {
         traits.push(({
-          type: trait.trait_type,
-          value: trait.value,
+          type: trait[0],
+          value: trait[1],
         }))
       })
     }
     newNFT = await repositories.nft.save({
       ...existingNFT,
-      contract: nftInfo.contract.address,
+      contract: ethers.utils.getAddress(nftInfo.contract.address),
       tokenId: nftInfo.id.tokenId,
       metadata: {
-        name: nftInfo.metadata.name,
-        description: nftInfo.metadata.description,
+        name: nftInfo.title,
+        description: nftInfo.description,
         imageURL: nftInfo.metadata.image,
         traits: traits,
       },
@@ -185,24 +189,26 @@ const updateEntity = async (
     })
 
     if (newNFT) {
-      await repositories.collection.findOne({ where: { contract: newNFT.contract } })
+      await repositories.collection.findOne({ where: {
+        contract: ethers.utils.getAddress(newNFT.contract),
+      } })
         .then(fp.thruIfEmpty(() => {
-          return getCollectionNameFromContract(newNFT.contract, newNFT.type)
+          return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then((collectionName: string) => {
               logger.debug('new collection name', { collectionName })
               return repositories.collection.save({
-                contract: newNFT.contract,
+                contract: ethers.utils.getAddress(newNFT.contract),
                 name: collectionName,
               })
             })
         }))
         .then((collection: entity.Collection) => {
           const edgeVals = {
-            thisEntityType: EntityType.Collection,
-            thatEntityType: EntityType.NFT,
+            thisEntityType: defs.EntityType.Collection,
+            thatEntityType: defs.EntityType.NFT,
             thisEntityId: collection.id,
             thatEntityId: newNFT.id,
-            edgeType: EdgeType.Includes,
+            edgeType: defs.EdgeType.Includes,
           }
           repositories.edge.findOne({ where: edgeVals })
             .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
@@ -224,7 +230,10 @@ export const checkNFTContractAddresses = async (
       return []
     }
     const nftsChunks: NFT[][] = Lodash.chunk(
-      nfts.map((nft: entity.NFT) => ({ contract: nft.contract, tokenId: nft.tokenId })),
+      nfts.map((nft: entity.NFT) => ({
+        contract: ethers.utils.getAddress(nft.contract),
+        tokenId: nft.tokenId,
+      })),
       20,
     )
 
@@ -274,6 +283,7 @@ export const updateWalletNFTs = async (
   return await Promise.all(
     ownedNFTs.map(async (nft: OwnedNFT) => {
       const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
+
       if (response)
         await updateEntity(response, userId, walletId)
     }),
