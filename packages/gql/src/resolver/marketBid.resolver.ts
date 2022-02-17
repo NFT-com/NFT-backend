@@ -3,7 +3,6 @@ import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination } from '../helper'
@@ -32,15 +31,39 @@ const getBids = (
     .then(pagination.toPageable(pageInput))
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getAssetList = (assets: any): any => {
-  return assets.map((asset: any) => {
+const encodeAssetType = (assetClass: string, asset: gql.MarketplaceAssetInput): string => {
+  switch (assetClass) {
+  case 'ETH':
+    return helper.encode(['address'], [helper.AddressZero()])
+  case 'ERC20':
+    return helper.encode(['address'], [asset.standard.contractAddress])
+  case 'ERC721':
+  case 'ERC1155':
+    return helper.encode(['address', 'uint256', 'bool'], [asset.standard.contractAddress, asset.standard.tokenId, asset.standard.allowAll])
+  default:
+    return ''
+  }
+}
+
+// byte validation and returns back asset list
+const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any => {
+  return assets.map((asset: gql.MarketplaceAssetInput) => {
+    const assetTypeBytes = encodeAssetType(asset.standard.assetClass, asset)
+    const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
+
+    // basic validation that bytes match
+    if (assetTypeBytes !== asset.standard.bytes) {
+      throw Error(`Calculated Asset Type Bytes ${assetTypeBytes} mismatch sent bytes ${asset.standard.bytes}`)
+    } else if (assetBytes !== asset.bytes) {
+      throw Error(`Calculated Asset Bytes ${assetBytes} mismatch sent bytes ${asset.bytes}`)
+    }
+
     return {
       assetType: {
-        assetClass: asset[0],
-        data: helper.encode(asset[1], asset[2]),
+        assetClass: asset.standard.assetClass,
+        data: assetTypeBytes,
       },
-      data: helper.encode(['uint256', 'uint256'], asset[3]),
+      data: assetBytes,
     }
   })
 }
@@ -72,12 +95,10 @@ const validOrderMatch = async (
       marketBidArgs?.input.signature.s,
     )
 
-    console.log('result: ', result)
+    const calculatedStructHash: string = result?.[1]
 
-    if (marketBidArgs?.input.structHash == result[1]) {
-      console.log('structHash matches')
-    } else {
-      throw Error('structHash mismatch')
+    if (marketBidArgs?.input.structHash !== calculatedStructHash) {
+      throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketBidArgs?.input.structHash}`)
     }
   } catch (err) {
     logger.error('order validation error: ', err)
@@ -87,10 +108,59 @@ const validOrderMatch = async (
   // STEP 2 cross validation between marketAsk and potential marketBid
   try {
     // check time match
-    
-    // make sure marketAsk is not expired
+    const currentUnixSec = Math.floor(new Date().getTime() / 1000)
+
+    const askStart = Number(marketAsk.start)
+    const askEnd = Number(marketAsk.end)
+    const bidStart = Number(marketBidArgs?.input.start)
+    const bidEnd = Number(marketBidArgs?.input.end)
+
+    // TODO: make sure logic is sound...
+    // Reference logic in smart contract -> LibSignature.validate
+    if (!(askStart == 0 || askStart < currentUnixSec)) {
+      throw Error(`Invalid Market Ask Start: ${askStart}`)
+    } else if (!(bidStart == 0 || bidStart < currentUnixSec)) {
+      throw Error(`Invalid Market Bid Start: ${bidStart}`)
+    } else if (!(askEnd == 0 || askEnd > currentUnixSec)) {
+      throw Error(`Invalid Market Ask End: ${askEnd}`)
+    } else if (!(bidEnd == 0 || bidEnd > currentUnixSec)) {
+      throw Error(`Invalid Market Bid End: ${bidEnd}`)
+    }
+
     // make sure marketAsk taker is valid for Bid
-    // make sure assets match
+    const askTaker = marketAsk.takerAddress
+    if (
+      !(askTaker == helper.AddressZero() ||
+      helper.checkSum(askTaker) == helper.checkSum(marketBidArgs?.input.makerAddress))
+    ) {
+      throw Error(`Bidder ${marketBidArgs?.input.makerAddress} not equal to Maker's Taker ${askTaker}`)
+    }
+
+    // make sure assets match via contract
+    const result = await nftMarketplaceContract.validateMatch_(
+      {
+        maker: marketAsk.makerAddress,
+        makeAssets: getAssetList(marketAsk.makeAsset),
+        taker: marketAsk.takerAddress,
+        takeAssets: getAssetList(marketAsk.takeAsset),
+        salt: marketAsk.salt,
+        start: marketAsk.start,
+        end: marketAsk.end,
+      },
+      {
+        maker: marketBidArgs?.input.makerAddress,
+        makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        taker: marketBidArgs?.input.takerAddress || helper.AddressZero,
+        takeAssets: getAssetList(marketBidArgs?.input.takeAsset),
+        salt: marketBidArgs?.input.salt,
+        start: marketBidArgs?.input.start,
+        end: marketBidArgs?.input.end,
+      },
+    )
+
+    if (!result) {
+      throw Error('Market Bid does not match with Market Ask')
+    }
   } catch (err) {
     logger.error('order matching validation error: ', err)
     return false

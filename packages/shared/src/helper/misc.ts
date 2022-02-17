@@ -28,6 +28,10 @@ export const ERC1155_ASSET_CLASS = convertToHash('ERC1155').substring(0, 10)
 export const COLLECTION = convertToHash('COLLECTION').substring(0, 10)
 export const CRYPTO_KITTY = convertToHash('CRYPTO_KITTY').substring(0, 10)
 
+export const checkSum = (input: string): string => {
+  return utils.getAddress(input)
+}
+
 export const encode = (types: string[], values: any[]): string => {
   return utils.defaultAbiCoder.encode(types, values)
 }
