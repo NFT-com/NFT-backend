@@ -10,7 +10,7 @@ type MarketBid {
   marketAskId: String!
   makerAddress: Address!
   makeAsset: [MarketplaceAsset!]
-  takerAddress: Address
+  takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
   message: String!
   start: String!
@@ -36,7 +36,7 @@ input CreateBidInput {
   makeAsset: [MarketplaceAssetInput!]
   takerAddress: Address!
   takeAsset: [MarketplaceAssetInput!]
-  message: String
+  message: String!
   start: String!
   end: String!
   salt: Int!

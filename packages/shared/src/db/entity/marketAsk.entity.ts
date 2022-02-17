@@ -21,7 +21,7 @@ export class MarketAsk extends BaseEntity {
   })
   makeAsset: MarketplaceAsset[]
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   takerAddress: string
 
   @Column('json', {

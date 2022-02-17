@@ -24,7 +24,7 @@ export class MarketBid extends BaseEntity {
   })
   makeAsset: MarketplaceAsset[]
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   takerAddress: string
 
   @Column('json', {
@@ -33,7 +33,7 @@ export class MarketBid extends BaseEntity {
   })
   takeAsset: MarketplaceAsset[]
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: false })
   message: string
 
   @Column({ nullable: false })
