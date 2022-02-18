@@ -28,6 +28,12 @@ export class MarketBid extends BaseEntity {
   })
   takeAsset: MarketplaceAsset[]
 
+  @Column({ nullable: true })
+  approvalTxHash: string
+
+  @Column({ nullable: true })
+  cancelTxHash: string
+
   @Column({ nullable: false })
   start: string
 

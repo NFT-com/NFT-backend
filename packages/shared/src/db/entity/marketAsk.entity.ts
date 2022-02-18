@@ -1,4 +1,4 @@
-import { Column, Index } from 'typeorm'
+import { Column } from 'typeorm'
 
 import { MarketplaceAsset } from '@nftcom/shared/defs'
 
@@ -9,7 +9,6 @@ export class MarketAsk extends BaseEntity {
   @Column({ nullable: false })
   makerAddress: string
 
-  @Index()
   @Column({ nullable: false })
   makerWalletId: string
 
@@ -27,6 +26,12 @@ export class MarketAsk extends BaseEntity {
     default: [],
   })
   takeAsset: MarketplaceAsset[]
+
+  @Column({ nullable: true })
+  approvalTxHash: string
+
+  @Column({ nullable: true })
+  cancelTxHash: string
 
   @Column({ nullable: false })
   start: string

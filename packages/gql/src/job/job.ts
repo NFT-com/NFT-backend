@@ -1,7 +1,13 @@
 import Bull from 'bull'
 
 import { redisConfig } from '@nftcom/gql/config'
+import {
+  MARKETPLACE_SYNC_JOB,
+  NFT_COLLECTION_JOB,
+  PROFILE_SYNC_JOB,
+} from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
+import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
 import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
 
@@ -10,9 +16,6 @@ const redis = {
   port: redisConfig.port,
 }
 const queuePrefix = 'queue'
-
-const NFT_COLLECTION_JOB = 'nft_collection'
-const PROFILE_SYNC_JOB = 'profile_sync:4' // 4 = chainId
 
 const queues: { [key: string]: Bull.Queue } = {}
 
@@ -37,6 +40,11 @@ const createQueues = (): void => {
     prefix: queuePrefix,
     redis,
   })
+
+  queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
+    prefix: queuePrefix,
+    redis,
+  })
 }
 
 const listenToJobs = (): Promise<void[]> => {
@@ -47,6 +55,8 @@ const listenToJobs = (): Promise<void[]> => {
       return queue.process(getUsersNFTs)
     case PROFILE_SYNC_JOB:
       return queue.process(syncProfileNFTs)
+    case MARKETPLACE_SYNC_JOB:
+      return queue.process(syncMarketplace)
     default:
       return queue.process(getEthereumEvents)
     }
@@ -71,6 +81,13 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnFail: true,
         // repeat every 2 minutes for nft collection job
         repeat: { every: 60000 * 2 },
+      })
+    case MARKETPLACE_SYNC_JOB:
+      return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
+        removeOnComplete: true,
+        removeOnFail: true,
+        // repeat every 5 minutes for nft collection job
+        repeat: { every: 60000 * 5 },
       })
     default:
       return queues[chainId].add({ chainId }, {
