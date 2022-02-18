@@ -149,6 +149,14 @@ const createAsk = (
     }))
 }
 
+// TODOs
+// 1. add more advanced filters (sort by price, sort by floor)
+// 2. filter asks from a single user (walletId or address)
+// 3. filter private orders (designated takerAddress)
+// 4. show all marketAsk / marketBid, even if NFT is not in wallet -> to allow user to cancel
+//      -> front end to show if signature has enough balance
+// 5. get singular ASK (show all bids for a single ask)
+
 export default {
   Query: {
     getAsks: getAsks,
