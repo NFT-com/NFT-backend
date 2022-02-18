@@ -1,7 +1,7 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, convertAssetInput, gql } from '@nftcom/gql/defs'
+import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
@@ -31,43 +31,6 @@ const getBids = (
     .then(pagination.toPageable(pageInput))
 }
 
-const encodeAssetType = (assetClass: string, asset: gql.MarketplaceAssetInput): string => {
-  switch (assetClass) {
-  case 'ETH':
-    return helper.encode(['address'], [helper.AddressZero()])
-  case 'ERC20':
-    return helper.encode(['address'], [asset.standard.contractAddress])
-  case 'ERC721':
-  case 'ERC1155':
-    return helper.encode(['address', 'uint256', 'bool'], [asset.standard.contractAddress, asset.standard.tokenId, asset.standard.allowAll])
-  default:
-    return ''
-  }
-}
-
-// byte validation and returns back asset list
-const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any => {
-  return assets.map((asset: gql.MarketplaceAssetInput) => {
-    const assetTypeBytes = encodeAssetType(asset.standard.assetClass, asset)
-    const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
-
-    // basic validation that bytes match
-    if (assetTypeBytes !== asset.standard.bytes) {
-      throw Error(`Calculated Asset Type Bytes ${assetTypeBytes} mismatch sent bytes ${asset.standard.bytes}`)
-    } else if (assetBytes !== asset.bytes) {
-      throw Error(`Calculated Asset Bytes ${assetBytes} mismatch sent bytes ${asset.bytes}`)
-    }
-
-    return {
-      assetType: {
-        assetClass: asset.standard.assetClass,
-        data: assetTypeBytes,
-      },
-      data: assetBytes,
-    }
-  })
-}
-
 const validOrderMatch = async (
   marketAsk: entity.MarketAsk,
   marketBidArgs: gql.MutationCreateBidArgs,
@@ -84,7 +47,7 @@ const validOrderMatch = async (
       {
         maker: marketBidArgs?.input.makerAddress,
         makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
-        taker: marketBidArgs?.input.takerAddress || helper.AddressZero,
+        taker: marketBidArgs?.input.takerAddress,
         takeAssets: getAssetList(marketBidArgs?.input.makeAsset),
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
@@ -150,7 +113,7 @@ const validOrderMatch = async (
       {
         maker: marketBidArgs?.input.makerAddress,
         makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
-        taker: marketBidArgs?.input.takerAddress || helper.AddressZero,
+        taker: marketBidArgs?.input.takerAddress,
         takeAssets: getAssetList(marketBidArgs?.input.takeAsset),
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,

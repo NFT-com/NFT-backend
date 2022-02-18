@@ -1,8 +1,9 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, convertAssetInput, gql } from '@nftcom/gql/defs'
-import { _logger, entity, helper } from '@nftcom/shared'
+import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
+import { appError, marketAskError } from '@nftcom/gql/error'
+import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination } from '../helper'
 import { core } from '../service'
@@ -28,6 +29,45 @@ const getAsks = (
     filter,
   )
     .then(pagination.toPageable(pageInput))
+}
+
+const validAsk = async (
+  marketAskArgs: gql.MutationCreateAskArgs,
+  wallet: entity.Wallet,
+): Promise<boolean> => {
+  const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
+    contracts.nftMarketplaceAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+
+  // STEP 1 basic validation of order structure (if not used before)
+  try {
+    const result = await nftMarketplaceContract.validateOrder_(
+      {
+        maker: marketAskArgs?.input.makerAddress,
+        makeAssets: getAssetList(marketAskArgs?.input.makeAsset),
+        taker: marketAskArgs?.input.takerAddress,
+        takeAssets: getAssetList(marketAskArgs?.input.makeAsset),
+        salt: marketAskArgs?.input.salt,
+        start: marketAskArgs?.input.start,
+        end: marketAskArgs?.input.end,
+      },
+      marketAskArgs?.input.signature.v,
+      marketAskArgs?.input.signature.r,
+      marketAskArgs?.input.signature.s,
+    )
+
+    const calculatedStructHash: string = result?.[1]
+
+    if (marketAskArgs?.input.structHash !== calculatedStructHash) {
+      throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketAskArgs?.input.structHash}`)
+    }
+  } catch (err) {
+    logger.error('order validation error: ', err)
+    return false
+  }
+
+  return true
 }
 
 const createAsk = (
@@ -83,18 +123,30 @@ const createAsk = (
   const takeAssetInput = args?.input.takeAsset
   const takeAssets = convertAssetInput(takeAssetInput)
 
-  return repositories.marketAsk.save({
-    structHash: args?.input.structHash,
-    signature: args?.input.signature,
-    makerAddress: args?.input.makerAddress,
-    makeAsset: makeAssets,
-    takerAddress: args?.input.takerAddress,
-    takeAsset: takeAssets,
-    start: args?.input.start,
-    end: args?.input.end,
-    salt: args?.input.salt,
-    chainId: wallet.chainId,
-  })
+  // structHash should be unique
+  return repositories.marketAsk
+    .findOne({ where: { structHash: args?.input.structHash } })
+    .then(fp.rejectIfNotEmpty((appError.buildInvalid(
+      marketAskError.buildMarketAskInvalidMsg(),
+      marketAskError.ErrorType.MarketAskInvalid,
+    ))))
+    .then(() => validAsk(args, wallet))
+    .then(fp.rejectIfFalse((appError.buildInvalid(
+      marketAskError.buildMarketAskInvalidMsg(),
+      marketAskError.ErrorType.MarketAskInvalid,
+    ))))
+    .then(() => repositories.marketAsk.save({
+      structHash: args?.input.structHash,
+      signature: args?.input.signature,
+      makerAddress: args?.input.makerAddress,
+      makeAsset: makeAssets,
+      takerAddress: args?.input.takerAddress,
+      takeAsset: takeAssets,
+      start: args?.input.start,
+      end: args?.input.end,
+      salt: args?.input.salt,
+      chainId: wallet.chainId,
+    }))
 }
 
 export default {
