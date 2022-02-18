@@ -5,14 +5,17 @@ type GetMarketBid {
 }
 
 type MarketBid {
+  structHash: String!
+  signature: Signature!
+  marketAskId: String!
   makerAddress: Address!
-  makerWalletId: String!
   makeAsset: [MarketplaceAsset!]
-  takerAddress: Address
+  takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
+  message: String!
   start: String!
   end: String!
-  salt: String!
+  salt: Int!
   offerAcceptedAt: DateTime
   acceptedAt: DateTime
   rejectedAt: DateTime
@@ -20,4 +23,31 @@ type MarketBid {
   chainId: String!
 }
 
-#extend type Mutation {}
+input BidsInput {
+  makerAddress: Address
+  pageInput: PageInput
+}
+
+input CreateBidInput {
+  structHash: String!
+  signature: SignatureInput!
+  marketAskId: String!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
+  message: String!
+  start: String!
+  end: String!
+  salt: Int!
+  chainId: String!
+}
+
+
+extend type Query {
+  getBids(input: BidsInput!): GetMarketBid!
+}
+
+extend type Mutation {
+  createBid(input: CreateBidInput!): MarketBid!
+}
