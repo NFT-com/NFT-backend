@@ -2,8 +2,6 @@ import { BigNumber, constants, Signature, utils } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
-import { AssetClass } from '@nftcom/shared/defs'
-
 export const stringListToMap = (
   str: string,
   listSep = '|',
@@ -27,6 +25,10 @@ export const ERC721_ASSET_CLASS = convertToHash('ERC721').substring(0, 10)
 export const ERC1155_ASSET_CLASS = convertToHash('ERC1155').substring(0, 10)
 export const COLLECTION = convertToHash('COLLECTION').substring(0, 10)
 export const CRYPTO_KITTY = convertToHash('CRYPTO_KITTY').substring(0, 10)
+
+export const checkSum = (input: string): string => {
+  return utils.getAddress(input)
+}
 
 export const encode = (types: string[], values: any[]): string => {
   return utils.defaultAbiCoder.encode(types, values)
@@ -148,21 +150,3 @@ export const shortenAddress = (address: string, chars = 4): string => {
 
 export const toFixedValue = (price: string, units = 18): string =>
   utils.formatUnits(bigNumber(price), units)
-
-export const convertAssetInput = (assetInput: any): any => {
-  const assets = []
-  assetInput.map((asset) => {
-    assets.push({
-      standard: {
-        assetClass: asset.standard.assetClass as AssetClass,
-        bytes: asset.standard.bytes,
-        contractAddress: asset.standard.contractAddress,
-        tokenId: bigNumberToString(asset.standard.tokenId),
-        allowAll: asset.standard.allowAll,
-      },
-      bytes: asset.bytes,
-      value: bigNumberToString(asset.value),
-      minimumBid: bigNumberToString(asset.minimumBid),
-    })
-  })
-}
