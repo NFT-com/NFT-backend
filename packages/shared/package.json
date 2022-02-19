@@ -21,7 +21,7 @@
     "nanoid": "^3.1.30",
     "node-fetch": "^2.6.6",
     "pg": "^8.7.1",
-    "typeorm": "^0.2.41"
+    "typeorm": "0.2.41"
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^9.0.0",
