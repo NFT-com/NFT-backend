@@ -1,0 +1,8 @@
+input SwapsInput {
+  makerAddress: Address
+  pageInput: PageInput
+}
+
+extend type Query {
+  getSwaps(input: SwapsInput!): GetMarketSwap!
+}

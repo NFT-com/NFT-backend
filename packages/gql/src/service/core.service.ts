@@ -1,6 +1,6 @@
 import { getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, walletError } from '@nftcom/gql/error'
+import { appError, profileError,walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
 import { _logger, defs, entity, fp, helper, repository } from '@nftcom/shared'
 
@@ -230,11 +230,40 @@ export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<
   return repositories.edge.count({ ...filter, deletedAt: null })
 }
 
+// global object for blacklist profiles
+const blacklistProfiles = {
+  'nike': true,
+}
+
+const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
+const validProfileRegex = /^[0-9a-z_]{1,100}$/
+const blacklistBool = (inputUrl: string): boolean => blacklistProfiles[inputUrl]
+
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
 ): Promise<entity.Profile> => {
-  return ctx.repositories.profile.save(profile)
+  return ctx.repositories.profile.findByURL(profile.url)
+    .then(fp.thruIfEmpty((profile) =>
+      Promise.all([
+        fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
+          appError.buildExists(
+            profileError.buildProfileInvalidCharMsg(profile.url),
+            profileError.ErrorType.ProfileInvalid,
+          )),
+        fp.rejectIf((profile: Partial<entity.Profile>) => ethereumRegex.test(profile.url))(
+          appError.buildExists(
+            profileError.buildProfileInvalidEthMsg(profile.url),
+            profileError.ErrorType.ProfileInvalid,
+          )),
+        fp.rejectIf((profile: Partial<entity.Profile>) => blacklistBool(profile.url))(
+          appError.buildExists(
+            profileError.buildProfileInvalidBlacklistMsg(profile.url),
+            profileError.ErrorType.ProfileInvalid,
+          )),
+      ]),
+    ))
+    .then(() => ctx.repositories.profile.save(profile))
 }
 
 export const createEdge = (
