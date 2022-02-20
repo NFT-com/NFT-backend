@@ -1,5 +1,20 @@
+type MarketSwap {
+  askId: String!
+  bidId: String
+  txHash: String!
+  blockNumber: String!
+  private: Boolean
+}
+
+type GetMarketSwap {
+  items: [MarketSwap!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
 input SwapsInput {
-  makerAddress: Address
+  askId: Address
+  bidId: Address
   pageInput: PageInput
 }
 
