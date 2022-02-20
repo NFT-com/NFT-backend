@@ -149,6 +149,25 @@ const unfollowProfile = (
     }))
 }
 
+const getProfileByURLPassive = (
+  _: any,
+  args: gql.QueryProfileArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { user } = ctx
+  logger.debug('getProfileByURLPassive', { loggedInUserId: user?.id, input: args })
+  const schema = Joi.object().keys({
+    url: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args)
+
+  return ctx.repositories.profile.findByURL(args.url)
+    .then(fp.rejectIfEmpty(appError.buildExists(
+      profileError.buildProfileNotFoundMsg(args.url),
+      profileError.ErrorType.ProfileNotFound,
+    )))
+}
+
 const getProfileByURL = (
   _: any,
   args: gql.QueryProfileArgs,
@@ -370,6 +389,7 @@ const mintGKProfile = (
 export default {
   Query: {
     profile: getProfileByURL,
+    profilePassive: getProfileByURLPassive,
     myProfiles: combineResolvers(auth.isAuthenticated, getMyProfiles),
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
