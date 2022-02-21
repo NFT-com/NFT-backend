@@ -13,7 +13,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 const getNFT = (
   _: unknown,
-  args: gql.QueryNFTArgs,
+  args: gql.QueryNFTByIdArgs,
   ctx: Context,
 ): Promise<gql.NFT> => {
   const { user, repositories } = ctx
@@ -23,6 +23,30 @@ const getNFT = (
   })
   joi.validateSchema(schema, args)
   return repositories.nft.findById(args.id)
+}
+
+const getContractNFT = (
+  _: unknown,
+  args: gql.QueryNFTArgs,
+  ctx: Context,
+): Promise<gql.NFT> => {
+  const { user, repositories } = ctx
+  logger.debug('getContractNFT', { loggedInUserId: user?.id, input: args })
+  const schema = Joi.object().keys({
+    id: Joi.string().required(),
+    contract: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args)
+  return repositories.nft.findOne({ where: {
+    contract: args.contract,
+    tokenId: args.id,
+  } })
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('collection ' + args.contract),
+        nftError.ErrorType.NFTNotFound,
+      ),
+    ))
 }
 
 const getNFTs = (
@@ -157,7 +181,7 @@ const getCollectionNFTs = (
       Promise.resolve(resultEdges.totalItems),
     ]))
     .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => Promise.resolve({
-      items: nfts,
+      items: nfts ?? [],
       pageInfo,
       totalItems: count,
     }))
@@ -191,7 +215,8 @@ const refreshMyNFTs = (
 
 export default {
   Query: {
-    nft: getNFT,
+    nft: getContractNFT,
+    nftById: getNFT,
     nfts: getNFTs,
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
