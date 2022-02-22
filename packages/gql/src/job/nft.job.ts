@@ -1,6 +1,7 @@
 import { Job } from 'bull'
 import { ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
+import * as typeorm from 'typeorm'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
@@ -42,10 +43,6 @@ interface NFTMetaDataResponse {
   }
   timeLastUpdated: string
 }
-interface NFT {
-  contract: string
-  tokenId: string
-}
 
 const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   try {
@@ -66,11 +63,11 @@ const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
  * If not, deletes the NFT record from the DB.
  */
 const filterNFTsWithAlchemy = async (
-  nfts: Array<NFT>,
+  nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<any[]> => {
   const contracts = []
-  nfts.forEach((nft: NFT) => {
+  nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
     contracts.push(nft.contract)
   })
   try {
@@ -83,7 +80,7 @@ const filterNFTsWithAlchemy = async (
     const checksum = ethers.utils.getAddress
 
     return await Promise.all(
-      nfts.map(async (dbNFT: NFT) => {
+      nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
           checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
           ownedNFT.id.tokenId === dbNFT.tokenId,
@@ -91,7 +88,8 @@ const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.nft.delete(dbNFT)
+          await repositories.edge.delete({ thatEntityId: dbNFT.id } )
+            .then(() => repositories.nft.delete(dbNFT))
         }
       }),
     )
@@ -192,13 +190,13 @@ const updateEntity = async (
     })
 
     if (newNFT) {
-      await repositories.collection.findOne({ where: {
-        contract: ethers.utils.getAddress(newNFT.contract),
-      } })
+      await repositories.collection.findOne({
+        where: { contract: ethers.utils.getAddress(newNFT.contract) },
+      })
         .then(fp.thruIfEmpty(() => {
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then((collectionName: string) => {
-              logger.debug('new collection name', { collectionName })
+              logger.debug('new collection', { collectionName, contract: newNFT.contract })
               return repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
                 name: collectionName,
@@ -236,15 +234,12 @@ export const checkNFTContractAddresses = async (
     if (!nfts.length) {
       return []
     }
-    const nftsChunks: NFT[][] = Lodash.chunk(
-      nfts.map((nft: entity.NFT) => ({
-        contract: ethers.utils.getAddress(nft.contract),
-        tokenId: nft.tokenId,
-      })),
+    const nftsChunks: entity.NFT[][] = Lodash.chunk(
+      nfts,
       20,
     )
 
-    nftsChunks.forEach(async (nftChunk: NFT[]) => {
+    nftsChunks.forEach(async (nftChunk: entity.NFT[]) => {
       await filterNFTsWithAlchemy(nftChunk, walletAddress)
     })
   } catch (err) {
@@ -285,16 +280,15 @@ export const updateWalletNFTs = async (
   userId: string,
   walletId: string,
   walletAddress: string,
-): Promise<void[]> => {
+): Promise<void> => {
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
-  return await Promise.all(
-    ownedNFTs.map(async (nft: OwnedNFT) => {
-      const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
-
-      if (response)
-        await updateEntity(response, userId, walletId)
-    }),
-  )
+  ownedNFTs.reduce(async (memo: any, nft: OwnedNFT) => {
+    await memo
+    const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
+    if (response) {
+      await updateEntity(response, userId, walletId)
+    }
+  }, null)
 }
 
 /**
