@@ -2,6 +2,7 @@ import { Job } from 'bull'
 import { utils } from 'ethers'
 
 import { _logger, db, provider } from '@nftcom/shared'
+import { parseBoolean } from '@nftcom/shared/helper/misc'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -25,21 +26,32 @@ const listenApprovalEvents = async (chainId: number): Promise<void[]> => {
   try {
     const logs = await chainProvider.getLogs(filter)
     logs.map(async (log) => {
-      const txHash = log.topics[1]
+      const hash = log.topics[1]
       const maker = log.topics[2]
-      const taker = log.topics[3]
 
-      const marketAsk = await repositories.marketAsk.findOne({ where: { makerAddress: maker } })
-      await repositories.marketAsk.updateOneById(marketAsk.id, {
-        approvalTxHash: txHash,
-      })
-      const marketBid = await repositories.marketBid.findOne({
+      const marketAsk = await repositories.marketAsk.findOne({
         where: {
+          structHash: hash,
           makerAddress: maker,
-          takerAddress: taker,
         },
       })
-      await repositories.marketBid.updateOneById(marketBid.id, { approvalTxHash: txHash })
+      if (marketAsk) {
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          approvalTxHash: log.transactionHash,
+        })
+      } else {
+        const marketBid = await repositories.marketBid.findOne({
+          where: {
+            structHash: hash,
+            makerAddress: maker,
+          },
+        })
+        if (marketBid) {
+          await repositories.marketBid.updateOneById(marketAsk.id, {
+            approvalTxHash: log.transactionHash,
+          })
+        }
+      }
     })
   } catch (e) {
     console.log(e)
@@ -96,11 +108,49 @@ const listenMatchEvents = async (chainId: number): Promise<void[]> => {
     fromBlock: 0,
     toBlock: latestBlock.number,
     topics: [
-      utils.id('Match(bytes32,bytes32,address,address,uint256,uint256,uint256,uint256,bool)'),
+      utils.id('Match(bytes32,bytes32,address,address,uint256,uint256,bool)'),
     ],
   }
-  const logs = await chainProvider.getLogs(filter)
-  console.log(logs)
+  try {
+    const logs = await chainProvider.getLogs(filter)
+    logs.map(async (log) => {
+      const makerHash = log.topics[1]
+      const takerHash = log.topics[2]
+      const privateSale = log.topics[7]
+
+      let marketAsk, marketBid
+      // if maker is user who made ask listing...
+      marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
+      if (marketAsk) {
+        marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
+      } else {
+        // if maker is user who made bid to ask...
+        marketBid = await repositories.marketBid.findOne( { where: { structHash: makerHash } })
+        if (marketBid) {
+          marketAsk = await repositories.marketAsk.findOne( { where: { structHash: takerHash } })
+        }
+      }
+
+      if (!marketAsk || !marketBid) return
+      const marketSwap = await repositories.marketSwap.findOne({
+        where: {
+          askId: marketAsk.id,
+          bidId: marketBid.id,
+        },
+      })
+      if (!marketSwap) {
+        await repositories.marketSwap.save({
+          askId: marketAsk.id,
+          bidId: marketBid.id,
+          txHash: log.transactionHash,
+          blockNumber: log.blockNumber.toFixed(),
+          private: parseBoolean(privateSale),
+        })
+      }
+    })
+  } catch (e) {
+    console.log(e)
+  }
   return
 }
 
