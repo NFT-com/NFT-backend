@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm'
 
-import { MarketplaceAsset, Signature } from '@nftcom/shared/defs'
+import { defs } from '@nftcom/shared'
 
 import { BaseEntity } from './base.entity'
 @Entity()
@@ -10,7 +10,7 @@ export class MarketAsk extends BaseEntity {
   structHash: string
 
   @Column({ type: 'json', nullable: false })
-  signature: Signature
+  signature: defs.Signature
 
   @Column({ nullable: false })
   makerAddress: string
@@ -19,7 +19,7 @@ export class MarketAsk extends BaseEntity {
     nullable: false,
     default: [],
   })
-  makeAsset: MarketplaceAsset[]
+  makeAsset: defs.MarketplaceAsset[]
 
   @Column({ nullable: false })
   takerAddress: string
@@ -28,7 +28,7 @@ export class MarketAsk extends BaseEntity {
     nullable: false,
     default: [],
   })
-  takeAsset: MarketplaceAsset[]
+  takeAsset: defs.MarketplaceAsset[]
 
   @Column({ nullable: false })
   start: string

@@ -1,6 +1,5 @@
 import { gql } from '@nftcom/gql/defs'
 import { db, defs, entity, helper } from '@nftcom/shared'
-import { AssetClass } from '@nftcom/shared/defs'
 
 import { PageInfo } from './gql'
 
@@ -63,7 +62,7 @@ Array<gql.MarketplaceAssetInput> =>
   assetInput.map((asset) => {
     assets.push({
       standard: {
-        assetClass: asset.standard.assetClass as AssetClass,
+        assetClass: asset.standard.assetClass as defs.AssetClass,
         bytes: asset.standard.bytes,
         contractAddress: asset.standard.contractAddress,
         tokenId: helper.bigNumberToString(asset.standard.tokenId),
