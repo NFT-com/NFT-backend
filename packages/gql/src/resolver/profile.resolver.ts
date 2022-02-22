@@ -105,15 +105,14 @@ const followProfile = (
   args: gql.MutationFollowProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, wallet, repositories } = ctx
+  const { user, wallet } = ctx
   logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
 
   const schema = Joi.object().keys({ url: Joi.string() })
   joi.validateSchema(schema, args)
 
   const { url } = args
-  return repositories.profile.findByURL(url)
-    .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url })))
+  return core.createProfile(ctx, { url })
     .then(fp.tapWait(createFollowEdge(ctx)))
 }
 
@@ -150,20 +149,38 @@ const unfollowProfile = (
     }))
 }
 
+const getProfileByURLPassive = (
+  _: any,
+  args: gql.QueryProfileArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { user } = ctx
+  logger.debug('getProfileByURLPassive', { loggedInUserId: user?.id, input: args })
+  const schema = Joi.object().keys({
+    url: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args)
+
+  return ctx.repositories.profile.findByURL(args.url)
+    .then(fp.rejectIfEmpty(appError.buildExists(
+      profileError.buildProfileNotFoundMsg(args.url),
+      profileError.ErrorType.ProfileNotFound,
+    )))
+}
+
 const getProfileByURL = (
   _: any,
   args: gql.QueryProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, repositories } = ctx
+  const { user } = ctx
   logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
   })
   joi.validateSchema(schema, args)
 
-  return repositories.profile.findByURL(args.url)
-    .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: args.url })))
+  return core.createProfile(ctx, { url: args.url })
 }
 
 const getWinningBid = (
@@ -372,6 +389,7 @@ const mintGKProfile = (
 export default {
   Query: {
     profile: getProfileByURL,
+    profilePassive: getProfileByURLPassive,
     myProfiles: combineResolvers(auth.isAuthenticated, getMyProfiles),
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),

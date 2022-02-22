@@ -1,3 +1,10 @@
+enum AssetClass {
+  ETH
+  ERC20
+  ERC721
+  ERC1155
+}
+
 type GetMarketAsk {
   items: [MarketAsk!]
   pageInfo: PageInfo
@@ -8,37 +15,68 @@ type AssetType {
   assetClass: String!
   bytes: String!
   contractAddress: String!
-  tokenId: String
+  tokenId: Uint256!
   allowAll: Boolean!
 }
 
 type MarketplaceAsset {
   standard: AssetType!
   bytes: String!
-  value: Int!
-  minimumBid: Int!
+  value: Uint256!
+  minimumBid: Uint256!
 }
 
 type MarketAsk {
+  structHash: String!
+  signature: Signature!
   makerAddress: Address!
-  makerWalletId: String!
   makeAsset: [MarketplaceAsset!]
-  takerAddress: Address
+  takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
   start: String!
   end: String!
-  salt: String!
+  salt: Int!
   offerAcceptedAt: DateTime
   chainId: String!
 }
 
 input AsksInput {
-  makerWalletId: String
+  makerAddress: Address
   pageInput: PageInput
+}
+
+input AssetTypeInput {
+  assetClass: AssetClass!
+  bytes: String!
+  contractAddress: String!
+  tokenId: Uint256!
+  allowAll: Boolean!
+}
+
+input MarketplaceAssetInput {
+  standard: AssetTypeInput!
+  bytes: String!
+  value: Uint256!
+  minimumBid: Uint256!
+}
+
+input CreateAskInput {
+  structHash: String!
+  signature: SignatureInput!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
+  start: String!
+  end: String!
+  salt: Int!
+  chainId: String!
 }
 
 extend type Query {
   getAsks(input: AsksInput!): GetMarketAsk!
 }
 
-#extend type Mutation {}
+extend type Mutation {
+  createAsk(input: CreateAskInput!): MarketAsk!
+}

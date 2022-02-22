@@ -59,6 +59,12 @@ const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   }
 }
 
+/**
+ * Takes a bunch of NFTs (pulled from the DB), and checks 
+ * that the given owner is still correct.
+ * 
+ * If not, deletes the NFT record from the DB.
+ */
 const filterNFTsWithAlchemy = async (
   nfts: Array<NFT>,
   owner: string,
@@ -74,21 +80,18 @@ const filterNFTsWithAlchemy = async (
     })
     const ownedNfts = response.ownedNfts
 
+    const checksum = ethers.utils.getAddress
+
     return await Promise.all(
-      nfts.map(async (alchemyNft: NFT) => {
+      nfts.map(async (dbNFT: NFT) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
-          ownedNFT.contract.address === alchemyNft.contract &&
-          ownedNFT.id.tokenId === alchemyNft.tokenId,
+          checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
+          ownedNFT.id.tokenId === dbNFT.tokenId,
         )
-        // if contract owner has changed ...
+        // We didn't find this NFT entry in the most recent list of
+        // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          const nftRecord = await repositories.nft.findOne({
-            where: {
-              contract: ethers.utils.getAddress(alchemyNft.contract),
-              tokenId: alchemyNft.tokenId,
-            },
-          })
-          await repositories.nft.delete(nftRecord)
+          await repositories.nft.delete(dbNFT)
         }
       }),
     )
@@ -168,8 +171,8 @@ const updateEntity = async (
     if (nftInfo.metadata.attributes) {
       nftInfo.metadata.attributes.map((trait) => {
         traits.push(({
-          type: trait[0],
-          value: trait[1],
+          type: trait?.trait_type,
+          value: trait?.value,
         }))
       })
     }
@@ -219,6 +222,10 @@ const updateEntity = async (
   }
 }
 
+/**
+ * Gets all the NFTs in the database owned by this user,
+ * and cross-references them with new Alchemy data.
+ */
 export const checkNFTContractAddresses = async (
   userId: string,
   walletId: string,

@@ -40,11 +40,10 @@ export enum NFTSize {
 }
 
 export enum AssetClass {
-  ETH_ASSET_CLASS = 'ETH',
-  ERC20_ASSET_CLASS = 'ERC20',
-  ERC721_ASSET_CLASS = 'ERC721',
-  ERC1155_ASSET_CLASS = 'ERC1155',
-  CRYPTO_PUNK = 'CRYPTO_PUNK',
+  ETH = 'ETH',
+  ERC20 = 'ERC20',
+  ERC721 = 'ERC721',
+  ERC1155 = 'ERC1155'
 }
 
 export type CurationItem = {
@@ -54,17 +53,17 @@ export type CurationItem = {
 
 export type AssetType = {
   assetClass: AssetClass
-  bytes: string
+  bytes: string // encoded data; (address, uint256, bool) = (contract address, tokenId - only NFTs, allow all from collection - only NFTs) if allow all = true, ignore tokenId...
   contractAddress: string
-  tokenId?: string
+  tokenId: string
   allowAll: boolean
 }
 
 export type MarketplaceAsset = {
   standard: AssetType
-  bytes: string
-  value: number
-  minimumBid: number
+  bytes: string // encoded data; (uint256, uint256) = (value, minimumBid)
+  value: string
+  minimumBid: string
 }
 
 export type Trait = {

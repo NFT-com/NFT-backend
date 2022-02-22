@@ -4,6 +4,9 @@ import approvalResolvers from './approval.resolver'
 import bidResolvers from './bid.resolver'
 import collectionResolvers from './collection.resolver'
 import curationResolvers from './curation.resolver'
+import marketAskResolvers from './marketAsk.resolver'
+import marketBidResolvers from './marketBid.resolver'
+import marketSwapResolvers from './marketBid.resolver'
 import miscResolvers from './misc.resolver'
 import nftResolvers from './nft.resolver'
 import profileResolvers from './profile.resolver'
@@ -17,6 +20,9 @@ export const resolvers = mergeResolvers([
   bidResolvers,
   curationResolvers,
   collectionResolvers,
+  marketAskResolvers,
+  marketBidResolvers,
+  marketSwapResolvers,
   miscResolvers,
   nftResolvers,
   profileResolvers,

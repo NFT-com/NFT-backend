@@ -1,17 +1,19 @@
-import { Column, Index } from 'typeorm'
+import { Column, Entity } from 'typeorm'
 
-import { MarketplaceAsset } from '@nftcom/shared/defs'
+import { MarketplaceAsset, Signature } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
-
+@Entity()
 export class MarketAsk extends BaseEntity {
 
   @Column({ nullable: false })
-  makerAddress: string
+  structHash: string
 
-  @Index()
+  @Column({ type: 'json', nullable: false })
+  signature: Signature
+
   @Column({ nullable: false })
-  makerWalletId: string
+  makerAddress: string
 
   @Column('json', {
     nullable: false,
@@ -19,7 +21,7 @@ export class MarketAsk extends BaseEntity {
   })
   makeAsset: MarketplaceAsset[]
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   takerAddress: string
 
   @Column('json', {
@@ -35,7 +37,7 @@ export class MarketAsk extends BaseEntity {
   end: string
 
   @Column({ nullable: false })
-  salt: string
+  salt: number
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   offerAcceptedAt: Date

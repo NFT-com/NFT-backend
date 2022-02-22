@@ -5,6 +5,20 @@ import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.js
 
 // TODO: move contract addresses to Doppler.
 
+export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0xA3509a064A54a7a60Fc4Db0245ef44F812f439f6')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+
 export function wethAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case 4:

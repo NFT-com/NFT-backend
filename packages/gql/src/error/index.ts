@@ -1,6 +1,8 @@
 export * as appError from './app.error'
 export * as approvalError from './approval.error'
 export * as curationError from './curation.error'
+export * as marketAskError from './marketAsk.error'
+export * as marketBidError from './marketBid.error'
 export * as mintError from './mint.error'
 export * as nftError from './nft.error'
 export * as profileError from './profile.error'
