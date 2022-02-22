@@ -25,7 +25,7 @@ const listenApprovalEvents = async (chainId: number): Promise<void[]> => {
   }
   try {
     const logs = await chainProvider.getLogs(filter)
-    logs.map(async (log) => {
+    const promises = logs.map(async (log) => {
       const hash = log.topics[1]
       const maker = log.topics[2]
 
@@ -53,13 +53,15 @@ const listenApprovalEvents = async (chainId: number): Promise<void[]> => {
         }
       }
     })
+
+    await Promise.allSettled(promises)
   } catch (e) {
     console.log(e)
   }
   return
 }
 
-const listenCancelEvents = async (chainId: number): Promise<void[]> => {
+const listenNonceIncrementedEvents = async (chainId: number): Promise<void[]> => {
   const chainProvider = provider.provider(chainId)
   const latestBlock = await chainProvider.getBlock('latest')
   const filter = {
@@ -67,33 +69,18 @@ const listenCancelEvents = async (chainId: number): Promise<void[]> => {
     fromBlock: 0,
     toBlock: latestBlock.number,
     topics: [
-      utils.id('Cancel(bytes32,address,address)'),
+      utils.id('NonceIncremented(address,uint)'),
     ],
   }
   try {
     const logs = await chainProvider.getLogs(filter)
-    logs.map(async (log) => {
-      const txHash = log.topics[1]
-      const maker = log.topics[2]
-      const taker = log.topics[3]
-
-      const marketAsk = await repositories.marketAsk.findOne({ where: { makerAddress: maker } })
-      // if takers cancel their bid...
-      if (taker) {
-        const marketBid = await repositories.marketBid.findOne({
-          where: {
-            makerAddress: maker,
-            takerAddress: taker,
-          },
-        })
-        await repositories.marketBid.updateOneById(marketBid.id, { cancelTxHash: txHash })
-      } else if (!taker) {
-        // if maker cancel ask listing...
-        await repositories.marketAsk.updateOneById(marketAsk.id, {
-          cancelTxHash: txHash,
-        })
-      }
+    const promises = logs.map(async (log) => {
+      console.log(log)
+      // const maker = log.topics[1]
+      // const nonce = log.topics[2]
     })
+
+    await Promise.allSettled(promises)
   } catch (e) {
     console.log(e)
   }
@@ -113,7 +100,7 @@ const listenMatchEvents = async (chainId: number): Promise<void[]> => {
   }
   try {
     const logs = await chainProvider.getLogs(filter)
-    logs.map(async (log) => {
+    const promises = logs.map(async (log) => {
       const makerHash = log.topics[1]
       const takerHash = log.topics[2]
       const privateSale = log.topics[7]
@@ -148,6 +135,8 @@ const listenMatchEvents = async (chainId: number): Promise<void[]> => {
         })
       }
     })
+
+    await Promise.allSettled(promises)
   } catch (e) {
     console.log(e)
   }
@@ -159,7 +148,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     logger.debug('marketplace sync job', job.data)
     const chainId = Number(job.data.chainId)
     await listenApprovalEvents(chainId)
-    await listenCancelEvents(chainId)
+    await listenNonceIncrementedEvents(chainId)
     await listenMatchEvents(chainId)
   } catch (err) {
     console.log('error', err)

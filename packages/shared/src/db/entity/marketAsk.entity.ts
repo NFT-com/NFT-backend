@@ -12,6 +12,9 @@ export class MarketAsk extends BaseEntity {
   @Column({ type: 'json', nullable: false })
   signature: Signature
 
+  @Column( { nullable: false })
+  nonce: number
+
   @Column({ nullable: false })
   makerAddress: string
 
