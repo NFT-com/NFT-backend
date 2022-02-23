@@ -5,6 +5,12 @@ enum AssetClass {
   ERC1155
 }
 
+enum AuctionType {
+  FixedPrice
+  English
+  Decreasing
+}
+
 type GetMarketAsk {
   items: [MarketAsk!]
   pageInfo: PageInfo
@@ -62,6 +68,7 @@ input MarketplaceAssetInput {
 
 input CreateAskInput {
   structHash: String!
+  auctionType: AuctionType!
   signature: SignatureInput!
   makerAddress: Address!
   makeAsset: [MarketplaceAssetInput!]
