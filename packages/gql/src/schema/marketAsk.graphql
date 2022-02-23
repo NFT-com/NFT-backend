@@ -5,7 +5,7 @@ enum AssetClass {
   ERC1155
 }
 
-enum AuctionTypeInput {
+enum AuctionType {
   FixedPrice
   English
   Decreasing
@@ -68,7 +68,7 @@ input MarketplaceAssetInput {
 
 input CreateAskInput {
   structHash: String!
-  auctionType: AuctionTypeInput!
+  auctionType: AuctionType!
   signature: SignatureInput!
   makerAddress: Address!
   makeAsset: [MarketplaceAssetInput!]
