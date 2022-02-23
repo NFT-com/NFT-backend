@@ -1,5 +1,7 @@
 import { Job } from 'bull'
 import { utils } from 'ethers'
+import { ethers } from 'ethers'
+import { LessThan } from 'typeorm'
 
 import { _logger, db, provider } from '@nftcom/shared'
 import { parseBoolean } from '@nftcom/shared/helper/misc'
@@ -12,12 +14,16 @@ const marketContract: {[chainId: number]: string} = {
   [4]: '0xA3509a064A54a7a60Fc4Db0245ef44F812f439f6',
 }
 
-const listenApprovalEvents = async (chainId: number): Promise<void[]> => {
-  const chainProvider = provider.provider(chainId)
+let cachedBlock = -1
+
+const listenApprovalEvents = async (
+  chainId: number,
+  chainProvider: ethers.providers.BaseProvider,
+): Promise<void[]> => {
   const latestBlock = await chainProvider.getBlock('latest')
   const filter = {
     address: marketContract[chainId],
-    fromBlock: 0,
+    fromBlock: cachedBlock,
     toBlock: latestBlock.number,
     topics: [
       utils.id('Approval(bytes32,address,address)'),
@@ -61,12 +67,14 @@ const listenApprovalEvents = async (chainId: number): Promise<void[]> => {
   return
 }
 
-const listenNonceIncrementedEvents = async (chainId: number): Promise<void[]> => {
-  const chainProvider = provider.provider(chainId)
+const listenNonceIncrementedEvents = async (
+  chainId: number,
+  chainProvider: ethers.providers.BaseProvider,
+): Promise<void[]> => {
   const latestBlock = await chainProvider.getBlock('latest')
   const filter = {
     address: marketContract[chainId],
-    fromBlock: 0,
+    fromBlock: cachedBlock,
     toBlock: latestBlock.number,
     topics: [
       utils.id('NonceIncremented(address,uint)'),
@@ -75,9 +83,20 @@ const listenNonceIncrementedEvents = async (chainId: number): Promise<void[]> =>
   try {
     const logs = await chainProvider.getLogs(filter)
     const promises = logs.map(async (log) => {
-      console.log(log)
-      // const maker = log.topics[1]
-      // const nonce = log.topics[2]
+      const maker = log.topics[1]
+      const nonce = log.topics[2]
+      const marketAsks = await repositories.marketAsk.find({
+        where: {
+          makerAddress: maker,
+          nonce: LessThan(nonce),
+        },
+      })
+      console.log(marketAsks)
+      // if (marketAsks.length) {
+      //
+      // } else {
+      //
+      // }
     })
 
     await Promise.allSettled(promises)
@@ -87,12 +106,67 @@ const listenNonceIncrementedEvents = async (chainId: number): Promise<void[]> =>
   return
 }
 
-const listenMatchEvents = async (chainId: number): Promise<void[]> => {
-  const chainProvider = provider.provider(chainId)
+const listenCancelEvents = async (
+  chainId: number,
+  chainProvider: ethers.providers.BaseProvider,
+): Promise<void[]> => {
   const latestBlock = await chainProvider.getBlock('latest')
   const filter = {
     address: marketContract[chainId],
-    fromBlock: 0,
+    fromBlock: cachedBlock,
+    toBlock: latestBlock.number,
+    topics: [
+      utils.id('Cancel(byte32,address)'),
+    ],
+  }
+  try {
+    const logs = await chainProvider.getLogs(filter)
+    const promises = logs.map(async (log) => {
+      const hash = log.topics[1]
+      const maker = log.topics[2]
+
+      const marketAsk = await repositories.marketAsk.findOne({
+        where: {
+          structHash: hash,
+          makerAddress: maker,
+        },
+      })
+      if (marketAsk) {
+        // if user cancels ask listing...
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          cancelTxHash: log.transactionHash,
+        })
+      } else {
+        const marketBid = await repositories.marketBid.findOne({
+          where: {
+            structHash: hash,
+            makerAddress: maker,
+          },
+        })
+        if (marketBid) {
+          // if user cancels bid on ask...
+          await repositories.marketBid.updateOneById(marketAsk.id, {
+            cancelTxHash: log.transactionHash,
+          })
+        }
+      }
+    })
+
+    await Promise.allSettled(promises)
+  } catch (e) {
+    console.log(e)
+  }
+  return
+}
+
+const listenMatchEvents = async (
+  chainId: number,
+  chainProvider: ethers.providers.BaseProvider,
+): Promise<void[]> => {
+  const latestBlock = await chainProvider.getBlock('latest')
+  const filter = {
+    address: marketContract[chainId],
+    fromBlock: cachedBlock,
     toBlock: latestBlock.number,
     topics: [
       utils.id('Match(bytes32,bytes32,address,address,uint256,uint256,bool)'),
@@ -147,9 +221,15 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
   try {
     logger.debug('marketplace sync job', job.data)
     const chainId = Number(job.data.chainId)
-    await listenApprovalEvents(chainId)
-    await listenNonceIncrementedEvents(chainId)
-    await listenMatchEvents(chainId)
+    const chainProvider = provider.provider(chainId)
+
+    await listenApprovalEvents(chainId, chainProvider)
+    await listenNonceIncrementedEvents(chainId, chainProvider)
+    await listenCancelEvents(chainId, chainProvider)
+    await listenMatchEvents(chainId, chainProvider)
+
+    const latestBlock = await chainProvider.getBlock('latest')
+    cachedBlock = latestBlock.number
   } catch (err) {
     console.log('error', err)
   }
