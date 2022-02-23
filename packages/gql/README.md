@@ -1,5 +1,7 @@
 # NFT.com GQL Server
 
+## [Click here to see SchemaAPI](./schema.md)
+
 ## **How to Set Up the Hedera Consensus Service With Production**
 
 ### **Requirements**
