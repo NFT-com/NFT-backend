@@ -80,6 +80,7 @@ const createAsk = (
 
   const schema = Joi.object().keys({
     structHash: Joi.string().required(),
+    auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
     signature: joi.buildSignatureInputSchema(),
     makerAddress: Joi.string().required(),
     makeAsset: Joi.array().min(1).max(100).items(
@@ -137,6 +138,7 @@ const createAsk = (
     ))))
     .then(() => repositories.marketAsk.save({
       structHash: args?.input.structHash,
+      auctionType: args?.input.auctionType,
       signature: args?.input.signature,
       makerAddress: args?.input.makerAddress,
       makeAsset: makeAssets,
