@@ -9,7 +9,11 @@ export class MarketAsk extends BaseEntity {
   @Column({ nullable: false })
   structHash: string
 
-  @Column({ nullable: false })
+  @Column({
+    type: 'enum',
+    enum: AuctionType,
+    nullable: false,
+  })
   auctionType: AuctionType
 
   @Column({ type: 'json', nullable: false })
