@@ -50,8 +50,7 @@ const bid = (
       }
 
       // create profile if it doesn't exist
-      return repositories.profile.findByURL(input.profileURL)
-        .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url: input.profileURL })))
+      return core.createProfile(ctx, { url: input.profileURL })
         .then(({ id }) => ({ walletId, profileId: id }))
     })
     .then(({ profileId, walletId }) => {
@@ -243,8 +242,7 @@ const setProfilePreferences = (
     // Fetch the Profiles by URLs and create Profiles that don't exist.
     .then(() => Promise.all(
       args.input.urls.map((url) =>
-        ctx.repositories.profile.findByURL(url)
-          .then(fp.thruIfEmpty(() => core.createProfile(ctx, { url }))),
+        core.createProfile(ctx, { url }),
       ),
     ))
     // Save the new Bids

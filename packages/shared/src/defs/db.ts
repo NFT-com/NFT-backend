@@ -66,6 +66,12 @@ export type MarketplaceAsset = {
   minimumBid: string
 }
 
+export enum AuctionType {
+  FixedPrice = 'FixedPrice',
+  English = 'English',
+  Decreasing = 'Decreasing',
+}
+
 export type Trait = {
   type: string
   value: string

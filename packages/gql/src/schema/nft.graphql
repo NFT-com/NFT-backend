@@ -31,7 +31,7 @@ type NFT {
   tokenId: String!
   isOwnedByMe: Boolean
   metadata: NFTMetadata!
-  price: Uint256!
+  price: Uint256
   type: NFTType!
 #  user: User
   wallet: Wallet
@@ -79,7 +79,8 @@ type RefreshMyNFTsOutput {
 }
 
 extend type Query {
-  nft(id: ID!): NFT!
+  nft(contract: Address!, id: String!): NFT!
+  nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!

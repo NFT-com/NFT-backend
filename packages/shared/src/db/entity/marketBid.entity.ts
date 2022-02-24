@@ -10,11 +10,11 @@ export class MarketBid extends BaseEntity {
   @Column({ nullable: false })
   structHash: string
 
+  @Column({ nullable: false })
+  nonce: number
+
   @Column({ type: 'json', nullable: false })
   signature: Signature
-
-  @Column( { nullable: false })
-  nonce: number
 
   @Column({ nullable: false })
   marketAskId: string

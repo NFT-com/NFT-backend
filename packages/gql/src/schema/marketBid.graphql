@@ -6,6 +6,7 @@ type GetMarketBid {
 
 type MarketBid {
   structHash: String!
+  nonce: Int!
   signature: Signature!
   marketAskId: String!
   makerAddress: Address!
@@ -30,6 +31,7 @@ input BidsInput {
 
 input CreateBidInput {
   structHash: String!
+  nonce: Int!
   signature: SignatureInput!
   marketAskId: String!
   makerAddress: Address!

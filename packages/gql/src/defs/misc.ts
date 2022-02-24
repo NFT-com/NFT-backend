@@ -1,6 +1,6 @@
 import { gql } from '@nftcom/gql/defs'
 import { db, defs, entity, helper } from '@nftcom/shared'
-import { AssetClass } from '@nftcom/shared/defs'
+import { ERC20_ASSET_CLASS, ERC721_ASSET_CLASS, ERC1155_ASSET_CLASS, ETH_ASSET_CLASS } from '@nftcom/shared/helper/misc'
 
 import { PageInfo } from './gql'
 
@@ -19,8 +19,8 @@ export type Context = {
   teamKey?: string
 }
 
-const encodeAssetType = (assetClass: string, asset: gql.MarketplaceAssetInput): string => {
-  switch (assetClass) {
+const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
+  switch (asset.standard.assetClass) {
   case 'ETH':
     return helper.encode(['address'], [helper.AddressZero()])
   case 'ERC20':
@@ -33,22 +33,38 @@ const encodeAssetType = (assetClass: string, asset: gql.MarketplaceAssetInput): 
   }
 }
 
+const encodeAssetClass = (assetClass: gql.AssetClass): string => {
+  switch (assetClass) {
+  case 'ETH':
+    return ETH_ASSET_CLASS
+  case 'ERC20':
+    return ERC20_ASSET_CLASS
+  case 'ERC721':
+    return ERC721_ASSET_CLASS
+  case 'ERC1155':
+    return ERC1155_ASSET_CLASS
+  default:
+    return ''
+  }
+}
+
 // byte validation and returns back asset list
 export const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any => {
   return assets.map((asset: gql.MarketplaceAssetInput) => {
-    const assetTypeBytes = encodeAssetType(asset.standard.assetClass, asset)
+    const assetTypeBytes = encodeAssetType(asset)
     const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
 
     // basic validation that bytes match
     if (assetTypeBytes !== asset.standard.bytes) {
       throw Error(`Calculated Asset Type Bytes ${assetTypeBytes} mismatch sent bytes ${asset.standard.bytes}`)
     } else if (assetBytes !== asset.bytes) {
+      console.log(assets)
       throw Error(`Calculated Asset Bytes ${assetBytes} mismatch sent bytes ${asset.bytes}`)
     }
 
     return {
       assetType: {
-        assetClass: asset.standard.assetClass,
+        assetClass: encodeAssetClass(asset.standard.assetClass),
         data: assetTypeBytes,
       },
       data: assetBytes,
@@ -63,7 +79,7 @@ Array<gql.MarketplaceAssetInput> =>
   assetInput.map((asset) => {
     assets.push({
       standard: {
-        assetClass: asset.standard.assetClass as AssetClass,
+        assetClass: asset.standard.assetClass as defs.AssetClass,
         bytes: asset.standard.bytes,
         contractAddress: asset.standard.contractAddress,
         tokenId: helper.bigNumberToString(asset.standard.tokenId),
