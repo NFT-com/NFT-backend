@@ -41,10 +41,10 @@ export class MarketAsk extends BaseEntity {
   takeAsset: MarketplaceAsset[]
 
   @Column({ nullable: false })
-  start: string
+  start: number
 
   @Column({ nullable: false })
-  end: string
+  end: number
 
   @Column({ nullable: false })
   salt: number

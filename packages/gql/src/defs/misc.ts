@@ -49,7 +49,9 @@ const encodeAssetClass = (assetClass: gql.AssetClass): string => {
 }
 
 // byte validation and returns back asset list
-export const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any => {
+export const getAssetList = (
+  assets: Array<gql.MarketplaceAssetInput>,
+): any[] => {
   return assets.map((asset: gql.MarketplaceAssetInput) => {
     const assetTypeBytes = encodeAssetType(asset)
     const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
