@@ -91,12 +91,25 @@ const listenNonceIncrementedEvents = async (
           nonce: LessThan(nonce),
         },
       })
-      console.log(marketAsks)
-      // if (marketAsks.length) {
-      //
-      // } else {
-      //
-      // }
+      if (marketAsks.length) {
+        await Promise.all(marketAsks.map(async (marketAsk) => {
+          await repositories.marketAsk.updateOneById(marketAsk.id, {
+            cancelTxHash: log.transactionHash,
+          })
+        }))
+      } else {
+        const marketBids = await repositories.marketBid.find({
+          where: {
+            makerAddress: maker,
+            nonce: LessThan(nonce),
+          },
+        })
+        await Promise.all(marketBids.map(async (marketBid) => {
+          await repositories.marketBid.updateOneById(marketBid.id, {
+            cancelTxHash: log.transactionHash,
+          })
+        }))
+      }
     })
 
     await Promise.allSettled(promises)
