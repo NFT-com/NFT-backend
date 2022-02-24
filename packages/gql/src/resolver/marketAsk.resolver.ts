@@ -47,7 +47,7 @@ const validAsk = async (
         maker: marketAskArgs?.input.makerAddress,
         makeAssets: getAssetList(marketAskArgs?.input.makeAsset),
         taker: marketAskArgs?.input.takerAddress,
-        takeAssets: getAssetList(marketAskArgs?.input.makeAsset),
+        takeAssets: getAssetList(marketAskArgs?.input.takeAsset),
         salt: marketAskArgs?.input.salt,
         start: marketAskArgs?.input.start,
         end: marketAskArgs?.input.end,
@@ -79,6 +79,7 @@ const createAsk = (
   logger.debug('createAsk', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
+    chainId: Joi.string().required(),
     structHash: Joi.string().required(),
     auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
     signature: joi.buildSignatureInputSchema(),
