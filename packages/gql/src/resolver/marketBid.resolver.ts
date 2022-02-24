@@ -142,6 +142,7 @@ const createBid = (
 
   const schema = Joi.object().keys({
     structHash: Joi.string().required(),
+    nonce: Joi.required().custom(joi.buildBigNumber),
     signature: joi.buildSignatureInputSchema(),
     marketAskId: Joi.string().required(),
     makerAddress: Joi.string().required(),
@@ -199,6 +200,7 @@ const createBid = (
     )))
     .then(() => repositories.marketBid.save({
       structHash: args?.input.structHash,
+      nonce: args?.input.nonce,
       signature: args?.input.signature,
       marketAskId: args?.input.marketAskId,
       makerAddress: args?.input.makerAddress,

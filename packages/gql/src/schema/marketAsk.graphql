@@ -34,6 +34,7 @@ type MarketplaceAsset {
 
 type MarketAsk {
   structHash: String!
+  nonce: Int!
   signature: Signature!
   makerAddress: Address!
   makeAsset: [MarketplaceAsset!]
@@ -68,6 +69,7 @@ input MarketplaceAssetInput {
 
 input CreateAskInput {
   structHash: String!
+  nonce: Int!
   auctionType: AuctionType!
   signature: SignatureInput!
   makerAddress: Address!
