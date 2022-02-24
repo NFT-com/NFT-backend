@@ -35,19 +35,13 @@ const _abi = [
       {
         indexed: false,
         internalType: "bytes32",
-        name: "hash",
+        name: "structHash",
         type: "bytes32",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "maker",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "taker",
         type: "address",
       },
     ],
@@ -73,19 +67,13 @@ const _abi = [
       {
         indexed: false,
         internalType: "bytes32",
-        name: "hash",
+        name: "structHash",
         type: "bytes32",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "maker",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "taker",
         type: "address",
       },
     ],
@@ -139,6 +127,25 @@ const _abi = [
       },
     ],
     name: "Match",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "maker",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "newNonce",
+        type: "uint256",
+      },
+    ],
+    name: "NonceIncremented",
     type: "event",
   },
   {
@@ -360,6 +367,11 @@ const _abi = [
             name: "end",
             type: "uint256",
           },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
         ],
         internalType: "struct LibSignature.Order",
         name: "order",
@@ -369,25 +381,6 @@ const _abi = [
     name: "approveOrder_",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    name: "approvedOrders",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
   {
@@ -475,6 +468,11 @@ const _abi = [
           {
             internalType: "uint256",
             name: "end",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
             type: "uint256",
           },
         ],
@@ -588,6 +586,11 @@ const _abi = [
           {
             internalType: "uint256",
             name: "end",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
             type: "uint256",
           },
         ],
@@ -749,6 +752,11 @@ const _abi = [
             name: "end",
             type: "uint256",
           },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
         ],
         internalType: "struct LibSignature.Order",
         name: "sellOrder",
@@ -839,6 +847,11 @@ const _abi = [
             name: "end",
             type: "uint256",
           },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
         ],
         internalType: "struct LibSignature.Order",
         name: "buyOrder",
@@ -863,6 +876,13 @@ const _abi = [
     name: "executeSwap",
     outputs: [],
     stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "incrementNonce",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -909,6 +929,44 @@ const _abi = [
     name: "modifyWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "nonces",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
+      },
+    ],
+    name: "orderApproved",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "approved",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -1154,6 +1212,11 @@ const _abi = [
             name: "end",
             type: "uint256",
           },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
         ],
         internalType: "struct LibSignature.Order",
         name: "sellOrder",
@@ -1242,6 +1305,11 @@ const _abi = [
           {
             internalType: "uint256",
             name: "end",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
             type: "uint256",
           },
         ],
@@ -1346,6 +1414,11 @@ const _abi = [
           {
             internalType: "uint256",
             name: "end",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
             type: "uint256",
           },
         ],

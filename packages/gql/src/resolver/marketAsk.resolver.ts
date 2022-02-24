@@ -51,6 +51,7 @@ const validAsk = async (
         salt: marketAskArgs?.input.salt,
         start: marketAskArgs?.input.start,
         end: marketAskArgs?.input.end,
+        nonce: marketAskArgs?.input?.nonce,
       },
       marketAskArgs?.input.signature.v,
       marketAskArgs?.input.signature.r,
@@ -114,8 +115,8 @@ const createAsk = (
         minimumBid: Joi.required().custom(joi.buildBigNumber),
       }),
     ),
-    start: Joi.string().required(),
-    end: Joi.string().required(),
+    start: Joi.number().required(),
+    end: Joi.number().required(),
     salt: Joi.number().required(),
   })
   joi.validateSchema(schema, args?.input)

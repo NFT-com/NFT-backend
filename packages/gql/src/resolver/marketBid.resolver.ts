@@ -52,6 +52,7 @@ const validOrderMatch = async (
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
+        nonce: marketBidArgs?.input.nonce,
       },
       marketBidArgs?.input.signature.v,
       marketBidArgs?.input.signature.r,
@@ -109,6 +110,7 @@ const validOrderMatch = async (
         salt: marketAsk.salt,
         start: marketAsk.start,
         end: marketAsk.end,
+        nonce: marketAsk.nonce,
       },
       {
         maker: marketBidArgs?.input.makerAddress,
@@ -118,6 +120,7 @@ const validOrderMatch = async (
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
+        nonce: marketBidArgs?.input.nonce,
       },
     )
 
@@ -176,8 +179,8 @@ const createBid = (
       }),
     ),
     message: Joi.string().optional(),
-    start: Joi.string().required(),
-    end: Joi.string().required(),
+    start: Joi.number().required(),
+    end: Joi.number().required(),
     salt: Joi.number().required(),
   })
   joi.validateSchema(schema, args?.input)

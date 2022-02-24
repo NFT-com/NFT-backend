@@ -46,6 +46,7 @@ export declare namespace LibSignature {
     salt: BigNumberish;
     start: BigNumberish;
     end: BigNumberish;
+    nonce: BigNumberish;
   };
 
   export type OrderStructOutput = [
@@ -53,6 +54,7 @@ export declare namespace LibSignature {
     LibAsset.AssetStructOutput[],
     string,
     LibAsset.AssetStructOutput[],
+    BigNumber,
     BigNumber,
     BigNumber,
     BigNumber
@@ -64,22 +66,25 @@ export declare namespace LibSignature {
     salt: BigNumber;
     start: BigNumber;
     end: BigNumber;
+    nonce: BigNumber;
   };
 }
 
 export interface NftMarketplaceInterface extends utils.Interface {
   contractName: "NftMarketplace";
   functions: {
-    "approveOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256))": FunctionFragment;
-    "approvedOrders(bytes32)": FunctionFragment;
-    "buyNow((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256),uint8,bytes32,bytes32)": FunctionFragment;
-    "cancel((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256))": FunctionFragment;
+    "approveOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256))": FunctionFragment;
+    "buyNow((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256),uint8,bytes32,bytes32)": FunctionFragment;
+    "cancel((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256))": FunctionFragment;
     "cancelledOrFinalized(bytes32)": FunctionFragment;
     "changeProtocolFee(uint256)": FunctionFragment;
     "concatVRS(uint8,bytes32,bytes32)": FunctionFragment;
-    "executeSwap((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256),uint8[2],bytes32[2],bytes32[2])": FunctionFragment;
+    "executeSwap((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256),uint8[2],bytes32[2],bytes32[2])": FunctionFragment;
+    "incrementNonce()": FunctionFragment;
     "initialize(address,address,address,address)": FunctionFragment;
     "modifyWhitelist(address,bool)": FunctionFragment;
+    "nonces(address)": FunctionFragment;
+    "orderApproved(bytes32)": FunctionFragment;
     "owner()": FunctionFragment;
     "protocolFee()": FunctionFragment;
     "proxies(bytes4)": FunctionFragment;
@@ -90,18 +95,14 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "transferOwnership(address)": FunctionFragment;
     "upgradeTo(address)": FunctionFragment;
     "upgradeToAndCall(address,bytes)": FunctionFragment;
-    "validateMatch_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256))": FunctionFragment;
-    "validateOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256),uint8,bytes32,bytes32)": FunctionFragment;
+    "validateMatch_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256))": FunctionFragment;
+    "validateOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256),uint8,bytes32,bytes32)": FunctionFragment;
     "whitelistERC20(address)": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "approveOrder_",
     values: [LibSignature.OrderStruct]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "approvedOrders",
-    values: [BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "buyNow",
@@ -134,12 +135,21 @@ export interface NftMarketplaceInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "incrementNonce",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "initialize",
     values: [string, string, string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "modifyWhitelist",
     values: [string, boolean]
+  ): string;
+  encodeFunctionData(functionFragment: "nonces", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "orderApproved",
+    values: [BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -189,10 +199,6 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "approveOrder_",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "approvedOrders",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "buyNow", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "cancel", data: BytesLike): Result;
   decodeFunctionResult(
@@ -208,9 +214,18 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "executeSwap",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "incrementNonce",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "modifyWhitelist",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "orderApproved",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -256,10 +271,11 @@ export interface NftMarketplaceInterface extends utils.Interface {
 
   events: {
     "AdminChanged(address,address)": EventFragment;
-    "Approval(bytes32,address,address)": EventFragment;
+    "Approval(bytes32,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
-    "Cancel(bytes32,address,address)": EventFragment;
+    "Cancel(bytes32,address)": EventFragment;
     "Match(bytes32,bytes32,address,address,uint256,uint256,bool)": EventFragment;
+    "NonceIncremented(address,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "ProtocolFeeChange(uint256)": EventFragment;
     "ProxyChange(bytes4,address)": EventFragment;
@@ -273,6 +289,7 @@ export interface NftMarketplaceInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Cancel"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Match"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NonceIncremented"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ProtocolFeeChange"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ProxyChange"): EventFragment;
@@ -289,8 +306,8 @@ export type AdminChangedEvent = TypedEvent<
 export type AdminChangedEventFilter = TypedEventFilter<AdminChangedEvent>;
 
 export type ApprovalEvent = TypedEvent<
-  [string, string, string],
-  { hash: string; maker: string; taker: string }
+  [string, string],
+  { structHash: string; maker: string }
 >;
 
 export type ApprovalEventFilter = TypedEventFilter<ApprovalEvent>;
@@ -300,8 +317,8 @@ export type BeaconUpgradedEvent = TypedEvent<[string], { beacon: string }>;
 export type BeaconUpgradedEventFilter = TypedEventFilter<BeaconUpgradedEvent>;
 
 export type CancelEvent = TypedEvent<
-  [string, string, string],
-  { hash: string; maker: string; taker: string }
+  [string, string],
+  { structHash: string; maker: string }
 >;
 
 export type CancelEventFilter = TypedEventFilter<CancelEvent>;
@@ -320,6 +337,14 @@ export type MatchEvent = TypedEvent<
 >;
 
 export type MatchEventFilter = TypedEventFilter<MatchEvent>;
+
+export type NonceIncrementedEvent = TypedEvent<
+  [string, BigNumber],
+  { maker: string; newNonce: BigNumber }
+>;
+
+export type NonceIncrementedEventFilter =
+  TypedEventFilter<NonceIncrementedEvent>;
 
 export type OwnershipTransferredEvent = TypedEvent<
   [string, string],
@@ -395,11 +420,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    approvedOrders(
-      arg0: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
-
     buyNow(
       sellOrder: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -439,6 +459,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    incrementNonce(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     initialize(
       _transferProxy: string,
       _erc20TransferProxy: string,
@@ -452,6 +476,13 @@ export interface NftMarketplace extends BaseContract {
       _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    nonces(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    orderApproved(
+      hash: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean] & { approved: boolean }>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
@@ -514,8 +545,6 @@ export interface NftMarketplace extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  approvedOrders(arg0: BytesLike, overrides?: CallOverrides): Promise<boolean>;
-
   buyNow(
     sellOrder: LibSignature.OrderStruct,
     v: BigNumberish,
@@ -555,6 +584,10 @@ export interface NftMarketplace extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  incrementNonce(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   initialize(
     _transferProxy: string,
     _erc20TransferProxy: string,
@@ -568,6 +601,10 @@ export interface NftMarketplace extends BaseContract {
     _val: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  nonces(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+  orderApproved(hash: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
   owner(overrides?: CallOverrides): Promise<string>;
 
@@ -630,11 +667,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    approvedOrders(
-      arg0: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
     buyNow(
       sellOrder: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -674,6 +706,8 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    incrementNonce(overrides?: CallOverrides): Promise<void>;
+
     initialize(
       _transferProxy: string,
       _erc20TransferProxy: string,
@@ -687,6 +721,10 @@ export interface NftMarketplace extends BaseContract {
       _val: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    nonces(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    orderApproved(hash: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
@@ -752,24 +790,22 @@ export interface NftMarketplace extends BaseContract {
       newAdmin?: null
     ): AdminChangedEventFilter;
 
-    "Approval(bytes32,address,address)"(
-      hash?: null,
-      maker?: null,
-      taker?: null
+    "Approval(bytes32,address)"(
+      structHash?: null,
+      maker?: string | null
     ): ApprovalEventFilter;
-    Approval(hash?: null, maker?: null, taker?: null): ApprovalEventFilter;
+    Approval(structHash?: null, maker?: string | null): ApprovalEventFilter;
 
     "BeaconUpgraded(address)"(
       beacon?: string | null
     ): BeaconUpgradedEventFilter;
     BeaconUpgraded(beacon?: string | null): BeaconUpgradedEventFilter;
 
-    "Cancel(bytes32,address,address)"(
-      hash?: null,
-      maker?: null,
-      taker?: null
+    "Cancel(bytes32,address)"(
+      structHash?: null,
+      maker?: string | null
     ): CancelEventFilter;
-    Cancel(hash?: null, maker?: null, taker?: null): CancelEventFilter;
+    Cancel(structHash?: null, maker?: string | null): CancelEventFilter;
 
     "Match(bytes32,bytes32,address,address,uint256,uint256,bool)"(
       makerHash?: null,
@@ -789,6 +825,15 @@ export interface NftMarketplace extends BaseContract {
       takerSalt?: null,
       privateSale?: null
     ): MatchEventFilter;
+
+    "NonceIncremented(address,uint256)"(
+      maker?: string | null,
+      newNonce?: null
+    ): NonceIncrementedEventFilter;
+    NonceIncremented(
+      maker?: string | null,
+      newNonce?: null
+    ): NonceIncrementedEventFilter;
 
     "OwnershipTransferred(address,address)"(
       previousOwner?: string | null,
@@ -834,11 +879,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    approvedOrders(
-      arg0: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     buyNow(
       sellOrder: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -878,6 +918,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    incrementNonce(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     initialize(
       _transferProxy: string,
       _erc20TransferProxy: string,
@@ -890,6 +934,13 @@ export interface NftMarketplace extends BaseContract {
       _token: string,
       _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    nonces(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    orderApproved(
+      hash: BytesLike,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
@@ -954,11 +1005,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    approvedOrders(
-      arg0: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     buyNow(
       sellOrder: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -998,6 +1044,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    incrementNonce(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     initialize(
       _transferProxy: string,
       _erc20TransferProxy: string,
@@ -1010,6 +1060,16 @@ export interface NftMarketplace extends BaseContract {
       _token: string,
       _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    nonces(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    orderApproved(
+      hash: BytesLike,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
