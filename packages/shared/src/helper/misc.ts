@@ -31,7 +31,7 @@ export const checkSum = (input: string): string => {
 }
 
 export const encode = (types: string[], values: any[]): string => {
-  return utils.keccak256(utils.defaultAbiCoder.encode(types, values))
+  return utils.defaultAbiCoder.encode(types, values)
 }
 
 export const AddressZero = (): string => {
