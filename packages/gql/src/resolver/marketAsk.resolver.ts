@@ -63,6 +63,10 @@ const validAsk = async (
     if (marketAskArgs?.input.structHash !== calculatedStructHash) {
       throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketAskArgs?.input.structHash}`)
     }
+
+    if (!result[0]) {
+      throw Error(`provided signature ${JSON.stringify(marketAskArgs.input.signature)} doesn't match`)
+    }
   } catch (err) {
     logger.error('order validation error: ', err)
     return false
