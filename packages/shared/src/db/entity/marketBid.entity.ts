@@ -38,6 +38,9 @@ export class MarketBid extends BaseEntity {
   takeAsset: MarketplaceAsset[]
 
   @Column({ nullable: true })
+  marketSwapId: string
+
+  @Column({ nullable: true })
   approvalTxHash: string
 
   @Column({ nullable: true })
@@ -47,10 +50,10 @@ export class MarketBid extends BaseEntity {
   message: string
 
   @Column({ nullable: false })
-  start: string
+  start: number
 
   @Column({ nullable: false })
-  end: string
+  end: number
 
   @Column({ nullable: false })
   salt: number

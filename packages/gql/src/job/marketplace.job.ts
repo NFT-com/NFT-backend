@@ -3,41 +3,39 @@ import { utils } from 'ethers'
 import { ethers } from 'ethers'
 import { LessThan } from 'typeorm'
 
-import { _logger, db, provider } from '@nftcom/shared'
-import { parseBoolean } from '@nftcom/shared/helper/misc'
+import { _logger, contracts, db, helper,provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
 
-const marketContract: {[chainId: number]: string} = {
-  [4]: '0xA3509a064A54a7a60Fc4Db0245ef44F812f439f6',
+const cachedBlock: {[chainId: number] : number} = {
+  4: 10184159, // block number which marketplace contract created
 }
-
-let cachedBlock = -1
 
 const listenApprovalEvents = async (
   chainId: number,
   chainProvider: ethers.providers.BaseProvider,
+  latestBlock: number,
 ): Promise<void[]> => {
-  const latestBlock = await chainProvider.getBlock('latest')
+  const address = contracts.nftMarketplaceAddress(chainId)
   const filter = {
-    address: marketContract[chainId],
-    fromBlock: cachedBlock,
-    toBlock: latestBlock.number,
+    address: address,
+    fromBlock: cachedBlock[chainId],
+    toBlock: latestBlock,
     topics: [
-      utils.id('Approval(bytes32,address,address)'),
+      utils.id('Approval(bytes32,address)'),
     ],
   }
   try {
     const logs = await chainProvider.getLogs(filter)
     const promises = logs.map(async (log) => {
-      const hash = log.topics[1]
+      const structHash = log.topics[1]
       const maker = log.topics[2]
 
       const marketAsk = await repositories.marketAsk.findOne({
         where: {
-          structHash: hash,
+          structHash: structHash,
           makerAddress: maker,
         },
       })
@@ -48,7 +46,7 @@ const listenApprovalEvents = async (
       } else {
         const marketBid = await repositories.marketBid.findOne({
           where: {
-            structHash: hash,
+            structHash: structHash,
             makerAddress: maker,
           },
         })
@@ -70,12 +68,13 @@ const listenApprovalEvents = async (
 const listenNonceIncrementedEvents = async (
   chainId: number,
   chainProvider: ethers.providers.BaseProvider,
+  latestBlock: number,
 ): Promise<void[]> => {
-  const latestBlock = await chainProvider.getBlock('latest')
+  const address = contracts.nftMarketplaceAddress(chainId)
   const filter = {
-    address: marketContract[chainId],
-    fromBlock: cachedBlock,
-    toBlock: latestBlock.number,
+    address: address,
+    fromBlock: cachedBlock[chainId],
+    toBlock: latestBlock,
     topics: [
       utils.id('NonceIncremented(address,uint)'),
     ],
@@ -89,6 +88,7 @@ const listenNonceIncrementedEvents = async (
         where: {
           makerAddress: maker,
           nonce: LessThan(nonce),
+          marketSwapId: null,
         },
       })
       if (marketAsks.length) {
@@ -102,6 +102,7 @@ const listenNonceIncrementedEvents = async (
           where: {
             makerAddress: maker,
             nonce: LessThan(nonce),
+            marketSwapId: null,
           },
         })
         await Promise.all(marketBids.map(async (marketBid) => {
@@ -122,12 +123,13 @@ const listenNonceIncrementedEvents = async (
 const listenCancelEvents = async (
   chainId: number,
   chainProvider: ethers.providers.BaseProvider,
+  latestBlock: number,
 ): Promise<void[]> => {
-  const latestBlock = await chainProvider.getBlock('latest')
+  const address = contracts.nftMarketplaceAddress(chainId)
   const filter = {
-    address: marketContract[chainId],
-    fromBlock: cachedBlock,
-    toBlock: latestBlock.number,
+    address: address,
+    fromBlock: cachedBlock[chainId],
+    toBlock: latestBlock,
     topics: [
       utils.id('Cancel(byte32,address)'),
     ],
@@ -135,13 +137,14 @@ const listenCancelEvents = async (
   try {
     const logs = await chainProvider.getLogs(filter)
     const promises = logs.map(async (log) => {
-      const hash = log.topics[1]
+      const structHash = log.topics[1]
       const maker = log.topics[2]
 
       const marketAsk = await repositories.marketAsk.findOne({
         where: {
-          structHash: hash,
+          structHash: structHash,
           makerAddress: maker,
+          marketSwapId: null,
         },
       })
       if (marketAsk) {
@@ -152,7 +155,7 @@ const listenCancelEvents = async (
       } else {
         const marketBid = await repositories.marketBid.findOne({
           where: {
-            structHash: hash,
+            structHash: structHash,
             makerAddress: maker,
           },
         })
@@ -175,12 +178,13 @@ const listenCancelEvents = async (
 const listenMatchEvents = async (
   chainId: number,
   chainProvider: ethers.providers.BaseProvider,
+  latestBlock: number,
 ): Promise<void[]> => {
-  const latestBlock = await chainProvider.getBlock('latest')
+  const address = contracts.nftMarketplaceAddress(chainId)
   const filter = {
-    address: marketContract[chainId],
-    fromBlock: cachedBlock,
-    toBlock: latestBlock.number,
+    address: address,
+    fromBlock: cachedBlock[chainId],
+    toBlock: latestBlock,
     topics: [
       utils.id('Match(bytes32,bytes32,address,address,uint256,uint256,bool)'),
     ],
@@ -206,19 +210,25 @@ const listenMatchEvents = async (
       }
 
       if (!marketAsk || !marketBid) return
-      const marketSwap = await repositories.marketSwap.findOne({
+      let marketSwap = await repositories.marketSwap.findOne({
         where: {
           askId: marketAsk.id,
           bidId: marketBid.id,
         },
       })
       if (!marketSwap) {
-        await repositories.marketSwap.save({
+        marketSwap = await repositories.marketSwap.save({
           askId: marketAsk.id,
           bidId: marketBid.id,
           txHash: log.transactionHash,
           blockNumber: log.blockNumber.toFixed(),
-          private: parseBoolean(privateSale),
+          private: helper.parseBoolean(privateSale),
+        })
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          marketSwapId: marketSwap.id,
+        })
+        await repositories.marketBid.updateOneById(marketBid.id, {
+          marketSwapId: marketSwap.id,
         })
       }
     })
@@ -235,14 +245,14 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     logger.debug('marketplace sync job', job.data)
     const chainId = Number(job.data.chainId)
     const chainProvider = provider.provider(chainId)
-
-    await listenApprovalEvents(chainId, chainProvider)
-    await listenNonceIncrementedEvents(chainId, chainProvider)
-    await listenCancelEvents(chainId, chainProvider)
-    await listenMatchEvents(chainId, chainProvider)
-
     const latestBlock = await chainProvider.getBlock('latest')
-    cachedBlock = latestBlock.number
+
+    await listenApprovalEvents(chainId, chainProvider, latestBlock.number)
+    await listenNonceIncrementedEvents(chainId, chainProvider, latestBlock.number)
+    await listenCancelEvents(chainId, chainProvider, latestBlock.number)
+    await listenMatchEvents(chainId, chainProvider, latestBlock.number)
+    // update cached block number to the latest block number
+    cachedBlock[chainId] = latestBlock.number
   } catch (err) {
     console.log('error', err)
   }

@@ -13,9 +13,12 @@ type MarketBid {
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
+  marketSwapId: String
+  approvalTxHash: String
+  cancelTxHash: String
   message: String!
-  start: String!
-  end: String!
+  start: Int!
+  end: Int!
   salt: Int!
   offerAcceptedAt: DateTime
   acceptedAt: DateTime
@@ -39,8 +42,8 @@ input CreateBidInput {
   takerAddress: Address!
   takeAsset: [MarketplaceAssetInput!]
   message: String!
-  start: String!
-  end: String!
+  start: Int!
+  end: Int!
   salt: Int!
   chainId: String!
 }

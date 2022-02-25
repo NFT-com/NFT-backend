@@ -40,8 +40,11 @@ type MarketAsk {
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
-  start: String!
-  end: String!
+  marketSwapId: String
+  approvalTxHash: String
+  cancelTxHash: String
+  start: Int!
+  end: Int!
   salt: Int!
   offerAcceptedAt: DateTime
   chainId: String!
@@ -76,8 +79,8 @@ input CreateAskInput {
   makeAsset: [MarketplaceAssetInput!]
   takerAddress: Address!
   takeAsset: [MarketplaceAssetInput!]
-  start: String!
-  end: String!
+  start: Int!
+  end: Int!
   salt: Int!
   chainId: String!
 }

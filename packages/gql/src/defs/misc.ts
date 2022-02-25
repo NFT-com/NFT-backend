@@ -1,6 +1,5 @@
 import { gql } from '@nftcom/gql/defs'
 import { db, defs, entity, helper } from '@nftcom/shared'
-import { ERC20_ASSET_CLASS, ERC721_ASSET_CLASS, ERC1155_ASSET_CLASS, ETH_ASSET_CLASS } from '@nftcom/shared/helper/misc'
 
 import { PageInfo } from './gql'
 
@@ -36,20 +35,22 @@ const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
 const encodeAssetClass = (assetClass: gql.AssetClass): string => {
   switch (assetClass) {
   case 'ETH':
-    return ETH_ASSET_CLASS
+    return helper.ETH_ASSET_CLASS
   case 'ERC20':
-    return ERC20_ASSET_CLASS
+    return helper.ERC20_ASSET_CLASS
   case 'ERC721':
-    return ERC721_ASSET_CLASS
+    return helper.ERC721_ASSET_CLASS
   case 'ERC1155':
-    return ERC1155_ASSET_CLASS
+    return helper.ERC1155_ASSET_CLASS
   default:
     return ''
   }
 }
 
 // byte validation and returns back asset list
-export const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any => {
+export const getAssetList = (
+  assets: Array<gql.MarketplaceAssetInput>,
+): any[] => {
   return assets.map((asset: gql.MarketplaceAssetInput) => {
     const assetTypeBytes = encodeAssetType(asset)
     const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
