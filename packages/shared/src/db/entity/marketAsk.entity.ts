@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, OneToMany } from 'typeorm'
 
+import { NFT } from '@nftcom/shared/db/entity/nft.entity'
 import { AuctionType, MarketplaceAsset, Signature } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
@@ -63,5 +64,8 @@ export class MarketAsk extends BaseEntity {
 
   @Column( { nullable: false })
   chainId: string
+
+  @OneToMany(() => NFT, (nft: NFT) => nft.marketAsk)
+  nfts: NFT[]
 
 }
