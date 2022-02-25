@@ -18,8 +18,17 @@ const defaultBlock: {[chainId: number] : number} = {
   4: 10184159, // block number which marketplace contract created
 }
 
-const maxBlocks = 100000
+const MAX_BLOCKS = 100000 // we use this constant to split blocks to avoid any issues to get logs for event...
 
+/**
+ * recursive method to split blocks for getting event logs
+ * @param provider
+ * @param fromBlock
+ * @param toBlock
+ * @param address
+ * @param topics
+ * @param currentStackLv
+ */
 const splitGetLogs = async (
   provider: ethers.providers.BaseProvider,
   fromBlock: number,
@@ -28,6 +37,7 @@ const splitGetLogs = async (
   topics: any[],
   currentStackLv: number,
 ): Promise<ethers.providers.Log[]> => {
+  // split block range in half...
   const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
   // eslint-disable-next-line no-use-before-define
   const first = await getPastLogs(provider, address, topics,
@@ -38,6 +48,15 @@ const splitGetLogs = async (
   return [...first, ...last]
 }
 
+/**
+ * get past event logs
+ * @param provider
+ * @param address
+ * @param topics
+ * @param fromBlock
+ * @param toBlock
+ * @param currentStackLv
+ */
 const getPastLogs = async (
   provider: ethers.providers.BaseProvider,
   address: string,
@@ -46,6 +65,7 @@ const getPastLogs = async (
   toBlock: number,
   currentStackLv = 0,
 ): Promise<ethers.providers.Log[]> => {
+  // if there are too many recursive calls, we just return empty array...
   if (currentStackLv > 400) {
     return []
   }
@@ -54,11 +74,12 @@ const getPastLogs = async (
   }
 
   try {
-    // if there are too many blocks, we will break it up...
-    if (toBlock - fromBlock > maxBlocks) {
+    // if there are too many blocks, we will split it up...
+    if (toBlock - fromBlock > MAX_BLOCKS) {
       console.log(`getting logs from ${fromBlock} to ${toBlock}`)
       return await splitGetLogs(provider, fromBlock, toBlock, address, topics, currentStackLv)
     } else {
+      // we just get logs using provider...
       console.log(`getting logs from ${fromBlock} to ${toBlock}`)
       const filter = {
         address: address,
@@ -73,6 +94,13 @@ const getPastLogs = async (
   }
 }
 
+/**
+ * listen to approval events
+ * @param chainId
+ * @param provider
+ * @param cachedBlock
+ * @param latestBlock
+ */
 const listenApprovalEvents = async (
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -125,6 +153,13 @@ const listenApprovalEvents = async (
   return
 }
 
+/**
+ * listen to nonceIncremented events
+ * @param chainId
+ * @param provider
+ * @param cachedBlock
+ * @param latestBlock
+ */
 const listenNonceIncrementedEvents = async (
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -180,6 +215,13 @@ const listenNonceIncrementedEvents = async (
   return
 }
 
+/**
+ * listen to cancel events
+ * @param chainId
+ * @param provider
+ * @param cachedBlock
+ * @param latestBlock
+ */
 const listenCancelEvents = async (
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -234,6 +276,13 @@ const listenCancelEvents = async (
   return
 }
 
+/**
+ * listen to match events
+ * @param chainId
+ * @param provider
+ * @param cachedBlock
+ * @param latestBlock
+ */
 const listenMatchEvents = async (
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -295,6 +344,10 @@ const listenMatchEvents = async (
   return
 }
 
+/**
+ * get cached block from redis to sync marketplace events
+ * @param chainId
+ */
 const getCachedBlock = async (chainId: number): Promise<number> => {
   try {
     const cachedBlock = await redis.get(`cached_block_${chainId}`)
