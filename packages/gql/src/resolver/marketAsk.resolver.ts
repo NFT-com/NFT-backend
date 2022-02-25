@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -29,6 +30,38 @@ const getAsks = (
     filter,
   )
     .then(pagination.toPageable(pageInput))
+}
+
+const filterAsksForNft = (
+  contract: string,
+  tokenId: number,
+) => {
+  return (asks: entity.MarketAsk[]) => {
+    const filtered = asks.filter((ask: entity.MarketAsk) => {
+      const matchingMakeAsset = ask.makeAsset.find((asset) => {
+        return asset?.standard?.contractAddress === contract &&
+          asset?.standard?.tokenId === String(tokenId)
+      })
+      return matchingMakeAsset != null
+    })
+    return filtered
+  }
+}
+
+const getNFTAsks = (
+  _: any,
+  args: gql.QueryGetNFTAsksArgs,
+  ctx: Context,
+): Promise<gql.MarketAsk[]> => {
+  const { repositories } = ctx
+  logger.debug('getNFTAsks', { input: args?.input })
+  const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
+    makerAddress,
+  } as Partial<entity.MarketAsk>)
+  return repositories.marketAsk.find({ where: filter })
+    .then(fp.thruIfEmpty(() => []))
+    .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
 
 const validAsk = async (
@@ -170,6 +203,7 @@ const createAsk = (
 export default {
   Query: {
     getAsks: getAsks,
+    getNFTAsks: getNFTAsks,
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
