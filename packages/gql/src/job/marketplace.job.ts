@@ -1,34 +1,90 @@
 import { Job } from 'bull'
 import { utils } from 'ethers'
 import { ethers } from 'ethers'
+import Redis from 'ioredis'
 import { LessThan } from 'typeorm'
 
+import { redisConfig } from '@nftcom/gql/config'
 import { _logger, contracts, db, helper,provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-
 const repositories = db.newRepositories()
+const redis = new Redis({
+  port: redisConfig.port,
+  host: redisConfig.host,
+})
 
-const cachedBlock: {[chainId: number] : number} = {
+const defaultBlock: {[chainId: number] : number} = {
   4: 10184159, // block number which marketplace contract created
+}
+
+const maxBlocks = 100000
+
+const splitGetLogs = async (
+  provider: ethers.providers.BaseProvider,
+  fromBlock: number,
+  toBlock: number,
+  address: string,
+  topics: any[],
+  currentStackLv: number,
+): Promise<ethers.providers.Log[]> => {
+  const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
+  // eslint-disable-next-line no-use-before-define
+  const first = await getPastLogs(provider, address, topics,
+    fromBlock, midBlock, currentStackLv + 1)
+  // eslint-disable-next-line no-use-before-define
+  const last = await getPastLogs(provider, address, topics,
+    midBlock + 1, toBlock, currentStackLv + 1)
+  return [...first, ...last]
+}
+
+const getPastLogs = async (
+  provider: ethers.providers.BaseProvider,
+  address: string,
+  topics: any[],
+  fromBlock: number,
+  toBlock: number,
+  currentStackLv = 0,
+): Promise<ethers.providers.Log[]> => {
+  if (currentStackLv > 400) {
+    return []
+  }
+  if (fromBlock > toBlock) {
+    return []
+  }
+
+  try {
+    // if there are too many blocks, we will break it up...
+    if (toBlock - fromBlock > maxBlocks) {
+      console.log(`getting logs from ${fromBlock} to ${toBlock}`)
+      return await splitGetLogs(provider, fromBlock, toBlock, address, topics, currentStackLv)
+    } else {
+      console.log(`getting logs from ${fromBlock} to ${toBlock}`)
+      const filter = {
+        address: address,
+        fromBlock: fromBlock,
+        toBlock: toBlock,
+        topics: topics,
+      }
+      return await provider.getLogs(filter)
+    }
+  } catch (e) {
+    return []
+  }
 }
 
 const listenApprovalEvents = async (
   chainId: number,
-  chainProvider: ethers.providers.BaseProvider,
+  provider: ethers.providers.BaseProvider,
+  cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const filter = {
-    address: address,
-    fromBlock: cachedBlock[chainId],
-    toBlock: latestBlock,
-    topics: [
-      utils.id('Approval(bytes32,address)'),
-    ],
-  }
+  const topics = [
+    utils.id('Approval(bytes32,address)'),
+  ]
   try {
-    const logs = await chainProvider.getLogs(filter)
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
     const promises = logs.map(async (log) => {
       const structHash = log.topics[1]
       const maker = log.topics[2]
@@ -37,6 +93,8 @@ const listenApprovalEvents = async (
         where: {
           structHash: structHash,
           makerAddress: maker,
+          approvalTxHash: null,
+          cancelTxHash: null,
         },
       })
       if (marketAsk) {
@@ -48,6 +106,8 @@ const listenApprovalEvents = async (
           where: {
             structHash: structHash,
             makerAddress: maker,
+            approvalTxHash: null,
+            cancelTxHash: null,
           },
         })
         if (marketBid) {
@@ -67,20 +127,16 @@ const listenApprovalEvents = async (
 
 const listenNonceIncrementedEvents = async (
   chainId: number,
-  chainProvider: ethers.providers.BaseProvider,
+  provider: ethers.providers.BaseProvider,
+  cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const filter = {
-    address: address,
-    fromBlock: cachedBlock[chainId],
-    toBlock: latestBlock,
-    topics: [
-      utils.id('NonceIncremented(address,uint)'),
-    ],
-  }
+  const topics = [
+    utils.id('NonceIncremented(address,uint)'),
+  ]
   try {
-    const logs = await chainProvider.getLogs(filter)
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
     const promises = logs.map(async (log) => {
       const maker = log.topics[1]
       const nonce = log.topics[2]
@@ -89,6 +145,8 @@ const listenNonceIncrementedEvents = async (
           makerAddress: maker,
           nonce: LessThan(nonce),
           marketSwapId: null,
+          approvalTxHash: null,
+          cancelTxHash: null,
         },
       })
       if (marketAsks.length) {
@@ -103,6 +161,8 @@ const listenNonceIncrementedEvents = async (
             makerAddress: maker,
             nonce: LessThan(nonce),
             marketSwapId: null,
+            approvalTxHash: null,
+            cancelTxHash: null,
           },
         })
         await Promise.all(marketBids.map(async (marketBid) => {
@@ -122,20 +182,16 @@ const listenNonceIncrementedEvents = async (
 
 const listenCancelEvents = async (
   chainId: number,
-  chainProvider: ethers.providers.BaseProvider,
+  provider: ethers.providers.BaseProvider,
+  cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const filter = {
-    address: address,
-    fromBlock: cachedBlock[chainId],
-    toBlock: latestBlock,
-    topics: [
-      utils.id('Cancel(byte32,address)'),
-    ],
-  }
+  const topics = [
+    utils.id('Cancel(byte32,address)'),
+  ]
   try {
-    const logs = await chainProvider.getLogs(filter)
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
     const promises = logs.map(async (log) => {
       const structHash = log.topics[1]
       const maker = log.topics[2]
@@ -144,7 +200,8 @@ const listenCancelEvents = async (
         where: {
           structHash: structHash,
           makerAddress: maker,
-          marketSwapId: null,
+          approvalTxHash: null,
+          cancelTxHash: null,
         },
       })
       if (marketAsk) {
@@ -157,6 +214,8 @@ const listenCancelEvents = async (
           where: {
             structHash: structHash,
             makerAddress: maker,
+            approvalTxHash: null,
+            cancelTxHash: null,
           },
         })
         if (marketBid) {
@@ -177,20 +236,16 @@ const listenCancelEvents = async (
 
 const listenMatchEvents = async (
   chainId: number,
-  chainProvider: ethers.providers.BaseProvider,
+  provider: ethers.providers.BaseProvider,
+  cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const filter = {
-    address: address,
-    fromBlock: cachedBlock[chainId],
-    toBlock: latestBlock,
-    topics: [
-      utils.id('Match(bytes32,bytes32,address,address,uint256,uint256,bool)'),
-    ],
-  }
+  const topics = [
+    utils.id('Match(bytes32,bytes32,address,address,uint256,uint256,bool)'),
+  ]
   try {
-    const logs = await chainProvider.getLogs(filter)
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
     const promises = logs.map(async (log) => {
       const makerHash = log.topics[1]
       const takerHash = log.topics[2]
@@ -240,19 +295,31 @@ const listenMatchEvents = async (
   return
 }
 
+const getCachedBlock = async (chainId: number): Promise<number> => {
+  try {
+    const cachedBlock = await redis.get(`cached_block_${chainId}`)
+    if (cachedBlock) return Number(cachedBlock)
+    else return defaultBlock[chainId]
+  } catch (e) {
+    return defaultBlock[chainId]
+  }
+}
+
 export const syncMarketplace = async (job: Job): Promise<any> => {
   try {
     logger.debug('marketplace sync job', job.data)
+
     const chainId = Number(job.data.chainId)
     const chainProvider = provider.provider(chainId)
     const latestBlock = await chainProvider.getBlock('latest')
+    const cachedBlock = await getCachedBlock(chainId)
 
-    await listenApprovalEvents(chainId, chainProvider, latestBlock.number)
-    await listenNonceIncrementedEvents(chainId, chainProvider, latestBlock.number)
-    await listenCancelEvents(chainId, chainProvider, latestBlock.number)
-    await listenMatchEvents(chainId, chainProvider, latestBlock.number)
+    await listenApprovalEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+    await listenNonceIncrementedEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+    await listenCancelEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+    await listenMatchEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     // update cached block number to the latest block number
-    cachedBlock[chainId] = latestBlock.number
+    await redis.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
     console.log('error', err)
   }
