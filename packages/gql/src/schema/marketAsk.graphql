@@ -45,6 +45,7 @@ type MarketAsk {
   salt: Int!
   offerAcceptedAt: DateTime
   chainId: String!
+  auctionType: AuctionType!
 }
 
 input AsksInput {
@@ -95,4 +96,5 @@ extend type Query {
 
 extend type Mutation {
   createAsk(input: CreateAskInput!): MarketAsk!
+  cancelAsk(askId: ID!): Boolean!
 }

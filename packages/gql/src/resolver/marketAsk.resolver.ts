@@ -108,6 +108,38 @@ const validAsk = async (
   return true
 }
 
+const cancelAsk = (
+  _: any,
+  args: gql.MutationCancelAskArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { user, repositories, wallet } = ctx
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.askId })
+  return repositories.marketAsk.findById(args.askId)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        marketAskError.buildMarketAskNotFoundMsg(args.askId),
+        marketAskError.ErrorType.MarketAskNotFound,
+      ),
+    ))
+    .then(fp.rejectIf((ask: entity.MarketAsk) => ask.makerAddress !== wallet.address)(
+      appError.buildForbidden(
+        marketAskError.buildMarketAskNotOwnedMsg(),
+        marketAskError.ErrorType.MarketAskNotOwned,
+      ),
+    ))
+    .then(fp.tap((ask: entity.MarketAsk) => {
+      repositories.marketBid.delete({
+        marketAskId: ask.id,
+      })
+    }))
+    .then((ask: entity.MarketAsk) => {
+      repositories.marketAsk.delete({ id: ask.id })
+    })
+    .then(() => true)
+    .catch(() => false)
+}
+
 const createAsk = (
   _: any,
   args: gql.MutationCreateAskArgs,
@@ -207,5 +239,6 @@ export default {
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
+    cancelAsk: combineResolvers(auth.isAuthenticated, cancelAsk),
   },
 }
