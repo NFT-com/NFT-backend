@@ -33,6 +33,7 @@ type MarketplaceAsset {
 }
 
 type MarketAsk {
+  id: ID!
   structHash: String!
   nonce: Int!
   signature: Signature!

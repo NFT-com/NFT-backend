@@ -6,7 +6,7 @@ import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError } from '@nftcom/gql/error'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
-import { auth, joi, pagination } from '../helper'
+import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
@@ -85,6 +85,7 @@ const validAsk = async (
         start: marketAskArgs?.input.start,
         end: marketAskArgs?.input.end,
         nonce: marketAskArgs?.input?.nonce,
+        auctionType: utils.auctionTypeToInt(marketAskArgs?.input?.auctionType),
       },
       marketAskArgs?.input.signature.v,
       marketAskArgs?.input.signature.r,
