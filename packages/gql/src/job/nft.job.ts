@@ -89,7 +89,9 @@ const filterNFTsWithAlchemy = async (
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
           await repositories.edge.delete({ thatEntityId: dbNFT.id } )
-            .then(() => repositories.nft.delete(dbNFT))
+            .then(() => repositories.nft.delete({
+              id: dbNFT.id,
+            }))
         }
       }),
     )
