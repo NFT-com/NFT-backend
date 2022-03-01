@@ -5,7 +5,7 @@ import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
-import { auth, joi, pagination } from '../helper'
+import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketBid, _logger.Context.GraphQL)
@@ -53,6 +53,7 @@ const validOrderMatch = async (
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
         nonce: marketBidArgs?.input.nonce,
+        auctionType: utils.auctionTypeToInt(marketBidArgs.input.auctionType),
       },
       marketBidArgs?.input.signature.v,
       marketBidArgs?.input.signature.r,
@@ -111,6 +112,7 @@ const validOrderMatch = async (
         start: marketAsk.start,
         end: marketAsk.end,
         nonce: marketAsk.nonce,
+        auctionType: utils.auctionTypeToInt(marketAsk.auctionType),
       },
       {
         maker: marketBidArgs?.input.makerAddress,
@@ -121,6 +123,7 @@ const validOrderMatch = async (
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
         nonce: marketBidArgs?.input.nonce,
+        auctionType: utils.auctionTypeToInt(marketBidArgs?.input.auctionType),
       },
     )
 

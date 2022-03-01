@@ -43,6 +43,7 @@ input CreateBidInput {
   end: Int!
   salt: Int!
   chainId: String!
+  auctionType: AuctionType!
 }
 
 
