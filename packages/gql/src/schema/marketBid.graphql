@@ -6,6 +6,7 @@ type GetMarketBid {
 
 type MarketBid {
   structHash: String!
+  nonce: Int!
   signature: Signature!
   marketAskId: String!
   makerAddress: Address!
@@ -13,8 +14,8 @@ type MarketBid {
   takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
   message: String!
-  start: String!
-  end: String!
+  start: Int!
+  end: Int!
   salt: Int!
   offerAcceptedAt: DateTime
   acceptedAt: DateTime
@@ -30,6 +31,7 @@ input BidsInput {
 
 input CreateBidInput {
   structHash: String!
+  nonce: Int!
   signature: SignatureInput!
   marketAskId: String!
   makerAddress: Address!
@@ -37,8 +39,8 @@ input CreateBidInput {
   takerAddress: Address!
   takeAsset: [MarketplaceAssetInput!]
   message: String!
-  start: String!
-  end: String!
+  start: Int!
+  end: Int!
   salt: Int!
   chainId: String!
 }

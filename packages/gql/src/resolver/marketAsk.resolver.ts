@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -31,6 +32,38 @@ const getAsks = (
     .then(pagination.toPageable(pageInput))
 }
 
+const filterAsksForNft = (
+  contract: string,
+  tokenId: number,
+) => {
+  return (asks: entity.MarketAsk[]) => {
+    const filtered = asks.filter((ask: entity.MarketAsk) => {
+      const matchingMakeAsset = ask.makeAsset.find((asset) => {
+        return asset?.standard?.contractAddress === contract &&
+          asset?.standard?.tokenId === String(tokenId)
+      })
+      return matchingMakeAsset != null
+    })
+    return filtered
+  }
+}
+
+const getNFTAsks = (
+  _: any,
+  args: gql.QueryGetNFTAsksArgs,
+  ctx: Context,
+): Promise<gql.MarketAsk[]> => {
+  const { repositories } = ctx
+  logger.debug('getNFTAsks', { input: args?.input })
+  const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
+    makerAddress,
+  } as Partial<entity.MarketAsk>)
+  return repositories.marketAsk.find({ where: filter })
+    .then(fp.thruIfEmpty(() => []))
+    .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
+}
+
 const validAsk = async (
   marketAskArgs: gql.MutationCreateAskArgs,
   wallet: entity.Wallet,
@@ -47,10 +80,11 @@ const validAsk = async (
         maker: marketAskArgs?.input.makerAddress,
         makeAssets: getAssetList(marketAskArgs?.input.makeAsset),
         taker: marketAskArgs?.input.takerAddress,
-        takeAssets: getAssetList(marketAskArgs?.input.makeAsset),
+        takeAssets: getAssetList(marketAskArgs?.input.takeAsset),
         salt: marketAskArgs?.input.salt,
         start: marketAskArgs?.input.start,
         end: marketAskArgs?.input.end,
+        nonce: marketAskArgs?.input?.nonce,
       },
       marketAskArgs?.input.signature.v,
       marketAskArgs?.input.signature.r,
@@ -62,12 +96,48 @@ const validAsk = async (
     if (marketAskArgs?.input.structHash !== calculatedStructHash) {
       throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketAskArgs?.input.structHash}`)
     }
+
+    if (!result[0]) {
+      throw Error(`provided signature ${JSON.stringify(marketAskArgs.input.signature)} doesn't match`)
+    }
   } catch (err) {
     logger.error('order validation error: ', err)
     return false
   }
 
   return true
+}
+
+const cancelAsk = (
+  _: any,
+  args: gql.MutationCancelAskArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { user, repositories, wallet } = ctx
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.askId })
+  return repositories.marketAsk.findById(args.askId)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        marketAskError.buildMarketAskNotFoundMsg(args.askId),
+        marketAskError.ErrorType.MarketAskNotFound,
+      ),
+    ))
+    .then(fp.rejectIf((ask: entity.MarketAsk) => ask.makerAddress !== wallet.address)(
+      appError.buildForbidden(
+        marketAskError.buildMarketAskNotOwnedMsg(),
+        marketAskError.ErrorType.MarketAskNotOwned,
+      ),
+    ))
+    .then(fp.tap((ask: entity.MarketAsk) => {
+      repositories.marketBid.delete({
+        marketAskId: ask.id,
+      })
+    }))
+    .then((ask: entity.MarketAsk) => {
+      repositories.marketAsk.delete({ id: ask.id })
+    })
+    .then(() => true)
+    .catch(() => false)
 }
 
 const createAsk = (
@@ -79,7 +149,10 @@ const createAsk = (
   logger.debug('createAsk', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
+    chainId: Joi.string().required(),
     structHash: Joi.string().required(),
+    nonce: Joi.required().custom(joi.buildBigNumber),
+    auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
     signature: joi.buildSignatureInputSchema(),
     makerAddress: Joi.string().required(),
     makeAsset: Joi.array().min(1).max(100).items(
@@ -111,8 +184,8 @@ const createAsk = (
         minimumBid: Joi.required().custom(joi.buildBigNumber),
       }),
     ),
-    start: Joi.string().required(),
-    end: Joi.string().required(),
+    start: Joi.number().required(),
+    end: Joi.number().required(),
     salt: Joi.number().required(),
   })
   joi.validateSchema(schema, args?.input)
@@ -137,6 +210,8 @@ const createAsk = (
     ))))
     .then(() => repositories.marketAsk.save({
       structHash: args?.input.structHash,
+      nonce: args?.input.nonce,
+      auctionType: args?.input.auctionType,
       signature: args?.input.signature,
       makerAddress: args?.input.makerAddress,
       makeAsset: makeAssets,
@@ -160,8 +235,10 @@ const createAsk = (
 export default {
   Query: {
     getAsks: getAsks,
+    getNFTAsks: getNFTAsks,
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
+    cancelAsk: combineResolvers(auth.isAuthenticated, cancelAsk),
   },
 }

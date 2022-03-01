@@ -27,7 +27,7 @@ export const buildSignatureInputSchema = (): Joi.ObjectSchema =>
 
 export const buildBigNumber = (value: string, helpers): string => {
   const v = BigNumber.from(value)
-  if (helper.isEmpty(v) || v.lte(BigNumber.from(0))) {
+  if (helper.isEmpty(v) || v.lt(BigNumber.from(0))) {
     return helpers.error('invalid price/amount')
   }
   return v._hex

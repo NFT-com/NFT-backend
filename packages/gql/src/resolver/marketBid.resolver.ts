@@ -52,6 +52,7 @@ const validOrderMatch = async (
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
+        nonce: marketBidArgs?.input.nonce,
       },
       marketBidArgs?.input.signature.v,
       marketBidArgs?.input.signature.r,
@@ -109,6 +110,7 @@ const validOrderMatch = async (
         salt: marketAsk.salt,
         start: marketAsk.start,
         end: marketAsk.end,
+        nonce: marketAsk.nonce,
       },
       {
         maker: marketBidArgs?.input.makerAddress,
@@ -118,6 +120,7 @@ const validOrderMatch = async (
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
+        nonce: marketBidArgs?.input.nonce,
       },
     )
 
@@ -142,6 +145,7 @@ const createBid = (
 
   const schema = Joi.object().keys({
     structHash: Joi.string().required(),
+    nonce: Joi.required().custom(joi.buildBigNumber),
     signature: joi.buildSignatureInputSchema(),
     marketAskId: Joi.string().required(),
     makerAddress: Joi.string().required(),
@@ -175,8 +179,8 @@ const createBid = (
       }),
     ),
     message: Joi.string().optional(),
-    start: Joi.string().required(),
-    end: Joi.string().required(),
+    start: Joi.number().required(),
+    end: Joi.number().required(),
     salt: Joi.number().required(),
   })
   joi.validateSchema(schema, args?.input)
@@ -199,6 +203,7 @@ const createBid = (
     )))
     .then(() => repositories.marketBid.save({
       structHash: args?.input.structHash,
+      nonce: args?.input.nonce,
       signature: args?.input.signature,
       marketAskId: args?.input.marketAskId,
       makerAddress: args?.input.makerAddress,

@@ -18,8 +18,8 @@ export type Context = {
   teamKey?: string
 }
 
-const encodeAssetType = (assetClass: string, asset: gql.MarketplaceAssetInput): string => {
-  switch (assetClass) {
+const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
+  switch (asset.standard.assetClass) {
   case 'ETH':
     return helper.encode(['address'], [helper.AddressZero()])
   case 'ERC20':
@@ -32,22 +32,40 @@ const encodeAssetType = (assetClass: string, asset: gql.MarketplaceAssetInput): 
   }
 }
 
+const encodeAssetClass = (assetClass: gql.AssetClass): string => {
+  switch (assetClass) {
+  case 'ETH':
+    return helper.ETH_ASSET_CLASS
+  case 'ERC20':
+    return helper.ERC20_ASSET_CLASS
+  case 'ERC721':
+    return helper.ERC721_ASSET_CLASS
+  case 'ERC1155':
+    return helper.ERC1155_ASSET_CLASS
+  default:
+    return ''
+  }
+}
+
 // byte validation and returns back asset list
-export const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any => {
+export const getAssetList = (
+  assets: Array<gql.MarketplaceAssetInput>,
+): any[] => {
   return assets.map((asset: gql.MarketplaceAssetInput) => {
-    const assetTypeBytes = encodeAssetType(asset.standard.assetClass, asset)
+    const assetTypeBytes = encodeAssetType(asset)
     const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
 
     // basic validation that bytes match
     if (assetTypeBytes !== asset.standard.bytes) {
       throw Error(`Calculated Asset Type Bytes ${assetTypeBytes} mismatch sent bytes ${asset.standard.bytes}`)
     } else if (assetBytes !== asset.bytes) {
+      console.log(assets)
       throw Error(`Calculated Asset Bytes ${assetBytes} mismatch sent bytes ${asset.bytes}`)
     }
 
     return {
       assetType: {
-        assetClass: asset.standard.assetClass,
+        assetClass: encodeAssetClass(asset.standard.assetClass),
         data: assetTypeBytes,
       },
       data: assetBytes,

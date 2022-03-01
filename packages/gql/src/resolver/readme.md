@@ -78,10 +78,10 @@ Moving to `AssetType` struct, you see there are two fields.
 Here are the current assetClasses and their respective bytes4 code:
 ```
 import { keccak256, toUtf8Bytes } from "ethers/lib/utils";
-* ETH => keccak256(toUtf8Bytes(text)).substring(0, 10)
-* ERC20 => keccak256(toUtf8Bytes(text)).substring(0, 10)
-* ERC721 => keccak256(toUtf8Bytes(text)).substring(0, 10)
-* ERC1155 => keccak256(toUtf8Bytes(text)).substring(0, 10)
+* ETH => keccak256(toUtf8Bytes("ETH")).substring(0, 10)
+* ERC20 => keccak256(toUtf8Bytes("ERC20")).substring(0, 10)
+* ERC721 => keccak256(toUtf8Bytes("ERC721")).substring(0, 10)
+* ERC1155 => keccak256(toUtf8Bytes("ERC1155")).substring(0, 10)
 ```
 
 If you print out the results for each, you'll get the value used for the `bytes4 assetClass` field.
