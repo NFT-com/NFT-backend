@@ -20,7 +20,7 @@ type GetMarketAsk {
 type AssetType {
   assetClass: String!
   bytes: String!
-  contractAddress: String!
+  contractAddress: Address!
   tokenId: Uint256!
   allowAll: Boolean!
 }
@@ -33,6 +33,7 @@ type MarketplaceAsset {
 }
 
 type MarketAsk {
+  id: ID!
   structHash: String!
   nonce: Int!
   signature: Signature!
@@ -45,11 +46,18 @@ type MarketAsk {
   salt: Int!
   offerAcceptedAt: DateTime
   chainId: String!
+  auctionType: AuctionType!
 }
 
 input AsksInput {
   makerAddress: Address
   pageInput: PageInput
+}
+
+input NftAsksInput {
+  nftTokenId: Uint256!
+  nftContractAddress: Address!
+  makerAddress: Address
 }
 
 input AssetTypeInput {
@@ -84,8 +92,10 @@ input CreateAskInput {
 
 extend type Query {
   getAsks(input: AsksInput!): GetMarketAsk!
+  getNFTAsks(input: NftAsksInput!): [MarketAsk!]!
 }
 
 extend type Mutation {
   createAsk(input: CreateAskInput!): MarketAsk!
+  cancelAsk(askId: ID!): Boolean!
 }

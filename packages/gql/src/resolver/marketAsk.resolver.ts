@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -5,7 +6,7 @@ import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError } from '@nftcom/gql/error'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
-import { auth, joi, pagination } from '../helper'
+import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
@@ -31,6 +32,38 @@ const getAsks = (
     .then(pagination.toPageable(pageInput))
 }
 
+const filterAsksForNft = (
+  contract: string,
+  tokenId: number,
+) => {
+  return (asks: entity.MarketAsk[]) => {
+    const filtered = asks.filter((ask: entity.MarketAsk) => {
+      const matchingMakeAsset = ask.makeAsset.find((asset) => {
+        return asset?.standard?.contractAddress === contract &&
+          asset?.standard?.tokenId === String(tokenId)
+      })
+      return matchingMakeAsset != null
+    })
+    return filtered
+  }
+}
+
+const getNFTAsks = (
+  _: any,
+  args: gql.QueryGetNFTAsksArgs,
+  ctx: Context,
+): Promise<gql.MarketAsk[]> => {
+  const { repositories } = ctx
+  logger.debug('getNFTAsks', { input: args?.input })
+  const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
+    makerAddress,
+  } as Partial<entity.MarketAsk>)
+  return repositories.marketAsk.find({ where: filter })
+    .then(fp.thruIfEmpty(() => []))
+    .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
+}
+
 const validAsk = async (
   marketAskArgs: gql.MutationCreateAskArgs,
   wallet: entity.Wallet,
@@ -52,6 +85,7 @@ const validAsk = async (
         start: marketAskArgs?.input.start,
         end: marketAskArgs?.input.end,
         nonce: marketAskArgs?.input?.nonce,
+        auctionType: utils.auctionTypeToInt(marketAskArgs?.input?.auctionType),
       },
       marketAskArgs?.input.signature.v,
       marketAskArgs?.input.signature.r,
@@ -73,6 +107,38 @@ const validAsk = async (
   }
 
   return true
+}
+
+const cancelAsk = (
+  _: any,
+  args: gql.MutationCancelAskArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { user, repositories, wallet } = ctx
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.askId })
+  return repositories.marketAsk.findById(args.askId)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        marketAskError.buildMarketAskNotFoundMsg(args.askId),
+        marketAskError.ErrorType.MarketAskNotFound,
+      ),
+    ))
+    .then(fp.rejectIf((ask: entity.MarketAsk) => ask.makerAddress !== wallet.address)(
+      appError.buildForbidden(
+        marketAskError.buildMarketAskNotOwnedMsg(),
+        marketAskError.ErrorType.MarketAskNotOwned,
+      ),
+    ))
+    .then(fp.tap((ask: entity.MarketAsk) => {
+      repositories.marketBid.delete({
+        marketAskId: ask.id,
+      })
+    }))
+    .then((ask: entity.MarketAsk) => {
+      repositories.marketAsk.delete({ id: ask.id })
+    })
+    .then(() => true)
+    .catch(() => false)
 }
 
 const createAsk = (
@@ -170,8 +236,10 @@ const createAsk = (
 export default {
   Query: {
     getAsks: getAsks,
+    getNFTAsks: getNFTAsks,
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
+    cancelAsk: combineResolvers(auth.isAuthenticated, cancelAsk),
   },
 }
