@@ -16,7 +16,7 @@ export class MarketAsk extends BaseEntity {
   @Column({
     type: 'enum',
     enum: AuctionType,
-    nullable: false,
+    nullable: true,
   })
   auctionType: AuctionType
 
