@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, OneToMany } from 'typeorm'
 
+import { NFT } from '@nftcom/shared/db/entity/nft.entity'
 import { MarketplaceAsset, Signature } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
@@ -37,6 +38,15 @@ export class MarketBid extends BaseEntity {
   })
   takeAsset: MarketplaceAsset[]
 
+  @Column({ nullable: true })
+  marketSwapId: string
+
+  @Column({ nullable: true })
+  approvalTxHash: string
+
+  @Column({ nullable: true })
+  cancelTxHash: string
+
   @Column({ type: 'text', nullable: false })
   message: string
 
@@ -60,5 +70,8 @@ export class MarketBid extends BaseEntity {
 
   @Column( { nullable: false })
   chainId: string
+
+  @OneToMany(() => NFT, (nft: NFT) => nft.marketBid)
+  nfts: NFT[]
 
 }
