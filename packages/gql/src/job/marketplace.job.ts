@@ -78,11 +78,11 @@ const getPastLogs = async (
   try {
     // if there are too many blocks, we will split it up...
     if (toBlock - fromBlock > MAX_BLOCKS) {
-      console.log(`getting logs from ${fromBlock} to ${toBlock}`)
+      logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
       return await splitGetLogs(provider, fromBlock, toBlock, address, topics, currentStackLv)
     } else {
       // we just get logs using provider...
-      console.log(`getting logs from ${fromBlock} to ${toBlock}`)
+      logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
       const filter = {
         address: address,
         fromBlock: fromBlock,
@@ -150,7 +150,7 @@ const listenApprovalEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -212,7 +212,7 @@ const listenNonceIncrementedEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -273,7 +273,7 @@ const listenCancelEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -409,7 +409,7 @@ const listenMatchEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -461,7 +461,7 @@ const listenMatchTwoAEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -523,7 +523,7 @@ const listenMatchTwoBEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -575,7 +575,7 @@ const listenMatchThreeAEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -637,7 +637,7 @@ const listenMatchThreeBEvents = async (
 
     await Promise.allSettled(promises)
   } catch (e) {
-    console.log(e)
+    logger.debug(e)
   }
   return
 }
@@ -676,6 +676,6 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     // update cached block number to the latest block number
     await redis.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
-    console.log('error', err)
+    logger.debug('error', err)
   }
 }
