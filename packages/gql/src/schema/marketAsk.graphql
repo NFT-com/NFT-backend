@@ -27,6 +27,7 @@ type AssetType {
 
 type MarketplaceAsset {
   standard: AssetType!
+  nftId: String!
   bytes: String!
   value: Uint256!
   minimumBid: Uint256!
@@ -41,6 +42,9 @@ type MarketAsk {
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
+  marketSwapId: String
+  approvalTxHash: String
+  cancelTxHash: String
   start: Int!
   end: Int!
   salt: Int!

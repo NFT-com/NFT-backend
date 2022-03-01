@@ -61,6 +61,7 @@ export type AssetType = {
 
 export type MarketplaceAsset = {
   standard: AssetType
+  nftId: string
   bytes: string // encoded data; (uint256, uint256) = (value, minimumBid)
   value: string
   minimumBid: string
