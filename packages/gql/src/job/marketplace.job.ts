@@ -6,8 +6,7 @@ import Redis from 'ioredis'
 import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
-import { _logger, contracts, db, helper,provider } from '@nftcom/shared'
-import { AssetClass, AuctionType, MarketplaceAsset } from '@nftcom/shared/defs'
+import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const repositories = db.newRepositories()
@@ -282,27 +281,27 @@ const parseAsset = (
   assetData: string[],
   assetClass: string[],
   assetType: string[],
-): MarketplaceAsset[] => {
-  const asset: MarketplaceAsset[] = []
+): defs.MarketplaceAsset[] => {
+  const asset: defs.MarketplaceAsset[] = []
   assetData.map((data, index) => {
     const parsedAssetData = defaultAbiCoder.decode(['uint256','uint256'], data)
     let assetClassData
     let assetTypeData
     switch (assetClass[index]) {
     case helper.ETH_ASSET_CLASS:
-      assetClassData = AssetClass.ETH
+      assetClassData = defs.AssetClass.ETH
       assetTypeData = [helper.AddressZero()]
       break
     case helper.ERC20_ASSET_CLASS:
-      assetClassData = AssetClass.ERC20
+      assetClassData = defs.AssetClass.ERC20
       assetTypeData = defaultAbiCoder.decode(['address'], assetType[index])
       break
     case helper.ERC721_ASSET_CLASS:
-      assetClassData = AssetClass.ERC721
+      assetClassData = defs.AssetClass.ERC721
       assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
       break
     case helper.ERC1155_ASSET_CLASS:
-      assetClassData = AssetClass.ERC1155
+      assetClassData = defs.AssetClass.ERC1155
       assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
       break
     default:
@@ -394,7 +393,7 @@ const listenMatchEvents = async (
             r: makerSig.r,
             s: makerSig.s,
           },
-          auctionType: auctionType as AuctionType,
+          auctionType: auctionType as defs.AuctionType,
         })
         await repositories.marketBid.updateOneById(marketBid.id, {
           marketSwapId: marketSwap.id,
