@@ -73,7 +73,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every 10 minutes for nft collection job
-        repeat: { every: 600000 },
+        repeat: { every: 60000 * 10 },
       })
     case PROFILE_SYNC_JOB:
       return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
@@ -109,7 +109,7 @@ export const startAndListen = (): Promise<void> => {
 export const stopAndDisconnect = (): Promise<any> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
-    return queue.empty()
-      .then(() => queue.close(false))
+    return queue.obliterate({ force: true })
+      .then(() => queue.close())
   }))
 }

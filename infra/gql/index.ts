@@ -101,8 +101,10 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['HCS_ACCOUNT_ID'] = process.env.HCS_ACCOUNT_ID || parsedFile['HCS_ACCOUNT_ID']
   parsedFile['HCS_PRIVATE_KEY'] = process.env.HCS_PRIVATE_KEY || parsedFile['HCS_PRIVATE_KEY']
   parsedFile['SERVER_CONFIG'] = process.env.SERVER_CONFIG || ''
-  parsedFile['ALCHEMY_API_KEY'] = process.env.ALCHEMY_API_KEY || parsedFile['ALCHEMY_API_KEY']
   parsedFile['SENTRY_DSN'] = process.env.SENTRY_DSN || parsedFile['SENTRY_DSN']
+  parsedFile['INFURA_API_KEY'] = process.env.INFURA_API_KEY || parsedFile['INFURA_API_KEY']
+  parsedFile['ALCHEMY_API_KEY'] = process.env.ALCHEMY_API_KEY || parsedFile['ALCHEMY_API_KEY']
+  parsedFile['ALCHEMY_NFT_API_URL'] = process.env.ALCHEMY_NFT_API_URL || parsedFile['ALCHEMY_NFT_API_URL']
 
   console.log(JSON.stringify(parsedFile))
 
