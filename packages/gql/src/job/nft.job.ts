@@ -9,8 +9,8 @@ import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shar
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
-const ALCHEMY_API_URL = `https://eth-${network}.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
+const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
+const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
 interface OwnedNFT {
   contract: {
     address: string
@@ -48,6 +48,7 @@ const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   try {
     const response = await web3.alchemy.getNfts({
       owner: owner,
+      withMetadata: false,
     })
     return response.ownedNfts as OwnedNFT[]
   } catch (err) {
@@ -81,10 +82,10 @@ const filterNFTsWithAlchemy = async (
 
     return await Promise.all(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
+        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
           checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
-          ownedNFT.id.tokenId === dbNFT.tokenId,
-        )
+          Number(ownedNFT.id.tokenId) === dbNFT.tokenId
+        })
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
@@ -179,7 +180,7 @@ const updateEntity = async (
     newNFT = await repositories.nft.save({
       ...existingNFT,
       contract: ethers.utils.getAddress(nftInfo.contract.address),
-      tokenId: nftInfo.id.tokenId,
+      tokenId: Number(nftInfo.id.tokenId),
       metadata: {
         name: nftInfo.title,
         description: nftInfo.description,

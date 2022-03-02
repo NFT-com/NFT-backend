@@ -58,6 +58,7 @@ runs:
         HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
         ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
+        ALCHEMY_NFT_API_URL: ${{ fromJSON(inputs.secrets).ALCHEMY_NFT_API_URL }}
         SENTRY_DSN: ${{ fromJSON(inputs.secrets).SENTRY_DSN }}
         SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}
         SUPPORTED_NETWORKS: ${{ fromJSON(inputs.secrets).SUPPORTED_NETWORKS }}

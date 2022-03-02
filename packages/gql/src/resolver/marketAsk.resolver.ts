@@ -40,7 +40,7 @@ const filterAsksForNft = (
     const filtered = asks.filter((ask: entity.MarketAsk) => {
       const matchingMakeAsset = ask.makeAsset.find((asset) => {
         return asset?.standard?.contractAddress === contract &&
-          asset?.standard?.tokenId === String(tokenId)
+          asset?.standard?.tokenId === tokenId
       })
       return matchingMakeAsset != null
     })

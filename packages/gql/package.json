@@ -17,7 +17,7 @@
     "doc:gen": "graphql-markdown http://localhost:10010/graphql > schema.md"
   },
   "dependencies": {
-    "@alch/alchemy-web3": "^1.2.4",
+    "@alch/alchemy-web3": "^1.2.5",
     "@graphql-tools/merge": "^8.2.0",
     "@hashgraph/sdk": "^2.7.1",
     "@sendgrid/mail": "^7.6.0",
