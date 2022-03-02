@@ -109,7 +109,7 @@ export const startAndListen = (): Promise<void> => {
 export const stopAndDisconnect = (): Promise<any> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
-    return queue.empty()
-      .then(() => queue.close(false))
+    return queue.obliterate({ force: true })
+      .then(() => queue.close())
   }))
 }
