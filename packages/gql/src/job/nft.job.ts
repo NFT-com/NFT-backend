@@ -1,5 +1,5 @@
 import { Job } from 'bull'
-import { ethers, providers } from 'ethers'
+import { BigNumber,ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
 
@@ -82,10 +82,10 @@ const filterNFTsWithAlchemy = async (
 
     return await Promise.all(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
+        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
           checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
-          Number(ownedNFT.id.tokenId) === dbNFT.tokenId
-        })
+          BigNumber.from(ownedNFT.id.tokenId).toString() === dbNFT.tokenId,
+        )
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
@@ -156,7 +156,7 @@ const updateEntity = async (
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: ethers.utils.getAddress(nftInfo.contract.address),
-        tokenId: nftInfo.id.tokenId,
+        tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
       },
     })
     let type: defs.NFTType
@@ -180,7 +180,7 @@ const updateEntity = async (
     newNFT = await repositories.nft.save({
       ...existingNFT,
       contract: ethers.utils.getAddress(nftInfo.contract.address),
-      tokenId: Number(nftInfo.id.tokenId),
+      tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
       metadata: {
         name: nftInfo.title,
         description: nftInfo.description,

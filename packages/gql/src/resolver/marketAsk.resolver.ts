@@ -40,7 +40,7 @@ const filterAsksForNft = (
     const filtered = asks.filter((ask: entity.MarketAsk) => {
       const matchingMakeAsset = ask.makeAsset.find((asset) => {
         return asset?.standard?.contractAddress === contract &&
-          asset?.standard?.tokenId === tokenId
+          asset?.standard?.tokenId === String(tokenId)
       })
       return matchingMakeAsset != null
     })
@@ -70,7 +70,7 @@ const validAsk = async (
 ): Promise<boolean> => {
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
     contracts.nftMarketplaceAddress(wallet.chainId),
-    provider.provider(Number(wallet.chainId)),
+    provider.provider(wallet.chainId),
   )
 
   // STEP 1 basic validation of order structure (if not used before)

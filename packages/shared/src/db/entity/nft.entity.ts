@@ -17,7 +17,7 @@ export class NFT extends BaseEntity {
   contract: string
 
   @Column({ nullable: false })
-  tokenId: number
+  tokenId: string
 
   @Column({ type: 'json', nullable: false })
   metadata: NFTMetadata

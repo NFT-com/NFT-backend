@@ -55,7 +55,7 @@ export type AssetType = {
   assetClass: AssetClass
   bytes: string // encoded data; (address, uint256, bool) = (contract address, tokenId - only NFTs, allow all from collection - only NFTs) if allow all = true, ignore tokenId...
   contractAddress: string
-  tokenId: number
+  tokenId: string
   allowAll: boolean
 }
 
