@@ -70,7 +70,7 @@ const validAsk = async (
 ): Promise<boolean> => {
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
     contracts.nftMarketplaceAddress(wallet.chainId),
-    provider.provider(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
   )
 
   // STEP 1 basic validation of order structure (if not used before)
