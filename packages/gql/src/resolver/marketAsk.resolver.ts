@@ -136,12 +136,15 @@ const cancelAsk = (
       })
     }))
     .then((ask: entity.MarketAsk) => {
-      const chain = provider.provider(ask.chainId)
+      const chain = provider.provider(Number(ask.chainId))
       chain.getTransaction(args?.input.txHash)
         .then(() =>  {
           repositories.marketAsk.updateOneById(ask.id, { cancelTxHash: args?.input.txHash })
         })
-        .catch(() => false)
+        .catch((err) => {
+          logger.error('cancelAsk error: ', err)
+          return false
+        })
     })
     .then(() => true)
 }
