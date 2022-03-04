@@ -191,6 +191,11 @@ const updateEntity = async (
       userId: userId,
       walletId: walletId,
     })
+    if (newNFT && !existingNFT) {
+      console.log('this is a new nft')
+    } else if (newNFT && existingNFT) {
+      console.log('this is an existing nft')
+    }
 
     if (newNFT) {
       await repositories.collection.findOne({

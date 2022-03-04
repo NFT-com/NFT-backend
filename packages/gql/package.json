@@ -42,7 +42,8 @@
     "kill-port": "^1.6.1",
     "lodash": "^4.17.21",
     "source-map-support": "^0.5.21",
-    "typeorm": "0.2.41"
+    "typeorm": "0.2.41",
+    "typesense": "^1.2.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^2.2.1",
