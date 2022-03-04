@@ -136,7 +136,7 @@ export function getEthGasInfo(chainId: number): Promise<GasInfo> {
     .then((response) => response.json())
     .then((response: any) => {
       const priceGwei = response?.fastest ? response?.fastest / 10 : defaultPriceGwei
-  
+
       // only use gas station for mainnet, otherwise apply gas manually
       if (chainId === 1) {
         return {

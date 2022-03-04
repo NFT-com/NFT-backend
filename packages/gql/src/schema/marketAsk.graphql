@@ -94,6 +94,16 @@ input CreateAskInput {
   chainId: String!
 }
 
+input CancelAskInput {
+  marketAskId: ID!
+  txHash: String!
+}
+
+input BuyNowInput {
+  marketAskId: ID!
+  txHash: String!
+}
+
 extend type Query {
   getAsks(input: AsksInput!): GetMarketAsk!
   getNFTAsks(input: NftAsksInput!): [MarketAsk!]!
@@ -101,5 +111,6 @@ extend type Query {
 
 extend type Mutation {
   createAsk(input: CreateAskInput!): MarketAsk!
-  cancelAsk(askId: ID!): Boolean!
+  cancelAsk(input: CancelAskInput!): Boolean!
+  buyNow(input: BuyNowInput!): MarketSwap!
 }

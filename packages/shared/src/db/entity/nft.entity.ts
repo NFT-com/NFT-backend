@@ -1,7 +1,5 @@
-import { Column, Entity, Index, ManyToOne } from 'typeorm'
+import { Column, Entity, Index } from 'typeorm'
 
-import { MarketAsk } from '@nftcom/shared/db/entity/marketAsk.entity'
-import { MarketBid } from '@nftcom/shared/db/entity/marketBid.entity'
 import { NFTMetadata, NFTType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
@@ -36,11 +34,5 @@ export class NFT extends BaseEntity {
 
   @Column({ nullable: false })
   walletId: string
-
-  @ManyToOne(() => MarketAsk, (marketAsk: MarketAsk) => marketAsk.nfts)
-  marketAsk: MarketAsk
-
-  @ManyToOne(() => MarketBid, (marketBid: MarketBid) => marketBid.nfts)
-  marketBid: MarketAsk
 
 }
