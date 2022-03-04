@@ -18,10 +18,11 @@ const getBids = (
   const { repositories } = ctx
   logger.debug('getBids', { input: args?.input })
   const pageInput = args?.input?.pageInput
-  const { makerAddress } = helper.safeObject(args?.input)
+  const { makerAddress, marketAskId } = helper.safeObject(args?.input)
 
   const filter: Partial<entity.MarketBid> = helper.removeEmpty({
-    makerAddress: makerAddress,
+    makerAddress,
+    marketAskId,
   })
   return core.paginatedEntitiesBy(
     repositories.marketBid,
@@ -255,7 +256,7 @@ const cancelMarketBid = (
 
 export default {
   Query: {
-    getBids: getBids,
+    getBids,
   },
   Mutation: {
     createBid: combineResolvers(auth.isAuthenticated, createBid),
