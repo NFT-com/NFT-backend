@@ -40,19 +40,20 @@ const swapNFT = (
   logger.debug('swapNFT', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
-    askId: Joi.string().required(),
+    marketAskId: Joi.string().required(),
+    marketBidId: Joi.string().required(),
     txHash: Joi.string().required(),
   })
   joi.validateSchema(schema, args?.input)
-  return repositories.marketAsk.findById(args?.input.askId)
+  return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIfEmpty(appError.buildNotFound(
-      marketAskError.buildMarketAskNotFoundMsg(args?.input.askId),
+      marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
       marketAskError.ErrorType.MarketAskNotFound,
     )))
     .then((ask: entity.MarketAsk) =>
-      repositories.marketBid.findById(args?.input.bidId)
+      repositories.marketBid.findById(args?.input.marketBidId)
         .then(fp.rejectIfEmpty(appError.buildNotFound(
-          marketBidError.buildMarketBidNotFoundMsg(args?.input.bidId),
+          marketBidError.buildMarketBidNotFoundMsg(args?.input.marketBidId),
           marketBidError.ErrorType.MarketAskNotFound,
         )))
         .then((bid: entity.MarketBid) => {

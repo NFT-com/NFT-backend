@@ -4,8 +4,7 @@ import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError } from '@nftcom/gql/error'
-import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-import { AuctionType } from '@nftcom/shared/defs'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -235,8 +234,8 @@ const validMarketAsk = (
   marketAsk: entity.MarketAsk,
 ): boolean => {
   // if user wants to buy nft directly, its auction type should be fixed or decreasing method...
-  if (marketAsk.auctionType === AuctionType.FixedPrice ||
-    marketAsk.auctionType === AuctionType.Decreasing)
+  if (marketAsk.auctionType === defs.AuctionType.FixedPrice ||
+    marketAsk.auctionType === defs.AuctionType.Decreasing)
     return true
   return false
 }

@@ -19,8 +19,8 @@ input SwapsInput {
 }
 
 input SwapNFTInput {
-  askId: ID!
-  bidId: ID!
+  marketAskId: ID!
+  marketBidId: ID!
   txHash: String!
 }
 
