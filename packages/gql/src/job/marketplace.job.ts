@@ -15,6 +15,9 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 
+const abi = contracts.marketplaceABIJSON()
+const iface = new utils.Interface(abi)
+
 const defaultBlock: {[chainId: number] : number} = {
   4: 10184159, // block number which marketplace contract created
 }
@@ -76,14 +79,14 @@ const getPastLogs = async (
 
   try {
     // if there are too many blocks, we will split it up...
-    if (toBlock - fromBlock > MAX_BLOCKS) {
-      logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
+    if ((toBlock - fromBlock) > MAX_BLOCKS) {
+      logger.debug(`recursive getting logs from ${fromBlock} to ${toBlock}`)
       return await splitGetLogs(provider, fromBlock, toBlock, address, topics, currentStackLv)
     } else {
       // we just get logs using provider...
       logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
       const filter = {
-        address: address,
+        address: utils.getAddress(address),
         fromBlock: fromBlock,
         toBlock: toBlock,
         topics: topics,
@@ -91,6 +94,7 @@ const getPastLogs = async (
       return await provider.getLogs(filter)
     }
   } catch (e) {
+    logger.error('error while getting past logs: ', e)
     return []
   }
 }
@@ -339,70 +343,129 @@ const listenMatchEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const abi = [
-    'event Match(bytes32 indexed makerStructHash,bytes32 indexed takerStructHash,LibSignature.AuctionType auctionType,' +
-    'Sig makerSig,Sig takerSig,bool privateSale)',
-  ]
-  const iface = new utils.Interface(abi)
   const topics = [
-    utils.id('Match(bytes32,bytes32,LibSignature.AuctionType,Sig,Sig,bool)'),
+    utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
   ]
+
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
+
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
-      const makerHash = log.topics[1]
-      const takerHash = log.topics[2]
-      const privateSale = event.args.privateSale
-      const auctionType = event.args.auctionType
-      const makerSig = event.args.makerSig
-      const takerSig = event.args.takerSig
+      try {
+        const event = iface.parseLog(log)
+        const makerHash = log.topics[1]
+        const takerHash = log.topics[2]
+        const privateSale = event.args.privateSale
+        const auctionType = event.args.auctionType == 0 ?
+          defs.AuctionType.FixedPrice :
+          event.args.auctionType == 1 ?
+            defs.AuctionType.English :
+            defs.AuctionType.Decreasing
+        const makerSig = event.args.makerSig
+        const takerSig = event.args.takerSig
 
-      let marketAsk, marketBid
-      // if maker is user who made ask listing...
-      marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
-      if (marketAsk) {
-        marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
-      } else {
+        let marketAsk, marketBid
+        // if maker is user who made ask listing...
+        marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
+        if (marketAsk) {
+          marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
+        } else {
         // if maker is user who made bid to ask...
-        marketBid = await repositories.marketBid.findOne( { where: { structHash: makerHash } })
-        if (marketBid) {
-          marketAsk = await repositories.marketAsk.findOne( { where: { structHash: takerHash } })
+          marketBid = await repositories.marketBid.findOne( { where: { structHash: makerHash } })
+          if (marketBid) {
+            marketAsk = await repositories.marketAsk.findOne( { where: { structHash: takerHash } })
+          }
         }
-      }
 
-      if (!marketAsk || !marketBid) return
-      let marketSwap = await repositories.marketSwap.findOne({
-        where: {
-          askId: marketAsk.id,
-          bidId: marketBid.id,
-        },
-      })
-      if (!marketSwap) {
-        marketSwap = await repositories.marketSwap.save({
-          askId: marketAsk.id,
-          bidId: marketBid.id,
-          txHash: log.transactionHash,
-          blockNumber: log.blockNumber.toFixed(),
-          private: helper.parseBoolean(privateSale),
-        })
-        await repositories.marketAsk.updateOneById(marketAsk.id, {
-          marketSwapId: marketSwap.id,
-          signature: {
-            v: makerSig.v,
-            r: makerSig.r,
-            s: makerSig.s,
+        if (!marketAsk) {
+          marketAsk = await repositories.marketAsk.save({
+            structHash: makerHash,
+            nonce: -1,
+            auctionType,
+            signature: {
+              v: makerSig.v,
+              r: makerSig.r,
+              s: makerSig.s,
+            },
+            makerAddress: '0x',
+            takerAddress: '0x',
+            start: -1,
+            end: -1,
+            salt: -1,
+  
+            // actual values
+            makeAsset: [],
+            takeAsset: [],
+            chainId: chainId.toString(),
+          })
+
+          logger.debug('created new marketAsk ', marketAsk.id)
+        }
+
+        if (!marketBid && takerHash != '0x0000000000000000000000000000000000000000000000000000000000000000') {
+          marketBid = await repositories.marketBid.save({
+            structHash: takerHash,
+            nonce: -1,
+            marketAskId: marketAsk.id,
+            signature: {
+              v: takerSig.v,
+              r: takerSig.r,
+              s: takerSig.s,
+            },
+            makerAddress: '0x',
+            takerAddress: '0x',
+            start: -1,
+            end: -1,
+            salt: -1,
+            message: '',
+  
+            // actual values
+            makeAsset: [],
+            takeAsset: [],
+            chainId: chainId.toString(),
+          })
+
+          logger.debug('created new marketBid ', marketBid.id)
+        }
+
+        let marketSwap = await repositories.marketSwap.findOne({
+          where: {
+            askId: marketAsk.id,
+            bidId: marketBid ? marketBid.id : null,
+            txHash: log.transactionHash,
           },
-          auctionType: auctionType as defs.AuctionType,
         })
-        await repositories.marketBid.updateOneById(marketBid.id, {
-          marketSwapId: marketSwap.id,
-          signature: {
-            v: takerSig.v,
-            r: takerSig.r,
-            s: takerSig.s,
-          },
-        })
+        if (!marketSwap) {
+          marketSwap = await repositories.marketSwap.save({
+            askId: marketAsk.id,
+            bidId: marketBid ? marketBid.id : null,
+            txHash: log.transactionHash,
+            blockNumber: log.blockNumber.toFixed(),
+            private: helper.parseBoolean(privateSale),
+          })
+          await repositories.marketAsk.updateOneById(marketAsk.id, {
+            marketSwapId: marketSwap.id,
+            signature: {
+              v: makerSig.v,
+              r: makerSig.r,
+              s: makerSig.s,
+            },
+            auctionType,
+          })
+
+          if (marketBid) {
+            await repositories.marketBid.updateOneById(marketBid.id, {
+              marketSwapId: marketSwap.id,
+              signature: {
+                v: takerSig.v,
+                r: takerSig.r,
+                s: takerSig.s,
+              },
+            })
+          }
+        }
+      } catch (e) {
+        logger.error('error while parsing match event: ', e)
       }
     })
 
@@ -427,35 +490,60 @@ const listenMatchTwoAEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const abi = [
-    'event Match2A(bytes32 indexed makerStructHash,address makerAddress,address takerAddress,' +
-    'uint256 start,uint256 end,uint256 nonce,uint256 salt)',
-  ]
-  const iface = new utils.Interface(abi)
   const topics = [
     utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
   ]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
+
     const promises = logs.map(async (log) => {
       const event = iface.parseLog(log)
       const makerHash = log.topics[1]
+      const makerAddress = event.args.makerAddress
       const takerAddress = event.args.takerAddress
       const start = event.args.start
       const end = event.args.end
       const nonce = event.args.nonce
       const salt = event.args.salt
 
-      const marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
-      if (!marketAsk) return
+      let marketAsk = await repositories.marketAsk.findOne({ where: {
+        structHash: makerHash } })
 
-      await repositories.marketAsk.updateOneById(marketAsk.id, {
-        takerAddress: takerAddress,
-        start: start,
-        end: end,
-        nonce: nonce,
-        salt: salt,
-      })
+      if (!marketAsk) {
+        marketAsk = await repositories.marketAsk.save({
+          structHash: makerHash,
+          nonce: nonce,
+          makerAddress,
+          takerAddress,
+          start,
+          end,
+          salt,
+          chainId: chainId.toString(),
+
+          // placeholder values
+          auctionType: defs.AuctionType.FixedPrice,
+          signature: {
+            v: -1,
+            r: '',
+            s: '',
+          },
+          makeAsset: [],
+          takeAsset: [],
+        })
+
+        logger.debug('created new marketAsk from Match2A ', marketAsk.id)
+      } else {
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          makerAddress,
+          takerAddress,
+          start: Number(start),
+          end: Number(end),
+          nonce: Number(nonce),
+          salt: Number(salt),
+        })
+
+        logger.debug('updated existing marketAsk from Match2A ', marketAsk.id)
+      }
     })
 
     await Promise.allSettled(promises)
@@ -479,11 +567,6 @@ const listenMatchTwoBEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const abi = [
-    'event Match2B(bytes32 indexed makerStructHash,bytes[] sellerMakerOrderAssetData,bytes[] sellerMakerOrderAssetTypeData,' +
-    'bytes4[] sellerMakerOrderAssetClass,bytes[] sellerTakerOrderAssetData,bytes[] sellerTakerOrderAssetTypeData,bytes4[] sellerTakerOrderAssetClass)',
-  ]
-  const iface = new utils.Interface(abi)
   const topics = [
     utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
   ]
@@ -491,6 +574,7 @@ const listenMatchTwoBEvents = async (
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
     const promises = logs.map(async (log) => {
       const event = iface.parseLog(log)
+
       const makerHash = log.topics[1]
 
       const sellerMakerOrderAssetData = event.args[1] as string[]
@@ -511,13 +595,40 @@ const listenMatchTwoBEvents = async (
         sellerTakerOrderAssetTypeData,
       )
 
-      const marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
-      if (!marketAsk) return
+      let marketAsk = await repositories.marketAsk.findOne({ where: {
+        structHash: makerHash } })
+      if (!marketAsk) {
+        // no marketAsk -> populate
+        marketAsk = await repositories.marketAsk.save({
+          structHash: makerHash,
+          nonce: -1,
+          auctionType: defs.AuctionType.FixedPrice,
+          signature: {
+            v: -1,
+            r: '',
+            s: '',
+          },
+          makerAddress: '0x',
+          takerAddress: '0x',
+          start: -1,
+          end: -1,
+          salt: -1,
 
-      await repositories.marketAsk.updateOneById(marketAsk.id, {
-        makeAsset: makeAsset,
-        takeAsset: takeAsset,
-      })
+          // actual values
+          makeAsset: makeAsset,
+          takeAsset: takeAsset,
+          chainId: chainId.toString(),
+        })
+
+        logger.debug('created new marketAsk from Match2B ', marketAsk.id)
+      } else {
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          makeAsset: makeAsset,
+          takeAsset: takeAsset,
+        })
+        
+        logger.debug('updated existing marketAsk from Match2B ', marketAsk.id)
+      }
     })
 
     await Promise.allSettled(promises)
@@ -541,35 +652,61 @@ const listenMatchThreeAEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const abi = [
-    'event Match3A(bytes32 indexed makerStructHash,address makerAddress,address takerAddress,' +
-    'uint256 start,uint256 end,uint256 nonce,uint256 salt)',
-  ]
-  const iface = new utils.Interface(abi)
   const topics = [
     utils.id('Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
   ]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
+
+    logger.debug('Match3A logs', logs.length)
+
     const promises = logs.map(async (log) => {
       const event = iface.parseLog(log)
-      const makerHash = log.topics[1]
+      const takerHash = log.topics[1]
+      const makerAddress = event.args.makerAddress
       const takerAddress = event.args.takerAddress
-      const start = event.args.start
-      const end = event.args.end
-      const nonce = event.args.nonce
-      const salt = event.args.salt
+      const start = Number(event.args.start)
+      const end = Number(event.args.end)
+      const nonce = Number(event.args.nonce)
+      const salt = Number(event.args.salt)
 
-      const marketBid = await repositories.marketBid.findOne({ where: { structHash: makerHash } })
-      if (!marketBid) return
+      let marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
+      if (!marketBid) {
+        marketBid = await repositories.marketBid.save({
+          structHash: takerHash,
+          nonce,
+          makerAddress,
+          takerAddress,
+          start,
+          end,
+          salt,
+          chainId: chainId.toString(),
+          message: '',
+          
+          // placeholder values
+          marketAskId: '-1',
+          signature: {
+            v: -1,
+            r: '',
+            s: '',
+          },
+          makeAsset: [],
+          takeAsset: [],
+        })
 
-      await repositories.marketBid.updateOneById(marketBid.id, {
-        takerAddress: takerAddress,
-        start: start,
-        end: end,
-        nonce: nonce,
-        salt: salt,
-      })
+        logger.debug('created new marketBid Match 3A', marketBid.id)
+      } else {
+        await repositories.marketBid.updateOneById(marketBid.id, {
+          makerAddress,
+          takerAddress,
+          start: start,
+          end: end,
+          nonce: nonce,
+          salt: salt,
+        })
+
+        logger.debug('updated existing marketBid from Match3A ', marketBid.id)
+      }
     })
 
     await Promise.allSettled(promises)
@@ -593,19 +730,17 @@ const listenMatchThreeBEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const abi = [
-    'event Match3B(bytes32 indexed makerStructHash,bytes[] buyerMakerOrderAssetData,bytes[] buyerMakerOrderAssetTypeData,' +
-    'bytes4[] buyerMakerOrderAssetClass,bytes[] buyerTakerOrderAssetData,bytes[] buyerTakerOrderAssetTypeData,bytes4[] buyerTakerOrderAssetClass)',
-  ]
-  const iface = new utils.Interface(abi)
   const topics = [
     utils.id('Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
   ]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
+
+    logger.debug('Match3B logs', logs.length)
+
     const promises = logs.map(async (log) => {
       const event = iface.parseLog(log)
-      const makerHash = log.topics[1]
+      const takerHash = log.topics[1]
 
       const buyerMakerOrderAssetData = event.args[1] as string[]
       const buyerMakerOrderAssetTypeData = event.args[2] as string[]
@@ -625,13 +760,38 @@ const listenMatchThreeBEvents = async (
         buyerTakerOrderAssetTypeData,
       )
 
-      const marketAsk = await repositories.marketBid.findOne({ where: { structHash: makerHash } })
-      if (!marketAsk) return
+      let marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
+      if (!marketBid) {
+        marketBid = await repositories.marketBid.save({
+          structHash: takerHash,
+          nonce: -1,
+          marketAskId: '',
+          signature: {
+            v: -1,
+            r: '',
+            s: '',
+          },
+          makerAddress: '0x',
+          takerAddress: '0x',
+          start: -1,
+          end: -1,
+          salt: -1,
 
-      await repositories.marketBid.updateOneById(marketAsk.id, {
-        makeAsset: makeAsset,
-        takeAsset: takeAsset,
-      })
+          // actual values
+          makeAsset: makeAsset,
+          takeAsset: takeAsset,
+          chainId: chainId.toString(),
+        })
+
+        logger.debug('created new marketBid Match 3B', marketBid.id)
+      } else {
+        await repositories.marketBid.updateOneById(marketBid.id, {
+          makeAsset: makeAsset,
+          takeAsset: takeAsset,
+        })
+
+        logger.debug('updated existing marketBid from Match3B ', marketBid.id)
+      }
     })
 
     await Promise.allSettled(promises)
@@ -648,7 +808,7 @@ const listenMatchThreeBEvents = async (
 const getCachedBlock = async (chainId: number): Promise<number> => {
   try {
     const cachedBlock = await redis.get(`cached_block_${chainId}`)
-    if (cachedBlock) return Number(cachedBlock)
+    if (cachedBlock) return defaultBlock[chainId] // Number(cachedBlock)
     else return defaultBlock[chainId]
   } catch (e) {
     return defaultBlock[chainId]
