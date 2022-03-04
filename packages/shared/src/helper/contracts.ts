@@ -1,6 +1,7 @@
 import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
+import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
 
 // TODO: move contract addresses to Doppler.
@@ -111,6 +112,10 @@ export const MintedProfileTopic = '0x848fe9120700715213a041f29982f684fa481b289b4
 
 export function profileAuctionABI(): any {
   return profileAuctionABIJSON
+}
+
+export function marketplaceABIJSON(): any {
+  return nftMarketplaceABIJSON
 }
 
 export interface GasInfo {
