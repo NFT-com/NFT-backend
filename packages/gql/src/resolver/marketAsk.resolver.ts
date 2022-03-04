@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -115,7 +115,7 @@ const cancelAsk = (
   ctx: Context,
 ): Promise<boolean> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.input.marketAskId })
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.input.marketAskId, txHash: args?.input.txHash })
   return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
@@ -123,9 +123,10 @@ const cancelAsk = (
         marketAskError.ErrorType.MarketAskNotFound,
       ),
     ))
-    .then(fp.rejectIf((ask: entity.MarketAsk) => ask.makerAddress !== wallet.address)(
+    .then(fp.rejectIf((ask: entity.MarketAsk) =>
+      ethers.utils.getAddress(ask.makerAddress) !== ethers.utils.getAddress(wallet.address))(
       appError.buildForbidden(
-        marketAskError.buildMarketAskNotOwnedMsg(),
+        marketAskError.buildMarketAskNotOwnedMsg(wallet.address, args?.input.marketAskId),
         marketAskError.ErrorType.MarketAskNotOwned,
       ),
     ))
@@ -135,15 +136,17 @@ const cancelAsk = (
       })
     }))
     .then((ask: entity.MarketAsk) => {
-      const chain = provider.provider(ask.chainId)
+      const chain = provider.provider(Number(ask.chainId))
       chain.getTransaction(args?.input.txHash)
         .then(() =>  {
           repositories.marketAsk.updateOneById(ask.id, { cancelTxHash: args?.input.txHash })
         })
-        .catch(() => false)
+        .catch((err) => {
+          logger.error('cancelAsk error: ', err)
+          return false
+        })
     })
     .then(() => true)
-    .catch(() => false)
 }
 
 const createAsk = (

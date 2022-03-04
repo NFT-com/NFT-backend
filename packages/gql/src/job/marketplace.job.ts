@@ -94,6 +94,7 @@ const getPastLogs = async (
       return await provider.getLogs(filter)
     }
   } catch (e) {
+    logger.error('error while getting past logs: ', e)
     return []
   }
 }
@@ -364,6 +365,7 @@ const listenMatchEvents = async (
   const topics = [
     utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
   ]
+
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
