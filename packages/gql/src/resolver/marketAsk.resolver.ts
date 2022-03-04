@@ -115,7 +115,7 @@ const cancelAsk = (
   ctx: Context,
 ): Promise<boolean> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.input.marketAskId })
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.input.marketAskId, txHash: args?.input.txHash })
   return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
