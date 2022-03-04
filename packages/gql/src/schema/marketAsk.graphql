@@ -107,6 +107,7 @@ input BuyNowInput {
 extend type Query {
   getAsks(input: AsksInput!): GetMarketAsk!
   getNFTAsks(input: NftAsksInput!): [MarketAsk!]!
+  getNFTOffers(input: NftAsksInput!): [MarketAsk!]!
 }
 
 extend type Mutation {
