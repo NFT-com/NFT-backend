@@ -28,7 +28,7 @@ type NFTMetadata {
 type NFT {
   id: ID!
   contract: Address
-  tokenId: String!
+  tokenId: Uint256!
   isOwnedByMe: Boolean
   metadata: NFTMetadata!
   price: Uint256
