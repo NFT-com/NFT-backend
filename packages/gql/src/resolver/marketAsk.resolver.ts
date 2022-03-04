@@ -23,12 +23,11 @@ const getAsks = (
 
   const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
     makerAddress: makerAddress,
-    cancelTxHash: null,
   })
   return core.paginatedEntitiesBy(
     repositories.marketAsk,
     pageInput,
-    filter,
+    { ...filter, cancelTxHash: null },
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -59,9 +58,8 @@ const getNFTAsks = (
   const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
   const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
     makerAddress,
-    cancelTxHash: null,
   } as Partial<entity.MarketAsk>)
-  return repositories.marketAsk.find({ where: filter })
+  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
     .then(fp.thruIfEmpty(() => []))
     .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
