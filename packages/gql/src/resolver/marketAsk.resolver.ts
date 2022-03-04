@@ -5,6 +5,7 @@ import Joi from 'joi'
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError } from '@nftcom/gql/error'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { AuctionType } from '@nftcom/shared/defs'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -115,11 +116,11 @@ const cancelAsk = (
   ctx: Context,
 ): Promise<boolean> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.askId })
-  return repositories.marketAsk.findById(args.askId)
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.input.marketAskId })
+  return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        marketAskError.buildMarketAskNotFoundMsg(args.askId),
+        marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
         marketAskError.ErrorType.MarketAskNotFound,
       ),
     ))
@@ -135,7 +136,12 @@ const cancelAsk = (
       })
     }))
     .then((ask: entity.MarketAsk) => {
-      repositories.marketAsk.delete({ id: ask.id })
+      const chain = provider.provider(ask.chainId)
+      chain.getTransaction(args?.input.txHash)
+        .then(() =>  {
+          repositories.marketAsk.updateOneById(ask.id, { cancelTxHash: args?.input.txHash })
+        })
+        .catch(() => false)
     })
     .then(() => true)
     .catch(() => false)
@@ -225,6 +231,49 @@ const createAsk = (
     }))
 }
 
+const validMarketAsk = (
+  marketAsk: entity.MarketAsk,
+): boolean => {
+  // if user wants to buy nft directly, its auction type should be fixed or decreasing method...
+  if (marketAsk.auctionType === AuctionType.FixedPrice ||
+    marketAsk.auctionType === AuctionType.Decreasing)
+    return true
+  return false
+}
+
+const buyNow = (
+  _: any,
+  args: gql.MutationBuyNowArgs,
+  ctx: Context,
+): Promise<gql.MarketSwap | void> => {
+  const { user, repositories } = ctx
+  logger.debug('buyNow', { loggedInUserId: user?.id, input: args?.input })
+
+  const schema = Joi.object().keys({
+    marketAskId: Joi.string().required(),
+    txHash: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args?.input)
+  return repositories.marketAsk.findById(args?.input.marketAskId)
+    .then(fp.rejectIfEmpty(appError.buildNotFound(
+      marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
+      marketAskError.ErrorType.MarketAskNotFound,
+    )))
+    .then((ask: entity.MarketAsk) => {
+      if (validMarketAsk(ask)) {
+        const chain = provider.provider(ask.chainId)
+        chain.getTransaction(args?.input.txHash)
+          .then((response) =>
+            repositories.marketSwap.save({
+              askId: ask.id,
+              txHash: args?.input.txHash,
+              blockNumber: response.blockNumber.toFixed(),
+            }),
+          )
+      }
+    })
+}
+
 // TODOs
 // 1. add more advanced filters (sort by price, sort by floor)
 // 2. filter asks from a single user (walletId or address)
@@ -241,5 +290,6 @@ export default {
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
     cancelAsk: combineResolvers(auth.isAuthenticated, cancelAsk),
+    buyNow: combineResolvers(auth.isAuthenticated, buyNow),
   },
 }

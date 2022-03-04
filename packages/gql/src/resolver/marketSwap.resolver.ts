@@ -1,7 +1,11 @@
-import { Context, gql } from '@nftcom/gql/defs'
-import { _logger, entity,helper } from '@nftcom/shared'
+import { combineResolvers } from 'graphql-resolvers'
+import Joi from 'joi'
 
-import { pagination } from '../helper'
+import { Context, gql } from '@nftcom/gql/defs'
+import { _logger, entity, fp, helper, provider } from '@nftcom/shared'
+
+import { appError, marketAskError, marketBidError, marketSwapError } from '../error'
+import { auth, joi, pagination } from '../helper'
 import { core } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketSwap, _logger.Context.GraphQL)
@@ -27,9 +31,58 @@ const getSwaps = (
     .then(pagination.toPageable(pageInput))
 }
 
+const swapNFT = (
+  _: any,
+  args: gql.MutationSwapNFTArgs,
+  ctx: Context,
+): Promise<gql.MarketSwap | void> => {
+  const { user, repositories } = ctx
+  logger.debug('swapNFT', { loggedInUserId: user?.id, input: args?.input })
+
+  const schema = Joi.object().keys({
+    askId: Joi.string().required(),
+    txHash: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args?.input)
+  return repositories.marketAsk.findById(args?.input.askId)
+    .then(fp.rejectIfEmpty(appError.buildNotFound(
+      marketAskError.buildMarketAskNotFoundMsg(args?.input.askId),
+      marketAskError.ErrorType.MarketAskNotFound,
+    )))
+    .then((ask: entity.MarketAsk) =>
+      repositories.marketBid.findById(args?.input.bidId)
+        .then(fp.rejectIfEmpty(appError.buildNotFound(
+          marketBidError.buildMarketBidNotFoundMsg(args?.input.bidId),
+          marketBidError.ErrorType.MarketAskNotFound,
+        )))
+        .then((bid: entity.MarketBid) => {
+          const chain = provider.provider(ask.chainId)
+          chain.getTransaction(args?.input.txHash)
+            .then((response) =>
+              repositories.marketSwap.findOne({ where: { askId: ask.id, bidId: bid.id } })
+                .then(fp.rejectIfNotEmpty(appError.buildInvalid(
+                  marketSwapError.buildMarketSwapInvalidMsg(),
+                  marketSwapError.ErrorType.MarketSwapInvalid,
+                )))
+                .then(() => repositories.marketSwap.save({
+                  askId: ask.id,
+                  bidId: bid.id,
+                  txHash: args?.input.txHash,
+                  blockNumber: response.blockNumber.toFixed(),
+                })),
+            )
+            .catch((err) => {
+              throw Error(`txHash ${args?.input.txHash} is not valid ${err} `)
+            })
+        }),
+    )
+}
+
 export default {
   Query: {
     getSwaps: getSwaps,
   },
-  Mutation: {},
+  Mutation: {
+    swapNFT: combineResolvers(auth.isAuthenticated, swapNFT),
+  },
 }
