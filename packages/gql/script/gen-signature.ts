@@ -1,7 +1,7 @@
 import { Wallet } from 'ethers'
 
 const authMessage = 'I\'d like to sign in'
-const defaultKey = 'a2f890d2f7023d5eeba7f5c600bd50650ca59bd7e7007af8e016cd7abdc9af5d'
+const defaultKey = 'dbbda6ab62d2f221e1b8e0ae2ffe65b842635f0ddededbfe64a31f15dc169e83'
 
 const main = async (): Promise<void> => {
   const privateKey = process.argv[2] || defaultKey

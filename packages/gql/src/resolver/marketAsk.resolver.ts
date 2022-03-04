@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -123,9 +123,10 @@ const cancelAsk = (
         marketAskError.ErrorType.MarketAskNotFound,
       ),
     ))
-    .then(fp.rejectIf((ask: entity.MarketAsk) => ask.makerAddress !== wallet.address)(
+    .then(fp.rejectIf((ask: entity.MarketAsk) =>
+      ethers.utils.getAddress(ask.makerAddress) !== ethers.utils.getAddress(wallet.address))(
       appError.buildForbidden(
-        marketAskError.buildMarketAskNotOwnedMsg(),
+        marketAskError.buildMarketAskNotOwnedMsg(wallet.address, args?.input.marketAskId),
         marketAskError.ErrorType.MarketAskNotOwned,
       ),
     ))
@@ -143,7 +144,6 @@ const cancelAsk = (
         .catch(() => false)
     })
     .then(() => true)
-    .catch(() => false)
 }
 
 const createAsk = (

@@ -8,4 +8,4 @@ export const buildMarketAskInvalidMsg = (): string => 'MarketAsk invalid'
 
 export const buildMarketAskNotFoundMsg = (id: string): string => `MarketAsk ${id} not found`
 
-export const buildMarketAskNotOwnedMsg = (): string => 'MarketAsk not owned'
+export const buildMarketAskNotOwnedMsg = (caller: string, id: string): string => `Caller ${caller} does not own marketAsk id: ${id}`
