@@ -637,7 +637,7 @@ const listenMatchThreeBEvents = async (
 const getCachedBlock = async (chainId: number): Promise<number> => {
   try {
     const cachedBlock = await redis.get(`cached_block_${chainId}`)
-    if (cachedBlock) return Number(cachedBlock)
+    if (cachedBlock) return defaultBlock[chainId] // Number(cachedBlock)
     else return defaultBlock[chainId]
   } catch (e) {
     return defaultBlock[chainId]
