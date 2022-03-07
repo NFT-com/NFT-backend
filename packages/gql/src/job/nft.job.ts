@@ -2,6 +2,7 @@ import { Job } from 'bull'
 import { BigNumber,ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
+import Typesense from 'typesense'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
@@ -11,6 +12,19 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
+const TYPESENSE_HOST = '3.87.139.177' //process.env.TYPESENSE_APP_ID
+const TYPESENSE_API_KEY = 'TiwsolWyPwgfGmOvhw9yavpVuWz1YnM4fxHh65BH8JFr6oV4' // process.env.TYPESENSE_API_KEY
+
+const client = new Typesense.Client({
+  'nodes': [{
+    'host': TYPESENSE_HOST, // For Typesense Cloud use xxx.a1.typesense.net
+    'port': 8108,      // For Typesense Cloud use 443
+    'protocol': 'http',   // For Typesense Cloud use https
+  }],
+  'apiKey': TYPESENSE_API_KEY,
+  'connectionTimeoutSeconds': 2,
+})
+
 interface OwnedNFT {
   contract: {
     address: string
@@ -43,6 +57,26 @@ interface NFTMetaDataResponse {
   }
   timeLastUpdated: string
 }
+
+/*
+// typesense types/interfaces 
+type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
+
+interface CollectionFieldSchema {
+  name: string
+  type: CollectionFieldType
+  optional?: boolean
+  facet?: boolean
+  index?: boolean
+}
+
+interface CollectionCreateSchema {
+  name: string
+  default_sorting_field?: string
+  fields: CollectionFieldSchema[]
+  symbols_to_index?: string[]
+  token_separators?: string[]
+}*/
 
 const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   try {
@@ -159,6 +193,7 @@ const updateEntity = async (
         tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
       },
     })
+    
     let type: defs.NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
@@ -191,8 +226,17 @@ const updateEntity = async (
       userId: userId,
       walletId: walletId,
     })
+    console.log('newNFT activated, newNFT: ' + newNFT)
     if (newNFT && !existingNFT) {
-      console.log('this is a new nft')
+      console.log('this is a new (not existing) nft - search engine to index new document')
+      const indexNft = []
+      indexNft.push({
+        contract: nftInfo.contract.address,
+        tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+        type: type,
+        name: nftInfo.title,
+      })
+      client.collections('nfts').documents().import(indexNft,{ action : 'create' })
     } else if (newNFT && existingNFT) {
       console.log('this is an existing nft')
     }
