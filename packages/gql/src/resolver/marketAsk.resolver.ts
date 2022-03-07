@@ -48,6 +48,22 @@ const filterAsksForNft = (
   }
 }
 
+const filterOffersForNft = (
+  contract: string,
+  tokenId: number,
+) => {
+  return (asks: entity.MarketAsk[]) => {
+    const filtered = asks.filter((ask: entity.MarketAsk) => {
+      const matchingTakeAsset = ask.takeAsset.find((asset) => {
+        return asset?.standard?.contractAddress === contract &&
+          asset?.standard?.tokenId === String(tokenId)
+      })
+      return matchingTakeAsset != null
+    })
+    return filtered
+  }
+}
+
 const getNFTAsks = (
   _: any,
   args: gql.QueryGetNFTAsksArgs,
@@ -62,6 +78,22 @@ const getNFTAsks = (
   return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
     .then(fp.thruIfEmpty(() => []))
     .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
+}
+
+const getNFTOffers = (
+  _: any,
+  args: gql.QueryGetNFTOffersArgs,
+  ctx: Context,
+): Promise<gql.MarketAsk[]> => {
+  const { repositories } = ctx
+  logger.debug('getNFTOffers', { input: args?.input })
+  const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
+    makerAddress,
+  } as Partial<entity.MarketAsk>)
+  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
+    .then(fp.thruIfEmpty(() => []))
+    .then(filterOffersForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
 
 const validAsk = async (
@@ -288,6 +320,7 @@ export default {
   Query: {
     getAsks: getAsks,
     getNFTAsks: getNFTAsks,
+    getNFTOffers,
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
