@@ -267,9 +267,9 @@ const buyNow = (
         chain.getTransaction(args?.input.txHash)
           .then((response) =>
             repositories.marketSwap.save({
-              askId: ask.id,
               txHash: args?.input.txHash,
               blockNumber: response.blockNumber.toFixed(),
+              marketAsk: ask,
             }),
           )
       }
