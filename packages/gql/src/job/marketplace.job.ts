@@ -417,6 +417,8 @@ const listenMatchEvents = async (
             takeAsset: [],
             chainId: chainId.toString(),
           })
+
+          logger.debug('created new marketAsk ', marketAsk.id)
         }
 
         if (!marketBid && takerHash != '0x0000000000000000000000000000000000000000000000000000000000000000') {
