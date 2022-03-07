@@ -18,10 +18,10 @@ const getSwaps = (
   const { repositories } = ctx
   logger.debug('getSwaps', { input: args?.input })
   const pageInput = args?.input?.pageInput
-  const { askId } = helper.safeObject(args?.input)
+  const { marketAskId } = helper.safeObject(args?.input)
 
   const filter: Partial<entity.MarketSwap> = helper.removeEmpty({
-    askId: askId,
+    askId: marketAskId,
   })
   return core.paginatedEntitiesBy(
     repositories.marketSwap,
@@ -60,16 +60,16 @@ const swapNFT = (
           const chain = provider.provider(ask.chainId)
           chain.getTransaction(args?.input.txHash)
             .then((response) =>
-              repositories.marketSwap.findOne({ where: { askId: ask.id, bidId: bid.id } })
+              repositories.marketSwap.findOne({ where: { marketAsk: ask, marketBid: bid } })
                 .then(fp.rejectIfNotEmpty(appError.buildInvalid(
                   marketSwapError.buildMarketSwapInvalidMsg(),
                   marketSwapError.ErrorType.MarketSwapInvalid,
                 )))
                 .then(() => repositories.marketSwap.save({
-                  askId: ask.id,
-                  bidId: bid.id,
                   txHash: args?.input.txHash,
                   blockNumber: response.blockNumber.toFixed(),
+                  marketAsk: ask,
+                  marketBid: bid,
                 })),
             )
             .catch((err) => {
