@@ -1,10 +1,10 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError } from '@nftcom/gql/error'
-import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -27,7 +27,7 @@ const getAsks = (
   return core.paginatedEntitiesBy(
     repositories.marketAsk,
     pageInput,
-    filter,
+    { ...filter, cancelTxHash: null },
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -48,6 +48,22 @@ const filterAsksForNft = (
   }
 }
 
+const filterOffersForNft = (
+  contract: string,
+  tokenId: number,
+) => {
+  return (asks: entity.MarketAsk[]) => {
+    const filtered = asks.filter((ask: entity.MarketAsk) => {
+      const matchingTakeAsset = ask.takeAsset.find((asset) => {
+        return asset?.standard?.contractAddress === contract &&
+          asset?.standard?.tokenId === String(tokenId)
+      })
+      return matchingTakeAsset != null
+    })
+    return filtered
+  }
+}
+
 const getNFTAsks = (
   _: any,
   args: gql.QueryGetNFTAsksArgs,
@@ -59,9 +75,25 @@ const getNFTAsks = (
   const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
     makerAddress,
   } as Partial<entity.MarketAsk>)
-  return repositories.marketAsk.find({ where: filter })
+  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
     .then(fp.thruIfEmpty(() => []))
     .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
+}
+
+const getNFTOffers = (
+  _: any,
+  args: gql.QueryGetNFTOffersArgs,
+  ctx: Context,
+): Promise<gql.MarketAsk[]> => {
+  const { repositories } = ctx
+  logger.debug('getNFTOffers', { input: args?.input })
+  const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
+  const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
+    makerAddress,
+  } as Partial<entity.MarketAsk>)
+  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
+    .then(fp.thruIfEmpty(() => []))
+    .then(filterOffersForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
 
 const validAsk = async (
@@ -70,7 +102,7 @@ const validAsk = async (
 ): Promise<boolean> => {
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
     contracts.nftMarketplaceAddress(wallet.chainId),
-    provider.provider(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
   )
 
   // STEP 1 basic validation of order structure (if not used before)
@@ -115,17 +147,18 @@ const cancelAsk = (
   ctx: Context,
 ): Promise<boolean> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.askId })
-  return repositories.marketAsk.findById(args.askId)
+  logger.debug('cancelAsk', { loggedInUserId: user?.id, askId: args?.input.marketAskId, txHash: args?.input.txHash })
+  return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        marketAskError.buildMarketAskNotFoundMsg(args.askId),
+        marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
         marketAskError.ErrorType.MarketAskNotFound,
       ),
     ))
-    .then(fp.rejectIf((ask: entity.MarketAsk) => ask.makerAddress !== wallet.address)(
+    .then(fp.rejectIf((ask: entity.MarketAsk) =>
+      ethers.utils.getAddress(ask.makerAddress) !== ethers.utils.getAddress(wallet.address))(
       appError.buildForbidden(
-        marketAskError.buildMarketAskNotOwnedMsg(),
+        marketAskError.buildMarketAskNotOwnedMsg(wallet.address, args?.input.marketAskId),
         marketAskError.ErrorType.MarketAskNotOwned,
       ),
     ))
@@ -135,10 +168,17 @@ const cancelAsk = (
       })
     }))
     .then((ask: entity.MarketAsk) => {
-      repositories.marketAsk.delete({ id: ask.id })
+      const chain = provider.provider(Number(ask.chainId))
+      chain.getTransaction(args?.input.txHash)
+        .then(() =>  {
+          repositories.marketAsk.updateOneById(ask.id, { cancelTxHash: args?.input.txHash })
+        })
+        .catch((err) => {
+          logger.error('cancelAsk error: ', err)
+          return false
+        })
     })
     .then(() => true)
-    .catch(() => false)
 }
 
 const createAsk = (
@@ -225,6 +265,49 @@ const createAsk = (
     }))
 }
 
+const validMarketAsk = (
+  marketAsk: entity.MarketAsk,
+): boolean => {
+  // if user wants to buy nft directly, its auction type should be fixed or decreasing method...
+  if (marketAsk.auctionType === defs.AuctionType.FixedPrice ||
+    marketAsk.auctionType === defs.AuctionType.Decreasing)
+    return true
+  return false
+}
+
+const buyNow = (
+  _: any,
+  args: gql.MutationBuyNowArgs,
+  ctx: Context,
+): Promise<gql.MarketSwap | void> => {
+  const { user, repositories } = ctx
+  logger.debug('buyNow', { loggedInUserId: user?.id, input: args?.input })
+
+  const schema = Joi.object().keys({
+    marketAskId: Joi.string().required(),
+    txHash: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args?.input)
+  return repositories.marketAsk.findById(args?.input.marketAskId)
+    .then(fp.rejectIfEmpty(appError.buildNotFound(
+      marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
+      marketAskError.ErrorType.MarketAskNotFound,
+    )))
+    .then((ask: entity.MarketAsk) => {
+      if (validMarketAsk(ask)) {
+        const chain = provider.provider(ask.chainId)
+        chain.getTransaction(args?.input.txHash)
+          .then((response) =>
+            repositories.marketSwap.save({
+              txHash: args?.input.txHash,
+              blockNumber: response.blockNumber.toFixed(),
+              marketAsk: ask,
+            }),
+          )
+      }
+    })
+}
+
 // TODOs
 // 1. add more advanced filters (sort by price, sort by floor)
 // 2. filter asks from a single user (walletId or address)
@@ -237,9 +320,11 @@ export default {
   Query: {
     getAsks: getAsks,
     getNFTAsks: getNFTAsks,
+    getNFTOffers,
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
     cancelAsk: combineResolvers(auth.isAuthenticated, cancelAsk),
+    buyNow: combineResolvers(auth.isAuthenticated, buyNow),
   },
 }

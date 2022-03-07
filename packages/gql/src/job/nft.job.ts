@@ -1,5 +1,5 @@
 import { Job } from 'bull'
-import { BigNumber,ethers, providers } from 'ethers'
+import { BigNumber, ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
 import Typesense from 'typesense'

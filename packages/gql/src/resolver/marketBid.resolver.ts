@@ -18,10 +18,11 @@ const getBids = (
   const { repositories } = ctx
   logger.debug('getBids', { input: args?.input })
   const pageInput = args?.input?.pageInput
-  const { makerAddress } = helper.safeObject(args?.input)
+  const { makerAddress, marketAskId } = helper.safeObject(args?.input)
 
   const filter: Partial<entity.MarketBid> = helper.removeEmpty({
-    makerAddress: makerAddress,
+    makerAddress,
+    marketAskId,
   })
   return core.paginatedEntitiesBy(
     repositories.marketBid,
@@ -221,11 +222,44 @@ const createBid = (
     }))
 }
 
+const cancelMarketBid = (
+  _: any,
+  args: gql.MutationCancelMarketBidArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { user, repositories, wallet } = ctx
+  logger.debug('cancelBid', { loggedInUserId: user?.id, bidId: args?.input.marketBidId })
+  return repositories.marketBid.findById(args?.input.marketBidId)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        marketBidError.buildMarketBidNotFoundMsg(args?.input.marketBidId),
+        marketBidError.ErrorType.MarketBidNotFound,
+      ),
+    ))
+    .then(fp.rejectIf((bid: entity.MarketBid) => bid.makerAddress !== wallet.address)(
+      appError.buildForbidden(
+        marketBidError.buildMarketBidNotOwnedMsg(),
+        marketBidError.ErrorType.MarketBidNotOwned,
+      ),
+    ))
+    .then((bid: entity.MarketBid) => {
+      const chain = provider.provider(bid.chainId)
+      chain.getTransaction(args?.input.txHash)
+        .then(() =>  {
+          repositories.marketBid.updateOneById(bid.id, { cancelTxHash: args?.input.txHash })
+        })
+        .catch(() => false)
+    })
+    .then(() => true)
+    .catch(() => false)
+}
+
 export default {
   Query: {
-    getBids: getBids,
+    getBids,
   },
   Mutation: {
     createBid: combineResolvers(auth.isAuthenticated, createBid),
+    cancelMarketBid: combineResolvers(auth.isAuthenticated, cancelMarketBid),
   },
 }

@@ -1,6 +1,7 @@
 import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
+import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
 
 // TODO: move contract addresses to Doppler.
@@ -113,6 +114,10 @@ export function profileAuctionABI(): any {
   return profileAuctionABIJSON
 }
 
+export function marketplaceABIJSON(): any {
+  return nftMarketplaceABIJSON
+}
+
 export interface GasInfo {
   gasLimit: number
   gasPrice: number
@@ -131,7 +136,7 @@ export function getEthGasInfo(chainId: number): Promise<GasInfo> {
     .then((response) => response.json())
     .then((response: any) => {
       const priceGwei = response?.fastest ? response?.fastest / 10 : defaultPriceGwei
-  
+
       // only use gas station for mainnet, otherwise apply gas manually
       if (chainId === 1) {
         return {

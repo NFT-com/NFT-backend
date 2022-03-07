@@ -5,6 +5,7 @@ type GetMarketBid {
 }
 
 type MarketBid {
+  id: ID!
   structHash: String!
   nonce: Int!
   signature: Signature!
@@ -29,6 +30,7 @@ type MarketBid {
 
 input BidsInput {
   makerAddress: Address
+  marketAskId: String
   pageInput: PageInput
 }
 
@@ -49,6 +51,11 @@ input CreateBidInput {
   auctionType: AuctionType!
 }
 
+input CancelBidInput {
+  marketBidId: ID!
+  txHash: String!
+}
+
 
 extend type Query {
   getBids(input: BidsInput!): GetMarketBid!
@@ -56,4 +63,5 @@ extend type Query {
 
 extend type Mutation {
   createBid(input: CreateBidInput!): MarketBid!
+  cancelMarketBid(input: CancelBidInput!): Boolean!
 }
