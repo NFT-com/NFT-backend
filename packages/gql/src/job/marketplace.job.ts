@@ -448,18 +448,18 @@ const listenMatchEvents = async (
         }
         let marketSwap = await repositories.marketSwap.findOne({
           where: {
-            askId: marketAsk.id,
-            bidId: marketBid ? marketBid.id : null,
+            marketAsk: marketAsk,
+            marketBid: marketBid,
             txHash: log.transactionHash,
           },
         })
         if (!marketSwap) {
           marketSwap = await repositories.marketSwap.save({
-            askId: marketAsk.id,
-            bidId: marketBid ? marketBid.id : null,
             txHash: log.transactionHash,
             blockNumber: log.blockNumber.toFixed(),
             private: helper.parseBoolean(privateSale),
+            marketAsk: marketAsk,
+            marketBid: marketBid,
           })
           await repositories.marketAsk.updateOneById(marketAsk.id, {
             marketSwapId: marketSwap.id,

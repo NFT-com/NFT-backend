@@ -1,6 +1,6 @@
 type MarketSwap {
-  askId: String!
-  bidId: String
+  marketAsk: MarketAsk
+  marketBid: MarketBid
   txHash: String!
   blockNumber: String!
   private: Boolean
@@ -13,8 +13,8 @@ type GetMarketSwap {
 }
 
 input SwapsInput {
-  askId: Address
-  bidId: Address
+  marketAskId: Address
+  marketBidId: Address
   pageInput: PageInput
 }
 
