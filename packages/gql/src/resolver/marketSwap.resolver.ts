@@ -60,7 +60,8 @@ const swapNFT = (
           const chain = provider.provider(ask.chainId)
           chain.getTransaction(args?.input.txHash)
             .then((response) =>
-              repositories.marketSwap.findOne({ where: { marketAsk: ask, marketBid: bid } })
+              repositories.marketSwap.findOne({ where: {
+                marketAsk: ask, marketBid: bid ? bid : null } })
                 .then(fp.rejectIfNotEmpty(appError.buildInvalid(
                   marketSwapError.buildMarketSwapInvalidMsg(),
                   marketSwapError.ErrorType.MarketSwapInvalid,
