@@ -417,8 +417,6 @@ const listenMatchEvents = async (
             takeAsset: [],
             chainId: chainId.toString(),
           })
-
-          logger.debug('created new marketAsk ', marketAsk.id)
         }
 
         if (!marketBid && takerHash != '0x0000000000000000000000000000000000000000000000000000000000000000') {
@@ -449,10 +447,11 @@ const listenMatchEvents = async (
         let marketSwap = await repositories.marketSwap.findOne({
           where: {
             marketAsk: marketAsk,
-            marketBid: marketBid,
+            marketBid: marketBid ? marketBid : null,
             txHash: log.transactionHash,
           },
         })
+
         if (!marketSwap) {
           marketSwap = await repositories.marketSwap.save({
             txHash: log.transactionHash,
