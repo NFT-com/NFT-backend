@@ -14,8 +14,8 @@ const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
 
-const TYPESENSE_HOST = '3.87.139.177' //process.env.TYPESENSE_APP_ID
-const TYPESENSE_API_KEY = 'TiwsolWyPwgfGmOvhw9yavpVuWz1YnM4fxHh65BH8JFr6oV4' // process.env.TYPESENSE_API_KEY
+const TYPESENSE_HOST = process.env.TYPESENSE_APP_ID
+const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST, // For Typesense Cloud use xxx.a1.typesense.net
@@ -219,7 +219,7 @@ const updateEntity = async (
         type: type,
         name: nftInfo.title,
       })
-      client.collections('nfts1').documents().import(indexNft,{ action : 'create' })
+      client.collections('nfts').documents().import(indexNft,{ action : 'create' })
         .then(() => logger.debug('nft added to typesense index'))
         .catch(err => { logger.info('error: could not save nft in Typesense: ' + err)})
     }
@@ -246,7 +246,7 @@ const updateEntity = async (
                 name: collectionName,
               })
 
-              return client.collections('collections1').documents().import(indexCollection, { action: 'create' })
+              return client.collections('collections').documents().import(indexCollection, { action: 'create' })
                 .then(() => logger.debug('collection added to typesense index'))
                 .catch(err => { logger.info('error: could not save collection in Typesense: ' + err)})
             })

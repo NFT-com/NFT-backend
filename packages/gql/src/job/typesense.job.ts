@@ -9,8 +9,8 @@ import Typesense from 'typesense'
 import { _logger } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-const TYPESENSE_HOST = '3.87.139.177' //process.env.TYPESENSE_APP_ID
-const TYPESENSE_API_KEY = 'TiwsolWyPwgfGmOvhw9yavpVuWz1YnM4fxHh65BH8JFr6oV4' // process.env.TYPESENSE_API_KEY
+const TYPESENSE_HOST = process.env.TYPESENSE_APP_ID
+const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
 
@@ -58,7 +58,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   const nftCollectionFields = nftFields as CollectionFieldSchema[]
     
   const nftSchema = {
-    name: 'nfts1',
+    name: 'nfts',
     fields: nftCollectionFields,
   }
   const nftCollectionSchema = nftSchema as CollectionCreateSchema
@@ -66,7 +66,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   // need to add logic to not create after first init 
   client.collections().create(nftCollectionSchema)
     .then(() => logger.debug('nft index schema created'))
-    .catch(err => logger.info('oof, nft index schema error: ' + err ))
+    .catch(() => logger.info('nft index schema already created, skipping...'))
 
   // COLLECTIONS SCHEMA (coll)
   const collFields = []
@@ -77,12 +77,12 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   const collCollectionFields = collFields as CollectionFieldSchema[]
     
   const collSchema = {
-    name: 'collections1',
+    name: 'collections',
     fields: collCollectionFields,
   }
   const collCollectionSchema = collSchema as CollectionCreateSchema
     
   client.collections().create(collCollectionSchema)
     .then(() => logger.debug('collections index schema created'))
-    .catch(err => logger.info('oof, collection index schema error: ' + err ))
+    .catch(() => logger.info('collection index schema already created, skipping...'))
 }

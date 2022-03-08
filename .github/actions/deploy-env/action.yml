@@ -62,6 +62,8 @@ runs:
         SENTRY_DSN: ${{ fromJSON(inputs.secrets).SENTRY_DSN }}
         SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}
         SUPPORTED_NETWORKS: ${{ fromJSON(inputs.secrets).SUPPORTED_NETWORKS }}
+        TYPESENSE_HOST: ${{ fromJSON(inputs.secrets).TYPESENSE_HOST }}
+        TYPESENSE_API_KEY: ${{ fromJSON(inputs.secrets).TYPESENSE_API_KEY }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
