@@ -449,10 +449,11 @@ const listenMatchEvents = async (
         let marketSwap = await repositories.marketSwap.findOne({
           where: {
             marketAsk: marketAsk,
-            marketBid: marketBid,
+            marketBid: marketBid ? marketBid : null,
             txHash: log.transactionHash,
           },
         })
+
         if (!marketSwap) {
           marketSwap = await repositories.marketSwap.save({
             txHash: log.transactionHash,
