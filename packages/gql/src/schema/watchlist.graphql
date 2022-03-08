@@ -1,0 +1,28 @@
+union WatchlistItem = NFT | Profile | Collection
+
+type Watchlist {
+    id: ID!
+    user: User!
+}
+
+type WatchlistItem {
+    id: ID!
+    inWatchlist: ID!
+    itemId: ID! # (NFT | Profile | Collection) ID
+    itemData: WatchlistItem!
+}
+
+input AddToWatchlistInput {
+    watchlistId: ID!
+    watchlistItemId: ID! # (NFT | Profile | Collection) ID
+}
+
+extend type Query {
+    watchlist(id: ID): Watchlist!
+    allMyWatchlists: [Watchlist!]
+}
+
+extend type Mutation {
+    createWatchlist: Watchlist!
+    addToWatchlist(input: AddToWatchlistInput!): Watchlist!
+}

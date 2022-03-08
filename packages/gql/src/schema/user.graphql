@@ -6,6 +6,7 @@ type User {
   isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]
   myApprovals: [Approval!]
+  myWatchlists: [Watchlist!]
   preferences: UserPreferences!
   referredBy: String
   referralId: String!
