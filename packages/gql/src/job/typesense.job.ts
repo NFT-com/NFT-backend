@@ -9,7 +9,7 @@ import Typesense from 'typesense'
 import { _logger } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-const TYPESENSE_HOST = process.env.TYPESENSE_APP_ID
+const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
@@ -49,7 +49,6 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   
   // NFT SCHEMA 
   const nftFields = []
-  nftFields.push({ name: 'id', type: stringType, facet: false, index: false })
   nftFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'name', type: stringType, facet: false, index: true })
@@ -70,7 +69,6 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
 
   // COLLECTIONS SCHEMA (coll)
   const collFields = []
-  collFields.push({ name: 'id', type: stringType, facet: false, index: true })
   collFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   collFields.push({ name: 'name', type: stringType, facet: false, index: true })
     
