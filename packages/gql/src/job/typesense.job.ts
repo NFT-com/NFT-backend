@@ -1,16 +1,17 @@
+// TYPESENSE COLLECTION SCHEMA CREATION 
+// below job only needs to run on startup. creates collection schema if not already created 
+// schema should always exist in production, so may drop in future or keep for ref
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Job } from 'bull'
-import * as Lodash from 'lodash'
 import Typesense from 'typesense'
 
-import { _logger, db } from '@nftcom/shared'
+import { _logger } from '@nftcom/shared'
 
-const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const TYPESENSE_HOST = '3.87.139.177' //process.env.TYPESENSE_APP_ID
 const TYPESENSE_API_KEY = 'TiwsolWyPwgfGmOvhw9yavpVuWz1YnM4fxHh65BH8JFr6oV4' // process.env.TYPESENSE_API_KEY
 
-//declare type? 
 type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
 
 interface CollectionFieldSchema {
@@ -39,138 +40,49 @@ const client = new Typesense.Client({
   'connectionTimeoutSeconds': 2,
 })
 
-export const typesenseIndexNFTs = async (job: Job): Promise<any> => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   // check if collection exist, if not create collection schema
    
   const stringType = 'string' as CollectionFieldType
   //const numType = 'int32' as FieldType
-    
-  const fields = []
-  fields.push({ name: 'id', type: stringType, facet: false, index: false })
-  fields.push({ name: 'contract', type: stringType, facet: false, index: true })
-  fields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
-  fields.push({ name: 'name', type: stringType, facet: false, index: true })
-  fields.push({ name: 'type', type: stringType, facet: false, index: true })
-    
-  const collectionFields = fields as CollectionFieldSchema[]
-    
-  const schema = {
-    name: 'nfts',
-    fields: collectionFields,
-  }
-  const collectionSchema = schema as CollectionCreateSchema
-    
-  // need to add logic to not create after first init 
-  client.collections().create(collectionSchema)
-    .then(() => logger.debug(job + ' :collection schema created'))
-    .catch(err => logger.info('oof, collection schema error: ' + err ))
-    
-  // limit pull, flatten nfts and push to typesense index
-  const dbNfts = await repositories.nft.find({
-    select: ['id', 'contract', 'type', 'tokenId', 'metadata'],
-  })
-  const indexNfts = []
-  for (const i in dbNfts) {
-    indexNfts.push({
-      id: dbNfts[i].id,
-      contract: dbNfts[i].contract,
-      type: dbNfts[i].type,
-      name: dbNfts[i].metadata.name,
-      tokenId: dbNfts[i].tokenId,
-    })
-  }
-
-  const chunks = Lodash.chunk(indexNfts, 100)
-  chunks.forEach(chunk => client.collections('nfts').documents().import(chunk, { action: 'create' })
-    .then(() => logger.debug('nfts created in typesense'))
-    .catch(err => { logger.info('error - could not save nfts in typesense: ' + err)}),
-  )
-}
-
-export const typesenseIndexCollections = async (job: Job): Promise<any> => {
-  // check if collection exist, if not create collection schema
   
-  const stringType = 'string' as CollectionFieldType
-  //const numType = 'int32' as FieldType
+  // NFT SCHEMA 
+  const nftFields = []
+  nftFields.push({ name: 'id', type: stringType, facet: false, index: false })
+  nftFields.push({ name: 'contract', type: stringType, facet: false, index: true })
+  nftFields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
+  nftFields.push({ name: 'name', type: stringType, facet: false, index: true })
+  nftFields.push({ name: 'type', type: stringType, facet: false, index: true })
     
-  const fields = []
-  fields.push({ name: 'id', type: stringType, facet: false, index: true })
-  fields.push({ name: 'contract', type: stringType, facet: false, index: true })
-  fields.push({ name: 'name', type: stringType, facet: false, index: true })
+  const nftCollectionFields = nftFields as CollectionFieldSchema[]
     
-  const collectionFields = fields as CollectionFieldSchema[]
-    
-  const schema = {
-    name: 'collections',
-    fields: collectionFields,
+  const nftSchema = {
+    name: 'nfts1',
+    fields: nftCollectionFields,
   }
-  const collectionSchema = schema as CollectionCreateSchema
+  const nftCollectionSchema = nftSchema as CollectionCreateSchema
     
   // need to add logic to not create after first init 
-  client.collections().create(collectionSchema)
-    .then(() => logger.debug(job + ' :collections collection schema created'))
-    .catch(err => logger.info('oof, collection schema error: ' + err ))
+  client.collections().create(nftCollectionSchema)
+    .then(() => logger.debug('nft index schema created'))
+    .catch(err => logger.info('oof, nft index schema error: ' + err ))
+
+  // COLLECTIONS SCHEMA (coll)
+  const collFields = []
+  collFields.push({ name: 'id', type: stringType, facet: false, index: true })
+  collFields.push({ name: 'contract', type: stringType, facet: false, index: true })
+  collFields.push({ name: 'name', type: stringType, facet: false, index: true })
     
-  // limit pull, flatten nfts and push to typesense index
-  const dbCollections = await repositories.collection.find({
-    select: ['id', 'contract', 'name'],
-  })
-  const indexCollections = []
-  for (const i in dbCollections) {
-    indexCollections.push({
-      id: dbCollections[i].id,
-      contract: dbCollections[i].contract,
-      name: dbCollections[i].name,
-    })
+  const collCollectionFields = collFields as CollectionFieldSchema[]
+    
+  const collSchema = {
+    name: 'collections1',
+    fields: collCollectionFields,
   }
-
-  const chunks = Lodash.chunk(indexCollections, 100)
-  chunks.forEach(chunk => client.collections('collections').documents().import(chunk, { action: 'create' })
-    .then(() => logger.debug('collections created in typesense'))
-    .catch(err => { logger.info('error - could not save collections in typesense: ' + err)}),
-  )
-}
-
-export const typesenseIndexProfiles = async (job: Job): Promise<any> => {
-  // check if collection exist, if not create collection schema
-
-  const stringType = 'string' as CollectionFieldType
-  //const numType = 'int32' as FieldType
+  const collCollectionSchema = collSchema as CollectionCreateSchema
     
-  const fields = []
-  fields.push({ name: 'id', type: stringType, facet: false, index: true })
-  fields.push({ name: 'url', type: stringType, facet: false, index: true })
-  fields.push({ name: 'status', type: stringType, facet: false, index: true })
-    
-  const collectionFields = fields as CollectionFieldSchema[]
-    
-  const schema = {
-    name: 'profiles',
-    fields: collectionFields,
-  }
-  const collectionSchema = schema as CollectionCreateSchema
-    
-  // need to add logic to not create after first init 
-  client.collections().create(collectionSchema)
-    .then(() => logger.debug(job + ' :profile schema created'))
-    .catch(err => logger.info('oof, collection schema error: ' + err ))
-    
-  // limit pull, flatten nfts and push to typesense index
-  const dbProfiles = await repositories.profile.find({
-    select: ['id', 'url', 'status'],
-  })
-  const indexProfiles = []
-  for (const i in dbProfiles) {
-    indexProfiles.push({
-      id: dbProfiles[i].id,
-      url: dbProfiles[i].url,
-      status: dbProfiles[i].status,
-    })
-  }
-
-  const chunks = Lodash.chunk(indexProfiles, 100)
-  chunks.forEach(chunk => client.collections('profiles').documents().import(chunk, { action: 'create' })
-    .then(() => logger.debug('profiles created in typesense'))
-    .catch(err => { logger.info('error - could not save profiles in typesense: ' + err)}),
-  )
+  client.collections().create(collCollectionSchema)
+    .then(() => logger.debug('collections index schema created'))
+    .catch(err => logger.info('oof, collection index schema error: ' + err ))
 }

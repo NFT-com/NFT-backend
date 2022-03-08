@@ -9,12 +9,13 @@ import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shar
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
+
 const TYPESENSE_HOST = '3.87.139.177' //process.env.TYPESENSE_APP_ID
 const TYPESENSE_API_KEY = 'TiwsolWyPwgfGmOvhw9yavpVuWz1YnM4fxHh65BH8JFr6oV4' // process.env.TYPESENSE_API_KEY
-
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST, // For Typesense Cloud use xxx.a1.typesense.net
@@ -57,26 +58,6 @@ interface NFTMetaDataResponse {
   }
   timeLastUpdated: string
 }
-
-/*
-// typesense types/interfaces 
-type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
-
-interface CollectionFieldSchema {
-  name: string
-  type: CollectionFieldType
-  optional?: boolean
-  facet?: boolean
-  index?: boolean
-}
-
-interface CollectionCreateSchema {
-  name: string
-  default_sorting_field?: string
-  fields: CollectionFieldSchema[]
-  symbols_to_index?: string[]
-  token_separators?: string[]
-}*/
 
 const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   try {
@@ -226,9 +207,11 @@ const updateEntity = async (
       userId: userId,
       walletId: walletId,
     })
-    console.log('newNFT activated, newNFT: ' + newNFT)
+
+    // add new nft to search (Typesense) 
+    // TODO: Fix below approach to collect new NFTs added each minute, and batch update to Typesense every min
+    // TODO: How to save ID? pull from newNFT? run query following newNFT? is it worth it/needed?
     if (newNFT && !existingNFT) {
-      console.log('this is a new (not existing) nft - search engine to index new document')
       const indexNft = []
       indexNft.push({
         contract: nftInfo.contract.address,
@@ -236,9 +219,9 @@ const updateEntity = async (
         type: type,
         name: nftInfo.title,
       })
-      client.collections('nfts').documents().import(indexNft,{ action : 'create' })
-    } else if (newNFT && existingNFT) {
-      console.log('this is an existing nft')
+      client.collections('nfts1').documents().import(indexNft,{ action : 'create' })
+        .then(() => logger.debug('nft added to typesense index'))
+        .catch(err => { logger.info('error: could not save nft in Typesense: ' + err)})
     }
 
     if (newNFT) {
@@ -246,13 +229,26 @@ const updateEntity = async (
         where: { contract: ethers.utils.getAddress(newNFT.contract) },
       })
         .then(fp.thruIfEmpty(() => {
+          // find & save collection name
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
-            .then((collectionName: string) => {
+            .then(async (collectionName: string) => {
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
-              return repositories.collection.save({
+
+              await repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
                 name: collectionName,
               })
+
+              // add new collection to search (Typesense) 
+              const indexCollection = []
+              indexCollection.push({
+                contract: newNFT.contract,
+                name: collectionName,
+              })
+
+              return client.collections('collections1').documents().import(indexCollection, { action: 'create' })
+                .then(() => logger.debug('collection added to typesense index'))
+                .catch(err => { logger.info('error: could not save collection in Typesense: ' + err)})
             })
         }))
         .then((collection: entity.Collection) => {
