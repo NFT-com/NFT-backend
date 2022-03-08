@@ -4,7 +4,7 @@ import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError } from '@nftcom/gql/error'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -275,11 +275,97 @@ const validMarketAsk = (
   return false
 }
 
+/**
+ * do validation on txHash and return block number if it's valid
+ * @param txHash
+ * @param chainId
+ * @param marketAskId
+ */
+const validateTxHashForBuyNow = async (
+  txHash: string,
+  chainId: string,
+  marketAskId: string,
+): Promise<number | undefined> => {
+  try {
+    const chainProvider = provider.provider(Number(chainId))
+    const repositories = db.newRepositories()
+    // check if tx hash has been executed...
+    const tx = await chainProvider.getTransaction(txHash)
+    if (!tx.confirmations)
+      return undefined
+
+    const sourceReceipt = await tx.wait()
+    const abi = contracts.marketplaceABIJSON()
+    const iface = new ethers.utils.Interface(abi)
+    let eventEmitted = false
+
+    const topics = [
+      ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
+      ethers.utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
+      ethers.utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
+    ]
+    // look through events of tx and check it contains Match or Match2A or Match2B event...
+    // if it contains match events, then we validate if marketAskId is correct one...
+    await Promise.all(
+      sourceReceipt.logs.map(async (log) => {
+        if (topics.find((topic) => topic === log.topics[0])) {
+          const event = iface.parseLog(log)
+          if (event.name === 'Match') {
+            const makerHash = event.args.makerStructHash
+            const auctionType = event.args.auctionType == 0 ?
+              defs.AuctionType.FixedPrice :
+              event.args.auctionType == 1 ?
+                defs.AuctionType.English :
+                defs.AuctionType.Decreasing
+            if (auctionType === defs.AuctionType.English) eventEmitted = false
+            else {
+              const marketAsk = await repositories.marketAsk.findOne({
+                where: {
+                  id: marketAskId,
+                  structHash: makerHash,
+                },
+              })
+              if (!marketAsk) eventEmitted = false
+              else eventEmitted = true
+            }
+          }
+          if (event.name === 'Match2A') {
+            const makerHash = event.args.makerStructHash
+            const marketAsk = await repositories.marketAsk.findOne({
+              where: {
+                id: marketAskId,
+                structHash: makerHash,
+              },
+            })
+            if (!marketAsk) eventEmitted = false
+            else eventEmitted = true
+          }
+          if (event.name === 'Match2B') {
+            const makerHash = event.args.makerStructHash
+            const marketAsk = await repositories.marketAsk.findOne({
+              where: {
+                id: marketAskId,
+                structHash: makerHash,
+              },
+            })
+            if (!marketAsk) eventEmitted = false
+            else eventEmitted = true
+          }
+        }
+      }),
+    )
+    if (eventEmitted) return tx.blockNumber
+  } catch (e) {
+    logger.debug(`${txHash} is not valid`)
+    return undefined
+  }
+}
+
 const buyNow = (
   _: any,
   args: gql.MutationBuyNowArgs,
   ctx: Context,
-): Promise<gql.MarketSwap | void> => {
+): Promise<gql.MarketSwap> => {
   const { user, repositories } = ctx
   logger.debug('buyNow', { loggedInUserId: user?.id, input: args?.input })
 
@@ -293,17 +379,32 @@ const buyNow = (
       marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
       marketAskError.ErrorType.MarketAskNotFound,
     )))
-    .then((ask: entity.MarketAsk) => {
+    .then((ask: entity.MarketAsk): Promise<entity.MarketSwap> => {
       if (validMarketAsk(ask)) {
-        const chain = provider.provider(ask.chainId)
-        chain.getTransaction(args?.input.txHash)
-          .then((response) =>
-            repositories.marketSwap.save({
-              txHash: args?.input.txHash,
-              blockNumber: response.blockNumber.toFixed(),
-              marketAsk: ask,
-            }),
-          )
+        return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args.input.marketAskId)
+          .then((blockNumber): Promise<entity.MarketSwap> => {
+            if (blockNumber) {
+              return repositories.marketSwap.findOne({
+                where: {
+                  txHash: args?.input.txHash,
+                  marketAsk: ask,
+                },
+              }).then((swap: entity.MarketSwap | undefined) => {
+                if (swap)
+                  return Promise.resolve(swap)
+                else
+                  return repositories.marketSwap.save({
+                    txHash: args?.input.txHash,
+                    blockNumber: blockNumber.toFixed(),
+                    marketAsk: ask,
+                  })
+              })
+            } else {
+              return Promise.reject(`TxHash ${args?.input.txHash} is not valid or does not contain any match related events.`)
+            }
+          })
+      } else {
+        return Promise.reject('Auction type should not be english auction')
       }
     })
 }
