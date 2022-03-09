@@ -3,7 +3,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
-import { appError, marketAskError } from '@nftcom/gql/error'
+import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
 import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
@@ -141,6 +141,59 @@ const validAsk = async (
   return true
 }
 
+/**
+ * do validation on txHash and return block number if it's valid
+ * @param txHash
+ * @param chainId
+ * @param marketAskId
+ */
+const validateTxHashForCancelAsk = async (
+  txHash: string,
+  chainId: string,
+  marketAskId: string,
+): Promise<boolean> => {
+  try {
+    const chainProvider = provider.provider(Number(chainId))
+    const repositories = db.newRepositories()
+    // check if tx hash has been executed...
+    const tx = await chainProvider.getTransaction(txHash)
+    if (!tx.confirmations)
+      return false
+
+    const sourceReceipt = await tx.wait()
+    const abi = contracts.marketplaceABIJSON()
+    const iface = new ethers.utils.Interface(abi)
+    let eventEmitted = false
+
+    const topic = ethers.utils.id('Cancel(byte32,address)')
+    // look through events of tx and check it contains Cancel event...
+    // if it contains Cancel event, then we validate if marketAskId is correct one...
+    await Promise.all(
+      sourceReceipt.logs.map(async (log) => {
+        if (log.topics[0] === topic) {
+          const event = iface.parseLog(log)
+          if (event.name === 'Cancel') {
+            const makerHash = event.args.structHash
+            const makerAddress = event.args.maker
+            const marketAsk = await repositories.marketAsk.findOne({
+              where: {
+                id: marketAskId,
+                structHash: makerHash,
+                makerAddress: makerAddress,
+              },
+            })
+            if (!marketAsk) eventEmitted = false
+            else eventEmitted = true
+          }
+        }
+      }))
+    return eventEmitted
+  } catch (e) {
+    logger.debug(`${txHash} is not valid`, e)
+    return false
+  }
+}
+
 const cancelAsk = (
   _: any,
   args: gql.MutationCancelAskArgs,
@@ -162,23 +215,24 @@ const cancelAsk = (
         marketAskError.ErrorType.MarketAskNotOwned,
       ),
     ))
-    .then(fp.tap((ask: entity.MarketAsk) => {
-      repositories.marketBid.delete({
-        marketAskId: ask.id,
-      })
-    }))
-    .then((ask: entity.MarketAsk) => {
-      const chain = provider.provider(Number(ask.chainId))
-      chain.getTransaction(args?.input.txHash)
-        .then(() =>  {
-          repositories.marketAsk.updateOneById(ask.id, { cancelTxHash: args?.input.txHash })
-        })
-        .catch((err) => {
-          logger.error('cancelAsk error: ', err)
-          return false
+    .then((ask: entity.MarketAsk): Promise<boolean> => {
+      return validateTxHashForCancelAsk(args?.input.txHash, ask.chainId, args?.input.marketAskId)
+        .then((valid) => {
+          if (valid) {
+            return repositories.marketBid.delete({
+              marketAskId: ask.id,
+            }).then(() => {
+              return repositories.marketAsk.updateOneById(ask.id, {
+                cancelTxHash: args?.input.txHash,
+              }).then(() => true)})
+          } else {
+            return Promise.reject(appError.buildInvalid(
+              marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
+              marketAskError.ErrorType.TxHashInvalid,
+            ))
+          }
         })
     })
-    .then(() => true)
 }
 
 const createAsk = (
@@ -352,11 +406,11 @@ const validateTxHashForBuyNow = async (
             else eventEmitted = true
           }
         }
-      }),
-    )
+      }))
     if (eventEmitted) return tx.blockNumber
+    else  return undefined
   } catch (e) {
-    logger.debug(`${txHash} is not valid`)
+    logger.debug(`${txHash} is not valid`, e)
     return undefined
   }
 }
@@ -381,7 +435,7 @@ const buyNow = (
     )))
     .then((ask: entity.MarketAsk): Promise<entity.MarketSwap> => {
       if (validMarketAsk(ask)) {
-        return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args.input.marketAskId)
+        return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args?.input.marketAskId)
           .then((blockNumber): Promise<entity.MarketSwap> => {
             if (blockNumber) {
               return repositories.marketSwap.findOne({
@@ -389,22 +443,28 @@ const buyNow = (
                   txHash: args?.input.txHash,
                   marketAsk: ask,
                 },
-              }).then((swap: entity.MarketSwap | undefined) => {
-                if (swap)
-                  return Promise.resolve(swap)
-                else
-                  return repositories.marketSwap.save({
-                    txHash: args?.input.txHash,
-                    blockNumber: blockNumber.toFixed(),
-                    marketAsk: ask,
-                  })
               })
+                .then(fp.rejectIfNotEmpty(appError.buildExists(
+                  marketSwapError.buildMarketAskBoughtMsg(),
+                  marketSwapError.ErrorType.MarketAskBought,
+                )))
+                .then(() => repositories.marketSwap.save({
+                  txHash: args?.input.txHash,
+                  blockNumber: blockNumber.toFixed(),
+                  marketAsk: ask,
+                }))
             } else {
-              return Promise.reject(`TxHash ${args?.input.txHash} is not valid or does not contain any match related events.`)
+              return Promise.reject(appError.buildInvalid(
+                marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
+                marketAskError.ErrorType.TxHashInvalid,
+              ))
             }
           })
       } else {
-        return Promise.reject('Auction type should not be english auction')
+        return Promise.reject(appError.buildInvalid(
+          marketAskError.buildAuctionTypeInvalidMsg(),
+          marketAskError.ErrorType.AuctionTypeInvalid,
+        ))
       }
     })
 }
