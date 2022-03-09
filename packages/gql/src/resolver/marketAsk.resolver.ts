@@ -165,7 +165,7 @@ const validateTxHashForCancelAsk = async (
     const iface = new ethers.utils.Interface(abi)
     let eventEmitted = false
 
-    const topic = ethers.utils.id('Cancel(byte32,address)')
+    const topic = ethers.utils.id('Cancel(bytes32,address)')
     // look through events of tx and check it contains Cancel event...
     // if it contains Cancel event, then we validate if marketAskId is correct one...
     await Promise.all(
@@ -179,10 +179,10 @@ const validateTxHashForCancelAsk = async (
               where: {
                 id: marketAskId,
                 structHash: makerHash,
-                makerAddress: makerAddress,
+                makerAddress: ethers.utils.getAddress(makerAddress),
               },
             })
-            eventEmitted = !!marketAsk
+            eventEmitted = (marketAsk !== undefined)
           }
         }
       }))
@@ -376,7 +376,7 @@ const validateTxHashForBuyNow = async (
                   structHash: makerHash,
                 },
               })
-              eventEmitted = !!marketAsk
+              eventEmitted = (marketAsk !== undefined)
             }
           }
           if (event.name === 'Match2A') {
@@ -387,7 +387,7 @@ const validateTxHashForBuyNow = async (
                 structHash: makerHash,
               },
             })
-            eventEmitted = !!marketAsk
+            eventEmitted = (marketAsk !== undefined)
           }
           if (event.name === 'Match2B') {
             const makerHash = event.args.makerStructHash
@@ -397,7 +397,7 @@ const validateTxHashForBuyNow = async (
                 structHash: makerHash,
               },
             })
-            eventEmitted = !!marketAsk
+            eventEmitted = (marketAsk !== undefined)
           }
         }
       }))
