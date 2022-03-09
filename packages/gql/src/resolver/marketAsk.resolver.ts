@@ -182,8 +182,7 @@ const validateTxHashForCancelAsk = async (
                 makerAddress: makerAddress,
               },
             })
-            if (!marketAsk) eventEmitted = false
-            else eventEmitted = true
+            eventEmitted = !!marketAsk
           }
         }
       }))
@@ -323,10 +322,8 @@ const validMarketAsk = (
   marketAsk: entity.MarketAsk,
 ): boolean => {
   // if user wants to buy nft directly, its auction type should be fixed or decreasing method...
-  if (marketAsk.auctionType === defs.AuctionType.FixedPrice ||
+  return (marketAsk.auctionType === defs.AuctionType.FixedPrice ||
     marketAsk.auctionType === defs.AuctionType.Decreasing)
-    return true
-  return false
 }
 
 /**
@@ -379,8 +376,7 @@ const validateTxHashForBuyNow = async (
                   structHash: makerHash,
                 },
               })
-              if (!marketAsk) eventEmitted = false
-              else eventEmitted = true
+              eventEmitted = !!marketAsk
             }
           }
           if (event.name === 'Match2A') {
@@ -391,8 +387,7 @@ const validateTxHashForBuyNow = async (
                 structHash: makerHash,
               },
             })
-            if (!marketAsk) eventEmitted = false
-            else eventEmitted = true
+            eventEmitted = !!marketAsk
           }
           if (event.name === 'Match2B') {
             const makerHash = event.args.makerStructHash
@@ -402,8 +397,7 @@ const validateTxHashForBuyNow = async (
                 structHash: makerHash,
               },
             })
-            if (!marketAsk) eventEmitted = false
-            else eventEmitted = true
+            eventEmitted = !!marketAsk
           }
         }
       }))

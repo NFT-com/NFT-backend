@@ -264,8 +264,7 @@ const validateTxHashForCancelMarketBid = async (
                 makerAddress: makerAddress,
               },
             })
-            if (!marketBid) eventEmitted = false
-            else eventEmitted = true
+            eventEmitted = !!marketBid
           }
         }
       }))

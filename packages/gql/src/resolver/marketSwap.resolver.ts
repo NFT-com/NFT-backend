@@ -110,8 +110,7 @@ const validateTxHashForSwapNFT = async (
               }
               if (!marketAsk || !marketBid) eventEmitted = false
               else {
-                if (marketAsk.chainId !== marketBid.chainId) eventEmitted = false
-                else eventEmitted = true
+                eventEmitted = (marketAsk.chainId === marketBid.chainId)
               }
             }
           }
