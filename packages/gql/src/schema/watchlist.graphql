@@ -15,7 +15,7 @@ type WatchlistItem {
 
 input AddToWatchlistInput {
     watchlistId: ID!
-    watchlistItemId: ID! # (NFT | Profile | Collection) ID
+    itemId: ID! # (NFT | Profile | Collection) ID
 }
 
 input EditWatchlistTitleInput {
