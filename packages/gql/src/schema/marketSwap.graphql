@@ -29,5 +29,5 @@ extend type Query {
 }
 
 extend type Mutation {
-  swapNFT(input: SwapNFTInput!): MarketBid!
+  swapNFT(input: SwapNFTInput!): MarketSwap!
 }
