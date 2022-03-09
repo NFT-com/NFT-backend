@@ -3,6 +3,7 @@ union WatchlistItem = NFT | Profile | Collection
 type Watchlist {
     id: ID!
     user: User!
+    title: string!
 }
 
 type WatchlistItem {
@@ -17,6 +18,11 @@ input AddToWatchlistInput {
     watchlistItemId: ID! # (NFT | Profile | Collection) ID
 }
 
+input EditWatchlistTitleInput {
+    watchlistId: ID!
+    newTitle: string!
+}
+
 extend type Query {
     watchlist(id: ID): Watchlist!
     allMyWatchlists: [Watchlist!]
@@ -25,4 +31,5 @@ extend type Query {
 extend type Mutation {
     createWatchlist: Watchlist!
     addToWatchlist(input: AddToWatchlistInput!): Watchlist!
+    editWatchlistTitle(input: EditWatchlistTitleInput!): Watchlist!
 }
