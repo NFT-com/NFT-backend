@@ -18,16 +18,6 @@ input SwapsInput {
   pageInput: PageInput
 }
 
-input SwapNFTInput {
-  marketAskId: ID!
-  marketBidId: ID!
-  txHash: String!
-}
-
 extend type Query {
   getSwaps(input: SwapsInput!): GetMarketSwap!
-}
-
-extend type Mutation {
-  swapNFT(input: SwapNFTInput!): MarketSwap!
 }

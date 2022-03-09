@@ -1,10 +1,10 @@
-import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
-import { _logger, contracts, db, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
+import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -223,58 +223,6 @@ const createBid = (
     }))
 }
 
-/**
- * do validation on txHash and return block number if it's valid
- * @param txHash
- * @param chainId
- * @param marketBidId
- */
-const validateTxHashForCancelMarketBid = async (
-  txHash: string,
-  chainId: string,
-  marketBidId: string,
-): Promise<boolean> => {
-  try {
-    const chainProvider = provider.provider(Number(chainId))
-    const repositories = db.newRepositories()
-    // check if tx hash has been executed...
-    const tx = await chainProvider.getTransaction(txHash)
-    if (!tx.confirmations)
-      return false
-
-    const sourceReceipt = await tx.wait()
-    const abi = contracts.marketplaceABIJSON()
-    const iface = new ethers.utils.Interface(abi)
-    let eventEmitted = false
-
-    const topic = ethers.utils.id('Cancel(bytes32,address)')
-    // look through events of tx and check it contains Cancel event...
-    // if it contains Cancel event, then we validate if marketBidId is correct one...
-    await Promise.all(
-      sourceReceipt.logs.map(async (log) => {
-        if (log.topics[0] === topic) {
-          const event = iface.parseLog(log)
-          if (event.name === 'Cancel') {
-            const makerHash = event.args.structHash
-            const makerAddress = event.args.maker
-            const marketBid = await repositories.marketBid.findOne({
-              where: {
-                id: marketBidId,
-                structHash: makerHash,
-                makerAddress: ethers.utils.getAddress(makerAddress),
-              },
-            })
-            eventEmitted = (marketBid !== undefined)
-          }
-        }
-      }))
-    return eventEmitted
-  } catch (e) {
-    logger.debug(`${txHash} is not valid`, e)
-    return false
-  }
-}
-
 const cancelMarketBid = (
   _: any,
   args: gql.MutationCancelMarketBidArgs,
@@ -296,10 +244,11 @@ const cancelMarketBid = (
       ),
     ))
     .then((bid: entity.MarketBid): Promise<boolean> => {
-      return validateTxHashForCancelMarketBid(
+      return validateTxHashForCancel(
         args?.input.txHash,
         bid.chainId,
         args?.input.marketBidId,
+        AskOrBid.Bid,
       ).then((valid) => {
         if (valid) {
           return repositories.marketBid.updateOneById(bid.id, {
