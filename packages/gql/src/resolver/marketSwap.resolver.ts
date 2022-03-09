@@ -157,7 +157,12 @@ const swapNFT = (
             args?.input.marketBidId,
           ).then((blockNumber): Promise<entity.MarketSwap> => {
             if (blockNumber) {
-              return repositories.marketSwap.findOne({ where: { marketAsk: ask, marketBid: bid } })
+              return repositories.marketSwap.findOne({
+                where: {
+                  txHash: args?.input.txHash,
+                  marketAsk: ask,
+                  marketBid: bid ? bid : null,
+                } })
                 .then(fp.rejectIfNotEmpty(appError.buildExists(
                   marketSwapError.buildMarketSwapExistingMsg(),
                   marketSwapError.ErrorType.MarketSwapExisting,
