@@ -3,7 +3,7 @@ union WatchlistItem = NFT | Profile | Collection
 type Watchlist {
     id: ID!
     user: User!
-    title: string!
+    title: String!
 }
 
 type WatchlistItem {
@@ -20,7 +20,7 @@ input AddToWatchlistInput {
 
 input EditWatchlistTitleInput {
     watchlistId: ID!
-    newTitle: string!
+    newTitle: String!
 }
 
 extend type Query {
