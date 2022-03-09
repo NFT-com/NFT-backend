@@ -429,31 +429,41 @@ const buyNow = (
     )))
     .then((ask: entity.MarketAsk): Promise<entity.MarketSwap> => {
       if (validMarketAsk(ask)) {
-        return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args?.input.marketAskId)
-          .then((blockNumber): Promise<entity.MarketSwap> => {
-            if (blockNumber) {
-              return repositories.marketSwap.findOne({
-                where: {
-                  txHash: args?.input.txHash,
-                  marketAsk: ask,
-                },
-              })
-                .then(fp.rejectIfNotEmpty(appError.buildExists(
-                  marketSwapError.buildMarketAskBoughtMsg(),
-                  marketSwapError.ErrorType.MarketAskBought,
-                )))
-                .then(() => repositories.marketSwap.save({
-                  txHash: args?.input.txHash,
-                  blockNumber: blockNumber.toFixed(),
-                  marketAsk: ask,
-                }))
-            } else {
-              return Promise.reject(appError.buildInvalid(
-                marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
-                marketAskError.ErrorType.TxHashInvalid,
-              ))
-            }
-          })
+        if (!ask.marketSwapId) {
+          return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args?.input.marketAskId)
+            .then((blockNumber): Promise<entity.MarketSwap> => {
+              if (blockNumber) {
+                return repositories.marketSwap.findOne({
+                  where: {
+                    txHash: args?.input.txHash,
+                    marketAsk: ask,
+                  },
+                })
+                  .then(fp.rejectIfNotEmpty(appError.buildExists(
+                    marketSwapError.buildMarketSwapExistingMsg(),
+                    marketSwapError.ErrorType.MarketSwapExisting,
+                  )))
+                  .then(() =>
+                    repositories.marketSwap.save({
+                      txHash: args?.input.txHash,
+                      blockNumber: blockNumber.toFixed(),
+                      marketAsk: ask,
+                    }).then((swap: entity.MarketSwap) =>
+                      repositories.marketAsk.updateOneById(ask.id, {
+                        marketSwapId: swap.id,
+                      }).then(() => swap)))
+              } else {
+                return Promise.reject(appError.buildInvalid(
+                  marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
+                  marketAskError.ErrorType.TxHashInvalid,
+                ))
+              }
+            })
+        } else {
+          return Promise.reject(appError.buildInvalid(
+            marketAskError.buildMarketAskBoughtMsg(),
+            marketAskError.ErrorType.MarketAskBought))
+        }
       } else {
         return Promise.reject(appError.buildInvalid(
           marketAskError.buildAuctionTypeInvalidMsg(),
