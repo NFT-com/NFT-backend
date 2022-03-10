@@ -1,4 +1,8 @@
-union WatchlistItem = NFT | Profile | Collection
+enum WatchlistItem {
+     NFT
+     Profile
+     Collection
+}
 
 type Watchlist {
     id: ID!
