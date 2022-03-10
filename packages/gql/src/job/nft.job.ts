@@ -214,14 +214,20 @@ const updateEntity = async (
     if (newNFT && !existingNFT) {
       const indexNft = []
       indexNft.push({
+        id: newNFT.id,
         contract: nftInfo.contract.address,
         tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
         type: type,
         name: nftInfo.title,
       })
-      client.collections('nfts').documents().import(indexNft,{ action : 'create' })
-        .then(() => logger.debug('nft added to typesense index'))
-        .catch(err => { logger.info('error: could not save nft in Typesense: ' + err)})
+
+      try {
+        await client.collections('nfts').documents().import(indexNft,{ action : 'create' })
+        logger.debug('nft added to typesense index')
+      }
+      catch (err) {
+        logger.info('error: could not save nft in typesense: ' + err)
+      }
     }
 
     if (newNFT) {
@@ -232,22 +238,8 @@ const updateEntity = async (
           // find & save collection name
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then(async (collectionName: string) => {
-            // add new collection to search (Typesense) 
-              const indexCollection = []
-              indexCollection.push({
-                contract: newNFT.contract,
-                name: collectionName,
-              })
-
+              // add new collection to search (Typesense) 
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
-
-              try {
-                await client.collections('collections').documents().import(indexCollection, { action: 'create' })
-                logger.debug('collection added to typesense index')
-              }
-              catch (err) {
-                logger.info('error: could not save collection in typesense: ' + err)
-              }
 
               return repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
@@ -255,7 +247,24 @@ const updateEntity = async (
               })
             })
         }))
-        .then((collection: entity.Collection) => {
+        .then(async (collection: entity.Collection) => {
+          // save nft in typesense search 
+          const indexCollection = []
+          indexCollection.push({
+            id: collection.id,
+            contract: collection.contract,
+            name: collection.name,
+          })
+          
+          try {
+            await client.collections('collections').documents().import(indexCollection, { action: 'create' })
+            logger.debug('collection added to typesense index')
+          }
+          catch (err) {
+            logger.info('error: could not save collection in typesense: ' + err)
+          }
+
+          // update edgeVals
           const edgeVals = {
             thisEntityType: defs.EntityType.Collection,
             thatEntityType: defs.EntityType.NFT,

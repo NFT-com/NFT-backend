@@ -49,6 +49,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   
   // NFT SCHEMA 
   const nftFields = []
+  nftFields.push({ name: 'id', type: stringType, facet: false, index: false })
   nftFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'name', type: stringType, facet: false, index: true })
@@ -69,6 +70,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
 
   // COLLECTIONS SCHEMA (coll)
   const collFields = []
+  collFields.push({ name: 'id', type: stringType, facet: false, index: false })
   collFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   collFields.push({ name: 'name', type: stringType, facet: false, index: true })
     
