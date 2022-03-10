@@ -15,6 +15,12 @@ export const stringListToMap = (
   }, new Map<string, string>())
 }
 
+export function getGenesisKeyWhitelist(): Array<string> {
+  return [
+    '0x59495589849423692778a8c5aaCA62CA80f875a4',
+  ]
+}
+
 export const convertToHash = (text: string): string => {
   return utils.keccak256(utils.toUtf8Bytes(text))
 }

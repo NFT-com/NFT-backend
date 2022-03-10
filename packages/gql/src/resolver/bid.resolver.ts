@@ -26,7 +26,7 @@ const bid = (
   args: gql.MutationBidArgs,
   ctx: Context,
 ): Promise<gql.Bid> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
@@ -55,16 +55,22 @@ const bid = (
     })
     .then(({ profileId, walletId }) => {
       if (input.nftType === gql.NFTType.GenesisKey) {
-        return repositories.bid.findOne({ where: {
-          nftType: gql.NFTType.GenesisKey,
-          walletId,
-        } }).then((previousGKBid) => ({
-          walletId,
-          profileId,
-          stakeWeight: null,
-          existingBid: previousGKBid,
-          prevTopBidOwner: null,
-        }))
+        const whitelist = helper.getGenesisKeyWhitelist()
+
+        if (whitelist.includes(wallet.address)) {
+          return repositories.bid.findOne({ where: {
+            nftType: gql.NFTType.GenesisKey,
+            walletId,
+          } }).then((previousGKBid) => ({
+            walletId,
+            profileId,
+            stakeWeight: null,
+            existingBid: previousGKBid,
+            prevTopBidOwner: null,
+          }))
+        } else {
+          throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+        }
       } else if (input.nftType !== gql.NFTType.Profile) {
         // TODO: find bid and prevTopBid for non-profile NFTs too.
         return { walletId, profileId, stakeWeight: null, existingBid: null, prevTopBidOwner: null }
