@@ -232,23 +232,27 @@ const updateEntity = async (
           // find & save collection name
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then(async (collectionName: string) => {
-              logger.debug('new collection', { collectionName, contract: newNFT.contract })
-
-              await repositories.collection.save({
-                contract: ethers.utils.getAddress(newNFT.contract),
-                name: collectionName,
-              })
-
-              // add new collection to search (Typesense) 
+            // add new collection to search (Typesense) 
               const indexCollection = []
               indexCollection.push({
                 contract: newNFT.contract,
                 name: collectionName,
               })
 
-              return client.collections('collections').documents().import(indexCollection, { action: 'create' })
-                .then(() => logger.debug('collection added to typesense index'))
-                .catch(err => { logger.info('error: could not save collection in Typesense: ' + err)})
+              logger.debug('new collection', { collectionName, contract: newNFT.contract })
+
+              try {
+                await client.collections('collections').documents().import(indexCollection, { action: 'create' })
+                logger.debug('collection added to typesense index')
+              }
+              catch (err) {
+                logger.info('error: could not save collection in typesense: ' + err)
+              }
+
+              return repositories.collection.save({
+                contract: ethers.utils.getAddress(newNFT.contract),
+                name: collectionName,
+              })
             })
         }))
         .then((collection: entity.Collection) => {
