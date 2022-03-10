@@ -5,7 +5,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, defs, entity } from '@nftcom/shared'
+import { _logger, defs, entity, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Wallet, _logger.Context.GraphQL)
 
@@ -41,8 +41,7 @@ const isAddressWhitelisted = (
 ): Promise<boolean> => {
   const { wallet } = ctx
   logger.debug('isAddressWhitelisted', { input: args.input, caller: wallet })
-  // todo: get the real whitelist here.
-  const whitelist = []
+  const whitelist = helper.getGenesisKeyWhitelist()
   return Promise.resolve(whitelist.includes(args.input?.address))
 }
 
