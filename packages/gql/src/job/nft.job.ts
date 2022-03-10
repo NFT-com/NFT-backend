@@ -2,15 +2,30 @@ import { Job } from 'bull'
 import { BigNumber, ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
+import Typesense from 'typesense'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
+
+const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+const client = new Typesense.Client({
+  'nodes': [{
+    'host': TYPESENSE_HOST, // For Typesense Cloud use xxx.a1.typesense.net
+    'port': 8108,      // For Typesense Cloud use 443
+    'protocol': 'http',   // For Typesense Cloud use https
+  }],
+  'apiKey': TYPESENSE_API_KEY,
+  'connectionTimeoutSeconds': 2,
+})
+
 interface OwnedNFT {
   contract: {
     address: string
@@ -159,6 +174,7 @@ const updateEntity = async (
         tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
       },
     })
+    
     let type: defs.NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
@@ -192,18 +208,47 @@ const updateEntity = async (
       walletId: walletId,
     })
 
+    // add new nft to search (Typesense) 
+    // TODO: Fix below approach to collect new NFTs added each minute, and batch update to Typesense every min
+    // TODO: How to save ID? pull from newNFT? run query following newNFT? is it worth it/needed?
+    if (newNFT && !existingNFT) {
+      const indexNft = []
+      indexNft.push({
+        contract: nftInfo.contract.address,
+        tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+        type: type,
+        name: nftInfo.title,
+      })
+      client.collections('nfts').documents().import(indexNft,{ action : 'create' })
+        .then(() => logger.debug('nft added to typesense index'))
+        .catch(err => { logger.info('error: could not save nft in Typesense: ' + err)})
+    }
+
     if (newNFT) {
       await repositories.collection.findOne({
         where: { contract: ethers.utils.getAddress(newNFT.contract) },
       })
         .then(fp.thruIfEmpty(() => {
+          // find & save collection name
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
-            .then((collectionName: string) => {
+            .then(async (collectionName: string) => {
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
-              return repositories.collection.save({
+
+              await repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
                 name: collectionName,
               })
+
+              // add new collection to search (Typesense) 
+              const indexCollection = []
+              indexCollection.push({
+                contract: newNFT.contract,
+                name: collectionName,
+              })
+
+              return client.collections('collections').documents().import(indexCollection, { action: 'create' })
+                .then(() => logger.debug('collection added to typesense index'))
+                .catch(err => { logger.info('error: could not save collection in Typesense: ' + err)})
             })
         }))
         .then((collection: entity.Collection) => {
