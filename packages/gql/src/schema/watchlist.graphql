@@ -1,4 +1,4 @@
-enum WatchlistItem {
+enum WatchlistItemType {
      NFT
      Profile
      Collection
@@ -14,7 +14,7 @@ type WatchlistItem {
     id: ID!
     inWatchlist: ID!
     itemId: ID! # (NFT | Profile | Collection) ID
-    itemData: WatchlistItem!
+    itemData: WatchlistItemType!
 }
 
 input AddToWatchlistInput {
