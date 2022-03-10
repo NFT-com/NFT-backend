@@ -8,13 +8,13 @@ type Watchlist {
     id: ID!
     user: User!
     title: String!
+    items: [WatchlistItem!]
 }
 
 type WatchlistItem {
     id: ID!
     inWatchlist: ID!
-    itemId: ID! # (NFT | Profile | Collection) ID
-    itemData: WatchlistItemType!
+    item: WatchlistItemType!
 }
 
 input AddToWatchlistInput {
