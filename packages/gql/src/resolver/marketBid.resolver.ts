@@ -3,6 +3,7 @@ import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
+import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
@@ -242,16 +243,25 @@ const cancelMarketBid = (
         marketBidError.ErrorType.MarketBidNotOwned,
       ),
     ))
-    .then((bid: entity.MarketBid) => {
-      const chain = provider.provider(bid.chainId)
-      chain.getTransaction(args?.input.txHash)
-        .then(() =>  {
-          repositories.marketBid.updateOneById(bid.id, { cancelTxHash: args?.input.txHash })
-        })
-        .catch(() => false)
+    .then((bid: entity.MarketBid): Promise<boolean> => {
+      return validateTxHashForCancel(
+        args?.input.txHash,
+        bid.chainId,
+        args?.input.marketBidId,
+        AskOrBid.Bid,
+      ).then((valid) => {
+        if (valid) {
+          return repositories.marketBid.updateOneById(bid.id, {
+            cancelTxHash: args?.input.txHash,
+          }).then(() => true)
+        } else {
+          return Promise.reject(appError.buildInvalid(
+            marketBidError.buildTxHashInvalidMsg(args?.input.txHash),
+            marketBidError.ErrorType.TxHashInvalid,
+          ))
+        }
+      })
     })
-    .then(() => true)
-    .catch(() => false)
 }
 
 export default {
