@@ -34,7 +34,22 @@ const addAddress = (
     }))
 }
 
+const isAddressWhitelisted = (
+  _: any,
+  args: gql.QueryIsAddressWhitelistedArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { wallet } = ctx
+  logger.debug('isAddressWhitelisted', { input: args.input, caller: wallet })
+  // todo: get the real whitelist here.
+  const whitelist = []
+  return Promise.resolve(whitelist.includes(args.input?.address))
+}
+
 export default {
+  Query: {
+    isAddressWhitelisted: isAddressWhitelisted,
+  },
   Mutation: {
     addAddress: combineResolvers(auth.isAuthenticated, addAddress),
   },
