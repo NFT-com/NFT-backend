@@ -295,7 +295,7 @@ const createAsk = (
     ))))
     .then(() => {
       return availableToCreateAsk(wallet.address, makeAssets, repositories)
-        .then((available) => {
+        .then((available): Promise<entity.MarketAsk> => {
           if (available) {
             return repositories.marketAsk.save({
               structHash: args?.input.structHash,

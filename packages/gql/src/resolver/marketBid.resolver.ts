@@ -240,7 +240,7 @@ const createBid = (
     )))
     .then(() => {
       return availableToBid(wallet.address, repositories)
-        .then((available) => {
+        .then((available): Promise<entity.MarketBid> => {
           if (available) {
             return repositories.marketBid.save({
               structHash: args?.input.structHash,
