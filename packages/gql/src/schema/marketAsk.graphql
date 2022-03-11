@@ -27,7 +27,7 @@ type AssetType {
 
 type MarketplaceAsset {
   standard: AssetType!
-  nftId: String!
+  nftId: String
   bytes: String!
   value: Uint256!
   minimumBid: Uint256!
