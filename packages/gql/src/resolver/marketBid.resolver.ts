@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
@@ -141,22 +142,25 @@ const validOrderMatch = async (
   return true
 }
 
-const isUserAvailableToBid = async (
-  makerAddress: string,
+const availableToBid = async (
+  address: string,
   repositories: db.Repository,
 ): Promise<boolean> => {
-  const latestBids = await repositories.marketBid.find({
+  const now = Date.now()
+  const activeBids = await repositories.marketBid.find({
     skip: 0,
     take: 1,
     order: { createdAt: 'DESC' },
     where: {
-      makerAddress: ethers.utils.getAddress(makerAddress),
+      makerAddress: ethers.utils.getAddress(address),
       cancelTxHash: null,
       marketSwapId: null,
       rejectedAt: null,
+      start: LessThanOrEqual(now),
+      end: MoreThanOrEqual(now),
     },
   })
-  const activeBids = latestBids.filter((bid) => bid.approvalTxHash !== null)
+
   return (activeBids.length === 0)
 }
 
@@ -235,7 +239,7 @@ const createBid = (
       marketBidError.ErrorType.MarketBidInvalid,
     )))
     .then(() => {
-      return isUserAvailableToBid(wallet.address, repositories)
+      return availableToBid(wallet.address, repositories)
         .then((available) => {
           if (available) {
             return repositories.marketBid.save({

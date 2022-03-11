@@ -3,7 +3,7 @@ export enum ErrorType {
   MarketBidInvalid = 'MARKET_BID_INVALID',
   MarketBidNotFound = 'MARKET_BID_NOT_FOUND',
   MarketBidNotOwned = 'MARKET_BID_NOT_OWNED',
-  MarketBidUnavailable = 'Market_BID_UNAVAILABLE',
+  MarketBidUnavailable = 'MARKET_BID_UNAVAILABLE',
   MakerAddressNotOwned = 'MAKER_ADDRESS_NOT_OWNED',
   TxHashInvalid = 'TX_HASH_INVALID',
 }

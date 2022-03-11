@@ -1,6 +1,7 @@
 import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
@@ -198,6 +199,24 @@ const cancelAsk = (
     })
 }
 
+const availableToCreateAsk = async (
+  address: string,
+  asset: Array<gql.MarketplaceAssetInput>,
+  repositories: db.Repository,
+): Promise<boolean> => {
+  const now = Date.now()
+  const marketAsk = await repositories.marketAsk.findOne({
+    where: {
+      makerAddress: address,
+      makerAsset: asset,
+      offerAcceptedAt: null,
+      start: LessThanOrEqual(now),
+      end: MoreThanOrEqual(now),
+    },
+  })
+  return (marketAsk === undefined)
+}
+
 const createAsk = (
   _: any,
   args: gql.MutationCreateAskArgs,
@@ -254,6 +273,14 @@ const createAsk = (
   const takeAssetInput = args?.input.takeAsset
   const takeAssets = convertAssetInput(takeAssetInput)
 
+  if (ethers.utils.getAddress(args?.input.makerAddress) !==
+    ethers.utils.getAddress(wallet.address)) {
+    return Promise.reject(appError.buildForbidden(
+      marketAskError.buildMakerAddressNotOwnedMsg(),
+      marketAskError.ErrorType.MakerAddressNotOwned,
+    ))
+  }
+
   // structHash should be unique
   return repositories.marketAsk
     .findOne({ where: { structHash: args?.input.structHash } })
@@ -266,20 +293,31 @@ const createAsk = (
       marketAskError.buildMarketAskInvalidMsg(),
       marketAskError.ErrorType.MarketAskInvalid,
     ))))
-    .then(() => repositories.marketAsk.save({
-      structHash: args?.input.structHash,
-      nonce: args?.input.nonce,
-      auctionType: args?.input.auctionType,
-      signature: args?.input.signature,
-      makerAddress: args?.input.makerAddress,
-      makeAsset: makeAssets,
-      takerAddress: args?.input.takerAddress,
-      takeAsset: takeAssets,
-      start: args?.input.start,
-      end: args?.input.end,
-      salt: args?.input.salt,
-      chainId: wallet.chainId,
-    }))
+    .then(() => {
+      return availableToCreateAsk(wallet.address, makeAssets, repositories)
+        .then((available) => {
+          if (available) {
+            return repositories.marketAsk.save({
+              structHash: args?.input.structHash,
+              nonce: args?.input.nonce,
+              auctionType: args?.input.auctionType,
+              signature: args?.input.signature,
+              makerAddress: args?.input.makerAddress,
+              makeAsset: makeAssets,
+              takerAddress: args?.input.takerAddress,
+              takeAsset: takeAssets,
+              start: args?.input.start,
+              end: args?.input.end,
+              salt: args?.input.salt,
+              chainId: wallet.chainId,
+            })
+          } else {
+            return Promise.reject(appError.buildForbidden(
+              marketAskError.buildMarketAskUnavailableMsg(wallet.address),
+              marketAskError.ErrorType.MarketAskUnavailable))
+          }
+        })
+    })
 }
 
 const validMarketAsk = (
