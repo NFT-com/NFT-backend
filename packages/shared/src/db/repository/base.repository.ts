@@ -41,7 +41,8 @@ export class BaseRepository<T> {
   public findPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
     return this.getRepository()
       .findAndCount({
-        where: query.filter,
+        relations: query.relations,
+        where: query.filters,
         order: query.orderBy,
         take: query.take,
         cache: true,
@@ -64,7 +65,7 @@ export class BaseRepository<T> {
 
     return this.getRepository()
       .createQueryBuilder(alias)
-      .where(query.filter)
+      .where(query.filters)
       .distinctOn(distinctOn)
       .orderBy(orderBy)
       .take(query.take)

@@ -18,15 +18,68 @@ const getSwaps = (
   const { repositories } = ctx
   logger.debug('getSwaps', { input: args?.input })
   const pageInput = args?.input?.pageInput
-  const { marketAskId } = helper.safeObject(args?.input)
+  const { marketAskIds, marketBidIds } = helper.safeObject(args?.input)
 
-  const filter: Partial<entity.MarketSwap> = helper.removeEmpty({
-    askId: marketAskId,
-  })
+  const filters: Partial<entity.MarketSwap>[] = [
+    ...(marketAskIds ?? []).map((askIdToFind) => helper.removeEmpty({
+      marketAsk: askIdToFind == null ? null : {
+        id: askIdToFind,
+      },
+    })),
+    ...(marketBidIds ?? []).map((bidIdToFind) => helper.removeEmpty({
+      marketBid: bidIdToFind == null ? null : {
+        id: bidIdToFind,
+      },
+    })),
+  ]
   return core.paginatedEntitiesBy(
     repositories.marketSwap,
     pageInput,
-    filter,
+    filters,
+    ['marketAsk', 'marketBid'],
+  )
+    .then(pagination.toPageable(pageInput))
+}
+
+const getUserSwaps = (
+  _: any,
+  args: gql.QueryGetUserSwapsArgs,
+  ctx: Context,
+): Promise<gql.GetMarketSwap> => {
+  const { repositories } = ctx
+  logger.debug('getUserSwaps', { input: args?.input })
+  const pageInput = args?.input?.pageInput
+  const { participant } = helper.safeObject(args?.input)
+  // TODO: also find the swaps where input.participant initiated a "buyNow" event
+  // in that case, there is just one MarketAsk and the buyer's address isn't saved
+  // anywhere in our DB currently.
+  const filters: Partial<entity.MarketSwap>[] = [
+    helper.removeEmpty({
+      marketAsk: {
+        makerAddress: participant,
+      },
+    }),
+    helper.removeEmpty({
+      marketAsk: {
+        takerAddress: participant,
+      },
+    }),
+    helper.removeEmpty({
+      marketBid: {
+        makerAddress: participant,
+      },
+    }),
+    helper.removeEmpty({
+      marketBid: {
+        takerAddress: participant,
+      },
+    }),
+  ]
+  return core.paginatedEntitiesBy(
+    repositories.marketSwap,
+    pageInput,
+    filters,
+    ['marketAsk', 'marketBid'],
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -186,7 +239,8 @@ const swapNFT = (
 
 export default {
   Query: {
-    getSwaps: getSwaps,
+    getSwaps,
+    getUserSwaps,
   },
   Mutation: {
     swapNFT: combineResolvers(auth.isAuthenticated, swapNFT),

@@ -109,12 +109,12 @@ const safeInput = (
  *               |<-- last n before | first n after -->|
  * 12pm  11am  10am  9am  8am  7am  6am  5am  4am  3am  2am  1am
  */
-export const toPageableFilter = <T>(
+export const toPageableFilters = <T>(
   pageInput: gql.PageInput,
-  filter: Partial<T>,
+  filters: Partial<T>[],
   orderKey = 'createdAt',
   cursor: (orderBy: string) => DefaultCursor = getDefaultCursor,
-): Partial<T> => {
+): Partial<T>[] => {
   const safePageInput = safeInput(pageInput, cursor(orderKey))
   let cursorValue = null
   if (isOrderByDate(orderKey)) {
@@ -126,7 +126,7 @@ export const toPageableFilter = <T>(
       ? helper.lessThan(safePageInput.afterCursor)
       : helper.moreThan(safePageInput.beforeCursor)
   }
-  return { ...filter, deletedAt: null, [orderKey]: cursorValue }
+  return filters.map((filter) => ({ ...filter, deletedAt: null, [orderKey]: cursorValue }))
 }
 
 const parseCursorValue = (v: Date | string | number): string => {

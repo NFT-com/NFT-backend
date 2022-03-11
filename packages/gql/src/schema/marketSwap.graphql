@@ -13,8 +13,13 @@ type GetMarketSwap {
 }
 
 input SwapsInput {
-  marketAskId: Address
-  marketBidId: Address
+  marketAskIds: [ID]
+  marketBidIds: [ID]
+  pageInput: PageInput
+}
+
+input UserSwapsInput {
+  participant: Address!
   pageInput: PageInput
 }
 
@@ -26,6 +31,7 @@ input SwapNFTInput {
 
 extend type Query {
   getSwaps(input: SwapsInput!): GetMarketSwap!
+  getUserSwaps(input: UserSwapsInput!): GetMarketSwap!
 }
 
 extend type Mutation {
