@@ -1,14 +1,16 @@
-import { Column, Entity } from 'typeorm'
+// For future use
 
-import { BaseEntity } from './base.entity'
+// import { Column, Entity } from 'typeorm'
 
-@Entity()
-export class Watchlist extends BaseEntity {
+// import { BaseEntity } from './base.entity'
 
-  @Column({ nullable: false })
-  userId: string
+// @Entity()
+// export class Watchlist extends BaseEntity {
 
-  @Column({ nullable: false })
-  title: string
+//   @Column({ nullable: false })
+//   userId: string
 
-}
+//   @Column({ nullable: false })
+//   title: string
+
+// }

@@ -1,11 +1,13 @@
-import { Watchlist } from '@nftcom/shared/db/entity'
+// For future use
 
-import { BaseRepository } from './base.repository'
+// import { Watchlist } from '@nftcom/shared/db/entity'
 
-export class WatchlistRepository extends BaseRepository<Watchlist> {
+// import { BaseRepository } from './base.repository'
 
-  constructor() {
-    super(Watchlist)
-  }
+// export class WatchlistRepository extends BaseRepository<Watchlist> {
 
-}
+//   constructor() {
+//     super(Watchlist)
+//   }
+
+// }
