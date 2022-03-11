@@ -50,6 +50,9 @@ const getUserSwaps = (
   logger.debug('getUserSwaps', { input: args?.input })
   const pageInput = args?.input?.pageInput
   const { participant } = helper.safeObject(args?.input)
+  // TODO: also find the swaps where input.participant initiated a "buyNow" event
+  // in that case, there is just one MarketAsk and the buyer's address isn't saved
+  // anywhere in our DB currently.
   const filters: Partial<entity.MarketSwap>[] = [
     helper.removeEmpty({
       marketAsk: {
