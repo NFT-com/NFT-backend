@@ -21,14 +21,15 @@ const getBids = (
   const pageInput = args?.input?.pageInput
   const { makerAddress, marketAskId } = helper.safeObject(args?.input)
 
-  const filter: Partial<entity.MarketBid> = helper.removeEmpty({
+  const filters: Partial<entity.MarketBid>[] = [helper.removeEmpty({
     makerAddress,
     marketAskId,
-  })
+  })]
   return core.paginatedEntitiesBy(
     repositories.marketBid,
     pageInput,
-    filter,
+    filters,
+    [], // relations
   )
     .then(pagination.toPageable(pageInput))
 }

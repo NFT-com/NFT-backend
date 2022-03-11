@@ -108,15 +108,16 @@ const getMyNFTs = (
   const pageInput = args?.input?.pageInput
   const { types, profileId } = helper.safeObject(args?.input)
 
-  const filter: Partial<entity.NFT> = helper.removeEmpty({
+  const filters: Partial<entity.NFT>[] = [helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     userId: user.id,
     profileId,
-  })
+  })]
   return core.paginatedEntitiesBy(
     ctx.repositories.nft,
     pageInput,
-    filter,
+    filters,
+    [], // relations
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -165,12 +166,13 @@ const getCollectionNFTs = (
     .then((collection: entity.Collection) => core.paginatedEntitiesBy(
       repositories.edge,
       pageInput,
-      {
+      [{
         thisEntityId: collection.id,
         thisEntityType: defs.EntityType.Collection,
         thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Includes,
-      },
+      }],
+      [], // relations
     ))
     .then(pagination.toPageable(pageInput))
     .then((resultEdges: Pageable<entity.Edge>) => Promise.all([

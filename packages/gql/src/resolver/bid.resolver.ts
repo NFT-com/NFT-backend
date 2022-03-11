@@ -148,11 +148,12 @@ const getBids = (
         walletId: wallet?.id,
         nftType: args?.input?.nftType,
       }
-      const filter = helper.inputT2SafeK(inputFilters)
+      const filters = [helper.inputT2SafeK(inputFilters)]
       return core.paginatedEntitiesBy(
         ctx.repositories.bid,
         pageInput,
-        filter,
+        filters,
+        [], // relations
       )
     })
     .then(pagination.toPageable(pageInput))
@@ -166,11 +167,12 @@ const getMyBids = (
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK<entity.Bid>({ ...args?.input, userId: user.id })
+  const filters = [helper.inputT2SafeK<entity.Bid>({ ...args?.input, userId: user.id })]
   return core.paginatedEntitiesBy(
     ctx.repositories.bid,
     pageInput,
-    filter,
+    filters,
+    [], // relations
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -197,11 +199,12 @@ const getTopBids = (
     profileId: args?.input?.profileId,
     status: args?.input?.status,
   }
-  const filter = helper.inputT2SafeK(inputFilters)
+  const filters = [helper.inputT2SafeK(inputFilters)]
   return core.paginatedEntitiesBy(
     ctx.repositories.bid,
     pageInput,
-    filter,
+    filters,
+    [], // relations
     'price',
   )
     .then(pagination.toPageable(pageInput, 'price'))
