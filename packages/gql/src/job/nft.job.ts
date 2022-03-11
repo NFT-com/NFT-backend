@@ -167,6 +167,7 @@ const updateEntity = async (
   walletId: string,
 ): Promise<void> => {
   let newNFT
+  let newCollection
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -240,6 +241,7 @@ const updateEntity = async (
             .then(async (collectionName: string) => {
               // add new collection to search (Typesense) 
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
+              newCollection = true
 
               return repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
@@ -248,20 +250,22 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
-          // save nft in typesense search 
-          const indexCollection = []
-          indexCollection.push({
-            id: collection.id,
-            contract: collection.contract,
-            name: collection.name,
-          })
-          
-          try {
-            await client.collections('collections').documents().import(indexCollection, { action: 'create' })
-            logger.debug('collection added to typesense index')
-          }
-          catch (err) {
-            logger.info('error: could not save collection in typesense: ' + err)
+          // save collection in typesense search  if new 
+          if (newCollection) {
+            const indexCollection = []
+            indexCollection.push({
+              id: collection.id,
+              contract: collection.contract,
+              name: collection.name,
+            })
+            
+            try {
+              await client.collections('collections').documents().import(indexCollection, { action: 'create' })
+              logger.debug('collection added to typesense index')
+            }
+            catch (err) {
+              logger.info('error: could not save collection in typesense: ' + err)
+            }
           }
 
           // update edgeVals
