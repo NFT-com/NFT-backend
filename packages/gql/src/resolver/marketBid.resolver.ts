@@ -188,6 +188,8 @@ const createBid = (
     start: Joi.number().required(),
     end: Joi.number().required(),
     salt: Joi.number().required(),
+    chainId: Joi.string().required(),
+    auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
   })
   joi.validateSchema(schema, args?.input)
 
