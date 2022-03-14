@@ -17,7 +17,8 @@ export enum EdgeType {
   Follows = 'Follows',
   Referred = 'Referred',
   Displays = 'Displays',
-  Includes = 'Includes'
+  Includes = 'Includes',
+  Watches = 'Watches'
 }
 
 export enum BidStatus {
