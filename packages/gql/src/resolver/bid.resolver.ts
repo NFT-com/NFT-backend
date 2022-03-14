@@ -26,7 +26,7 @@ const bid = (
   args: gql.MutationBidArgs,
   ctx: Context,
 ): Promise<gql.Bid> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
@@ -55,16 +55,22 @@ const bid = (
     })
     .then(({ profileId, walletId }) => {
       if (input.nftType === gql.NFTType.GenesisKey) {
-        return repositories.bid.findOne({ where: {
-          nftType: gql.NFTType.GenesisKey,
-          walletId,
-        } }).then((previousGKBid) => ({
-          walletId,
-          profileId,
-          stakeWeight: null,
-          existingBid: previousGKBid,
-          prevTopBidOwner: null,
-        }))
+        const whitelist = helper.getGenesisKeyWhitelist()
+
+        if (whitelist.includes(wallet.address)) {
+          return repositories.bid.findOne({ where: {
+            nftType: gql.NFTType.GenesisKey,
+            walletId,
+          } }).then((previousGKBid) => ({
+            walletId,
+            profileId,
+            stakeWeight: null,
+            existingBid: previousGKBid,
+            prevTopBidOwner: null,
+          }))
+        } else {
+          throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+        }
       } else if (input.nftType !== gql.NFTType.Profile) {
         // TODO: find bid and prevTopBid for non-profile NFTs too.
         return { walletId, profileId, stakeWeight: null, existingBid: null, prevTopBidOwner: null }
@@ -142,11 +148,12 @@ const getBids = (
         walletId: wallet?.id,
         nftType: args?.input?.nftType,
       }
-      const filter = helper.inputT2SafeK(inputFilters)
+      const filters = [helper.inputT2SafeK(inputFilters)]
       return core.paginatedEntitiesBy(
         ctx.repositories.bid,
         pageInput,
-        filter,
+        filters,
+        [], // relations
       )
     })
     .then(pagination.toPageable(pageInput))
@@ -160,11 +167,12 @@ const getMyBids = (
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK<entity.Bid>({ ...args?.input, userId: user.id })
+  const filters = [helper.inputT2SafeK<entity.Bid>({ ...args?.input, userId: user.id })]
   return core.paginatedEntitiesBy(
     ctx.repositories.bid,
     pageInput,
-    filter,
+    filters,
+    [], // relations
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -191,11 +199,12 @@ const getTopBids = (
     profileId: args?.input?.profileId,
     status: args?.input?.status,
   }
-  const filter = helper.inputT2SafeK(inputFilters)
+  const filters = [helper.inputT2SafeK(inputFilters)]
   return core.paginatedEntitiesBy(
     ctx.repositories.bid,
     pageInput,
-    filter,
+    filters,
+    [], // relations
     'price',
   )
     .then(pagination.toPageable(pageInput, 'price'))

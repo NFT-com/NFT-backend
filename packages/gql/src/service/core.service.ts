@@ -140,37 +140,42 @@ export const entitiesBy = <T>(
 export const paginatedEntitiesBy = <T>(
   repo: repository.BaseRepository<T>,
   pageInput: gql.PageInput,
-  filter: Partial<T>,
+  filters: Partial<T>[],
+  relations: string[],
   orderKey= 'createdAt',
   orderDirection = 'DESC',
   distinctOn?: defs.DistinctOn<T>,
 ): Promise<defs.PageableResult<T>> => {
-  const pageableFilter = pagination.toPageableFilter(pageInput, filter, orderKey)
+  const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
   const orderBy = <defs.OrderBy>{ [orderKey]: orderDirection }
   const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reveredOrderBy = <defs.OrderBy>{ [orderKey]: reversedOrderDirection }
 
   return pagination.resolvePage<T>(pageInput, {
     firstAfter: () => repo.findPageable({
-      filter: pageableFilter,
+      filters: pageableFilters,
+      relations: relations,
       orderBy,
       take: pageInput.first,
       distinctOn,
     }),
     firstBefore: () => repo.findPageable({
-      filter: pageableFilter,
+      filters: pageableFilters,
+      relations: relations,
       orderBy,
       take: pageInput.first,
       distinctOn,
     }),
     lastAfter: () => repo.findPageable({
-      filter: pageableFilter,
+      filters: pageableFilters,
+      relations: relations,
       orderBy: reveredOrderBy,
       take: pageInput.last,
       distinctOn,
     }).then(pagination.reverseResult),
     lastBefore: () => repo.findPageable({
-      filter: pageableFilter,
+      filters: pageableFilters,
+      relations: relations,
       orderBy: reveredOrderBy,
       take: pageInput.last,
       distinctOn,

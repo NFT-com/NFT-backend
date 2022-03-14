@@ -17,11 +17,12 @@ const getMyCurations = (
   const { user, repositories } = ctx
   logger.debug('getMyCurations', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const filter = helper.inputT2SafeK<entity.Curation>(args?.input, { userId: user.id })
+  const filters = [helper.inputT2SafeK<entity.Curation>(args?.input, { userId: user.id })]
   return core.paginatedEntitiesBy(
     repositories.curation,
     pageInput,
-    filter,
+    filters,
+    [], // relations
   )
     .then(pagination.toPageable(pageInput))
 }
