@@ -4,11 +4,22 @@ type Watchlist {
     collectionItems: [Collection!]
 }
 
+enum WatchlistItemType {
+    NFT,
+    Profile,
+    Collection
+}
+
+input WatchlistInput {
+    itemId: ID!
+    itemType: WatchlistItemType!
+}
+
 extend type Query {
     watchlist: Watchlist!
 }
 
 extend type Mutation {
-    addToWatchlist(itemId: ID!): Watchlist!
-    deleteFromWatchlist(itemId: ID!): Watchlist!
+    addToWatchlist(input: WatchlistInput!): Boolean
+    deleteFromWatchlist(input: WatchlistInput!): Boolean
 }
