@@ -1,39 +1,14 @@
-enum WatchlistItemType {
-     NFT
-     Profile
-     Collection
-}
-
 type Watchlist {
-    id: ID!
-    user: User!
-    title: String!
-    items: [WatchlistItem!]
-}
-
-type WatchlistItem {
-    id: ID!
-    inWatchlist: ID!
-    item: WatchlistItemType!
-}
-
-input AddToWatchlistInput {
-    watchlistId: ID!
-    itemId: ID! # (NFT | Profile | Collection) ID
-}
-
-input EditWatchlistTitleInput {
-    watchlistId: ID!
-    newTitle: String!
+    nftItems: [NFT!]
+    profileItems: [Profile!]
+    collectionItems: [Collection!]
 }
 
 extend type Query {
-    watchlist(id: ID): Watchlist!
-    allMyWatchlists: [Watchlist!]
+    watchlist: Watchlist!
 }
 
 extend type Mutation {
-    createWatchlist: Watchlist!
-    addToWatchlist(input: AddToWatchlistInput!): Watchlist!
-    editWatchlistTitle(input: EditWatchlistTitleInput!): Watchlist!
+    addToWatchlist(itemId: ID!): Watchlist!
+    deleteFromWatchlist(itemId: ID!): Watchlist!
 }
