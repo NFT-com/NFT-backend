@@ -42,6 +42,9 @@ export class MarketAsk extends BaseEntity {
   takeAsset: MarketplaceAsset[]
 
   @Column({ nullable: true })
+  buyNowTaker: string
+
+  @Column({ nullable: true })
   marketSwapId: string
 
   @Column({ nullable: true })

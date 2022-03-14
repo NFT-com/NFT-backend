@@ -100,7 +100,7 @@ const getPastLogs = async (
 }
 
 /**
- * listen to approval events
+ * listen to Approval events
  * TODO: need to confirm again once at least one approval event happens
  * @param chainId
  * @param provider
@@ -164,7 +164,7 @@ const listenApprovalEvents = async (
 }
 
 /**
- * listen to nonceIncremented events
+ * listen to NonceIncremented events
  * TODO: need to confirm again once at least one nonceIncremented event happens
  * @param chainId
  * @param provider
@@ -231,7 +231,7 @@ const listenNonceIncrementedEvents = async (
 }
 
 /**
- * listen to cancel events
+ * listen to Cancel events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -355,7 +355,7 @@ const parseAsset = async (
 }
 
 /**
- * listen to match events
+ * listen to Match events
  * TODO: need to confirm again once at least one match event happens
  * @param chainId
  * @param provider
@@ -505,7 +505,7 @@ const listenMatchEvents = async (
 }
 
 /**
- * listen to match2A events
+ * listen to Match2A events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -584,7 +584,7 @@ const listenMatchTwoAEvents = async (
 }
 
 /**
- * listen to match2B events
+ * listen to Match2B events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -673,7 +673,7 @@ const listenMatchTwoBEvents = async (
 }
 
 /**
- * listen to match3A events
+ * listen to Match3A events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -751,7 +751,7 @@ const listenMatchThreeAEvents = async (
 }
 
 /**
- * listen to match3B events
+ * listen to Match3B events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -836,6 +836,51 @@ const listenMatchThreeBEvents = async (
 }
 
 /**
+ * listen to BuyNowInfo events
+ * @param chainId
+ * @param provider
+ * @param cachedBlock
+ * @param latestBlock
+ */
+const listenBuyNowInfoEvents = async (
+  chainId: number,
+  provider: ethers.providers.BaseProvider,
+  cachedBlock: number,
+  latestBlock: number,
+): Promise<void[]> => {
+  const address = contracts.nftMarketplaceAddress(chainId)
+  const topics = [
+    utils.id('BuyNowInfo(bytes32,address)'),
+  ]
+  try {
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
+
+    logger.debug('BuyNowInfo logs', logs.length)
+
+    const promises = logs.map(async (log) => {
+      const event = iface.parseLog(log)
+
+      const makerHash = log.topics[1]
+      const takerAddress = event.args.takerAddress
+
+      const marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
+      if (marketAsk) {
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          buyNowTaker: utils.getAddress(takerAddress),
+        })
+
+        logger.debug('updated existing marketAsk from BuyNowInfo ', marketAsk.id)
+      }
+    })
+
+    await Promise.allSettled(promises)
+  } catch (e) {
+    logger.debug(e)
+  }
+  return
+}
+
+/**
  * get cached block from redis to sync marketplace events
  * @param chainId
  */
@@ -866,6 +911,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await listenMatchThreeAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchThreeBEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+    await listenBuyNowInfoEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     // update cached block number to the latest block number
     await redis.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
