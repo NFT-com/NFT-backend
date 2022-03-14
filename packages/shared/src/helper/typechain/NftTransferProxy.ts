@@ -18,14 +18,15 @@ import { FunctionFragment, Result, EventFragment } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
-export interface TransferProxyInterface extends utils.Interface {
-  contractName: "TransferProxy";
+export interface NftTransferProxyInterface extends utils.Interface {
+  contractName: "NftTransferProxy";
   functions: {
     "addOperator(address)": FunctionFragment;
     "erc1155safeTransferFrom(address,address,address,uint256,uint256,bytes)": FunctionFragment;
     "erc721safeTransferFrom(address,address,address,uint256)": FunctionFragment;
     "initialize()": FunctionFragment;
     "owner()": FunctionFragment;
+    "proxiableUUID()": FunctionFragment;
     "removeOperator(address)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
@@ -47,6 +48,10 @@ export interface TransferProxyInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "proxiableUUID",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "removeOperator",
     values: [string]
@@ -79,6 +84,10 @@ export interface TransferProxyInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "proxiableUUID",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "removeOperator",
     data: BytesLike
@@ -133,13 +142,13 @@ export type UpgradedEvent = TypedEvent<[string], { implementation: string }>;
 
 export type UpgradedEventFilter = TypedEventFilter<UpgradedEvent>;
 
-export interface TransferProxy extends BaseContract {
-  contractName: "TransferProxy";
+export interface NftTransferProxy extends BaseContract {
+  contractName: "NftTransferProxy";
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: TransferProxyInterface;
+  interface: NftTransferProxyInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,
@@ -189,6 +198,8 @@ export interface TransferProxy extends BaseContract {
     ): Promise<ContractTransaction>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
 
     removeOperator(
       operator: string,
@@ -245,6 +256,8 @@ export interface TransferProxy extends BaseContract {
 
   owner(overrides?: CallOverrides): Promise<string>;
 
+  proxiableUUID(overrides?: CallOverrides): Promise<string>;
+
   removeOperator(
     operator: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -294,6 +307,8 @@ export interface TransferProxy extends BaseContract {
     initialize(overrides?: CallOverrides): Promise<void>;
 
     owner(overrides?: CallOverrides): Promise<string>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
     removeOperator(operator: string, overrides?: CallOverrides): Promise<void>;
 
@@ -374,6 +389,8 @@ export interface TransferProxy extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
+    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
+
     removeOperator(
       operator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -429,6 +446,8 @@ export interface TransferProxy extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     removeOperator(
       operator: string,
