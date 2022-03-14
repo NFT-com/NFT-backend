@@ -3,6 +3,7 @@ export enum ErrorType {
   MarketAskNotFound = 'MARKET_ASK_NOT_FOUND',
   MarketAskNotOwned = 'MARKET_ASK_NOT_OWNED',
   MarketAskBought = 'MARKET_ASK_BOUGHT',
+  MissingBuyNowInfo = 'MISSING_BUY_NOW_INFO',
   TxHashInvalid = 'TX_HASH_INVALID',
   AuctionTypeInvalid = 'AUCTION_TYPE_INVALID'
 }
@@ -14,6 +15,8 @@ export const buildMarketAskNotFoundMsg = (id: string): string => `MarketAsk ${id
 export const buildMarketAskNotOwnedMsg = (caller: string, id: string): string => `Caller ${caller} does not own marketAsk id: ${id}`
 
 export const buildMarketAskBoughtMsg = (): string => 'MarketAsk is already bought'
+
+export const buildMissingBuyNowInfoMsg = (txHash: string): string => `TxHash ${txHash} is missing BuyNowInfo`
 
 export const buildTxHashInvalidMsg = (txHash: string): string => `TxHash ${txHash} is not valid`
 
