@@ -39,7 +39,8 @@ const getAsks = (
   return core.paginatedEntitiesBy(
     repositories.marketAsk,
     pageInput,
-    { ...filter, cancelTxHash: null },
+    [{ ...filter, cancelTxHash: null }],
+    [], // relations
   )
     .then(pagination.toPageable(pageInput))
 }
@@ -212,6 +213,8 @@ const availableToCreateAsk = async (
       offerAcceptedAt: null,
       start: LessThanOrEqual(now),
       end: MoreThanOrEqual(now),
+      cancelTxHash: null,
+      marketSwapId: null,
     },
   })
   return (marketAsk === undefined)
