@@ -42,6 +42,7 @@ export interface CryptoKittyTransferProxyInterface extends utils.Interface {
     "addOperator(address)": FunctionFragment;
     "initialize()": FunctionFragment;
     "owner()": FunctionFragment;
+    "proxiableUUID()": FunctionFragment;
     "removeOperator(address)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "transfer(((bytes4,bytes),bytes),address,address)": FunctionFragment;
@@ -56,6 +57,10 @@ export interface CryptoKittyTransferProxyInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "proxiableUUID",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "removeOperator",
     values: [string]
@@ -84,6 +89,10 @@ export interface CryptoKittyTransferProxyInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "proxiableUUID",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "removeOperator",
     data: BytesLike
@@ -178,6 +187,8 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
+    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
+
     removeOperator(
       operator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -222,6 +233,8 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
   owner(overrides?: CallOverrides): Promise<string>;
 
+  proxiableUUID(overrides?: CallOverrides): Promise<string>;
+
   removeOperator(
     operator: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -260,6 +273,8 @@ export interface CryptoKittyTransferProxy extends BaseContract {
     initialize(overrides?: CallOverrides): Promise<void>;
 
     owner(overrides?: CallOverrides): Promise<string>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
     removeOperator(operator: string, overrides?: CallOverrides): Promise<void>;
 
@@ -329,6 +344,8 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
+    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
+
     removeOperator(
       operator: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -373,6 +390,8 @@ export interface CryptoKittyTransferProxy extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     removeOperator(
       operator: string,

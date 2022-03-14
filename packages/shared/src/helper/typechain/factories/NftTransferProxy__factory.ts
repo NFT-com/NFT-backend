@@ -5,9 +5,9 @@
 import { Contract, Signer, utils } from "ethers";
 import { Provider } from "@ethersproject/providers";
 import type {
-  ERC20TransferProxy,
-  ERC20TransferProxyInterface,
-} from "../ERC20TransferProxy";
+  NftTransferProxy,
+  NftTransferProxyInterface,
+} from "../NftTransferProxy";
 
 const _abi = [
   {
@@ -90,7 +90,7 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "contract IERC20Upgradeable",
+        internalType: "contract IERC1155Upgradeable",
         name: "token",
         type: "address",
       },
@@ -106,11 +106,49 @@ const _abi = [
       },
       {
         internalType: "uint256",
+        name: "id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
         name: "value",
         type: "uint256",
       },
+      {
+        internalType: "bytes",
+        name: "data",
+        type: "bytes",
+      },
     ],
-    name: "erc20safeTransferFrom",
+    name: "erc1155safeTransferFrom",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "contract IERC721Upgradeable",
+        name: "token",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "from",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+    ],
+    name: "erc721safeTransferFrom",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -214,15 +252,15 @@ const _abi = [
   },
 ];
 
-export class ERC20TransferProxy__factory {
+export class NftTransferProxy__factory {
   static readonly abi = _abi;
-  static createInterface(): ERC20TransferProxyInterface {
-    return new utils.Interface(_abi) as ERC20TransferProxyInterface;
+  static createInterface(): NftTransferProxyInterface {
+    return new utils.Interface(_abi) as NftTransferProxyInterface;
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
-  ): ERC20TransferProxy {
-    return new Contract(address, _abi, signerOrProvider) as ERC20TransferProxy;
+  ): NftTransferProxy {
+    return new Contract(address, _abi, signerOrProvider) as NftTransferProxy;
   }
 }

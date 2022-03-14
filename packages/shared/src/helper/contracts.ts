@@ -2,7 +2,7 @@ import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
-import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
+import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
 
 // TODO: move contract addresses to Doppler.
 export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
@@ -10,7 +10,7 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xA3509a064A54a7a60Fc4Db0245ef44F812f439f6')
+    return utils.getAddress('0x5e6420d2EceF69265503797c6a3D1f6f6188b024')
   case '0':
   case 0:
   case 'mainnet':
@@ -58,7 +58,7 @@ export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xa75F995f252ba5F7C17f834b314201271d32eC35')
+    return utils.getAddress('0x6e62f41A3aDf9f30fab56060D62bCFeB08C7F501')
   case '0':
   case 0:
   case 'mainnet':
@@ -72,7 +72,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xc5782D87B3d353edbf1B03dEB001949Afd2e25E8')
+    return utils.getAddress('0xA2395cd351A8E7cbB3af729060FDB813738313ff')
   case '0':
   case 0:
   case 'mainnet':
@@ -86,7 +86,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x2295828BBB9270cF92D29ed79bA0260d64fdF23f')
+    return utils.getAddress('0x941BA75176396e4Fa168750b7927EF42DF67FF0C')
   case '0':
   case 0:
   case 'mainnet':
@@ -99,7 +99,7 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
+    return utils.getAddress('0xb5815c46D262005C170576330D0FB27d018fAd60')
   case '0':
   case 0:
   case 'mainnet':

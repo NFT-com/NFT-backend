@@ -65,6 +65,25 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
+        indexed: true,
+        internalType: "bytes32",
+        name: "makerStructHash",
+        type: "bytes32",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "takerAddress",
+        type: "address",
+      },
+    ],
+    name: "BuyNowInfo",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: false,
         internalType: "bytes32",
         name: "structHash",
@@ -261,7 +280,7 @@ const _abi = [
       {
         indexed: true,
         internalType: "bytes32",
-        name: "makerStructHash",
+        name: "takerStructHash",
         type: "bytes32",
       },
       {
@@ -310,7 +329,7 @@ const _abi = [
       {
         indexed: true,
         internalType: "bytes32",
-        name: "makerStructHash",
+        name: "takerStructHash",
         type: "bytes32",
       },
       {
@@ -1270,6 +1289,11 @@ const _abi = [
         name: "_stakingContract",
         type: "address",
       },
+      {
+        internalType: "address",
+        name: "_nftToken",
+        type: "address",
+      },
     ],
     name: "initialize",
     outputs: [],
@@ -1292,6 +1316,32 @@ const _abi = [
     name: "modifyWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "nftBuyContract",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "nftToken",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -1353,6 +1403,19 @@ const _abi = [
         internalType: "uint256",
         name: "",
         type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "proxiableUUID",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
       },
     ],
     stateMutability: "view",
@@ -1429,19 +1492,6 @@ const _abi = [
     name: "setTransferProxy",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "stakingContract",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
   {

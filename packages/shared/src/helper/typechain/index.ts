@@ -7,11 +7,13 @@ export type { ERC20TransferProxy } from "./ERC20TransferProxy";
 export type { ERC721 } from "./ERC721";
 export type { GenesisKey } from "./GenesisKey";
 export type { GenesisNftStake } from "./GenesisNftStake";
+export type { LpStake } from "./LpStake";
+export type { NftBuyer } from "./NftBuyer";
 export type { NftMarketplace } from "./NftMarketplace";
 export type { NftProfile } from "./NftProfile";
+export type { NftTransferProxy } from "./NftTransferProxy";
 export type { ProfileAuction } from "./ProfileAuction";
 export type { PublicNftStake } from "./PublicNftStake";
-export type { TransferProxy } from "./TransferProxy";
 export type { Weth } from "./Weth";
 
 export { CryptoKittyTransferProxy__factory } from "./factories/CryptoKittyTransferProxy__factory";
@@ -20,9 +22,11 @@ export { ERC20TransferProxy__factory } from "./factories/ERC20TransferProxy__fac
 export { ERC721__factory } from "./factories/ERC721__factory";
 export { GenesisKey__factory } from "./factories/GenesisKey__factory";
 export { GenesisNftStake__factory } from "./factories/GenesisNftStake__factory";
+export { LpStake__factory } from "./factories/LpStake__factory";
+export { NftBuyer__factory } from "./factories/NftBuyer__factory";
 export { NftMarketplace__factory } from "./factories/NftMarketplace__factory";
 export { NftProfile__factory } from "./factories/NftProfile__factory";
+export { NftTransferProxy__factory } from "./factories/NftTransferProxy__factory";
 export { ProfileAuction__factory } from "./factories/ProfileAuction__factory";
 export { PublicNftStake__factory } from "./factories/PublicNftStake__factory";
-export { TransferProxy__factory } from "./factories/TransferProxy__factory";
 export { Weth__factory } from "./factories/Weth__factory";
