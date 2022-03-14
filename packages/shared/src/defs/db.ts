@@ -122,7 +122,8 @@ export type PageableResult<T> = [T[], number]
 export type DistinctOn<T> = Extract<keyof T, string>[]
 
 export type PageableQuery<T> = {
-  filter: Partial<T>
+  filters: Partial<T>[]
+  relations: string[]
   orderBy: OrderBy
   take: number
   distinctOn?: DistinctOn<T>

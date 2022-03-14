@@ -160,7 +160,8 @@ const endProfileAuction = (
         core.paginatedEntitiesBy(
           ctx.repositories.bid,
           { first: 1 },
-          { profileId: profile.id },
+          [{ profileId: profile.id }],
+          [], // relations
           'price',
         )
           .then(pagination.toPageable({ first: 1 }, 'price'))
