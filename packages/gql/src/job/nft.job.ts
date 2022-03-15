@@ -217,7 +217,7 @@ const updateEntity = async (
       indexNft.push({
         id: newNFT.id,
         contract: nftInfo.contract.address,
-        tokenId: BigNumber.from(nftInfo.id.tokenId).toHexString(),
+        tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
         type: type,
         name: nftInfo.title,
       })
