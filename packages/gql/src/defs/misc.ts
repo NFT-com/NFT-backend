@@ -81,7 +81,7 @@ Array<gql.MarketplaceAssetInput> =>
     let tokenId = ''
     const assetClass = asset.standard.assetClass as defs.AssetClass
     if (assetClass === defs.AssetClass.ERC721 || assetClass === defs.AssetClass.ERC1155)
-      tokenId = helper.bigNumberToString(asset.standard.tokenId)
+      tokenId = helper.bigNumberToHex(asset.standard.tokenId)
     assets.push({
       standard: {
         assetClass: assetClass,

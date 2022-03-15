@@ -239,32 +239,40 @@ const createBid = (
       marketBidError.buildMarketBidInvalidMsg(),
       marketBidError.ErrorType.MarketBidInvalid,
     )))
-    .then(() => {
-      return availableToBid(wallet.address, repositories)
-        .then((available): Promise<entity.MarketBid> => {
-          if (available) {
-            return repositories.marketBid.save({
-              structHash: args?.input.structHash,
-              nonce: args?.input.nonce,
-              signature: args?.input.signature,
-              marketAskId: args?.input.marketAskId,
-              makerAddress: args?.input.makerAddress,
-              makeAsset: makeAssets,
-              takerAddress: args?.input.takerAddress,
-              takeAsset: takeAssets,
-              message: args?.input.message,
-              start: args?.input.start,
-              end: args?.input.end,
-              salt: args?.input.salt,
-              chainId: wallet.chainId,
+    .then(() =>
+      repositories.marketBid
+        .findOne({ where: { structHash: args?.input.structHash } })
+        .then(fp.rejectIfNotEmpty(appError.buildExists(
+          marketBidError.buildMarketBidExistingMsg(),
+          marketBidError.ErrorType.MarketBidExisting,
+        )))
+        .then(() => {
+          return availableToBid(wallet.address, repositories)
+            .then((available): Promise<entity.MarketBid> => {
+              if (available) {
+                return repositories.marketBid.save({
+                  structHash: args?.input.structHash,
+                  nonce: args?.input.nonce,
+                  signature: args?.input.signature,
+                  marketAskId: args?.input.marketAskId,
+                  makerAddress: args?.input.makerAddress,
+                  makeAsset: makeAssets,
+                  takerAddress: args?.input.takerAddress,
+                  takeAsset: takeAssets,
+                  message: args?.input.message,
+                  start: args?.input.start,
+                  end: args?.input.end,
+                  salt: args?.input.salt,
+                  chainId: wallet.chainId,
+                })
+              } else {
+                return Promise.reject(appError.buildForbidden(
+                  marketBidError.buildMarketBidUnavailableMsg(wallet.address),
+                  marketBidError.ErrorType.MarketBidUnavailable))
+              }
             })
-          } else {
-            return Promise.reject(appError.buildForbidden(
-              marketBidError.buildMarketBidUnavailableMsg(wallet.address),
-              marketBidError.ErrorType.MarketBidUnavailable))
-          }
-        })
-    })
+        }),
+    )
 }
 
 const cancelMarketBid = (

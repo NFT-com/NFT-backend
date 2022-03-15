@@ -1,6 +1,7 @@
 export enum ErrorType {
   MarketAskNotFound = 'MARKET_ASK_NOT_FOUND',
   MarketBidInvalid = 'MARKET_BID_INVALID',
+  MarketBidExisting = 'MARKET_BID_EXISTING',
   MarketBidNotFound = 'MARKET_BID_NOT_FOUND',
   MarketBidNotOwned = 'MARKET_BID_NOT_OWNED',
   MarketBidUnavailable = 'MARKET_BID_UNAVAILABLE',
@@ -11,6 +12,8 @@ export enum ErrorType {
 export const buildMarketAskNotFoundMsg = (): string => 'MarketAsk not found'
 
 export const buildMarketBidInvalidMsg = (): string => 'MarketBid invalid'
+
+export const buildMarketBidExistingMsg = (): string => 'MarketBid is already existing'
 
 export const buildMarketBidNotFoundMsg = (id: string): string => `MarketBid ${id} not found`
 

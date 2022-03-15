@@ -205,7 +205,7 @@ const availableToCreateAsk = async (
   repositories: db.Repository,
 ): Promise<boolean> => {
   const now = Date.now() / 1000
-  const marketAsk = await repositories.marketAsk.findOne({
+  const marketAsks = await repositories.marketAsk.find({
     where: {
       makerAddress: ethers.utils.getAddress(address),
       offerAcceptedAt: null,
@@ -213,19 +213,25 @@ const availableToCreateAsk = async (
       marketSwapId: null,
     },
   })
-  if (!marketAsk) return true
-  // if market ask is ended...
-  if (marketAsk.end < now) return true
 
-  // check if user's maker asset is already existing...
-  if (assets.length !== marketAsk.makeAsset.length) return true
-  assets.forEach((asset, index) => {
-    if (asset !== marketAsk.makeAsset[index]) {
-      return true
+  // find out active marketAsks which have user's make asset...
+  const activeAsks = marketAsks.filter((ask) => {
+    if (ask.end < now) return false
+    else {
+      if (assets.length !== ask.makeAsset.length) return false
+      else {
+        assets.forEach((asset, index) => {
+          if (asset.bytes !== ask.makeAsset[index].bytes) return false
+          else if (asset.value !== ask.makeAsset[index].value) return false
+          else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
+          else if (asset.standard !== ask.makeAsset[index].standard ) return false
+        })
+        return true
+      }
     }
   })
 
-  return false
+  return (activeAsks.length === 0)
 }
 
 const createAsk = (
@@ -295,9 +301,9 @@ const createAsk = (
   // structHash should be unique
   return repositories.marketAsk
     .findOne({ where: { structHash: args?.input.structHash } })
-    .then(fp.rejectIfNotEmpty((appError.buildInvalid(
-      marketAskError.buildMarketAskInvalidMsg(),
-      marketAskError.ErrorType.MarketAskInvalid,
+    .then(fp.rejectIfNotEmpty((appError.buildExists(
+      marketAskError.buildMarketAskExistingMsg(),
+      marketAskError.ErrorType.MarketAskExisting,
     ))))
     .then(() => validAsk(args, wallet))
     .then(fp.rejectIfFalse((appError.buildInvalid(
