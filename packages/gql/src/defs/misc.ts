@@ -78,12 +78,16 @@ Array<gql.MarketplaceAssetInput> =>
 {
   const assets = []
   assetInput.map((asset) => {
+    let tokenId = ''
+    const assetClass = asset.standard.assetClass as defs.AssetClass
+    if (assetClass === defs.AssetClass.ERC721 || assetClass === defs.AssetClass.ERC1155)
+      tokenId = helper.bigNumberToHex(asset.standard.tokenId)
     assets.push({
       standard: {
-        assetClass: asset.standard.assetClass as defs.AssetClass,
+        assetClass: assetClass,
         bytes: asset.standard.bytes,
         contractAddress: asset.standard.contractAddress,
-        tokenId: helper.bigNumberToString(asset.standard.tokenId),
+        tokenId: tokenId,
         allowAll: asset.standard.allowAll,
       },
       bytes: asset.bytes,
