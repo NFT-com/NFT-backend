@@ -218,6 +218,7 @@ const availableToCreateAsk = async (
   if (marketAsk.end < now) return true
 
   // check if user's maker asset is already existing...
+  if (assets.length !== marketAsk.makeAsset.length) return true
   assets.forEach((asset, index) => {
     if (asset !== marketAsk.makeAsset[index]) {
       return true
