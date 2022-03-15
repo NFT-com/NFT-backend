@@ -3,7 +3,6 @@ import { BigNumber, utils } from 'ethers'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Redis from 'ioredis'
-import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
@@ -193,14 +192,14 @@ const listenNonceIncrementedEvents = async (
       const marketAsks = await repositories.marketAsk.find({
         where: {
           makerAddress: utils.getAddress(makerAddress),
-          nonce: LessThan(nonce),
           marketSwapId: null,
           approvalTxHash: null,
           cancelTxHash: null,
         },
       })
-      if (marketAsks.length) {
-        await Promise.all(marketAsks.map(async (marketAsk) => {
+      const filteredAsks = marketAsks.filter((ask) => ask.nonce < nonce)
+      if (filteredAsks.length) {
+        await Promise.all(filteredAsks.map(async (marketAsk) => {
           await repositories.marketAsk.updateOneById(marketAsk.id, {
             cancelTxHash: log.transactionHash,
           })
@@ -209,13 +208,13 @@ const listenNonceIncrementedEvents = async (
         const marketBids = await repositories.marketBid.find({
           where: {
             makerAddress: utils.getAddress(makerAddress),
-            nonce: LessThan(nonce),
             marketSwapId: null,
             approvalTxHash: null,
             cancelTxHash: null,
           },
         })
-        await Promise.all(marketBids.map(async (marketBid) => {
+        const filteredBids = marketBids.filter((bid) => bid.nonce < nonce)
+        await Promise.all(filteredBids.map(async (marketBid) => {
           await repositories.marketBid.updateOneById(marketBid.id, {
             cancelTxHash: log.transactionHash,
           })
@@ -440,6 +439,7 @@ const listenMatchEvents = async (
               r: takerSig.r,
               s: takerSig.s,
             },
+            auctionType: auctionType,
             makerAddress: '0x',
             takerAddress: '0x',
             start: -1,
@@ -714,6 +714,7 @@ const listenMatchThreeAEvents = async (
           start,
           end,
           salt,
+          auctionType: defs.AuctionType.FixedPrice,
           chainId: chainId.toString(),
           message: '',
 
@@ -814,6 +815,7 @@ const listenMatchThreeBEvents = async (
           // actual values
           makeAsset: makeAsset,
           takeAsset: takeAsset,
+          auctionType: defs.AuctionType.FixedPrice,
           chainId: chainId.toString(),
         })
 

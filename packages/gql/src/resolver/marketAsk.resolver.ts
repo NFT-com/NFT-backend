@@ -1,7 +1,6 @@
 import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
@@ -202,22 +201,30 @@ const cancelAsk = (
 
 const availableToCreateAsk = async (
   address: string,
-  asset: Array<gql.MarketplaceAssetInput>,
+  assets: Array<gql.MarketplaceAssetInput>,
   repositories: db.Repository,
 ): Promise<boolean> => {
-  const now = Date.now()
+  const now = Date.now() / 1000
   const marketAsk = await repositories.marketAsk.findOne({
     where: {
-      makerAddress: address,
-      makerAsset: asset,
+      makerAddress: ethers.utils.getAddress(address),
       offerAcceptedAt: null,
-      start: LessThanOrEqual(now),
-      end: MoreThanOrEqual(now),
       cancelTxHash: null,
       marketSwapId: null,
     },
   })
-  return (marketAsk === undefined)
+  if (!marketAsk) return true
+  // if market ask is ended...
+  if (marketAsk.end < now) return true
+
+  // check if user's maker asset is already existing...
+  assets.forEach((asset, index) => {
+    if (asset !== marketAsk.makeAsset[index]) {
+      return true
+    }
+  })
+
+  return false
 }
 
 const createAsk = (
@@ -241,7 +248,7 @@ const createAsk = (
           assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.required().custom(joi.buildBigNumber),
+          tokenId: Joi.optional(),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
@@ -256,7 +263,7 @@ const createAsk = (
           assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.required().custom(joi.buildBigNumber),
+          tokenId: Joi.optional(),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),

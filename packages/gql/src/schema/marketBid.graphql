@@ -26,6 +26,7 @@ type MarketBid {
   rejectedAt: DateTime
   rejectedReason: String
   chainId: String!
+  auctionType: AuctionType!
 }
 
 input BidsInput {

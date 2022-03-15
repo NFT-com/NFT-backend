@@ -1,7 +1,6 @@
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
@@ -147,8 +146,8 @@ const availableToBid = async (
   address: string,
   repositories: db.Repository,
 ): Promise<boolean> => {
-  const now = Date.now()
-  const activeBids = await repositories.marketBid.find({
+  const now = Date.now() / 1000
+  const marketBids = await repositories.marketBid.find({
     skip: 0,
     take: 1,
     order: { createdAt: 'DESC' },
@@ -157,11 +156,10 @@ const availableToBid = async (
       cancelTxHash: null,
       marketSwapId: null,
       rejectedAt: null,
-      start: LessThanOrEqual(now),
-      end: MoreThanOrEqual(now),
     },
   })
 
+  const activeBids = marketBids.filter((bid) => bid.end >= now)
   return (activeBids.length === 0)
 }
 
@@ -185,7 +183,7 @@ const createBid = (
           assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.required().custom(joi.buildBigNumber),
+          tokenId: Joi.optional(),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
@@ -200,7 +198,7 @@ const createBid = (
           assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.required().custom(joi.buildBigNumber),
+          tokenId: Joi.optional(),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
