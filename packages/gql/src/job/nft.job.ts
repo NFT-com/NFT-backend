@@ -73,9 +73,9 @@ const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
 }
 
 /**
- * Takes a bunch of NFTs (pulled from the DB), and checks 
+ * Takes a bunch of NFTs (pulled from the DB), and checks
  * that the given owner is still correct.
- * 
+ *
  * If not, deletes the NFT record from the DB.
  */
 const filterNFTsWithAlchemy = async (
@@ -172,10 +172,10 @@ const updateEntity = async (
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: ethers.utils.getAddress(nftInfo.contract.address),
-        tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+        tokenId: BigNumber.from(nftInfo.id.tokenId).toHexString(),
       },
     })
-    
+
     let type: defs.NFTType
     if (nftInfo.id.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
@@ -197,7 +197,7 @@ const updateEntity = async (
     newNFT = await repositories.nft.save({
       ...existingNFT,
       contract: ethers.utils.getAddress(nftInfo.contract.address),
-      tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+      tokenId: BigNumber.from(nftInfo.id.tokenId).toHexString(),
       metadata: {
         name: nftInfo.title,
         description: nftInfo.description,
@@ -209,7 +209,7 @@ const updateEntity = async (
       walletId: walletId,
     })
 
-    // add new nft to search (Typesense) 
+    // add new nft to search (Typesense)
     // TODO: Fix below approach to collect new NFTs added each minute, and batch update to Typesense every min
     // TODO: How to save ID? pull from newNFT? run query following newNFT? is it worth it/needed?
     if (newNFT && !existingNFT) {
@@ -239,7 +239,7 @@ const updateEntity = async (
           // find & save collection name
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then(async (collectionName: string) => {
-              // add new collection to search (Typesense) 
+              // add new collection to search (Typesense)
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
               newCollection = true
 
@@ -250,7 +250,7 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
-          // save collection in typesense search  if new 
+          // save collection in typesense search  if new
           if (newCollection) {
             const indexCollection = []
             indexCollection.push({
@@ -258,7 +258,7 @@ const updateEntity = async (
               contract: collection.contract,
               name: collection.name,
             })
-            
+
             try {
               await client.collections('collections').documents().import(indexCollection, { action: 'create' })
               logger.debug('collection added to typesense index')
