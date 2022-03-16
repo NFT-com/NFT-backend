@@ -2,7 +2,13 @@ import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
+import {
+  blockNumberToTimestamp,
+  Context,
+  convertAssetInput,
+  getAssetList,
+  gql,
+} from '@nftcom/gql/defs'
 import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
@@ -468,9 +474,12 @@ const buyNow = (
                       blockNumber: blockNumber.toFixed(),
                       marketAsk: ask,
                     }).then((swap: entity.MarketSwap) =>
-                      repositories.marketAsk.updateOneById(ask.id, {
-                        marketSwapId: swap.id,
-                      }).then(() => swap)))
+                      blockNumberToTimestamp(blockNumber, ask.chainId)
+                        .then((time) => repositories.marketAsk.updateOneById(ask.id, {
+                          marketSwapId: swap.id,
+                          offerAcceptedAt: new Date(time),
+                        }).then(() => swap)),
+                    ))
               } else {
                 return Promise.reject(appError.buildInvalid(
                   marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
