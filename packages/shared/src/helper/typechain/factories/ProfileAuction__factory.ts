@@ -76,7 +76,7 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "genKeyMerkleOnly",
+    name: "genKeyWhitelistOnly",
     outputs: [
       {
         internalType: "bool",
@@ -118,6 +118,11 @@ const _abi = [
         name: "tokenId",
         type: "uint256",
       },
+      {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
+      },
     ],
     name: "genesisKeyClaimProfile",
     outputs: [],
@@ -140,14 +145,14 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "tokenId",
-        type: "uint256",
-      },
-      {
         internalType: "string",
         name: "profileUrl",
         type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
       },
       {
         internalType: "address",
@@ -155,7 +160,7 @@ const _abi = [
         type: "address",
       },
     ],
-    name: "genesisKeyMerkleClaim",
+    name: "genesisKeyWhitelistClaim",
     outputs: [
       {
         internalType: "bool",
@@ -237,19 +242,6 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "merkleDistributorProfile",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
     name: "nftBuyer",
     outputs: [
       {
@@ -315,19 +307,6 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "proxiableUUID",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
     name: "publicFee",
     outputs: [
       {
@@ -384,24 +363,11 @@ const _abi = [
     inputs: [
       {
         internalType: "bool",
-        name: "_genKeyMerkleOnly",
+        name: "_genKeyWhitelistOnly",
         type: "bool",
       },
     ],
-    name: "setGenKeyMerkleOnly",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_merkle",
-        type: "address",
-      },
-    ],
-    name: "setMerkleDistributor",
+    name: "setGenKeyWhitelistOnly",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

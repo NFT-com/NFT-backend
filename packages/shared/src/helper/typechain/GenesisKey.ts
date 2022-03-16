@@ -46,13 +46,13 @@ export interface GenesisKeyInterface extends utils.Interface {
     "initialize(string,string,address,address,uint256)": FunctionFragment;
     "initializePublicSale(uint256,uint256,uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
+    "multiOwnerOf(uint256,uint256)": FunctionFragment;
     "multiSig()": FunctionFragment;
     "name()": FunctionFragment;
     "numKeysForSale()": FunctionFragment;
     "numKeysPublicPurchased()": FunctionFragment;
     "owner()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
-    "proxiableUUID()": FunctionFragment;
     "publicExecuteBid()": FunctionFragment;
     "publicSaleDurationSeconds()": FunctionFragment;
     "publicSaleStartSecond()": FunctionFragment;
@@ -65,6 +65,7 @@ export interface GenesisKeyInterface extends utils.Interface {
     "startPublicSale()": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
+    "tokenIdsOwned(address)": FunctionFragment;
     "tokenURI(uint256)": FunctionFragment;
     "totalSupply()": FunctionFragment;
     "transferETH()": FunctionFragment;
@@ -133,6 +134,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     functionFragment: "isApprovedForAll",
     values: [string, string]
   ): string;
+  encodeFunctionData(
+    functionFragment: "multiOwnerOf",
+    values: [BigNumberish, BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "multiSig", values?: undefined): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(
@@ -147,10 +152,6 @@ export interface GenesisKeyInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "ownerOf",
     values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "proxiableUUID",
-    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "publicExecuteBid",
@@ -191,6 +192,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "tokenIdsOwned",
+    values: [string]
+  ): string;
   encodeFunctionData(
     functionFragment: "tokenURI",
     values: [BigNumberish]
@@ -277,6 +282,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     functionFragment: "isApprovedForAll",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "multiOwnerOf",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "multiSig", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(
@@ -289,10 +298,6 @@ export interface GenesisKeyInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "proxiableUUID",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "publicExecuteBid",
     data: BytesLike
@@ -335,6 +340,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenIdsOwned",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "totalSupply",
@@ -373,7 +382,6 @@ export interface GenesisKeyInterface extends utils.Interface {
     "BeaconUpgraded(address)": EventFragment;
     "BidCancelled(bytes32)": EventFragment;
     "ClaimedGenesisKey(address,uint256,uint256,bool)": EventFragment;
-    "InitMetadata(uint256,string)": EventFragment;
     "NewClaimableGenKey(address,uint256,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
     "Upgraded(address)": EventFragment;
@@ -385,7 +393,6 @@ export interface GenesisKeyInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BidCancelled"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ClaimedGenesisKey"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "InitMetadata"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NewClaimableGenKey"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
@@ -432,13 +439,6 @@ export type ClaimedGenesisKeyEvent = TypedEvent<
 
 export type ClaimedGenesisKeyEventFilter =
   TypedEventFilter<ClaimedGenesisKeyEvent>;
-
-export type InitMetadataEvent = TypedEvent<
-  [BigNumber, string],
-  { _tokenId: BigNumber; uri: string }
->;
-
-export type InitMetadataEventFilter = TypedEventFilter<InitMetadataEvent>;
 
 export type NewClaimableGenKeyEvent = TypedEvent<
   [string, BigNumber, BigNumber],
@@ -567,6 +567,12 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string[]]>;
+
     multiSig(overrides?: CallOverrides): Promise<[string]>;
 
     name(overrides?: CallOverrides): Promise<[string]>;
@@ -581,8 +587,6 @@ export interface GenesisKey extends BaseContract {
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[string]>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
 
     publicExecuteBid(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -627,6 +631,11 @@ export interface GenesisKey extends BaseContract {
     ): Promise<[boolean]>;
 
     symbol(overrides?: CallOverrides): Promise<[string]>;
+
+    tokenIdsOwned(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean[]]>;
 
     tokenURI(
       tokenId: BigNumberish,
@@ -757,6 +766,12 @@ export interface GenesisKey extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
+  multiOwnerOf(
+    startIndex: BigNumberish,
+    endIndex: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string[]>;
+
   multiSig(overrides?: CallOverrides): Promise<string>;
 
   name(overrides?: CallOverrides): Promise<string>;
@@ -768,8 +783,6 @@ export interface GenesisKey extends BaseContract {
   owner(overrides?: CallOverrides): Promise<string>;
 
   ownerOf(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
-
-  proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
   publicExecuteBid(
     overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -814,6 +827,8 @@ export interface GenesisKey extends BaseContract {
   ): Promise<boolean>;
 
   symbol(overrides?: CallOverrides): Promise<string>;
+
+  tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<boolean[]>;
 
   tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -941,6 +956,12 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string[]>;
+
     multiSig(overrides?: CallOverrides): Promise<string>;
 
     name(overrides?: CallOverrides): Promise<string>;
@@ -952,8 +973,6 @@ export interface GenesisKey extends BaseContract {
     owner(overrides?: CallOverrides): Promise<string>;
 
     ownerOf(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
     publicExecuteBid(overrides?: CallOverrides): Promise<void>;
 
@@ -988,6 +1007,8 @@ export interface GenesisKey extends BaseContract {
     ): Promise<boolean>;
 
     symbol(overrides?: CallOverrides): Promise<string>;
+
+    tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<boolean[]>;
 
     tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -1085,12 +1106,6 @@ export interface GenesisKey extends BaseContract {
       _blockNum?: null,
       _whitelist?: null
     ): ClaimedGenesisKeyEventFilter;
-
-    "InitMetadata(uint256,string)"(
-      _tokenId?: null,
-      uri?: null
-    ): InitMetadataEventFilter;
-    InitMetadata(_tokenId?: null, uri?: null): InitMetadataEventFilter;
 
     "NewClaimableGenKey(address,uint256,uint256)"(
       _user?: string | null,
@@ -1199,6 +1214,12 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     multiSig(overrides?: CallOverrides): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1213,8 +1234,6 @@ export interface GenesisKey extends BaseContract {
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicExecuteBid(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -1259,6 +1278,8 @@ export interface GenesisKey extends BaseContract {
     ): Promise<BigNumber>;
 
     symbol(overrides?: CallOverrides): Promise<BigNumber>;
+
+    tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     tokenURI(
       tokenId: BigNumberish,
@@ -1393,6 +1414,12 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     multiSig(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1409,8 +1436,6 @@ export interface GenesisKey extends BaseContract {
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     publicExecuteBid(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -1461,6 +1486,11 @@ export interface GenesisKey extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    tokenIdsOwned(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     tokenURI(
       tokenId: BigNumberish,

@@ -21,26 +21,23 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface ProfileAuctionInterface extends utils.Interface {
   contractName: "ProfileAuction";
   functions: {
-    "genKeyMerkleOnly()": FunctionFragment;
+    "genKeyWhitelistOnly()": FunctionFragment;
     "genesisKeyClaimNumber(uint256)": FunctionFragment;
-    "genesisKeyClaimProfile(string,uint256)": FunctionFragment;
+    "genesisKeyClaimProfile(string,uint256,address)": FunctionFragment;
     "genesisKeyContract()": FunctionFragment;
-    "genesisKeyMerkleClaim(uint256,string,address)": FunctionFragment;
+    "genesisKeyWhitelistClaim(string,uint256,address)": FunctionFragment;
     "genesisStakingContract()": FunctionFragment;
     "governor()": FunctionFragment;
     "initialize(address,address,address,address,address,address,address)": FunctionFragment;
-    "merkleDistributorProfile()": FunctionFragment;
     "nftBuyer()": FunctionFragment;
     "nftProfile()": FunctionFragment;
     "nftProfileHelperAddress()": FunctionFragment;
     "nftToken()": FunctionFragment;
     "owner()": FunctionFragment;
-    "proxiableUUID()": FunctionFragment;
     "publicFee()": FunctionFragment;
     "publicMint(string,uint8,bytes32,bytes32)": FunctionFragment;
     "publicMintBool()": FunctionFragment;
-    "setGenKeyMerkleOnly(bool)": FunctionFragment;
-    "setMerkleDistributor(address)": FunctionFragment;
+    "setGenKeyWhitelistOnly(bool)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "setPublicFee(uint256)": FunctionFragment;
     "setPublicMint(bool)": FunctionFragment;
@@ -49,7 +46,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
   };
 
   encodeFunctionData(
-    functionFragment: "genKeyMerkleOnly",
+    functionFragment: "genKeyWhitelistOnly",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -58,15 +55,15 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "genesisKeyClaimProfile",
-    values: [string, BigNumberish]
+    values: [string, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "genesisKeyContract",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "genesisKeyMerkleClaim",
-    values: [BigNumberish, string, string]
+    functionFragment: "genesisKeyWhitelistClaim",
+    values: [string, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "genesisStakingContract",
@@ -76,10 +73,6 @@ export interface ProfileAuctionInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "initialize",
     values: [string, string, string, string, string, string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "merkleDistributorProfile",
-    values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "nftBuyer", values?: undefined): string;
   encodeFunctionData(
@@ -92,10 +85,6 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "nftToken", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "proxiableUUID",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "publicFee", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "publicMint",
@@ -106,12 +95,8 @@ export interface ProfileAuctionInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "setGenKeyMerkleOnly",
+    functionFragment: "setGenKeyWhitelistOnly",
     values: [boolean]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setMerkleDistributor",
-    values: [string]
   ): string;
   encodeFunctionData(functionFragment: "setOwner", values: [string]): string;
   encodeFunctionData(
@@ -129,7 +114,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "genKeyMerkleOnly",
+    functionFragment: "genKeyWhitelistOnly",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -145,7 +130,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "genesisKeyMerkleClaim",
+    functionFragment: "genesisKeyWhitelistClaim",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -154,10 +139,6 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "governor", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "merkleDistributorProfile",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "nftBuyer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nftProfile", data: BytesLike): Result;
   decodeFunctionResult(
@@ -166,10 +147,6 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "nftToken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "proxiableUUID",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "publicFee", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "publicMint", data: BytesLike): Result;
   decodeFunctionResult(
@@ -177,11 +154,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setGenKeyMerkleOnly",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setMerkleDistributor",
+    functionFragment: "setGenKeyWhitelistOnly",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
@@ -262,7 +235,7 @@ export interface ProfileAuction extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    genKeyMerkleOnly(overrides?: CallOverrides): Promise<[boolean]>;
+    genKeyWhitelistOnly(overrides?: CallOverrides): Promise<[boolean]>;
 
     genesisKeyClaimNumber(
       arg0: BigNumberish,
@@ -272,14 +245,15 @@ export interface ProfileAuction extends BaseContract {
     genesisKeyClaimProfile(
       profileUrl: string,
       tokenId: BigNumberish,
+      recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     genesisKeyContract(overrides?: CallOverrides): Promise<[string]>;
 
-    genesisKeyMerkleClaim(
-      tokenId: BigNumberish,
+    genesisKeyWhitelistClaim(
       profileUrl: string,
+      tokenId: BigNumberish,
       recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -299,8 +273,6 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    merkleDistributorProfile(overrides?: CallOverrides): Promise<[string]>;
-
     nftBuyer(overrides?: CallOverrides): Promise<[string]>;
 
     nftProfile(overrides?: CallOverrides): Promise<[string]>;
@@ -310,8 +282,6 @@ export interface ProfileAuction extends BaseContract {
     nftToken(overrides?: CallOverrides): Promise<[string]>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
 
     publicFee(overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -325,13 +295,8 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<[boolean]>;
 
-    setGenKeyMerkleOnly(
-      _genKeyMerkleOnly: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    setMerkleDistributor(
-      _merkle: string,
+    setGenKeyWhitelistOnly(
+      _genKeyWhitelistOnly: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -362,7 +327,7 @@ export interface ProfileAuction extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
-  genKeyMerkleOnly(overrides?: CallOverrides): Promise<boolean>;
+  genKeyWhitelistOnly(overrides?: CallOverrides): Promise<boolean>;
 
   genesisKeyClaimNumber(
     arg0: BigNumberish,
@@ -372,14 +337,15 @@ export interface ProfileAuction extends BaseContract {
   genesisKeyClaimProfile(
     profileUrl: string,
     tokenId: BigNumberish,
+    recipient: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   genesisKeyContract(overrides?: CallOverrides): Promise<string>;
 
-  genesisKeyMerkleClaim(
-    tokenId: BigNumberish,
+  genesisKeyWhitelistClaim(
     profileUrl: string,
+    tokenId: BigNumberish,
     recipient: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -399,8 +365,6 @@ export interface ProfileAuction extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  merkleDistributorProfile(overrides?: CallOverrides): Promise<string>;
-
   nftBuyer(overrides?: CallOverrides): Promise<string>;
 
   nftProfile(overrides?: CallOverrides): Promise<string>;
@@ -410,8 +374,6 @@ export interface ProfileAuction extends BaseContract {
   nftToken(overrides?: CallOverrides): Promise<string>;
 
   owner(overrides?: CallOverrides): Promise<string>;
-
-  proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
   publicFee(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -425,13 +387,8 @@ export interface ProfileAuction extends BaseContract {
 
   publicMintBool(overrides?: CallOverrides): Promise<boolean>;
 
-  setGenKeyMerkleOnly(
-    _genKeyMerkleOnly: boolean,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  setMerkleDistributor(
-    _merkle: string,
+  setGenKeyWhitelistOnly(
+    _genKeyWhitelistOnly: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -462,7 +419,7 @@ export interface ProfileAuction extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    genKeyMerkleOnly(overrides?: CallOverrides): Promise<boolean>;
+    genKeyWhitelistOnly(overrides?: CallOverrides): Promise<boolean>;
 
     genesisKeyClaimNumber(
       arg0: BigNumberish,
@@ -472,14 +429,15 @@ export interface ProfileAuction extends BaseContract {
     genesisKeyClaimProfile(
       profileUrl: string,
       tokenId: BigNumberish,
+      recipient: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
     genesisKeyContract(overrides?: CallOverrides): Promise<string>;
 
-    genesisKeyMerkleClaim(
-      tokenId: BigNumberish,
+    genesisKeyWhitelistClaim(
       profileUrl: string,
+      tokenId: BigNumberish,
       recipient: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
@@ -499,8 +457,6 @@ export interface ProfileAuction extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    merkleDistributorProfile(overrides?: CallOverrides): Promise<string>;
-
     nftBuyer(overrides?: CallOverrides): Promise<string>;
 
     nftProfile(overrides?: CallOverrides): Promise<string>;
@@ -510,8 +466,6 @@ export interface ProfileAuction extends BaseContract {
     nftToken(overrides?: CallOverrides): Promise<string>;
 
     owner(overrides?: CallOverrides): Promise<string>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
     publicFee(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -525,13 +479,8 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<boolean>;
 
-    setGenKeyMerkleOnly(
-      _genKeyMerkleOnly: boolean,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    setMerkleDistributor(
-      _merkle: string,
+    setGenKeyWhitelistOnly(
+      _genKeyWhitelistOnly: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -579,7 +528,7 @@ export interface ProfileAuction extends BaseContract {
   };
 
   estimateGas: {
-    genKeyMerkleOnly(overrides?: CallOverrides): Promise<BigNumber>;
+    genKeyWhitelistOnly(overrides?: CallOverrides): Promise<BigNumber>;
 
     genesisKeyClaimNumber(
       arg0: BigNumberish,
@@ -589,14 +538,15 @@ export interface ProfileAuction extends BaseContract {
     genesisKeyClaimProfile(
       profileUrl: string,
       tokenId: BigNumberish,
+      recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     genesisKeyContract(overrides?: CallOverrides): Promise<BigNumber>;
 
-    genesisKeyMerkleClaim(
-      tokenId: BigNumberish,
+    genesisKeyWhitelistClaim(
       profileUrl: string,
+      tokenId: BigNumberish,
       recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -616,8 +566,6 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    merkleDistributorProfile(overrides?: CallOverrides): Promise<BigNumber>;
-
     nftBuyer(overrides?: CallOverrides): Promise<BigNumber>;
 
     nftProfile(overrides?: CallOverrides): Promise<BigNumber>;
@@ -627,8 +575,6 @@ export interface ProfileAuction extends BaseContract {
     nftToken(overrides?: CallOverrides): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicFee(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -642,13 +588,8 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<BigNumber>;
 
-    setGenKeyMerkleOnly(
-      _genKeyMerkleOnly: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    setMerkleDistributor(
-      _merkle: string,
+    setGenKeyWhitelistOnly(
+      _genKeyWhitelistOnly: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -680,7 +621,9 @@ export interface ProfileAuction extends BaseContract {
   };
 
   populateTransaction: {
-    genKeyMerkleOnly(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    genKeyWhitelistOnly(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     genesisKeyClaimNumber(
       arg0: BigNumberish,
@@ -690,6 +633,7 @@ export interface ProfileAuction extends BaseContract {
     genesisKeyClaimProfile(
       profileUrl: string,
       tokenId: BigNumberish,
+      recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -697,9 +641,9 @@ export interface ProfileAuction extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    genesisKeyMerkleClaim(
-      tokenId: BigNumberish,
+    genesisKeyWhitelistClaim(
       profileUrl: string,
+      tokenId: BigNumberish,
       recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -721,10 +665,6 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    merkleDistributorProfile(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     nftBuyer(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     nftProfile(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -736,8 +676,6 @@ export interface ProfileAuction extends BaseContract {
     nftToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     publicFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -751,13 +689,8 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    setGenKeyMerkleOnly(
-      _genKeyMerkleOnly: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    setMerkleDistributor(
-      _merkle: string,
+    setGenKeyWhitelistOnly(
+      _genKeyWhitelistOnly: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

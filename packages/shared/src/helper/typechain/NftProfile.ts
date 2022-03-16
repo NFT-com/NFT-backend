@@ -35,7 +35,6 @@ export interface NftProfileInterface extends utils.Interface {
     "profileAuctionContract()": FunctionFragment;
     "profileOwner(string)": FunctionFragment;
     "protocolFee()": FunctionFragment;
-    "proxiableUUID()": FunctionFragment;
     "safeTransferFrom(address,address,uint256)": FunctionFragment;
     "setApprovalForAll(address,bool)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
@@ -95,10 +94,6 @@ export interface NftProfileInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "protocolFee",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "proxiableUUID",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -183,10 +178,6 @@ export interface NftProfileInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "protocolFee",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "proxiableUUID",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -370,8 +361,6 @@ export interface NftProfile extends BaseContract {
 
     protocolFee(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
-
     "safeTransferFrom(address,address,uint256)"(
       from: string,
       to: string,
@@ -503,8 +492,6 @@ export interface NftProfile extends BaseContract {
 
   protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
 
-  proxiableUUID(overrides?: CallOverrides): Promise<string>;
-
   "safeTransferFrom(address,address,uint256)"(
     from: string,
     to: string,
@@ -632,8 +619,6 @@ export interface NftProfile extends BaseContract {
     profileOwner(_string: string, overrides?: CallOverrides): Promise<string>;
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -819,8 +804,6 @@ export interface NftProfile extends BaseContract {
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
-
     "safeTransferFrom(address,address,uint256)"(
       from: string,
       to: string,
@@ -966,8 +949,6 @@ export interface NftProfile extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     protocolFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,

@@ -18,16 +18,6 @@ import { FunctionFragment, Result, EventFragment } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
-export declare namespace NftMarketplace {
-  export type SigStruct = { v: BigNumberish; r: BytesLike; s: BytesLike };
-
-  export type SigStructOutput = [number, string, string] & {
-    v: number;
-    r: string;
-    s: string;
-  };
-}
-
 export declare namespace LibAsset {
   export type AssetTypeStruct = { assetClass: BytesLike; data: BytesLike };
 
@@ -91,11 +81,10 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "cancel((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "cancelledOrFinalized(bytes32)": FunctionFragment;
     "changeProtocolFee(uint256)": FunctionFragment;
-    "concatVRS(uint8,bytes32,bytes32)": FunctionFragment;
     "executeSwap((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),uint8[2],bytes32[2],bytes32[2])": FunctionFragment;
-    "getDecreasingPrice((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "incrementNonce()": FunctionFragment;
-    "initialize(address,address,address,address,address)": FunctionFragment;
+    "initialize(address,address,address,address,address,address,address)": FunctionFragment;
+    "marketplaceEvent()": FunctionFragment;
     "modifyWhitelist(address,bool)": FunctionFragment;
     "nftBuyContract()": FunctionFragment;
     "nftToken()": FunctionFragment;
@@ -103,16 +92,16 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "orderApproved(bytes32)": FunctionFragment;
     "owner()": FunctionFragment;
     "protocolFee()": FunctionFragment;
-    "proxiableUUID()": FunctionFragment;
     "proxies(bytes4)": FunctionFragment;
-    "recoverVRS(bytes)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
+    "royaltyInfo(address)": FunctionFragment;
+    "setRoyalty(address,address,uint256)": FunctionFragment;
     "setTransferProxy(bytes4,address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "upgradeTo(address)": FunctionFragment;
     "upgradeToAndCall(address,bytes)": FunctionFragment;
-    "validateMatch_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "validateOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),uint8,bytes32,bytes32)": FunctionFragment;
+    "validationLogic()": FunctionFragment;
     "whitelistERC20(address)": FunctionFragment;
   };
 
@@ -137,10 +126,6 @@ export interface NftMarketplaceInterface extends utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "concatVRS",
-    values: [BigNumberish, BytesLike, BytesLike]
-  ): string;
-  encodeFunctionData(
     functionFragment: "executeSwap",
     values: [
       LibSignature.OrderStruct,
@@ -151,16 +136,16 @@ export interface NftMarketplaceInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "getDecreasingPrice",
-    values: [LibSignature.OrderStruct]
-  ): string;
-  encodeFunctionData(
     functionFragment: "incrementNonce",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string, string, string, string]
+    values: [string, string, string, string, string, string, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "marketplaceEvent",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "modifyWhitelist",
@@ -181,18 +166,15 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "protocolFee",
     values?: undefined
   ): string;
-  encodeFunctionData(
-    functionFragment: "proxiableUUID",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "proxies", values: [BytesLike]): string;
-  encodeFunctionData(
-    functionFragment: "recoverVRS",
-    values: [BytesLike]
-  ): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "royaltyInfo", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "setRoyalty",
+    values: [string, string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setTransferProxy",
@@ -208,12 +190,12 @@ export interface NftMarketplaceInterface extends utils.Interface {
     values: [string, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "validateMatch_",
-    values: [LibSignature.OrderStruct, LibSignature.OrderStruct]
-  ): string;
-  encodeFunctionData(
     functionFragment: "validateOrder_",
     values: [LibSignature.OrderStruct, BigNumberish, BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "validationLogic",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "whitelistERC20",
@@ -234,13 +216,8 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "changeProtocolFee",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "concatVRS", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "executeSwap",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getDecreasingPrice",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -248,6 +225,10 @@ export interface NftMarketplaceInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "marketplaceEvent",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "modifyWhitelist",
     data: BytesLike
@@ -267,16 +248,16 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "protocolFee",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "proxiableUUID",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "proxies", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "recoverVRS", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "royaltyInfo",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "setRoyalty", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setTransferProxy",
     data: BytesLike
@@ -291,11 +272,11 @@ export interface NftMarketplaceInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "validateMatch_",
+    functionFragment: "validateOrder_",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "validateOrder_",
+    functionFragment: "validationLogic",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -307,17 +288,12 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "AdminChanged(address,address)": EventFragment;
     "Approval(bytes32,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
-    "BuyNowInfo(bytes32,address)": EventFragment;
     "Cancel(bytes32,address)": EventFragment;
-    "Match(bytes32,bytes32,uint8,tuple,tuple,bool)": EventFragment;
-    "Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)": EventFragment;
-    "Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])": EventFragment;
-    "Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)": EventFragment;
-    "Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])": EventFragment;
     "NonceIncremented(address,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "ProtocolFeeChange(uint256)": EventFragment;
     "ProxyChange(bytes4,address)": EventFragment;
+    "RoyaltyInfoChange(address,address,uint256)": EventFragment;
     "Transfer(tuple,address,address)": EventFragment;
     "Upgraded(address)": EventFragment;
     "WhitelistChange(address,bool)": EventFragment;
@@ -326,17 +302,12 @@ export interface NftMarketplaceInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "BuyNowInfo"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Cancel"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Match"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Match2A"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Match2B"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Match3A"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Match3B"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NonceIncremented"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ProtocolFeeChange"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ProxyChange"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "RoyaltyInfoChange"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "WhitelistChange"): EventFragment;
@@ -360,100 +331,12 @@ export type BeaconUpgradedEvent = TypedEvent<[string], { beacon: string }>;
 
 export type BeaconUpgradedEventFilter = TypedEventFilter<BeaconUpgradedEvent>;
 
-export type BuyNowInfoEvent = TypedEvent<
-  [string, string],
-  { makerStructHash: string; takerAddress: string }
->;
-
-export type BuyNowInfoEventFilter = TypedEventFilter<BuyNowInfoEvent>;
-
 export type CancelEvent = TypedEvent<
   [string, string],
   { structHash: string; maker: string }
 >;
 
 export type CancelEventFilter = TypedEventFilter<CancelEvent>;
-
-export type MatchEvent = TypedEvent<
-  [
-    string,
-    string,
-    number,
-    NftMarketplace.SigStructOutput,
-    NftMarketplace.SigStructOutput,
-    boolean
-  ],
-  {
-    makerStructHash: string;
-    takerStructHash: string;
-    auctionType: number;
-    makerSig: NftMarketplace.SigStructOutput;
-    takerSig: NftMarketplace.SigStructOutput;
-    privateSale: boolean;
-  }
->;
-
-export type MatchEventFilter = TypedEventFilter<MatchEvent>;
-
-export type Match2AEvent = TypedEvent<
-  [string, string, string, BigNumber, BigNumber, BigNumber, BigNumber],
-  {
-    makerStructHash: string;
-    makerAddress: string;
-    takerAddress: string;
-    start: BigNumber;
-    end: BigNumber;
-    nonce: BigNumber;
-    salt: BigNumber;
-  }
->;
-
-export type Match2AEventFilter = TypedEventFilter<Match2AEvent>;
-
-export type Match2BEvent = TypedEvent<
-  [string, string[], string[], string[], string[], string[], string[]],
-  {
-    makerStructHash: string;
-    sellerMakerOrderAssetData: string[];
-    sellerMakerOrderAssetTypeData: string[];
-    sellerMakerOrderAssetClass: string[];
-    sellerTakerOrderAssetData: string[];
-    sellerTakerOrderAssetTypeData: string[];
-    sellerTakerOrderAssetClass: string[];
-  }
->;
-
-export type Match2BEventFilter = TypedEventFilter<Match2BEvent>;
-
-export type Match3AEvent = TypedEvent<
-  [string, string, string, BigNumber, BigNumber, BigNumber, BigNumber],
-  {
-    takerStructHash: string;
-    makerAddress: string;
-    takerAddress: string;
-    start: BigNumber;
-    end: BigNumber;
-    nonce: BigNumber;
-    salt: BigNumber;
-  }
->;
-
-export type Match3AEventFilter = TypedEventFilter<Match3AEvent>;
-
-export type Match3BEvent = TypedEvent<
-  [string, string[], string[], string[], string[], string[], string[]],
-  {
-    takerStructHash: string;
-    buyerMakerOrderAssetData: string[];
-    buyerMakerOrderAssetTypeData: string[];
-    buyerMakerOrderAssetClass: string[];
-    buyerTakerOrderAssetData: string[];
-    buyerTakerOrderAssetTypeData: string[];
-    buyerTakerOrderAssetClass: string[];
-  }
->;
-
-export type Match3BEventFilter = TypedEventFilter<Match3BEvent>;
 
 export type NonceIncrementedEvent = TypedEvent<
   [string, BigNumber],
@@ -485,6 +368,14 @@ export type ProxyChangeEvent = TypedEvent<
 >;
 
 export type ProxyChangeEventFilter = TypedEventFilter<ProxyChangeEvent>;
+
+export type RoyaltyInfoChangeEvent = TypedEvent<
+  [string, string, BigNumber],
+  { token: string; owner: string; percent: BigNumber }
+>;
+
+export type RoyaltyInfoChangeEventFilter =
+  TypedEventFilter<RoyaltyInfoChangeEvent>;
 
 export type TransferEvent = TypedEvent<
   [LibAsset.AssetStructOutput, string, string],
@@ -560,13 +451,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    concatVRS(
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
-
     executeSwap(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
@@ -575,11 +459,6 @@ export interface NftMarketplace extends BaseContract {
       s: [BytesLike, BytesLike],
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    getDecreasingPrice(
-      sellOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
 
     incrementNonce(
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -591,8 +470,12 @@ export interface NftMarketplace extends BaseContract {
       _cryptoKittyProxy: string,
       _stakingContract: string,
       _nftToken: string,
+      _validationLogic: string,
+      _marketplaceEvent: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    marketplaceEvent(overrides?: CallOverrides): Promise<[string]>;
 
     modifyWhitelist(
       _token: string,
@@ -615,16 +498,21 @@ export interface NftMarketplace extends BaseContract {
 
     protocolFee(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
-
     proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
-    recoverVRS(
-      signature: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[number, string, string]>;
-
     renounceOwnership(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    royaltyInfo(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[string, BigNumber] & { owner: string; percent: BigNumber }>;
+
+    setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -650,12 +538,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    validateMatch_(
-      sellOrder: LibSignature.OrderStruct,
-      buyOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
-
     validateOrder_(
       order: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -663,6 +545,8 @@ export interface NftMarketplace extends BaseContract {
       s: BytesLike,
       overrides?: CallOverrides
     ): Promise<[boolean, string]>;
+
+    validationLogic(overrides?: CallOverrides): Promise<[string]>;
 
     whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
   };
@@ -695,13 +579,6 @@ export interface NftMarketplace extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  concatVRS(
-    v: BigNumberish,
-    r: BytesLike,
-    s: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<string>;
-
   executeSwap(
     sellOrder: LibSignature.OrderStruct,
     buyOrder: LibSignature.OrderStruct,
@@ -710,11 +587,6 @@ export interface NftMarketplace extends BaseContract {
     s: [BytesLike, BytesLike],
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  getDecreasingPrice(
-    sellOrder: LibSignature.OrderStruct,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
 
   incrementNonce(
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -726,8 +598,12 @@ export interface NftMarketplace extends BaseContract {
     _cryptoKittyProxy: string,
     _stakingContract: string,
     _nftToken: string,
+    _validationLogic: string,
+    _marketplaceEvent: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  marketplaceEvent(overrides?: CallOverrides): Promise<string>;
 
   modifyWhitelist(
     _token: string,
@@ -747,16 +623,21 @@ export interface NftMarketplace extends BaseContract {
 
   protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
 
-  proxiableUUID(overrides?: CallOverrides): Promise<string>;
-
   proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<string>;
 
-  recoverVRS(
-    signature: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<[number, string, string]>;
-
   renounceOwnership(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  royaltyInfo(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<[string, BigNumber] & { owner: string; percent: BigNumber }>;
+
+  setRoyalty(
+    nftContract: string,
+    recipient: string,
+    amount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -782,12 +663,6 @@ export interface NftMarketplace extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  validateMatch_(
-    sellOrder: LibSignature.OrderStruct,
-    buyOrder: LibSignature.OrderStruct,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
-
   validateOrder_(
     order: LibSignature.OrderStruct,
     v: BigNumberish,
@@ -795,6 +670,8 @@ export interface NftMarketplace extends BaseContract {
     s: BytesLike,
     overrides?: CallOverrides
   ): Promise<[boolean, string]>;
+
+  validationLogic(overrides?: CallOverrides): Promise<string>;
 
   whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -827,13 +704,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    concatVRS(
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<string>;
-
     executeSwap(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
@@ -843,11 +713,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    getDecreasingPrice(
-      sellOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     incrementNonce(overrides?: CallOverrides): Promise<void>;
 
     initialize(
@@ -856,8 +721,12 @@ export interface NftMarketplace extends BaseContract {
       _cryptoKittyProxy: string,
       _stakingContract: string,
       _nftToken: string,
+      _validationLogic: string,
+      _marketplaceEvent: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    marketplaceEvent(overrides?: CallOverrides): Promise<string>;
 
     modifyWhitelist(
       _token: string,
@@ -877,16 +746,21 @@ export interface NftMarketplace extends BaseContract {
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<string>;
-
     proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<string>;
 
-    recoverVRS(
-      signature: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[number, string, string]>;
-
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
+
+    royaltyInfo(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[string, BigNumber] & { owner: string; percent: BigNumber }>;
+
+    setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     setTransferProxy(
       assetType: BytesLike,
@@ -910,12 +784,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    validateMatch_(
-      sellOrder: LibSignature.OrderStruct,
-      buyOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
     validateOrder_(
       order: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -923,6 +791,8 @@ export interface NftMarketplace extends BaseContract {
       s: BytesLike,
       overrides?: CallOverrides
     ): Promise<[boolean, string]>;
+
+    validationLogic(overrides?: CallOverrides): Promise<string>;
 
     whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
   };
@@ -948,113 +818,11 @@ export interface NftMarketplace extends BaseContract {
     ): BeaconUpgradedEventFilter;
     BeaconUpgraded(beacon?: string | null): BeaconUpgradedEventFilter;
 
-    "BuyNowInfo(bytes32,address)"(
-      makerStructHash?: BytesLike | null,
-      takerAddress?: null
-    ): BuyNowInfoEventFilter;
-    BuyNowInfo(
-      makerStructHash?: BytesLike | null,
-      takerAddress?: null
-    ): BuyNowInfoEventFilter;
-
     "Cancel(bytes32,address)"(
       structHash?: null,
       maker?: string | null
     ): CancelEventFilter;
     Cancel(structHash?: null, maker?: string | null): CancelEventFilter;
-
-    "Match(bytes32,bytes32,uint8,tuple,tuple,bool)"(
-      makerStructHash?: BytesLike | null,
-      takerStructHash?: BytesLike | null,
-      auctionType?: null,
-      makerSig?: null,
-      takerSig?: null,
-      privateSale?: null
-    ): MatchEventFilter;
-    Match(
-      makerStructHash?: BytesLike | null,
-      takerStructHash?: BytesLike | null,
-      auctionType?: null,
-      makerSig?: null,
-      takerSig?: null,
-      privateSale?: null
-    ): MatchEventFilter;
-
-    "Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)"(
-      makerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
-      start?: null,
-      end?: null,
-      nonce?: null,
-      salt?: null
-    ): Match2AEventFilter;
-    Match2A(
-      makerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
-      start?: null,
-      end?: null,
-      nonce?: null,
-      salt?: null
-    ): Match2AEventFilter;
-
-    "Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])"(
-      makerStructHash?: BytesLike | null,
-      sellerMakerOrderAssetData?: null,
-      sellerMakerOrderAssetTypeData?: null,
-      sellerMakerOrderAssetClass?: null,
-      sellerTakerOrderAssetData?: null,
-      sellerTakerOrderAssetTypeData?: null,
-      sellerTakerOrderAssetClass?: null
-    ): Match2BEventFilter;
-    Match2B(
-      makerStructHash?: BytesLike | null,
-      sellerMakerOrderAssetData?: null,
-      sellerMakerOrderAssetTypeData?: null,
-      sellerMakerOrderAssetClass?: null,
-      sellerTakerOrderAssetData?: null,
-      sellerTakerOrderAssetTypeData?: null,
-      sellerTakerOrderAssetClass?: null
-    ): Match2BEventFilter;
-
-    "Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)"(
-      takerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
-      start?: null,
-      end?: null,
-      nonce?: null,
-      salt?: null
-    ): Match3AEventFilter;
-    Match3A(
-      takerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
-      start?: null,
-      end?: null,
-      nonce?: null,
-      salt?: null
-    ): Match3AEventFilter;
-
-    "Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])"(
-      takerStructHash?: BytesLike | null,
-      buyerMakerOrderAssetData?: null,
-      buyerMakerOrderAssetTypeData?: null,
-      buyerMakerOrderAssetClass?: null,
-      buyerTakerOrderAssetData?: null,
-      buyerTakerOrderAssetTypeData?: null,
-      buyerTakerOrderAssetClass?: null
-    ): Match3BEventFilter;
-    Match3B(
-      takerStructHash?: BytesLike | null,
-      buyerMakerOrderAssetData?: null,
-      buyerMakerOrderAssetTypeData?: null,
-      buyerMakerOrderAssetClass?: null,
-      buyerTakerOrderAssetData?: null,
-      buyerTakerOrderAssetTypeData?: null,
-      buyerTakerOrderAssetClass?: null
-    ): Match3BEventFilter;
 
     "NonceIncremented(address,uint256)"(
       maker?: string | null,
@@ -1085,6 +853,17 @@ export interface NftMarketplace extends BaseContract {
       assetType?: BytesLike | null,
       proxy?: null
     ): ProxyChangeEventFilter;
+
+    "RoyaltyInfoChange(address,address,uint256)"(
+      token?: null,
+      owner?: null,
+      percent?: null
+    ): RoyaltyInfoChangeEventFilter;
+    RoyaltyInfoChange(
+      token?: null,
+      owner?: null,
+      percent?: null
+    ): RoyaltyInfoChangeEventFilter;
 
     "Transfer(tuple,address,address)"(
       asset?: null,
@@ -1132,13 +911,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    concatVRS(
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     executeSwap(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
@@ -1146,11 +918,6 @@ export interface NftMarketplace extends BaseContract {
       r: [BytesLike, BytesLike],
       s: [BytesLike, BytesLike],
       overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    getDecreasingPrice(
-      sellOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     incrementNonce(
@@ -1163,8 +930,12 @@ export interface NftMarketplace extends BaseContract {
       _cryptoKittyProxy: string,
       _stakingContract: string,
       _nftToken: string,
+      _validationLogic: string,
+      _marketplaceEvent: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    marketplaceEvent(overrides?: CallOverrides): Promise<BigNumber>;
 
     modifyWhitelist(
       _token: string,
@@ -1187,16 +958,18 @@ export interface NftMarketplace extends BaseContract {
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
-
     proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
 
-    recoverVRS(
-      signature: BytesLike,
-      overrides?: CallOverrides
+    renounceOwnership(
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    renounceOwnership(
+    royaltyInfo(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1222,12 +995,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    validateMatch_(
-      sellOrder: LibSignature.OrderStruct,
-      buyOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     validateOrder_(
       order: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -1235,6 +1002,8 @@ export interface NftMarketplace extends BaseContract {
       s: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    validationLogic(overrides?: CallOverrides): Promise<BigNumber>;
 
     whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
   };
@@ -1268,13 +1037,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    concatVRS(
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     executeSwap(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
@@ -1282,11 +1044,6 @@ export interface NftMarketplace extends BaseContract {
       r: [BytesLike, BytesLike],
       s: [BytesLike, BytesLike],
       overrides?: PayableOverrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    getDecreasingPrice(
-      sellOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     incrementNonce(
@@ -1299,8 +1056,12 @@ export interface NftMarketplace extends BaseContract {
       _cryptoKittyProxy: string,
       _stakingContract: string,
       _nftToken: string,
+      _validationLogic: string,
+      _marketplaceEvent: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    marketplaceEvent(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     modifyWhitelist(
       _token: string,
@@ -1326,19 +1087,24 @@ export interface NftMarketplace extends BaseContract {
 
     protocolFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     proxies(
       arg0: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    recoverVRS(
-      signature: BytesLike,
+    renounceOwnership(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    royaltyInfo(
+      arg0: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    renounceOwnership(
+    setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1364,12 +1130,6 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    validateMatch_(
-      sellOrder: LibSignature.OrderStruct,
-      buyOrder: LibSignature.OrderStruct,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     validateOrder_(
       order: LibSignature.OrderStruct,
       v: BigNumberish,
@@ -1377,6 +1137,8 @@ export interface NftMarketplace extends BaseContract {
       s: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    validationLogic(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     whitelistERC20(
       arg0: string,
