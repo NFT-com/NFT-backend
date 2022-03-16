@@ -5,6 +5,7 @@ import { defaultAbiCoder } from 'ethers/lib/utils'
 import Redis from 'ioredis'
 
 import { redisConfig } from '@nftcom/gql/config'
+import { blockNumberToTimestamp } from '@nftcom/gql/defs'
 import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -392,17 +393,8 @@ const listenMatchEvents = async (
         const takerSig = event.args.takerSig
 
         let marketAsk, marketBid
-        // if maker is user who made ask listing...
         marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
-        if (marketAsk) {
-          marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
-        } else {
-          // if maker is user who made bid to ask...
-          marketBid = await repositories.marketBid.findOne({ where: { structHash: makerHash } })
-          if (marketBid) {
-            marketAsk = await repositories.marketAsk.findOne({ where: { structHash: takerHash } })
-          }
-        }
+        marketBid = await repositories.marketBid.findOne({ where: { structHash: takerHash } })
 
         if (!marketAsk) {
           marketAsk = await repositories.marketAsk.save({
@@ -471,6 +463,7 @@ const listenMatchEvents = async (
             marketAsk: marketAsk,
             marketBid: marketBid,
           })
+          const timestamp = await blockNumberToTimestamp(log.blockNumber, chainId.toString())
           await repositories.marketAsk.updateOneById(marketAsk.id, {
             marketSwapId: marketSwap.id,
             signature: {
@@ -479,6 +472,7 @@ const listenMatchEvents = async (
               s: makerSig.s,
             },
             auctionType,
+            offerAcceptedAt: new Date(timestamp),
           })
 
           if (marketBid) {
@@ -489,6 +483,8 @@ const listenMatchEvents = async (
                 r: takerSig.r,
                 s: takerSig.s,
               },
+              auctionType: auctionType,
+              acceptedAt: new Date(timestamp),
             })
           }
         }
