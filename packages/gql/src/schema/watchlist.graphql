@@ -1,7 +1,7 @@
 type Watchlist {
-    nftItems: [NFT!]
-    profileItems: [Profile!]
-    collectionItems: [Collection!]
+    nftItems: [NFT!]!
+    profileItems: [Profile!]!
+    collectionItems: [Collection!]!
 }
 
 enum WatchlistItemType {
