@@ -2,7 +2,8 @@ import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
-import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
+import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
+import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
 // TODO: move contract addresses to Doppler.
 export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
@@ -11,6 +12,34 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
     return utils.getAddress('0x30Cd409caCE94Ae1550CB2FCEe72489f02406F92')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+
+export function marketplaceEventAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0x4827e7627D64f9D7E1bcc202Ba444f47a5A92082')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+
+export function validationLogicAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0x6b8Ae1C1a56F2286c6e5664507ce680F9E8056AA')
   case '0':
   case 0:
   case 'mainnet':
@@ -115,6 +144,10 @@ export function profileAuctionABI(): any {
 
 export function marketplaceABIJSON(): any {
   return nftMarketplaceABIJSON
+}
+
+export function marketplaceEventABI(): any {
+  return marketplaceEventABIJSON
 }
 
 export interface GasInfo {

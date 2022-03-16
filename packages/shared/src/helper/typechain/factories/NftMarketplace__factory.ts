@@ -85,279 +85,6 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "makerStructHash",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "takerStructHash",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "enum LibSignature.AuctionType",
-        name: "auctionType",
-        type: "uint8",
-      },
-      {
-        components: [
-          {
-            internalType: "uint8",
-            name: "v",
-            type: "uint8",
-          },
-          {
-            internalType: "bytes32",
-            name: "r",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "s",
-            type: "bytes32",
-          },
-        ],
-        indexed: false,
-        internalType: "struct NftMarketplace.Sig",
-        name: "makerSig",
-        type: "tuple",
-      },
-      {
-        components: [
-          {
-            internalType: "uint8",
-            name: "v",
-            type: "uint8",
-          },
-          {
-            internalType: "bytes32",
-            name: "r",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "s",
-            type: "bytes32",
-          },
-        ],
-        indexed: false,
-        internalType: "struct NftMarketplace.Sig",
-        name: "takerSig",
-        type: "tuple",
-      },
-      {
-        indexed: false,
-        internalType: "bool",
-        name: "privateSale",
-        type: "bool",
-      },
-    ],
-    name: "Match",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "makerStructHash",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "makerAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "takerAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "start",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "end",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "nonce",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "salt",
-        type: "uint256",
-      },
-    ],
-    name: "Match2A",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "makerStructHash",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "sellerMakerOrderAssetData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "sellerMakerOrderAssetTypeData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes4[]",
-        name: "sellerMakerOrderAssetClass",
-        type: "bytes4[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "sellerTakerOrderAssetData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "sellerTakerOrderAssetTypeData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes4[]",
-        name: "sellerTakerOrderAssetClass",
-        type: "bytes4[]",
-      },
-    ],
-    name: "Match2B",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "makerStructHash",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "makerAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "takerAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "start",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "end",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "nonce",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "salt",
-        type: "uint256",
-      },
-    ],
-    name: "Match3A",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "makerStructHash",
-        type: "bytes32",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "buyerMakerOrderAssetData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "buyerMakerOrderAssetTypeData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes4[]",
-        name: "buyerMakerOrderAssetClass",
-        type: "bytes4[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "buyerTakerOrderAssetData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes[]",
-        name: "buyerTakerOrderAssetTypeData",
-        type: "bytes[]",
-      },
-      {
-        indexed: false,
-        internalType: "bytes4[]",
-        name: "buyerTakerOrderAssetClass",
-        type: "bytes4[]",
-      },
-    ],
-    name: "Match3B",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
         internalType: "address",
         name: "maker",
         type: "address",
@@ -421,6 +148,31 @@ const _abi = [
       },
     ],
     name: "ProxyChange",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "address",
+        name: "token",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "percent",
+        type: "uint256",
+      },
+    ],
+    name: "RoyaltyInfoChange",
     type: "event",
   },
   {
@@ -878,35 +630,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint8",
-        name: "v",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "r",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "s",
-        type: "bytes32",
-      },
-    ],
-    name: "concatVRS",
-    outputs: [
-      {
-        internalType: "bytes",
-        name: "",
-        type: "bytes",
-      },
-    ],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         components: [
           {
             internalType: "address",
@@ -1128,120 +851,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: "address",
-            name: "maker",
-            type: "address",
-          },
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: "bytes4",
-                    name: "assetClass",
-                    type: "bytes4",
-                  },
-                  {
-                    internalType: "bytes",
-                    name: "data",
-                    type: "bytes",
-                  },
-                ],
-                internalType: "struct LibAsset.AssetType",
-                name: "assetType",
-                type: "tuple",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-            ],
-            internalType: "struct LibAsset.Asset[]",
-            name: "makeAssets",
-            type: "tuple[]",
-          },
-          {
-            internalType: "address",
-            name: "taker",
-            type: "address",
-          },
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: "bytes4",
-                    name: "assetClass",
-                    type: "bytes4",
-                  },
-                  {
-                    internalType: "bytes",
-                    name: "data",
-                    type: "bytes",
-                  },
-                ],
-                internalType: "struct LibAsset.AssetType",
-                name: "assetType",
-                type: "tuple",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-            ],
-            internalType: "struct LibAsset.Asset[]",
-            name: "takeAssets",
-            type: "tuple[]",
-          },
-          {
-            internalType: "uint256",
-            name: "salt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "start",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "end",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "nonce",
-            type: "uint256",
-          },
-          {
-            internalType: "enum LibSignature.AuctionType",
-            name: "auctionType",
-            type: "uint8",
-          },
-        ],
-        internalType: "struct LibSignature.Order",
-        name: "sellOrder",
-        type: "tuple",
-      },
-    ],
-    name: "getDecreasingPrice",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "incrementNonce",
     outputs: [],
@@ -1270,10 +879,38 @@ const _abi = [
         name: "_stakingContract",
         type: "address",
       },
+      {
+        internalType: "address",
+        name: "_nftToken",
+        type: "address",
+      },
+      {
+        internalType: "contract ValidationLogic",
+        name: "_validationLogic",
+        type: "address",
+      },
+      {
+        internalType: "contract MarketplaceEvent",
+        name: "_marketplaceEvent",
+        type: "address",
+      },
     ],
     name: "initialize",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "marketplaceEvent",
+    outputs: [
+      {
+        internalType: "contract MarketplaceEvent",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -1292,6 +929,32 @@ const _abi = [
     name: "modifyWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "nftBuyContract",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "nftToken",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -1378,37 +1041,55 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "bytes",
-        name: "signature",
-        type: "bytes",
-      },
-    ],
-    name: "recoverVRS",
-    outputs: [
-      {
-        internalType: "uint8",
-        name: "",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "pure",
+    inputs: [],
+    name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
-    inputs: [],
-    name: "renounceOwnership",
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "royaltyInfo",
+    outputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        internalType: "uint96",
+        name: "percent",
+        type: "uint96",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "nftContract",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "setRoyalty",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -1429,19 +1110,6 @@ const _abi = [
     name: "setTransferProxy",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "stakingContract",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
   {
@@ -1587,220 +1255,6 @@ const _abi = [
           },
         ],
         internalType: "struct LibSignature.Order",
-        name: "sellOrder",
-        type: "tuple",
-      },
-      {
-        components: [
-          {
-            internalType: "address",
-            name: "maker",
-            type: "address",
-          },
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: "bytes4",
-                    name: "assetClass",
-                    type: "bytes4",
-                  },
-                  {
-                    internalType: "bytes",
-                    name: "data",
-                    type: "bytes",
-                  },
-                ],
-                internalType: "struct LibAsset.AssetType",
-                name: "assetType",
-                type: "tuple",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-            ],
-            internalType: "struct LibAsset.Asset[]",
-            name: "makeAssets",
-            type: "tuple[]",
-          },
-          {
-            internalType: "address",
-            name: "taker",
-            type: "address",
-          },
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: "bytes4",
-                    name: "assetClass",
-                    type: "bytes4",
-                  },
-                  {
-                    internalType: "bytes",
-                    name: "data",
-                    type: "bytes",
-                  },
-                ],
-                internalType: "struct LibAsset.AssetType",
-                name: "assetType",
-                type: "tuple",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-            ],
-            internalType: "struct LibAsset.Asset[]",
-            name: "takeAssets",
-            type: "tuple[]",
-          },
-          {
-            internalType: "uint256",
-            name: "salt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "start",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "end",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "nonce",
-            type: "uint256",
-          },
-          {
-            internalType: "enum LibSignature.AuctionType",
-            name: "auctionType",
-            type: "uint8",
-          },
-        ],
-        internalType: "struct LibSignature.Order",
-        name: "buyOrder",
-        type: "tuple",
-      },
-    ],
-    name: "validateMatch_",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: "address",
-            name: "maker",
-            type: "address",
-          },
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: "bytes4",
-                    name: "assetClass",
-                    type: "bytes4",
-                  },
-                  {
-                    internalType: "bytes",
-                    name: "data",
-                    type: "bytes",
-                  },
-                ],
-                internalType: "struct LibAsset.AssetType",
-                name: "assetType",
-                type: "tuple",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-            ],
-            internalType: "struct LibAsset.Asset[]",
-            name: "makeAssets",
-            type: "tuple[]",
-          },
-          {
-            internalType: "address",
-            name: "taker",
-            type: "address",
-          },
-          {
-            components: [
-              {
-                components: [
-                  {
-                    internalType: "bytes4",
-                    name: "assetClass",
-                    type: "bytes4",
-                  },
-                  {
-                    internalType: "bytes",
-                    name: "data",
-                    type: "bytes",
-                  },
-                ],
-                internalType: "struct LibAsset.AssetType",
-                name: "assetType",
-                type: "tuple",
-              },
-              {
-                internalType: "bytes",
-                name: "data",
-                type: "bytes",
-              },
-            ],
-            internalType: "struct LibAsset.Asset[]",
-            name: "takeAssets",
-            type: "tuple[]",
-          },
-          {
-            internalType: "uint256",
-            name: "salt",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "start",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "end",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "nonce",
-            type: "uint256",
-          },
-          {
-            internalType: "enum LibSignature.AuctionType",
-            name: "auctionType",
-            type: "uint8",
-          },
-        ],
-        internalType: "struct LibSignature.Order",
         name: "order",
         type: "tuple",
       },
@@ -1831,6 +1285,19 @@ const _abi = [
         internalType: "bytes32",
         name: "",
         type: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "validationLogic",
+    outputs: [
+      {
+        internalType: "contract ValidationLogic",
+        name: "",
+        type: "address",
       },
     ],
     stateMutability: "view",

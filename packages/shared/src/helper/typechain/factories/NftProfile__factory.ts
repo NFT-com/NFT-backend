@@ -172,19 +172,9 @@ const _abi = [
         type: "address",
       },
       {
-        internalType: "uint256",
-        name: "_nftTokens",
-        type: "uint256",
-      },
-      {
         internalType: "string",
         name: "_profileURI",
         type: "string",
-      },
-      {
-        internalType: "uint256",
-        name: "_blockMinted",
-        type: "uint256",
       },
     ],
     name: "createProfile",
@@ -351,34 +341,17 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_tokenId",
-        type: "uint256",
+        internalType: "string",
+        name: "_string",
+        type: "string",
       },
     ],
-    name: "profileDetails",
+    name: "profileOwner",
     outputs: [
       {
-        components: [
-          {
-            internalType: "uint256",
-            name: "_nftTokens",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "_blockMinted",
-            type: "uint256",
-          },
-          {
-            internalType: "string",
-            name: "_profileURI",
-            type: "string",
-          },
-        ],
-        internalType: "struct Bid",
+        internalType: "address",
         name: "",
-        type: "tuple",
+        type: "address",
       },
     ],
     stateMutability: "view",
@@ -391,35 +364,6 @@ const _abi = [
       {
         internalType: "uint256",
         name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "value",
-        type: "uint256",
-      },
-    ],
-    name: "royaltyInfo",
-    outputs: [
-      {
-        internalType: "address",
-        name: "receiver",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "royaltyAmount",
         type: "uint256",
       },
     ],
@@ -517,24 +461,6 @@ const _abi = [
       },
     ],
     name: "setProfileAuction",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "recipient",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "value",
-        type: "uint256",
-      },
-    ],
-    name: "setRoyalties",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
