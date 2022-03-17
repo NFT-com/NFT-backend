@@ -44,6 +44,9 @@
     * [AssetTypeInput](#assettypeinput)
     * [BidInput](#bidinput)
     * [BidsInput](#bidsinput)
+    * [BuyNowInput](#buynowinput)
+    * [CancelAskInput](#cancelaskinput)
+    * [CancelBidInput](#cancelbidinput)
     * [CollectionInput](#collectioninput)
     * [CollectionNFTsInput](#collectionnftsinput)
     * [CreateAskInput](#createaskinput)
@@ -57,6 +60,7 @@
     * [MarketplaceAssetInput](#marketplaceassetinput)
     * [MintGKProfileInput](#mintgkprofileinput)
     * [NFTsInput](#nftsinput)
+    * [NftAsksInput](#nftasksinput)
     * [PageInput](#pageinput)
     * [ProfileClaimedInput](#profileclaimedinput)
     * [ProfilePreferenceInput](#profilepreferenceinput)
@@ -65,6 +69,7 @@
     * [SetCurationInput](#setcurationinput)
     * [SignUpInput](#signupinput)
     * [SignatureInput](#signatureinput)
+    * [SwapNFTInput](#swapnftinput)
     * [SwapsInput](#swapsinput)
     * [TopBidsInput](#topbidsinput)
     * [UpdateCurationInput](#updatecurationinput)
@@ -72,9 +77,12 @@
     * [UpdateProfileInput](#updateprofileinput)
     * [UpdateUserInput](#updateuserinput)
     * [UserPreferencesInput](#userpreferencesinput)
+    * [UserSwapsInput](#userswapsinput)
     * [WalletInput](#walletinput)
+    * [WhitelistCheckInput](#whitelistcheckinput)
   * [Enums](#enums)
     * [AssetClass](#assetclass)
+    * [AuctionType](#auctiontype)
     * [BidStatus](#bidstatus)
     * [NFTSize](#nftsize)
     * [NFTType](#nfttype)
@@ -164,6 +172,26 @@
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>getNFTAsks</strong></td>
+<td valign="top">[<a href="#marketask">MarketAsk</a>!]!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#nftasksinput">NftAsksInput</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>getNFTOffers</strong></td>
+<td valign="top">[<a href="#marketask">MarketAsk</a>!]!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#nftasksinput">NftAsksInput</a>!</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>getBids</strong></td>
 <td valign="top"><a href="#getmarketbid">GetMarketBid</a>!</td>
 <td></td>
@@ -181,6 +209,16 @@
 <tr>
 <td colspan="2" align="right" valign="top">input</td>
 <td valign="top"><a href="#swapsinput">SwapsInput</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>getUserSwaps</strong></td>
+<td valign="top"><a href="#getmarketswap">GetMarketSwap</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#userswapsinput">UserSwapsInput</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -303,6 +341,16 @@
 <td valign="top"><a href="#user">User</a>!</td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isAddressWhitelisted</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#whitelistcheckinput">WhitelistCheckInput</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -408,6 +456,26 @@
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>cancelAsk</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#cancelaskinput">CancelAskInput</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>buyNow</strong></td>
+<td valign="top"><a href="#marketswap">MarketSwap</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#buynowinput">BuyNowInput</a>!</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>createBid</strong></td>
 <td valign="top"><a href="#marketbid">MarketBid</a>!</td>
 <td></td>
@@ -415,6 +483,26 @@
 <tr>
 <td colspan="2" align="right" valign="top">input</td>
 <td valign="top"><a href="#createbidinput">CreateBidInput</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>cancelMarketBid</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#cancelbidinput">CancelBidInput</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>swapNFT</strong></td>
+<td valign="top"><a href="#marketswap">MarketSwap</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" align="right" valign="top">input</td>
+<td valign="top"><a href="#swapnftinput">SwapNFTInput</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -631,7 +719,7 @@
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>assetClass</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#assetclass">AssetClass</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -641,7 +729,7 @@
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>contractAddress</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#address">Address</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -1110,8 +1198,18 @@
 </thead>
 <tbody>
 <tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>structHash</strong></td>
 <td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>nonce</strong></td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -1140,13 +1238,33 @@
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>buyNowTaker</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>marketSwapId</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>approvalTxHash</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>cancelTxHash</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>start</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>end</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -1162,6 +1280,11 @@
 <tr>
 <td colspan="2" valign="top"><strong>chainId</strong></td>
 <td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>auctionType</strong></td>
+<td valign="top"><a href="#auctiontype">AuctionType</a>!</td>
 <td></td>
 </tr>
 </tbody>
@@ -1180,8 +1303,18 @@
 </thead>
 <tbody>
 <tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>structHash</strong></td>
 <td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>nonce</strong></td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -1215,18 +1348,33 @@
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>marketSwapId</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>approvalTxHash</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>cancelTxHash</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>message</strong></td>
 <td valign="top"><a href="#string">String</a>!</td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>start</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>end</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -1259,6 +1407,11 @@
 <td valign="top"><a href="#string">String</a>!</td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>auctionType</strong></td>
+<td valign="top"><a href="#auctiontype">AuctionType</a>!</td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -1275,13 +1428,13 @@
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>askId</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td colspan="2" valign="top"><strong>marketAsk</strong></td>
+<td valign="top"><a href="#marketask">MarketAsk</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>bidId</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td colspan="2" valign="top"><strong>marketBid</strong></td>
+<td valign="top"><a href="#marketbid">MarketBid</a></td>
 <td></td>
 </tr>
 <tr>
@@ -1317,6 +1470,11 @@
 <tr>
 <td colspan="2" valign="top"><strong>standard</strong></td>
 <td valign="top"><a href="#assettype">AssetType</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>nftId</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
@@ -1361,7 +1519,7 @@
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>tokenId</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#uint256">Uint256</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -1935,7 +2093,7 @@
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>tokenId</strong></td>
-<td valign="top"><a href="#uint256">Uint256</a>!</td>
+<td valign="top"><a href="#uint256">Uint256</a></td>
 <td></td>
 </tr>
 <tr>
@@ -2021,6 +2179,83 @@
 <td valign="top"><a href="#address">Address</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>marketAskId</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### BuyNowInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>marketAskId</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>txHash</strong></td>
+<td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### CancelAskInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>marketAskId</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>txHash</strong></td>
+<td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### CancelBidInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>marketBidId</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>txHash</strong></td>
+<td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -2089,6 +2324,16 @@
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>nonce</strong></td>
+<td valign="top"><a href="#int">Int</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>auctionType</strong></td>
+<td valign="top"><a href="#auctiontype">AuctionType</a>!</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>signature</strong></td>
 <td valign="top"><a href="#signatureinput">SignatureInput</a>!</td>
 <td></td>
@@ -2115,12 +2360,12 @@
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>start</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>end</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -2150,6 +2395,11 @@
 <tr>
 <td colspan="2" valign="top"><strong>structHash</strong></td>
 <td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>nonce</strong></td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -2189,12 +2439,12 @@
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>start</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>end</strong></td>
-<td valign="top"><a href="#string">String</a>!</td>
+<td valign="top"><a href="#int">Int</a>!</td>
 <td></td>
 </tr>
 <tr>
@@ -2205,6 +2455,11 @@
 <tr>
 <td colspan="2" valign="top"><strong>chainId</strong></td>
 <td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>auctionType</strong></td>
+<td valign="top"><a href="#auctiontype">AuctionType</a>!</td>
 <td></td>
 </tr>
 </tbody>
@@ -2431,6 +2686,35 @@
 </tbody>
 </table>
 
+### NftAsksInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>nftTokenId</strong></td>
+<td valign="top"><a href="#uint256">Uint256</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>nftContractAddress</strong></td>
+<td valign="top"><a href="#address">Address</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>makerAddress</strong></td>
+<td valign="top"><a href="#address">Address</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
 ### PageInput
 
 <table>
@@ -2648,6 +2932,35 @@
 </tbody>
 </table>
 
+### SwapNFTInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>marketAskId</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>marketBidId</strong></td>
+<td valign="top"><a href="#id">ID</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>txHash</strong></td>
+<td valign="top"><a href="#string">String</a>!</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
 ### SwapsInput
 
 <table>
@@ -2660,13 +2973,13 @@
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>askId</strong></td>
-<td valign="top"><a href="#address">Address</a></td>
+<td colspan="2" valign="top"><strong>marketAskIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>bidId</strong></td>
-<td valign="top"><a href="#address">Address</a></td>
+<td colspan="2" valign="top"><strong>marketBidIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
 <td></td>
 </tr>
 <tr>
@@ -2851,6 +3164,30 @@
 </tbody>
 </table>
 
+### UserSwapsInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>participant</strong></td>
+<td valign="top"><a href="#address">Address</a>!</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>pageInput</strong></td>
+<td valign="top"><a href="#pageinput">PageInput</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
 ### WalletInput
 
 <table>
@@ -2880,6 +3217,25 @@
 </tbody>
 </table>
 
+### WhitelistCheckInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>address</strong></td>
+<td valign="top"><a href="#address">Address</a>!</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
 ## Enums
 
 ### AssetClass
@@ -2904,6 +3260,29 @@
 </tr>
 <tr>
 <td valign="top"><strong>ERC1155</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### AuctionType
+
+<table>
+<thead>
+<th align="left">Value</th>
+<th align="left">Description</th>
+</thead>
+<tbody>
+<tr>
+<td valign="top"><strong>FixedPrice</strong></td>
+<td></td>
+</tr>
+<tr>
+<td valign="top"><strong>English</strong></td>
+<td></td>
+</tr>
+<tr>
+<td valign="top"><strong>Decreasing</strong></td>
 <td></td>
 </tr>
 </tbody>
