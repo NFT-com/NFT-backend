@@ -288,20 +288,14 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
+        internalType: "address[]",
+        name: "receivers",
+        type: "address[]",
       },
     ],
-    name: "claimId",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
+    name: "claimGrantKey",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -519,6 +513,30 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "startIndex",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "endIndex",
+        type: "uint256",
+      },
+    ],
+    name: "multiOwnerOf",
+    outputs: [
+      {
+        internalType: "address[]",
+        name: "",
+        type: "address[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "multiSig",
     outputs: [
@@ -637,7 +655,7 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "remainingWhitelistClaims",
+    name: "remainingTeamAdvisorGrant",
     outputs: [
       {
         internalType: "uint256",
@@ -651,57 +669,6 @@ const _abi = [
   {
     inputs: [],
     name: "resetPublicSale",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "from",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "to",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "tokenId",
-        type: "uint256",
-      },
-    ],
-    name: "safeTransferFrom",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "from",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "to",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "tokenId",
-        type: "uint256",
-      },
-      {
-        internalType: "bytes",
-        name: "_data",
-        type: "bytes",
-      },
-    ],
-    name: "safeTransferFrom",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -811,41 +778,17 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "index",
-        type: "uint256",
-      },
-    ],
-    name: "tokenByIndex",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "address",
-        name: "owner",
+        name: "user",
         type: "address",
       },
-      {
-        internalType: "uint256",
-        name: "index",
-        type: "uint256",
-      },
     ],
-    name: "tokenOfOwnerByIndex",
+    name: "tokenIdsOwned",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "bool[]",
         name: "",
-        type: "uint256",
+        type: "bool[]",
       },
     ],
     stateMutability: "view",
@@ -945,6 +888,52 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_wethTokens",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "_owner",
+        type: "address",
+      },
+      {
+        components: [
+          {
+            internalType: "uint8",
+            name: "v",
+            type: "uint8",
+          },
+          {
+            internalType: "bytes32",
+            name: "r",
+            type: "bytes32",
+          },
+          {
+            internalType: "bytes32",
+            name: "s",
+            type: "bytes32",
+          },
+        ],
+        internalType: "struct GenesisKey.Sig",
+        name: "sig",
+        type: "tuple",
+      },
+    ],
+    name: "validateBid",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "wethAddress",
     outputs: [
@@ -985,9 +974,9 @@ const _abi = [
         type: "bytes32[]",
       },
       {
-        internalType: "uint256[]",
-        name: "_tokenId",
-        type: "uint256[]",
+        internalType: "uint256",
+        name: "_wethMin",
+        type: "uint256",
       },
     ],
     name: "whitelistExecuteBid",

@@ -86,6 +86,75 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "bytes32",
+        "name": "hash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BidCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_blockNum",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "_whitelist",
+        "type": "bool"
+      }
+    ],
+    "name": "ClaimedGenesisKey",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_blockNum",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewClaimableGenKey",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "from",
         "type": "address"
@@ -159,19 +228,131 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_wethTokens",
+        "type": "uint256"
+      },
+      {
         "internalType": "address",
-        "name": "_receiver",
+        "name": "_owner",
         "type": "address"
       },
       {
-        "internalType": "string",
-        "name": "_profileURI",
-        "type": "string"
+        "internalType": "uint8",
+        "name": "v",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "r",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
       }
     ],
-    "name": "createProfile",
+    "name": "cancelBid",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cancelledOrFinalized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "receivers",
+        "type": "address[]"
+      }
+    ],
+    "name": "claimGrantKey",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_wethTokens",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "v",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "r",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "claimKey",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "claimableBlock",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "finalWethPrice",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -194,14 +375,45 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "getCurrentPrice",
+    "outputs": [
       {
-        "internalType": "string",
-        "name": "_string",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
-    "name": "getTokenId",
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_wethTokens",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "name": "getStructHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initialWethPrice",
     "outputs": [
       {
         "internalType": "uint256",
@@ -226,11 +438,44 @@
       },
       {
         "internalType": "address",
-        "name": "_nftErc20Contract",
+        "name": "_wethAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_multiSig",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_auctionSeconds",
+        "type": "uint256"
       }
     ],
     "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_initialWethPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_finalWethPrice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_numKeysForSale",
+        "type": "uint256"
+      }
+    ],
+    "name": "initializePublicSale",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -260,6 +505,43 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "startIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "endIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "multiOwnerOf",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "multiSig",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "name",
     "outputs": [
@@ -274,12 +556,25 @@
   },
   {
     "inputs": [],
-    "name": "nftErc20Contract",
+    "name": "numKeysForSale",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numKeysPublicPurchased",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -319,31 +614,19 @@
   },
   {
     "inputs": [],
-    "name": "profileAuctionContract",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "publicExecuteBid",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_string",
-        "type": "string"
-      }
-    ],
-    "name": "profileOwner",
+    "inputs": [],
+    "name": "publicSaleDurationSeconds",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -351,7 +634,7 @@
   },
   {
     "inputs": [],
-    "name": "protocolFee",
+    "name": "publicSaleStartSecond",
     "outputs": [
       {
         "internalType": "uint256",
@@ -363,52 +646,21 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
+    "inputs": [],
+    "name": "remainingTeamAdvisorGrant",
+    "outputs": [
       {
         "internalType": "uint256",
-        "name": "tokenId",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "safeTransferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_data",
-        "type": "bytes"
-      }
-    ],
-    "name": "safeTransferFrom",
+    "inputs": [],
+    "name": "resetPublicSale",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -435,7 +687,20 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_new",
+        "name": "_newMS",
+        "type": "address"
+      }
+    ],
+    "name": "setMultiSig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_owner",
         "type": "address"
       }
     ],
@@ -447,14 +712,27 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_profileAuctionContract",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "_seconds",
+        "type": "uint256"
       }
     ],
-    "name": "setProfileAuction",
+    "name": "setPublicSaleDuration",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "startPublicSale",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -492,41 +770,17 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "index",
-        "type": "uint256"
-      }
-    ],
-    "name": "tokenByIndex",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
-        "name": "owner",
+        "name": "user",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "index",
-        "type": "uint256"
       }
     ],
-    "name": "tokenOfOwnerByIndex",
+    "name": "tokenIdsOwned",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "bool[]",
         "name": "",
-        "type": "uint256"
+        "type": "bool[]"
       }
     ],
     "stateMutability": "view",
@@ -552,25 +806,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_string",
-        "type": "string"
-      }
-    ],
-    "name": "tokenUsed",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "totalSupply",
     "outputs": [
@@ -584,19 +819,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_profile",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      }
-    ],
-    "name": "tradeMarkTransfer",
+    "inputs": [],
+    "name": "transferETH",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -653,6 +877,103 @@
     "name": "upgradeToAndCall",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_wethTokens",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "v",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct GenesisKey.Sig",
+        "name": "sig",
+        "type": "tuple"
+      }
+    ],
+    "name": "validateBid",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "wethAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_wethTokens",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_owners",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint8[]",
+        "name": "v",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "r",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "s",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_wethMin",
+        "type": "uint256"
+      }
+    ],
+    "name": "whitelistExecuteBid",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]
