@@ -269,6 +269,7 @@ const createBid = (
                   end: args?.input.end,
                   salt: args?.input.salt,
                   chainId: wallet.chainId,
+                  auctionType: args?.input.auctionType,
                 })
               } else {
                 return Promise.reject(appError.buildForbidden(
