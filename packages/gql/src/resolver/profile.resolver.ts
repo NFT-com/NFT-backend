@@ -1,4 +1,4 @@
-import { BigNumber, ContractReceipt, ContractTransaction, utils, Wallet } from 'ethers'
+import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -6,7 +6,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
@@ -288,104 +288,6 @@ const profileClaimed = (
     })
 }
 
-const mintGKProfile = (
-  _: any,
-  args: gql.MutationMintGkProfileArgs,
-  ctx: Context,
-): Promise<string> => {
-  const { repositories, wallet } = ctx
-  const { startIndex, count } = args.input
-  logger.debug('mintGKProfile', { startIndex, count })
-  const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(wallet.chainId))
-    .connect(provider.provider(Number(wallet.chainId)))
-  const genesisKeyContract = typechain.GenesisKey__factory.connect(
-    contracts.genesisKeyAddress(wallet.chainId),
-    signer,
-  )
-  const profileAuctionContract = typechain.ProfileAuction__factory.connect(
-    contracts.profileAuctionAddress(wallet.chainId),
-    signer,
-  )
-  return new Promise(() => {
-    const mintArgs = []
-    const executedBids = []
-    const givenProfiles: Array<{profile: entity.Profile; walletId: string; userId: string}> = []
-    const givenProfileURIs = []
-    Array.apply(0, Array(count)).map((z, index) => index + startIndex)
-      .forEach((tokenIndex: number) => {
-        genesisKeyContract.ownerOf(BigNumber.from(tokenIndex))
-          .then((address: string) => {
-            repositories.wallet.findOne({ where: { address, network: 'ethereum', chainId: wallet.chainId } })
-              .then(fp.thruIfNotEmpty((bidderWallet: entity.Wallet) => {
-                return Promise.all([
-                  repositories.bid.find({
-                    where: {
-                      walletId: bidderWallet.id,
-                      nftType: defs.NFTType.GenesisKeyProfile,
-                    },
-                    order: { price: 'DESC' },
-                  }),
-                  Promise.resolve(bidderWallet),
-                ])
-              }))
-              .then(fp.thruIfNotEmpty(([prefs, bidderWallet] : [entity.Bid[], entity.Wallet]) => {
-                return Promise.all([
-                  Promise.resolve(prefs),
-                  Promise.resolve(bidderWallet),
-                  Promise.all(prefs.map((pref) => repositories.profile.findById(pref.profileId))),
-                ])
-              }))
-              .then(fp.thruIfNotEmpty((
-                [prefs, bidderWallet, profiles]:
-                [entity.Bid[], entity.Wallet, entity.Profile[]],
-              ) => {
-                for (let i = 0; i < prefs.length; i++) {
-                  const profile = profiles[i]
-                  if (
-                    profile.status === defs.ProfileStatus.Available &&
-                        !givenProfileURIs.includes(profile.url)
-                  ) {
-                    mintArgs.push({
-                      _profileURI: profile.url,
-                      _owner: bidderWallet.address,
-                    })
-                    executedBids.push(prefs[i])
-                    givenProfiles.push({
-                      profile,
-                      walletId: prefs[i].walletId,
-                      userId: prefs[i].userId,
-                    })
-                    givenProfileURIs.push(profile.url)
-                    break
-                  }
-                }
-              }))
-          })
-      })
-
-    logger.debug('mintGKProfile transaction args: ', mintArgs)
-
-    return contracts.getEthGasInfo(Number(wallet.chainId))
-      .then((egs) => profileAuctionContract.whitelistGenesisMint(mintArgs, egs))
-      .then((tx: ContractTransaction) => tx.wait(1))
-      .then(fp.tapIf((receipt: ContractReceipt) => receipt.status === 1)((receipt) => {
-        Promise.all([
-          ...executedBids.map((bid: entity.Bid) =>
-            repositories.bid.save({ ...bid, status: defs.BidStatus.Executed })),
-          ...givenProfiles.map((profileWithData) =>
-            repositories.profile.save({
-              ...profileWithData.profile,
-              status: defs.ProfileStatus.Pending,
-              ownerUserId: profileWithData.userId,
-              ownerWalletId: profileWithData.walletId,
-            })),
-        ])
-        return receipt
-      }))
-      .then((receipt: ContractReceipt) => receipt.transactionHash)
-  })
-}
-
 export default {
   Query: {
     profile: getProfileByURL,
@@ -399,7 +301,6 @@ export default {
     unfollowProfile: combineResolvers(auth.isAuthenticated, unfollowProfile),
     updateProfile: combineResolvers(auth.isAuthenticated, updateProfile),
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
-    mintGKProfile: combineResolvers(auth.isTeamAuthenticated, mintGKProfile),
   },
   Profile: {
     followersCount: getFollowersCount,
