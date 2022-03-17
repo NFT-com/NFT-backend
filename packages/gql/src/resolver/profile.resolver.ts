@@ -236,6 +236,12 @@ const getFollowersCount = (
   })
 }
 
+const getBlockedProfileURIs = (): Promise<string[]> => {
+  logger.debug('getBlockedProfiles')
+  const whitelist = helper.getProfileURIBlockList()
+  return Promise.resolve(whitelist)
+}
+
 // TODO: make sure this is running on cron job -> that pull events from:
 // TODO: emit MintedProfile(_owner, _profileURI, _nftTokens, claimableBlock[hash]);
 const profileClaimed = (
@@ -295,6 +301,7 @@ export default {
     myProfiles: combineResolvers(auth.isAuthenticated, getMyProfiles),
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
+    blockedProfileURIs: getBlockedProfileURIs,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
