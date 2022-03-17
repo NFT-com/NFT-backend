@@ -195,6 +195,7 @@ const listenNonceIncrementedEvents = async (
       const marketAsks = await repositories.marketAsk.find({
         where: {
           makerAddress: utils.getAddress(makerAddress),
+          nonce: LessThan(nonce),
           marketSwapId: null,
           approvalTxHash: null,
           cancelTxHash: null,
@@ -211,6 +212,7 @@ const listenNonceIncrementedEvents = async (
         const marketBids = await repositories.marketBid.find({
           where: {
             makerAddress: utils.getAddress(makerAddress),
+            nonce: LessThan(nonce),
             marketSwapId: null,
             approvalTxHash: null,
             cancelTxHash: null,
