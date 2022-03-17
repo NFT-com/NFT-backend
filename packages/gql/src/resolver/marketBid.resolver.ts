@@ -40,6 +40,11 @@ const validOrderMatch = async (
   marketBidArgs: gql.MutationCreateBidArgs,
   wallet: entity.Wallet,
 ): Promise<boolean> => {
+  const validationLogicContract = typechain.ValidationLogic__factory.connect(
+    contracts.validationLogicAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
     contracts.nftMarketplaceAddress(wallet.chainId),
     provider.provider(Number(wallet.chainId)),
@@ -106,7 +111,7 @@ const validOrderMatch = async (
     }
 
     // make sure assets match via contract
-    const result = await nftMarketplaceContract.validateMatch_(
+    const result = await validationLogicContract.validateMatch_(
       {
         maker: marketAsk.makerAddress,
         makeAssets: getAssetList(marketAsk.makeAsset),

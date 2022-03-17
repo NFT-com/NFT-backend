@@ -20,22 +20,15 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface PublicNftStakeInterface extends utils.Interface {
   contractName: "PublicNftStake";
   functions: {
-    "DAO()": FunctionFragment;
     "DOMAIN_SEPARATOR()": FunctionFragment;
-    "WETH9()": FunctionFragment;
     "allowance(address,address)": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
-    "approveToken(address)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
-    "changeDAO(address)": FunctionFragment;
-    "convertERC20ToNFT(address)": FunctionFragment;
-    "convertEthToNFT()": FunctionFragment;
     "decimals()": FunctionFragment;
     "decreaseAllowance(address,uint256)": FunctionFragment;
     "enter(uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "increaseAllowance(address,uint256)": FunctionFragment;
     "leave(uint256)": FunctionFragment;
-    "modifyWhitelist(address,bool)": FunctionFragment;
     "name()": FunctionFragment;
     "nftToken()": FunctionFragment;
     "nonces(address)": FunctionFragment;
@@ -44,16 +37,12 @@ export interface PublicNftStakeInterface extends utils.Interface {
     "totalSupply()": FunctionFragment;
     "transfer(address,uint256)": FunctionFragment;
     "transferFrom(address,address,uint256)": FunctionFragment;
-    "uniswapRouter()": FunctionFragment;
-    "whitelistERC20(address)": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "DAO", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "DOMAIN_SEPARATOR",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "WETH9", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "allowance",
     values: [string, string]
@@ -62,20 +51,7 @@ export interface PublicNftStakeInterface extends utils.Interface {
     functionFragment: "approve",
     values: [string, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "approveToken",
-    values: [string]
-  ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
-  encodeFunctionData(functionFragment: "changeDAO", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "convertERC20ToNFT",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "convertEthToNFT",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "decreaseAllowance",
@@ -90,10 +66,6 @@ export interface PublicNftStakeInterface extends utils.Interface {
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "leave", values: [BigNumberish]): string;
-  encodeFunctionData(
-    functionFragment: "modifyWhitelist",
-    values: [string, boolean]
-  ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(functionFragment: "nftToken", values?: undefined): string;
   encodeFunctionData(functionFragment: "nonces", values: [string]): string;
@@ -122,37 +94,14 @@ export interface PublicNftStakeInterface extends utils.Interface {
     functionFragment: "transferFrom",
     values: [string, string, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "uniswapRouter",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "whitelistERC20",
-    values: [string]
-  ): string;
 
-  decodeFunctionResult(functionFragment: "DAO", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "DOMAIN_SEPARATOR",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "WETH9", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "approveToken",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "changeDAO", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "convertERC20ToNFT",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "convertEthToNFT",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "decimals", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "decreaseAllowance",
@@ -164,10 +113,6 @@ export interface PublicNftStakeInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "leave", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "modifyWhitelist",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nftToken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
@@ -182,26 +127,14 @@ export interface PublicNftStakeInterface extends utils.Interface {
     functionFragment: "transferFrom",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "uniswapRouter",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "whitelistERC20",
-    data: BytesLike
-  ): Result;
 
   events: {
     "Approval(address,address,uint256)": EventFragment;
-    "NewDao(address)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
-    "WhiteListChange(address,bool)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "NewDao"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "WhiteListChange"): EventFragment;
 }
 
 export type ApprovalEvent = TypedEvent<
@@ -211,23 +144,12 @@ export type ApprovalEvent = TypedEvent<
 
 export type ApprovalEventFilter = TypedEventFilter<ApprovalEvent>;
 
-export type NewDaoEvent = TypedEvent<[string], { dao: string }>;
-
-export type NewDaoEventFilter = TypedEventFilter<NewDaoEvent>;
-
 export type TransferEvent = TypedEvent<
   [string, string, BigNumber],
   { from: string; to: string; value: BigNumber }
 >;
 
 export type TransferEventFilter = TypedEventFilter<TransferEvent>;
-
-export type WhiteListChangeEvent = TypedEvent<
-  [string, boolean],
-  { token: string; val: boolean }
->;
-
-export type WhiteListChangeEventFilter = TypedEventFilter<WhiteListChangeEvent>;
 
 export interface PublicNftStake extends BaseContract {
   contractName: "PublicNftStake";
@@ -257,11 +179,7 @@ export interface PublicNftStake extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    DAO(overrides?: CallOverrides): Promise<[string]>;
-
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<[string]>;
-
-    WETH9(overrides?: CallOverrides): Promise<[string]>;
 
     allowance(
       owner: string,
@@ -275,26 +193,7 @@ export interface PublicNftStake extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    approveToken(
-      token: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     balanceOf(account: string, overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    changeDAO(
-      newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    convertERC20ToNFT(
-      tokenIn: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    convertEthToNFT(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
 
     decimals(overrides?: CallOverrides): Promise<[number]>;
 
@@ -323,12 +222,6 @@ export interface PublicNftStake extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    modifyWhitelist(
-      token: string,
-      val: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     name(overrides?: CallOverrides): Promise<[string]>;
 
     nftToken(overrides?: CallOverrides): Promise<[string]>;
@@ -351,28 +244,20 @@ export interface PublicNftStake extends BaseContract {
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     transfer(
-      recipient: string,
+      to: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     transferFrom(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    uniswapRouter(overrides?: CallOverrides): Promise<[string]>;
-
-    whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
   };
 
-  DAO(overrides?: CallOverrides): Promise<string>;
-
   DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
-
-  WETH9(overrides?: CallOverrides): Promise<string>;
 
   allowance(
     owner: string,
@@ -386,26 +271,7 @@ export interface PublicNftStake extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  approveToken(
-    token: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   balanceOf(account: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-  changeDAO(
-    newDAO: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  convertERC20ToNFT(
-    tokenIn: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  convertEthToNFT(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   decimals(overrides?: CallOverrides): Promise<number>;
 
@@ -434,12 +300,6 @@ export interface PublicNftStake extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  modifyWhitelist(
-    token: string,
-    val: boolean,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   name(overrides?: CallOverrides): Promise<string>;
 
   nftToken(overrides?: CallOverrides): Promise<string>;
@@ -462,28 +322,20 @@ export interface PublicNftStake extends BaseContract {
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
   transfer(
-    recipient: string,
+    to: string,
     amount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   transferFrom(
-    sender: string,
-    recipient: string,
+    from: string,
+    to: string,
     amount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  uniswapRouter(overrides?: CallOverrides): Promise<string>;
-
-  whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
-
   callStatic: {
-    DAO(overrides?: CallOverrides): Promise<string>;
-
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
-
-    WETH9(overrides?: CallOverrides): Promise<string>;
 
     allowance(
       owner: string,
@@ -497,18 +349,7 @@ export interface PublicNftStake extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    approveToken(token: string, overrides?: CallOverrides): Promise<void>;
-
     balanceOf(account: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    changeDAO(newDAO: string, overrides?: CallOverrides): Promise<void>;
-
-    convertERC20ToNFT(
-      tokenIn: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    convertEthToNFT(overrides?: CallOverrides): Promise<void>;
 
     decimals(overrides?: CallOverrides): Promise<number>;
 
@@ -534,12 +375,6 @@ export interface PublicNftStake extends BaseContract {
 
     leave(_xNftAmount: BigNumberish, overrides?: CallOverrides): Promise<void>;
 
-    modifyWhitelist(
-      token: string,
-      val: boolean,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     name(overrides?: CallOverrides): Promise<string>;
 
     nftToken(overrides?: CallOverrides): Promise<string>;
@@ -562,21 +397,17 @@ export interface PublicNftStake extends BaseContract {
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
     transfer(
-      recipient: string,
+      to: string,
       amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
     transferFrom(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<boolean>;
-
-    uniswapRouter(overrides?: CallOverrides): Promise<string>;
-
-    whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
   };
 
   filters: {
@@ -591,9 +422,6 @@ export interface PublicNftStake extends BaseContract {
       value?: null
     ): ApprovalEventFilter;
 
-    "NewDao(address)"(dao?: string | null): NewDaoEventFilter;
-    NewDao(dao?: string | null): NewDaoEventFilter;
-
     "Transfer(address,address,uint256)"(
       from?: string | null,
       to?: string | null,
@@ -604,23 +432,10 @@ export interface PublicNftStake extends BaseContract {
       to?: string | null,
       value?: null
     ): TransferEventFilter;
-
-    "WhiteListChange(address,bool)"(
-      token?: string | null,
-      val?: null
-    ): WhiteListChangeEventFilter;
-    WhiteListChange(
-      token?: string | null,
-      val?: null
-    ): WhiteListChangeEventFilter;
   };
 
   estimateGas: {
-    DAO(overrides?: CallOverrides): Promise<BigNumber>;
-
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
-
-    WETH9(overrides?: CallOverrides): Promise<BigNumber>;
 
     allowance(
       owner: string,
@@ -634,26 +449,7 @@ export interface PublicNftStake extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    approveToken(
-      token: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     balanceOf(account: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    changeDAO(
-      newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    convertERC20ToNFT(
-      tokenIn: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    convertEthToNFT(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
 
     decimals(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -682,12 +478,6 @@ export interface PublicNftStake extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    modifyWhitelist(
-      token: string,
-      val: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     name(overrides?: CallOverrides): Promise<BigNumber>;
 
     nftToken(overrides?: CallOverrides): Promise<BigNumber>;
@@ -710,29 +500,21 @@ export interface PublicNftStake extends BaseContract {
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
     transfer(
-      recipient: string,
+      to: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     transferFrom(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    uniswapRouter(overrides?: CallOverrides): Promise<BigNumber>;
-
-    whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    DAO(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    WETH9(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     allowance(
       owner: string,
@@ -746,28 +528,9 @@ export interface PublicNftStake extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    approveToken(
-      token: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     balanceOf(
       account: string,
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    changeDAO(
-      newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    convertERC20ToNFT(
-      tokenIn: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    convertEthToNFT(
-      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     decimals(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -797,12 +560,6 @@ export interface PublicNftStake extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    modifyWhitelist(
-      token: string,
-      val: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     nftToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -828,23 +585,16 @@ export interface PublicNftStake extends BaseContract {
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     transfer(
-      recipient: string,
+      to: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     transferFrom(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    uniswapRouter(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    whitelistERC20(
-      arg0: string,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };
 }

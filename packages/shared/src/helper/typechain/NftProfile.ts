@@ -18,24 +18,12 @@ import { FunctionFragment, Result, EventFragment } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
-export type BidStruct = {
-  _nftTokens: BigNumberish;
-  _blockMinted: BigNumberish;
-  _profileURI: string;
-};
-
-export type BidStructOutput = [BigNumber, BigNumber, string] & {
-  _nftTokens: BigNumber;
-  _blockMinted: BigNumber;
-  _profileURI: string;
-};
-
 export interface NftProfileInterface extends utils.Interface {
   contractName: "NftProfile";
   functions: {
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
-    "createProfile(address,uint256,string,uint256)": FunctionFragment;
+    "createProfile(address,string)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
     "getTokenId(string)": FunctionFragment;
     "initialize(string,string,address)": FunctionFragment;
@@ -45,14 +33,12 @@ export interface NftProfileInterface extends utils.Interface {
     "owner()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
     "profileAuctionContract()": FunctionFragment;
-    "profileDetails(uint256)": FunctionFragment;
+    "profileOwner(string)": FunctionFragment;
     "protocolFee()": FunctionFragment;
-    "royaltyInfo(uint256,uint256)": FunctionFragment;
     "safeTransferFrom(address,address,uint256)": FunctionFragment;
     "setApprovalForAll(address,bool)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "setProfileAuction(address)": FunctionFragment;
-    "setRoyalties(address,uint256)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
     "tokenByIndex(uint256)": FunctionFragment;
@@ -73,7 +59,7 @@ export interface NftProfileInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "createProfile",
-    values: [string, BigNumberish, string, BigNumberish]
+    values: [string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "getApproved",
@@ -103,16 +89,12 @@ export interface NftProfileInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "profileDetails",
-    values: [BigNumberish]
+    functionFragment: "profileOwner",
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "protocolFee",
     values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "royaltyInfo",
-    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "safeTransferFrom",
@@ -126,10 +108,6 @@ export interface NftProfileInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "setProfileAuction",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setRoyalties",
-    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
@@ -195,15 +173,11 @@ export interface NftProfileInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "profileDetails",
+    functionFragment: "profileOwner",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "protocolFee",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "royaltyInfo",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -217,10 +191,6 @@ export interface NftProfileInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setProfileAuction",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setRoyalties",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -347,9 +317,7 @@ export interface NftProfile extends BaseContract {
 
     createProfile(
       _receiver: string,
-      _nftTokens: BigNumberish,
       _profileURI: string,
-      _blockMinted: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -389,20 +357,9 @@ export interface NftProfile extends BaseContract {
 
     profileAuctionContract(overrides?: CallOverrides): Promise<[string]>;
 
-    profileDetails(
-      _tokenId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BidStructOutput]>;
+    profileOwner(_string: string, overrides?: CallOverrides): Promise<[string]>;
 
     protocolFee(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    royaltyInfo(
-      arg0: BigNumberish,
-      value: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [string, BigNumber] & { receiver: string; royaltyAmount: BigNumber }
-    >;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -432,12 +389,6 @@ export interface NftProfile extends BaseContract {
 
     setProfileAuction(
       _profileAuctionContract: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    setRoyalties(
-      recipient: string,
-      value: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -503,9 +454,7 @@ export interface NftProfile extends BaseContract {
 
   createProfile(
     _receiver: string,
-    _nftTokens: BigNumberish,
     _profileURI: string,
-    _blockMinted: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -539,20 +488,9 @@ export interface NftProfile extends BaseContract {
 
   profileAuctionContract(overrides?: CallOverrides): Promise<string>;
 
-  profileDetails(
-    _tokenId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BidStructOutput>;
+  profileOwner(_string: string, overrides?: CallOverrides): Promise<string>;
 
   protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-  royaltyInfo(
-    arg0: BigNumberish,
-    value: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [string, BigNumber] & { receiver: string; royaltyAmount: BigNumber }
-  >;
 
   "safeTransferFrom(address,address,uint256)"(
     from: string,
@@ -582,12 +520,6 @@ export interface NftProfile extends BaseContract {
 
   setProfileAuction(
     _profileAuctionContract: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  setRoyalties(
-    recipient: string,
-    value: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -650,9 +582,7 @@ export interface NftProfile extends BaseContract {
 
     createProfile(
       _receiver: string,
-      _nftTokens: BigNumberish,
       _profileURI: string,
-      _blockMinted: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -686,20 +616,9 @@ export interface NftProfile extends BaseContract {
 
     profileAuctionContract(overrides?: CallOverrides): Promise<string>;
 
-    profileDetails(
-      _tokenId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BidStructOutput>;
+    profileOwner(_string: string, overrides?: CallOverrides): Promise<string>;
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-    royaltyInfo(
-      arg0: BigNumberish,
-      value: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [string, BigNumber] & { receiver: string; royaltyAmount: BigNumber }
-    >;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -726,12 +645,6 @@ export interface NftProfile extends BaseContract {
 
     setProfileAuction(
       _profileAuctionContract: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    setRoyalties(
-      recipient: string,
-      value: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -847,9 +760,7 @@ export interface NftProfile extends BaseContract {
 
     createProfile(
       _receiver: string,
-      _nftTokens: BigNumberish,
       _profileURI: string,
-      _blockMinted: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -886,18 +797,12 @@ export interface NftProfile extends BaseContract {
 
     profileAuctionContract(overrides?: CallOverrides): Promise<BigNumber>;
 
-    profileDetails(
-      _tokenId: BigNumberish,
+    profileOwner(
+      _string: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-    royaltyInfo(
-      arg0: BigNumberish,
-      value: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -927,12 +832,6 @@ export interface NftProfile extends BaseContract {
 
     setProfileAuction(
       _profileAuctionContract: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    setRoyalties(
-      recipient: string,
-      value: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1002,9 +901,7 @@ export interface NftProfile extends BaseContract {
 
     createProfile(
       _receiver: string,
-      _nftTokens: BigNumberish,
       _profileURI: string,
-      _blockMinted: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1046,18 +943,12 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    profileDetails(
-      _tokenId: BigNumberish,
+    profileOwner(
+      _string: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     protocolFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    royaltyInfo(
-      arg0: BigNumberish,
-      value: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -1087,12 +978,6 @@ export interface NftProfile extends BaseContract {
 
     setProfileAuction(
       _profileAuctionContract: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    setRoyalties(
-      recipient: string,
-      value: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

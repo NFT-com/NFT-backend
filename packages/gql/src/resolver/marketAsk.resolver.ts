@@ -2,7 +2,13 @@ import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
+import {
+  blockNumberToTimestamp,
+  Context,
+  convertAssetInput,
+  getAssetList,
+  gql,
+} from '@nftcom/gql/defs'
 import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
@@ -21,6 +27,11 @@ import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
+
+interface BuyNowInfo {
+  block: number
+  buyNowTaker: string | null
+}
 
 const getAsks = (
   _: any,
@@ -355,7 +366,7 @@ const validateTxHashForBuyNow = async (
   txHash: string,
   chainId: string,
   marketAskId: string,
-): Promise<number | undefined> => {
+): Promise<BuyNowInfo | undefined> => {
   try {
     const chainProvider = provider.provider(Number(chainId))
     const repositories = db.newRepositories()
@@ -365,9 +376,10 @@ const validateTxHashForBuyNow = async (
       return undefined
 
     const sourceReceipt = await tx.wait()
-    const abi = contracts.marketplaceABIJSON()
+    const abi = contracts.marketplaceEventABI()
     const iface = new ethers.utils.Interface(abi)
     let eventEmitted = false
+    let buyNowTaker = null
 
     const topics = [
       ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
@@ -418,10 +430,26 @@ const validateTxHashForBuyNow = async (
             })
             eventEmitted = (marketAsk !== undefined)
           }
+          if (event.name === 'BuyNowInfo') {
+            const makerHash = event.args.makerStructHash
+            buyNowTaker = event.args.args.takerAddress
+            const marketAsk = await repositories.marketAsk.findOne({
+              where: {
+                id: marketAskId,
+                structHash: makerHash,
+              },
+            })
+            eventEmitted = (marketAsk !== undefined)
+          }
         }
       }))
-    if (eventEmitted) return tx.blockNumber
-    else  return undefined
+    if (eventEmitted) {
+      return {
+        block: tx.blockNumber,
+        buyNowTaker: buyNowTaker,
+      } as BuyNowInfo
+    }
+    else return undefined
   } catch (e) {
     logger.debug(`${txHash} is not valid`, e)
     return undefined
@@ -450,34 +478,39 @@ const buyNow = (
       if (validMarketAsk(ask)) {
         if (!ask.marketSwapId) {
           return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args?.input.marketAskId)
-            .then((blockNumber): Promise<entity.MarketSwap> => {
-              if (blockNumber) {
-                return repositories.marketSwap.findOne({
-                  where: {
-                    txHash: args?.input.txHash,
-                    marketAsk: ask,
-                  },
-                })
-                  .then(fp.rejectIfNotEmpty(appError.buildExists(
-                    marketSwapError.buildMarketSwapExistingMsg(),
-                    marketSwapError.ErrorType.MarketSwapExisting,
-                  )))
-                  .then(() =>
-                    repositories.marketSwap.save({
+            .then((buyNowInfo): Promise<entity.MarketSwap> => {
+              if (buyNowInfo) {
+                if (buyNowInfo.buyNowTaker) {
+                  return repositories.marketSwap.findOne({
+                    where: {
                       txHash: args?.input.txHash,
-                      blockNumber: blockNumber.toFixed(),
                       marketAsk: ask,
-                    }).then((swap: entity.MarketSwap) =>
-                      repositories.marketAsk.updateOneById(ask.id, {
-                        marketSwapId: swap.id,
-                      }).then(() => swap)))
-              } else {
-                return Promise.reject(appError.buildInvalid(
-                  marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
-                  marketAskError.ErrorType.TxHashInvalid,
-                ))
-              }
-            })
+                    },
+                  })
+                    .then(fp.rejectIfNotEmpty(appError.buildExists(
+                      marketSwapError.buildMarketSwapExistingMsg(),
+                      marketSwapError.ErrorType.MarketSwapExisting,
+                    )))
+                    .then(() =>
+                      repositories.marketSwap.save({
+                        txHash: args?.input.txHash,
+                        blockNumber: buyNowInfo.block.toFixed(),
+                        marketAsk: ask,
+                      }).then((swap: entity.MarketSwap) =>
+                        blockNumberToTimestamp(Number(buyNowInfo.block.toFixed()), ask.chainId)
+                          .then((time) => repositories.marketAsk.updateOneById(ask.id, {
+                            marketSwapId: swap.id,
+                            offerAcceptedAt: new Date(time),
+                            buyNowTaker: buyNowInfo.buyNowTaker,
+                          }).then(() => swap)),
+                      ))
+                } else {
+                  return Promise.reject(appError.buildInvalid(
+                    marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
+                    marketAskError.ErrorType.TxHashInvalid,
+                  ))
+                }
+              }})
         } else {
           return Promise.reject(appError.buildInvalid(
             marketAskError.buildMarketAskBoughtMsg(),
