@@ -3,6 +3,7 @@ import { BigNumber, utils } from 'ethers'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Redis from 'ioredis'
+import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
