@@ -63,7 +63,7 @@ const filterAsksForNft = (
     const filtered = asks.filter((ask: entity.MarketAsk) => {
       const matchingMakeAsset = ask.makeAsset.find((asset) => {
         return asset?.standard?.contractAddress === contract &&
-          asset?.standard?.tokenId === String(tokenId)
+          BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
       })
       return matchingMakeAsset != null
     })
@@ -79,7 +79,7 @@ const filterOffersForNft = (
     const filtered = asks.filter((ask: entity.MarketAsk) => {
       const matchingTakeAsset = ask.takeAsset.find((asset) => {
         return asset?.standard?.contractAddress === contract &&
-          asset?.standard?.tokenId === String(tokenId)
+          BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
       })
       return matchingTakeAsset != null
     })
