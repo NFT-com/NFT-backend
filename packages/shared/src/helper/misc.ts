@@ -21,6 +21,12 @@ export function getGenesisKeyWhitelist(): Array<string> {
   ]
 }
 
+export function getProfileURIBlockList(): Array<string> {
+  return [
+    'obama',
+  ]
+}
+
 export const convertToHash = (text: string): string => {
   return utils.keccak256(utils.toUtf8Bytes(text))
 }
