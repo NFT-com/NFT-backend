@@ -1,10 +1,11 @@
+import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
-import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -141,6 +142,27 @@ const validOrderMatch = async (
   return true
 }
 
+const availableToBid = async (
+  address: string,
+  repositories: db.Repository,
+): Promise<boolean> => {
+  const now = Date.now() / 1000
+  const marketBids = await repositories.marketBid.find({
+    skip: 0,
+    take: 1,
+    order: { createdAt: 'DESC' },
+    where: {
+      makerAddress: ethers.utils.getAddress(address),
+      cancelTxHash: null,
+      marketSwapId: null,
+      rejectedAt: null,
+    },
+  })
+
+  const activeBids = marketBids.filter((bid) => bid.end >= now)
+  return (activeBids.length === 0)
+}
+
 const createBid = (
   _: any,
   args: gql.MutationCreateBidArgs,
@@ -161,7 +183,7 @@ const createBid = (
           assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.required().custom(joi.buildBigNumber),
+          tokenId: Joi.optional(),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
@@ -176,7 +198,7 @@ const createBid = (
           assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
           bytes: Joi.string().required(),
           contractAddress: Joi.string().required(),
-          tokenId: Joi.required().custom(joi.buildBigNumber),
+          tokenId: Joi.optional(),
           allowAll: Joi.boolean().required(),
         }),
         bytes: Joi.string().required(),
@@ -199,6 +221,14 @@ const createBid = (
   const takeAssetInput = args?.input.takeAsset
   const takeAssets = convertAssetInput(takeAssetInput)
 
+  if (ethers.utils.getAddress(args?.input.makerAddress) !==
+    ethers.utils.getAddress(wallet.address)) {
+    return Promise.reject(appError.buildForbidden(
+      marketBidError.buildMakerAddressNotOwnedMsg(),
+      marketBidError.ErrorType.MakerAddressNotOwned,
+    ))
+  }
+
   return repositories.marketAsk.findById(args?.input.marketAskId)
     .then(fp.rejectIf((marketAsk: entity.MarketAsk) => !marketAsk)(appError.buildInvalid(
       marketBidError.buildMarketAskNotFoundMsg(),
@@ -209,21 +239,40 @@ const createBid = (
       marketBidError.buildMarketBidInvalidMsg(),
       marketBidError.ErrorType.MarketBidInvalid,
     )))
-    .then(() => repositories.marketBid.save({
-      structHash: args?.input.structHash,
-      nonce: args?.input.nonce,
-      signature: args?.input.signature,
-      marketAskId: args?.input.marketAskId,
-      makerAddress: args?.input.makerAddress,
-      makeAsset: makeAssets,
-      takerAddress: args?.input.takerAddress,
-      takeAsset: takeAssets,
-      message: args?.input.message,
-      start: args?.input.start,
-      end: args?.input.end,
-      salt: args?.input.salt,
-      chainId: wallet.chainId,
-    }))
+    .then(() =>
+      repositories.marketBid
+        .findOne({ where: { structHash: args?.input.structHash } })
+        .then(fp.rejectIfNotEmpty(appError.buildExists(
+          marketBidError.buildMarketBidExistingMsg(),
+          marketBidError.ErrorType.MarketBidExisting,
+        )))
+        .then(() => {
+          return availableToBid(wallet.address, repositories)
+            .then((available): Promise<entity.MarketBid> => {
+              if (available) {
+                return repositories.marketBid.save({
+                  structHash: args?.input.structHash,
+                  nonce: args?.input.nonce,
+                  signature: args?.input.signature,
+                  marketAskId: args?.input.marketAskId,
+                  makerAddress: args?.input.makerAddress,
+                  makeAsset: makeAssets,
+                  takerAddress: args?.input.takerAddress,
+                  takeAsset: takeAssets,
+                  message: args?.input.message,
+                  start: args?.input.start,
+                  end: args?.input.end,
+                  salt: args?.input.salt,
+                  chainId: wallet.chainId,
+                })
+              } else {
+                return Promise.reject(appError.buildForbidden(
+                  marketBidError.buildMarketBidUnavailableMsg(wallet.address),
+                  marketBidError.ErrorType.MarketBidUnavailable))
+              }
+            })
+        }),
+    )
 }
 
 const cancelMarketBid = (

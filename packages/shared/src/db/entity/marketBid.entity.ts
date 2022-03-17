@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm'
 
-import { MarketplaceAsset, Signature } from '@nftcom/shared/defs'
+import { AuctionType, MarketplaceAsset, Signature } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
@@ -12,6 +12,13 @@ export class MarketBid extends BaseEntity {
 
   @Column({ nullable: false })
   nonce: number
+
+  @Column({
+    type: 'enum',
+    enum: AuctionType,
+    nullable: false,
+  })
+  auctionType: AuctionType
 
   @Column({ type: 'json', nullable: false })
   signature: Signature

@@ -1,5 +1,5 @@
 import { gql } from '@nftcom/gql/defs'
-import { db, defs, entity, helper } from '@nftcom/shared'
+import { db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { PageInfo } from './gql'
 
@@ -78,12 +78,16 @@ Array<gql.MarketplaceAssetInput> =>
 {
   const assets = []
   assetInput.map((asset) => {
+    let tokenId = ''
+    const assetClass = asset.standard.assetClass as defs.AssetClass
+    if (assetClass === defs.AssetClass.ERC721 || assetClass === defs.AssetClass.ERC1155)
+      tokenId = helper.bigNumberToHex(asset.standard.tokenId)
     assets.push({
       standard: {
-        assetClass: asset.standard.assetClass as defs.AssetClass,
+        assetClass: assetClass,
         bytes: asset.standard.bytes,
         contractAddress: asset.standard.contractAddress,
-        tokenId: helper.bigNumberToString(asset.standard.tokenId),
+        tokenId: tokenId,
         allowAll: asset.standard.allowAll,
       },
       bytes: asset.bytes,
@@ -93,4 +97,13 @@ Array<gql.MarketplaceAssetInput> =>
   })
 
   return assets
+}
+
+export const blockNumberToTimestamp = async (
+  blockNumber: number,
+  chainId: string,
+): Promise<number> => {
+  const chainProvider = provider.provider(Number(chainId))
+  const block = await chainProvider.getBlock(blockNumber)
+  return block.timestamp * 1000
 }
