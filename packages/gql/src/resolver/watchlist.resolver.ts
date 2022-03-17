@@ -1,97 +1,113 @@
 import { Context, gql } from '@nftcom/gql/defs'
 import { core } from '@nftcom/gql/service'
-import { _logger, defs, entity, fp } from '@nftcom/shared'
+import { defs, entity, fp } from '@nftcom/shared'
 
-const logger = _logger.Factory(_logger.Context.Watchlist, _logger.Context.GraphQL)
+// const logger = _logger.Factory(_logger.Context.Watchlist, _logger.Context.GraphQL)
 
-const getWatchlistItems = (ctx: Context): Promise<gql.Watchlist> => {
-  const { user } = ctx
-
-  const getNFTs = (): Promise<entity.NFT[]> => {
-    return core.thatEntitiesOfEdgesBy<entity.NFT>(ctx, {
-      thisEntityId: user.id,
-      thisEntityType: defs.EntityType.User,
-      edgeType: defs.EdgeType.Watches,
-    })
+const getWatchlistItems = (
+  ctx: Context,
+  args: gql.QueryWatchlistArgs,
+): Promise<gql.Watchlist> => {
+  const { userId } = args
+  const watchEdge: Partial<entity.Edge> = {
+    thisEntityId: userId, // replace with user.id from context when auth is added
+    thisEntityType: defs.EntityType.User,
+    edgeType: defs.EdgeType.Watches,
   }
 
-  const getProfiles = (): Promise<entity.Profile[]> => {
-    return core.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
-      thisEntityId: user.id,
-      thisEntityType: defs.EntityType.User,
-      edgeType: defs.EdgeType.Watches,
+  const getWatchedNFTs = (): Promise<entity.NFT[]> =>
+    core.thatEntitiesOfEdgesBy<entity.NFT>(ctx, {
+      ...watchEdge,
+      thatEntityType: defs.EntityType.NFT,
     })
-  }
-
-  const getCollections = (): Promise<entity.Collection[]> => {
-    return core.thatEntitiesOfEdgesBy<entity.Collection>(ctx, {
-      thisEntityId: user.id,
-      thisEntityType: defs.EntityType.User,
-      edgeType: defs.EdgeType.Watches,
+  const getWatchedProfiles = (): Promise<entity.Profile[]> =>
+    core.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
+      ...watchEdge,
+      thatEntityType: defs.EntityType.Profile,
     })
-  }
+  const getWatchedCollections = (): Promise<entity.Collection[]> =>
+    core.thatEntitiesOfEdgesBy<entity.Collection>(ctx, {
+      ...watchEdge,
+      thatEntityType: defs.EntityType.Collection,
+    })
 
   return Promise.all([
-    getNFTs(),
-    getProfiles(),
-    getCollections(),
-  ])
-    .then(([nftItems, profileItems, collectionItems]) => {
-      return {
-        nftItems,
-        profileItems,
-        collectionItems,
-      }
-    })
+    getWatchedNFTs(),
+    getWatchedProfiles(),
+    getWatchedCollections(),
+  ]).then(([nftItems, profileItems, collectionItems]) => ({
+    nftItems,
+    profileItems,
+    collectionItems,
+  }))
 }
 
-const getWatchlist = (_: any, args: any, ctx: Context): Promise<gql.Watchlist> => {
-  const { user } = ctx
-  logger.debug('getWatchlist', { loggedInUserId: user.id, input: args })
+const getWatchlist = (
+  _: any,
+  args: gql.QueryWatchlistArgs,
+  ctx: Context,
+): Promise<gql.Watchlist> => {
+  // place back when auth is added
+  // const { user } = ctx
+  // logger.debug('getWatchlist', { loggedInUserId: user.id, input: args })
 
-  return getWatchlistItems(ctx)
+  return getWatchlistItems(ctx, args)
 }
 
-const createWatchEdge = (args: gql.WatchlistInput, ctx: Context): Promise<boolean> => {
-  const { user, repositories } = ctx
-  const { itemId, itemType } = args
-
-  return repositories.edge.exists({
-    thisEntityId: user.id,
-    edgeType: defs.EdgeType.Watches,
-    thatEntityId: itemId,
-    deletedAt: null,
-  })
-    .then(fp.thruIfFalse(() =>
-      core.createEdge(ctx, {
-        thisEntityId: user.id,
-        thisEntityType: defs.EntityType.User,
-        edgeType: defs.EdgeType.Watches,
-        thatEntityId: itemId,
-        thatEntityType: defs.EntityType[itemType],
-      }),
-    ))
-}
-
-const addToWatchlist = (_: any, args: gql.WatchlistInput, ctx: Context): Promise<boolean> => {
-  const { user } = ctx
-  logger.debug('addToWatchlist', { loggedInUserId: user.id, input: args })
-
-  return createWatchEdge(args, ctx)
-}
-
-const deleteFromWatchlist = (_: any, args: gql.WatchlistInput, ctx: Context): Promise<boolean> => {
-  const { user, repositories } = ctx
-  const { itemId, itemType } = args
-  logger.debug('deleteFromWatchlist', { loggedInUserId: user.id, input: args })
-  
-  return repositories.edge.delete({
-    thisEntityId: user.id,
+const createWatchEdge = (
+  args: gql.MutationAddToWatchlistArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { repositories } = ctx
+  const { userId, itemId, itemType } = args.input
+  const watchEdge: Partial<entity.Edge> = {
+    thisEntityId: userId, // replace with user.id from context when auth is added
+    thisEntityType: defs.EntityType.User,
     edgeType: defs.EdgeType.Watches,
     thatEntityId: itemId,
     thatEntityType: defs.EntityType[itemType],
     deletedAt: null,
-  })
+  }
+
+  return repositories.edge
+    .exists(watchEdge)
+    .then(fp.thruIfFalse(() => repositories.edge.save(watchEdge)))
+    .then(() => true)
+}
+
+const addToWatchlist = (
+  _: any,
+  args: gql.MutationAddToWatchlistArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  // place back when auth is added
+  // const { user } = ctx
+  // logger.debug('addToWatchlist', { loggedInUserId: user.id, input: args })
+
+  return createWatchEdge(args, ctx)
+}
+
+const deleteFromWatchlist = (
+  _: any,
+  args: gql.MutationDeleteFromWatchlistArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { repositories } = ctx
+  // place back when auth is added
+  // logger.debug('deleteFromWatchlist', { loggedInUserId: user.id, input: args })
+  const { userId, itemId, itemType } = args.input
+  const watchEdge: Partial<entity.Edge> = {
+    thisEntityId: userId, // replace with user.id from context when auth is added
+    thisEntityType: defs.EntityType.User,
+    edgeType: defs.EdgeType.Watches,
+    thatEntityId: itemId,
+    thatEntityType: defs.EntityType[itemType],
+    deletedAt: null,
+  }
+
+  return repositories.edge
+    .exists(watchEdge)
+    .then(fp.thruIfTrue(() => repositories.edge.delete(watchEdge)))
 }
 
 export default {

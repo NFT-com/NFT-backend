@@ -11,12 +11,13 @@ enum WatchlistItemType {
 }
 
 input WatchlistInput {
+    userId: ID!
     itemId: ID!
     itemType: WatchlistItemType!
 }
 
 extend type Query {
-    watchlist: Watchlist!
+    watchlist(userId: ID!): Watchlist!
 }
 
 extend type Mutation {
