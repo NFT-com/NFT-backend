@@ -79,7 +79,7 @@
   {
     "inputs": [
       {
-        "internalType": "contract IERC20Upgradeable",
+        "internalType": "contract IERC1155Upgradeable",
         "name": "token",
         "type": "address"
       },
@@ -95,11 +95,49 @@
       },
       {
         "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "erc1155safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC721Upgradeable",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
         "type": "uint256"
       }
     ],
-    "name": "erc20safeTransferFrom",
+    "name": "erc721safeTransferFrom",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

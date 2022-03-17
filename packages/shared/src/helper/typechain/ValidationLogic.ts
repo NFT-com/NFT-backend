@@ -4,6 +4,7 @@
 import {
   BaseContract,
   BigNumber,
+  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
@@ -36,42 +37,68 @@ export declare namespace LibAsset {
   };
 }
 
-export interface CryptoKittyTransferProxyInterface extends utils.Interface {
-  contractName: "CryptoKittyTransferProxy";
+export declare namespace LibSignature {
+  export type OrderStruct = {
+    maker: string;
+    makeAssets: LibAsset.AssetStruct[];
+    taker: string;
+    takeAssets: LibAsset.AssetStruct[];
+    salt: BigNumberish;
+    start: BigNumberish;
+    end: BigNumberish;
+    nonce: BigNumberish;
+    auctionType: BigNumberish;
+  };
+
+  export type OrderStructOutput = [
+    string,
+    LibAsset.AssetStructOutput[],
+    string,
+    LibAsset.AssetStructOutput[],
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    number
+  ] & {
+    maker: string;
+    makeAssets: LibAsset.AssetStructOutput[];
+    taker: string;
+    takeAssets: LibAsset.AssetStructOutput[];
+    salt: BigNumber;
+    start: BigNumber;
+    end: BigNumber;
+    nonce: BigNumber;
+    auctionType: number;
+  };
+}
+
+export interface ValidationLogicInterface extends utils.Interface {
+  contractName: "ValidationLogic";
   functions: {
-    "addOperator(address)": FunctionFragment;
+    "getDecreasingPrice((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "initialize()": FunctionFragment;
     "owner()": FunctionFragment;
-    "proxiableUUID()": FunctionFragment;
-    "removeOperator(address)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
-    "transfer(((bytes4,bytes),bytes),address,address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "upgradeTo(address)": FunctionFragment;
     "upgradeToAndCall(address,bytes)": FunctionFragment;
+    "validateBuyNow((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),address)": FunctionFragment;
+    "validateMatch_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "addOperator", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "getDecreasingPrice",
+    values: [LibSignature.OrderStruct]
+  ): string;
   encodeFunctionData(
     functionFragment: "initialize",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "proxiableUUID",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "removeOperator",
-    values: [string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transfer",
-    values: [LibAsset.AssetStruct, string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
@@ -82,26 +109,25 @@ export interface CryptoKittyTransferProxyInterface extends utils.Interface {
     functionFragment: "upgradeToAndCall",
     values: [string, BytesLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "validateBuyNow",
+    values: [LibSignature.OrderStruct, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "validateMatch_",
+    values: [LibSignature.OrderStruct, LibSignature.OrderStruct]
+  ): string;
 
   decodeFunctionResult(
-    functionFragment: "addOperator",
+    functionFragment: "getDecreasingPrice",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "proxiableUUID",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "removeOperator",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "transfer", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
@@ -109,6 +135,14 @@ export interface CryptoKittyTransferProxyInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "upgradeTo", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "upgradeToAndCall",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "validateBuyNow",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "validateMatch_",
     data: BytesLike
   ): Result;
 
@@ -148,13 +182,13 @@ export type UpgradedEvent = TypedEvent<[string], { implementation: string }>;
 
 export type UpgradedEventFilter = TypedEventFilter<UpgradedEvent>;
 
-export interface CryptoKittyTransferProxy extends BaseContract {
-  contractName: "CryptoKittyTransferProxy";
+export interface ValidationLogic extends BaseContract {
+  contractName: "ValidationLogic";
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: CryptoKittyTransferProxyInterface;
+  interface: ValidationLogicInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,
@@ -176,10 +210,10 @@ export interface CryptoKittyTransferProxy extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    addOperator(
-      operator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+    getDecreasingPrice(
+      sellOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     initialize(
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -187,21 +221,7 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
-
-    removeOperator(
-      operator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    transfer(
-      asset: LibAsset.AssetStruct,
-      from: string,
-      to: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -220,12 +240,24 @@ export interface CryptoKittyTransferProxy extends BaseContract {
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    validateBuyNow(
+      sellOrder: LibSignature.OrderStruct,
+      buyer: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    validateMatch_(
+      sellOrder: LibSignature.OrderStruct,
+      buyOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
   };
 
-  addOperator(
-    operator: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+  getDecreasingPrice(
+    sellOrder: LibSignature.OrderStruct,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   initialize(
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -233,21 +265,7 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
   owner(overrides?: CallOverrides): Promise<string>;
 
-  proxiableUUID(overrides?: CallOverrides): Promise<string>;
-
-  removeOperator(
-    operator: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   renounceOwnership(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  transfer(
-    asset: LibAsset.AssetStruct,
-    from: string,
-    to: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -267,25 +285,29 @@ export interface CryptoKittyTransferProxy extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  validateBuyNow(
+    sellOrder: LibSignature.OrderStruct,
+    buyer: string,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  validateMatch_(
+    sellOrder: LibSignature.OrderStruct,
+    buyOrder: LibSignature.OrderStruct,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
   callStatic: {
-    addOperator(operator: string, overrides?: CallOverrides): Promise<void>;
+    getDecreasingPrice(
+      sellOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     initialize(overrides?: CallOverrides): Promise<void>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<string>;
-
-    removeOperator(operator: string, overrides?: CallOverrides): Promise<void>;
-
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
-
-    transfer(
-      asset: LibAsset.AssetStruct,
-      from: string,
-      to: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     transferOwnership(
       newOwner: string,
@@ -302,6 +324,18 @@ export interface CryptoKittyTransferProxy extends BaseContract {
       data: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    validateBuyNow(
+      sellOrder: LibSignature.OrderStruct,
+      buyer: string,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    validateMatch_(
+      sellOrder: LibSignature.OrderStruct,
+      buyOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
   };
 
   filters: {
@@ -333,9 +367,9 @@ export interface CryptoKittyTransferProxy extends BaseContract {
   };
 
   estimateGas: {
-    addOperator(
-      operator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+    getDecreasingPrice(
+      sellOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     initialize(
@@ -344,21 +378,7 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
-
-    removeOperator(
-      operator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    transfer(
-      asset: LibAsset.AssetStruct,
-      from: string,
-      to: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -377,12 +397,24 @@ export interface CryptoKittyTransferProxy extends BaseContract {
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    validateBuyNow(
+      sellOrder: LibSignature.OrderStruct,
+      buyer: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    validateMatch_(
+      sellOrder: LibSignature.OrderStruct,
+      buyOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    addOperator(
-      operator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+    getDecreasingPrice(
+      sellOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     initialize(
@@ -391,21 +423,7 @@ export interface CryptoKittyTransferProxy extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    removeOperator(
-      operator: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    transfer(
-      asset: LibAsset.AssetStruct,
-      from: string,
-      to: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -423,6 +441,18 @@ export interface CryptoKittyTransferProxy extends BaseContract {
       newImplementation: string,
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    validateBuyNow(
+      sellOrder: LibSignature.OrderStruct,
+      buyer: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    validateMatch_(
+      sellOrder: LibSignature.OrderStruct,
+      buyOrder: LibSignature.OrderStruct,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };
 }

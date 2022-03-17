@@ -69,7 +69,7 @@ input AssetTypeInput {
   assetClass: AssetClass!
   bytes: String!
   contractAddress: String!
-  tokenId: Uint256!
+  tokenId: Uint256
   allowAll: Boolean!
 }
 

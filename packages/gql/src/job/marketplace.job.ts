@@ -3,7 +3,6 @@ import { BigNumber, utils } from 'ethers'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Redis from 'ioredis'
-import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
@@ -15,8 +14,10 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 
-const abi = contracts.marketplaceABIJSON()
-const iface = new utils.Interface(abi)
+const eventABI = contracts.marketplaceEventABI()
+const marketplaceABI = contracts.marketplaceABIJSON()
+const eventIface = new utils.Interface(eventABI)
+const marketplaceIface = new utils.Interface(marketplaceABI)
 
 const defaultBlock: {[chainId: number] : number} = {
   4: 10184159, // block number which marketplace contract created
@@ -123,7 +124,7 @@ const listenApprovalEvents = async (
     logger.debug('Approval logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = marketplaceIface.parseLog(log)
       const structHash = event.args.structHash
       const makerAddress = event.args.maker
 
@@ -187,20 +188,20 @@ const listenNonceIncrementedEvents = async (
     logger.debug('NonceIncremented logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = marketplaceIface.parseLog(log)
       const makerAddress = event.args.maker
       const nonce = Number(event.args.newNonce)
       const marketAsks = await repositories.marketAsk.find({
         where: {
           makerAddress: utils.getAddress(makerAddress),
-          nonce: LessThan(nonce),
           marketSwapId: null,
           approvalTxHash: null,
           cancelTxHash: null,
         },
       })
-      if (marketAsks.length) {
-        await Promise.all(marketAsks.map(async (marketAsk) => {
+      const filteredAsks = marketAsks.filter((ask) => ask.nonce < nonce)
+      if (filteredAsks.length) {
+        await Promise.all(filteredAsks.map(async (marketAsk) => {
           await repositories.marketAsk.updateOneById(marketAsk.id, {
             cancelTxHash: log.transactionHash,
           })
@@ -209,13 +210,13 @@ const listenNonceIncrementedEvents = async (
         const marketBids = await repositories.marketBid.find({
           where: {
             makerAddress: utils.getAddress(makerAddress),
-            nonce: LessThan(nonce),
             marketSwapId: null,
             approvalTxHash: null,
             cancelTxHash: null,
           },
         })
-        await Promise.all(marketBids.map(async (marketBid) => {
+        const filteredBids = marketBids.filter((bid) => bid.nonce < nonce)
+        await Promise.all(filteredBids.map(async (marketBid) => {
           await repositories.marketBid.updateOneById(marketBid.id, {
             cancelTxHash: log.transactionHash,
           })
@@ -253,7 +254,7 @@ const listenCancelEvents = async (
     logger.debug('Cancel logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = marketplaceIface.parseLog(log)
       const structHash = event.args.structHash
       const makerAddress = event.args.maker
 
@@ -368,7 +369,7 @@ const listenMatchEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
   ]
@@ -380,7 +381,7 @@ const listenMatchEvents = async (
 
     const promises = logs.map(async (log) => {
       try {
-        const event = iface.parseLog(log)
+        const event = eventIface.parseLog(log)
         const makerHash = log.topics[1]
         const takerHash = log.topics[2]
         const privateSale = event.args.privateSale
@@ -438,6 +439,7 @@ const listenMatchEvents = async (
               r: takerSig.r,
               s: takerSig.s,
             },
+            auctionType: auctionType,
             makerAddress: '0x',
             takerAddress: '0x',
             start: -1,
@@ -515,7 +517,7 @@ const listenMatchTwoAEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
   ]
@@ -525,7 +527,7 @@ const listenMatchTwoAEvents = async (
     logger.debug('Match2A logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
       const makerHash = log.topics[1]
       const makerAddress = event.args.makerAddress
       const takerAddress = event.args.takerAddress
@@ -594,8 +596,7 @@ const listenMatchTwoBEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
-  const iface = new utils.Interface(abi)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
   ]
@@ -605,7 +606,7 @@ const listenMatchTwoBEvents = async (
     logger.debug('Match2B logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
 
       const makerHash = log.topics[1]
 
@@ -683,7 +684,7 @@ const listenMatchThreeAEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
   ]
@@ -693,7 +694,7 @@ const listenMatchThreeAEvents = async (
     logger.debug('Match3A logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
       const takerHash = log.topics[1]
       const makerAddress = event.args.makerAddress
       const takerAddress = event.args.takerAddress
@@ -712,6 +713,7 @@ const listenMatchThreeAEvents = async (
           start,
           end,
           salt,
+          auctionType: defs.AuctionType.FixedPrice,
           chainId: chainId.toString(),
           message: '',
 
@@ -761,7 +763,7 @@ const listenMatchThreeBEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
   ]
@@ -771,7 +773,7 @@ const listenMatchThreeBEvents = async (
     logger.debug('Match3B logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
       const takerHash = log.topics[1]
 
       const buyerMakerOrderAssetData = event.args.buyerMakerOrderAssetData as string[]
@@ -812,6 +814,7 @@ const listenMatchThreeBEvents = async (
           // actual values
           makeAsset: makeAsset,
           takeAsset: takeAsset,
+          auctionType: defs.AuctionType.FixedPrice,
           chainId: chainId.toString(),
         })
 
@@ -846,7 +849,7 @@ const listenBuyNowInfoEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('BuyNowInfo(bytes32,address)'),
   ]
@@ -856,7 +859,7 @@ const listenBuyNowInfoEvents = async (
     logger.debug('BuyNowInfo logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
 
       const makerHash = log.topics[1]
       const takerAddress = event.args.takerAddress
