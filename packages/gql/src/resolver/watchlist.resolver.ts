@@ -1,7 +1,4 @@
-import { combineResolvers } from 'graphql-resolvers'
-
 import { Context, gql } from '@nftcom/gql/defs'
-import { auth } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp } from '@nftcom/shared'
 
@@ -99,10 +96,10 @@ const deleteFromWatchlist = (_: any, args: gql.WatchlistInput, ctx: Context): Pr
 
 export default {
   Query: {
-    watchlist: combineResolvers(auth.isAuthenticated, getWatchlist),
+    watchlist: getWatchlist,
   },
   Mutation: {
-    addToWatchlist: combineResolvers(auth.isAuthenticated, addToWatchlist),
-    deleteFromWatchlist: combineResolvers(auth.isAuthenticated, deleteFromWatchlist),
+    addToWatchlist,
+    deleteFromWatchlist,
   },
 }
