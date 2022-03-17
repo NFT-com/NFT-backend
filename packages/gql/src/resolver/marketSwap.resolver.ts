@@ -1,8 +1,9 @@
+import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { _logger, entity, fp, helper } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { appError, marketAskError, marketBidError, marketSwapError } from '../error'
 import { auth, joi, pagination } from '../helper'
@@ -91,90 +92,91 @@ const getUserSwaps = (
  * @param marketAskId
  * @param marketBidId
  */
-// const validateTxHashForSwapNFT = async (
-//   txHash: string,
-//   chainId: string,
-//   marketAskId: string,
-//   marketBidId: string,
-// ): Promise<number | undefined> => {
-//   try {
-//     const repositories = db.newRepositories()
-//     const chainProvider = provider.provider(Number(chainId))
-//     // check if tx hash has been executed...
-//     const tx = await chainProvider.getTransaction(txHash)
-//     if (!tx.confirmations)
-//       return undefined
-//
-//     const sourceReceipt = await tx.wait()
-//     const abi = contracts.marketplaceABIJSON()
-//     const iface = new ethers.utils.Interface(abi)
-//     let eventEmitted = false
-//
-//     const topic = ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)')
-//
-//     // look through events of tx and check it contains Match event...
-//     // if it contains Match event, then we validate if both marketAskId, marketBidId are correct ones...
-//     await Promise.all(
-//       sourceReceipt.logs.map(async (log) => {
-//         if (log.topics[0] === topic) {
-//           const event = iface.parseLog(log)
-//           if (event.name === 'Match') {
-//             const makerHash = event.args.makerStructHash
-//             const takerHash = event.args.takerStructHash
-//             const auctionType = event.args.auctionType == 0 ?
-//               defs.AuctionType.FixedPrice :
-//               event.args.auctionType == 1 ?
-//                 defs.AuctionType.English :
-//                 defs.AuctionType.Decreasing
-//             if (auctionType !== defs.AuctionType.English) eventEmitted = false
-//             else {
-//               let marketAsk
-//               let marketBid
-//               marketAsk = await repositories.marketAsk.findOne({
-//                 where: {
-//                   id: marketAskId,
-//                   structHash: makerHash,
-//                 },
-//               })
-//               if (!marketAsk) {
-//                 // if maker is user who bid on ask...
-//                 marketAsk = await repositories.marketAsk.findOne({
-//                   where: {
-//                     id: marketAskId,
-//                     structHash: takerHash,
-//                   },
-//                 })
-//                 marketBid = await repositories.marketBid.findOne({
-//                   where: {
-//                     id: marketBidId,
-//                     structHash: makerHash,
-//                   },
-//                 })
-//               }
-//               else {
-//                 // if maker is user who provided ask...
-//                 marketBid = await repositories.marketBid.findOne({
-//                   where: {
-//                     id: marketBidId,
-//                     structHash: takerHash,
-//                   },
-//                 })
-//               }
-//               if (!marketAsk || !marketBid) eventEmitted = false
-//               else {
-//                 eventEmitted = (marketAsk.chainId === marketBid.chainId)
-//               }
-//             }
-//           }
-//         }
-//       }))
-//     if (eventEmitted) return tx.blockNumber
-//     else return undefined
-//   } catch (e) {
-//     logger.debug(`${txHash} is not valid`, e)
-//     return undefined
-//   }
-// }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const validateTxHashForSwapNFT = async (
+  txHash: string,
+  chainId: string,
+  marketAskId: string,
+  marketBidId: string,
+): Promise<number | undefined> => {
+  try {
+    const repositories = db.newRepositories()
+    const chainProvider = provider.provider(Number(chainId))
+    // check if tx hash has been executed...
+    const tx = await chainProvider.getTransaction(txHash)
+    if (!tx.confirmations)
+      return undefined
+
+    const sourceReceipt = await tx.wait()
+    const abi = contracts.marketplaceABIJSON()
+    const iface = new ethers.utils.Interface(abi)
+    let eventEmitted = false
+
+    const topic = ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)')
+
+    // look through events of tx and check it contains Match event...
+    // if it contains Match event, then we validate if both marketAskId, marketBidId are correct ones...
+    await Promise.all(
+      sourceReceipt.logs.map(async (log) => {
+        if (log.topics[0] === topic) {
+          const event = iface.parseLog(log)
+          if (event.name === 'Match') {
+            const makerHash = event.args.makerStructHash
+            const takerHash = event.args.takerStructHash
+            const auctionType = event.args.auctionType == 0 ?
+              defs.AuctionType.FixedPrice :
+              event.args.auctionType == 1 ?
+                defs.AuctionType.English :
+                defs.AuctionType.Decreasing
+            if (auctionType !== defs.AuctionType.English) eventEmitted = false
+            else {
+              let marketAsk
+              let marketBid
+              marketAsk = await repositories.marketAsk.findOne({
+                where: {
+                  id: marketAskId,
+                  structHash: makerHash,
+                },
+              })
+              if (!marketAsk) {
+                // if maker is user who bid on ask...
+                marketAsk = await repositories.marketAsk.findOne({
+                  where: {
+                    id: marketAskId,
+                    structHash: takerHash,
+                  },
+                })
+                marketBid = await repositories.marketBid.findOne({
+                  where: {
+                    id: marketBidId,
+                    structHash: makerHash,
+                  },
+                })
+              }
+              else {
+                // if maker is user who provided ask...
+                marketBid = await repositories.marketBid.findOne({
+                  where: {
+                    id: marketBidId,
+                    structHash: takerHash,
+                  },
+                })
+              }
+              if (!marketAsk || !marketBid) eventEmitted = false
+              else {
+                eventEmitted = (marketAsk.chainId === marketBid.chainId)
+              }
+            }
+          }
+        }
+      }))
+    if (eventEmitted) return tx.blockNumber
+    else return undefined
+  } catch (e) {
+    logger.debug(`${txHash} is not valid`, e)
+    return undefined
+  }
+}
 
 const swapNFT = (
   _: any,
