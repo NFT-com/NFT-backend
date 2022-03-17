@@ -1,5 +1,5 @@
 import { gql } from '@nftcom/gql/defs'
-import { db, defs, entity, helper } from '@nftcom/shared'
+import { db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { PageInfo } from './gql'
 
@@ -97,4 +97,13 @@ Array<gql.MarketplaceAssetInput> =>
   })
 
   return assets
+}
+
+export const blockNumberToTimestamp = async (
+  blockNumber: number,
+  chainId: string,
+): Promise<number> => {
+  const chainProvider = provider.provider(Number(chainId))
+  const block = await chainProvider.getBlock(blockNumber)
+  return block.timestamp * 1000
 }

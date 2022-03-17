@@ -2,7 +2,13 @@ import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
+import {
+  blockNumberToTimestamp,
+  Context,
+  convertAssetInput,
+  getAssetList,
+  gql,
+} from '@nftcom/gql/defs'
 import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
@@ -370,7 +376,7 @@ const validateTxHashForBuyNow = async (
       return undefined
 
     const sourceReceipt = await tx.wait()
-    const abi = contracts.marketplaceABIJSON()
+    const abi = contracts.marketplaceEventABI()
     const iface = new ethers.utils.Interface(abi)
     let eventEmitted = false
     let buyNowTaker = null
@@ -443,7 +449,7 @@ const validateTxHashForBuyNow = async (
         buyNowTaker: buyNowTaker,
       } as BuyNowInfo
     }
-    else  return undefined
+    else return undefined
   } catch (e) {
     logger.debug(`${txHash} is not valid`, e)
     return undefined
@@ -491,23 +497,20 @@ const buyNow = (
                         blockNumber: buyNowInfo.block.toFixed(),
                         marketAsk: ask,
                       }).then((swap: entity.MarketSwap) =>
-                        repositories.marketAsk.updateOneById(ask.id, {
-                          marketSwapId: swap.id,
-                          buyNowTaker: buyNowInfo.buyNowTaker,
-                        }).then(() => swap)))
+                        blockNumberToTimestamp(Number(buyNowInfo.block.toFixed()), ask.chainId)
+                          .then((time) => repositories.marketAsk.updateOneById(ask.id, {
+                            marketSwapId: swap.id,
+                            offerAcceptedAt: new Date(time),
+                            buyNowTaker: buyNowInfo.buyNowTaker,
+                          }).then(() => swap)),
+                      ))
                 } else {
                   return Promise.reject(appError.buildInvalid(
-                    marketAskError.buildMissingBuyNowInfoMsg(args?.input.txHash),
-                    marketAskError.ErrorType.MissingBuyNowInfo,
+                    marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
+                    marketAskError.ErrorType.TxHashInvalid,
                   ))
                 }
-              } else {
-                return Promise.reject(appError.buildInvalid(
-                  marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
-                  marketAskError.ErrorType.TxHashInvalid,
-                ))
-              }
-            })
+              }})
         } else {
           return Promise.reject(appError.buildInvalid(
             marketAskError.buildMarketAskBoughtMsg(),
