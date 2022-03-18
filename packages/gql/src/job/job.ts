@@ -95,8 +95,8 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
         removeOnComplete: true,
         removeOnFail: true,
-        // repeat every 10 minute for nft marketplace job
-        repeat: { every: 60000 * 10 },
+        // repeat every 5 minute for nft marketplace job
+        repeat: { every: 60000 * 5 },
       })
     case TYPESENSE_INDEX_SCHEMA_JOB:
       return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
