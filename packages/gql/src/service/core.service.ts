@@ -236,7 +236,7 @@ export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<
 }
 
 // global object for blacklist profiles
-const blacklistProfiles = {
+export const blacklistProfiles = {
   'nike': true,
 }
 
