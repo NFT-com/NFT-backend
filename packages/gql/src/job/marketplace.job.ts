@@ -910,7 +910,6 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await listenNonceIncrementedEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenCancelEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
 
-    // market place satch events tit
     await listenMatchTwoAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchTwoBEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchThreeAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
