@@ -57,7 +57,7 @@ const validOrderMatch = async (
         maker: marketBidArgs?.input.makerAddress,
         makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
         taker: marketBidArgs?.input.takerAddress,
-        takeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        takeAssets: getAssetList(marketBidArgs?.input.takeAsset),
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
