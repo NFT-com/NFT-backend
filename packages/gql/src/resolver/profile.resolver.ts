@@ -238,8 +238,8 @@ const getFollowersCount = (
 
 const getBlockedProfileURIs = (): Promise<string[]> => {
   logger.debug('getBlockedProfiles')
-  const whitelist = helper.getProfileURIBlockList()
-  return Promise.resolve(whitelist)
+  const blocklist = core.blacklistProfiles
+  return Promise.resolve(Object.keys(blocklist))
 }
 
 // TODO: make sure this is running on cron job -> that pull events from:
