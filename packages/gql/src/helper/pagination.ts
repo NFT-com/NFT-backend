@@ -52,7 +52,7 @@ export const resolvePage = <T>(
 }
 
 const isOrderByDate = (orderKey: string): boolean =>
-  ['createdAt', 'updatedAt', 'deletedAt'].includes(orderKey)
+  ['createdAt', 'updatedAt', 'deletedAt', 'offerAcceptedAt'].includes(orderKey)
 
 export const getDefaultCursor = (orderBy: string): DefaultCursor => {
   return isOrderByDate(orderBy)
