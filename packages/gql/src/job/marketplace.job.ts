@@ -887,7 +887,10 @@ const listenBuyNowInfoEvents = async (
 const getCachedBlock = async (chainId: number): Promise<number> => {
   try {
     const cachedBlock = await redis.get(`cached_block_${chainId}`)
-    if (cachedBlock) return defaultBlock[chainId] //Number(cachedBlock)
+
+    // get 1000 blocks before incase of some blocks not being handled correctly
+    if (cachedBlock) return Number(cachedBlock) > 10000
+      ? Number(cachedBlock) - 10000 : Number(cachedBlock)
     else return defaultBlock[chainId]
   } catch (e) {
     return defaultBlock[chainId]
@@ -906,6 +909,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await listenApprovalEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenNonceIncrementedEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenCancelEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+
     await listenMatchTwoAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchTwoBEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchThreeAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)

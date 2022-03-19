@@ -236,6 +236,12 @@ const getFollowersCount = (
   })
 }
 
+const getBlockedProfileURIs = (): Promise<string[]> => {
+  logger.debug('getBlockedProfiles')
+  const blocklist = core.blacklistProfiles
+  return Promise.resolve(Object.keys(blocklist))
+}
+
 // TODO: make sure this is running on cron job -> that pull events from:
 // TODO: emit MintedProfile(_owner, _profileURI, _nftTokens, claimableBlock[hash]);
 const profileClaimed = (
@@ -248,7 +254,7 @@ const profileClaimed = (
   logger.debug('profileClaimed', { profileId, walletId, txHash })
 
   const profileAuction = new utils.Interface(contracts.profileAuctionABI())
-  
+
   return repositories.wallet.findById(walletId)
     .then((wallet: entity.Wallet) => Promise.all([
       Promise.resolve(wallet),
@@ -295,6 +301,7 @@ export default {
     myProfiles: combineResolvers(auth.isAuthenticated, getMyProfiles),
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
+    blockedProfileURIs: getBlockedProfileURIs,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

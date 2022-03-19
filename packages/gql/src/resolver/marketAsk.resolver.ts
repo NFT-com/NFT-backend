@@ -385,6 +385,7 @@ const validateTxHashForBuyNow = async (
       ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
       ethers.utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
       ethers.utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
+      ethers.utils.id('BuyNowInfo(bytes32,address)'),
     ]
     // look through events of tx and check it contains Match or Match2A or Match2B event...
     // if it contains match events, then we validate if marketAskId is correct one...
