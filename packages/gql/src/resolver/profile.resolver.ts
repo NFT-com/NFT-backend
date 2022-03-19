@@ -254,7 +254,7 @@ const profileClaimed = (
   logger.debug('profileClaimed', { profileId, walletId, txHash })
 
   const profileAuction = new utils.Interface(contracts.profileAuctionABI())
-  
+
   return repositories.wallet.findById(walletId)
     .then((wallet: entity.Wallet) => Promise.all([
       Promise.resolve(wallet),
