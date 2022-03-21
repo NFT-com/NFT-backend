@@ -218,6 +218,7 @@ const updateEntity = async (
         id: newNFT.id,
         contract: nftInfo.contract.address,
         tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+        image: newNFT.metadata.imageURL,
         type: type,
         name: nftInfo.title,
       })
