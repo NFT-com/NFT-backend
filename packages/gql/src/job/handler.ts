@@ -172,11 +172,11 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
       return Promise.all([
         validateLiveBalances(filteredBids, chainId),
         events.map((evt) => {
-        // console.log(`Found event ${evt.event} with chainId: ${chainId}`)
-          const [owner,, profileUrl,,] = evt.args
+          console.log(`Found event ${evt.event} with chainId: ${chainId}, ${evt.args}`)
+          const [owner,profileUrl] = evt.args
 
           switch (evt.event) {
-          case 'NewClaimableProfile':
+          case 'MintedProfile':
             return repositories.event.exists({
               chainId,
               ownerAddress: owner,
