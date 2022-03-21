@@ -385,6 +385,7 @@ const validateTxHashForBuyNow = async (
       ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
       ethers.utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
       ethers.utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
+      ethers.utils.id('BuyNowInfo(bytes32,address)'),
     ]
     // look through events of tx and check it contains Match or Match2A or Match2B event...
     // if it contains match events, then we validate if marketAskId is correct one...
@@ -525,6 +526,54 @@ const buyNow = (
     })
 }
 
+const filterAsks = (
+  _: any,
+  args: gql.QueryFilterAsksArgs,
+  ctx: Context,
+): Promise<gql.GetMarketAsk> => {
+  const { repositories } = ctx
+  logger.debug('filterAsks', { input: args?.input })
+  const schema = Joi.object().keys({
+    auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
+    sortBy: Joi.string().valid('RecentlyCreated', 'RecentlySold', 'EndingSoon', 'Oldest'),
+    chainId: Joi.string().alphanum(),
+    pageInput: Joi.any(),
+  })
+  joi.validateSchema(schema, args?.input)
+
+  const { auctionType, sortBy, chainId, pageInput } = helper.safeObject(args?.input)
+  const filters: Partial<entity.MarketAsk>[] = [
+    helper.removeEmpty({
+      auctionType,
+      chainId,
+    }),
+  ]
+  let orderKey
+  let orderDirection
+  if (sortBy === 'RecentlyCreated') {
+    orderKey = 'createdAt'
+    orderDirection = 'DESC'
+  } else if (sortBy === 'RecentlySold') {
+    orderKey = 'offerAcceptedAt'
+    orderDirection = 'DESC'
+  } else if (sortBy === 'EndingSoon') {
+    orderKey = 'end'
+    orderDirection = 'ASC'
+  } else if (sortBy === 'Oldest') {
+    orderKey = 'createdAt'
+    orderDirection = 'ASC'
+  }
+  return core.paginatedEntitiesBy(
+    repositories.marketAsk,
+    pageInput,
+    filters,
+    [],
+    orderKey,
+    orderDirection,
+  )
+    .then(pagination.toPageable(pageInput))
+}
+
 // TODOs
 // 1. add more advanced filters (sort by price, sort by floor)
 // 2. filter asks from a single user (walletId or address)
@@ -538,6 +587,7 @@ export default {
     getAsks: getAsks,
     getNFTAsks: getNFTAsks,
     getNFTOffers,
+    filterAsks: filterAsks,
   },
   Mutation: {
     createAsk: combineResolvers(auth.isAuthenticated, createAsk),
