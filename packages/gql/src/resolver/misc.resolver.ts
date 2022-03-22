@@ -108,14 +108,14 @@ const endGKBlindAuction = (
           break
         }
       }
-
+      ''
       return {
         topBids: Object.keys(topBidPerWallet).map(key => {
           return { key, value: topBidPerWallet[key] }
         }),
         firstLosingBid,
         whitelistWinnersCount: Object.keys(topBidPerWallet).length,
-        medianPrice: median(Object.values(topBidPerWallet)),
+        medianPrice: median(Object.values(topBidPerWallet)).toString(),
         totalBidsCount: bids.length,
       }
     })

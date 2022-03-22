@@ -25,7 +25,7 @@ type EndGkOutput {
   topBids: [EndGkWinner]!
   firstLosingBid: [EndGkWinner]!
   whitelistWinnersCount: Uint256!
-  medianPrice: Uint256!
+  medianPrice: String!
   totalBidsCount: Uint256!
 }
 
