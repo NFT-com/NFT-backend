@@ -1,7 +1,9 @@
 import { Job } from 'bull'
+import cryptoRandomString from 'crypto-random-string'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { Contract, ethers, Wallet } from 'ethers'
 
+import { auth } from '@nftcom/gql/helper'
 import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
 
 import HederaConsensusService from '../service/hedera.service'
@@ -187,11 +189,36 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                 // find and mark profile status as minted
                 return Promise.all([
                   repositories.profile.findByURL(profileUrl)
+                    .then(fp.thruIfEmpty(() => {
+                      repositories.wallet.findByChainAddress(chainId, owner)
+                        .then(fp.thruIfEmpty(() => {
+                          const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+                          return repositories.user.save({
+                            // defaults
+                            username: 'ethereum-' + ethers.utils.getAddress(owner),
+                            referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+                          })
+                            .then((user: entity.User) => repositories.wallet.save({
+                              address: ethers.utils.getAddress(owner),
+                              network: 'ethereum',
+                              chainId: chainId,
+                              chainName: chain.name,
+                              userId: user.id,
+                            }))
+                        }))
+                        .then((wallet: entity.Wallet) => {
+                          repositories.profile.save({
+                            status: defs.ProfileStatus.Owned,
+                            url: profileUrl,
+                            ownerWalletId: wallet.id,
+                            ownerUserId: wallet.userId,
+                          })
+                        })
+                    }))
                     .then(fp.thruIfNotEmpty((profile) => {
                       profile.status = defs.ProfileStatus.Owned
                       repositories.profile.save(profile)
-                    }),
-                    ),
+                    })),
                   repositories.event.save(
                     {
                       chainId,
