@@ -16,8 +16,21 @@ type EndAuctionOutput {
   profile: Profile
 }
 
+type EndGkWinner {
+  key: String
+  value: String
+}
+
+type EndGkOutput {
+  topBids: [EndGkWinner]!
+  firstLosingBid: [EndGkWinner]!
+  blindWhitelistWinner: Uint256!
+  medianPrice: Uint256!
+  totalBids: Uint256!
+}
+
 extend type Mutation {
   uploadFileSession: FileUploadOutput!
   endProfileAuction(input: EndAuctionInput!): EndAuctionOutput!
-  endGKBlindAuction: Boolean
+  endGKBlindAuction: EndGkOutput!
 }
