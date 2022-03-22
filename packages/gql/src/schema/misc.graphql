@@ -24,9 +24,9 @@ type EndGkWinner {
 type EndGkOutput {
   topBids: [EndGkWinner]!
   firstLosingBid: [EndGkWinner]!
-  blindWhitelistWinner: Uint256!
+  whitelistWinnersCount: Uint256!
   medianPrice: Uint256!
-  totalBids: Uint256!
+  totalBidsCount: Uint256!
 }
 
 extend type Mutation {

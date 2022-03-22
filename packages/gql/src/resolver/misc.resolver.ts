@@ -90,26 +90,22 @@ const endGKBlindAuction = (
     })
     .then(([bids, wallets]: [entity.Bid[], entity.Wallet[]]) => {
       const topBidPerWallet = {}
-      const firstLosingBid = {}
+      const firstLosingBid = []
       for (let i = 0; i < wallets.length; i++) {
         const price = BigNumber.from(bids[i]?.price) ?? BigNumber.from(0)
         const wallet = wallets[i]?.address
 
-        if (wallet != '') {
-          if (Object.keys(topBidPerWallet).length < 3001) {
-            const currentTopBid = topBidPerWallet[wallet] ?? 0
+        if (Object.keys(topBidPerWallet).length < 3001) {
+          const currentTopBid = topBidPerWallet[wallet] ?? 0
 
-            topBidPerWallet[wallet] = price.gt(currentTopBid) ?
-              price.toString() : currentTopBid.toString()
-  
-            logger.debug(`new top bid ${topBidPerWallet[wallet]} for ${wallet}`)
-          } else {
-            logger.debug(`1st loser bid is ${price} for ${wallet}`)
-            firstLosingBid[wallet] = price
-            break
-          }
+          topBidPerWallet[wallet] = price.gt(currentTopBid) ?
+            price.toString() : currentTopBid.toString()
+
+          logger.debug(`new top bid ${topBidPerWallet[wallet]} for ${wallet}`)
         } else {
-          logger.debug('skip null wallet...')
+          logger.debug(`1st loser bid is ${price} for ${wallet}`)
+          firstLosingBid.push({ key: wallet, value: price })
+          break
         }
       }
 
@@ -117,12 +113,10 @@ const endGKBlindAuction = (
         topBids: Object.keys(topBidPerWallet).map(key => {
           return { key, value: topBidPerWallet[key] }
         }),
-        firstLosingBid: Object.keys(firstLosingBid).map(key => {
-          return { key, value: firstLosingBid[key] }
-        }),
-        blindWhitelistWinner: Object.keys(topBidPerWallet).length,
+        firstLosingBid,
+        whitelistWinnersCount: Object.keys(topBidPerWallet).length,
         medianPrice: median(Object.values(topBidPerWallet)),
-        totalBids: bids.length,
+        totalBidsCount: bids.length,
       }
     })
 }
