@@ -108,7 +108,7 @@ const endGKBlindAuction = (
           break
         }
       }
-      ''
+
       return {
         topBids: Object.keys(topBidPerWallet).map(key => {
           return { key, value: topBidPerWallet[key] }
