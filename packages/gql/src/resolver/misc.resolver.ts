@@ -120,7 +120,7 @@ const endGKBlindAuction = (
         }),
         firstLosingBid: firstLosingBid.length > 0 ? firstLosingBid : lastNonValidBid,
         whitelistWinnersCount: Object.keys(topBidPerWallet).length,
-        medianPrice: median(Object.values(topBidPerWallet)),
+        medianPrice: median(Object.values(topBidPerWallet)).toString(),
         totalBidsCount: bids.length,
       }
     })
