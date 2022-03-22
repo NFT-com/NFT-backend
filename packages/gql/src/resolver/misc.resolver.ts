@@ -53,10 +53,10 @@ const sendWinNotification = (
 
 const median = (arr: Array<number>): string => {
   const middle: number = Math.floor(arr.length / 2)
-  arr = [...arr].sort((a, b) => a - b)
+  arr = [...arr].sort((a, b) => BigNumber.from(a).gt(BigNumber.from(b)) ? 0 : -1)
   return arr.length % 2 !== 0 ?
     BigNumber.from(arr[middle]).toString() :
-    BigNumber.from((arr[middle - 1] + arr[middle]) / 2).toString()
+    BigNumber.from(arr[middle - 1]).add(BigNumber.from(arr[middle])).div(2).toString()
 }
 
 const endGKBlindAuction = (
