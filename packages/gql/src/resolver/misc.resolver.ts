@@ -106,6 +106,7 @@ const endGKBlindAuction = (
           } else {
             logger.debug(`1st loser bid is ${price} for ${wallet}`)
             firstLosingBid[wallet] = price
+            break
           }
         } else {
           logger.debug('skip null wallet...')
