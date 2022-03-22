@@ -51,10 +51,12 @@ const sendWinNotification = (
   sendgrid.sendWinEmail(topBid, user, profileURL),
 ])
 
-const median = (arr: Array<number>): number => {
+const median = (arr: Array<number>): string => {
   const middle: number = Math.floor(arr.length / 2)
   arr = [...arr].sort((a, b) => a - b)
-  return arr.length % 2 !== 0 ? arr[middle] : (arr[middle - 1] + arr[middle]) / 2
+  return arr.length % 2 !== 0 ?
+    BigNumber.from(arr[middle]).toString() :
+    BigNumber.from((arr[middle - 1] + arr[middle]) / 2).toString()
 }
 
 const endGKBlindAuction = (
@@ -91,6 +93,7 @@ const endGKBlindAuction = (
     .then(([bids, wallets]: [entity.Bid[], entity.Wallet[]]) => {
       const topBidPerWallet = {}
       const firstLosingBid = []
+      let lastNonValidBid
       for (let i = 0; i < wallets.length; i++) {
         const price = BigNumber.from(bids[i]?.price) ?? BigNumber.from(0)
         const wallet = wallets[i]?.address
@@ -98,10 +101,12 @@ const endGKBlindAuction = (
         if (Object.keys(topBidPerWallet).length < 3001) {
           const currentTopBid = topBidPerWallet[wallet] ?? 0
 
-          topBidPerWallet[wallet] = price.gt(currentTopBid) ?
-            price.toString() : currentTopBid.toString()
+          topBidPerWallet[wallet] = price.gt(BigNumber.from(currentTopBid)) ?
+            price.toString() : BigNumber.from(currentTopBid).toString()
 
           logger.debug(`new top bid ${topBidPerWallet[wallet]} for ${wallet}`)
+
+          lastNonValidBid = [{ key: wallet, value: topBidPerWallet[wallet] }]
         } else {
           logger.debug(`1st loser bid is ${price} for ${wallet}`)
           firstLosingBid.push({ key: wallet, value: price })
@@ -113,9 +118,9 @@ const endGKBlindAuction = (
         topBids: Object.keys(topBidPerWallet).map(key => {
           return { key, value: topBidPerWallet[key] }
         }),
-        firstLosingBid,
+        firstLosingBid: firstLosingBid.length > 0 ? firstLosingBid : lastNonValidBid,
         whitelistWinnersCount: Object.keys(topBidPerWallet).length,
-        medianPrice: median(Object.values(topBidPerWallet)).toString(),
+        medianPrice: median(Object.values(topBidPerWallet)),
         totalBidsCount: bids.length,
       }
     })
