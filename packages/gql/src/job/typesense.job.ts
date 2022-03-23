@@ -52,6 +52,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   nftFields.push({ name: 'id', type: stringType, facet: false, index: false })
   nftFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
+  nftFields.push({ name: 'imageURL', type: stringType, facet: false, index: false })
   nftFields.push({ name: 'name', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'type', type: stringType, facet: false, index: true })
     
@@ -85,4 +86,22 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   client.collections().create(collCollectionSchema)
     .then(() => logger.debug('collections index schema created'))
     .catch(() => logger.info('collection index schema already created, skipping...'))
+
+  // PROFILE SCHEMA (minted only)
+  const profileFields = []
+  profileFields.push({ name: 'id', type: stringType, facet: false, index: false })
+  profileFields.push({ name: 'url', type: stringType, facet: false, index: true })
+    
+  const profileCollectionFields = profileFields as CollectionFieldSchema[]
+    
+  const profileSchema = {
+    name: 'nfts',
+    fields: profileCollectionFields,
+  }
+  const profileCollectionSchema = profileSchema as CollectionCreateSchema
+    
+  // need to add logic to not create after first init 
+  client.collections().create(profileCollectionSchema)
+    .then(() => logger.debug('profile index schema created'))
+    .catch(() => logger.info('profile index schema already created, skipping...'))
 }
