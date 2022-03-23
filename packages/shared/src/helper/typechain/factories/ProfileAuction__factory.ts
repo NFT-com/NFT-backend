@@ -46,19 +46,6 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
-        indexed: true,
-        internalType: "bytes32",
-        name: "hash",
-        type: "bytes32",
-      },
-    ],
-    name: "BidCancelled",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
         indexed: false,
         internalType: "address",
         name: "_user",
@@ -69,126 +56,9 @@ const _abi = [
         internalType: "string",
         name: "_val",
         type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_blockNum",
-        type: "uint256",
       },
     ],
     name: "MintedProfile",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "_user",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "_val",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-    ],
-    name: "NewBid",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "_user",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "_val",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_blockNum",
-        type: "uint256",
-      },
-    ],
-    name: "NewClaimableProfile",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "_user",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "_val",
-        type: "string",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_block",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_tokenId",
-        type: "uint256",
-      },
-    ],
-    name: "RedeemProfile",
     type: "event",
   },
   {
@@ -205,235 +75,13 @@ const _abi = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_profilesToMint",
-        type: "uint256",
-      },
-    ],
-    name: "addProfilesToMint",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_nftTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        internalType: "string",
-        name: "_profileURI",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-    ],
-    name: "approveBid",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    name: "approvedBids",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_nftTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        internalType: "string",
-        name: "_profileURI",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
-        internalType: "uint8",
-        name: "v",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "r",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "s",
-        type: "bytes32",
-      },
-    ],
-    name: "cancelBid",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    name: "cancelledOrFinalized",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_nftTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        internalType: "string",
-        name: "_profileURI",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
-        internalType: "uint8",
-        name: "v",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "r",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "s",
-        type: "bytes32",
-      },
-    ],
-    name: "claimProfile",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    name: "claimableBlock",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [],
-    name: "coldWallet",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_user",
-        type: "address",
-      },
-    ],
-    name: "genKeyOwner",
+    name: "genKeyWhitelistOnly",
     outputs: [
       {
         internalType: "bool",
         name: "",
         type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
-    ],
-    name: "genesisKeyClaim",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
       },
     ],
     stateMutability: "view",
@@ -459,6 +107,29 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
+      },
+    ],
+    name: "genesisKeyClaimProfile",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "genesisKeyContract",
     outputs: [
@@ -472,16 +143,32 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "genesisKeyPercent",
-    outputs: [
+    inputs: [
+      {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
       {
         internalType: "uint256",
-        name: "",
+        name: "tokenId",
         type: "uint256",
       },
+      {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
+      },
     ],
-    stateMutability: "view",
+    name: "genesisKeyWhitelistClaim",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -495,40 +182,6 @@ const _abi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_nftTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        internalType: "string",
-        name: "_profileURI",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-    ],
-    name: "getStructHash",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "pure",
     type: "function",
   },
   {
@@ -548,12 +201,7 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
-        name: "_nftErc20Contract",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "_minter",
+        name: "_nftToken",
         type: "address",
       },
       {
@@ -573,7 +221,7 @@ const _abi = [
       },
       {
         internalType: "address",
-        name: "_coldWallet",
+        name: "_nftBuyer",
         type: "address",
       },
       {
@@ -586,11 +234,6 @@ const _abi = [
         name: "_genesisStakingContract",
         type: "address",
       },
-      {
-        internalType: "address",
-        name: "_publicStakingContract",
-        type: "address",
-      },
     ],
     name: "initialize",
     outputs: [],
@@ -599,98 +242,7 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "minimumBid",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: "uint256",
-            name: "_nftTokens",
-            type: "uint256",
-          },
-          {
-            internalType: "bool",
-            name: "_genKey",
-            type: "bool",
-          },
-          {
-            internalType: "string",
-            name: "_profileURI",
-            type: "string",
-          },
-          {
-            internalType: "address",
-            name: "_owner",
-            type: "address",
-          },
-          {
-            internalType: "uint8",
-            name: "v",
-            type: "uint8",
-          },
-          {
-            internalType: "bytes32",
-            name: "r",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "s",
-            type: "bytes32",
-          },
-          {
-            internalType: "uint8",
-            name: "nftV",
-            type: "uint8",
-          },
-          {
-            internalType: "bytes32",
-            name: "nftR",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "nftS",
-            type: "bytes32",
-          },
-        ],
-        internalType: "struct ProfileAuctionV2.MintArgs[]",
-        name: "mintArgs",
-        type: "tuple[]",
-      },
-    ],
-    name: "mintProfileFor",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "minter",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "nftErc20Contract",
+    name: "nftBuyer",
     outputs: [
       {
         internalType: "address",
@@ -729,12 +281,12 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "oneTimeGenesisKeyMint",
+    name: "nftToken",
     outputs: [
       {
-        internalType: "bool",
+        internalType: "address",
         name: "",
-        type: "bool",
+        type: "address",
       },
     ],
     stateMutability: "view",
@@ -755,45 +307,53 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "payOutNftTokens",
+    name: "publicFee",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        internalType: "uint8",
+        name: "v",
+        type: "uint8",
+      },
+      {
+        internalType: "bytes32",
+        name: "r",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes32",
+        name: "s",
+        type: "bytes32",
+      },
+    ],
+    name: "publicMint",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
   },
   {
     inputs: [],
-    name: "profilesToMint",
+    name: "publicMintBool",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "bool",
         name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "publicPoolPercent",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "publicStakingContract",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
+        type: "bool",
       },
     ],
     stateMutability: "view",
@@ -803,24 +363,11 @@ const _abi = [
     inputs: [
       {
         internalType: "bool",
-        name: "_val",
+        name: "_genKeyWhitelistOnly",
         type: "bool",
       },
     ],
-    name: "setGenesisMint",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_newBid",
-        type: "uint256",
-      },
-    ],
-    name: "setMinimumBid",
+    name: "setGenKeyWhitelistOnly",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -834,6 +381,32 @@ const _abi = [
       },
     ],
     name: "setOwner",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_fee",
+        type: "uint256",
+      },
+    ],
+    name: "setPublicFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bool",
+        name: "_val",
+        type: "bool",
+      },
+    ],
+    name: "setPublicMint",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -867,98 +440,6 @@ const _abi = [
     name: "upgradeToAndCall",
     outputs: [],
     stateMutability: "payable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_nftTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "_genKey",
-        type: "bool",
-      },
-      {
-        internalType: "string",
-        name: "_profileURI",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
-        internalType: "uint8",
-        name: "v",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "r",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "s",
-        type: "bytes32",
-      },
-    ],
-    name: "validateBid",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "_profileURI",
-        type: "string",
-      },
-      {
-        internalType: "uint256",
-        name: "_tokenId",
-        type: "uint256",
-      },
-    ],
-    name: "whitelistGenesisClaim",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: "string",
-            name: "_profileURI",
-            type: "string",
-          },
-          {
-            internalType: "address",
-            name: "_owner",
-            type: "address",
-          },
-        ],
-        internalType: "struct ProfileAuctionV2.WhitelistArgs[]",
-        name: "whitelistArgs",
-        type: "tuple[]",
-      },
-    ],
-    name: "whitelistGenesisMint",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
 ];

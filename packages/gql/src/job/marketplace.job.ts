@@ -3,6 +3,7 @@ import { BigNumber, utils } from 'ethers'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Redis from 'ioredis'
+import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
@@ -15,8 +16,10 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 
-const abi = contracts.marketplaceABIJSON()
-const iface = new utils.Interface(abi)
+const eventABI = contracts.marketplaceEventABI()
+const marketplaceABI = contracts.marketplaceABIJSON()
+const eventIface = new utils.Interface(eventABI)
+const marketplaceIface = new utils.Interface(marketplaceABI)
 
 const defaultBlock: {[chainId: number] : number} = {
   4: 10184159, // block number which marketplace contract created
@@ -100,7 +103,7 @@ const getPastLogs = async (
 }
 
 /**
- * listen to approval events
+ * listen to Approval events
  * TODO: need to confirm again once at least one approval event happens
  * @param chainId
  * @param provider
@@ -123,7 +126,7 @@ const listenApprovalEvents = async (
     logger.debug('Approval logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = marketplaceIface.parseLog(log)
       const structHash = event.args.structHash
       const makerAddress = event.args.maker
 
@@ -164,7 +167,7 @@ const listenApprovalEvents = async (
 }
 
 /**
- * listen to nonceIncremented events
+ * listen to NonceIncremented events
  * TODO: need to confirm again once at least one nonceIncremented event happens
  * @param chainId
  * @param provider
@@ -187,12 +190,13 @@ const listenNonceIncrementedEvents = async (
     logger.debug('NonceIncremented logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = marketplaceIface.parseLog(log)
       const makerAddress = event.args.maker
       const nonce = Number(event.args.newNonce)
       const marketAsks = await repositories.marketAsk.find({
         where: {
           makerAddress: utils.getAddress(makerAddress),
+          nonce: LessThan(nonce),
           marketSwapId: null,
           approvalTxHash: null,
           cancelTxHash: null,
@@ -209,6 +213,7 @@ const listenNonceIncrementedEvents = async (
         const marketBids = await repositories.marketBid.find({
           where: {
             makerAddress: utils.getAddress(makerAddress),
+            nonce: LessThan(nonce),
             marketSwapId: null,
             approvalTxHash: null,
             cancelTxHash: null,
@@ -231,7 +236,7 @@ const listenNonceIncrementedEvents = async (
 }
 
 /**
- * listen to cancel events
+ * listen to Cancel events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -253,7 +258,7 @@ const listenCancelEvents = async (
     logger.debug('Cancel logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = marketplaceIface.parseLog(log)
       const structHash = event.args.structHash
       const makerAddress = event.args.maker
 
@@ -355,7 +360,7 @@ const parseAsset = async (
 }
 
 /**
- * listen to match events
+ * listen to Match events
  * TODO: need to confirm again once at least one match event happens
  * @param chainId
  * @param provider
@@ -368,7 +373,7 @@ const listenMatchEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
   ]
@@ -380,7 +385,7 @@ const listenMatchEvents = async (
 
     const promises = logs.map(async (log) => {
       try {
-        const event = iface.parseLog(log)
+        const event = eventIface.parseLog(log)
         const makerHash = log.topics[1]
         const takerHash = log.topics[2]
         const privateSale = event.args.privateSale
@@ -417,8 +422,6 @@ const listenMatchEvents = async (
             takeAsset: [],
             chainId: chainId.toString(),
           })
-
-          logger.debug('created new marketAsk ', marketAsk.id)
         }
 
         if (!marketBid && takerHash != '0x0000000000000000000000000000000000000000000000000000000000000000') {
@@ -501,7 +504,7 @@ const listenMatchEvents = async (
 }
 
 /**
- * listen to match2A events
+ * listen to Match2A events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -513,7 +516,7 @@ const listenMatchTwoAEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
   ]
@@ -523,7 +526,7 @@ const listenMatchTwoAEvents = async (
     logger.debug('Match2A logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
       const makerHash = log.topics[1]
       const makerAddress = event.args.makerAddress
       const takerAddress = event.args.takerAddress
@@ -580,7 +583,7 @@ const listenMatchTwoAEvents = async (
 }
 
 /**
- * listen to match2B events
+ * listen to Match2B events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -592,8 +595,7 @@ const listenMatchTwoBEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
-  const iface = new utils.Interface(abi)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
   ]
@@ -603,7 +605,7 @@ const listenMatchTwoBEvents = async (
     logger.debug('Match2B logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
 
       const makerHash = log.topics[1]
 
@@ -669,7 +671,7 @@ const listenMatchTwoBEvents = async (
 }
 
 /**
- * listen to match3A events
+ * listen to Match3A events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -681,7 +683,7 @@ const listenMatchThreeAEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
   ]
@@ -691,7 +693,7 @@ const listenMatchThreeAEvents = async (
     logger.debug('Match3A logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
       const takerHash = log.topics[1]
       const makerAddress = event.args.makerAddress
       const takerAddress = event.args.takerAddress
@@ -748,7 +750,7 @@ const listenMatchThreeAEvents = async (
 }
 
 /**
- * listen to match3B events
+ * listen to Match3B events
  * @param chainId
  * @param provider
  * @param cachedBlock
@@ -760,7 +762,7 @@ const listenMatchThreeBEvents = async (
   cachedBlock: number,
   latestBlock: number,
 ): Promise<void[]> => {
-  const address = contracts.nftMarketplaceAddress(chainId)
+  const address = contracts.marketplaceEventAddress(chainId)
   const topics = [
     utils.id('Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
   ]
@@ -770,7 +772,7 @@ const listenMatchThreeBEvents = async (
     logger.debug('Match3B logs', logs.length)
 
     const promises = logs.map(async (log) => {
-      const event = iface.parseLog(log)
+      const event = eventIface.parseLog(log)
       const takerHash = log.topics[1]
 
       const buyerMakerOrderAssetData = event.args.buyerMakerOrderAssetData as string[]
@@ -834,13 +836,61 @@ const listenMatchThreeBEvents = async (
 }
 
 /**
+ * listen to BuyNowInfo events
+ * @param chainId
+ * @param provider
+ * @param cachedBlock
+ * @param latestBlock
+ */
+const listenBuyNowInfoEvents = async (
+  chainId: number,
+  provider: ethers.providers.BaseProvider,
+  cachedBlock: number,
+  latestBlock: number,
+): Promise<void[]> => {
+  const address = contracts.marketplaceEventAddress(chainId)
+  const topics = [
+    utils.id('BuyNowInfo(bytes32,address)'),
+  ]
+  try {
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
+
+    logger.debug('BuyNowInfo logs', logs.length)
+
+    const promises = logs.map(async (log) => {
+      const event = eventIface.parseLog(log)
+
+      const makerHash = log.topics[1]
+      const takerAddress = event.args.takerAddress
+
+      const marketAsk = await repositories.marketAsk.findOne({ where: { structHash: makerHash } })
+      if (marketAsk) {
+        await repositories.marketAsk.updateOneById(marketAsk.id, {
+          buyNowTaker: utils.getAddress(takerAddress),
+        })
+
+        logger.debug('updated existing marketAsk from BuyNowInfo ', marketAsk.id)
+      }
+    })
+
+    await Promise.allSettled(promises)
+  } catch (e) {
+    logger.debug(e)
+  }
+  return
+}
+
+/**
  * get cached block from redis to sync marketplace events
  * @param chainId
  */
 const getCachedBlock = async (chainId: number): Promise<number> => {
   try {
     const cachedBlock = await redis.get(`cached_block_${chainId}`)
-    if (cachedBlock) return defaultBlock[chainId] //Number(cachedBlock)
+
+    // get 1000 blocks before incase of some blocks not being handled correctly
+    if (cachedBlock) return Number(cachedBlock) > 10000
+      ? Number(cachedBlock) - 10000 : Number(cachedBlock)
     else return defaultBlock[chainId]
   } catch (e) {
     return defaultBlock[chainId]
@@ -859,11 +909,13 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await listenApprovalEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenNonceIncrementedEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenCancelEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+
     await listenMatchTwoAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchTwoBEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchThreeAEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchThreeBEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenMatchEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
+    await listenBuyNowInfoEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     // update cached block number to the latest block number
     await redis.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {

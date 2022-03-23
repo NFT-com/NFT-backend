@@ -19,11 +19,6 @@ const _abi = [
       },
       {
         internalType: "address",
-        name: "_weth",
-        type: "address",
-      },
-      {
-        internalType: "address",
         name: "_nftKeyGenesis",
         type: "address",
       },
@@ -62,19 +57,6 @@ const _abi = [
       {
         indexed: true,
         internalType: "address",
-        name: "dao",
-        type: "address",
-      },
-    ],
-    name: "NewDao",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
         name: "from",
         type: "address",
       },
@@ -95,38 +77,6 @@ const _abi = [
     type: "event",
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "bool",
-        name: "val",
-        type: "bool",
-      },
-    ],
-    name: "WhiteListChange",
-    type: "event",
-  },
-  {
-    inputs: [],
-    name: "DAO",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "DOMAIN_SEPARATOR",
     outputs: [
@@ -134,19 +84,6 @@ const _abi = [
         internalType: "bytes32",
         name: "",
         type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "WETH9",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
       },
     ],
     stateMutability: "view",
@@ -204,19 +141,6 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
-        name: "token",
-        type: "address",
-      },
-    ],
-    name: "approveToken",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
         name: "account",
         type: "address",
       },
@@ -235,19 +159,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "newDAO",
-        type: "address",
-      },
-    ],
-    name: "changeDAO",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "uint256",
         name: "_xNftAmount",
         type: "uint256",
@@ -259,26 +170,6 @@ const _abi = [
       },
     ],
     name: "collectTokens",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "tokenIn",
-        type: "address",
-      },
-    ],
-    name: "convertERC20ToNFT",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "convertEthToNFT",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -391,24 +282,6 @@ const _abi = [
       },
     ],
     name: "leave",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "token",
-        type: "address",
-      },
-      {
-        internalType: "bool",
-        name: "val",
-        type: "bool",
-      },
-    ],
-    name: "modifyWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -630,42 +503,6 @@ const _abi = [
     ],
     stateMutability: "nonpayable",
     type: "function",
-  },
-  {
-    inputs: [],
-    name: "uniswapRouter",
-    outputs: [
-      {
-        internalType: "contract IUniswapRouter",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "whitelistERC20",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    stateMutability: "payable",
-    type: "receive",
   },
 ];
 

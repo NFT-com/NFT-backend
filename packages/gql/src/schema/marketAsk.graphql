@@ -11,6 +11,13 @@ enum AuctionType {
   Decreasing
 }
 
+enum AskSortType {
+  RecentlyCreated
+  RecentlySold
+  EndingSoon
+  Oldest
+}
+
 type GetMarketAsk {
   items: [MarketAsk!]
   pageInfo: PageInfo
@@ -42,6 +49,7 @@ type MarketAsk {
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
+  buyNowTaker: String
   marketSwapId: String
   approvalTxHash: String
   cancelTxHash: String
@@ -104,10 +112,18 @@ input BuyNowInput {
   txHash: String!
 }
 
+input FilterAskInput {
+  auctionType: AuctionType
+  sortBy: AskSortType
+  chainId: String
+  pageInput: PageInput
+}
+
 extend type Query {
   getAsks(input: AsksInput!): GetMarketAsk!
   getNFTAsks(input: NftAsksInput!): [MarketAsk!]!
   getNFTOffers(input: NftAsksInput!): [MarketAsk!]!
+  filterAsks(input: FilterAskInput!): GetMarketAsk!
 }
 
 extend type Mutation {

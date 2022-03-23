@@ -1,8 +1,11 @@
 import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
+import genKeyClaimABIJSON from '@nftcom/shared/helper/abis/GenesisKeyDistributor.json'
+import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
-import profileAuctionABIJSON from '@nftcom/shared/helper/abis/profile_auction.json'
+import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
+import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
 // TODO: move contract addresses to Doppler.
 export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
@@ -10,7 +13,35 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xA3509a064A54a7a60Fc4Db0245ef44F812f439f6')
+    return utils.getAddress('0xC6F83d1D6D5a2aC7EE034483F8Ebe29646467Db7')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+
+export function marketplaceEventAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0x8D42A1Af22ac1287aabFEb5D7BEEa956210Cf197')
+  case '0':
+  case 0:
+  case 'mainnet':
+  default:
+    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+  }
+}
+
+export function validationLogicAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('0xce789D5C9DfDdEBA2AA87b37f2dE25e26a767023')
   case '0':
   case 0:
   case 'mainnet':
@@ -58,7 +89,7 @@ export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xa75F995f252ba5F7C17f834b314201271d32eC35')
+    return utils.getAddress('0x0F38751eA1bD10B373Cf9f61794426a251f43f99')
   case '0':
   case 0:
   case 'mainnet':
@@ -72,7 +103,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xc5782D87B3d353edbf1B03dEB001949Afd2e25E8')
+    return utils.getAddress('0xaa7F30a10D3E259ae9B14308C77dFe5aA2f5D9Df')
   case '0':
   case 0:
   case 'mainnet':
@@ -86,7 +117,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x2295828BBB9270cF92D29ed79bA0260d64fdF23f')
+    return utils.getAddress('0xc53884b5E8B9f29635D865FBBccFd7Baf103B6eC')
   case '0':
   case 0:
   case 'mainnet':
@@ -99,7 +130,7 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
+    return utils.getAddress('0xbEeB7221B6058B9529e0bde13A072f17c63CD372')
   case '0':
   case 0:
   case 'mainnet':
@@ -115,6 +146,18 @@ export function profileAuctionABI(): any {
 
 export function marketplaceABIJSON(): any {
   return nftMarketplaceABIJSON
+}
+
+export function marketplaceEventABI(): any {
+  return marketplaceEventABIJSON
+}
+
+export function merkleAirdropABI(): any {
+  return merkleAirdropABIJSON
+}
+
+export function genKeyClaimABI(): any {
+  return genKeyClaimABIJSON
 }
 
 export interface GasInfo {

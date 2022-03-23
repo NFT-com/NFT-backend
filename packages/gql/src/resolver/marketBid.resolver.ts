@@ -5,7 +5,7 @@ import Joi from 'joi'
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
-import { _logger, contracts, db,entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -40,6 +40,11 @@ const validOrderMatch = async (
   marketBidArgs: gql.MutationCreateBidArgs,
   wallet: entity.Wallet,
 ): Promise<boolean> => {
+  const validationLogicContract = typechain.ValidationLogic__factory.connect(
+    contracts.validationLogicAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
     contracts.nftMarketplaceAddress(wallet.chainId),
     provider.provider(Number(wallet.chainId)),
@@ -52,7 +57,7 @@ const validOrderMatch = async (
         maker: marketBidArgs?.input.makerAddress,
         makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
         taker: marketBidArgs?.input.takerAddress,
-        takeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        takeAssets: getAssetList(marketBidArgs?.input.takeAsset),
         salt: marketBidArgs?.input.salt,
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
@@ -106,7 +111,7 @@ const validOrderMatch = async (
     }
 
     // make sure assets match via contract
-    const result = await nftMarketplaceContract.validateMatch_(
+    const result = await validationLogicContract.validateMatch_(
       {
         maker: marketAsk.makerAddress,
         makeAssets: getAssetList(marketAsk.makeAsset),
@@ -142,26 +147,28 @@ const validOrderMatch = async (
   return true
 }
 
-const availableToBid = async (
-  address: string,
-  repositories: db.Repository,
-): Promise<boolean> => {
-  const now = Date.now() / 1000
-  const marketBids = await repositories.marketBid.find({
-    skip: 0,
-    take: 1,
-    order: { createdAt: 'DESC' },
-    where: {
-      makerAddress: ethers.utils.getAddress(address),
-      cancelTxHash: null,
-      marketSwapId: null,
-      rejectedAt: null,
-    },
-  })
+// FIXME: add validation later for 1% increase AND marketAskId
+// NOTE: currently this is limited every user to 1 active bid per user, not per ask
+// const availableToBid = async (
+//   address: string,
+//   repositories: db.Repository,
+// ): Promise<boolean> => {
+//   const now = Date.now() / 1000
+//   const marketBids = await repositories.marketBid.find({
+//     skip: 0,
+//     take: 1,
+//     order: { createdAt: 'DESC' },
+//     where: {
+//       makerAddress: ethers.utils.getAddress(address),
+//       cancelTxHash: null,
+//       marketSwapId: null,
+//       rejectedAt: null,
+//     },
+//   })
 
-  const activeBids = marketBids.filter((bid) => bid.end >= now)
-  return (activeBids.length === 0)
-}
+//   const activeBids = marketBids.filter((bid) => bid.end >= now)
+//   return (activeBids.length === 0)
+// }
 
 const createBid = (
   _: any,
@@ -247,30 +254,22 @@ const createBid = (
           marketBidError.ErrorType.MarketBidExisting,
         )))
         .then(() => {
-          return availableToBid(wallet.address, repositories)
-            .then((available): Promise<entity.MarketBid> => {
-              if (available) {
-                return repositories.marketBid.save({
-                  structHash: args?.input.structHash,
-                  nonce: args?.input.nonce,
-                  signature: args?.input.signature,
-                  marketAskId: args?.input.marketAskId,
-                  makerAddress: args?.input.makerAddress,
-                  makeAsset: makeAssets,
-                  takerAddress: args?.input.takerAddress,
-                  takeAsset: takeAssets,
-                  message: args?.input.message,
-                  start: args?.input.start,
-                  end: args?.input.end,
-                  salt: args?.input.salt,
-                  chainId: wallet.chainId,
-                })
-              } else {
-                return Promise.reject(appError.buildForbidden(
-                  marketBidError.buildMarketBidUnavailableMsg(wallet.address),
-                  marketBidError.ErrorType.MarketBidUnavailable))
-              }
-            })
+          return repositories.marketBid.save({
+            structHash: args?.input.structHash,
+            nonce: args?.input.nonce,
+            signature: args?.input.signature,
+            marketAskId: args?.input.marketAskId,
+            makerAddress: args?.input.makerAddress,
+            makeAsset: makeAssets,
+            takerAddress: args?.input.takerAddress,
+            takeAsset: takeAssets,
+            message: args?.input.message,
+            start: args?.input.start,
+            end: args?.input.end,
+            salt: args?.input.salt,
+            chainId: wallet.chainId,
+            auctionType: args?.input.auctionType,
+          })
         }),
     )
 }

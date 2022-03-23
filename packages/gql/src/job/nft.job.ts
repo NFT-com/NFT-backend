@@ -99,7 +99,7 @@ const filterNFTsWithAlchemy = async (
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
           checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
-          BigNumber.from(ownedNFT.id.tokenId).toHexString() === dbNFT.tokenId,
+          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT.tokenId)),
         )
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
