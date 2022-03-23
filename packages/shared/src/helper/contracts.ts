@@ -13,7 +13,7 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xC6F83d1D6D5a2aC7EE034483F8Ebe29646467Db7')
+    return utils.getAddress('0xc70090a2d719b4f9BB73084A48900510457d350E')
   case '0':
   case 0:
   case 'mainnet':
@@ -27,7 +27,7 @@ export function marketplaceEventAddress(chainId: string | number = 'mainnet'): s
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x8D42A1Af22ac1287aabFEb5D7BEEa956210Cf197')
+    return utils.getAddress('0x8Bbf505ce08553A4F0083Fc1166195B0cB837Ab7')
   case '0':
   case 0:
   case 'mainnet':
@@ -41,7 +41,7 @@ export function validationLogicAddress(chainId: string | number = 'mainnet'): st
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xce789D5C9DfDdEBA2AA87b37f2dE25e26a767023')
+    return utils.getAddress('0x54d6c3C9Cefcfa96C9e9e020d456D6FF172807D8')
   case '0':
   case 0:
   case 'mainnet':
@@ -89,7 +89,7 @@ export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x0F38751eA1bD10B373Cf9f61794426a251f43f99')
+    return utils.getAddress('0xFD080f88e4dA08cAA35744b281481cc86b95D287')
   case '0':
   case 0:
   case 'mainnet':
@@ -103,7 +103,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xaa7F30a10D3E259ae9B14308C77dFe5aA2f5D9Df')
+    return utils.getAddress('0x4Defe27b42e870E36BD693Bd7d4514e80272bF1e')
   case '0':
   case 0:
   case 'mainnet':
@@ -117,7 +117,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xc53884b5E8B9f29635D865FBBccFd7Baf103B6eC')
+    return utils.getAddress('0x96c7a4c8babfA1f24f275Ad93a02319E76c395fe')
   case '0':
   case 0:
   case 'mainnet':
@@ -130,7 +130,7 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xbEeB7221B6058B9529e0bde13A072f17c63CD372')
+    return utils.getAddress('0xAed146B7E487B2d64b51B6D27F75c1f52247050a')
   case '0':
   case 0:
   case 'mainnet':
