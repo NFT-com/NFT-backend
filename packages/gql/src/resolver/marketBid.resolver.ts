@@ -8,7 +8,7 @@ import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validati
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
-import { core } from '../service'
+import { core, sendgrid } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketBid, _logger.Context.GraphQL)
 
@@ -246,7 +246,7 @@ const createBid = (
       marketBidError.buildMarketBidInvalidMsg(),
       marketBidError.ErrorType.MarketBidInvalid,
     )))
-    .then(() =>
+    .then((marketAsk: entity.MarketAsk) =>
       repositories.marketBid
         .findOne({ where: { structHash: args?.input.structHash } })
         .then(fp.rejectIfNotEmpty(appError.buildExists(
@@ -269,9 +269,17 @@ const createBid = (
             salt: args?.input.salt,
             chainId: wallet.chainId,
             auctionType: args?.input.auctionType,
+          }).then((bid: entity.MarketBid) => {
+            return repositories.wallet.findByChainAddress(marketAsk.chainId, marketAsk.makerAddress)
+              .then((wallet: entity.Wallet) => {
+                return repositories.user.findById(wallet.userId)
+                  .then((user: entity.User) => {
+                    return sendgrid.sendMarketplaceBidConfirmEmail(bid, user)
+                      .then(() => bid)
+                  })
+              })
           })
-        }),
-    )
+        }))
 }
 
 const cancelMarketBid = (
