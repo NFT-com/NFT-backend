@@ -150,10 +150,15 @@ const validAsk = async (
     const calculatedStructHash: string = result?.[1]
 
     if (marketAskArgs?.input.structHash !== calculatedStructHash) {
+      logger.debug('calculatedStructHash: ', calculatedStructHash)
+      logger.debug('marketAskArgs?.input.structHash: ', calculatedStructHash)
+
       throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketAskArgs?.input.structHash}`)
     }
 
     if (!result[0]) {
+      logger.debug('result[0]: ', result[0])
+
       throw Error(`provided signature ${JSON.stringify(marketAskArgs.input.signature)} doesn't match`)
     }
   } catch (err) {
@@ -251,7 +256,7 @@ const createAsk = (
   ctx: Context,
 ): Promise<gql.MarketAsk> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('createAsk', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('createAsk', { loggedInUserId: user?.id, input: JSON.stringify(args?.input, null, 2) })
 
   const schema = Joi.object().keys({
     chainId: Joi.string().required(),
