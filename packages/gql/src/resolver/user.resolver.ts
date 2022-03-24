@@ -169,6 +169,13 @@ const buildPreferencesInputSchema = (): Joi.ObjectSchema =>
     outbidNotifications: Joi.boolean().required(),
     purchaseSuccessNotifications: Joi.boolean().required(),
     promotionalNotifications: Joi.boolean().required(),
+    nftSoldNotifications: Joi.boolean().required(),
+    nftListingChangeNotifications: Joi.boolean().required(),
+    nftOwnerChangeNotifications: Joi.boolean().required(),
+    nftNewBidNotifications: Joi.boolean().required(),
+    collectionFloorChangeNotifications: Joi.boolean().required(),
+    collectionAssetSoldNotifications: Joi.boolean().required(),
+    collectionNewListingNotifications: Joi.boolean().required(),
   })
 
 const updateMe = (
