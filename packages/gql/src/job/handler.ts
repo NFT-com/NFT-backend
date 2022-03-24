@@ -77,7 +77,7 @@ const getAddressBalanceMapping = (bids: entity.Bid[], walletIdAddressMapping: an
     splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
       provider.provider(Number(chainId)),
       splitArray,
-      [contracts.nftTokenAddress(chainId), contracts.wethAddress(chainId)],
+      [contracts.nftTokenAddress(chainId), '0x0'],
       contracts.multiBalance(chainId),
     ),
   )
@@ -128,10 +128,10 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
             }),
             genesisKeyBids.map((bid: entity.Bid) => {
               const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-              const wethBalance = Number(balanceObj[contracts.wethAddress(chainId)]) ?? 0
+              const ethBalance = Number(balanceObj['0x0']) ?? 0
                 
-              if (wethBalance < Number(bid.price)) {
-                logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), wethBalance })
+              if (ethBalance < Number(bid.price)) {
+                logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
                 repositories.bid.deleteById(bid.id)
               }
             }),
