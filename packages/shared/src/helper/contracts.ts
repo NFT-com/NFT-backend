@@ -7,7 +7,7 @@ import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.jso
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
 import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
-// TODO: move contract addresses to Doppler.
+// TODO: move contract addresses to Doppler
 export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case 4:
