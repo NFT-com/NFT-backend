@@ -241,6 +241,7 @@ const availableToCreateAsk = async (
           else if (asset.value !== ask.makeAsset[index].value) return false
           else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
           else if (asset.standard !== ask.makeAsset[index].standard ) return false
+          else if (asset.standard.tokenId !== ask.makeAsset[index].standard.tokenId ) return false
         })
         return true
       }
