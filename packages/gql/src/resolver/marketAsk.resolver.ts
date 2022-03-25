@@ -236,6 +236,8 @@ const availableToCreateAsk = async (
     encodeAssetClass(defs.AssetClass.ERC1155),
   ]
 
+  logger.debug('==============> assets: ', assets)
+
   // find out active marketAsks which have user's make asset...
   const activeAsks = marketAsks.filter((ask) => {
     if (ask.end < now) return false
@@ -254,6 +256,8 @@ const availableToCreateAsk = async (
       }
     }
   })
+
+  logger.debug('==============> active asks: ', activeAsks)
 
   return (activeAsks.length === 0)
 }
