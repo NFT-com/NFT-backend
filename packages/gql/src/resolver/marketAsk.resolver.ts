@@ -241,10 +241,13 @@ const availableToCreateAsk = async (
       if (assets.length !== ask.makeAsset.length) return false
       else {
         assets.forEach((asset, index) => {
-          if (asset.bytes !== ask.makeAsset[index].bytes) return false
-          else if (asset.value !== ask.makeAsset[index].value) return false
-          else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
-          else if (ethers.utils.getAddress(asset.standard.contractAddress) !==
+          logger.debug('compare contract address: ', ethers.utils.getAddress(asset.standard.contractAddress) !==
+            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress))
+          logger.debug('NonFungibleAssetAsset.includes(asset.standard.assetClass): ', NonFungibleAssetAsset.includes(asset.standard.assetClass))
+          logger.debug('!BigNumber.from(asset.standard.tokenId).eq(ask.makeAsset[index].standard.tokenId): ',
+            !BigNumber.from(asset.standard.tokenId)
+              .eq(ask.makeAsset[index].standard.tokenId))
+          if (ethers.utils.getAddress(asset.standard.contractAddress) !==
             ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) return false
           else if (NonFungibleAssetAsset.includes(asset.standard.assetClass) &&
             !BigNumber.from(asset.standard.tokenId)
