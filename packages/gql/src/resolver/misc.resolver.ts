@@ -247,30 +247,14 @@ const getContracts = (
   const { chainId } = input
 
   return {
-    marketplace: {
-      address: contracts.nftMarketplaceAddress(chainId),
-      abi: JSON.stringify(contracts.marketplaceABIJSON()),
-    },
-    marketplaceEvent: {
-      address: contracts.marketplaceEventAddress(chainId),
-      abi: JSON.stringify(contracts.marketplaceEventABI()),
-    },
-    validationLogic: {
-      address: contracts.validationLogicAddress(chainId),
-      abi: '',
-    },
-    nftToken: {
-      address: contracts.nftTokenAddress(chainId),
-      abi: '',
-    },
-    profileAuction: {
-      address: contracts.profileAuctionAddress(chainId),
-      abi: JSON.stringify(contracts.profileAuctionABI()),
-    },
-    genesisKey: {
-      address: contracts.genesisKeyAddress(chainId),
-      abi: '',
-    },
+    marketplace: contracts.nftMarketplaceAddress(chainId),
+    marketplaceEvent: contracts.marketplaceEventAddress(chainId),
+    validationLogic: contracts.validationLogicAddress(chainId),
+    nftToken: contracts.nftTokenAddress(chainId),
+    profileAuction: contracts.profileAuctionAddress(chainId),
+    nftProfile: contracts.nftProfileAddress(chainId),
+    genesisKey: contracts.genesisKeyAddress(chainId),
+    genesisKeyStake: contracts.genesisKeyStakeAddress(chainId),
   }
 }
 

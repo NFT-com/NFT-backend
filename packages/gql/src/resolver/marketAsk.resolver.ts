@@ -257,7 +257,7 @@ const availableToCreateAsk = async (
     }
   })
 
-  logger.debug('==============> active asks: ', activeAsks)
+  logger.debug('==============> active asks: ', JSON.stringify(activeAsks, null, 2))
 
   return (activeAsks.length === 0)
 }

@@ -33,18 +33,15 @@ input getContractsInput {
   chainId: String!
 }
 
-type ContractInfo {
-  address: String!
-  abi: String!
-}
-
 type GetContracts {
-  marketplace: ContractInfo!
-  marketplaceEvent: ContractInfo!
-  validationLogic: ContractInfo!
-  nftToken: ContractInfo!
-  profileAuction: ContractInfo!
-  genesisKey: ContractInfo!
+  marketplace: String!
+  marketplaceEvent: String!
+  validationLogic: String!
+  nftToken: String!
+  profileAuction: String!
+  genesisKey: String!
+  nftProfile: String!
+  genesisKeyStake: String!
 }
 
 extend type Query {
