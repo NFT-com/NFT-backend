@@ -240,7 +240,7 @@ const availableToCreateAsk = async (
     else {
       if (assets.length !== ask.makeAsset.length) return false
       else {
-        return assets.forEach((asset, index) => {
+        assets.forEach((asset, index) => {
           if (ethers.utils.getAddress(asset.standard.contractAddress) !==
             ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) {
             logger.debug('====> 1', ethers.utils.getAddress(asset.standard.contractAddress))
@@ -250,10 +250,10 @@ const availableToCreateAsk = async (
             .eq(ask.makeAsset[index].standard.tokenId)) {
             logger.debug('====> 2', BigNumber.from(asset.standard.tokenId).toString())
             return false
-          } else {
-            return true
           }
         })
+
+        return true
       }
     }
   })
