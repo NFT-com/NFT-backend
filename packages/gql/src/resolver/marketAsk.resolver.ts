@@ -248,7 +248,7 @@ const availableToCreateAsk = async (
     }
   })
 
-  return (activeAsks.length === 0)
+  return (activeAsks.length < 5)
 }
 
 const createAsk = (
