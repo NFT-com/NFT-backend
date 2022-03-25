@@ -241,12 +241,12 @@ const availableToCreateAsk = async (
       if (assets.length !== ask.makeAsset.length) return false
       else {
         assets.forEach((asset, index) => {
-          if (ethers.utils.getAddress(asset.standard.contractAddress) !==
+          if (ethers.utils.getAddress(asset.standard.contractAddress) ===
             ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) {
             logger.debug('====> 1', ethers.utils.getAddress(asset.standard.contractAddress))
             return false
           } else if (NonFungibleAssetAsset.includes(asset.standard.assetClass) &&
-          !BigNumber.from(asset.standard.tokenId)
+          BigNumber.from(asset.standard.tokenId)
             .eq(ask.makeAsset[index].standard.tokenId)) {
             logger.debug('====> 2', BigNumber.from(asset.standard.tokenId).toString())
             return false
