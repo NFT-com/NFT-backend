@@ -32,7 +32,7 @@ const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
   }
 }
 
-export const encodeAssetClass = (assetClass: gql.AssetClass): string => {
+const encodeAssetClass = (assetClass: gql.AssetClass): string => {
   switch (assetClass) {
   case 'ETH':
     return helper.ETH_ASSET_CLASS
