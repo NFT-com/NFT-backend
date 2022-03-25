@@ -6,7 +6,6 @@ import {
   blockNumberToTimestamp,
   Context,
   convertAssetInput,
-  encodeAssetClass,
   getAssetList,
   gql,
 } from '@nftcom/gql/defs'
@@ -231,10 +230,7 @@ const availableToCreateAsk = async (
     },
   })
 
-  const NonFungibleAssetAsset = [
-    encodeAssetClass(defs.AssetClass.ERC721),
-    encodeAssetClass(defs.AssetClass.ERC1155),
-  ]
+  const NonFungibleAssetAsset = ['ERC721', 'ERC1155']
 
   logger.debug('==============> assets: ', assets)
 
@@ -248,9 +244,11 @@ const availableToCreateAsk = async (
           if (asset.bytes !== ask.makeAsset[index].bytes) return false
           else if (asset.value !== ask.makeAsset[index].value) return false
           else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
-          else if (asset.standard !== ask.makeAsset[index].standard ) return false
-          else if (NonFungibleAssetAsset.includes(asset.bytes) &&
-            asset.standard.tokenId !== ask.makeAsset[index].standard.tokenId ) return false
+          else if (ethers.utils.getAddress(asset.standard.contractAddress) !==
+            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) return false
+          else if (NonFungibleAssetAsset.includes(asset.standard.assetClass) &&
+            !BigNumber.from(asset.standard.tokenId)
+              .eq(ask.makeAsset[index].standard.tokenId)) return false
         })
         return true
       }
