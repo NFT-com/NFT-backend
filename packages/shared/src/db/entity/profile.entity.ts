@@ -36,4 +36,7 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   description: string
 
+  @Column({ nullable: true })
+  showGallery: boolean
+
 }
