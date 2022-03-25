@@ -240,20 +240,20 @@ const availableToCreateAsk = async (
     else {
       if (assets.length !== ask.makeAsset.length) return false
       else {
-        assets.forEach((asset, index) => {
-          logger.debug('compare contract address: ', ethers.utils.getAddress(asset.standard.contractAddress) !==
-            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress))
-          logger.debug('NonFungibleAssetAsset.includes(asset.standard.assetClass): ', NonFungibleAssetAsset.includes(asset.standard.assetClass))
-          logger.debug('!BigNumber.from(asset.standard.tokenId).eq(ask.makeAsset[index].standard.tokenId): ',
-            !BigNumber.from(asset.standard.tokenId)
-              .eq(ask.makeAsset[index].standard.tokenId))
+        return assets.forEach((asset, index) => {
           if (ethers.utils.getAddress(asset.standard.contractAddress) !==
-            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) return false
-          else if (NonFungibleAssetAsset.includes(asset.standard.assetClass) &&
-            !BigNumber.from(asset.standard.tokenId)
-              .eq(ask.makeAsset[index].standard.tokenId)) return false
+            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) {
+            logger.debug('====> 1', ethers.utils.getAddress(asset.standard.contractAddress))
+            return false
+          } else if (NonFungibleAssetAsset.includes(asset.standard.assetClass) &&
+          !BigNumber.from(asset.standard.tokenId)
+            .eq(ask.makeAsset[index].standard.tokenId)) {
+            logger.debug('====> 2', BigNumber.from(asset.standard.tokenId).toString())
+            return false
+          } else {
+            return true
+          }
         })
-        return true
       }
     }
   })
