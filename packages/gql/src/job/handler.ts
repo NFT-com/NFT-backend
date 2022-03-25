@@ -126,13 +126,18 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 repositories.bid.deleteById(bid.id)
               }
             }),
-            genesisKeyBids.map((bid: entity.Bid) => {
-              const balanceObj = addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-              const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
-                
-              if (ethBalance < Number(bid.price)) {
-                logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
-                repositories.bid.deleteById(bid.id)
+            genesisKeyBids.map(async (bid: entity.Bid) => {
+              try {
+                const balanceObj = (await addressBalanceMapping[0])[
+                  walletIdAddressMapping[bid.walletId]]
+                const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
+                  
+                if (ethBalance < Number(bid.price)) {
+                  logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
+                  repositories.bid.deleteById(bid.id)
+                }
+              } catch (err) {
+                logger.debug('gk balance: ', err)
               }
             }),
           ])
