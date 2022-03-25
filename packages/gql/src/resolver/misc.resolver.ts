@@ -8,7 +8,7 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, approvalError, mintError, profileError, userError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -53,10 +53,10 @@ const sendWinNotification = (
 
 const median = (arr: Array<number>): string => {
   const middle: number = Math.floor(arr.length / 2)
-  arr = [...arr].sort((a, b) => a - b)
+  arr = [...arr].sort((a, b) => BigNumber.from(a).gt(BigNumber.from(b)) ? 0 : -1)
   return arr.length % 2 !== 0 ?
     BigNumber.from(arr[middle]).toString() :
-    BigNumber.from((arr[middle - 1] + arr[middle]) / 2).toString()
+    BigNumber.from(arr[middle - 1]).add(BigNumber.from(arr[middle])).div(2).toString()
 }
 
 const endGKBlindAuction = (
@@ -64,7 +64,7 @@ const endGKBlindAuction = (
   args: unknown,
   ctx: Context,
 ): Promise<gql.EndGkOutput> => {
-  const { repositories, wallet } = ctx
+  const { repositories } = ctx
 
   return repositories.bid.find({
     where: { nftType: defs.NFTType.GenesisKey }, order:  { price: 'DESC' },
@@ -75,20 +75,6 @@ const endGKBlindAuction = (
       }))
         .then((wallets: entity.Wallet[]) =>
           [bids, wallets])
-    })
-    .then(([bids, wallets]: [entity.Bid[], entity.Wallet[]]) => {
-      const filteredBids = bids.filter((bid, index) => {
-        const wethContract = typechain.Weth__factory.connect(
-          contracts.wethAddress(wallet.chainId),
-          provider.provider(Number(wallet.chainId)),
-        )
-        return wethContract.balanceOf(wallets[index]?.address ?? '')
-          .catch(() => Promise.resolve(BigNumber.from(0)))
-          .then((balance: BigNumber) => {
-            return balance.gte(bid.price)
-          })
-      })
-      return [filteredBids, wallets]
     })
     .then(([bids, wallets]: [entity.Bid[], entity.Wallet[]]) => {
       const topBidPerWallet = {}
