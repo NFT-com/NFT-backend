@@ -6,6 +6,7 @@ import {
   blockNumberToTimestamp,
   Context,
   convertAssetInput,
+  encodeAssetClass,
   getAssetList,
   gql,
 } from '@nftcom/gql/defs'
@@ -230,6 +231,11 @@ const availableToCreateAsk = async (
     },
   })
 
+  const NonFungibleAssetAsset = [
+    encodeAssetClass(defs.AssetClass.ERC721),
+    encodeAssetClass(defs.AssetClass.ERC1155),
+  ]
+
   // find out active marketAsks which have user's make asset...
   const activeAsks = marketAsks.filter((ask) => {
     if (ask.end < now) return false
@@ -241,14 +247,15 @@ const availableToCreateAsk = async (
           else if (asset.value !== ask.makeAsset[index].value) return false
           else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
           else if (asset.standard !== ask.makeAsset[index].standard ) return false
-          else if (asset.standard.tokenId !== ask.makeAsset[index].standard.tokenId ) return false
+          else if (NonFungibleAssetAsset.includes(asset.bytes) &&
+            asset.standard.tokenId !== ask.makeAsset[index].standard.tokenId ) return false
         })
         return true
       }
     }
   })
 
-  return (activeAsks.length < 5)
+  return (activeAsks.length === 0)
 }
 
 const createAsk = (
