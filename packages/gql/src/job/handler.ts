@@ -77,7 +77,7 @@ const getAddressBalanceMapping = (bids: entity.Bid[], walletIdAddressMapping: an
     splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
       provider.provider(Number(chainId)),
       splitArray,
-      [contracts.nftTokenAddress(chainId), '0x0'],
+      ['0x0000000000000000000000000000000000000000', contracts.nftTokenAddress(chainId)],
       contracts.multiBalance(chainId),
     ),
   )
@@ -126,13 +126,18 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 repositories.bid.deleteById(bid.id)
               }
             }),
-            genesisKeyBids.map((bid: entity.Bid) => {
-              const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-              const ethBalance = Number(balanceObj['0x0']) ?? 0
-                
-              if (ethBalance < Number(bid.price)) {
-                logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
-                repositories.bid.deleteById(bid.id)
+            genesisKeyBids.map(async (bid: entity.Bid) => {
+              try {
+                const balanceObj = (await addressBalanceMapping[0])[
+                  walletIdAddressMapping[bid.walletId]]
+                const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
+                  
+                if (ethBalance < Number(bid.price)) {
+                  logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
+                  repositories.bid.deleteById(bid.id)
+                }
+              } catch (err) {
+                logger.debug('gk balance: ', err)
               }
             }),
           ])
@@ -148,10 +153,12 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     const { chainId } = job.data
     const contract = getContract(chainId)
 
+    logger.debug('getting Ethereum Events')
+
     // go through all bids and determine which ones are valid
     // valid bids:
     //  * have enough NFT tokens under address if for profile
-    //  * have enough WETH tokens under address for genesis key
+    //  * have enough ETH tokens under address for genesis key
     //  * are bids for an available profile (search profiles for urls for status)
 
     const filter = { address: contract.address }

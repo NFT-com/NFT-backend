@@ -206,6 +206,7 @@ const updateProfile = (
     bannerURL: Joi.string().uri().allow(null),
     description: Joi.string().allow(null),
     photoURL: Joi.string().uri().allow(null),
+    showGallery: Joi.boolean(),
   })
   joi.validateSchema(schema, args.input)
 
@@ -221,6 +222,7 @@ const updateProfile = (
       p.bannerURL = args.input.bannerURL || p.bannerURL
       p.description = args.input.description || p.description
       p.photoURL = args.input.photoURL || p.photoURL
+      p.showGallery = args.input.showGallery || p.showGallery
       return repositories.profile.save(p)
     })
 }
