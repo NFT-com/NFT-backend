@@ -5,10 +5,7 @@ import { _logger, entity, fp, helper } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
 
 sendgrid.setApiKey(sgAPIKey)
-const logger = _logger.Factory(
-  _logger.Context.SendGrid,
-  _logger.Context.General,
-)
+const logger = _logger.Factory(_logger.Context.SendGrid, _logger.Context.General)
 const from = {
   name: 'NFT.com',
   email: '<noreply@nft.com>',
@@ -30,8 +27,7 @@ const templates = {
 const send = (
   message: sendgrid.MailDataRequired | sendgrid.MailDataRequired[],
 ): Promise<unknown> => {
-  return sendgrid
-    .send(message)
+  return sendgrid.send(message)
     .then(fp.tap((result) => logger.debug('send', { message, result })))
     .catch(fp.tapThrow((err) => logger.error('send', { message, err })))
 }
@@ -44,17 +40,13 @@ export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
       from,
       to: { email: user.email },
       subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
-      text: `Your NFT.com email confirm code is ${
-        user.confirmEmailToken
-      }. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
-    }).then(() => true)
+      text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
+    })
+      .then(() => true)
   }
 }
 
-export const sendReferredBy = (
-  user: entity.User,
-  totalReferrals: number,
-): Promise<boolean> => {
+export const sendReferredBy = (user: entity.User, totalReferrals: number): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendReferredBy', { user })
     return send({
@@ -62,7 +54,8 @@ export const sendReferredBy = (
       to: { email: user.email },
       subject: `New NFT.com Referral! ${new Date().toUTCString()}`,
       text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
-    }).then(() => true)
+    })
+      .then(() => true)
   }
 }
 
@@ -120,9 +113,7 @@ export const sendWinEmail = (
   if (user?.email) {
     logger.debug('sendWinEmail', { user })
 
-    if (
-      helper.isFalse(user?.preferences?.purchaseSuccessNotifications ?? false)
-    ) {
+    if (helper.isFalse(user?.preferences?.purchaseSuccessNotifications ?? false)) {
       return Promise.resolve(false)
     }
 
