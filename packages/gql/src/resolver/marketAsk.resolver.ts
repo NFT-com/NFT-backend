@@ -230,6 +230,10 @@ const availableToCreateAsk = async (
     },
   })
 
+  const NonFungibleAssetAsset = ['ERC721']
+
+  logger.debug('==============> assets: ', assets)
+
   // find out active marketAsks which have user's make asset...
   const activeAsks = marketAsks.filter((ask) => {
     if (ask.end < now) return false
@@ -237,15 +241,25 @@ const availableToCreateAsk = async (
       if (assets.length !== ask.makeAsset.length) return false
       else {
         assets.forEach((asset, index) => {
-          if (asset.bytes !== ask.makeAsset[index].bytes) return false
-          else if (asset.value !== ask.makeAsset[index].value) return false
-          else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
-          else if (asset.standard !== ask.makeAsset[index].standard ) return false
+          const isERC721 = NonFungibleAssetAsset.includes(asset.standard.assetClass)
+          const sameContractAddress = ethers.utils.getAddress(asset.standard.contractAddress) ===
+            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)
+          const sameTokenId = BigNumber.from(asset.standard.tokenId)
+            .eq(ask.makeAsset[index].standard.tokenId)
+
+          if (isERC721 && sameContractAddress && sameTokenId) {
+            logger.debug('====> contractAddress', ethers.utils.getAddress(asset.standard.contractAddress))
+            logger.debug('====> tokenId', BigNumber.from(asset.standard.tokenId).toString())
+            return true
+          }
         })
-        return true
+
+        return false
       }
     }
   })
+
+  logger.debug('==============> active asks: ', JSON.stringify(activeAsks, null, 2))
 
   return (activeAsks.length === 0)
 }

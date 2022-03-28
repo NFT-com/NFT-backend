@@ -239,7 +239,29 @@ const endProfileAuction = (
     .then(([topBid]) => topBid)
 }
 
+const getContracts = (
+  _: any,
+  args: gql.QueryGetContractsArgs,
+): gql.GetContracts => {
+  const { input } = args
+  const { chainId } = input
+
+  return {
+    marketplace: contracts.nftMarketplaceAddress(chainId),
+    marketplaceEvent: contracts.marketplaceEventAddress(chainId),
+    validationLogic: contracts.validationLogicAddress(chainId),
+    nftToken: contracts.nftTokenAddress(chainId),
+    profileAuction: contracts.profileAuctionAddress(chainId),
+    nftProfile: contracts.nftProfileAddress(chainId),
+    genesisKey: contracts.genesisKeyAddress(chainId),
+    genesisKeyStake: contracts.genesisKeyStakeAddress(chainId),
+  }
+}
+
 export default {
+  Query: {
+    getContracts,
+  },
   Mutation: {
     uploadFileSession: combineResolvers(auth.isAuthenticated, getFileUploadSession),
     endProfileAuction: combineResolvers(auth.isTeamAuthenticated, endProfileAuction),

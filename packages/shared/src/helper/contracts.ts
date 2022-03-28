@@ -1,11 +1,15 @@
 import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
+import genesisKeyABIJSON from '@nftcom/shared/helper/abis/GenesisKey.json'
 import genKeyClaimABIJSON from '@nftcom/shared/helper/abis/GenesisKeyDistributor.json'
+import genKeyStakeABIJSON from '@nftcom/shared/helper/abis/GenesisNftStake.json'
+import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/MarketplaceEvent.json'
 import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
+import nftProfileABIJSON from '@nftcom/shared/helper/abis/NftProfile.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
-import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
+import validationLogicABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
 // TODO: move contract addresses to Doppler
 export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
@@ -138,7 +142,24 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   }
 }
 
+export function genesisKeyStakeAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '4':
+  case 'rinkeby':
+  case 4:
+    return utils.getAddress('0xaeE6068b3E6F7eA9a12CdA76E2aE8dCf1B31669B')
+  case '0':
+  case 0:
+  case 'mainnet':
+    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
+  }
+}
+
 export const MintedProfileTopic = '0x848fe9120700715213a041f29982f684fa481b289b434ac7e2b36785af0a3826'
+
+export function validationLogicABI(): any {
+  return validationLogicABIJSON
+}
 
 export function profileAuctionABI(): any {
   return profileAuctionABIJSON
@@ -150,6 +171,18 @@ export function marketplaceABIJSON(): any {
 
 export function marketplaceEventABI(): any {
   return marketplaceEventABIJSON
+}
+
+export function NftProfileABI(): any {
+  return nftProfileABIJSON
+}
+
+export function GenesisKeyABI(): any {
+  return genesisKeyABIJSON
+}
+
+export function GenKeyStakeABI(): any {
+  return genKeyStakeABIJSON
 }
 
 export function merkleAirdropABI(): any {
