@@ -212,7 +212,7 @@ const updateEntity = async (
     // add new nft to search (Typesense)
     // TODO: Fix below approach to collect new NFTs added each minute, and batch update to Typesense every min
     // TODO: How to save ID? pull from newNFT? run query following newNFT? is it worth it/needed?
-    if (newNFT && !existingNFT && process.env.NODE_ENV !== 'local') {
+    if (newNFT && !existingNFT) {
       const indexNft = []
       indexNft.push({
         id: newNFT.id,
@@ -252,7 +252,7 @@ const updateEntity = async (
         }))
         .then(async (collection: entity.Collection) => {
           // save collection in typesense search  if new
-          if (newCollection && process.env.NODE_ENV !== 'local') {
+          if (newCollection) {
             const indexCollection = []
             indexCollection.push({
               id: collection.id,

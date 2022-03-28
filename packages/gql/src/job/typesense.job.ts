@@ -52,7 +52,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   nftFields.push({ name: 'id', type: stringType, facet: false, index: false })
   nftFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
-  nftFields.push({ name: 'imageURL', type: stringType, facet: false, index: false })
+  nftFields.push({ name: 'imageURL', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'name', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'type', type: stringType, facet: false, index: true })
     
@@ -64,7 +64,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const nftCollectionSchema = nftSchema as CollectionCreateSchema
     
-  client.collections().create(nftCollectionSchema)
+  await client.collections().create(nftCollectionSchema)
     .then(() => logger.debug('nft index schema created'))
     .catch(() => logger.info('nft index schema already created, skipping...'))
 
@@ -82,7 +82,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const collCollectionSchema = collSchema as CollectionCreateSchema
     
-  client.collections().create(collCollectionSchema)
+  await client.collections().create(collCollectionSchema)
     .then(() => logger.debug('collections index schema created'))
     .catch(() => logger.info('collection index schema already created, skipping...'))
 
@@ -99,7 +99,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const profileCollectionSchema = profileSchema as CollectionCreateSchema
     
-  client.collections().create(profileCollectionSchema)
+  await client.collections().create(profileCollectionSchema)
     .then(() => logger.debug('profile index schema created'))
     .catch(() => logger.info('profile index schema already created, skipping...'))
 }

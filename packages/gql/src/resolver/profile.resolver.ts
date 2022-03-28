@@ -307,20 +307,19 @@ const profileClaimed = (
 
       const saveProfile = repositories.profile.save(profile)
 
-      if (process.env.NODE_ENV !== 'local') {
-        const indexProfile = []
-        indexProfile.push({
-          id: profile.id,
-          profile: profile.url,
-        })
-  
-        try {
-          await client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
-          logger.debug('profile added to typesense index')
-        }
-        catch (err) {
-          logger.info('error: could not save profile in typesense: ' + err)
-        }
+      // push newly minted profile to the search engine (typesense)
+      const indexProfile = []
+      indexProfile.push({
+        id: profile.id,
+        profile: profile.url,
+      })
+
+      try {
+        await client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
+        logger.debug('profile added to typesense index')
+      }
+      catch (err) {
+        logger.info('error: could not save profile in typesense: ' + err)
       }
       
       return saveProfile
