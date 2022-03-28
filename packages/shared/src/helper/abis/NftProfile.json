@@ -518,6 +518,19 @@
   {
     "inputs": [
       {
+        "internalType": "string",
+        "name": "_input",
+        "type": "string"
+      }
+    ],
+    "name": "setBaseURI",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "_new",
         "type": "address"

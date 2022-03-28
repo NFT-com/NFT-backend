@@ -13,6 +13,7 @@ import profileResolvers from './profile.resolver'
 import scalarResolvers from './scalar.resolver'
 import userResolvers from './user.resolver'
 import walletResolvers from './wallet.resolver'
+import watchlistResolvers from './watchlist.resolver'
 
 export const resolvers = mergeResolvers([
   scalarResolvers,
@@ -28,4 +29,5 @@ export const resolvers = mergeResolvers([
   profileResolvers,
   userResolvers,
   walletResolvers,
+  watchlistResolvers,
 ])

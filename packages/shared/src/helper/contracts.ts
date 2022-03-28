@@ -1,19 +1,23 @@
 import { utils } from 'ethers'
 import fetch from 'node-fetch'
 
+import genesisKeyABIJSON from '@nftcom/shared/helper/abis/GenesisKey.json'
 import genKeyClaimABIJSON from '@nftcom/shared/helper/abis/GenesisKeyDistributor.json'
+import genKeyStakeABIJSON from '@nftcom/shared/helper/abis/GenesisNftStake.json'
+import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/MarketplaceEvent.json'
 import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
+import nftProfileABIJSON from '@nftcom/shared/helper/abis/NftProfile.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
-import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
+import validationLogicABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
-// TODO: move contract addresses to Doppler.
+// TODO: move contract addresses to Doppler
 export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xC6F83d1D6D5a2aC7EE034483F8Ebe29646467Db7')
+    return utils.getAddress('0xc70090a2d719b4f9BB73084A48900510457d350E')
   case '0':
   case 0:
   case 'mainnet':
@@ -27,7 +31,7 @@ export function marketplaceEventAddress(chainId: string | number = 'mainnet'): s
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x8D42A1Af22ac1287aabFEb5D7BEEa956210Cf197')
+    return utils.getAddress('0x8Bbf505ce08553A4F0083Fc1166195B0cB837Ab7')
   case '0':
   case 0:
   case 'mainnet':
@@ -41,7 +45,7 @@ export function validationLogicAddress(chainId: string | number = 'mainnet'): st
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xce789D5C9DfDdEBA2AA87b37f2dE25e26a767023')
+    return utils.getAddress('0x54d6c3C9Cefcfa96C9e9e020d456D6FF172807D8')
   case '0':
   case 0:
   case 'mainnet':
@@ -89,7 +93,7 @@ export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x0F38751eA1bD10B373Cf9f61794426a251f43f99')
+    return utils.getAddress('0xFD080f88e4dA08cAA35744b281481cc86b95D287')
   case '0':
   case 0:
   case 'mainnet':
@@ -103,7 +107,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xaa7F30a10D3E259ae9B14308C77dFe5aA2f5D9Df')
+    return utils.getAddress('0x4Defe27b42e870E36BD693Bd7d4514e80272bF1e')
   case '0':
   case 0:
   case 'mainnet':
@@ -117,7 +121,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xc53884b5E8B9f29635D865FBBccFd7Baf103B6eC')
+    return utils.getAddress('0x96c7a4c8babfA1f24f275Ad93a02319E76c395fe')
   case '0':
   case 0:
   case 'mainnet':
@@ -130,7 +134,20 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xbEeB7221B6058B9529e0bde13A072f17c63CD372')
+    return utils.getAddress('0xAed146B7E487B2d64b51B6D27F75c1f52247050a')
+  case '0':
+  case 0:
+  case 'mainnet':
+    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
+  }
+}
+
+export function genesisKeyStakeAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '4':
+  case 'rinkeby':
+  case 4:
+    return utils.getAddress('0xaeE6068b3E6F7eA9a12CdA76E2aE8dCf1B31669B')
   case '0':
   case 0:
   case 'mainnet':
@@ -139,6 +156,10 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
 }
 
 export const MintedProfileTopic = '0x848fe9120700715213a041f29982f684fa481b289b434ac7e2b36785af0a3826'
+
+export function validationLogicABI(): any {
+  return validationLogicABIJSON
+}
 
 export function profileAuctionABI(): any {
   return profileAuctionABIJSON
@@ -150,6 +171,18 @@ export function marketplaceABIJSON(): any {
 
 export function marketplaceEventABI(): any {
   return marketplaceEventABIJSON
+}
+
+export function NftProfileABI(): any {
+  return nftProfileABIJSON
+}
+
+export function GenesisKeyABI(): any {
+  return genesisKeyABIJSON
+}
+
+export function GenKeyStakeABI(): any {
+  return genKeyStakeABIJSON
 }
 
 export function merkleAirdropABI(): any {

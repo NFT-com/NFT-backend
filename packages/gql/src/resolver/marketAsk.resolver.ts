@@ -150,10 +150,15 @@ const validAsk = async (
     const calculatedStructHash: string = result?.[1]
 
     if (marketAskArgs?.input.structHash !== calculatedStructHash) {
+      logger.debug('calculatedStructHash: ', calculatedStructHash)
+      logger.debug('marketAskArgs?.input.structHash: ', calculatedStructHash)
+
       throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketAskArgs?.input.structHash}`)
     }
 
     if (!result[0]) {
+      logger.debug('result[0]: ', result[0])
+
       throw Error(`provided signature ${JSON.stringify(marketAskArgs.input.signature)} doesn't match`)
     }
   } catch (err) {
@@ -225,6 +230,10 @@ const availableToCreateAsk = async (
     },
   })
 
+  const NonFungibleAssetAsset = ['ERC721', 'ERC1155']
+
+  logger.debug('==============> assets: ', assets)
+
   // find out active marketAsks which have user's make asset...
   const activeAsks = marketAsks.filter((ask) => {
     if (ask.end < now) return false
@@ -232,15 +241,24 @@ const availableToCreateAsk = async (
       if (assets.length !== ask.makeAsset.length) return false
       else {
         assets.forEach((asset, index) => {
-          if (asset.bytes !== ask.makeAsset[index].bytes) return false
-          else if (asset.value !== ask.makeAsset[index].value) return false
-          else if (asset.minimumBid !== ask.makeAsset[index].minimumBid) return false
-          else if (asset.standard !== ask.makeAsset[index].standard ) return false
+          if (ethers.utils.getAddress(asset.standard.contractAddress) ===
+            ethers.utils.getAddress(ask.makeAsset[index].standard.contractAddress)) {
+            logger.debug('====> 1', ethers.utils.getAddress(asset.standard.contractAddress))
+            return true
+          } else if (NonFungibleAssetAsset.includes(asset.standard.assetClass) &&
+          BigNumber.from(asset.standard.tokenId)
+            .eq(ask.makeAsset[index].standard.tokenId)) {
+            logger.debug('====> 2', BigNumber.from(asset.standard.tokenId).toString())
+            return true
+          }
         })
-        return true
+
+        return false
       }
     }
   })
+
+  logger.debug('==============> active asks: ', JSON.stringify(activeAsks, null, 2))
 
   return (activeAsks.length === 0)
 }
@@ -251,7 +269,7 @@ const createAsk = (
   ctx: Context,
 ): Promise<gql.MarketAsk> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('createAsk', { loggedInUserId: user?.id, input: args?.input })
+  logger.debug('createAsk', { loggedInUserId: user?.id, input: JSON.stringify(args?.input, null, 2) })
 
   const schema = Joi.object().keys({
     chainId: Joi.string().required(),

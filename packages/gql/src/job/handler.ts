@@ -1,7 +1,9 @@
 import { Job } from 'bull'
+import cryptoRandomString from 'crypto-random-string'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { Contract, ethers, Wallet } from 'ethers'
 
+import { auth } from '@nftcom/gql/helper'
 import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
 
 import HederaConsensusService from '../service/hedera.service'
@@ -75,7 +77,7 @@ const getAddressBalanceMapping = (bids: entity.Bid[], walletIdAddressMapping: an
     splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
       provider.provider(Number(chainId)),
       splitArray,
-      [contracts.nftTokenAddress(chainId), contracts.wethAddress(chainId)],
+      ['0x0000000000000000000000000000000000000000', contracts.nftTokenAddress(chainId)],
       contracts.multiBalance(chainId),
     ),
   )
@@ -124,13 +126,18 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 repositories.bid.deleteById(bid.id)
               }
             }),
-            genesisKeyBids.map((bid: entity.Bid) => {
-              const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-              const wethBalance = Number(balanceObj[contracts.wethAddress(chainId)]) ?? 0
-                
-              if (wethBalance < Number(bid.price)) {
-                logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), wethBalance })
-                repositories.bid.deleteById(bid.id)
+            genesisKeyBids.map(async (bid: entity.Bid) => {
+              try {
+                const balanceObj = (await addressBalanceMapping[0])[
+                  walletIdAddressMapping[bid.walletId]]
+                const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
+                  
+                if (ethBalance < Number(bid.price)) {
+                  logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
+                  repositories.bid.deleteById(bid.id)
+                }
+              } catch (err) {
+                logger.debug('gk balance: ', err)
               }
             }),
           ])
@@ -146,10 +153,12 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     const { chainId } = job.data
     const contract = getContract(chainId)
 
+    logger.debug('getting Ethereum Events')
+
     // go through all bids and determine which ones are valid
     // valid bids:
     //  * have enough NFT tokens under address if for profile
-    //  * have enough WETH tokens under address for genesis key
+    //  * have enough ETH tokens under address for genesis key
     //  * are bids for an available profile (search profiles for urls for status)
 
     const filter = { address: contract.address }
@@ -172,11 +181,11 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
       return Promise.all([
         validateLiveBalances(filteredBids, chainId),
         events.map((evt) => {
-        // console.log(`Found event ${evt.event} with chainId: ${chainId}`)
-          const [owner,, profileUrl,,] = evt.args
+          console.log(`Found event ${evt.event} with chainId: ${chainId}, ${evt.args}`)
+          const [owner,profileUrl] = evt.args
 
           switch (evt.event) {
-          case 'NewClaimableProfile':
+          case 'MintedProfile':
             return repositories.event.exists({
               chainId,
               ownerAddress: owner,
@@ -187,11 +196,36 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                 // find and mark profile status as minted
                 return Promise.all([
                   repositories.profile.findByURL(profileUrl)
+                    .then(fp.thruIfEmpty(() => {
+                      repositories.wallet.findByChainAddress(chainId, owner)
+                        .then(fp.thruIfEmpty(() => {
+                          const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+                          return repositories.user.save({
+                            // defaults
+                            username: 'ethereum-' + ethers.utils.getAddress(owner),
+                            referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+                          })
+                            .then((user: entity.User) => repositories.wallet.save({
+                              address: ethers.utils.getAddress(owner),
+                              network: 'ethereum',
+                              chainId: chainId,
+                              chainName: chain.name,
+                              userId: user.id,
+                            }))
+                        }))
+                        .then((wallet: entity.Wallet) => {
+                          repositories.profile.save({
+                            status: defs.ProfileStatus.Owned,
+                            url: profileUrl,
+                            ownerWalletId: wallet.id,
+                            ownerUserId: wallet.userId,
+                          })
+                        })
+                    }))
                     .then(fp.thruIfNotEmpty((profile) => {
                       profile.status = defs.ProfileStatus.Owned
                       repositories.profile.save(profile)
-                    }),
-                    ),
+                    })),
                   repositories.event.save(
                     {
                       chainId,
