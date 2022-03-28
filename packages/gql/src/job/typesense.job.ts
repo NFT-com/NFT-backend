@@ -64,7 +64,6 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const nftCollectionSchema = nftSchema as CollectionCreateSchema
     
-  // need to add logic to not create after first init 
   client.collections().create(nftCollectionSchema)
     .then(() => logger.debug('nft index schema created'))
     .catch(() => logger.info('nft index schema already created, skipping...'))
@@ -95,12 +94,11 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   const profileCollectionFields = profileFields as CollectionFieldSchema[]
     
   const profileSchema = {
-    name: 'nfts',
+    name: 'profiles',
     fields: profileCollectionFields,
   }
   const profileCollectionSchema = profileSchema as CollectionCreateSchema
     
-  // need to add logic to not create after first init 
   client.collections().create(profileCollectionSchema)
     .then(() => logger.debug('profile index schema created'))
     .catch(() => logger.info('profile index schema already created, skipping...'))

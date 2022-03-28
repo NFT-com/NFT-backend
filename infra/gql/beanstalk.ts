@@ -270,7 +270,7 @@ export const createEBInstance = (
       {
         namespace: 'aws:autoscaling:asg',
         name: 'MinSize',
-        value: '1',
+        value: '2',
       },
       {
         namespace: 'aws:autoscaling:asg',
