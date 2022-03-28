@@ -251,6 +251,12 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
+          const nftName = []
+          nftName.push({
+            id: newNFT.id,
+            contractName: collection.name,
+          })
+
           // save collection in typesense search  if new
           if (newCollection) {
             const indexCollection = []
@@ -262,10 +268,19 @@ const updateEntity = async (
 
             try {
               await client.collections('collections').documents().import(indexCollection, { action: 'create' })
+              await client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
               logger.debug('collection added to typesense index')
             }
             catch (err) {
               logger.info('error: could not save collection in typesense: ' + err)
+            }
+          } else if (newNFT) {
+            // not new collection, but still need to update NFT with collection name
+            try {
+              await client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
+            }
+            catch (err) {
+              logger.info('error: nft contractName could not be saved in typesense nft schema: ' + err)
             }
           }
 
