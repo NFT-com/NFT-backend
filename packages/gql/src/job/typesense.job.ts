@@ -29,12 +29,11 @@ interface CollectionCreateSchema {
   symbols_to_index?: string[]
   token_separators?: string[]
 }
-
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST,
-    'port': 8108,
-    'protocol': 'http',
+    'port': 443,
+    'protocol': 'https',
   }],
   'apiKey': TYPESENSE_API_KEY,
   'connectionTimeoutSeconds': 2,
