@@ -29,6 +29,25 @@ type EndGkOutput {
   totalBidsCount: Uint256!
 }
 
+input getContractsInput {
+  chainId: String!
+}
+
+type GetContracts {
+  marketplace: String!
+  marketplaceEvent: String!
+  validationLogic: String!
+  nftToken: String!
+  profileAuction: String!
+  genesisKey: String!
+  nftProfile: String!
+  genesisKeyStake: String!
+}
+
+extend type Query {
+  getContracts(input: getContractsInput!): GetContracts!
+}
+
 extend type Mutation {
   uploadFileSession: FileUploadOutput!
   endProfileAuction(input: EndAuctionInput!): EndAuctionOutput!

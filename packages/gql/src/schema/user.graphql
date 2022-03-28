@@ -6,6 +6,7 @@ type User {
   isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]
   myApprovals: [Approval!]
+  # myWatchlist: Watchlist # add back in when auth works
   preferences: UserPreferences!
   referredBy: String
   referralId: String!
