@@ -15,8 +15,8 @@ const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST, // For Typesense Cloud use xxx.a1.typesense.net
-    'port': 8108,      // For Typesense Cloud use 443
-    'protocol': 'http',   // For Typesense Cloud use https
+    'port': 443,      // For Typesense Cloud use 443
+    'protocol': 'https',   // For Typesense Cloud use https
   }],
   'apiKey': TYPESENSE_API_KEY,
   'connectionTimeoutSeconds': 2,
