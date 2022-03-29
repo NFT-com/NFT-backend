@@ -256,6 +256,7 @@ const getContracts = (
     genesisKey: contracts.genesisKeyAddress(chainId),
     genesisKeyStake: contracts.genesisKeyStakeAddress(chainId),
     genesisKeyTeamClaim: contracts.genesisKeyTeamClaimAddress(chainId),
+    genesisKeyDistributor: '', //TODO: Add this in after auction
     genesisKeyTeamMerkle: contracts.genesisKeyTeamMerkleAddress(chainId),
   }
 }
