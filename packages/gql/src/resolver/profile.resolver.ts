@@ -19,7 +19,7 @@ const client = new Typesense.Client({
     'protocol': 'https',
   }],
   'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 2,
+  'connectionTimeoutSeconds': 60,
 })
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({

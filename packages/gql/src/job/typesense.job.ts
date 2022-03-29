@@ -36,7 +36,7 @@ const client = new Typesense.Client({
     'protocol': 'https',
   }],
   'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 2,
+  'connectionTimeoutSeconds': 60,
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
