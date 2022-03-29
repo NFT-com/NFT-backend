@@ -9,7 +9,7 @@ import Typesense from 'typesense'
 import { _logger } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_HOST = 'ec2-3-81-208-206.compute-1.amazonaws.com' //process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
@@ -32,11 +32,12 @@ interface CollectionCreateSchema {
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
+    'port': 8108,
+    'protocol': 'http',
   }],
   'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 90,
+  numRetries: 3,
+  'connectionTimeoutSeconds': 10,
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

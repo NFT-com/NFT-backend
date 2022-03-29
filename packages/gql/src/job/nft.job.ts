@@ -14,16 +14,16 @@ const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
 
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_HOST = 'ec2-3-81-208-206.compute-1.amazonaws.com' //process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
+    'port': 8108,
+    'protocol': 'http',
   }],
   'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 60,
+  'connectionTimeoutSeconds': 10,
 })
 
 interface OwnedNFT {
@@ -218,7 +218,6 @@ const updateEntity = async (
         id: newNFT.id,
         contract: nftInfo.contract.address,
         tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-        imageURL: newNFT.metadata.imageURL,
         type: type,
         name: nftInfo.title,
       })
@@ -251,12 +250,6 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
-          const nftName = []
-          nftName.push({
-            id: newNFT.id,
-            contractName: collection.name,
-          })
-
           // save collection in typesense search  if new
           if (newCollection) {
             const indexCollection = []
@@ -268,19 +261,10 @@ const updateEntity = async (
 
             try {
               await client.collections('collections').documents().import(indexCollection, { action: 'create' })
-              await client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
               logger.debug('collection added to typesense index')
             }
             catch (err) {
               logger.info('error: could not save collection in typesense: ' + err)
-            }
-          } else if (newNFT) {
-            // not new collection, but still need to update NFT with collection name
-            try {
-              await client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
-            }
-            catch (err) {
-              logger.info('error: nft contractName could not be saved in typesense nft schema: ' + err)
             }
           }
 

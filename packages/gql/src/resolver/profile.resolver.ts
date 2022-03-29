@@ -10,16 +10,16 @@ import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_HOST = 'ec2-3-81-208-206.compute-1.amazonaws.com' //process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
+    'port': 8108,
+    'protocol': 'http',
   }],
   'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 60,
+  'connectionTimeoutSeconds': 10,
 })
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
