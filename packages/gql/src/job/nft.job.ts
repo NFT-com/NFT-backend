@@ -14,8 +14,8 @@ const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
 
-const TYPESENSE_HOST = 'dev-typesense.nft.com' // process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = 'yr7he5Xsy2tcFPAdVeJe2rGJAVuqCb5KFjnWYEkKpVLvGbMY' //process.env.TYPESENSE_API_KEY
+const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 const client = new Typesense.Client({
   'nodes': [{

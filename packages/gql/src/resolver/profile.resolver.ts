@@ -10,8 +10,8 @@ import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
-const TYPESENSE_HOST = 'dev-typesense.nft.com' // process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = 'yr7he5Xsy2tcFPAdVeJe2rGJAVuqCb5KFjnWYEkKpVLvGbMY' //process.env.TYPESENSE_API_KEY
+const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 const client = new Typesense.Client({
   'nodes': [{
