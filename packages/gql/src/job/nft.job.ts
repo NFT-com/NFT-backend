@@ -220,7 +220,7 @@ const updateEntity = async (
         id: newNFT.id,
         contract: nftInfo.contract.address,
         tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-        imageURL: newNFT.metadata.imageURL,
+        //imageURL: newNFT.metadata.imageURL,
         type: type,
         name: nftInfo.title,
       })
@@ -279,7 +279,7 @@ const updateEntity = async (
           else if (newNFT) {
           // not new collection, but still need to update NFT with collection name
             try {
-              await client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
+              client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
             }
             catch (err) {
               logger.info('error: nft contractName could not be saved in typesense nft schema: ' + err)
