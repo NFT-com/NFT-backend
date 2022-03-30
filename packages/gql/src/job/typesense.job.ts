@@ -10,7 +10,7 @@ import { _logger } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const TYPESENSE_HOST = 'dev-typesense.nft.com' // process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+const TYPESENSE_API_KEY = 'yr7he5Xsy2tcFPAdVeJe2rGJAVuqCb5KFjnWYEkKpVLvGbMY' //process.env.TYPESENSE_API_KEY
 
 type CollectionFieldType = 'string' | 'int32' | 'int64' | 'float' | 'bool' | 'geopoint' | 'geopoint[]' | 'string[]' | 'int32[]' | 'int64[]' | 'float[]' | 'bool[]' | 'auto' | 'string*'
 
@@ -66,7 +66,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const nftCollectionSchema = nftSchema as CollectionCreateSchema
     
-  await client.collections().create(nftCollectionSchema)
+  client.collections().create(nftCollectionSchema)
     .then(() => logger.debug('nft index schema created'))
     .catch(() => logger.info('nft index schema already created, skipping...'))
 
@@ -84,7 +84,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const collCollectionSchema = collSchema as CollectionCreateSchema
     
-  await client.collections().create(collCollectionSchema)
+  client.collections().create(collCollectionSchema)
     .then(() => logger.debug('collections index schema created'))
     .catch(() => logger.info('collection index schema already created, skipping...'))
 
@@ -101,7 +101,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   }
   const profileCollectionSchema = profileSchema as CollectionCreateSchema
     
-  await client.collections().create(profileCollectionSchema)
+  client.collections().create(profileCollectionSchema)
     .then(() => logger.debug('profile index schema created'))
     .catch(() => logger.info('profile index schema already created, skipping...'))
 }
