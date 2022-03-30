@@ -317,7 +317,7 @@ const profileClaimed = (
       })
 
       try {
-        await client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
+        client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
         logger.debug('profile added to typesense index')
       }
       catch (err) {
