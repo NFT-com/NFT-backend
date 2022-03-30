@@ -24,8 +24,7 @@ const client = new Typesense.Client({
     'protocol': 'https',
   }],
   'apiKey': TYPESENSE_API_KEY,
-  numRetries: 3,
-  'connectionTimeoutSeconds': 70,
+  'connectionTimeoutSeconds': 10,
 })
 
 interface OwnedNFT {
@@ -211,29 +210,6 @@ const updateEntity = async (
       walletId: walletId,
     })
 
-    // add new nft to search (Typesense)
-    // TODO: Fix below approach to collect new NFTs added each minute, and batch update to Typesense every min
-    // TODO: How to save ID? pull from newNFT? run query following newNFT? is it worth it/needed?
-    if (newNFT && !existingNFT) {
-      const indexNft = []
-      indexNft.push({
-        id: newNFT.id,
-        contract: nftInfo.contract.address,
-        tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-        //imageURL: newNFT.metadata.imageURL,
-        type: type,
-        name: nftInfo.title,
-      })
-
-      try {
-        client.collections('nfts').documents().import(indexNft,{ action : 'create' })
-        logger.debug('nft added to typesense index')
-      }
-      catch (err) {
-        logger.info('ERROR: could not save nft in typesense: ' + err)
-      }
-    }
-
     if (newNFT) {
       await repositories.collection.findOne({
         where: { contract: ethers.utils.getAddress(newNFT.contract) },
@@ -242,7 +218,6 @@ const updateEntity = async (
           // find & save collection name
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then(async (collectionName: string) => {
-              // add new collection to search (Typesense)
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
               newCollection = true
 
@@ -253,11 +228,6 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
-          /* const nftName = []
-          nftName.push({
-            id: newNFT.id,
-            contractName: collection.name,
-          })*/
           // save collection in typesense search  if new
           if (newCollection) {
             const indexCollection = []
@@ -267,24 +237,28 @@ const updateEntity = async (
               name: collection.name,
             })
 
-            try {
-              client.collections('collections').documents().import(indexCollection, { action: 'create' })
-              //client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
-              logger.debug('collection added to typesense index')
-            }
-            catch (err) {
-              logger.info('error: could not save collection in typesense: ' + err)
-            }
+            client.collections('collections').documents().import(indexCollection, { action: 'create' })
+              .then(() => logger.debug('collection added to typesense index'))
+              .catch((err) => logger.info('error: could not save collection in typesense: ' + err))
           }
-          /*else if (newNFT) {
-          // not new collection, but still need to update NFT with collection name
-            try {
-              client.collections('nfts').documents().import(nftName, { action: 'update' }) // after adding collection, add contractName to NFT document in typesense
-            }
-            catch (err) {
-              logger.info('error: nft contractName could not be saved in typesense nft schema: ' + err)
-            }
-          }*/
+
+          // add new nft to search (Typesense)
+          if(newNFT && !existingNFT) {
+            const indexNft = []
+            indexNft.push({
+              id: newNFT.id,
+              contract: nftInfo.contract.address,
+              tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+              imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
+              contractName: collection.name ? collection.name : '',
+              type: type,
+              name: nftInfo.title,
+            })
+  
+            client.collections('nfts').documents().import(indexNft, { action: 'create' })
+              .then(() => logger.debug('nft added to typesense index'))
+              .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
+          }
 
           // update edgeVals
           const edgeVals = {
