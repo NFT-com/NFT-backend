@@ -43,6 +43,8 @@ const client = new Typesense.Client({
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   // check if collection exist, if not create collection schema
+
+  logger.info('typesense host = ' + TYPESENSE_HOST + ' & typesense api key = ' + TYPESENSE_API_KEY)
    
   const stringType = 'string' as CollectionFieldType
   //const numType = 'int32' as FieldType
