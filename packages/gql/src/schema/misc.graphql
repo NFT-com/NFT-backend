@@ -43,6 +43,7 @@ type GetContracts {
   nftProfile: String!
   genesisKeyStake: String!
   genesisKeyTeamClaim: String!
+  genesisKeyDistributor: String!
   genesisKeyTeamMerkle: String!
 }
 
