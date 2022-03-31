@@ -16,7 +16,7 @@ const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 const client = new Typesense.Client({
   'nodes': [{
     'host': TYPESENSE_HOST,
-    port: 443,
+    'port': 443,
     'protocol': 'https',
   }],
   'apiKey': TYPESENSE_API_KEY,
@@ -303,7 +303,7 @@ const profileClaimed = (
         profileError.ErrorType.ProfileNotOwned,
       ),
     ))
-    .then(async (profile: entity.Profile) => {
+    .then((profile: entity.Profile) => {
       profile.status = defs.ProfileStatus.Owned
 
       const saveProfile = repositories.profile.save(profile)
@@ -315,13 +315,9 @@ const profileClaimed = (
         profile: profile.url,
       })
 
-      try {
-        client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
-        logger.debug('profile added to typesense index')
-      }
-      catch (err) {
-        logger.info('error: could not save profile in typesense: ' + err)
-      }
+      client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
+        .then(() => logger.debug('profile added to typesense index'))
+        .catch((err) => logger.info('error: could not save profile in typesense: ' + err))
       
       return saveProfile
     })
