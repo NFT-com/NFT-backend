@@ -2,5 +2,6 @@ encryptionsalt: v1:REzyrEoBTgo=:v1:H8QE9bTBOxErakR4:BWMZ1E3ZeYCVEPGF1D10YfVdjJXg
 config:
   nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
   nftcom:ebInstance: t3.small
+  nftcom:ebAutoScaleMin: 1
   nftcom:ebAutoScaleMax: 2
   nftcom:nodeEnv: development
