@@ -307,7 +307,7 @@ export const sendOutBidEmail = (
       return send({
         from,
         to: { email: bidder.email },
-        subject: 'Your got outbid on NFT.com marketplace',
+        subject: 'You got outbid on NFT.com marketplace',
         text: `The askId: ${ask.id} and auction ends at ${endTime} and ${days}:${hours}:${minutes}:${seconds} left`,
       })
     }
