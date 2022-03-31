@@ -155,12 +155,12 @@ export function genesisKeyStakeAddress(chainId: string | number = 'mainnet'): st
   }
 }
 
-export function genesisKeyTeamClaimAddress(chainId: string | number = 'mainnet'): string {
+export function genesisKeyTeamMerkleAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xB4900656f35687352e042CafA06ecd4077cC9b5E')
+    return utils.getAddress('0xf4CB1960416a7a676eE1AB9C6808B73254EEE32F')
   case '0':
   case 0:
   case 'mainnet':
@@ -168,12 +168,25 @@ export function genesisKeyTeamClaimAddress(chainId: string | number = 'mainnet')
   }
 }
 
-export function genesisKeyTeamMerkleAddress(chainId: string | number = 'mainnet'): string {
+export function genesisKeyTeamClaimAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x9629E6F272Ed58f35bA7739BA37C156091Fa4011')
+    return utils.getAddress('0xb2e8e382df819AA3EBb29906f613A8609F918e2e')
+  case '0':
+  case 0:
+  case 'mainnet':
+    return utils.getAddress('0x9F6ED3d90D48573245d6a0c0742db4eCf27B6a56')
+  }
+}
+
+export function genesisKeyDistributor(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '4':
+  case 'rinkeby':
+  case 4:
+    return utils.getAddress('0x34204485ac5DaD29DCD29DE7b2E360a45f975046')
   case '0':
   case 0:
   case 'mainnet':
