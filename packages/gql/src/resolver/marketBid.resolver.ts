@@ -274,7 +274,7 @@ const createBid = (
               .then((wallet: entity.Wallet) => {
                 return repositories.user.findById(wallet.userId)
                   .then((user: entity.User) => {
-                    return sendgrid.sendMarketplaceBidConfirmEmail(bid, user)
+                    return sendgrid.sendBidConfirmEmail(bid, user)
                       .then(() => bid)
                   })
               })

@@ -116,6 +116,7 @@ export const createEBInstance = (
   const applicationVersion = createApplicationVersion(infraOutput, application, appFileName)
   const instance = config.require('ebInstance')
   const autoScaleMax = config.require('ebAutoScaleMax')
+  const autoScaleMin = config.require('ebAutoScaleMin')
 
   return new aws.elasticbeanstalk.Environment('environment_gql', {
     name: getResourceName('gql'),
@@ -270,7 +271,7 @@ export const createEBInstance = (
       {
         namespace: 'aws:autoscaling:asg',
         name: 'MinSize',
-        value: '1',
+        value: autoScaleMin,
       },
       {
         namespace: 'aws:autoscaling:asg',

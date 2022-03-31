@@ -1,6 +1,7 @@
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import Typesense from 'typesense'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
@@ -9,6 +10,18 @@ import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
+const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+
+const client = new Typesense.Client({
+  'nodes': [{
+    'host': TYPESENSE_HOST,
+    'port': 443,
+    'protocol': 'https',
+  }],
+  'apiKey': TYPESENSE_API_KEY,
+  'connectionTimeoutSeconds': 10,
+})
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
   items: profiles,
@@ -292,7 +305,21 @@ const profileClaimed = (
     ))
     .then((profile: entity.Profile) => {
       profile.status = defs.ProfileStatus.Owned
-      return repositories.profile.save(profile)
+
+      const saveProfile = repositories.profile.save(profile)
+
+      // push newly minted profile to the search engine (typesense)
+      const indexProfile = []
+      indexProfile.push({
+        id: profile.id,
+        profile: profile.url,
+      })
+
+      client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
+        .then(() => logger.debug('profile added to typesense index'))
+        .catch((err) => logger.info('error: could not save profile in typesense: ' + err))
+      
+      return saveProfile
     })
 }
 

@@ -6,20 +6,20 @@ import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core, sendgrid } from '@nftcom/gql/service'
+import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
-const sendBidNotifications = (
-  newBid: entity.Bid,
-  prevTopBidOwner: entity.User,
-  newBidOwner: entity.User,
-  profileURL: string,
-): Promise<[boolean, boolean]> => Promise.all([
-  sendgrid.sendBidConfirmEmail(newBid, newBidOwner, profileURL),
-  sendgrid.sendOutbidEmail(prevTopBidOwner, profileURL),
-])
+// const sendBidNotifications = (
+//   newBid: entity.Bid,
+//   prevTopBidOwner: entity.User,
+//   newBidOwner: entity.User,
+//   profileURL: string,
+// ): Promise<[boolean, boolean]> => Promise.all([
+//   sendgrid.sendBidConfirmEmail(newBid, newBidOwner, profileURL),
+//   sendgrid.sendOutbidEmail(prevTopBidOwner, profileURL),
+// ])
 
 const bid = (
   _: any,
@@ -115,10 +115,10 @@ const bid = (
         prevTopBidOwner,
       ])
     })
-    .then(fp.tapIf(([newBid]) => newBid.nftType === defs.NFTType.Profile)(
-      ([newBid, prevTopBidOwner]) =>
-        sendBidNotifications(newBid, prevTopBidOwner, user, input.profileURL)),
-    )
+    // .then(fp.tapIf(([newBid]) => newBid.nftType === defs.NFTType.Profile)(
+    //   ([newBid, prevTopBidOwner]) =>
+    //     sendBidNotifications(newBid, prevTopBidOwner, user, input.profileURL)),
+    // )
     .then(([newBid]) => newBid)
 }
 
@@ -131,7 +131,7 @@ const getBids = (
   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
   const pageInput = args?.input?.pageInput
 
-  // TODO (eddie): add support for querying all public 
+  // TODO (eddie): add support for querying all public
   // bids for a user, given one of their wallet's details.
 
   return Promise.resolve(args?.input?.wallet)
