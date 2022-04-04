@@ -61,14 +61,18 @@ input MintGKProfileInput {
   count: Int
 }
 
+input InsiderReservedProfilesInput {
+  address: Address!
+}
+
 extend type Query {
-  # TODO do we need to gate this?
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
   myProfiles(input: ProfilesInput): ProfilesOutput!
   profile(url: String!): Profile!
   profilePassive(url: String!): Profile!
   blockedProfileURIs: [String!]!
+  insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
 }
 
 extend type Mutation {
