@@ -3,11 +3,12 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
+import { fetchUserFromMarketAskBid } from '@nftcom/gql/helper/utils'
 import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { appError, marketAskError, marketBidError, marketSwapError } from '../error'
 import { auth, joi, pagination } from '../helper'
-import { core } from '../service'
+import { core, sendgrid } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketSwap, _logger.Context.GraphQL)
 
@@ -226,7 +227,30 @@ const swapNFT = (
               blockNumber: '',
               marketAsk: ask,
               marketBid: bid,
-            }))
+            })
+              .then((swap: entity.MarketSwap) => {
+                // send email notification to seller and buyer
+                return fetchUserFromMarketAskBid(
+                  ask.makerAddress,
+                  ask.chainId,
+                  repositories,
+                ).then((seller: entity.User) => {
+                  return fetchUserFromMarketAskBid(
+                    bid.makerAddress,
+                    bid.chainId,
+                    repositories,
+                  ).then((buyer: entity.User) => {
+                    return sendgrid.sendExecuteSwapEmail(
+                      ask,
+                      bid,
+                      swap,
+                      args?.input.txHash,
+                      seller,
+                      buyer,
+                    ).then(() => swap)
+                  })
+                })
+              }))
             // }
             // else {
             //   return Promise.reject(appError.buildInvalid(

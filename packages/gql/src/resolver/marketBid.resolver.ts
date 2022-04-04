@@ -4,6 +4,7 @@ import Joi from 'joi'
 
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
+import { fetchUserFromMarketAskBid } from '@nftcom/gql/helper/utils'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
@@ -270,16 +271,19 @@ const createBid = (
             chainId: wallet.chainId,
             auctionType: args?.input.auctionType,
           }).then((bid: entity.MarketBid) => {
-            return repositories.wallet.findByChainAddress(marketAsk.chainId, marketAsk.makerAddress)
-              .then((wallet: entity.Wallet) => {
-                return repositories.user.findById(wallet.userId)
-                  .then((user: entity.User) => {
-                    return sendgrid.sendBidConfirmEmail(bid, user)
-                      .then(() => bid)
-                  })
+            // send email notification to bidder...
+            return fetchUserFromMarketAskBid(
+              marketAsk.makerAddress,
+              marketAsk.chainId,
+              repositories,
+            )
+              .then((user: entity.User) => {
+                return sendgrid.sendBidConfirmEmail(bid, user)
+                  .then(() => bid)
               })
           })
-        }))
+        }),
+    )
 }
 
 const cancelMarketBid = (
@@ -312,7 +316,20 @@ const cancelMarketBid = (
         if (valid) {
           return repositories.marketBid.updateOneById(bid.id, {
             cancelTxHash: args?.input.txHash,
-          }).then(() => true)
+          }).then(() => {
+            // send email notification to bidder...
+            return fetchUserFromMarketAskBid(
+              bid.makerAddress,
+              bid.chainId,
+              repositories,
+            ).then((bidder: entity.User) => {
+              return sendgrid.sendBidCancelEmail(
+                bid,
+                args?.input.txHash,
+                bidder,
+              ).then(() => true)
+            })
+          })
         } else {
           return Promise.reject(appError.buildInvalid(
             marketBidError.buildTxHashInvalidMsg(args?.input.txHash),

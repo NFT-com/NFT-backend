@@ -9,11 +9,11 @@ const from = {
   email: '<noreply@nft.com>',
 }
 
-// const templates = {
-//   confirmBid: 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7',
-//   outbid: 'd-6e92bafc43194eb5a1c8725ecbaaba14',
-//   winbid: 'd-9e11556ce7f34fbeb66e42f8d3803986',
-// }
+const templates = {
+  confirmBid: 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7',
+  outbid: 'd-6e92bafc43194eb5a1c8725ecbaaba14',
+  winbid: 'd-9e11556ce7f34fbeb66e42f8d3803986',
+}
 
 const send = (
   message: sendgrid.MailDataRequired | sendgrid.MailDataRequired[],
@@ -96,29 +96,29 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
 //   }
 // }
 
-// export const sendWinEmail = (
-//   topBid: entity.Bid,
-//   user: entity.User,
-//   profileURL: string,
-// ): Promise<boolean> => {
-//   if (user?.email) {
-//     logger.debug('sendWinEmail', { user })
-//
-//     if (helper.isFalse(user?.preferences?.purchaseSuccessNotifications ?? false)) {
-//       return Promise.resolve(false)
-//     }
-//
-//     return send({
-//       from,
-//       to: { email: user.email },
-//       dynamicTemplateData: {
-//         topBid,
-//         profileURL,
-//       },
-//       templateId: templates.winbid,
-//     }).then(() => true)
-//   }
-// }
+export const sendWinEmail = (
+  topBid: entity.Bid,
+  user: entity.User,
+  profileURL: string,
+): Promise<boolean> => {
+  if (user?.email) {
+    logger.debug('sendWinEmail', { user })
+
+    if (helper.isFalse(user?.preferences?.purchaseSuccessNotifications ?? false)) {
+      return Promise.resolve(false)
+    }
+
+    return send({
+      from,
+      to: { email: user.email },
+      dynamicTemplateData: {
+        topBid,
+        profileURL,
+      },
+      templateId: templates.winbid,
+    }).then(() => true)
+  }
+}
 
 export const sendBidConfirmEmail = (
   bid: entity.MarketBid,
@@ -148,7 +148,7 @@ export const sendBuyNowEmail = (
   buyer: entity.User,
 ): Promise<boolean> => {
   logger.debug('sendBuyNowEmail', { ask, txHash, seller, buyer })
-  if (seller.email && helper.isTrue(seller.preferences.bidActivityNotifications)) {
+  if (seller.email && helper.isTrue(seller.preferences.purchaseSuccessNotifications)) {
     // TODO: we should have template for marketplace buy now email
     return send({
       from,
@@ -156,7 +156,7 @@ export const sendBuyNowEmail = (
       subject: 'Your NFT.com marketplace asset is just sold directly.',
       text: `You can check information on txHash: ${txHash} and https://nft.com/${ask.id}`,
     }).then(() => {
-      if (buyer.email && helper.isTrue(buyer.preferences.bidActivityNotifications)) {
+      if (buyer.email && helper.isTrue(buyer.preferences.purchaseSuccessNotifications)) {
         // TODO: we should have template for marketplace buy now email
         return send({
           from,
@@ -167,7 +167,7 @@ export const sendBuyNowEmail = (
       }
     })
   } else {
-    if (buyer.email && helper.isTrue(buyer.preferences.bidActivityNotifications)) {
+    if (buyer.email && helper.isTrue(buyer.preferences.purchaseSuccessNotifications)) {
       // TODO: we should have template for marketplace buy now email
       return send({
         from,
@@ -302,7 +302,7 @@ export const sendOutBidEmail = (
   const days = Math.floor( duration/(60*60*24) )
 
   return Promise.all(bidders.map((bidder) => {
-    if (bidder.email && helper.isTrue(bidder.preferences.bidActivityNotifications)) {
+    if (bidder.email && helper.isTrue(bidder.preferences.outbidNotifications)) {
       // TODO: we should have template for marketplace ask cancel email
       return send({
         from,

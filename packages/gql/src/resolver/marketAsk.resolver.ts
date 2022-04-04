@@ -10,6 +10,7 @@ import {
   gql,
 } from '@nftcom/gql/defs'
 import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
+import { fetchUserFromMarketAskBid } from '@nftcom/gql/helper/utils'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
   _logger,
@@ -24,7 +25,7 @@ import {
 } from '@nftcom/shared'
 
 import { auth, joi, pagination, utils } from '../helper'
-import { core } from '../service'
+import { core, sendgrid } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
 
@@ -169,6 +170,21 @@ const validAsk = async (
   return true
 }
 
+const getBiddersUserInfo = async (
+  askId: string,
+  chainId: string,
+  repositories: db.Repository,
+): Promise<entity.User[]> => {
+  const bids = await repositories.marketBid.find({
+    where: { marketAskId: askId },
+  })
+  return await Promise.all(
+    bids.map(async (bid) => {
+      return await fetchUserFromMarketAskBid(bid.makerAddress, chainId, repositories)
+    }),
+  )
+}
+
 const cancelAsk = (
   _: any,
   args: gql.MutationCancelAskArgs,
@@ -199,12 +215,32 @@ const cancelAsk = (
       )
         .then((valid) => {
           if (valid) {
-            return repositories.marketBid.delete({
-              marketAskId: ask.id,
-            }).then(() => {
-              return repositories.marketAsk.updateOneById(ask.id, {
-                cancelTxHash: args?.input.txHash,
-              }).then(() => true)})
+            getBiddersUserInfo(
+              ask.makerAddress,
+              ask.chainId,
+              repositories,
+            ).then((bidders: entity.User[]) => {
+              return repositories.marketBid.delete({
+                marketAskId: ask.id,
+              }).then(() => {
+                return repositories.marketAsk.updateOneById(ask.id, {
+                  cancelTxHash: args?.input.txHash,
+                }).then(() => {
+                  // send email notification to seller and all bidders
+                  fetchUserFromMarketAskBid(
+                    ask.makerAddress,
+                    ask.chainId,
+                    repositories,
+                  ).then((seller: entity.User) => {
+                    sendgrid.sendAskCancelEmail(
+                      ask,
+                      args?.input.txHash,
+                      seller,
+                      bidders,
+                    ).then(() => true)
+                  })
+                })})
+            })
           } else {
             return Promise.reject(appError.buildInvalid(
               marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
@@ -522,7 +558,27 @@ const buyNow = (
                             marketSwapId: swap.id,
                             offerAcceptedAt: new Date(time),
                             buyNowTaker: buyNowInfo.buyNowTaker,
-                          }).then(() => swap)),
+                          }).then(() => {
+                            // send email notification to seller and buyer...
+                            return fetchUserFromMarketAskBid(
+                              ask.makerAddress,
+                              ask.chainId,
+                              repositories,
+                            ).then((seller: entity.User) => {
+                              return fetchUserFromMarketAskBid(
+                                buyNowInfo.buyNowTaker,
+                                ask.chainId,
+                                repositories,
+                              ).then((buyer: entity.User) => {
+                                return sendgrid.sendBuyNowEmail(
+                                  ask,
+                                  args?.input.txHash,
+                                  seller,
+                                  buyer,
+                                ).then(() => swap)
+                              })
+                            })
+                          })),
                       ))
                 } else {
                   return Promise.reject(appError.buildInvalid(
