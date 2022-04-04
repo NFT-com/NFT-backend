@@ -111,7 +111,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       })
     default:
       return queues[chainId].add({ chainId }, {
-        jobId: chainId,
+        jobId: `${chainId}_job`,
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every minute
