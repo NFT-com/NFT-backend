@@ -238,6 +238,13 @@ export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<
 // global object for blacklist profiles
 export const blacklistProfiles = {
   'nike': true,
+  'first': true,
+  'second': true,
+}
+
+// global object of reserved profiles mapped to the insider address.
+export const reservedProfiles = {
+  '0x341dE5B426d3582f35357094Ae412cf4E41774Cd': ['first', 'second'],
 }
 
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/

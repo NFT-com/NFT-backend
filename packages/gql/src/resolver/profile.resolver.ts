@@ -257,6 +257,16 @@ const getBlockedProfileURIs = (): Promise<string[]> => {
   return Promise.resolve(Object.keys(blocklist))
 }
 
+const getInsiderReservedProfileURIs = (
+  _: any,
+  args: gql.QueryInsiderReservedProfilesArgs,
+  ctx: Context,
+): Promise<string[]> => {
+  logger.debug('getInsiderReservedProfileURIs', args.input.address, ctx.user )
+  const reserved = core.reservedProfiles?.[args.input.address]
+  return Promise.resolve(reserved ?? [])
+}
+
 // TODO: make sure this is running on cron job -> that pull events from:
 // TODO: emit MintedProfile(_owner, _profileURI, _nftTokens, claimableBlock[hash]);
 const profileClaimed = (
@@ -331,6 +341,7 @@ export default {
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
     blockedProfileURIs: getBlockedProfileURIs,
+    insiderReservedProfiles: getInsiderReservedProfileURIs,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
