@@ -79,6 +79,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     switch (chainId) {
     case NFT_COLLECTION_JOB:
       return queues[NFT_COLLECTION_JOB].add({ NFT_COLLECTION_JOB }, {
+        jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running) 
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every 8 minutes for nft collection job
@@ -86,6 +87,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       })
     case PROFILE_SYNC_JOB:
       return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
+        jobId: 'profile_sync_job',
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every 3 minutes for nft profile job
@@ -93,6 +95,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       })
     case MARKETPLACE_SYNC_JOB:
       return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
+        jobId: 'marketplace_sync_job',
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every 5 minute for nft marketplace job
@@ -101,6 +104,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     case TYPESENSE_INDEX_SCHEMA_JOB:
       return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
         priority: 1,
+        jobId: 'typesense_index_job',
         removeOnComplete: true,
         removeOnFail: true,
         // no repeat options, only run once with top prio 
