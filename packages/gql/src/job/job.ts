@@ -103,14 +103,15 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       })
     case TYPESENSE_INDEX_SCHEMA_JOB:
       return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
+        // no repeat options, only run once with top prio 
         priority: 1,
         jobId: 'typesense_index_job',
         removeOnComplete: true,
         removeOnFail: true,
-        // no repeat options, only run once with top prio 
       })
     default:
       return queues[chainId].add({ chainId }, {
+        jobId: chainId,
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every minute
