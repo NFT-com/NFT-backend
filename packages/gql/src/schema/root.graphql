@@ -3,6 +3,7 @@ scalar Uint256
 scalar Bytes
 scalar DateTime
 scalar Date
+scalar Upload
 #scalar JSON
 #scalar JSONObject
 

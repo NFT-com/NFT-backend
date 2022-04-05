@@ -1,3 +1,4 @@
+
 type FollowersOutput {
   items: [Wallet!]!
   pageInfo: PageInfo
@@ -61,6 +62,11 @@ input MintGKProfileInput {
   count: Int
 }
 
+input UploadProfileImagesInput {
+  images: [Upload!]!
+  profileId: ID!
+}
+
 extend type Query {
   # TODO do we need to gate this?
   profileFollowers(input: FollowersInput!): FollowersOutput!
@@ -77,4 +83,5 @@ extend type Mutation {
   updateProfile(input: UpdateProfileInput!): Profile!
   profileClaimed(input: ProfileClaimedInput!): Profile!
   mintGKProfile(input: MintGKProfileInput): String!
+  uploadProfileImages(input: UploadProfileImagesInput): Profile!
 }
