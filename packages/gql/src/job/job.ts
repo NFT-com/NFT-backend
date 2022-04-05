@@ -83,6 +83,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnFail: true,
         // repeat every 8 minutes for nft collection job
         repeat: { every: 60000 * 8 },
+        jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running) 
       })
     case PROFILE_SYNC_JOB:
       return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
@@ -90,6 +91,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnFail: true,
         // repeat every 3 minutes for nft profile job
         repeat: { every: 60000 * 3 },
+        jobId: 'profile_sync_job',
       })
     case MARKETPLACE_SYNC_JOB:
       return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
@@ -97,13 +99,15 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnFail: true,
         // repeat every 5 minute for nft marketplace job
         repeat: { every: 60000 * 5 },
+        jobId: 'marketplace_sync_job',
       })
     case TYPESENSE_INDEX_SCHEMA_JOB:
       return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
+        // no repeat options, only run once with top prio 
         priority: 1,
         removeOnComplete: true,
         removeOnFail: true,
-        // no repeat options, only run once with top prio 
+        jobId: 'typesense_index_job',
       })
     default:
       return queues[chainId].add({ chainId }, {
@@ -111,6 +115,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnFail: true,
         // repeat every minute
         repeat: { every: 60000 },
+        jobId: `chainid_${chainId}_job`,
       })
     }
   }))
@@ -125,7 +130,7 @@ export const startAndListen = (): Promise<void> => {
 export const stopAndDisconnect = (): Promise<any> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
-    return queue.obliterate( { force: true })
+    return queue.obliterate({ force: true })
       .then(() => queue.close())
   }))
 }
