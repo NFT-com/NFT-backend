@@ -1,5 +1,6 @@
 import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
+import bodyParser from 'body-parser'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
@@ -142,6 +143,7 @@ export const start = async (): Promise<void> => {
   })
 
   app.use(Sentry.Handlers.errorHandler())
+  app.use(bodyParser.json({ limit: '50mb' }))
 
   await server.start()
   server.applyMiddleware({ app, cors: true })

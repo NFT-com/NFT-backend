@@ -328,9 +328,20 @@ const profileClaimed = (
       client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
         .then(() => logger.debug('profile added to typesense index'))
         .catch((err) => logger.info('error: could not save profile in typesense: ' + err))
-      
+
       return saveProfile
     })
+}
+
+const uploadProfileImages = (
+  _: any,
+  args: gql.MutationUploadProfileImagesArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { repositories } = ctx
+  const { images } = args.input
+  console.log(images, repositories)
+  return null
 }
 
 export default {
@@ -348,6 +359,7 @@ export default {
     unfollowProfile: combineResolvers(auth.isAuthenticated, unfollowProfile),
     updateProfile: combineResolvers(auth.isAuthenticated, updateProfile),
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
+    uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
   },
   Profile: {
     followersCount: getFollowersCount,
