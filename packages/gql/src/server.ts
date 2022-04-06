@@ -150,10 +150,10 @@ export const start = async (): Promise<void> => {
                   content="Genesis Keys are very very important." />
                 <meta
                   name="twitter:image"
-                  content={"${url}"} />
+                  content="${url}" />
           </head>
           <body>
-            <img alt="genesis key" src={"${url}"} />
+            <img alt="genesis key" src="${url}" />
           </body>
         </html>`,
       )
