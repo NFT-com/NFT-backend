@@ -110,6 +110,12 @@ export const start = async (): Promise<void> => {
 
   app.use(Sentry.Handlers.requestHandler())
 
+  app.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
+    next()
+  })
+
   // TODO: user CDN urls later for default image and header
   app.get('/uri/:username', function (req, res) {
     const { username } = req.params
