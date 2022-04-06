@@ -136,6 +136,7 @@ export const start = async (): Promise<void> => {
     const { key } = req.params
 
     if (!isNaN(Number(key)) && Number(key) >= 1 && Number(key) <= 10000) {
+      const url = 'https://nft-llc.mypinata.cloud/ipfs/Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi'
       return res.send(
         `<!DOCTYPE html>
         <html lang="en">
@@ -149,10 +150,10 @@ export const start = async (): Promise<void> => {
                   content="Genesis Keys are very very important." />
                 <meta
                   name="twitter:image"
-                  content={${'https://nft-llc.mypinata.cloud/ipfs/Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi'}} />
+                  content={"${url}"} />
           </head>
           <body>
-            <img alt="genesis key" src={${'https://nft-llc.mypinata.cloud/ipfs/Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi'}} />
+            <img alt="genesis key" src={"${url}"} />
           </body>
         </html>`,
       )
