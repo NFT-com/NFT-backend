@@ -1,3 +1,4 @@
+
 type FollowersOutput {
   items: [Wallet!]!
   pageInfo: PageInfo
@@ -65,6 +66,13 @@ input InsiderReservedProfilesInput {
   address: Address!
 }
 
+input UploadProfileImagesInput {
+  profileId: ID!
+  banner: Upload
+  avatar: Upload
+  description: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -81,4 +89,5 @@ extend type Mutation {
   updateProfile(input: UpdateProfileInput!): Profile!
   profileClaimed(input: ProfileClaimedInput!): Profile!
   mintGKProfile(input: MintGKProfileInput): String!
+  uploadProfileImages(input: UploadProfileImagesInput): Profile!
 }

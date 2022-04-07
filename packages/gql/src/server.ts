@@ -3,6 +3,7 @@ import { ApolloServer } from 'apollo-server-express'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
+import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
 
 import { appError, profileError } from '@nftcom/gql/error'
@@ -175,6 +176,7 @@ export const start = async (): Promise<void> => {
   })
 
   app.use(Sentry.Handlers.errorHandler())
+  app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
 
   await server.start()
   server.applyMiddleware({ app, cors: true })
