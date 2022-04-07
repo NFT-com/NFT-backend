@@ -81,7 +81,7 @@ const endGKBlindAuction = (
       const firstLosingBid = []
       let lastNonValidBid
       for (let i = 0; i < wallets.length; i++) {
-        const price = BigNumber.from(bids[i]?.price) ?? BigNumber.from(0)
+        const price = BigNumber.from(bids[i]?.price ?? 0)
         const wallet = wallets[i]?.address
 
         if (Object.keys(topBidPerWallet).length < 3001) {
@@ -101,12 +101,22 @@ const endGKBlindAuction = (
       }
 
       return {
-        topBids: Object.keys(topBidPerWallet).map(key => {
-          return { key, value: topBidPerWallet[key] }
-        }),
-        firstLosingBid: firstLosingBid.length > 0 ? firstLosingBid : lastNonValidBid,
+        topBids: Object.keys(topBidPerWallet)
+          .sort((a, b) => {
+            if (topBidPerWallet[a] && topBidPerWallet[b]) {
+              return BigNumber.from(topBidPerWallet[a])
+                .gt(BigNumber.from(topBidPerWallet[b])) ? -1 : 1
+            }
+
+            return 1
+          })
+          .map(key => {
+            return { key, value: topBidPerWallet[key] }
+          }),
+        firstLosingBid: firstLosingBid.length > 0 ? firstLosingBid : lastNonValidBid ?? [],
         whitelistWinnersCount: Object.keys(topBidPerWallet).length,
-        medianPrice: median(Object.values(topBidPerWallet)).toString(),
+        medianPrice: Object.values(topBidPerWallet).length > 0 ?
+          median(Object.values(topBidPerWallet)).toString() : '',
         totalBidsCount: bids.length,
       }
     })
