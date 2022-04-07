@@ -4,7 +4,6 @@
 import {
   BaseContract,
   BigNumber,
-  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
@@ -23,14 +22,11 @@ export interface NftBuyerInterface extends utils.Interface {
     "DAO()": FunctionFragment;
     "MAX_PERCENT()": FunctionFragment;
     "changeDAO(address)": FunctionFragment;
-    "changePublicPercent(uint256)": FunctionFragment;
     "convert(address)": FunctionFragment;
     "convertETH()": FunctionFragment;
     "factory()": FunctionFragment;
     "genesisStaking()": FunctionFragment;
     "nft()": FunctionFragment;
-    "publicStaking()": FunctionFragment;
-    "publicStakingPercent()": FunctionFragment;
     "weth()": FunctionFragment;
   };
 
@@ -40,10 +36,6 @@ export interface NftBuyerInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "changeDAO", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "changePublicPercent",
-    values: [BigNumberish]
-  ): string;
   encodeFunctionData(functionFragment: "convert", values: [string]): string;
   encodeFunctionData(
     functionFragment: "convertETH",
@@ -55,14 +47,6 @@ export interface NftBuyerInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "nft", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "publicStaking",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "publicStakingPercent",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "weth", values?: undefined): string;
 
   decodeFunctionResult(functionFragment: "DAO", data: BytesLike): Result;
@@ -71,10 +55,6 @@ export interface NftBuyerInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "changeDAO", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "changePublicPercent",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "convert", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "convertETH", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
@@ -83,14 +63,6 @@ export interface NftBuyerInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "nft", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "publicStaking",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "publicStakingPercent",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "weth", data: BytesLike): Result;
 
   events: {
@@ -141,11 +113,6 @@ export interface NftBuyer extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    changePublicPercent(
-      _percent: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     convert(
       erc20: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -161,10 +128,6 @@ export interface NftBuyer extends BaseContract {
 
     nft(overrides?: CallOverrides): Promise<[string]>;
 
-    publicStaking(overrides?: CallOverrides): Promise<[string]>;
-
-    publicStakingPercent(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     weth(overrides?: CallOverrides): Promise<[string]>;
   };
 
@@ -174,11 +137,6 @@ export interface NftBuyer extends BaseContract {
 
   changeDAO(
     newDAO: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  changePublicPercent(
-    _percent: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -197,10 +155,6 @@ export interface NftBuyer extends BaseContract {
 
   nft(overrides?: CallOverrides): Promise<string>;
 
-  publicStaking(overrides?: CallOverrides): Promise<string>;
-
-  publicStakingPercent(overrides?: CallOverrides): Promise<BigNumber>;
-
   weth(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
@@ -209,11 +163,6 @@ export interface NftBuyer extends BaseContract {
     MAX_PERCENT(overrides?: CallOverrides): Promise<BigNumber>;
 
     changeDAO(newDAO: string, overrides?: CallOverrides): Promise<void>;
-
-    changePublicPercent(
-      _percent: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     convert(erc20: string, overrides?: CallOverrides): Promise<void>;
 
@@ -224,10 +173,6 @@ export interface NftBuyer extends BaseContract {
     genesisStaking(overrides?: CallOverrides): Promise<string>;
 
     nft(overrides?: CallOverrides): Promise<string>;
-
-    publicStaking(overrides?: CallOverrides): Promise<string>;
-
-    publicStakingPercent(overrides?: CallOverrides): Promise<BigNumber>;
 
     weth(overrides?: CallOverrides): Promise<string>;
   };
@@ -247,11 +192,6 @@ export interface NftBuyer extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    changePublicPercent(
-      _percent: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     convert(
       erc20: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -267,10 +207,6 @@ export interface NftBuyer extends BaseContract {
 
     nft(overrides?: CallOverrides): Promise<BigNumber>;
 
-    publicStaking(overrides?: CallOverrides): Promise<BigNumber>;
-
-    publicStakingPercent(overrides?: CallOverrides): Promise<BigNumber>;
-
     weth(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
@@ -281,11 +217,6 @@ export interface NftBuyer extends BaseContract {
 
     changeDAO(
       newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    changePublicPercent(
-      _percent: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -303,12 +234,6 @@ export interface NftBuyer extends BaseContract {
     genesisStaking(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     nft(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    publicStaking(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    publicStakingPercent(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
 
     weth(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };

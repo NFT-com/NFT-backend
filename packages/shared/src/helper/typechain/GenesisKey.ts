@@ -36,32 +36,39 @@ export interface GenesisKeyInterface extends utils.Interface {
     "cancelBid(uint256,address,uint8,bytes32,bytes32)": FunctionFragment;
     "cancelledOrFinalized(bytes32)": FunctionFragment;
     "claimGrantKey(address[])": FunctionFragment;
-    "claimKey(uint256,address,uint8,bytes32,bytes32)": FunctionFragment;
+    "claimKey(address,uint256)": FunctionFragment;
     "claimableBlock(bytes32)": FunctionFragment;
     "finalWethPrice()": FunctionFragment;
+    "genesisKeyMerkle()": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
     "getCurrentPrice()": FunctionFragment;
     "getStructHash(uint256,address)": FunctionFragment;
+    "gkTeamClaimContract()": FunctionFragment;
     "initialWethPrice()": FunctionFragment;
-    "initialize(string,string,address,address,uint256)": FunctionFragment;
-    "initializePublicSale(uint256,uint256,uint256)": FunctionFragment;
+    "initialize(string,string,address,address,uint256,bool)": FunctionFragment;
+    "initializePublicSale(uint256,uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
+    "lastClaimTime()": FunctionFragment;
     "multiOwnerOf(uint256,uint256)": FunctionFragment;
     "multiSig()": FunctionFragment;
     "name()": FunctionFragment;
-    "numKeysForSale()": FunctionFragment;
-    "numKeysPublicPurchased()": FunctionFragment;
     "owner()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
+    "pausedTransfer()": FunctionFragment;
     "publicExecuteBid()": FunctionFragment;
     "publicSaleDurationSeconds()": FunctionFragment;
     "publicSaleStartSecond()": FunctionFragment;
+    "randomClaimBool()": FunctionFragment;
     "remainingTeamAdvisorGrant()": FunctionFragment;
     "resetPublicSale()": FunctionFragment;
+    "safeTransferFrom(address,address,uint256)": FunctionFragment;
     "setApprovalForAll(address,bool)": FunctionFragment;
+    "setGenesisKeyMerkle(address)": FunctionFragment;
+    "setGkTeamClaim(address)": FunctionFragment;
     "setMultiSig(address)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "setPublicSaleDuration(uint256)": FunctionFragment;
+    "setWhitelist(address,bool)": FunctionFragment;
     "startPublicSale()": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
@@ -74,7 +81,7 @@ export interface GenesisKeyInterface extends utils.Interface {
     "upgradeToAndCall(address,bytes)": FunctionFragment;
     "validateBid(uint256,address,(uint8,bytes32,bytes32))": FunctionFragment;
     "wethAddress()": FunctionFragment;
-    "whitelistExecuteBid(uint256[],address[],uint8[],bytes32[],bytes32[],uint256)": FunctionFragment;
+    "whitelistedTransfer(address)": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -96,7 +103,7 @@ export interface GenesisKeyInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "claimKey",
-    values: [BigNumberish, string, BigNumberish, BytesLike, BytesLike]
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "claimableBlock",
@@ -104,6 +111,10 @@ export interface GenesisKeyInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "finalWethPrice",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "genesisKeyMerkle",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -119,20 +130,28 @@ export interface GenesisKeyInterface extends utils.Interface {
     values: [BigNumberish, string]
   ): string;
   encodeFunctionData(
+    functionFragment: "gkTeamClaimContract",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "initialWethPrice",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string, string, string, BigNumberish]
+    values: [string, string, string, string, BigNumberish, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "initializePublicSale",
-    values: [BigNumberish, BigNumberish, BigNumberish]
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "isApprovedForAll",
     values: [string, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lastClaimTime",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "multiOwnerOf",
@@ -140,18 +159,14 @@ export interface GenesisKeyInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "multiSig", values?: undefined): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "numKeysForSale",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "numKeysPublicPurchased",
-    values?: undefined
-  ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "ownerOf",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "pausedTransfer",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "publicExecuteBid",
@@ -166,6 +181,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "randomClaimBool",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "remainingTeamAdvisorGrant",
     values?: undefined
   ): string;
@@ -174,14 +193,30 @@ export interface GenesisKeyInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "safeTransferFrom",
+    values: [string, string, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setApprovalForAll",
     values: [string, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setGenesisKeyMerkle",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setGkTeamClaim",
+    values: [string]
   ): string;
   encodeFunctionData(functionFragment: "setMultiSig", values: [string]): string;
   encodeFunctionData(functionFragment: "setOwner", values: [string]): string;
   encodeFunctionData(
     functionFragment: "setPublicSaleDuration",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setWhitelist",
+    values: [string, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "startPublicSale",
@@ -226,15 +261,8 @@ export interface GenesisKeyInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "whitelistExecuteBid",
-    values: [
-      BigNumberish[],
-      string[],
-      BigNumberish[],
-      BytesLike[],
-      BytesLike[],
-      BigNumberish
-    ]
+    functionFragment: "whitelistedTransfer",
+    values: [string]
   ): string;
 
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
@@ -258,6 +286,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "genesisKeyMerkle",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getApproved",
     data: BytesLike
   ): Result;
@@ -267,6 +299,10 @@ export interface GenesisKeyInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getStructHash",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "gkTeamClaimContract",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -283,21 +319,21 @@ export interface GenesisKeyInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "lastClaimTime",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "multiOwnerOf",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "multiSig", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "numKeysForSale",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "numKeysPublicPurchased",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "pausedTransfer",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "publicExecuteBid",
     data: BytesLike
@@ -311,6 +347,10 @@ export interface GenesisKeyInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "randomClaimBool",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "remainingTeamAdvisorGrant",
     data: BytesLike
   ): Result;
@@ -319,7 +359,19 @@ export interface GenesisKeyInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "safeTransferFrom",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setApprovalForAll",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setGenesisKeyMerkle",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setGkTeamClaim",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -329,6 +381,10 @@ export interface GenesisKeyInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setPublicSaleDuration",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setWhitelist",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -371,7 +427,7 @@ export interface GenesisKeyInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "whitelistExecuteBid",
+    functionFragment: "whitelistedTransfer",
     data: BytesLike
   ): Result;
 
@@ -515,12 +571,9 @@ export interface GenesisKey extends BaseContract {
     ): Promise<ContractTransaction>;
 
     claimKey(
-      _wethTokens: BigNumberish,
-      _owner: string,
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      recipient: string,
+      _eth: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     claimableBlock(
@@ -529,6 +582,8 @@ export interface GenesisKey extends BaseContract {
     ): Promise<[BigNumber]>;
 
     finalWethPrice(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    genesisKeyMerkle(overrides?: CallOverrides): Promise<[string]>;
 
     getApproved(
       tokenId: BigNumberish,
@@ -543,6 +598,8 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
+    gkTeamClaimContract(overrides?: CallOverrides): Promise<[string]>;
+
     initialWethPrice(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     initialize(
@@ -551,13 +608,13 @@ export interface GenesisKey extends BaseContract {
       _wethAddress: string,
       _multiSig: string,
       _auctionSeconds: BigNumberish,
+      _randomClaimBool: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     initializePublicSale(
       _initialWethPrice: BigNumberish,
       _finalWethPrice: BigNumberish,
-      _numKeysForSale: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -566,6 +623,8 @@ export interface GenesisKey extends BaseContract {
       operator: string,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
+
+    lastClaimTime(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     multiOwnerOf(
       startIndex: BigNumberish,
@@ -577,16 +636,14 @@ export interface GenesisKey extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<[string]>;
 
-    numKeysForSale(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    numKeysPublicPurchased(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     owner(overrides?: CallOverrides): Promise<[string]>;
 
     ownerOf(
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[string]>;
+
+    pausedTransfer(overrides?: CallOverrides): Promise<[boolean]>;
 
     publicExecuteBid(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -596,15 +653,42 @@ export interface GenesisKey extends BaseContract {
 
     publicSaleStartSecond(overrides?: CallOverrides): Promise<[BigNumber]>;
 
+    randomClaimBool(overrides?: CallOverrides): Promise<[boolean]>;
+
     remainingTeamAdvisorGrant(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     resetPublicSale(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setApprovalForAll(
       operator: string,
       approved: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setGenesisKeyMerkle(
+      _newMK: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setGkTeamClaim(
+      _gkTeamClaimContract: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -620,6 +704,12 @@ export interface GenesisKey extends BaseContract {
 
     setPublicSaleDuration(
       _seconds: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setWhitelist(
+      _address: string,
+      _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -675,15 +765,10 @@ export interface GenesisKey extends BaseContract {
 
     wethAddress(overrides?: CallOverrides): Promise<[string]>;
 
-    whitelistExecuteBid(
-      _wethTokens: BigNumberish[],
-      _owners: string[],
-      v: BigNumberish[],
-      r: BytesLike[],
-      s: BytesLike[],
-      _wethMin: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+    whitelistedTransfer(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
   };
 
   approve(
@@ -714,12 +799,9 @@ export interface GenesisKey extends BaseContract {
   ): Promise<ContractTransaction>;
 
   claimKey(
-    _wethTokens: BigNumberish,
-    _owner: string,
-    v: BigNumberish,
-    r: BytesLike,
-    s: BytesLike,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    recipient: string,
+    _eth: BigNumberish,
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   claimableBlock(
@@ -728,6 +810,8 @@ export interface GenesisKey extends BaseContract {
   ): Promise<BigNumber>;
 
   finalWethPrice(overrides?: CallOverrides): Promise<BigNumber>;
+
+  genesisKeyMerkle(overrides?: CallOverrides): Promise<string>;
 
   getApproved(
     tokenId: BigNumberish,
@@ -742,6 +826,8 @@ export interface GenesisKey extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
+  gkTeamClaimContract(overrides?: CallOverrides): Promise<string>;
+
   initialWethPrice(overrides?: CallOverrides): Promise<BigNumber>;
 
   initialize(
@@ -750,13 +836,13 @@ export interface GenesisKey extends BaseContract {
     _wethAddress: string,
     _multiSig: string,
     _auctionSeconds: BigNumberish,
+    _randomClaimBool: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   initializePublicSale(
     _initialWethPrice: BigNumberish,
     _finalWethPrice: BigNumberish,
-    _numKeysForSale: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -765,6 +851,8 @@ export interface GenesisKey extends BaseContract {
     operator: string,
     overrides?: CallOverrides
   ): Promise<boolean>;
+
+  lastClaimTime(overrides?: CallOverrides): Promise<BigNumber>;
 
   multiOwnerOf(
     startIndex: BigNumberish,
@@ -776,13 +864,11 @@ export interface GenesisKey extends BaseContract {
 
   name(overrides?: CallOverrides): Promise<string>;
 
-  numKeysForSale(overrides?: CallOverrides): Promise<BigNumber>;
-
-  numKeysPublicPurchased(overrides?: CallOverrides): Promise<BigNumber>;
-
   owner(overrides?: CallOverrides): Promise<string>;
 
   ownerOf(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
+
+  pausedTransfer(overrides?: CallOverrides): Promise<boolean>;
 
   publicExecuteBid(
     overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -792,15 +878,42 @@ export interface GenesisKey extends BaseContract {
 
   publicSaleStartSecond(overrides?: CallOverrides): Promise<BigNumber>;
 
+  randomClaimBool(overrides?: CallOverrides): Promise<boolean>;
+
   remainingTeamAdvisorGrant(overrides?: CallOverrides): Promise<BigNumber>;
 
   resetPublicSale(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  "safeTransferFrom(address,address,uint256)"(
+    from: string,
+    to: string,
+    tokenId: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "safeTransferFrom(address,address,uint256,bytes)"(
+    from: string,
+    to: string,
+    tokenId: BigNumberish,
+    _data: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setApprovalForAll(
     operator: string,
     approved: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setGenesisKeyMerkle(
+    _newMK: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setGkTeamClaim(
+    _gkTeamClaimContract: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -816,6 +929,12 @@ export interface GenesisKey extends BaseContract {
 
   setPublicSaleDuration(
     _seconds: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setWhitelist(
+    _address: string,
+    _val: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -865,15 +984,10 @@ export interface GenesisKey extends BaseContract {
 
   wethAddress(overrides?: CallOverrides): Promise<string>;
 
-  whitelistExecuteBid(
-    _wethTokens: BigNumberish[],
-    _owners: string[],
-    v: BigNumberish[],
-    r: BytesLike[],
-    s: BytesLike[],
-    _wethMin: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+  whitelistedTransfer(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   callStatic: {
     approve(
@@ -904,13 +1018,10 @@ export interface GenesisKey extends BaseContract {
     ): Promise<void>;
 
     claimKey(
-      _wethTokens: BigNumberish,
-      _owner: string,
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
+      recipient: string,
+      _eth: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<boolean>;
 
     claimableBlock(
       arg0: BytesLike,
@@ -918,6 +1029,8 @@ export interface GenesisKey extends BaseContract {
     ): Promise<BigNumber>;
 
     finalWethPrice(overrides?: CallOverrides): Promise<BigNumber>;
+
+    genesisKeyMerkle(overrides?: CallOverrides): Promise<string>;
 
     getApproved(
       tokenId: BigNumberish,
@@ -932,6 +1045,8 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
+    gkTeamClaimContract(overrides?: CallOverrides): Promise<string>;
+
     initialWethPrice(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
@@ -940,13 +1055,13 @@ export interface GenesisKey extends BaseContract {
       _wethAddress: string,
       _multiSig: string,
       _auctionSeconds: BigNumberish,
+      _randomClaimBool: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
 
     initializePublicSale(
       _initialWethPrice: BigNumberish,
       _finalWethPrice: BigNumberish,
-      _numKeysForSale: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -955,6 +1070,8 @@ export interface GenesisKey extends BaseContract {
       operator: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
+
+    lastClaimTime(overrides?: CallOverrides): Promise<BigNumber>;
 
     multiOwnerOf(
       startIndex: BigNumberish,
@@ -966,13 +1083,11 @@ export interface GenesisKey extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<string>;
 
-    numKeysForSale(overrides?: CallOverrides): Promise<BigNumber>;
-
-    numKeysPublicPurchased(overrides?: CallOverrides): Promise<BigNumber>;
-
     owner(overrides?: CallOverrides): Promise<string>;
 
     ownerOf(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
+
+    pausedTransfer(overrides?: CallOverrides): Promise<boolean>;
 
     publicExecuteBid(overrides?: CallOverrides): Promise<void>;
 
@@ -980,13 +1095,40 @@ export interface GenesisKey extends BaseContract {
 
     publicSaleStartSecond(overrides?: CallOverrides): Promise<BigNumber>;
 
+    randomClaimBool(overrides?: CallOverrides): Promise<boolean>;
+
     remainingTeamAdvisorGrant(overrides?: CallOverrides): Promise<BigNumber>;
 
     resetPublicSale(overrides?: CallOverrides): Promise<void>;
 
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     setApprovalForAll(
       operator: string,
       approved: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setGenesisKeyMerkle(
+      _newMK: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setGkTeamClaim(
+      _gkTeamClaimContract: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -996,6 +1138,12 @@ export interface GenesisKey extends BaseContract {
 
     setPublicSaleDuration(
       _seconds: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setWhitelist(
+      _address: string,
+      _val: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -1043,15 +1191,10 @@ export interface GenesisKey extends BaseContract {
 
     wethAddress(overrides?: CallOverrides): Promise<string>;
 
-    whitelistExecuteBid(
-      _wethTokens: BigNumberish[],
-      _owners: string[],
-      v: BigNumberish[],
-      r: BytesLike[],
-      s: BytesLike[],
-      _wethMin: BigNumberish,
+    whitelistedTransfer(
+      arg0: string,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<boolean>;
   };
 
   filters: {
@@ -1162,12 +1305,9 @@ export interface GenesisKey extends BaseContract {
     ): Promise<BigNumber>;
 
     claimKey(
-      _wethTokens: BigNumberish,
-      _owner: string,
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      recipient: string,
+      _eth: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     claimableBlock(
@@ -1176,6 +1316,8 @@ export interface GenesisKey extends BaseContract {
     ): Promise<BigNumber>;
 
     finalWethPrice(overrides?: CallOverrides): Promise<BigNumber>;
+
+    genesisKeyMerkle(overrides?: CallOverrides): Promise<BigNumber>;
 
     getApproved(
       tokenId: BigNumberish,
@@ -1190,6 +1332,8 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    gkTeamClaimContract(overrides?: CallOverrides): Promise<BigNumber>;
+
     initialWethPrice(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
@@ -1198,13 +1342,13 @@ export interface GenesisKey extends BaseContract {
       _wethAddress: string,
       _multiSig: string,
       _auctionSeconds: BigNumberish,
+      _randomClaimBool: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     initializePublicSale(
       _initialWethPrice: BigNumberish,
       _finalWethPrice: BigNumberish,
-      _numKeysForSale: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1213,6 +1357,8 @@ export interface GenesisKey extends BaseContract {
       operator: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    lastClaimTime(overrides?: CallOverrides): Promise<BigNumber>;
 
     multiOwnerOf(
       startIndex: BigNumberish,
@@ -1224,16 +1370,14 @@ export interface GenesisKey extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
 
-    numKeysForSale(overrides?: CallOverrides): Promise<BigNumber>;
-
-    numKeysPublicPurchased(overrides?: CallOverrides): Promise<BigNumber>;
-
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     ownerOf(
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    pausedTransfer(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicExecuteBid(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -1243,15 +1387,42 @@ export interface GenesisKey extends BaseContract {
 
     publicSaleStartSecond(overrides?: CallOverrides): Promise<BigNumber>;
 
+    randomClaimBool(overrides?: CallOverrides): Promise<BigNumber>;
+
     remainingTeamAdvisorGrant(overrides?: CallOverrides): Promise<BigNumber>;
 
     resetPublicSale(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setApprovalForAll(
       operator: string,
       approved: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setGenesisKeyMerkle(
+      _newMK: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setGkTeamClaim(
+      _gkTeamClaimContract: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1267,6 +1438,12 @@ export interface GenesisKey extends BaseContract {
 
     setPublicSaleDuration(
       _seconds: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setWhitelist(
+      _address: string,
+      _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1319,14 +1496,9 @@ export interface GenesisKey extends BaseContract {
 
     wethAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
-    whitelistExecuteBid(
-      _wethTokens: BigNumberish[],
-      _owners: string[],
-      v: BigNumberish[],
-      r: BytesLike[],
-      s: BytesLike[],
-      _wethMin: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+    whitelistedTransfer(
+      arg0: string,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
 
@@ -1362,12 +1534,9 @@ export interface GenesisKey extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     claimKey(
-      _wethTokens: BigNumberish,
-      _owner: string,
-      v: BigNumberish,
-      r: BytesLike,
-      s: BytesLike,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      recipient: string,
+      _eth: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     claimableBlock(
@@ -1376,6 +1545,8 @@ export interface GenesisKey extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     finalWethPrice(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    genesisKeyMerkle(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getApproved(
       tokenId: BigNumberish,
@@ -1390,6 +1561,10 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    gkTeamClaimContract(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     initialWethPrice(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     initialize(
@@ -1398,13 +1573,13 @@ export interface GenesisKey extends BaseContract {
       _wethAddress: string,
       _multiSig: string,
       _auctionSeconds: BigNumberish,
+      _randomClaimBool: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     initializePublicSale(
       _initialWethPrice: BigNumberish,
       _finalWethPrice: BigNumberish,
-      _numKeysForSale: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1413,6 +1588,8 @@ export interface GenesisKey extends BaseContract {
       operator: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    lastClaimTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     multiOwnerOf(
       startIndex: BigNumberish,
@@ -1424,18 +1601,14 @@ export interface GenesisKey extends BaseContract {
 
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    numKeysForSale(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    numKeysPublicPurchased(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     ownerOf(
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    pausedTransfer(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     publicExecuteBid(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -1449,6 +1622,8 @@ export interface GenesisKey extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    randomClaimBool(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     remainingTeamAdvisorGrant(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -1457,9 +1632,34 @@ export interface GenesisKey extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    "safeTransferFrom(address,address,uint256)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "safeTransferFrom(address,address,uint256,bytes)"(
+      from: string,
+      to: string,
+      tokenId: BigNumberish,
+      _data: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setApprovalForAll(
       operator: string,
       approved: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setGenesisKeyMerkle(
+      _newMK: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setGkTeamClaim(
+      _gkTeamClaimContract: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1475,6 +1675,12 @@ export interface GenesisKey extends BaseContract {
 
     setPublicSaleDuration(
       _seconds: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setWhitelist(
+      _address: string,
+      _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1530,14 +1736,9 @@ export interface GenesisKey extends BaseContract {
 
     wethAddress(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    whitelistExecuteBid(
-      _wethTokens: BigNumberish[],
-      _owners: string[],
-      v: BigNumberish[],
-      r: BytesLike[],
-      s: BytesLike[],
-      _wethMin: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+    whitelistedTransfer(
+      arg0: string,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };
 }

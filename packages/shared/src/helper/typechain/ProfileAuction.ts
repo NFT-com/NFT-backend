@@ -21,23 +21,27 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface ProfileAuctionInterface extends utils.Interface {
   contractName: "ProfileAuction";
   functions: {
+    "extendRent(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "genKeyWhitelistOnly()": FunctionFragment;
     "genesisKeyClaimNumber(uint256)": FunctionFragment;
     "genesisKeyClaimProfile(string,uint256,address)": FunctionFragment;
     "genesisKeyContract()": FunctionFragment;
-    "genesisKeyWhitelistClaim(string,uint256,address)": FunctionFragment;
     "genesisStakingContract()": FunctionFragment;
+    "getFee(string,uint256)": FunctionFragment;
     "governor()": FunctionFragment;
     "initialize(address,address,address,address,address,address,address)": FunctionFragment;
+    "lengthPremium(uint256)": FunctionFragment;
     "nftBuyer()": FunctionFragment;
     "nftProfile()": FunctionFragment;
     "nftProfileHelperAddress()": FunctionFragment;
     "nftToken()": FunctionFragment;
     "owner()": FunctionFragment;
     "publicFee()": FunctionFragment;
-    "publicMint(string,uint8,bytes32,bytes32)": FunctionFragment;
+    "publicMint(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "publicMintBool()": FunctionFragment;
+    "purchaseExpiredProfile(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "setGenKeyWhitelistOnly(bool)": FunctionFragment;
+    "setLengthPremium(uint256,uint256)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "setPublicFee(uint256)": FunctionFragment;
     "setPublicMint(bool)": FunctionFragment;
@@ -45,6 +49,10 @@ export interface ProfileAuctionInterface extends utils.Interface {
     "upgradeToAndCall(address,bytes)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "extendRent",
+    values: [string, BigNumberish, BigNumberish, BytesLike, BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "genKeyWhitelistOnly",
     values?: undefined
@@ -62,17 +70,21 @@ export interface ProfileAuctionInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "genesisKeyWhitelistClaim",
-    values: [string, BigNumberish, string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "genesisStakingContract",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getFee",
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "governor", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "initialize",
     values: [string, string, string, string, string, string, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lengthPremium",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "nftBuyer", values?: undefined): string;
   encodeFunctionData(
@@ -88,15 +100,23 @@ export interface ProfileAuctionInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "publicFee", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "publicMint",
-    values: [string, BigNumberish, BytesLike, BytesLike]
+    values: [string, BigNumberish, BigNumberish, BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "publicMintBool",
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "purchaseExpiredProfile",
+    values: [string, BigNumberish, BigNumberish, BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setGenKeyWhitelistOnly",
     values: [boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setLengthPremium",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "setOwner", values: [string]): string;
   encodeFunctionData(
@@ -113,6 +133,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
     values: [string, BytesLike]
   ): string;
 
+  decodeFunctionResult(functionFragment: "extendRent", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "genKeyWhitelistOnly",
     data: BytesLike
@@ -130,15 +151,16 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "genesisKeyWhitelistClaim",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "genesisStakingContract",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "getFee", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "governor", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "lengthPremium",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "nftBuyer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nftProfile", data: BytesLike): Result;
   decodeFunctionResult(
@@ -154,7 +176,15 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "purchaseExpiredProfile",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setGenKeyWhitelistOnly",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setLengthPremium",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
@@ -175,12 +205,14 @@ export interface ProfileAuctionInterface extends utils.Interface {
   events: {
     "AdminChanged(address,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
-    "MintedProfile(address,string)": EventFragment;
+    "ExtendRent(address,string,uint256,uint256,bool)": EventFragment;
+    "MintedProfile(address,string,uint256,uint256)": EventFragment;
     "Upgraded(address)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ExtendRent"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MintedProfile"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
 }
@@ -196,9 +228,22 @@ export type BeaconUpgradedEvent = TypedEvent<[string], { beacon: string }>;
 
 export type BeaconUpgradedEventFilter = TypedEventFilter<BeaconUpgradedEvent>;
 
+export type ExtendRentEvent = TypedEvent<
+  [string, string, BigNumber, BigNumber, boolean],
+  {
+    _receiver: string;
+    _profileUrl: string;
+    _duration: BigNumber;
+    _fee: BigNumber;
+    _expired: boolean;
+  }
+>;
+
+export type ExtendRentEventFilter = TypedEventFilter<ExtendRentEvent>;
+
 export type MintedProfileEvent = TypedEvent<
-  [string, string],
-  { _user: string; _val: string }
+  [string, string, BigNumber, BigNumber],
+  { _user: string; _val: string; _duration: BigNumber; _fee: BigNumber }
 >;
 
 export type MintedProfileEventFilter = TypedEventFilter<MintedProfileEvent>;
@@ -235,6 +280,15 @@ export interface ProfileAuction extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
+    extendRent(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     genKeyWhitelistOnly(overrides?: CallOverrides): Promise<[boolean]>;
 
     genesisKeyClaimNumber(
@@ -251,14 +305,13 @@ export interface ProfileAuction extends BaseContract {
 
     genesisKeyContract(overrides?: CallOverrides): Promise<[string]>;
 
-    genesisKeyWhitelistClaim(
-      profileUrl: string,
-      tokenId: BigNumberish,
-      recipient: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     genesisStakingContract(overrides?: CallOverrides): Promise<[string]>;
+
+    getFee(
+      profileUrl: string,
+      duration: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     governor(overrides?: CallOverrides): Promise<[string]>;
 
@@ -272,6 +325,11 @@ export interface ProfileAuction extends BaseContract {
       _genesisStakingContract: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    lengthPremium(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     nftBuyer(overrides?: CallOverrides): Promise<[string]>;
 
@@ -287,6 +345,7 @@ export interface ProfileAuction extends BaseContract {
 
     publicMint(
       profileUrl: string,
+      duration: BigNumberish,
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
@@ -295,8 +354,23 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<[boolean]>;
 
+    purchaseExpiredProfile(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setLengthPremium(
+      _length: BigNumberish,
+      _premium: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -327,6 +401,15 @@ export interface ProfileAuction extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
+  extendRent(
+    profileUrl: string,
+    duration: BigNumberish,
+    v: BigNumberish,
+    r: BytesLike,
+    s: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   genKeyWhitelistOnly(overrides?: CallOverrides): Promise<boolean>;
 
   genesisKeyClaimNumber(
@@ -343,14 +426,13 @@ export interface ProfileAuction extends BaseContract {
 
   genesisKeyContract(overrides?: CallOverrides): Promise<string>;
 
-  genesisKeyWhitelistClaim(
-    profileUrl: string,
-    tokenId: BigNumberish,
-    recipient: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   genesisStakingContract(overrides?: CallOverrides): Promise<string>;
+
+  getFee(
+    profileUrl: string,
+    duration: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   governor(overrides?: CallOverrides): Promise<string>;
 
@@ -364,6 +446,11 @@ export interface ProfileAuction extends BaseContract {
     _genesisStakingContract: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  lengthPremium(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   nftBuyer(overrides?: CallOverrides): Promise<string>;
 
@@ -379,6 +466,7 @@ export interface ProfileAuction extends BaseContract {
 
   publicMint(
     profileUrl: string,
+    duration: BigNumberish,
     v: BigNumberish,
     r: BytesLike,
     s: BytesLike,
@@ -387,8 +475,23 @@ export interface ProfileAuction extends BaseContract {
 
   publicMintBool(overrides?: CallOverrides): Promise<boolean>;
 
+  purchaseExpiredProfile(
+    profileUrl: string,
+    duration: BigNumberish,
+    v: BigNumberish,
+    r: BytesLike,
+    s: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setGenKeyWhitelistOnly(
     _genKeyWhitelistOnly: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setLengthPremium(
+    _length: BigNumberish,
+    _premium: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -419,6 +522,15 @@ export interface ProfileAuction extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    extendRent(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     genKeyWhitelistOnly(overrides?: CallOverrides): Promise<boolean>;
 
     genesisKeyClaimNumber(
@@ -435,14 +547,13 @@ export interface ProfileAuction extends BaseContract {
 
     genesisKeyContract(overrides?: CallOverrides): Promise<string>;
 
-    genesisKeyWhitelistClaim(
-      profileUrl: string,
-      tokenId: BigNumberish,
-      recipient: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
     genesisStakingContract(overrides?: CallOverrides): Promise<string>;
+
+    getFee(
+      profileUrl: string,
+      duration: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     governor(overrides?: CallOverrides): Promise<string>;
 
@@ -456,6 +567,11 @@ export interface ProfileAuction extends BaseContract {
       _genesisStakingContract: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    lengthPremium(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     nftBuyer(overrides?: CallOverrides): Promise<string>;
 
@@ -471,6 +587,7 @@ export interface ProfileAuction extends BaseContract {
 
     publicMint(
       profileUrl: string,
+      duration: BigNumberish,
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
@@ -479,8 +596,23 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<boolean>;
 
+    purchaseExpiredProfile(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setLengthPremium(
+      _length: BigNumberish,
+      _premium: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -517,17 +649,48 @@ export interface ProfileAuction extends BaseContract {
     ): BeaconUpgradedEventFilter;
     BeaconUpgraded(beacon?: string | null): BeaconUpgradedEventFilter;
 
-    "MintedProfile(address,string)"(
+    "ExtendRent(address,string,uint256,uint256,bool)"(
+      _receiver?: null,
+      _profileUrl?: null,
+      _duration?: null,
+      _fee?: null,
+      _expired?: null
+    ): ExtendRentEventFilter;
+    ExtendRent(
+      _receiver?: null,
+      _profileUrl?: null,
+      _duration?: null,
+      _fee?: null,
+      _expired?: null
+    ): ExtendRentEventFilter;
+
+    "MintedProfile(address,string,uint256,uint256)"(
       _user?: null,
-      _val?: null
+      _val?: null,
+      _duration?: null,
+      _fee?: null
     ): MintedProfileEventFilter;
-    MintedProfile(_user?: null, _val?: null): MintedProfileEventFilter;
+    MintedProfile(
+      _user?: null,
+      _val?: null,
+      _duration?: null,
+      _fee?: null
+    ): MintedProfileEventFilter;
 
     "Upgraded(address)"(implementation?: string | null): UpgradedEventFilter;
     Upgraded(implementation?: string | null): UpgradedEventFilter;
   };
 
   estimateGas: {
+    extendRent(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     genKeyWhitelistOnly(overrides?: CallOverrides): Promise<BigNumber>;
 
     genesisKeyClaimNumber(
@@ -544,14 +707,13 @@ export interface ProfileAuction extends BaseContract {
 
     genesisKeyContract(overrides?: CallOverrides): Promise<BigNumber>;
 
-    genesisKeyWhitelistClaim(
-      profileUrl: string,
-      tokenId: BigNumberish,
-      recipient: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     genesisStakingContract(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getFee(
+      profileUrl: string,
+      duration: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     governor(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -564,6 +726,11 @@ export interface ProfileAuction extends BaseContract {
       _genesisKeyContract: string,
       _genesisStakingContract: string,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    lengthPremium(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     nftBuyer(overrides?: CallOverrides): Promise<BigNumber>;
@@ -580,6 +747,7 @@ export interface ProfileAuction extends BaseContract {
 
     publicMint(
       profileUrl: string,
+      duration: BigNumberish,
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
@@ -588,8 +756,23 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<BigNumber>;
 
+    purchaseExpiredProfile(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setLengthPremium(
+      _length: BigNumberish,
+      _premium: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -621,6 +804,15 @@ export interface ProfileAuction extends BaseContract {
   };
 
   populateTransaction: {
+    extendRent(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     genKeyWhitelistOnly(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -641,14 +833,13 @@ export interface ProfileAuction extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    genesisKeyWhitelistClaim(
-      profileUrl: string,
-      tokenId: BigNumberish,
-      recipient: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+    genesisStakingContract(
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    genesisStakingContract(
+    getFee(
+      profileUrl: string,
+      duration: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -663,6 +854,11 @@ export interface ProfileAuction extends BaseContract {
       _genesisKeyContract: string,
       _genesisStakingContract: string,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    lengthPremium(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     nftBuyer(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -681,6 +877,7 @@ export interface ProfileAuction extends BaseContract {
 
     publicMint(
       profileUrl: string,
+      duration: BigNumberish,
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
@@ -689,8 +886,23 @@ export interface ProfileAuction extends BaseContract {
 
     publicMintBool(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    purchaseExpiredProfile(
+      profileUrl: string,
+      duration: BigNumberish,
+      v: BigNumberish,
+      r: BytesLike,
+      s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setLengthPremium(
+      _length: BigNumberish,
+      _premium: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

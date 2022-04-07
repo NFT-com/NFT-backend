@@ -23,11 +23,13 @@ export interface NftProfileInterface extends utils.Interface {
   functions: {
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
-    "createProfile(address,string)": FunctionFragment;
+    "createProfile(address,string,uint256)": FunctionFragment;
+    "extendRent(string,uint256)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
     "getTokenId(string)": FunctionFragment;
     "initialize(string,string,address)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
+    "multiOwnerOf(uint256,uint256)": FunctionFragment;
     "name()": FunctionFragment;
     "nftErc20Contract()": FunctionFragment;
     "owner()": FunctionFragment;
@@ -35,14 +37,14 @@ export interface NftProfileInterface extends utils.Interface {
     "profileAuctionContract()": FunctionFragment;
     "profileOwner(string)": FunctionFragment;
     "protocolFee()": FunctionFragment;
+    "purchaseExpiredProfile(string,uint256,address)": FunctionFragment;
     "safeTransferFrom(address,address,uint256)": FunctionFragment;
     "setApprovalForAll(address,bool)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "setProfileAuction(address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
-    "tokenByIndex(uint256)": FunctionFragment;
-    "tokenOfOwnerByIndex(address,uint256)": FunctionFragment;
+    "tokenIdsOwned(address)": FunctionFragment;
     "tokenURI(uint256)": FunctionFragment;
     "tokenUsed(string)": FunctionFragment;
     "totalSupply()": FunctionFragment;
@@ -59,7 +61,11 @@ export interface NftProfileInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "createProfile",
-    values: [string, string]
+    values: [string, string, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "extendRent",
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getApproved",
@@ -73,6 +79,10 @@ export interface NftProfileInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "isApprovedForAll",
     values: [string, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "multiOwnerOf",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(
@@ -97,6 +107,10 @@ export interface NftProfileInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "purchaseExpiredProfile",
+    values: [string, BigNumberish, string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "safeTransferFrom",
     values: [string, string, BigNumberish]
   ): string;
@@ -115,12 +129,8 @@ export interface NftProfileInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "tokenByIndex",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "tokenOfOwnerByIndex",
-    values: [string, BigNumberish]
+    functionFragment: "tokenIdsOwned",
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "tokenURI",
@@ -151,6 +161,7 @@ export interface NftProfileInterface extends utils.Interface {
     functionFragment: "createProfile",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "extendRent", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
     data: BytesLike
@@ -159,6 +170,10 @@ export interface NftProfileInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "isApprovedForAll",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "multiOwnerOf",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
@@ -181,6 +196,10 @@ export interface NftProfileInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "purchaseExpiredProfile",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "safeTransferFrom",
     data: BytesLike
   ): Result;
@@ -199,11 +218,7 @@ export interface NftProfileInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "tokenByIndex",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "tokenOfOwnerByIndex",
+    functionFragment: "tokenIdsOwned",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
@@ -318,6 +333,13 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
+      _expiry: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    extendRent(
+      _profileURI: string,
+      _duration: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -344,6 +366,12 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string[]]>;
+
     name(overrides?: CallOverrides): Promise<[string]>;
 
     nftErc20Contract(overrides?: CallOverrides): Promise<[string]>;
@@ -360,6 +388,13 @@ export interface NftProfile extends BaseContract {
     profileOwner(_string: string, overrides?: CallOverrides): Promise<[string]>;
 
     protocolFee(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    purchaseExpiredProfile(
+      _profileURI: string,
+      _duration: BigNumberish,
+      _receiver: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -399,16 +434,10 @@ export interface NftProfile extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<[string]>;
 
-    tokenByIndex(
-      index: BigNumberish,
+    tokenIdsOwned(
+      user: string,
       overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    tokenOfOwnerByIndex(
-      owner: string,
-      index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    ): Promise<[boolean[]]>;
 
     tokenURI(
       tokenId: BigNumberish,
@@ -455,6 +484,13 @@ export interface NftProfile extends BaseContract {
   createProfile(
     _receiver: string,
     _profileURI: string,
+    _expiry: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  extendRent(
+    _profileURI: string,
+    _duration: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -478,6 +514,12 @@ export interface NftProfile extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
+  multiOwnerOf(
+    startIndex: BigNumberish,
+    endIndex: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string[]>;
+
   name(overrides?: CallOverrides): Promise<string>;
 
   nftErc20Contract(overrides?: CallOverrides): Promise<string>;
@@ -491,6 +533,13 @@ export interface NftProfile extends BaseContract {
   profileOwner(_string: string, overrides?: CallOverrides): Promise<string>;
 
   protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+  purchaseExpiredProfile(
+    _profileURI: string,
+    _duration: BigNumberish,
+    _receiver: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   "safeTransferFrom(address,address,uint256)"(
     from: string,
@@ -530,16 +579,7 @@ export interface NftProfile extends BaseContract {
 
   symbol(overrides?: CallOverrides): Promise<string>;
 
-  tokenByIndex(
-    index: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
-  tokenOfOwnerByIndex(
-    owner: string,
-    index: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<boolean[]>;
 
   tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -583,6 +623,13 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
+      _expiry: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    extendRent(
+      _profileURI: string,
+      _duration: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -606,6 +653,12 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string[]>;
+
     name(overrides?: CallOverrides): Promise<string>;
 
     nftErc20Contract(overrides?: CallOverrides): Promise<string>;
@@ -619,6 +672,13 @@ export interface NftProfile extends BaseContract {
     profileOwner(_string: string, overrides?: CallOverrides): Promise<string>;
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+    purchaseExpiredProfile(
+      _profileURI: string,
+      _duration: BigNumberish,
+      _receiver: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -655,16 +715,7 @@ export interface NftProfile extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<string>;
 
-    tokenByIndex(
-      index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    tokenOfOwnerByIndex(
-      owner: string,
-      index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<boolean[]>;
 
     tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -761,6 +812,13 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
+      _expiry: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    extendRent(
+      _profileURI: string,
+      _duration: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -784,6 +842,12 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     name(overrides?: CallOverrides): Promise<BigNumber>;
 
     nftErc20Contract(overrides?: CallOverrides): Promise<BigNumber>;
@@ -803,6 +867,13 @@ export interface NftProfile extends BaseContract {
     ): Promise<BigNumber>;
 
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+    purchaseExpiredProfile(
+      _profileURI: string,
+      _duration: BigNumberish,
+      _receiver: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -842,16 +913,7 @@ export interface NftProfile extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<BigNumber>;
 
-    tokenByIndex(
-      index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    tokenOfOwnerByIndex(
-      owner: string,
-      index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     tokenURI(
       tokenId: BigNumberish,
@@ -902,6 +964,13 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
+      _expiry: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    extendRent(
+      _profileURI: string,
+      _duration: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -928,6 +997,12 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    multiOwnerOf(
+      startIndex: BigNumberish,
+      endIndex: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     nftErc20Contract(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -949,6 +1024,13 @@ export interface NftProfile extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     protocolFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    purchaseExpiredProfile(
+      _profileURI: string,
+      _duration: BigNumberish,
+      _receiver: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
 
     "safeTransferFrom(address,address,uint256)"(
       from: string,
@@ -988,14 +1070,8 @@ export interface NftProfile extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    tokenByIndex(
-      index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    tokenOfOwnerByIndex(
-      owner: string,
-      index: BigNumberish,
+    tokenIdsOwned(
+      user: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

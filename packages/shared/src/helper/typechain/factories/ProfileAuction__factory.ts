@@ -48,6 +48,43 @@ const _abi = [
       {
         indexed: false,
         internalType: "address",
+        name: "_receiver",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "_profileUrl",
+        type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_duration",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_fee",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "bool",
+        name: "_expired",
+        type: "bool",
+      },
+    ],
+    name: "ExtendRent",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "address",
         name: "_user",
         type: "address",
       },
@@ -56,6 +93,18 @@ const _abi = [
         internalType: "string",
         name: "_val",
         type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_duration",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_fee",
+        type: "uint256",
       },
     ],
     name: "MintedProfile",
@@ -73,6 +122,39 @@ const _abi = [
     ],
     name: "Upgraded",
     type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "duration",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "v",
+        type: "uint8",
+      },
+      {
+        internalType: "bytes32",
+        name: "r",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes32",
+        name: "s",
+        type: "bytes32",
+      },
+    ],
+    name: "extendRent",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [],
@@ -143,6 +225,19 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "genesisStakingContract",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "string",
@@ -151,34 +246,16 @@ const _abi = [
       },
       {
         internalType: "uint256",
-        name: "tokenId",
+        name: "duration",
         type: "uint256",
       },
-      {
-        internalType: "address",
-        name: "recipient",
-        type: "address",
-      },
     ],
-    name: "genesisKeyWhitelistClaim",
+    name: "getFee",
     outputs: [
       {
-        internalType: "bool",
+        internalType: "uint256",
         name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "genesisStakingContract",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -238,6 +315,25 @@ const _abi = [
     name: "initialize",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "lengthPremium",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -326,6 +422,11 @@ const _abi = [
         type: "string",
       },
       {
+        internalType: "uint256",
+        name: "duration",
+        type: "uint256",
+      },
+      {
         internalType: "uint8",
         name: "v",
         type: "uint8",
@@ -362,12 +463,63 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "duration",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "v",
+        type: "uint8",
+      },
+      {
+        internalType: "bytes32",
+        name: "r",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes32",
+        name: "s",
+        type: "bytes32",
+      },
+    ],
+    name: "purchaseExpiredProfile",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bool",
         name: "_genKeyWhitelistOnly",
         type: "bool",
       },
     ],
     name: "setGenKeyWhitelistOnly",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_length",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_premium",
+        type: "uint256",
+      },
+    ],
+    name: "setLengthPremium",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

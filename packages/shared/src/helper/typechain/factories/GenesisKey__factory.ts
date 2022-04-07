@@ -8,6 +8,76 @@ import type { GenesisKey, GenesisKeyInterface } from "../GenesisKey";
 
 const _abi = [
   {
+    inputs: [],
+    name: "ApprovalCallerNotOwnerNorApproved",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ApprovalQueryForNonexistentToken",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ApprovalToCurrentOwner",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ApproveToCaller",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "BalanceQueryForZeroAddress",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "MintToZeroAddress",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "MintZeroQuantity",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "OwnerQueryForNonexistentToken",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "PausedTransfer",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TransferCallerNotOwnerNorApproved",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TransferFromIncorrectOwner",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TransferToNonERC721ReceiverImplementer",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "TransferToZeroAddress",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "URIQueryForNonexistentToken",
+    type: "error",
+  },
+  {
     anonymous: false,
     inputs: [
       {
@@ -301,34 +371,25 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_wethTokens",
-        type: "uint256",
-      },
-      {
         internalType: "address",
-        name: "_owner",
+        name: "recipient",
         type: "address",
       },
       {
-        internalType: "uint8",
-        name: "v",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "r",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "s",
-        type: "bytes32",
+        internalType: "uint256",
+        name: "_eth",
+        type: "uint256",
       },
     ],
     name: "claimKey",
-    outputs: [],
-    stateMutability: "nonpayable",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "payable",
     type: "function",
   },
   {
@@ -358,6 +419,19 @@ const _abi = [
         internalType: "uint256",
         name: "",
         type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "genesisKeyMerkle",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
       },
     ],
     stateMutability: "view",
@@ -421,6 +495,19 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "gkTeamClaimContract",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "initialWethPrice",
     outputs: [
       {
@@ -459,6 +546,11 @@ const _abi = [
         name: "_auctionSeconds",
         type: "uint256",
       },
+      {
+        internalType: "bool",
+        name: "_randomClaimBool",
+        type: "bool",
+      },
     ],
     name: "initialize",
     outputs: [],
@@ -475,11 +567,6 @@ const _abi = [
       {
         internalType: "uint256",
         name: "_finalWethPrice",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_numKeysForSale",
         type: "uint256",
       },
     ],
@@ -507,6 +594,19 @@ const _abi = [
         internalType: "bool",
         name: "",
         type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "lastClaimTime",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -564,32 +664,6 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "numKeysForSale",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "numKeysPublicPurchased",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
     name: "owner",
     outputs: [
       {
@@ -615,6 +689,19 @@ const _abi = [
         internalType: "address",
         name: "",
         type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "pausedTransfer",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
       },
     ],
     stateMutability: "view",
@@ -655,6 +742,19 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "randomClaimBool",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "remainingTeamAdvisorGrant",
     outputs: [
       {
@@ -677,6 +777,57 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
+        name: "from",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+    ],
+    name: "safeTransferFrom",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "from",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "_data",
+        type: "bytes",
+      },
+    ],
+    name: "safeTransferFrom",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
         name: "operator",
         type: "address",
       },
@@ -687,6 +838,32 @@ const _abi = [
       },
     ],
     name: "setApprovalForAll",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_newMK",
+        type: "address",
+      },
+    ],
+    name: "setGenesisKeyMerkle",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_gkTeamClaimContract",
+        type: "address",
+      },
+    ],
+    name: "setGkTeamClaim",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -726,6 +903,24 @@ const _abi = [
       },
     ],
     name: "setPublicSaleDuration",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_address",
+        type: "address",
+      },
+      {
+        internalType: "bool",
+        name: "_val",
+        type: "bool",
+      },
+    ],
+    name: "setWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -949,39 +1144,20 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256[]",
-        name: "_wethTokens",
-        type: "uint256[]",
-      },
-      {
-        internalType: "address[]",
-        name: "_owners",
-        type: "address[]",
-      },
-      {
-        internalType: "uint8[]",
-        name: "v",
-        type: "uint8[]",
-      },
-      {
-        internalType: "bytes32[]",
-        name: "r",
-        type: "bytes32[]",
-      },
-      {
-        internalType: "bytes32[]",
-        name: "s",
-        type: "bytes32[]",
-      },
-      {
-        internalType: "uint256",
-        name: "_wethMin",
-        type: "uint256",
+        internalType: "address",
+        name: "",
+        type: "address",
       },
     ],
-    name: "whitelistExecuteBid",
-    outputs: [],
-    stateMutability: "nonpayable",
+    name: "whitelistedTransfer",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
 ];

@@ -16,11 +16,6 @@ const _abi = [
       },
       {
         internalType: "address",
-        name: "_publicStaking",
-        type: "address",
-      },
-      {
-        internalType: "address",
         name: "_genesisStaking",
         type: "address",
       },
@@ -93,19 +88,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_percent",
-        type: "uint256",
-      },
-    ],
-    name: "changePublicPercent",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "address",
         name: "erc20",
         type: "address",
@@ -157,32 +139,6 @@ const _abi = [
         internalType: "address",
         name: "",
         type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "publicStaking",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "publicStakingPercent",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",
