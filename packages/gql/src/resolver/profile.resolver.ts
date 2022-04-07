@@ -1,8 +1,14 @@
+import aws from 'aws-sdk'
+import STS from 'aws-sdk/clients/sts'
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import { GraphQLUpload } from 'graphql-upload'
+import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
+import stream from 'stream'
 import Typesense from 'typesense'
 
+import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
@@ -12,6 +18,19 @@ import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+
+type S3UploadStream = {
+  writeStream: stream.PassThrough
+  promise: Promise<aws.S3.ManagedUpload.SendData>
+};
+
+let cachedSTS: STS = null
+const getSTS = (): STS => {
+  if (helper.isEmpty(cachedSTS)) {
+    cachedSTS = new STS()
+  }
+  return cachedSTS
+}
 
 const client = new Typesense.Client({
   'nodes': [{
@@ -323,18 +342,161 @@ const profileClaimed = (
     })
 }
 
-const uploadProfileImages = (
+const getAWSConfig = async (): Promise<aws.S3> => {
+  const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
+  const params: STS.AssumeRoleRequest = {
+    RoleArn: assetBucket.role,
+    RoleSessionName: sessionName,
+  }
+  const response = await getSTS().assumeRole(params).promise()
+  aws.config.update({
+    accessKeyId: response.Credentials.AccessKeyId,
+    secretAccessKey: response.Credentials.SecretAccessKey,
+  })
+  return new aws.S3()
+}
+
+const checkFileSize = async (
+  createReadStream: FileUpload['createReadStream'],
+  maxSize: number,
+): Promise<number> =>
+  new Promise((resolves, rejects) => {
+    let filesize = 0
+    const stream = createReadStream()
+    stream.on('data', (chunk: Buffer) => {
+      filesize += chunk.length
+      if (filesize > maxSize) {
+        rejects(filesize)
+      }
+    })
+    stream.on('end', () =>
+      resolves(filesize),
+    )
+    stream.on('error', rejects)
+  })
+
+const createUploadStream = (
+  s3: aws.S3,
+  key: string,
+  bucket: string,
+): S3UploadStream => {
+  const pass = new stream.PassThrough()
+  return {
+    writeStream: pass,
+    promise: s3.upload({
+      Bucket: bucket,
+      Key: key,
+      Body: pass,
+    }).promise(),
+  }
+}
+
+const uploadStreamToS3 = async (
+  filename: string,
+  s3: aws.S3,
+  stream: FileUpload['createReadStream'],
+): Promise<string> => {
+  try {
+    const bannerKey = filename + '-' + Date.now().toString()
+    const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
+    stream.pipe(bannerUploadStream.writeStream)
+    const result = await bannerUploadStream.promise
+    return result.Location
+  } catch (e) {
+    logger.debug('uploadStreamToS3', e)
+    throw e
+  }
+}
+
+const uploadProfileImages = async (
   _: any,
   args: gql.MutationUploadProfileImagesArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
   const { repositories } = ctx
-  const { images } = args.input
-  console.log(images, repositories)
-  return null
+  const { banner, avatar, profileId, description } = args.input
+  let profile = await repositories.profile.findById(profileId)
+  if (!profile) {
+    return Promise.reject(appError.buildNotFound(
+      profileError.buildProfileNotFoundMsg(profileId),
+      profileError.ErrorType.ProfileNotFound,
+    ))
+  }
+  let bannerResponse, avatarResponse
+  let bannerStream: FileUpload['createReadStream']
+  let avatarStream: FileUpload['createReadStream']
+  if (banner) {
+    bannerResponse = await banner
+    bannerStream = bannerResponse.createReadStream()
+  }
+  if (avatar) {
+    avatarResponse = await avatar
+    avatarStream = avatarResponse.createReadStream()
+  }
+
+  // 1. check banner size...
+  if (bannerStream) {
+    try {
+      const bannerMaxSize = 5000000
+      await checkFileSize(bannerStream, bannerMaxSize)
+    }
+    catch (e) {
+      if (typeof e === 'number') {
+        return Promise.reject(appError.buildInvalid(
+          profileError.buildProfileBannerFileSize(),
+          profileError.ErrorType.ProfileBannerFileSize,
+        ))
+      }
+    }
+  }
+
+  // 2. check avatar file size...
+  if (avatarStream) {
+    try {
+      const avatarMaxSize = 2000000
+      await checkFileSize(avatarStream, avatarMaxSize)
+    }
+    catch (e) {
+      if (typeof e === 'number') {
+        return Promise.reject(appError.buildInvalid(
+          profileError.buildProfileAvatarFileSize(),
+          profileError.ErrorType.ProfileAvatarFileSize,
+        ))
+      }
+    }
+  }
+
+  // 3. upload streams to AWS S3
+  const s3 = await getAWSConfig()
+
+  if (bannerResponse && bannerStream) {
+    const bannerUrl = await uploadStreamToS3(bannerResponse.filename, s3, bannerStream)
+    if (bannerUrl) {
+      await repositories.profile.updateOneById(profileId, {
+        bannerURL: bannerUrl,
+      })
+    }
+  }
+
+  if (avatarResponse && avatarStream) {
+    const avatarUrl = await uploadStreamToS3(avatarResponse.filename, s3, avatarStream)
+    if (avatarUrl) {
+      await repositories.profile.updateOneById(profileId, {
+        photoURL: avatarUrl,
+      })
+    }
+  }
+
+  if (description) {
+    await repositories.profile.updateOneById(profileId, { description: description })
+  }
+
+  profile = await repositories.profile.findById(profileId)
+  return profile
 }
 
 export default {
+  Upload: GraphQLUpload,
   Query: {
     profile: getProfileByURL,
     profilePassive: getProfileByURLPassive,

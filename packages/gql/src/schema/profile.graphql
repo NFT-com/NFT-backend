@@ -63,8 +63,10 @@ input MintGKProfileInput {
 }
 
 input UploadProfileImagesInput {
-  images: [Upload!]!
   profileId: ID!
+  banner: Upload
+  avatar: Upload
+  description: String
 }
 
 extend type Query {
