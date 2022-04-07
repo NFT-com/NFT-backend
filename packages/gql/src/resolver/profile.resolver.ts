@@ -362,6 +362,7 @@ const getAWSConfig = async (): Promise<aws.S3> => {
   aws.config.update({
     accessKeyId: response.Credentials.AccessKeyId,
     secretAccessKey: response.Credentials.SecretAccessKey,
+    sessionToken: response.Credentials.SessionToken,
   })
   return new aws.S3()
 }
@@ -407,7 +408,7 @@ const uploadStreamToS3 = async (
   stream: FileUpload['createReadStream'],
 ): Promise<string> => {
   try {
-    const bannerKey = filename + '-' + Date.now().toString()
+    const bannerKey = Date.now().toString() + '-' + filename
     const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
     stream.pipe(bannerUploadStream.writeStream)
     const result = await bannerUploadStream.promise
