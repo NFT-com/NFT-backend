@@ -133,6 +133,39 @@ export const start = async (): Promise<void> => {
       })
   })
 
+  app.get('/gk/:key', function (req, res) {
+    const { key } = req.params
+
+    if (!isNaN(Number(key)) && Number(key) >= 1 && Number(key) <= 10000) {
+      const url = 'https://nft-llc.mypinata.cloud/ipfs/Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi'
+      return res.send(
+        `<!DOCTYPE html>
+        <html lang="en">
+          <head>
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:site" content="@nftcomofficial" />
+                <meta name="twitter:creator" content="nft.com" />
+                <meta name="twitter:title" content="Check out my Genesis Key!" />
+                <meta
+                  name="twitter:description"
+                  content="Genesis Keys are very very important." />
+                <meta
+                  name="twitter:image"
+                  content="${url}" />
+          </head>
+          <body>
+            <img alt="genesis key" src="${url}" />
+          </body>
+        </html>`,
+      )
+    } else {
+      return Promise.reject(appError.buildExists(
+        profileError.buildKeyNotValid(key),
+        profileError.ErrorType.KeyInvalid,
+      ))
+    }
+  })
+
   server = new ApolloServer({
     introspection: helper.isFalse(isProduction()),
     resolvers: resolvers,

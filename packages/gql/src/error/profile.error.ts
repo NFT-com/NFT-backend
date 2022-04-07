@@ -7,6 +7,7 @@ export enum ErrorType {
   ProfileInvalid = 'PROFILE_INVALID',
   ProfileBannerFileSize = 'PROFILE_BANNER_FILE_SIZE',
   ProfileAvatarFileSize = 'PROFILE_AVATAR_FILE_SIZE',
+  KeyInvalid = 'KEY_INVALID',
 }
 
 export const buildProfileNotFoundMsg = (id: string): string => `Profile ${id} not found`
@@ -19,6 +20,9 @@ export const buildProfileNotFollowingMsg = (id: string): string =>
 
 export const buildProfileNotOwnedMsg = (id: string): string =>
   `You cannot update profile ${id} because you do not own it`
+
+export const buildKeyNotValid = (id: string): string =>
+  `Key ${id} does not exist! Please try again with a key from 1 - 10000`
 
 export const buildProfileNotMintedMsg = (id: string): string => `Profile ${id} is not minted and doesn't have a tokenId`
 
