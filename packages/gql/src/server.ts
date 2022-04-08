@@ -126,7 +126,7 @@ export const start = async (): Promise<void> => {
           return res.send({
             name: req.params.username,
             image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
-            header: profile.bannerURL ?? 'https://cdn.nft.com/nullBanner.svg',
+            header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
             description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
           })
         }
