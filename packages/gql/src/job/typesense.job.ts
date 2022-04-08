@@ -60,7 +60,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   nftFields.push({ name: 'price', type: floatType, facet: false, index: false, optional: true })
   nftFields.push({ name: 'createdAt', type: stringType, facet: false, index: false, optional: true })
   nftFields.push({ name: 'description', type: stringType, facet: false, index: false, optional: true })
-  nftFields.push({ name: 'lastSoldAt', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'lastSoldAt', type: floatType, facet: false, index: false, optional: true })
   nftFields.push({ name: 'lastListAt', type: stringType, facet: false, index: false, optional: true })
   nftFields.push({ name: 'lastExpireAt', type: stringType, facet: false, index: false, optional: true })
 
