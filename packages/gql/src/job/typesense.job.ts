@@ -45,18 +45,25 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   // check if collection exist, if not create collection schema
    
   const stringType = 'string' as CollectionFieldType
-  //const numType = 'int32' as FieldType
+  const floatType = 'float' as CollectionFieldType
   
   // NFT SCHEMA 
   const nftFields = []
   nftFields.push({ name: 'id', type: stringType, facet: false, index: false })
   nftFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'tokenId', type: stringType, facet: false, index: true })
-  nftFields.push({ name: 'contractName', type: stringType, facet: false, index: false, optional: true })
-  nftFields.push({ name: 'imageURL', type: stringType, facet: false, index: false, optional: true })
   nftFields.push({ name: 'name', type: stringType, facet: false, index: true })
   nftFields.push({ name: 'type', type: stringType, facet: false, index: true })
-    
+  nftFields.push({ name: 'status', type: stringType, facet: false, optional: true })
+  nftFields.push({ name: 'contractName', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'imageURL', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'price', type: floatType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'createdAt', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'description', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'lastSoldAt', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'lastListAt', type: stringType, facet: false, index: false, optional: true })
+  nftFields.push({ name: 'lastExpireAt', type: stringType, facet: false, index: false, optional: true })
+
   const nftCollectionFields = nftFields as CollectionFieldSchema[]
     
   const nftSchema = {
@@ -74,7 +81,11 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
   collFields.push({ name: 'id', type: stringType, facet: false, index: false })
   collFields.push({ name: 'contract', type: stringType, facet: false, index: true })
   collFields.push({ name: 'name', type: stringType, facet: false, index: true })
-    
+  collFields.push({ name: 'description', type: stringType, facet: false, index: false, optional: true })
+  collFields.push({ name: 'createdAt', type: stringType, facet: false, index: false, optional: true })
+  collFields.push({ name: 'floor', type: floatType, facet: false, index: false, optional: true })
+  collFields.push({ name: 'lastSoldPx', type: floatType, facet: false, index: false, optional: true })
+
   const collCollectionFields = collFields as CollectionFieldSchema[]
     
   const collSchema = {
@@ -85,7 +96,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
     
   client.collections().create(collCollectionSchema)
     .then(() => logger.debug('collections index schema created'))
-    .catch(() => logger.info('collection index schema already created, skipping...'))
+    .catch((err) => logger.info('collection index schema already created, skipping...' + err))
 
   // PROFILE SCHEMA (minted only)
   const profileFields = []
