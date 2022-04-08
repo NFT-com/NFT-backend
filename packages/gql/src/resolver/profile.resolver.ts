@@ -1,10 +1,12 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
+import axios from 'axios'
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
+import sharp from 'sharp'
 import stream from 'stream'
 import Typesense from 'typesense'
 
@@ -419,6 +421,26 @@ const uploadStreamToS3 = async (
   }
 }
 
+const generatePlaceholderImageWithText = async (
+  profileURL,
+  width = 248,
+  height = 248,
+): Promise<Buffer> => {
+  const overlay = `<svg width="${width}" height="${height}">
+    <text x="50%" y="${height - 54}" font-family="Rubik" font-size="10" text-anchor="middle" fill="white">NFT.COM/</text>
+    <text x="50%" y="${height - 36}" font-family="Rubik Mono One" font-size="16" text-anchor="middle" fill="white">${profileURL}</text>
+  </svg>`
+
+  const input = (await axios({ url: 'https://cdn.nft.com/nullPhoto.svg', responseType: 'arraybuffer' })).data as Buffer
+  return await sharp(input)
+    .composite([{
+      input: Buffer.from(overlay),
+      gravity: 'center',
+    }])
+    .png()
+    .toBuffer()
+}
+
 const uploadProfileImages = async (
   _: any,
   args: gql.MutationUploadProfileImagesArgs,
@@ -506,6 +528,46 @@ const uploadProfileImages = async (
   return profile
 }
 
+const createCompositeImage = async (
+  _: any,
+  args: gql.MutationCreateCompositeImageArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { repositories } = ctx
+  const { profileId } = args.input
+  let profile = await repositories.profile.findById(profileId)
+  if (!profile) {
+    return Promise.reject(appError.buildNotFound(
+      profileError.buildProfileNotFoundMsg(profileId),
+      profileError.ErrorType.ProfileNotFound,
+    ))
+  }
+
+  const url = profile.url.length > 9 ? profile.url.slice(0, 7).concat('...') : profile.url
+  // 1. generate placeholder image buffer with profile url...
+  const buffer = await generatePlaceholderImageWithText(url.toUpperCase())
+  // 2. upload buffer to s3...
+  const s3 = await getAWSConfig()
+  const imageKey = Date.now().toString() + '-' + profile.url + '.png'
+  try {
+    const res = await s3.upload({
+      Bucket: assetBucket.name,
+      Key: imageKey,
+      Body: buffer,
+      ContentType: 'image/png',
+    }).promise()
+    if (res && res.Location) {
+      profile = await repositories.profile.updateOneById(profileId, {
+        photoURL: res.Location,
+      })
+      return profile
+    }
+  } catch (e) {
+    logger.debug('createCompositeImage', e)
+    throw e
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -523,6 +585,7 @@ export default {
     updateProfile: combineResolvers(auth.isAuthenticated, updateProfile),
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
+    createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
   },
   Profile: {
     followersCount: getFollowersCount,

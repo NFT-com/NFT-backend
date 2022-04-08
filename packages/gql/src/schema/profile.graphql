@@ -73,6 +73,10 @@ input UploadProfileImagesInput {
   description: String
 }
 
+input CreateCompositeImageInput {
+  profileId: ID!
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -90,4 +94,5 @@ extend type Mutation {
   profileClaimed(input: ProfileClaimedInput!): Profile!
   mintGKProfile(input: MintGKProfileInput): String!
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
+  createCompositeImage(input: CreateCompositeImageInput): Profile!
 }
