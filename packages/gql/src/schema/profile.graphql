@@ -73,6 +73,10 @@ input UploadProfileImagesInput {
   description: String
 }
 
+input LatestProfilesInput {
+  pageInput: PageInput
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -81,6 +85,7 @@ extend type Query {
   profilePassive(url: String!): Profile!
   blockedProfileURIs: [String!]!
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
+  latestProfiles(input: LatestProfilesInput): ProfilesOutput!
 }
 
 extend type Mutation {
