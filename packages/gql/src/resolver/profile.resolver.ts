@@ -514,10 +514,11 @@ const getLatestProfiles = (
   const { repositories } = ctx
   logger.debug('getLatestProfiles', { input: args?.input })
   const pageInput = args?.input.pageInput
+  const filters = [helper.inputT2SafeK<entity.Profile>(args?.input)]
   return core.paginatedEntitiesBy(
     repositories.profile,
     pageInput,
-    [],
+    filters,
     [],
     'createdAt',
     'DESC',
