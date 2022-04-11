@@ -1,4 +1,11 @@
-import { getChain } from '@nftcom/gql/config'
+import aws from 'aws-sdk'
+import STS from 'aws-sdk/clients/sts'
+import axios from 'axios'
+import fs from 'fs'
+import path from 'path'
+import sharp from 'sharp'
+
+import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError,walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
@@ -251,6 +258,89 @@ const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
 const validProfileRegex = /^[0-9a-z_]{1,100}$/
 const blacklistBool = (inputUrl: string): boolean => blacklistProfiles[inputUrl]
 
+let cachedSTS: STS = null
+const getSTS = (): STS => {
+  if (helper.isEmpty(cachedSTS)) {
+    cachedSTS = new STS()
+  }
+  return cachedSTS
+}
+
+export const getAWSConfig = async (): Promise<aws.S3> => {
+  const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
+  const params: STS.AssumeRoleRequest = {
+    RoleArn: assetBucket.role,
+    RoleSessionName: sessionName,
+  }
+  const response = await getSTS().assumeRole(params).promise()
+  aws.config.update({
+    accessKeyId: response.Credentials.AccessKeyId,
+    secretAccessKey: response.Credentials.SecretAccessKey,
+    sessionToken: response.Credentials.SessionToken,
+  })
+  return new aws.S3()
+}
+
+const fontConfigTemplate = (fontPath: string): string => `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${fontPath}</dir>
+  <cachedir>/tmp/fonts-cache/</cachedir>
+  <config></config>
+</fontconfig>
+`
+
+const generatePlaceholderImageWithText = async (
+  profileURL,
+  width = 248,
+  height = 248,
+): Promise<Buffer> => {
+  // Set the environment variable path
+  const fontDir = path.resolve(path.join(__dirname, '../../fonts/'))
+  fs.writeFileSync(
+    path.join(fontDir, 'fonts.conf'),
+    fontConfigTemplate(fontDir),
+  )
+  process.env.FC_DEBUG = '1024'
+  process.env.FONTCONFIG_PATH = fontDir
+  process.env.FONTCONFIG_FILE = path.join(fontDir, 'fonts.conf')
+  process.env.PANGOCAIRO_BACKEND='fontconfig'
+  const overlay = `<svg width="${width}" height="${height}">
+    <text x="50%" y="${height - 54}" font-family="'Rubik'" font-size="10" text-anchor="middle" fill="white">NFT.COM/</text>
+    <text x="50%" y="${height - 36}" font-family="'RubikMonoOne'" font-size="16" text-anchor="middle" fill="white">${profileURL}</text>
+  </svg>`
+
+  const input = (await axios({ url: 'https://cdn.nft.com/nullPhoto.svg', responseType: 'arraybuffer' })).data as Buffer
+  return await sharp(input)
+    .composite([{
+      input: Buffer.from(overlay),
+      gravity: 'center',
+    }])
+    .png()
+    .toBuffer()
+}
+
+export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
+  const url = profileURL.length > 9 ? profileURL.slice(0, 7).concat('...') : profileURL
+  // 1. generate placeholder image buffer with profile url...
+  const buffer = await generatePlaceholderImageWithText(url.toUpperCase())
+  // 2. upload buffer to s3...
+  const s3 = await getAWSConfig()
+  const imageKey = Date.now().toString() + '-' + profileURL + '.png'
+  try {
+    const res = await s3.upload({
+      Bucket: assetBucket.name,
+      Key: imageKey,
+      Body: buffer,
+      ContentType: 'image/png',
+    }).promise()
+    return res.Location
+  } catch (e) {
+    logger.debug('generateCompositeImage', e)
+    throw e
+  }
+}
+
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
@@ -275,7 +365,11 @@ export const createProfile = (
           )),
       ]),
     ))
-    .then(() => ctx.repositories.profile.save(profile))
+    .then(() => ctx.repositories.profile.save(profile)
+      .then((savedProfile: entity.Profile) =>
+        generateCompositeImage(savedProfile.url)
+          .then((imageURL: string) =>
+            ctx.repositories.profile.updateOneById(savedProfile.id, { photoURL: imageURL }))))
 }
 
 export const createEdge = (

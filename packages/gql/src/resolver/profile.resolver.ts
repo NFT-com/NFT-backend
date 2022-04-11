@@ -1,12 +1,9 @@
 import aws from 'aws-sdk'
-import STS from 'aws-sdk/clients/sts'
-import axios from 'axios'
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
-import sharp from 'sharp'
 import stream from 'stream'
 import Typesense from 'typesense'
 
@@ -15,6 +12,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
+import { generateCompositeImage, getAWSConfig } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
@@ -25,14 +23,6 @@ type S3UploadStream = {
   writeStream: stream.PassThrough
   promise: Promise<aws.S3.ManagedUpload.SendData>
 };
-
-let cachedSTS: STS = null
-const getSTS = (): STS => {
-  if (helper.isEmpty(cachedSTS)) {
-    cachedSTS = new STS()
-  }
-  return cachedSTS
-}
 
 const client = new Typesense.Client({
   'nodes': [{
@@ -354,21 +344,6 @@ const profileClaimed = (
     })
 }
 
-const getAWSConfig = async (): Promise<aws.S3> => {
-  const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
-  const params: STS.AssumeRoleRequest = {
-    RoleArn: assetBucket.role,
-    RoleSessionName: sessionName,
-  }
-  const response = await getSTS().assumeRole(params).promise()
-  aws.config.update({
-    accessKeyId: response.Credentials.AccessKeyId,
-    secretAccessKey: response.Credentials.SecretAccessKey,
-    sessionToken: response.Credentials.SessionToken,
-  })
-  return new aws.S3()
-}
-
 const checkFileSize = async (
   createReadStream: FileUpload['createReadStream'],
   maxSize: number,
@@ -419,26 +394,6 @@ const uploadStreamToS3 = async (
     logger.debug('uploadStreamToS3', e)
     throw e
   }
-}
-
-const generatePlaceholderImageWithText = async (
-  profileURL,
-  width = 248,
-  height = 248,
-): Promise<Buffer> => {
-  const overlay = `<svg width="${width}" height="${height}">
-    <text x="50%" y="${height - 54}" font-family="Rubik" font-size="10" text-anchor="middle" fill="white">NFT.COM/</text>
-    <text x="50%" y="${height - 36}" font-family="Rubik Mono One" font-size="16" text-anchor="middle" fill="white">${profileURL}</text>
-  </svg>`
-
-  const input = (await axios({ url: 'https://cdn.nft.com/nullPhoto.svg', responseType: 'arraybuffer' })).data as Buffer
-  return await sharp(input)
-    .composite([{
-      input: Buffer.from(overlay),
-      gravity: 'center',
-    }])
-    .png()
-    .toBuffer()
 }
 
 const uploadProfileImages = async (
@@ -543,29 +498,11 @@ const createCompositeImage = async (
     ))
   }
 
-  const url = profile.url.length > 9 ? profile.url.slice(0, 7).concat('...') : profile.url
-  // 1. generate placeholder image buffer with profile url...
-  const buffer = await generatePlaceholderImageWithText(url.toUpperCase())
-  // 2. upload buffer to s3...
-  const s3 = await getAWSConfig()
-  const imageKey = Date.now().toString() + '-' + profile.url + '.png'
-  try {
-    const res = await s3.upload({
-      Bucket: assetBucket.name,
-      Key: imageKey,
-      Body: buffer,
-      ContentType: 'image/png',
-    }).promise()
-    if (res && res.Location) {
-      profile = await repositories.profile.updateOneById(profileId, {
-        photoURL: res.Location,
-      })
-      return profile
-    }
-  } catch (e) {
-    logger.debug('createCompositeImage', e)
-    throw e
-  }
+  const imageURL = await generateCompositeImage(profile.url)
+  profile = await repositories.profile.updateOneById(profileId, {
+    photoURL: imageURL,
+  })
+  return profile
 }
 
 export default {

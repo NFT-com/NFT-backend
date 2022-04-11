@@ -278,7 +278,7 @@ export default {
     topBids: getTopBids,
   },
   Mutation: {
-    bid: combineResolvers(auth.isAuthenticated, bid),
+    bid: bid,
     cancelBid: combineResolvers(auth.isAuthenticated, cancelBid),
     setProfilePreferences: combineResolvers(auth.isAuthenticated, setProfilePreferences),
   },

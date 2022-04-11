@@ -235,11 +235,12 @@ const updateEntity = async (
               id: collection.id,
               contract: collection.contract,
               name: collection.name,
+              createdAt: collection.createdAt,
             })
 
             client.collections('collections').documents().import(indexCollection, { action: 'create' })
               .then(() => logger.debug('collection added to typesense index'))
-              .catch((err) => logger.info('error: could not save collection in typesense: ' + err))
+              .catch(() => logger.info('error: could not save collection in typesense: '))
           }
 
           // add new nft to search (Typesense)
@@ -253,6 +254,8 @@ const updateEntity = async (
               contractName: collection.name ? collection.name : '',
               type: type,
               name: nftInfo.title,
+              description: newNFT.metadata.description,
+              createdAt: newNFT.createdAt,
             })
   
             client.collections('nfts').documents().import(indexNft, { action: 'create' })
