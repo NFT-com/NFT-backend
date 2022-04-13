@@ -103,6 +103,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_profileUrl",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_stake",
+        "type": "uint256"
+      }
+    ],
+    "name": "UpdatedProfileStake",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "implementation",
@@ -378,13 +397,32 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "owner",
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "profileUrl",
+        "type": "string"
+      }
+    ],
+    "name": "ownProfile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "name": "ownedProfileStake",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -392,12 +430,12 @@
   },
   {
     "inputs": [],
-    "name": "publicFee",
+    "name": "owner",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "address",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -485,6 +523,19 @@
   {
     "inputs": [
       {
+        "internalType": "string",
+        "name": "profileUrl",
+        "type": "string"
+      }
+    ],
+    "name": "redeemProfile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bool",
         "name": "_genKeyWhitelistOnly",
         "type": "bool"
@@ -529,12 +580,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_fee",
-        "type": "uint256"
+        "internalType": "bool",
+        "name": "_val",
+        "type": "bool"
       }
     ],
-    "name": "setPublicFee",
+    "name": "setPublicMint",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -542,12 +593,25 @@
   {
     "inputs": [
       {
-        "internalType": "bool",
-        "name": "_val",
-        "type": "bool"
+        "internalType": "uint256",
+        "name": "_fee",
+        "type": "uint256"
       }
     ],
-    "name": "setPublicMint",
+    "name": "setYearlyFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_years",
+        "type": "uint256"
+      }
+    ],
+    "name": "setYearsToOwn",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -581,6 +645,32 @@
     "name": "upgradeToAndCall",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "yearlyFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "yearsToOwn",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

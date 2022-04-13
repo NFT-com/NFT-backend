@@ -145,6 +145,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_profileURI",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_extendedExpiry",
+        "type": "uint256"
+      }
+    ],
+    "name": "ExtendExpiry",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "from",
@@ -230,7 +249,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_expiry",
+        "name": "_duration",
         "type": "uint256"
       }
     ],
@@ -250,6 +269,11 @@
         "internalType": "uint256",
         "name": "_duration",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "renter",
+        "type": "address"
       }
     ],
     "name": "extendRent",
