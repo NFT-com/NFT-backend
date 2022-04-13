@@ -83,7 +83,7 @@ extend type Query {
   myProfiles(input: ProfilesInput): ProfilesOutput!
   profile(url: String!): Profile!
   profilePassive(url: String!): Profile!
-  blockedProfileURIs: [String!]!
+  blockedProfileURI(url: String!): Boolean!
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
 }
