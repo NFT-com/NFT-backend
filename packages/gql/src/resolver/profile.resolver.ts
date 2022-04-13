@@ -15,6 +15,8 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
+import { blacklistBool } from '../service/core.service'
+
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
@@ -270,10 +272,12 @@ const getFollowersCount = (
   })
 }
 
-const getBlockedProfileURIs = (): Promise<string[]> => {
-  logger.debug('getBlockedProfiles')
-  const blocklist = core.blacklistProfiles
-  return Promise.resolve(Object.keys(blocklist))
+const getBlockedProfileURI = (
+  _: unknown,
+  args: gql.QueryBlockedProfileUriArgs,
+): Promise<boolean> => {
+  logger.debug('getBlockedProfileURI', args.url)
+  return Promise.resolve(blacklistBool(args.url.toLowerCase()))
 }
 
 const getInsiderReservedProfileURIs = (
@@ -534,7 +538,7 @@ export default {
     myProfiles: combineResolvers(auth.isAuthenticated, getMyProfiles),
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
-    blockedProfileURIs: getBlockedProfileURIs,
+    blockedProfileURI: getBlockedProfileURI,
     insiderReservedProfiles: getInsiderReservedProfileURIs,
     latestProfiles: getLatestProfiles,
   },
