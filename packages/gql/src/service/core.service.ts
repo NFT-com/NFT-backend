@@ -679,6 +679,12 @@ export const blacklistProfilePatterns = [
 // global object of reserved profiles mapped to the insider address.
 export const reservedProfiles = {
   '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B': ['joey1', 'joey2'],
+  '0x643367af2Ae07EBFbDE7599eB0855A19c24dca5F': ['jonathan1', 'jonathan2'],
+  '0x2f8ECC5A549638630C094a3DB3849f1ba27C31B1': ['kent1', 'kent2'],
+  '0x98375cB9Dc4a14b46a4C8b284880C7C277f4c8bc': ['john1' , 'john2'],
+  '0x948c21e4e9e342e083424b6132fc29644c6c0a9f': ['john3' , 'john4'],
+  '0x341dE5B426d3582f35357094Ae412cf4E41774Cd': ['eddie1', 'eddie2'],
+  '0x338eFdd45AE7D010da108f39d293565449C52682': ['gavin1', 'gavin2'],
 }
 
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
