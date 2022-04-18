@@ -9,7 +9,7 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/gql/package.json ./packages/gql/package.json
 
 # add tools for native dependencies (node-gpy)
-RUN apk add --no-cache --virtual .gyp python3 make g++  build-base pango-dev giflib-dev cairo-dev jpeg-dev \
+RUN apk add --no-cache --virtual .gyp python3 make g++  build-base pango-dev libpng-dev cairo-dev libpng jpeg-dev giflib-dev \
     && apk add --update  --repository http://dl-3.alpinelinux.org/alpine/edge/testing libmount ttf-dejavu ttf-droid ttf-freefont ttf-liberation fontconfig \
     && npm set progress=false \
     && npm install --production \
