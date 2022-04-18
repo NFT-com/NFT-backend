@@ -70,7 +70,10 @@ const endGKBlindAuction = (
     where: { nftType: defs.NFTType.GenesisKey }, order:  { price: 'DESC' },
   })
     .then((bids: entity.Bid[]) => {
-      return Promise.all(bids.map(bid => {
+      const sortedBids = bids.sort((a, b) =>
+        BigNumber.from(a.price).gt(BigNumber.from(b.price)) ? -1 : 1)
+
+      return Promise.all(sortedBids.map(bid => {
         return repositories.wallet.findById(bid.walletId)
       }))
         .then((wallets: entity.Wallet[]) =>
@@ -79,7 +82,7 @@ const endGKBlindAuction = (
     .then(([bids, wallets]: [entity.Bid[], entity.Wallet[]]) => {
       const topBidPerWallet = {}
       const firstLosingBid = []
-      let lastNonValidBid
+
       for (let i = 0; i < wallets.length; i++) {
         const price = BigNumber.from(bids[i]?.price ?? 0)
         const wallet = wallets[i]?.address
@@ -91,8 +94,6 @@ const endGKBlindAuction = (
             price.toString() : BigNumber.from(currentTopBid).toString()
 
           logger.debug(`new top bid ${topBidPerWallet[wallet]} for ${wallet}`)
-
-          lastNonValidBid = [{ key: wallet, value: topBidPerWallet[wallet] }]
         } else {
           logger.debug(`1st loser bid is ${price} for ${wallet}`)
           firstLosingBid.push({ key: wallet, value: price })
@@ -100,20 +101,24 @@ const endGKBlindAuction = (
         }
       }
 
-      return {
-        topBids: Object.keys(topBidPerWallet)
-          .sort((a, b) => {
-            if (topBidPerWallet[a] && topBidPerWallet[b]) {
-              return BigNumber.from(topBidPerWallet[a])
-                .gt(BigNumber.from(topBidPerWallet[b])) ? -1 : 1
-            }
+      const sortedTopBids = Object.keys(topBidPerWallet)
+        .sort((a, b) => {
+          if (topBidPerWallet[a] && topBidPerWallet[b]) {
+            return BigNumber.from(topBidPerWallet[a])
+              .gt(BigNumber.from(topBidPerWallet[b])) ? -1 : 1
+          }
 
-            return 1
-          })
-          .map(key => {
-            return { key, value: topBidPerWallet[key] }
-          }),
-        firstLosingBid: firstLosingBid.length > 0 ? firstLosingBid : lastNonValidBid ?? [],
+          return 1
+        })
+        .map(key => {
+          return { key, value: topBidPerWallet[key] }
+        })
+
+      return {
+        topBids: sortedTopBids,
+        firstLosingBid: firstLosingBid.length > 0 ? firstLosingBid : [
+          sortedTopBids[sortedTopBids.length - 1],
+        ] ?? [],
         whitelistWinnersCount: Object.keys(topBidPerWallet).length,
         medianPrice: Object.values(topBidPerWallet).length > 0 ?
           median(Object.values(topBidPerWallet)).toString() : '',

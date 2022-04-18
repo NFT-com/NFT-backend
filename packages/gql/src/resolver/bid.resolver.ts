@@ -1,14 +1,17 @@
 import { differenceInSeconds, isEqual } from 'date-fns'
+import abi from 'ethereumjs-abi'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import Web3 from 'web3'
 
 import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError } from '@nftcom/gql/error'
+import { appError, mintError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
+const web3 = new Web3()
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
 
 const sendBidNotifications = (
@@ -177,6 +180,35 @@ const getMyBids = (
     .then(pagination.toPageable(pageInput))
 }
 
+const signHash = (
+  _: any,
+  args: unknown,
+  ctx: Context,
+): Promise<gql.SignHashOutput> => {
+  const privateKey = process.env.PUBLIC_SALE_KEY
+  const { user } = ctx
+  
+  return ctx.repositories.wallet.findByUserId(user.id)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        mintError.buildWalletEmpty(),
+        mintError.ErrorType.WalletEmpty,
+      ),
+    )).then((wallet) => {
+      const hash = '0x' + abi.soliditySHA3(
+        ['address', 'string'],
+        [wallet[0]?.address, new Date().getTime().toString()],
+      ).toString('hex')
+    
+      const sigObj = web3.eth.accounts.sign(hash, privateKey)
+    
+      return {
+        hash: sigObj.messageHash,
+        signature: sigObj.signature,
+      }
+    })
+}
+
 const cancelBid = (
   _: any,
   args: gql.MutationCancelBidArgs,
@@ -279,6 +311,7 @@ export default {
   },
   Mutation: {
     bid: bid,
+    signHash: combineResolvers(auth.isAuthenticated, signHash),
     cancelBid: combineResolvers(auth.isAuthenticated, cancelBid),
     setProfilePreferences: combineResolvers(auth.isAuthenticated, setProfilePreferences),
   },

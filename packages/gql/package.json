@@ -33,6 +33,7 @@
     "dotenv": "^10.0.0",
     "envfile": "^6.17.0",
     "eth-balance-checker": "^0.1.2",
+    "ethereumjs-abi": "^0.6.8",
     "ethers": "^5.5.1",
     "express": "^4.17.2",
     "graphql": "^15.8.0",
@@ -47,7 +48,8 @@
     "sharp": "^0.30.3",
     "source-map-support": "^0.5.21",
     "typeorm": "0.2.41",
-    "typesense": "^1.2.1"
+    "typesense": "^1.2.1",
+    "web3": "^1.7.3"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^2.2.1",
