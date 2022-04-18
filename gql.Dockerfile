@@ -16,7 +16,7 @@ RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm install \
     && apk del .gyp
 
-RUN apk add --no-cache pango
+RUN apk add pango fontconfig
 
 COPY packages/shared ./packages/shared
 COPY packages/gql ./packages/gql
