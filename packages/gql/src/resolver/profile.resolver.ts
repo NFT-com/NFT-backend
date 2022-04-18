@@ -10,7 +10,7 @@ import Typesense from 'typesense'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
-import { auth, joi } from '@nftcom/gql/helper'
+import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { generateCompositeImage, getAWSConfig } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
@@ -505,6 +505,26 @@ const createCompositeImage = async (
   return profile
 }
 
+const getLatestProfiles = (
+  _: any,
+  args: gql.QueryLatestProfilesArgs,
+  ctx: Context,
+): Promise<gql.ProfilesOutput> => {
+  const { repositories } = ctx
+  logger.debug('getLatestProfiles', { input: args?.input })
+  const pageInput = args?.input.pageInput
+  const filters = [helper.inputT2SafeK<entity.Profile>(args?.input)]
+  return core.paginatedEntitiesBy(
+    repositories.profile,
+    pageInput,
+    filters,
+    [],
+    'createdAt',
+    'DESC',
+  )
+    .then(pagination.toPageable(pageInput))
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -515,6 +535,7 @@ export default {
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
     blockedProfileURIs: getBlockedProfileURIs,
     insiderReservedProfiles: getInsiderReservedProfileURIs,
+    latestProfiles: getLatestProfiles,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

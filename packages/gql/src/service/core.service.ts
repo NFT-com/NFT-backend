@@ -1,8 +1,6 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
 import axios from 'axios'
-import fs from 'fs'
-import path from 'path'
 import sharp from 'sharp'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
@@ -281,35 +279,15 @@ export const getAWSConfig = async (): Promise<aws.S3> => {
   return new aws.S3()
 }
 
-const fontConfigTemplate = (fontPath: string): string => `<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <dir>${fontPath}</dir>
-  <cachedir>/tmp/fonts-cache/</cachedir>
-  <config></config>
-</fontconfig>
-`
-
 const generatePlaceholderImageWithText = async (
   profileURL,
-  width = 248,
-  height = 248,
+  width = 1000,
+  height = 1000,
 ): Promise<Buffer> => {
-  // Set the environment variable path
-  const fontDir = path.resolve(path.join(__dirname, '../../fonts/'))
-  fs.writeFileSync(
-    path.join(fontDir, 'fonts.conf'),
-    fontConfigTemplate(fontDir),
-  )
-  process.env.FC_DEBUG = '1024'
-  process.env.FONTCONFIG_PATH = fontDir
-  process.env.FONTCONFIG_FILE = path.join(fontDir, 'fonts.conf')
-  process.env.PANGOCAIRO_BACKEND='fontconfig'
   const overlay = `<svg width="${width}" height="${height}">
-    <text x="50%" y="${height - 54}" font-family="'Rubik'" font-size="10" text-anchor="middle" fill="white">NFT.COM/</text>
-    <text x="50%" y="${height - 36}" font-family="'RubikMonoOne'" font-size="16" text-anchor="middle" fill="white">${profileURL}</text>
+    <text x="50%" y="${height - 150}" font-family="'Rubik'" font-size="30" text-anchor="middle" fill="white">NFT.COM/</text>
+    <text x="50%" y="${height - 100}" font-family="'Rubik'" font-size="40" text-anchor="middle" font-weight="900" fill="white">${profileURL}</text>
   </svg>`
-
   const input = (await axios({ url: 'https://cdn.nft.com/nullPhoto.svg', responseType: 'arraybuffer' })).data as Buffer
   return await sharp(input)
     .composite([{
@@ -321,9 +299,9 @@ const generatePlaceholderImageWithText = async (
 }
 
 export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
-  const url = profileURL.length > 9 ? profileURL.slice(0, 7).concat('...') : profileURL
+  const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
-  const buffer = await generatePlaceholderImageWithText(url.toUpperCase())
+  const buffer = await generatePlaceholderImageWithText(url.toUpperCase(), 1000, 1000)
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
   const imageKey = Date.now().toString() + '-' + profileURL + '.png'
