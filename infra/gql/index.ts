@@ -109,6 +109,9 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['ALCHEMY_NFT_API_URL'] = process.env.ALCHEMY_NFT_API_URL || parsedFile['ALCHEMY_NFT_API_URL']
   parsedFile['TYPESENSE_HOST'] = process.env.TYPESENSE_HOST || parsedFile['TYPESENSE_HOST']
   parsedFile['TYPESENSE_API_KEY'] = process.env.TYPESENSE_API_KEY || parsedFile['TYPESENSE_API_KEY']
+  parsedFile['PANGOCAIRO_BACKEND'] = process.env.PANGOCAIRO_BACKEND || parsedFile['PANGOCAIRO_BACKEND']
+  parsedFile['FONTCONFIG_FILE'] = process.env.FONTCONFIG_FILE || parsedFile['FONTCONFIG_FILE']
+  parsedFile['FONTCONFIG_PATH'] = process.env.FONTCONFIG_PATH || parsedFile['FONTCONFIG_PATH']
 
   console.log(JSON.stringify(parsedFile))
 
