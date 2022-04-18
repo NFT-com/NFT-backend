@@ -9,12 +9,14 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/gql/package.json ./packages/gql/package.json
 
 # add tools for native dependencies (node-gpy)
-RUN apk add --no-cache --virtual .gyp python3 make g++  build-base pango-dev libpng-dev cairo-dev libpng jpeg-dev giflib-dev fontconfig \
+RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm set progress=false \
     && npm install --production \
     && cp -R node_modules prod_node_modules \
     && npm install \
     && apk del .gyp
+
+RUN apk add --no-cache pango
 
 COPY packages/shared ./packages/shared
 COPY packages/gql ./packages/gql
