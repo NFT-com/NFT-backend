@@ -29,6 +29,7 @@ export const buildProfileNotMintedMsg = (id: string): string => `Profile ${id} i
 export const buildProfileInvalidCharMsg = (id: string): string => `Profile ${id} is not valid profile. Please use char [0-9a-z_] 1-100 characters`
 export const buildProfileInvalidEthMsg = (id: string): string => `Profile ${id} is not valid profile. Please do not use an ethereum address`
 export const buildProfileInvalidBlacklistMsg = (id: string): string => `Profile ${id} is a blacklisted profile. Please try another variation`
+export const buildProfileInvalidReserveMsg = (id: string): string => `Profile ${id} is a reserved profile. Please try another variation`
 
 export const buildProfileBannerFileSize = (): string => 'Banner image file size should not exceed 5MB.'
 export const buildProfileAvatarFileSize = (): string => 'Avatar image file size should not exceed 2MB.'

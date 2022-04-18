@@ -1,13 +1,22 @@
+import axios from 'axios'
 import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
+import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import Redis from 'ioredis'
 import Joi from 'joi'
 
+import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, userError, walletError } from '@nftcom/gql/error'
+import { appError, mintError,userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
-import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+
+const redis = new Redis({
+  port: redisConfig.port,
+  host: redisConfig.host,
+})
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
@@ -226,6 +235,78 @@ const getMyAddresses = (
   return repositories.wallet.findByUserId(parent.id)
 }
 
+const getMyGenesisKeys = async (
+  _: any,
+  args: unknown,
+  ctx: Context,
+): Promise<Array<gql.GkOutput>> => {
+  const { user, repositories } = ctx
+  logger.debug('getMyGenesisKeys', { loggedInUserId: user.id })
+  
+  return repositories.wallet.findByUserId(user.id)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        mintError.buildWalletEmpty(),
+        mintError.ErrorType.WalletEmpty,
+      ),
+    )).then(async (wallet) => {
+      const address = wallet[0]?.address
+      const cachedGks = await redis.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
+      let gk_owners
+
+      const genesisKeyContract = typechain.GenesisKey__factory.connect(
+        contracts.genesisKeyAddress(wallet[0].chainId),
+        provider.provider(Number(wallet[0].chainId)),
+      )
+
+      if (!cachedGks) {
+        gk_owners = {}
+
+        const totalSupply = Number(await genesisKeyContract.totalSupply())
+        for (let i = 1; i <= totalSupply; i += 500) {
+          const startIndex = i
+          const endIndex = i + 499 < totalSupply ? i + 499 : totalSupply
+
+          const owners = await genesisKeyContract.multiOwnerOf(startIndex, endIndex) // inclusive
+          owners.map((owner, index) => {
+            if (gk_owners[owner]) {
+              gk_owners[owner].push(i + index)
+            } else {
+              gk_owners[owner] = [i + index]
+            }
+          })
+        }
+
+        await redis.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'ex', 60 * 2) // 2 minutest
+      } else {
+        gk_owners = JSON.parse(cachedGks)
+      }
+
+      // parse and filter
+      const keyIds = gk_owners[utils.getAddress(address)]
+
+      if (!keyIds) {
+        return []
+      }
+
+      const uri = await genesisKeyContract.tokenURI(keyIds[0])
+      const strippedUri = uri.replace('ipfs://', '')
+      const ipfsHash = strippedUri.split('/')[0]
+
+      return keyIds.map(async (keyId) => {
+        const fullUrl = `https://nft-llc.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
+
+        const cachedGkData = await redis.get(fullUrl)
+        const metadata = cachedGkData ?? (await axios.get(fullUrl)).data
+
+        return {
+          tokenId: keyId,
+          metadata,
+        }
+      })
+    })
+}
+
 const getMyApprovals = (
   parent: gql.User,
   _: unknown,
@@ -242,6 +323,7 @@ const getMyApprovals = (
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
+    getMyGenesisKeys: combineResolvers(auth.isAuthenticated, getMyGenesisKeys),
   },
   Mutation: {
     signUp,
