@@ -209,6 +209,35 @@ const signHash = (
     })
 }
 
+const signHashProfile = (
+  _: any,
+  args: gql.MutationSignHashProfileArgs,
+  ctx: Context,
+): Promise<gql.SignHashOutput> => {
+  const privateKey = process.env.PUBLIC_SALE_KEY
+  const { user } = ctx
+  
+  return ctx.repositories.wallet.findByUserId(user.id)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        mintError.buildWalletEmpty(),
+        mintError.ErrorType.WalletEmpty,
+      ),
+    )).then((wallet) => {
+      const hash = '0x' + abi.soliditySHA3(
+        ['address', 'string'],
+        [wallet[0]?.address, args?.profileUrl],
+      ).toString('hex')
+    
+      const sigObj = web3.eth.accounts.sign(hash, privateKey)
+    
+      return {
+        hash: sigObj.messageHash,
+        signature: sigObj.signature,
+      }
+    })
+}
+
 const cancelBid = (
   _: any,
   args: gql.MutationCancelBidArgs,
@@ -312,6 +341,7 @@ export default {
   Mutation: {
     bid: bid,
     signHash: combineResolvers(auth.isAuthenticated, signHash),
+    signHashProfile: combineResolvers(auth.isAuthenticated, signHashProfile),
     cancelBid: combineResolvers(auth.isAuthenticated, cancelBid),
     setProfilePreferences: combineResolvers(auth.isAuthenticated, setProfilePreferences),
   },

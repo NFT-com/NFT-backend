@@ -20,6 +20,24 @@ type UserPreferences {
   promotionalNotifications: Boolean
 }
 
+type Attributes {
+  trait_type: String!
+  value: String!
+}
+
+type Metadata {
+  name: String!
+  image: String!,
+  description: String!
+  attributes: [Attributes]
+  animation_url: String
+}
+
+type GkOutput {
+  tokenId: String!
+  metadata: Metadata!
+}
+
 input UserPreferencesInput {
   bidActivityNotifications: Boolean
   priceChangeNotifications: Boolean
@@ -48,6 +66,7 @@ input UpdateEmailInput {
 
 extend type Query {
   me: User!
+  getMyGenesisKeys: [GkOutput]!
 }
 
 extend type Mutation {
