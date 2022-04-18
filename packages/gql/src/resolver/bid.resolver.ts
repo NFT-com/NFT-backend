@@ -6,10 +6,12 @@ import Web3 from 'web3'
 
 import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError } from '@nftcom/gql/error'
+import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+
+import { blacklistBool } from '../service/core.service'
 
 const web3 = new Web3()
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
@@ -216,6 +218,14 @@ const signHashProfile = (
 ): Promise<gql.SignHashOutput> => {
   const privateKey = process.env.PUBLIC_SALE_KEY
   const { user } = ctx
+
+  const reserved = core.reservedProfiles
+  const flattenedReserveList = [].concat(...Object.values(reserved))
+  const resevedMap = new Map(
+    flattenedReserveList.map(object => {
+      return [object, true]
+    }),
+  )
   
   return ctx.repositories.wallet.findByUserId(user.id)
     .then(fp.rejectIfEmpty(
@@ -224,6 +234,20 @@ const signHashProfile = (
         mintError.ErrorType.WalletEmpty,
       ),
     )).then((wallet) => {
+      if (resevedMap.get(args?.profileUrl?.toLowerCase())) {
+        throw appError.buildExists(
+          profileError.buildProfileInvalidReserveMsg(args?.profileUrl?.toLowerCase()),
+          profileError.ErrorType.ProfileInvalid,
+        )
+      }
+
+      if (blacklistBool(args?.profileUrl?.toLowerCase())) {
+        throw appError.buildExists(
+          profileError.buildProfileInvalidBlacklistMsg(args?.profileUrl?.toLowerCase()),
+          profileError.ErrorType.ProfileInvalid,
+        )
+      }
+
       const hash = '0x' + abi.soliditySHA3(
         ['address', 'string'],
         [wallet[0]?.address, args?.profileUrl],
