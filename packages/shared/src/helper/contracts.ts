@@ -17,7 +17,7 @@ export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0xd20Cb8c25E5A738f559DF29f64B6E2DD408e44C2')
+    return utils.getAddress('0x4aA4Cd36e21dCc2247b5FB5e30ED4D5808f7ECc1')
   case '0':
   case 0:
   case 'mainnet':
@@ -26,12 +26,13 @@ export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
   }
 }
 
+// deployedGkTeamDistributor
 export function genesisKeyTeamMerkleAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x1e01eED656d9aA0B9a16E76F720A6da63a838EA7')
+    return utils.getAddress('0xaE8F59CC5294Ad07a135eB39D361512aA9DaCb89')
   case '0':
   case 0:
   case 'mainnet':
@@ -44,7 +45,7 @@ export function genesisKeyTeamClaimAddress(chainId: string | number = 'mainnet')
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x1c4fFEC2191F97B40721a37271dE59413D817319')
+    return utils.getAddress('0x46b7f6864cD071845de69ce7E9D82EDBBDc7054F')
   case '0':
   case 0:
   case 'mainnet':
@@ -57,7 +58,7 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xE197428a3aB9E011ff99cD9d9D4c5Ea5D8f51f49')
+    return utils.getAddress('0x8cE66A6Bb03Fb407D9E9D8327e266e54058d7362')
   case '0':
   case 0:
   case 'mainnet':
@@ -70,7 +71,7 @@ export function genesisKeyStakeAddress(chainId: string | number = 'mainnet'): st
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0x4ab699B737c64958525172579D5411C4b2C343E7')
+    return utils.getAddress('0x7C056980e27AE75D01052C21cb598f368e01DE59')
   case '0':
   case 0:
   case 'mainnet':
@@ -83,7 +84,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x734a14f4df41f2fA90f8bF7fb7Ce3E2ab68d9cF0')
+    return utils.getAddress('0xd7Fd5046a2523841Ee840d7574B54591300bAcB6')
   case '0':
   case 0:
   case 'mainnet':
@@ -97,7 +98,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '4':
   case 'rinkeby':
   case 4:
-    return utils.getAddress('0xD954f115a212F328B0aBa249921f414Cb5eE3788')
+    return utils.getAddress('0xbc6BA73F5822abff07F6BABa7617E78a6C0729c6')
   case '0':
   case 0:
   case 'mainnet':
@@ -110,7 +111,7 @@ export function validationLogicAddress(chainId: string | number = 'mainnet'): st
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x3d278bB7ee5BcEFE68759Cd578E572f3B6A5774C')
+    return utils.getAddress('0x10CF5F4C7cEeBb483A64E9500816f7356dC9379a')
   case '0':
   case 0:
   case 'mainnet':
@@ -124,7 +125,7 @@ export function marketplaceEventAddress(chainId: string | number = 'mainnet'): s
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('0x7E635aD1D67f68F4B8D1EAdDDb4577aC2aA686Aa')
+    return utils.getAddress('0x0Fae273409Ad108692d6515dd134A338364f1689')
   case '0':
   case 0:
   case 'mainnet':
@@ -138,7 +139,7 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('/0x181030092C8255b9325EAb48712c14D518D1dE6B')
+    return utils.getAddress('0x4dCF39912385A00ed722ce0b70A21d616eA6BAEC')
   case '0':
   case 0:
   case 'mainnet':
