@@ -19,7 +19,7 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   ownerWalletId: string
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: true, unique: true })
   tokenId: string
 
   @Column({
