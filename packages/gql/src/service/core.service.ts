@@ -690,6 +690,33 @@ export const reservedProfiles = {
   '0x72dF8ecab91afe22367f4cCA904465Ae7bAF33b8': ['insider3', 'insider4'],
 }
 
+export const OFAC = {
+  '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c': true,
+  '0x67d40EE1A85bf4a4Bb7Ffae16De985e8427B6b45': true,
+  '0x6f1ca141a28907f78ebaa64fb83a9088b02a8352': true,
+  '0x6acdfba02d390b97ac2b2d42a63e85293bcc160e': true,
+  '0x48549a34ae37b12f6a30566245176994e17c6b4a': true,
+  '0x5512d943ed1f7c8a43f3435c85f7ab68b30121b0': true,
+  '0xc455f7fd3e0e12afd51fba5c106909934d8a0e4a': true,
+  '0x1da5821544e25c636c1417ba96ade4cf6d2f9b5a': true,
+  '0x7Db418b5D567A4e0E8c59Ad71BE1FcE48f3E6107': true,
+  '0x72a5843cc08275C8171E582972Aa4fDa8C397B2A': true,
+  '0x7F19720A857F834887FC9A7bC0a0fBe7Fc7f8102': true,
+  '0x7FF9cFad3877F21d41Da833E2F775dB0569eE3D9': true,
+  '0xd882cfc20f52f2599d84b8e8d58c7fb62cfe344b': true,
+  '0x901bb9583b24d97e995513c6778dc6888ab6870e': true,
+  '0xa7e5d5a720f06526557c513402f2e6b5fa20b008': true,
+  '0xfec8a60023265364d066a1212fde3930f6ae8da7': true,
+  '0x7F367cC41522cE07553e823bf3be79A889DEbe1B': true,
+  '0x9f4cda013e354b8fc285bf4b9a60460cee7f7ea9': true,
+  '0x3cbded43efdaf0fc77b9c55f6fc9988fcc9b757d': true,
+  '0x2f389ce8bd8ff92de3402ffce4691d17fc4f6535': true,
+  '0xe7aa314c77f4233c18c6cc84384a9247c0cf367b': true,
+  '0x308ed4b7b49797e1a98d3818bff6fe5385410370': true,
+  '0x19aa5fe80d33a56d56c78e82ea5e50e5d80b4dff': true,
+  '0x098B716B8Aaf21512996dC57EB0615e2383E2f96': true,
+}
+
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
 const validProfileRegex = /^[0-9a-z_]{1,100}$/
 export const blacklistBool = (inputUrl: string): boolean => {

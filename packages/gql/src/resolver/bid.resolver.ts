@@ -11,7 +11,7 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
-import { blacklistBool } from '../service/core.service'
+import { blacklistBool, OFAC } from '../service/core.service'
 
 const web3 = new Web3()
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
@@ -61,20 +61,25 @@ const bid = (
     .then(({ profileId, walletId }) => {
       if (input.nftType === gql.NFTType.GenesisKey) {
         const whitelist = helper.getGenesisKeyWhitelist()
+        const ofacBool = OFAC[wallet.address]
 
-        if (whitelist.includes(wallet.address)) {
-          return repositories.bid.findOne({ where: {
-            nftType: gql.NFTType.GenesisKey,
-            walletId,
-          } }).then((previousGKBid) => ({
-            walletId,
-            profileId,
-            stakeWeight: null,
-            existingBid: previousGKBid,
-            prevTopBidOwner: null,
-          }))
+        if (ofacBool) {
+          throw appError.buildForbidden(`${wallet.address} is on OFAC`)
         } else {
-          throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+          if (whitelist.includes(wallet.address)) {
+            return repositories.bid.findOne({ where: {
+              nftType: gql.NFTType.GenesisKey,
+              walletId,
+            } }).then((previousGKBid) => ({
+              walletId,
+              profileId,
+              stakeWeight: null,
+              existingBid: previousGKBid,
+              prevTopBidOwner: null,
+            }))
+          } else {
+            throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+          }
         }
       } else if (input.nftType !== gql.NFTType.Profile) {
         // TODO: find bid and prevTopBid for non-profile NFTs too.
@@ -246,6 +251,12 @@ const signHashProfile = (
           profileError.buildProfileInvalidBlacklistMsg(args?.profileUrl?.toLowerCase()),
           profileError.ErrorType.ProfileInvalid,
         )
+      }
+
+      const ofacBool = OFAC[wallet[0]?.address]
+
+      if (ofacBool) {
+        throw appError.buildForbidden(`${wallet[0]?.address} is on OFAC`)
       }
 
       const hash = '0x' + abi.soliditySHA3(
