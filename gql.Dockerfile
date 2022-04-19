@@ -43,7 +43,7 @@ COPY --from=build /app/packages/gql/package.json /app/packages/gql/package.json
 COPY --from=build /app/packages/gql/dist /app/packages/gql/dist
 COPY --from=build /app/packages/gql/.env /app/packages/gql/.env
 
-RUN apk add --no-cache pango
+RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
 RUN apk add --update --repository http://dl-3.alpinelinux.org/alpine/edge/testing fontconfig
 
 WORKDIR /app/packages/gql
