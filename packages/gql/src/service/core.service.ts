@@ -728,10 +728,17 @@ const generatePlaceholderImageWithText = async (
   height = 1000,
 ): Promise<Buffer> => {
   const overlay = `<svg width="${width}" height="${height}">
-    <text x="50%" y="${height - 150}" font-family="'Rubik'" font-size="30" text-anchor="middle" fill="white">NFT.COM/</text>
-    <text x="50%" y="${height - 100}" font-family="'Rubik'" font-size="40" text-anchor="middle" font-weight="900" fill="white">${profileURL}</text>
+    <text x="50%" y="${height - 150}" font-family="'Rubik-Regular Ultra-Heavy Italic'" font-size="30" text-anchor="middle" fill="white">NFT.COM/</text>
+    <text x="50%" y="${height - 100}" font-family="'Rubik-Regular Ultra-Heavy Italic'" font-size="40" text-anchor="middle" font-weight="900" fill="white">${profileURL}</text>
   </svg>`
   const input = (await axios({ url: 'https://cdn.nft.com/nullPhoto.svg', responseType: 'arraybuffer' })).data as Buffer
+  // await sharp(input)
+  //   .composite([{
+  //     input: Buffer.from(overlay),
+  //     gravity: 'center',
+  //   }])
+  //   .png()
+  //   .toFile(__dirname + '/composite.png')
   return await sharp(input)
     .composite([{
       input: Buffer.from(overlay),
