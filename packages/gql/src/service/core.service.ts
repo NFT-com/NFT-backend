@@ -686,6 +686,8 @@ export const reservedProfiles = {
   '0x341dE5B426d3582f35357094Ae412cf4E41774Cd': ['eddie1', 'eddie2'],
   '0x338eFdd45AE7D010da108f39d293565449C52682': ['gavin1', 'gavin2'],
   '0xF968EC896Ffcb78411328F9EcfAbB9FcCFe4E863': ['anthony1, anthony2'],
+  '0xa18376780EB719bA2d2abb02D1c6e4B8689329e0': ['insider1', 'insider2'],
+  '0x72dF8ecab91afe22367f4cCA904465Ae7bAF33b8': ['insider3', 'insider4'],
 }
 
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
