@@ -9,14 +9,13 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/gql/package.json ./packages/gql/package.json
 
 # add tools for native dependencies (node-gpy)
-RUN apk add --no-cache --virtual .gyp python3 make g++ \
+RUN apk add --no-cache --virtual .gyp python3 make g++ pango fontconfig \
     && npm set progress=false \
     && npm install --production \
     && cp -R node_modules prod_node_modules \
     && npm install \
     && apk del .gyp
 
-RUN apk add pango fontconfig
 
 COPY packages/shared ./packages/shared
 COPY packages/gql ./packages/gql
@@ -34,7 +33,7 @@ FROM node:16-alpine as release
 WORKDIR /app
 
 COPY --from=deps /app/prod_node_modules ./node_modules
-COPY --from=deps /app/packages/gql/fonts /app/packages/gql/fonts
+COPY --from=deps /app/packages/gql/fonts /usr/share/fonts
 
 COPY --from=build /app/packages/shared/package.json /app/packages/shared/package.json
 COPY --from=build /app/packages/shared/dist /app/packages/shared/dist
