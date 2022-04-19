@@ -9,7 +9,7 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/gql/package.json ./packages/gql/package.json
 
 # add tools for native dependencies (node-gpy)
-RUN apk add --no-cache --virtual .gyp python3 make g++ pango fontconfig \
+RUN apk add --no-cache --virtual .gyp python3 make g++ pango \
     && npm set progress=false \
     && npm install --production \
     && cp -R node_modules prod_node_modules \
@@ -31,6 +31,9 @@ RUN npm run build
 FROM node:16-alpine as release
 
 WORKDIR /app
+
+RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
+RUN apk add --update --repository http://dl-3.alpinelinux.org/alpine/edge/testing libmount ttf-dejavu ttf-droid ttf-freefont ttf-liberation fontconfig
 
 COPY --from=deps /app/prod_node_modules ./node_modules
 COPY --from=deps /app/packages/gql/fonts /usr/share/fonts
