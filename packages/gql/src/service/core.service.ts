@@ -693,7 +693,10 @@ export const reservedProfiles = {
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
 const validProfileRegex = /^[0-9a-z_]{1,100}$/
 export const blacklistBool = (inputUrl: string): boolean => {
-  return blacklistProfilePatterns.find((pattern) => pattern.test(inputUrl)) != null
+  const blacklisted = blacklistProfilePatterns.find((pattern) => pattern.test(inputUrl)) != null
+  const reserved = Object.keys(reservedProfiles)
+    .find((address) => reservedProfiles[address].includes(inputUrl)) != null
+  return blacklisted || reserved
 }
 
 export const createProfile = (
