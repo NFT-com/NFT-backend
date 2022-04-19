@@ -504,7 +504,7 @@ const createCompositeImage = async (
 
   const imageURL = await generateCompositeImage(profile.url)
   profile = await repositories.profile.updateOneById(profileId, {
-    photoURL: imageURL,
+    photoURL: imageURL + process.env.FONTCONFIG_PATH + '*' + process.env.PANGOCAIRO_BACKEND,
   })
   return profile
 }
