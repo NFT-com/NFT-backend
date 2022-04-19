@@ -28,7 +28,14 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
       let tokenId
 
       try {
-        tokenId = await nftProfileContract.getTokenId(profile.url)
+        tokenId = profile?.tokenId ?? await nftProfileContract.getTokenId(profile.url)
+        if (!profile?.tokenId) {
+          profile.tokenId = tokenId
+          await repositories.profile.save({
+            ...profile,
+          })
+          logger.debug('saved tokenId', tokenId)
+        }
         logger.debug(`getTokenId ${profile.url} => ${tokenId}`)
       } catch (getTokenIdErr) {
         // catch if profile doesn't exist yet
