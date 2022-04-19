@@ -32,6 +32,7 @@ FROM node:16-alpine as release
 
 WORKDIR /app
 
+
 COPY --from=deps /app/prod_node_modules ./node_modules
 COPY --from=deps /app/packages/gql/fonts /usr/share/fonts
 
@@ -43,7 +44,7 @@ COPY --from=build /app/packages/gql/dist /app/packages/gql/dist
 COPY --from=build /app/packages/gql/.env /app/packages/gql/.env
 
 RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
-RUN apk add --update --repository http://dl-3.alpinelinux.org/alpine/edge/testing fontconfig
+RUN apk add --update --repository http://dl-3.alpinelinux.org/alpine/edge/testing libmount ttf-dejavu fontconfig
 
 WORKDIR /app/packages/gql
 
