@@ -18,7 +18,6 @@ export const stringListToMap = (
 export function getGenesisKeyWhitelist(): Array<string> {
   return [
     '0x59495589849423692778a8c5aaCA62CA80f875a4',
-    '0xFC4BCb93a151F68773dA76D5D61E5f1Eea9FD494',
     '0xF968EC896Ffcb78411328F9EcfAbB9FcCFe4E863',
     '0x5c09f8b380140E40A4ADc744F9B199a9383553F9',
     '0x090Be0f933d005EB7f30BEcF78A37B9C0DBb7442',
