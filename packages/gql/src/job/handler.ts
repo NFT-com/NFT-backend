@@ -182,7 +182,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
         validateLiveBalances(filteredBids, chainId),
         events.map((evt) => {
           // console.log(`Found event ${evt.event} with chainId: ${chainId}, ${evt.args}`)
-          const [owner,profileUrl,,] = evt.args
+          const [owner,profileUrl,tokenId,,] = evt.args
 
           switch (evt.event) {
           case 'MintedProfile':
@@ -217,6 +217,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                           repositories.profile.save({
                             status: defs.ProfileStatus.Owned,
                             url: profileUrl,
+                            tokenId: tokenId.toString(),
                             ownerWalletId: wallet.id,
                             ownerUserId: wallet.userId,
                           })

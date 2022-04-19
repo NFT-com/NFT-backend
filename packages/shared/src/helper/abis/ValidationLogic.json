@@ -568,6 +568,16 @@
         "internalType": "struct LibSignature.Order",
         "name": "buyOrder",
         "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "viewOnly",
+        "type": "bool"
       }
     ],
     "name": "validateMatch_",
@@ -578,7 +588,7 @@
         "type": "bool"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "pure",
     "type": "function"
   }
 ]
