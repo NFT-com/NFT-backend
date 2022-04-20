@@ -124,7 +124,7 @@ export const createEBInstance = (
     application: application.name,
     version: applicationVersion,
     tier: 'WebServer',
-    solutionStackName: '64bit Amazon Linux 2 v3.4.13 running Docker',
+    solutionStackName: '64bit Amazon Linux 2 v3.4.12 running Docker',
     //  EB Command Options for Reference: 
     //  https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html#command-options-general-elbv2
     settings: [
