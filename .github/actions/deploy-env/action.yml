@@ -66,9 +66,6 @@ runs:
         SUPPORTED_NETWORKS: ${{ fromJSON(inputs.secrets).SUPPORTED_NETWORKS }}
         TYPESENSE_HOST: ${{ fromJSON(inputs.secrets).TYPESENSE_HOST }}
         TYPESENSE_API_KEY: ${{ fromJSON(inputs.secrets).TYPESENSE_API_KEY }}
-        PANGOCAIRO_BACKEND: ${{ fromJSON(inputs.secrets).PANGOCAIRO_BACKEND }}
-        FONTCONFIG_FILE: ${{ fromJSON(inputs.secrets).FONTCONFIG_FILE }}
-        FONTCONFIG_PATH: ${{ fromJSON(inputs.secrets).FONTCONFIG_PATH }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
