@@ -1,9 +1,7 @@
 import { ethers, providers } from 'ethers'
 
-const defaultChainId = process.env.SUPPORTED_NETWORKS.split(':')[1]
-
 export const provider = (
-  chainId: providers.Networkish = defaultChainId,
+  chainId: providers.Networkish = 1, //mainnet default
 ): ethers.providers.BaseProvider => {
   return new ethers.providers.FallbackProvider([
     // using zmok exclusively, can add additional providers if needed (need paid subscription)
