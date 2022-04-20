@@ -1,12 +1,11 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
-import axios from 'axios'
-import sharp from 'sharp'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError,walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
+import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { _logger, defs, entity, fp, helper, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -722,45 +721,19 @@ export const getAWSConfig = async (): Promise<aws.S3> => {
   return new aws.S3()
 }
 
-const generatePlaceholderImageWithText = async (
-  profileURL,
-  width = 1000,
-  height = 1000,
-): Promise<Buffer> => {
-  const overlay = `<svg width="${width}" height="${height}">
-    <text x="50%" y="${height - 150}" font-family="'Rubik-Regular Ultra-Heavy Italic'" font-size="30" text-anchor="middle" fill="white">NFT.COM/</text>
-    <text x="50%" y="${height - 100}" font-family="'Rubik-Regular Ultra-Heavy Italic'" font-size="40" text-anchor="middle" font-weight="900" fill="white">${profileURL}</text>
-  </svg>`
-  const input = (await axios({ url: 'https://cdn.nft.com/nullPhoto.svg', responseType: 'arraybuffer' })).data as Buffer
-  // await sharp(input)
-  //   .composite([{
-  //     input: Buffer.from(overlay),
-  //     gravity: 'center',
-  //   }])
-  //   .png()
-  //   .toFile(__dirname + '/composite.png')
-  return await sharp(input)
-    .composite([{
-      input: Buffer.from(overlay),
-      gravity: 'center',
-    }])
-    .png()
-    .toBuffer()
-}
-
 export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
-  const buffer = await generatePlaceholderImageWithText(url.toUpperCase(), 1000, 1000)
+  const buffer = generateSVG(url.toUpperCase())
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
-  const imageKey = Date.now().toString() + '-' + profileURL + '.png'
+  const imageKey = Date.now().toString() + '-' + profileURL + '.svg'
   try {
     const res = await s3.upload({
       Bucket: assetBucket.name,
       Key: imageKey,
       Body: buffer,
-      ContentType: 'image/png',
+      ContentType: 'image/svg+xml',
     }).promise()
     return res.Location
   } catch (e) {
