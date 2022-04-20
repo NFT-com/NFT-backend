@@ -73,6 +73,7 @@ extend type Query {
 extend type Mutation {
   bid(input: BidInput!): Bid!
   cancelBid(id: ID!): Boolean!
+  signHashProfile(profileUrl: String!): SignHashOutput!
   signHash: SignHashOutput!
   setProfilePreferences(input: ProfilePreferenceInput!): [Bid!]!
 }

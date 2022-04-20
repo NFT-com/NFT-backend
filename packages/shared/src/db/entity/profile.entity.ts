@@ -19,6 +19,9 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   ownerWalletId: string
 
+  @Column({ nullable: true, unique: true })
+  tokenId: string
+
   @Column({
     type: 'enum',
     enum: ProfileStatus,

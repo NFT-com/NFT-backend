@@ -177,7 +177,6 @@ export const start = async (): Promise<void> => {
 
   app.use(Sentry.Handlers.errorHandler())
   app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
-  process.env.FC_DEBUG='1024'
 
   await server.start()
   server.applyMiddleware({ app, cors: true })

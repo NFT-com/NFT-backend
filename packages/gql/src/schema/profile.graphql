@@ -25,6 +25,7 @@ type Profile {
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
   owner: Wallet
+  tokenId: String
   photoURL: String
   status: ProfileStatus
   url: String!

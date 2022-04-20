@@ -21,9 +21,12 @@ const queuePrefix = 'queue'
 
 const queues: { [key: string]: Bull.Queue } = {}
 
-// TODO: make sure to add mainnet before going live
+const PROD = process.env.ASSET_BUCKET === 'nftcom-prod-assets'
 const networks = new Map()
-networks.set('4', 'rinkeby')
+networks.set(
+  PROD ? '0' : '4',
+  PROD ? 'mainnet' : 'rinkeby',
+)
 
 const createQueues = (): void => {
   networks.forEach((val: string, key: string) => {

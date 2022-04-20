@@ -6,10 +6,12 @@ import Web3 from 'web3'
 
 import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError } from '@nftcom/gql/error'
+import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+
+import { blacklistBool, OFAC } from '../service/core.service'
 
 const web3 = new Web3()
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
@@ -59,20 +61,25 @@ const bid = (
     .then(({ profileId, walletId }) => {
       if (input.nftType === gql.NFTType.GenesisKey) {
         const whitelist = helper.getGenesisKeyWhitelist()
+        const ofacBool = OFAC[wallet.address]
 
-        if (whitelist.includes(wallet.address)) {
-          return repositories.bid.findOne({ where: {
-            nftType: gql.NFTType.GenesisKey,
-            walletId,
-          } }).then((previousGKBid) => ({
-            walletId,
-            profileId,
-            stakeWeight: null,
-            existingBid: previousGKBid,
-            prevTopBidOwner: null,
-          }))
+        if (ofacBool) {
+          throw appError.buildForbidden(`${wallet.address} is on OFAC`)
         } else {
-          throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+          if (whitelist.includes(wallet.address)) {
+            return repositories.bid.findOne({ where: {
+              nftType: gql.NFTType.GenesisKey,
+              walletId,
+            } }).then((previousGKBid) => ({
+              walletId,
+              profileId,
+              stakeWeight: null,
+              existingBid: previousGKBid,
+              prevTopBidOwner: null,
+            }))
+          } else {
+            throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+          }
         }
       } else if (input.nftType !== gql.NFTType.Profile) {
         // TODO: find bid and prevTopBid for non-profile NFTs too.
@@ -209,6 +216,63 @@ const signHash = (
     })
 }
 
+const signHashProfile = (
+  _: any,
+  args: gql.MutationSignHashProfileArgs,
+  ctx: Context,
+): Promise<gql.SignHashOutput> => {
+  const privateKey = process.env.PUBLIC_SALE_KEY
+  const { user } = ctx
+
+  const reserved = core.reservedProfiles
+  const flattenedReserveList = [].concat(...Object.values(reserved))
+  const resevedMap = new Map(
+    flattenedReserveList.map(object => {
+      return [object, true]
+    }),
+  )
+  
+  return ctx.repositories.wallet.findByUserId(user.id)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        mintError.buildWalletEmpty(),
+        mintError.ErrorType.WalletEmpty,
+      ),
+    )).then((wallet) => {
+      if (resevedMap.get(args?.profileUrl?.toLowerCase())) {
+        throw appError.buildExists(
+          profileError.buildProfileInvalidReserveMsg(args?.profileUrl?.toLowerCase()),
+          profileError.ErrorType.ProfileInvalid,
+        )
+      }
+
+      if (blacklistBool(args?.profileUrl?.toLowerCase())) {
+        throw appError.buildExists(
+          profileError.buildProfileInvalidBlacklistMsg(args?.profileUrl?.toLowerCase()),
+          profileError.ErrorType.ProfileInvalid,
+        )
+      }
+
+      const ofacBool = OFAC[wallet[0]?.address]
+
+      if (ofacBool) {
+        throw appError.buildForbidden(`${wallet[0]?.address} is on OFAC`)
+      }
+
+      const hash = '0x' + abi.soliditySHA3(
+        ['address', 'string'],
+        [wallet[0]?.address, args?.profileUrl],
+      ).toString('hex')
+    
+      const sigObj = web3.eth.accounts.sign(hash, privateKey)
+    
+      return {
+        hash: sigObj.messageHash,
+        signature: sigObj.signature,
+      }
+    })
+}
+
 const cancelBid = (
   _: any,
   args: gql.MutationCancelBidArgs,
@@ -312,6 +376,7 @@ export default {
   Mutation: {
     bid: bid,
     signHash: combineResolvers(auth.isAuthenticated, signHash),
+    signHashProfile: combineResolvers(auth.isAuthenticated, signHashProfile),
     cancelBid: combineResolvers(auth.isAuthenticated, cancelBid),
     setProfilePreferences: combineResolvers(auth.isAuthenticated, setProfilePreferences),
   },

@@ -272,11 +272,11 @@
       },
       {
         "internalType": "address",
-        "name": "renter",
+        "name": "_licensee",
         "type": "address"
       }
     ],
-    "name": "extendRent",
+    "name": "extendLicense",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -335,6 +335,11 @@
         "internalType": "address",
         "name": "_nftErc20Contract",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "baseURI",
+        "type": "string"
       }
     ],
     "name": "initialize",
@@ -588,6 +593,19 @@
   {
     "inputs": [
       {
+        "internalType": "string",
+        "name": "defaultBaseURI_",
+        "type": "string"
+      }
+    ],
+    "name": "setBaseURI",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "_new",
         "type": "address"
@@ -649,14 +667,24 @@
         "internalType": "address",
         "name": "user",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "endIndex",
+        "type": "uint256"
       }
     ],
     "name": "tokenIdsOwned",
     "outputs": [
       {
-        "internalType": "bool[]",
+        "internalType": "uint256[]",
         "name": "",
-        "type": "bool[]"
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
