@@ -3,6 +3,6 @@ config:
   nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
   nftcom:ebInstance: t3.medium
   nftcom:ebAutoScaleMin: 2
-  nftcom:ebAutoScaleMax: 4
+  nftcom:ebAutoScaleMax: 6
   nftcom:nodeEnv: production
   nftcom:logLevel: INFO
