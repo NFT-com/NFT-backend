@@ -34,7 +34,6 @@ WORKDIR /app
 
 
 COPY --from=deps /app/prod_node_modules ./node_modules
-COPY --from=deps /app/packages/gql/fonts /usr/share/fonts
 
 COPY --from=build /app/packages/shared/package.json /app/packages/shared/package.json
 COPY --from=build /app/packages/shared/dist /app/packages/shared/dist
