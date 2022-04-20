@@ -96,7 +96,7 @@ export const typesenseCollectionSchemas = async (job: Job): Promise<any> => {
     
   client.collections().create(collCollectionSchema)
     .then(() => logger.debug('collections index schema created'))
-    .catch((err) => logger.info('collection index schema already created, skipping...' + err))
+    .catch(() => logger.info('collection index schema already created, skipping...'))
 
   // PROFILE SCHEMA (minted only)
   const profileFields = []
