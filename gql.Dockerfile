@@ -42,9 +42,6 @@ COPY --from=build /app/packages/gql/package.json /app/packages/gql/package.json
 COPY --from=build /app/packages/gql/dist /app/packages/gql/dist
 COPY --from=build /app/packages/gql/.env /app/packages/gql/.env
 
-RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
-RUN apk add --update --repository http://dl-3.alpinelinux.org/alpine/edge/testing libmount ttf-dejavu fontconfig
-
 WORKDIR /app/packages/gql
 
 EXPOSE 8080
