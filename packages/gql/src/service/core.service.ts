@@ -723,11 +723,14 @@ export const OFAC = {
 
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
 const validProfileRegex = /^[0-9a-z_]{1,100}$/
-export const blacklistBool = (inputUrl: string, includeReserved = true): boolean => {
+export const blacklistBool = (inputUrl: string, blockReserved: boolean): boolean => {
   const blacklisted = blacklistProfilePatterns.find((pattern) => pattern.test(inputUrl)) != null
+  if (!blockReserved) {
+    return blacklisted
+  }
   const reserved = Object.keys(reservedProfiles)
     .find((address) => reservedProfiles[address].includes(inputUrl)) != null
-  return includeReserved ? blacklisted || reserved : blacklisted
+  return blacklisted || reserved
 }
 
 let cachedSTS: STS = null
@@ -791,7 +794,7 @@ export const createProfile = (
             profileError.buildProfileInvalidEthMsg(profile.url),
             profileError.ErrorType.ProfileInvalid,
           )),
-        fp.rejectIf((profile: Partial<entity.Profile>) => blacklistBool(profile.url))(
+        fp.rejectIf((profile: Partial<entity.Profile>) => blacklistBool(profile.url, false))(
           appError.buildExists(
             profileError.buildProfileInvalidBlacklistMsg(profile.url),
             profileError.ErrorType.ProfileInvalid,
