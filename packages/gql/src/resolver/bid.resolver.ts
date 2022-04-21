@@ -240,10 +240,14 @@ const signHashProfile = (
       ),
     )).then((wallet) => {
       if (resevedMap.get(args?.profileUrl?.toLowerCase())) {
-        throw appError.buildExists(
-          profileError.buildProfileInvalidReserveMsg(args?.profileUrl?.toLowerCase()),
-          profileError.ErrorType.ProfileInvalid,
-        )
+        const potentialInsider = reserved[helper.checkSum(wallet[0]?.address)]
+
+        if (!potentialInsider || potentialInsider.indexOf(args?.profileUrl?.toLowerCase()) == -1) {
+          throw appError.buildExists(
+            profileError.buildProfileInvalidReserveMsg(args?.profileUrl?.toLowerCase()),
+            profileError.ErrorType.ProfileInvalid,
+          )
+        }
       }
 
       if (blacklistBool(args?.profileUrl?.toLowerCase())) {
