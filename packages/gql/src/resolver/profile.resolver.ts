@@ -269,7 +269,7 @@ const getBlockedProfileURI = (
   args: gql.QueryBlockedProfileUriArgs,
 ): Promise<boolean> => {
   logger.debug('getBlockedProfileURI', args.url)
-  return Promise.resolve(blacklistBool(args.url.toLowerCase()))
+  return Promise.resolve(blacklistBool(args.url.toLowerCase(), args.blockReserved))
 }
 
 const getInsiderReservedProfileURIs = (
