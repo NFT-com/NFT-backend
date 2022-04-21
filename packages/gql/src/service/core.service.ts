@@ -695,39 +695,39 @@ export const reservedProfiles = {
 }
 
 export const OFAC = {
-  '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c': true,
+  '0x8576aCC5C05D6Ce88f4e49bf65BdF0C62F91353C': true,
   '0x67d40EE1A85bf4a4Bb7Ffae16De985e8427B6b45': true,
-  '0x6f1ca141a28907f78ebaa64fb83a9088b02a8352': true,
-  '0x6acdfba02d390b97ac2b2d42a63e85293bcc160e': true,
-  '0x48549a34ae37b12f6a30566245176994e17c6b4a': true,
-  '0x5512d943ed1f7c8a43f3435c85f7ab68b30121b0': true,
-  '0xc455f7fd3e0e12afd51fba5c106909934d8a0e4a': true,
-  '0x1da5821544e25c636c1417ba96ade4cf6d2f9b5a': true,
+  '0x6F1cA141A28907F78Ebaa64fb83A9088b02A8352': true,
+  '0x6aCDFBA02D390b97Ac2b2d42A63E85293BCc160e': true,
+  '0x48549A34AE37b12F6a30566245176994e17C6b4A': true,
+  '0x5512d943eD1f7c8a43F3435C85F7aB68b30121b0': true,
+  '0xC455f7fd3e0e12afd51fba5c106909934D8A0e4a': true,
+  '0x1da5821544e25c636c1417Ba96Ade4Cf6D2f9B5A': true,
   '0x7Db418b5D567A4e0E8c59Ad71BE1FcE48f3E6107': true,
   '0x72a5843cc08275C8171E582972Aa4fDa8C397B2A': true,
   '0x7F19720A857F834887FC9A7bC0a0fBe7Fc7f8102': true,
   '0x7FF9cFad3877F21d41Da833E2F775dB0569eE3D9': true,
-  '0xd882cfc20f52f2599d84b8e8d58c7fb62cfe344b': true,
-  '0x901bb9583b24d97e995513c6778dc6888ab6870e': true,
-  '0xa7e5d5a720f06526557c513402f2e6b5fa20b008': true,
-  '0xfec8a60023265364d066a1212fde3930f6ae8da7': true,
+  '0xd882cFc20F52f2599D84b8e8D58C7FB62cfE344b': true,
+  '0x901bb9583b24D97e995513C6778dc6888AB6870e': true,
+  '0xA7e5d5A720f06526557c513402f2e6B5fA20b008': true,
+  '0xfEC8A60023265364D066a1212fDE3930F6Ae8da7': true,
   '0x7F367cC41522cE07553e823bf3be79A889DEbe1B': true,
-  '0x9f4cda013e354b8fc285bf4b9a60460cee7f7ea9': true,
-  '0x3cbded43efdaf0fc77b9c55f6fc9988fcc9b757d': true,
-  '0x2f389ce8bd8ff92de3402ffce4691d17fc4f6535': true,
-  '0xe7aa314c77f4233c18c6cc84384a9247c0cf367b': true,
-  '0x308ed4b7b49797e1a98d3818bff6fe5385410370': true,
-  '0x19aa5fe80d33a56d56c78e82ea5e50e5d80b4dff': true,
+  '0x9F4cda013E354b8fC285BF4b9A60460cEe7f7Ea9': true,
+  '0x3CBdeD43EFdAf0FC77b9C55F6fC9988fCC9b757d': true,
+  '0x2f389cE8bD8ff92De3402FFCe4691d17fC4f6535': true,
+  '0xe7aa314c77F4233C18C6CC84384A9247c0cf367B': true,
+  '0x308eD4B7b49797e1A98D3818bFF6fe5385410370': true,
+  '0x19Aa5Fe80D33a56D56c78e82eA5E50E5d80b4Dff': true,
   '0x098B716B8Aaf21512996dC57EB0615e2383E2f96': true,
 }
 
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
 const validProfileRegex = /^[0-9a-z_]{1,100}$/
-export const blacklistBool = (inputUrl: string): boolean => {
+export const blacklistBool = (inputUrl: string, includeReserved = true): boolean => {
   const blacklisted = blacklistProfilePatterns.find((pattern) => pattern.test(inputUrl)) != null
   const reserved = Object.keys(reservedProfiles)
     .find((address) => reservedProfiles[address].includes(inputUrl)) != null
-  return blacklisted || reserved
+  return includeReserved ? blacklisted || reserved : blacklisted
 }
 
 let cachedSTS: STS = null

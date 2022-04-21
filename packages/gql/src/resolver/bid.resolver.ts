@@ -250,14 +250,14 @@ const signHashProfile = (
         }
       }
 
-      if (blacklistBool(args?.profileUrl?.toLowerCase())) {
+      if (blacklistBool(args?.profileUrl?.toLowerCase(), false)) {
         throw appError.buildExists(
           profileError.buildProfileInvalidBlacklistMsg(args?.profileUrl?.toLowerCase()),
           profileError.ErrorType.ProfileInvalid,
         )
       }
 
-      const ofacBool = OFAC[wallet[0]?.address]
+      const ofacBool = OFAC[helper.checkSum(wallet[0]?.address)]
 
       if (ofacBool) {
         throw appError.buildForbidden(`${wallet[0]?.address} is on OFAC`)
