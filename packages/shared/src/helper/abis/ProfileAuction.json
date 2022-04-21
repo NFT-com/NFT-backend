@@ -110,6 +110,38 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "_length",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_premium",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewLengthPremium",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewYearlyFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "string",
         "name": "_profileUrl",
         "type": "string"
@@ -135,6 +167,19 @@
       }
     ],
     "name": "Upgraded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_years",
+        "type": "uint256"
+      }
+    ],
+    "name": "YearsToOwn",
     "type": "event"
   },
   {
@@ -325,7 +370,7 @@
         "type": "address"
       },
       {
-        "internalType": "contract NftProfile",
+        "internalType": "address",
         "name": "_nftProfile",
         "type": "address"
       },
@@ -410,7 +455,7 @@
     "name": "nftProfile",
     "outputs": [
       {
-        "internalType": "contract NftProfile",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
