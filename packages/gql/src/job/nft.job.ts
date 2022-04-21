@@ -276,7 +276,7 @@ const updateEntity = async (
         })
     }
   } catch (err) {
-    console.log('error: ', err)
+    console.log('error update entity: ', err)
   }
 }
 
@@ -303,7 +303,7 @@ export const checkNFTContractAddresses = async (
       await filterNFTsWithAlchemy(nftChunk, walletAddress)
     })
   } catch (err) {
-    console.log('error: ', err)
+    console.log('error check nft contract address: ', err)
     return []
   }
 }
@@ -325,7 +325,7 @@ const checkOwnedNFTs = async (users: entity.User[]): Promise<void[]> => {
       }),
     )
   } catch (err) {
-    console.log('error: ', err)
+    console.log('error check owned NFTs: ', err)
     return []
   }
 }
@@ -375,6 +375,6 @@ export const getUsersNFTs = async (job: Job): Promise<any> => {
     await checkOwnedNFTs(users)
     return await getOwnedNFTs(users)
   } catch (err) {
-    console.log('error: ', err)
+    console.log('error fetching nft data: ', err)
   }
 }
