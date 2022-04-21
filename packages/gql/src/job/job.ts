@@ -21,11 +21,11 @@ const queuePrefix = 'queue'
 
 const queues: { [key: string]: Bull.Queue } = {}
 
-const PROD = process.env.ASSET_BUCKET === 'nftcom-prod-assets'
+const networkList = process.env.SUPPORTED_NETWORKS.replace('ethereum:', '').split(':')
 const networks = new Map()
 networks.set(
-  PROD ? '0' : '4',
-  PROD ? 'mainnet' : 'rinkeby',
+  networkList[0],
+  networkList[1],
 )
 
 const createQueues = (): void => {
