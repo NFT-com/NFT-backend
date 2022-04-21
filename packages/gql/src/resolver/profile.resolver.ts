@@ -1,5 +1,4 @@
 import aws from 'aws-sdk'
-import STS from 'aws-sdk/clients/sts'
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
@@ -13,6 +12,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
+import { generateCompositeImage, getAWSConfig } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { blacklistBool } from '../service/core.service'
@@ -25,14 +25,6 @@ type S3UploadStream = {
   writeStream: stream.PassThrough
   promise: Promise<aws.S3.ManagedUpload.SendData>
 };
-
-let cachedSTS: STS = null
-const getSTS = (): STS => {
-  if (helper.isEmpty(cachedSTS)) {
-    cachedSTS = new STS()
-  }
-  return cachedSTS
-}
 
 const client = new Typesense.Client({
   'nodes': [{
@@ -356,21 +348,6 @@ const profileClaimed = (
     })
 }
 
-const getAWSConfig = async (): Promise<aws.S3> => {
-  const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
-  const params: STS.AssumeRoleRequest = {
-    RoleArn: assetBucket.role,
-    RoleSessionName: sessionName,
-  }
-  const response = await getSTS().assumeRole(params).promise()
-  aws.config.update({
-    accessKeyId: response.Credentials.AccessKeyId,
-    secretAccessKey: response.Credentials.SecretAccessKey,
-    sessionToken: response.Credentials.SessionToken,
-  })
-  return new aws.S3()
-}
-
 const checkFileSize = async (
   createReadStream: FileUpload['createReadStream'],
   maxSize: number,
@@ -510,6 +487,28 @@ const uploadProfileImages = async (
   return profile
 }
 
+const createCompositeImage = async (
+  _: any,
+  args: gql.MutationCreateCompositeImageArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { repositories } = ctx
+  const { profileId } = args.input
+  let profile = await repositories.profile.findById(profileId)
+  if (!profile) {
+    return Promise.reject(appError.buildNotFound(
+      profileError.buildProfileNotFoundMsg(profileId),
+      profileError.ErrorType.ProfileNotFound,
+    ))
+  }
+
+  const imageURL = await generateCompositeImage(profile.url)
+  profile = await repositories.profile.updateOneById(profileId, {
+    photoURL: imageURL,
+  })
+  return profile
+}
+
 const getLatestProfiles = (
   _: any,
   args: gql.QueryLatestProfilesArgs,
@@ -548,6 +547,7 @@ export default {
     updateProfile: combineResolvers(auth.isAuthenticated, updateProfile),
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
+    createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
   },
   Profile: {
     followersCount: getFollowersCount,

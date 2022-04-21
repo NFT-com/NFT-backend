@@ -74,6 +74,10 @@ input UploadProfileImagesInput {
   description: String
 }
 
+input CreateCompositeImageInput {
+  profileId: ID!
+}
+
 input LatestProfilesInput {
   pageInput: PageInput
 }
@@ -96,4 +100,5 @@ extend type Mutation {
   profileClaimed(input: ProfileClaimedInput!): Profile!
   mintGKProfile(input: MintGKProfileInput): String!
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
+  createCompositeImage(input: CreateCompositeImageInput): Profile!
 }

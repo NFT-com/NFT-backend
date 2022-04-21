@@ -29,7 +29,7 @@ type MarketBid {
   auctionType: AuctionType!
 }
 
-input BidsInput {
+input MarketBidsInput {
   makerAddress: Address
   marketAskId: String
   pageInput: PageInput
@@ -59,7 +59,7 @@ input CancelBidInput {
 
 
 extend type Query {
-  getBids(input: BidsInput!): GetMarketBid!
+  getBids(input: MarketBidsInput!): GetMarketBid!
 }
 
 extend type Mutation {
