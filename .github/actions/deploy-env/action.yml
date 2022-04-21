@@ -59,7 +59,6 @@ runs:
         ZMOK_API_URL: ${{ fromJSON(inputs.secrets).ZMOK_API_URL }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
         ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
-        ALCHEMY_NFT_API_URL: ${{ fromJSON(inputs.secrets).ALCHEMY_NFT_API_URL }}
         SENTRY_DSN: ${{ fromJSON(inputs.secrets).SENTRY_DSN }}
         PUBLIC_SALE_KEY: ${{ fromJSON(inputs.secrets).PUBLIC_SALE_KEY }}
         SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}
