@@ -10,11 +10,12 @@ COPY packages/gql/package.json ./packages/gql/package.json
 
 # add tools for native dependencies (node-gpy)
 RUN apk add --no-cache --virtual .gyp python3 make g++ \
-    && npm set progress=false \ 
-    && npm install --production \ 
-    && cp -R node_modules prod_node_modules \ 
-    && npm install \ 
+    && npm set progress=false \
+    && npm install --production \
+    && cp -R node_modules prod_node_modules \
+    && npm install \
     && apk del .gyp
+
 
 COPY packages/shared ./packages/shared
 COPY packages/gql ./packages/gql
@@ -30,6 +31,7 @@ RUN npm run build
 FROM node:16-alpine as release
 
 WORKDIR /app
+
 
 COPY --from=deps /app/prod_node_modules ./node_modules
 

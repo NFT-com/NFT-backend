@@ -1,7 +1,11 @@
-import { getChain } from '@nftcom/gql/config'
+import aws from 'aws-sdk'
+import STS from 'aws-sdk/clients/sts'
+
+import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError,walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
+import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { _logger, defs, entity, fp, helper, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -726,6 +730,50 @@ export const blacklistBool = (inputUrl: string): boolean => {
   return blacklisted || reserved
 }
 
+let cachedSTS: STS = null
+const getSTS = (): STS => {
+  if (helper.isEmpty(cachedSTS)) {
+    cachedSTS = new STS()
+  }
+  return cachedSTS
+}
+
+export const getAWSConfig = async (): Promise<aws.S3> => {
+  const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
+  const params: STS.AssumeRoleRequest = {
+    RoleArn: assetBucket.role,
+    RoleSessionName: sessionName,
+  }
+  const response = await getSTS().assumeRole(params).promise()
+  aws.config.update({
+    accessKeyId: response.Credentials.AccessKeyId,
+    secretAccessKey: response.Credentials.SecretAccessKey,
+    sessionToken: response.Credentials.SessionToken,
+  })
+  return new aws.S3()
+}
+
+export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
+  const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
+  // 1. generate placeholder image buffer with profile url...
+  const buffer = generateSVG(url.toUpperCase())
+  // 2. upload buffer to s3...
+  const s3 = await getAWSConfig()
+  const imageKey = Date.now().toString() + '-' + profileURL + '.svg'
+  try {
+    const res = await s3.upload({
+      Bucket: assetBucket.name,
+      Key: imageKey,
+      Body: buffer,
+      ContentType: 'image/svg+xml',
+    }).promise()
+    return res.Location
+  } catch (e) {
+    logger.debug('generateCompositeImage', e)
+    throw e
+  }
+}
+
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
@@ -750,7 +798,11 @@ export const createProfile = (
           )),
       ]),
     ))
-    .then(() => ctx.repositories.profile.save(profile))
+    .then(() => ctx.repositories.profile.save(profile)
+      .then((savedProfile: entity.Profile) =>
+        generateCompositeImage(savedProfile.url)
+          .then((imageURL: string) =>
+            ctx.repositories.profile.updateOneById(savedProfile.id, { photoURL: imageURL }))))
 }
 
 export const createEdge = (

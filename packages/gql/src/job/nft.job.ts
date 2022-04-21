@@ -11,8 +11,8 @@ const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
-const ALCHEMY_NFT_API_URL = process.env.ALCHEMY_NFT_API_URL
-const web3 = createAlchemyWeb3(ALCHEMY_NFT_API_URL)
+const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY

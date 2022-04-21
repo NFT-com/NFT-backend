@@ -1,23 +1,13 @@
 import { ethers, providers } from 'ethers'
 
 export const provider = (
-  chainId: providers.Networkish = 4, /* mainnet */
+  chainId: providers.Networkish = 1, //mainnet default
 ): ethers.providers.BaseProvider => {
   return new ethers.providers.FallbackProvider([
-    // lower value prio picked first 
-    // weight decides quorum - 50% for successful response
+    // using zmok exclusively, can add additional providers if needed (need paid subscription)
+    // https://docs.ethers.io/v5/api/providers/other/#FallbackProvider
     {
       priority: 1,
-      weight: 2,
-      provider: new ethers.providers.AlchemyProvider(chainId, process.env.ALCHEMY_API_KEY),
-    },
-    {
-      priority: 2,
-      weight: 2,
-      provider: new ethers.providers.InfuraProvider(chainId, process.env.INFURA_API_KEY),
-    },
-    {
-      priority: 3,
       weight: 1,
       provider: new ethers.providers.JsonRpcProvider(process.env.ZMOK_API_URL, chainId),
     },
