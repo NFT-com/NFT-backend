@@ -196,7 +196,7 @@ export function genesisKeyDistributor(chainId: string | number = 'mainnet'): str
   }
 }
 
-export const MintedProfileTopic = '0x848fe9120700715213a041f29982f684fa481b289b434ac7e2b36785af0a3826'
+export const MintedProfileTopic = '0xfdbd996e3e72e8c7d34fc2f374c3c85c80a530bd1cdaa4a748d34e32103c5cc3'
 
 export function validationLogicABI(): any {
   return validationLogicABIJSON

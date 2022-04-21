@@ -17,13 +17,15 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
   try {
     logger.debug('syncing profile nfts', job.data)
 
-    const profiles = await repositories.profile.findAll()
+    let profiles = await repositories.profile.findAll()
+    let newTokenId = false
 
     const nftProfileContract = typechain.NftProfile__factory.connect(
       contracts.nftProfileAddress(job.data.chainId),
       provider.provider(Number(job.data.chainId)),
     )
 
+    // getTokenIds for everyone
     profiles.forEach(async (profile: entity.Profile) => {
       let tokenId
 
@@ -35,13 +37,19 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
             ...profile,
           })
           logger.debug('saved tokenId', tokenId)
+          newTokenId = true
         }
-        logger.debug(`getTokenId ${profile.url} => ${tokenId}`)
+        logger.debug(`existing tokenId ${profile.url} => ${tokenId}`)
       } catch (getTokenIdErr) {
         // catch if profile doesn't exist yet
         tokenId = -1
       }
+    })
 
+    profiles = newTokenId ? await repositories.profile.findAll() : profiles
+    
+    for (let i = 0; i < profiles.length; i++) {
+      const { tokenId } = profiles[i]
       const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
   
       const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
@@ -49,23 +57,25 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
         address,
       )
 
-      logger.debug(`address: ${address}, profile: ${profile.url}, tokenId: ${tokenId}`)
+      logger.debug(`address: ${address}, profile: ${profiles[i].url}, tokenId: ${tokenId}`)
               
       // wallet exists, so update user accordingly
       if (foundWallet) {
+        logger.debug('saved existing profile user wallet')
         repositories.profile.save({
-          ...profile,
+          ...profiles[i],
           ownerUserId: foundWallet.userId,
           ownerWalletId: foundWallet.id,
         })
       } else {
+        logger.debug('non user wallet for profile')
         repositories.profile.save({
-          ...profile,
+          ...profiles[i],
           ownerUserId: null,
           ownerWalletId: null,
         })
       }
-    })
+    }
   } catch (err) {
     console.log('error: ', err)
   }

@@ -1,10 +1,10 @@
 import { Job } from 'bull'
 import cryptoRandomString from 'crypto-random-string'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
-import { Contract, ethers, Wallet } from 'ethers'
+import { ethers, utils } from 'ethers'
 
 import { auth } from '@nftcom/gql/helper'
-import { _logger, contracts, db, defs, entity, fp, provider } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, fp, helper,provider } from '@nftcom/shared'
 
 import HederaConsensusService from '../service/hedera.service'
 
@@ -12,39 +12,8 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
 
-// TODO: migrate to Typechain
-const getContract = (chainId: number): Contract => {
-  const signer = Wallet.fromMnemonic(contracts.getProfileAuctionMnemonic(chainId))
-    .connect(provider.provider(Number(chainId)))
-
-  return new ethers.Contract(
-    contracts.profileAuctionAddress(chainId),
-    contracts.profileAuctionABI(),
-    signer,
-  )
-}
-
 const onlyUnique = (value, index, self: any[]): boolean => {
   return self.indexOf(value) === index
-}
-
-// includes bids for profiles and genesis keys
-const filterLiveBids = (bids: entity.Bid[]): Promise<entity.Bid[]> => {
-  return Promise.all([
-    bids,
-    repositories.profile.find({ where: { status: defs.ProfileStatus.Available } })
-      .then(profiles => profiles.map((profile: entity.Profile) => profile.id)
-        .reduce(function(map, item) {
-          map[item] = true
-          return map
-        }, {})), // returns mapping for constant lookup
-  ]).then(([bids, availableProfilesIds]: [entity.Bid[], string[]]) => {
-    return bids.filter(  // second promise filters all remaining valid bids
-      (bid: entity.Bid) =>
-        (bid.nftType == defs.NFTType.Profile && availableProfilesIds[bid.profileId]) ||
-        bid.nftType == defs.NFTType.GenesisKey,
-    ) // filter only non-executed bids for available handles and genesis keys
-  })
 }
 
 // size of each array for balances for NFT and WETH
@@ -148,49 +117,52 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
   }
 }
 
+const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
+
 export const getEthereumEvents = (job: Job): Promise<any> => {
   try {
     const { chainId } = job.data
-    const contract = getContract(chainId)
+
+    const topics = [
+      helper.id('MintedProfile(address,string,uint256,uint256,uint256)'),
+    ]
+
+    const chainProvider = provider.provider(Number(chainId))
+
+    const filter = {
+      address: helper.checkSum(contracts.profileAuctionAddress(chainId)),
+      topics: topics,
+      fromBlock: chainId == 4 ? 10540040 : 14629780, // mainnet
+    }
 
     logger.debug('getting Ethereum Events')
-
-    // go through all bids and determine which ones are valid
-    // valid bids:
-    //  * have enough NFT tokens under address if for profile
-    //  * have enough ETH tokens under address for genesis key
-    //  * are bids for an available profile (search profiles for urls for status)
-
-    const filter = { address: contract.address }
 
     return repositories.bid.find({
       where: [{
         nftType: defs.NFTType.GenesisKey,
         status: defs.BidStatus.Submitted,
-      },
-      {
-        nftType: defs.NFTType.Profile,
-        status: defs.BidStatus.Submitted,
       }],
-    }).then((bids: entity.Bid[]) => Promise.all([
-      filterLiveBids(bids),
-      contract.queryFilter(filter),
-    ])).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
+    }).then((bids: entity.Bid[]) => {
+      return Promise.all([
+        bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey),
+        chainProvider.getLogs(filter),
+      ])}).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
       logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
 
       return Promise.all([
         validateLiveBalances(filteredBids, chainId),
-        events.map((evt) => {
-          console.log(`Found event ${evt.event} with chainId: ${chainId}, ${evt.args}`)
+        events.map((unparsedEvent) => {
+          const evt = profileAuctioninterface.parseLog(unparsedEvent)
+          console.log(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
           const [owner,profileUrl,tokenId,,] = evt.args
 
-          switch (evt.event) {
+          switch (evt.name) {
           case 'MintedProfile':
             return repositories.event.exists({
               chainId,
               ownerAddress: owner,
               profileUrl: profileUrl,
-              txHash: evt.transactionHash,
+              txHash: unparsedEvent.transactionHash,
             }).then(existsBool => {
               if (!existsBool) {
                 // find and mark profile status as minted
@@ -230,9 +202,9 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                   repositories.event.save(
                     {
                       chainId,
-                      contract: contract.address,
-                      eventName: evt.event,
-                      txHash: evt.transactionHash,
+                      contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
+                      eventName: evt.name,
+                      txHash: unparsedEvent.transactionHash,
                       ownerAddress: owner,
                       profileUrl: profileUrl,
                     },

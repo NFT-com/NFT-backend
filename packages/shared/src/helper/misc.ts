@@ -73,6 +73,10 @@ export const checkSum = (input: string): string => {
   return utils.getAddress(input)
 }
 
+export const id = (input: string): string => {
+  return utils.id(input)
+}
+
 export const encode = (types: string[], values: any[]): string => {
   return utils.defaultAbiCoder.encode(types, values)
 }
