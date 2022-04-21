@@ -246,7 +246,7 @@ const signHashProfile = (
         )
       }
 
-      if (blacklistBool(args?.profileUrl?.toLowerCase())) {
+      if (blacklistBool(args?.profileUrl?.toLowerCase(), false)) {
         throw appError.buildExists(
           profileError.buildProfileInvalidBlacklistMsg(args?.profileUrl?.toLowerCase()),
           profileError.ErrorType.ProfileInvalid,
