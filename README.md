@@ -1,6 +1,6 @@
 # NFT.com backend
 
-NFT.com platform's GraphQL server and worker to sync Blockchain data.
+NFT.com platform's GraphQL server
 
 ## Getting Started
 
