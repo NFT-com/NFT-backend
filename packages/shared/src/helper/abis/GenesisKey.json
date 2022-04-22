@@ -26,6 +26,16 @@
   },
   {
     "inputs": [],
+    "name": "LockUpUnavailable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MaxSupply",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "MintToZeroAddress",
     "type": "error"
   },
@@ -156,19 +166,6 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "hash",
-        "type": "bytes32"
-      }
-    ],
-    "name": "BidCancelled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
         "internalType": "address",
         "name": "_user",
         "type": "address"
@@ -193,31 +190,6 @@
       }
     ],
     "name": "ClaimedGenesisKey",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "_user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "_amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "_blockNum",
-        "type": "uint256"
-      }
-    ],
-    "name": "NewClaimableGenKey",
     "type": "event"
   },
   {
@@ -259,6 +231,19 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "MAX_SUPPLY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -293,19 +278,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "bigMint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -365,13 +337,42 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "finalWethPrice",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "tokenId",
         "type": "uint256"
+      }
+    ],
+    "name": "currentXP",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "locked",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "current",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "total",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "finalEthPrice",
+    "outputs": [
+      {
+        "internalType": "uint96",
+        "name": "",
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
@@ -437,12 +438,12 @@
   },
   {
     "inputs": [],
-    "name": "initialWethPrice",
+    "name": "initialEthPrice",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
@@ -459,11 +460,6 @@
         "internalType": "string",
         "name": "symbol",
         "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_wethAddress",
-        "type": "address"
       },
       {
         "internalType": "address",
@@ -494,14 +490,14 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_initialWethPrice",
-        "type": "uint256"
+        "internalType": "uint96",
+        "name": "_initialEthPrice",
+        "type": "uint96"
       },
       {
-        "internalType": "uint256",
-        "name": "_finalWethPrice",
-        "type": "uint256"
+        "internalType": "uint96",
+        "name": "_finalEthPrice",
+        "type": "uint96"
       }
     ],
     "name": "initializePublicSale",
@@ -535,12 +531,12 @@
   },
   {
     "inputs": [],
-    "name": "lastClaimTime",
+    "name": "lockupBoolean",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "bool",
         "name": "",
-        "type": "uint256"
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -664,9 +660,9 @@
     "name": "publicSaleDurationSeconds",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
@@ -677,9 +673,9 @@
     "name": "publicSaleStartSecond",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
@@ -703,19 +699,12 @@
     "name": "remainingTeamAdvisorGrant",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "resetPublicSale",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -790,19 +779,6 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "defaultBaseURI_",
-        "type": "string"
-      }
-    ],
-    "name": "setBaseURI",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_newMK",
         "type": "address"
@@ -855,9 +831,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "_seconds",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "name": "setPublicSaleDuration",
@@ -957,30 +933,21 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "startIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "endIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "tokenIdsOwned",
-    "outputs": [
-      {
         "internalType": "uint256[]",
-        "name": "",
+        "name": "tokenIds",
         "type": "uint256[]"
       }
     ],
-    "stateMutability": "view",
+    "name": "toggleLockup",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "toggleLockupBoolean",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1095,19 +1062,6 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "wethAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",

@@ -164,6 +164,19 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "from",
@@ -295,6 +308,25 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_string",
+        "type": "string"
+      }
+    ],
+    "name": "getExpiryTimeline",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -490,9 +522,9 @@
     "name": "protocolFee",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
@@ -593,19 +625,6 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "defaultBaseURI_",
-        "type": "string"
-      }
-    ],
-    "name": "setBaseURI",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_new",
         "type": "address"
@@ -625,6 +644,19 @@
       }
     ],
     "name": "setProfileAuction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint96",
+        "name": "_fee",
+        "type": "uint96"
+      }
+    ],
+    "name": "setProtocolFee",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -656,35 +688,6 @@
         "internalType": "string",
         "name": "",
         "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "startIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "endIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "tokenIdsOwned",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",

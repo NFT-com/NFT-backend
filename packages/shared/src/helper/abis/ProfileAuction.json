@@ -639,6 +639,19 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_new",
+        "type": "address"
+      }
+    ],
+    "name": "setGovernor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_length",
         "type": "uint256"
@@ -696,9 +709,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "_fee",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "name": "setYearlyFee",
@@ -709,9 +722,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "_years",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "name": "setYearsToOwn",
@@ -792,9 +805,9 @@
     "name": "yearlyFee",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
@@ -805,9 +818,9 @@
     "name": "yearsToOwn",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint96",
         "name": "",
-        "type": "uint256"
+        "type": "uint96"
       }
     ],
     "stateMutability": "view",
