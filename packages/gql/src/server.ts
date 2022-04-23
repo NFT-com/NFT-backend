@@ -112,6 +112,7 @@ export const start = async (): Promise<void> => {
   const httpServer = http.createServer(app)
 
   app.use(Sentry.Handlers.requestHandler())
+  app.use(cors())
 
   // TODO: user CDN urls later for default image and header
   app.get('/uri/:username', function (req, res) {
