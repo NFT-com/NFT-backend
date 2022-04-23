@@ -1,4 +1,4 @@
-import { ApolloServerPluginDrainHttpServer } from 'apollo-server-core'
+import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
 import { utils } from 'ethers'
 import express from 'express'
@@ -168,12 +168,18 @@ export const start = async (): Promise<void> => {
   })
 
   server = new ApolloServer({
-    introspection: false,
+    //gql schema only visibly locally
+    introspection: process.env.NODE_ENV === 'local',
     resolvers: resolvers,
     typeDefs: typeDefs(),
     context: createContext,
     formatError,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    // disable landingPage for prod
+    plugins: [
+      process.env.NODE_ENV === 'production'
+        ? ApolloServerPluginLandingPageDisabled()
+        : ApolloServerPluginDrainHttpServer({ httpServer }),
+    ],
   })
 
   app.use(Sentry.Handlers.errorHandler())
