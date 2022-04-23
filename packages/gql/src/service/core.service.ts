@@ -756,6 +756,18 @@ export const getAWSConfig = async (): Promise<aws.S3> => {
   return new aws.S3()
 }
 
+export const s3ToCdn = (s3URL: string): string => {
+  if (s3URL.indexOf('nftcom-dev-assets') > -1) {
+    return s3URL.replace('https://nftcom-dev-assets.s3.amazonaws.com/', 'https://cdn.nft.com/dev/')
+  } else if (s3URL.indexOf('nftcom-staging-assets') > -1) {
+    return s3URL.replace('https://nftcom-staging-assets.s3.amazonaws.com/', 'https://cdn.nft.com/staging/')
+  } else if (s3URL.indexOf('nftcom-prod-assets') > -1) {
+    return s3URL.replace('https://nftcom-prod-assets.s3.amazonaws.com/', 'https://cdn.nft.com/')
+  } else {
+    return s3URL
+  }
+}
+
 export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
@@ -770,7 +782,7 @@ export const generateCompositeImage = async ( profileURL: string): Promise<strin
       Body: buffer,
       ContentType: 'image/svg+xml',
     }).promise()
-    return res.Location
+    return s3ToCdn(res.Location)
   } catch (e) {
     logger.debug('generateCompositeImage', e)
     throw e
@@ -782,8 +794,8 @@ export const createProfile = (
   profile: Partial<entity.Profile>,
 ): Promise<entity.Profile> => {
   return ctx.repositories.profile.findByURL(profile.url)
-    .then(fp.thruIfEmpty((profile) =>
-      Promise.all([
+    .then(fp.thruIfEmpty(() => {
+      return Promise.all([
         fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
           appError.buildExists(
             profileError.buildProfileInvalidCharMsg(profile.url),
@@ -799,13 +811,18 @@ export const createProfile = (
             profileError.buildProfileInvalidBlacklistMsg(profile.url),
             profileError.ErrorType.ProfileInvalid,
           )),
-      ]),
-    ))
-    .then(() => ctx.repositories.profile.save(profile)
-      .then((savedProfile: entity.Profile) =>
-        generateCompositeImage(savedProfile.url)
-          .then((imageURL: string) =>
-            ctx.repositories.profile.updateOneById(savedProfile.id, { photoURL: imageURL }))))
+      ])
+    }))
+    .then(() => {
+      return ctx.repositories.profile.save(profile)
+        .then((savedProfile: entity.Profile) =>
+          generateCompositeImage(savedProfile.url)
+            .then((imageURL: string) =>
+              ctx.repositories.profile.updateOneById(
+                savedProfile.id,
+                { photoURL: imageURL },
+              )))
+    })
 }
 
 export const createEdge = (
