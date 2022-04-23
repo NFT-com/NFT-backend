@@ -179,18 +179,15 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                             referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
                           })
                             .then((user: entity.User) =>
-                              Promise.all([
-                                user,
-                                repositories.wallet.save({
-                                  address: ethers.utils.getAddress(owner),
-                                  network: 'ethereum',
-                                  chainId: chainId,
-                                  chainName: chain.name,
-                                  userId: user.id,
-                                }),
-                              ]))
+                              repositories.wallet.save({
+                                address: ethers.utils.getAddress(owner),
+                                network: 'ethereum',
+                                chainId: chainId,
+                                chainName: chain.name,
+                                userId: user.id,
+                              }))
                         }))
-                        .then(([user, wallet]: [entity.User, entity.Wallet]) => {
+                        .then((wallet: entity.Wallet) => {
                           const ctx = {
                             chain: {
                               id: wallet.chainId,
@@ -198,7 +195,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                             },
                             network: 'Ethereum',
                             repositories: repositories,
-                            user,
+                            user: null,
                             wallet,
                           }
                           return core.createProfile(ctx, {
@@ -207,26 +204,24 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                             tokenId: tokenId.toString(),
                             ownerWalletId: wallet.id,
                             ownerUserId: wallet.userId,
-                          })
+                          }).then(() => repositories.event.save(
+                            {
+                              chainId,
+                              contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
+                              eventName: evt.name,
+                              txHash: unparsedEvent.transactionHash,
+                              ownerAddress: owner,
+                              profileUrl: profileUrl,
+                            },
+                          )).then(() => HederaConsensusService.submitMessage(
+                            `Profile ${ profileUrl } was minted by address ${ owner }`,
+                          ))
                         })
                     }))
                     .then(fp.thruIfNotEmpty((profile) => {
                       profile.status = defs.ProfileStatus.Owned
                       repositories.profile.save(profile)
                     })),
-                  repositories.event.save(
-                    {
-                      chainId,
-                      contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
-                      eventName: evt.name,
-                      txHash: unparsedEvent.transactionHash,
-                      ownerAddress: owner,
-                      profileUrl: profileUrl,
-                    },
-                  ),
-                  HederaConsensusService.submitMessage(
-                    `Profile ${ profileUrl } was minted by address ${ owner }`,
-                  ),
                 ])
               }
             })
