@@ -2,16 +2,17 @@ import Bull from 'bull'
 
 import { redisConfig } from '@nftcom/gql/config'
 import {
-  MARKETPLACE_SYNC_JOB,
+  //MARKETPLACE_SYNC_JOB,
   NFT_COLLECTION_JOB,
   PROFILE_SYNC_JOB,
-  TYPESENSE_INDEX_SCHEMA_JOB,
+  //TYPESENSE_INDEX_SCHEMA_JOB,
 } from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
-import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
 import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
-import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
+// DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+// import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
+// import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
 
 const redis = {
   host: redisConfig.host,
@@ -45,16 +46,16 @@ const createQueues = (): void => {
     prefix: queuePrefix,
     redis,
   })
+  // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+  // queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
+  //   prefix: queuePrefix,
+  //   redis,
+  // })
 
-  queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
-    prefix: queuePrefix,
-    redis,
-  })
-
-  queues[TYPESENSE_INDEX_SCHEMA_JOB] = new Bull(TYPESENSE_INDEX_SCHEMA_JOB, {
-    prefix: queuePrefix,
-    redis,
-  })
+  // queues[TYPESENSE_INDEX_SCHEMA_JOB] = new Bull(TYPESENSE_INDEX_SCHEMA_JOB, {
+  //   prefix: queuePrefix,
+  //   redis,
+  // })
 }
 
 const listenToJobs = (): Promise<void[]> => {
@@ -65,10 +66,11 @@ const listenToJobs = (): Promise<void[]> => {
       return queue.process(getUsersNFTs)
     case PROFILE_SYNC_JOB:
       return queue.process(syncProfileNFTs)
-    case MARKETPLACE_SYNC_JOB:
-      return queue.process(syncMarketplace)
-    case TYPESENSE_INDEX_SCHEMA_JOB:
-      return queue.process(typesenseCollectionSchemas)
+    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+    // case MARKETPLACE_SYNC_JOB:
+    //   return queue.process(syncMarketplace)
+    // case TYPESENSE_INDEX_SCHEMA_JOB:
+    //   return queue.process(typesenseCollectionSchemas)
     default:
       return queue.process(getEthereumEvents)
     }
@@ -96,22 +98,23 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         repeat: { every: 60000 * 3 },
         jobId: 'profile_sync_job',
       })
-    case MARKETPLACE_SYNC_JOB:
-      return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
-        removeOnComplete: true,
-        removeOnFail: true,
-        // repeat every 5 minute for nft marketplace job
-        repeat: { every: 60000 * 5 },
-        jobId: 'marketplace_sync_job',
-      })
-    case TYPESENSE_INDEX_SCHEMA_JOB:
-      return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
-        // no repeat options, only run once with top prio 
-        priority: 1,
-        removeOnComplete: true,
-        removeOnFail: true,
-        jobId: 'typesense_index_job',
-      })
+    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+    // case MARKETPLACE_SYNC_JOB:
+    //   return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
+    //     removeOnComplete: true,
+    //     removeOnFail: true,
+    //     // repeat every 5 minute for nft marketplace job
+    //     repeat: { every: 60000 * 5 },
+    //     jobId: 'marketplace_sync_job',
+    //   })
+    // case TYPESENSE_INDEX_SCHEMA_JOB:
+    //   return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
+    //     // no repeat options, only run once with top prio 
+    //     priority: 1,
+    //     removeOnComplete: true,
+    //     removeOnFail: true,
+    //     jobId: 'typesense_index_job',
+    //   })
     default:
       return queues[chainId].add({ chainId }, {
         removeOnComplete: true,

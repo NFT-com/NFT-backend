@@ -11,6 +11,7 @@ import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { authMessage, isProduction, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
@@ -167,7 +168,7 @@ export const start = async (): Promise<void> => {
   })
 
   server = new ApolloServer({
-    introspection: helper.isFalse(isProduction()),
+    introspection: false,
     resolvers: resolvers,
     typeDefs: typeDefs(),
     context: createContext,
