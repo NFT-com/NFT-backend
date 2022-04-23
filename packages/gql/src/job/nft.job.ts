@@ -2,8 +2,8 @@ import { Job } from 'bull'
 import { BigNumber, ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
-import Typesense from 'typesense'
 
+//import Typesense from 'typesense'
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 
@@ -14,18 +14,19 @@ const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+// TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
+// const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+// const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
-const client = new Typesense.Client({
-  'nodes': [{
-    'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
-  }],
-  'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 10,
-})
+// const client = new Typesense.Client({
+//   'nodes': [{
+//     'host': TYPESENSE_HOST,
+//     'port': 443,
+//     'protocol': 'https',
+//   }],
+//   'apiKey': TYPESENSE_API_KEY,
+//   'connectionTimeoutSeconds': 10,
+// })
 
 interface OwnedNFT {
   contract: {
@@ -168,7 +169,7 @@ const updateEntity = async (
   walletId: string,
 ): Promise<void> => {
   let newNFT
-  let newCollection
+  // let newCollection
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -219,7 +220,7 @@ const updateEntity = async (
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then(async (collectionName: string) => {
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
-              newCollection = true
+              //newCollection = true
 
               return repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
@@ -228,40 +229,40 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
+          // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY 
           // save collection in typesense search  if new
-          if (newCollection) {
-            const indexCollection = []
-            indexCollection.push({
-              id: collection.id,
-              contract: collection.contract,
-              name: collection.name,
-              createdAt: collection.createdAt,
-            })
-
-            client.collections('collections').documents().import(indexCollection, { action: 'create' })
-              .then(() => logger.debug('collection added to typesense index'))
-              .catch(() => logger.info('error: could not save collection in typesense: '))
-          }
+          // if (newCollection) {
+          //   const indexCollection = []
+          //   indexCollection.push({
+          //     id: collection.id,
+          //     contract: collection.contract,
+          //     name: collection.name,
+          //     createdAt: collection.createdAt,
+          //   })
+          //   client.collections('collections').documents().import(indexCollection, { action: 'create' })
+          //     .then(() => logger.debug('collection added to typesense index'))
+          //     .catch(() => logger.info('error: could not save collection in typesense: '))
+          // }
 
           // add new nft to search (Typesense)
-          if(newNFT && !existingNFT) {
-            const indexNft = []
-            indexNft.push({
-              id: newNFT.id,
-              contract: nftInfo.contract.address,
-              tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-              imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
-              contractName: collection.name ? collection.name : '',
-              type: type,
-              name: nftInfo.title,
-              description: newNFT.metadata.description,
-              createdAt: newNFT.createdAt,
-            })
+          // if(newNFT && !existingNFT) {
+          //   const indexNft = []
+          //   indexNft.push({
+          //     id: newNFT.id,
+          //     contract: nftInfo.contract.address,
+          //     tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+          //     imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
+          //     contractName: collection.name ? collection.name : '',
+          //     type: type,
+          //     name: nftInfo.title,
+          //     description: newNFT.metadata.description,
+          //     createdAt: newNFT.createdAt,
+          //   })
   
-            client.collections('nfts').documents().import(indexNft, { action: 'create' })
-              .then(() => logger.debug('nft added to typesense index'))
-              .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
-          }
+          //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
+          //     .then(() => logger.debug('nft added to typesense index'))
+          //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
+          // }
 
           // update edgeVals
           const edgeVals = {

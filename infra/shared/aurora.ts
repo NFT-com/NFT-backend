@@ -3,6 +3,7 @@ import { EngineType } from '@pulumi/aws/types/enums/rds'
 import { ec2 } from '@pulumi/awsx'
 import * as pulumi from '@pulumi/pulumi'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getResourceName, isFalse, isProduction } from '../helper'
 
 export type AuroraOutput = {
@@ -85,7 +86,7 @@ const createMain = (
       dbSubnetGroupName: subnetGroup.name,
       availabilityZone: zones[0],
       autoMinorVersionUpgrade: true,
-      publiclyAccessible: isFalse(isProduction()),
+      publiclyAccessible: true, //TODO: Lock down production and limit query/monitoring tools to within AWS VPC
     }))
   }
 
