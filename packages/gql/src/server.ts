@@ -1,5 +1,6 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
+import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
@@ -184,9 +185,10 @@ export const start = async (): Promise<void> => {
 
   app.use(Sentry.Handlers.errorHandler())
   app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
+  app.use(cors())
 
   await server.start()
-  server.applyMiddleware({ app, cors: true })
+  server.applyMiddleware({ app })
   await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
   console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
