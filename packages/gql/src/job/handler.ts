@@ -6,6 +6,7 @@ import { ethers, utils } from 'ethers'
 import { auth } from '@nftcom/gql/helper'
 import { _logger, contracts, db, defs, entity, fp, helper,provider } from '@nftcom/shared'
 
+import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -177,16 +178,30 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                             username: 'ethereum-' + ethers.utils.getAddress(owner),
                             referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
                           })
-                            .then((user: entity.User) => repositories.wallet.save({
-                              address: ethers.utils.getAddress(owner),
-                              network: 'ethereum',
-                              chainId: chainId,
-                              chainName: chain.name,
-                              userId: user.id,
-                            }))
+                            .then((user: entity.User) =>
+                              Promise.all([
+                                user,
+                                repositories.wallet.save({
+                                  address: ethers.utils.getAddress(owner),
+                                  network: 'ethereum',
+                                  chainId: chainId,
+                                  chainName: chain.name,
+                                  userId: user.id,
+                                }),
+                              ]))
                         }))
-                        .then((wallet: entity.Wallet) => {
-                          repositories.profile.save({
+                        .then(([user, wallet]: [entity.User, entity.Wallet]) => {
+                          const ctx = {
+                            chain: {
+                              id: wallet.chainId,
+                              name: wallet.chainName,
+                            },
+                            network: 'Ethereum',
+                            repositories: repositories,
+                            user,
+                            wallet,
+                          }
+                          return core.createProfile(ctx, {
                             status: defs.ProfileStatus.Owned,
                             url: profileUrl,
                             tokenId: tokenId.toString(),
