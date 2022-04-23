@@ -220,7 +220,7 @@ const updateEntity = async (
           return getCollectionNameFromContract(newNFT.contract, newNFT.type, network)
             .then(async (collectionName: string) => {
               logger.debug('new collection', { collectionName, contract: newNFT.contract })
-              newCollection = true
+              //newCollection = true
 
               return repositories.collection.save({
                 contract: ethers.utils.getAddress(newNFT.contract),
@@ -229,7 +229,7 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
-          //   TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY 
+          // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY 
           // save collection in typesense search  if new
           // if (newCollection) {
           //   const indexCollection = []
