@@ -112,6 +112,7 @@ export const start = async (): Promise<void> => {
   const httpServer = http.createServer(app)
 
   app.use(Sentry.Handlers.requestHandler())
+  app.use(cors())
 
   // TODO: user CDN urls later for default image and header
   app.get('/uri/:username', function (req, res) {
@@ -185,7 +186,6 @@ export const start = async (): Promise<void> => {
 
   app.use(Sentry.Handlers.errorHandler())
   app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
-  app.use(cors())
 
   await server.start()
   server.applyMiddleware({ app })
