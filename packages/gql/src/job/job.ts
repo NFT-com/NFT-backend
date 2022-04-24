@@ -25,13 +25,13 @@ const queues: { [key: string]: Bull.Queue } = {}
 const networkList = process.env.SUPPORTED_NETWORKS.replace('ethereum:', '').split(':')
 const networks = new Map()
 networks.set(
-  networkList[0],
-  networkList[1],
+  networkList[0], // chain id
+  networkList[1], // human readable network name
 )
 
 const createQueues = (): void => {
-  networks.forEach((val: string, key: string) => {
-    queues[key] = new Bull(val, {
+  networks.forEach((chainId: string, network: string) => {
+    queues[network] = new Bull(chainId, {
       prefix: queuePrefix,
       redis,
     })
