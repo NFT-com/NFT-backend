@@ -381,8 +381,6 @@ export const blacklistProfilePatterns = [
   // temporarily "banned" profiles (reserved for insiders with a 2nd address)
   /^fitness$/,
   /^longevity$/,
-  /^entertainment$/,
-  /^shopping$/,
   /^spirituality$/,
   /^metaphysics$/,
 ]
@@ -443,8 +441,7 @@ export const reservedProfiles = {
   '0x1e82eDe518Dad3e385cFC0AD52203911D254bc91': ['jeff', 'antiques'],
   '0x8952D923F4D957725F699603afD44Da6Bdc748A5': ['detroit', 'chicago'],
   '0x58d0f3dA9C97dE3c39f481e146f3568081d328a2': ['computers', 'business'],
-  // TODO: 2nd address needed. remove these profiles from the banlist if you want to reserve them here.
-  // '0x58d0f3dA9C97dE3c39f481e146f3568081d328a2': ['entertainment', 'shopping'],
+  '0xaC72e2fa06f52De2352F1548F00858E81C6d39C0': ['entertainment', 'shopping'],
   '0x5c09f8b380140E40A4ADc744F9B199a9383553F9': ['joey', 'jp'],
   '0xAf68eFa7F52DF54C6888b53bD4AC66803Dc92A5b': ['nft', 'crypto'],
   '0xC9d4f1d9CAc71AE773dab932d01138f04Fc9e01f': ['stoopidbuddy', 'harvatine'],
