@@ -94,8 +94,8 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
         removeOnComplete: true,
         removeOnFail: true,
-        // repeat every 3 minutes for nft profile job
-        repeat: { every: 60000 * 3 },
+        // repeat every 1 minutes for nft profile job
+        repeat: { every: 60000 * 1 },
         jobId: 'profile_sync_job',
       })
     // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
