@@ -189,12 +189,16 @@ const updateEntity = async (
     }
     const traits = []
     if (nftInfo.metadata.attributes) {
-      nftInfo.metadata.attributes.map((trait) => {
-        traits.push(({
-          type: trait?.trait_type,
-          value: trait?.value,
-        }))
-      })
+      try {
+        nftInfo.metadata.attributes.map((trait) => {
+          traits.push(({
+            type: trait?.trait_type,
+            value: trait?.value,
+          }))
+        })
+      } catch (err) {
+        logger.error('error while parsing traits', err, nftInfo, nftInfo.metadata, nftInfo.metadata.attributes)
+      }
     }
     newNFT = await repositories.nft.save({
       ...existingNFT,
