@@ -17,43 +17,42 @@ const onlyUnique = (value, index, self: any[]): boolean => {
   return self.indexOf(value) === index
 }
 
-// size of each array for balances for NFT and WETH
-// 450 is chosen as 450 x 2 (balance query for NFT and WETH) = 900
+// size of each array for balances for ETH
 // 900 balanceOf queries maxes sits comfortably below the 1000 maximum size limit on Ethereum
 // the size limit is mostly due to gas limits per ethereum call.
 // 
 // Even though balanceOf is a view function, it has to conform to size limits on calls via the
 // ethereum nodes
-const perChunk = 450
+const perChunk = 900
 
-const getAddressBalanceMapping = (bids: entity.Bid[], walletIdAddressMapping: any, chainId: number):
-[entity.Bid[], entity.Bid[], any, any] => {
-  const splitAddressArrays: any = Object.values(walletIdAddressMapping)
-    .reduce((resultArray, item, index) => {
-      const chunkIndex = Math.floor(index/perChunk)
+const getAddressBalanceMapping =
+  async (bids: entity.Bid[], walletIdAddressMapping: any, chainId: number):
+  Promise<[entity.Bid[], any, any]> => {
+    const splitAddressArrays: any = Object.values(walletIdAddressMapping)
+      .reduce((resultArray, item, index) => {
+        const chunkIndex = Math.floor(index/perChunk)
   
-      if (!resultArray[chunkIndex]) {
-        resultArray[chunkIndex] = [] // start a new chunk
-      }
+        if (!resultArray[chunkIndex]) {
+          resultArray[chunkIndex] = [] // start a new chunk
+        }
   
-      resultArray[chunkIndex].push(item)
+        resultArray[chunkIndex].push(item)
   
-      return resultArray
-    }, [])
+        return resultArray
+      }, [])
 
-  const profileBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.Profile)
-  const genesisKeyBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
-  const addressBalanceMapping = splitAddressArrays.map(
-    splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
-      provider.provider(Number(chainId)),
-      splitArray,
-      ['0x0000000000000000000000000000000000000000', contracts.nftTokenAddress(chainId)],
-      contracts.multiBalance(chainId),
-    ),
-  )
+    const genesisKeyBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
+    const addressBalanceMapping = splitAddressArrays.map(
+      splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
+        provider.provider(Number(chainId)),
+        splitArray,
+        ['0x0000000000000000000000000000000000000000'],
+        contracts.multiBalance(chainId),
+      ),
+    )
 
-  return [profileBids, genesisKeyBids, walletIdAddressMapping, addressBalanceMapping]
-}
+    return [genesisKeyBids, walletIdAddressMapping, addressBalanceMapping]
+  }
 
 // validates live balances for all the filtered bids
 const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<boolean> => {
@@ -81,21 +80,11 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
       ]: [entity.Bid[], any]) => getAddressBalanceMapping(bids, walletIdAddressMapping, chainId))
       .then(
         ([
-          profileBids,
           genesisKeyBids,
           walletIdAddressMapping,
           addressBalanceMapping,
-        ]: [entity.Bid[], entity.Bid[], any, any]) => {
+        ]: [entity.Bid[], any, any]) => {
           return Promise.all([
-            profileBids.map((bid: entity.Bid) => {
-              const balanceObj =  addressBalanceMapping[0][walletIdAddressMapping[bid.walletId]]
-              const nftBalance = Number(balanceObj[contracts.nftTokenAddress(chainId)]) ?? 0
-                
-              if (nftBalance < Number(bid.price)) {
-                logger.debug('softDeleteProfileBid', { type: bid.nftType, bidAmount: Number(bid.price), nftBalance })
-                repositories.bid.deleteById(bid.id)
-              }
-            }),
             genesisKeyBids.map(async (bid: entity.Bid) => {
               try {
                 const balanceObj = (await addressBalanceMapping[0])[
