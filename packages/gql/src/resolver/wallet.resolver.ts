@@ -45,7 +45,7 @@ const isAddressWhitelisted = async (
   const ensList = helper.getEnsKeyWhitelist()
 
   if (whitelist.includes(args.input?.address)) {
-    return Promise.resolve(whitelist.includes(args.input?.address))
+    return true
   } else {
     const ensAddress = await core.convertEthAddressToEns(args.input?.address)
     logger.debug('ensAddress: ', ensAddress)
