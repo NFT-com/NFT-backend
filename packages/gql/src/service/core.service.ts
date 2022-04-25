@@ -1,19 +1,14 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
-import { ethers } from 'ethers'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
-import { _logger, defs, entity, fp, helper, repository } from '@nftcom/shared'
+import { _logger, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
-
-const provider = (): ethers.providers.Provider => {
-  return new ethers.providers.JsonRpcProvider(process.env.ZMOK_API_URL)
-}
 
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
@@ -557,7 +552,7 @@ export const convertEthAddressToEns = async (
   ethAddress: string,
 ): Promise<string> => {
   try {
-    const ens = await provider().lookupAddress(ethAddress)
+    const ens = await provider.provider().lookupAddress(ethAddress)
     return ens
   } catch (e) {
     return `error converting eth address to ens: ${JSON.stringify(e)}`
@@ -568,7 +563,7 @@ export const convertEnsToEthAddress = async (
   ensAddress: string,
 ): Promise<string> => {
   try {
-    const address = await provider().resolveName(ensAddress?.toLowerCase())
+    const address = await provider.provider().resolveName(ensAddress?.toLowerCase())
     return address
   } catch (e) {
     return `error converting ens to eth address: ${JSON.stringify(e)}`
