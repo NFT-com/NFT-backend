@@ -1,14 +1,19 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
+import { ethers } from 'ethers'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, profileError,walletError } from '@nftcom/gql/error'
+import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { _logger, defs, entity, fp, helper, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
+
+const provider = (): ethers.providers.Provider => {
+  return new ethers.providers.JsonRpcProvider(process.env.ZMOK_API_URL)
+}
 
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
@@ -523,6 +528,9 @@ export const OFAC = {
   '0x308eD4B7b49797e1A98D3818bFF6fe5385410370': true,
   '0x19Aa5Fe80D33a56D56c78e82eA5E50E5d80b4Dff': true,
   '0x098B716B8Aaf21512996dC57EB0615e2383E2f96': true,
+  '0xa0e1c89Ef1a489c9C7dE96311eD5Ce5D32c20E4B': true,
+  '0x3Cffd56B47B7b41c56258D9C7731ABaDc360E073': true,
+  '0x53b6936513e738f44FB50d2b9476730C0Ab3Bfc1': true,
 }
 
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
@@ -543,6 +551,28 @@ const getSTS = (): STS => {
     cachedSTS = new STS()
   }
   return cachedSTS
+}
+
+export const convertEthAddressToEns = async (
+  ethAddress: string,
+): Promise<string> => {
+  try {
+    const ens = await provider().lookupAddress(ethAddress)
+    return ens
+  } catch (e) {
+    return `error converting eth address to ens: ${JSON.stringify(e)}`
+  }
+}
+
+export const convertEnsToEthAddress = async (
+  ensAddress: string,
+): Promise<string> => {
+  try {
+    const address = await provider().resolveName(ensAddress?.toLowerCase())
+    return address
+  } catch (e) {
+    return `error converting ens to eth address: ${JSON.stringify(e)}`
+  }
 }
 
 export const getAWSConfig = async (): Promise<aws.S3> => {
