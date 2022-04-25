@@ -1,6 +1,7 @@
 enum NFTType {
   ERC721
   ERC1155
+  UNKNOWN
   Profile
   GenesisKey
   GenesisKeyProfile
