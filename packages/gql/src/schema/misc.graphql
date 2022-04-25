@@ -33,6 +33,14 @@ input getContractsInput {
   chainId: String!
 }
 
+input convertEnsToEthAddressInput {
+  ensAddresses: [String!]!
+}
+
+type ConvertEnsToEthAddress {
+  ethAddresses: [String!]!
+}
+
 type GetContracts {
   marketplace: String!
   marketplaceEvent: String!
@@ -49,6 +57,7 @@ type GetContracts {
 
 extend type Query {
   getContracts(input: getContractsInput!): GetContracts!
+  convertEnsToEthAddress(input: convertEnsToEthAddressInput!): ConvertEnsToEthAddress!
 }
 
 extend type Mutation {

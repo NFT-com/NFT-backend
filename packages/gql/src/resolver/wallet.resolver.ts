@@ -34,7 +34,7 @@ const addAddress = (
     }))
 }
 
-const isAddressWhitelisted = (
+const isAddressWhitelisted = async (
   _: any,
   args: gql.QueryIsAddressWhitelistedArgs,
   ctx: Context,
@@ -42,7 +42,15 @@ const isAddressWhitelisted = (
   const { wallet } = ctx
   logger.debug('isAddressWhitelisted', { input: args.input, caller: wallet })
   const whitelist = helper.getGenesisKeyWhitelist()
-  return Promise.resolve(whitelist.includes(args.input?.address))
+  const ensList = helper.getEnsKeyWhitelist()
+
+  if (whitelist.includes(args.input?.address)) {
+    return Promise.resolve(whitelist.includes(args.input?.address))
+  } else {
+    const ensAddress = await core.convertEthAddressToEns(args.input?.address)
+    logger.debug('ensAddress: ', ensAddress)
+    return Promise.resolve(ensList.includes(ensAddress))
+  }
 }
 
 export default {

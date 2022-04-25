@@ -58,7 +58,7 @@ const bid = (
       return core.createProfile(ctx, { url: input.profileURL })
         .then(({ id }) => ({ walletId, profileId: id }))
     })
-    .then(({ profileId, walletId }) => {
+    .then(async ({ profileId, walletId }) => {
       if (input.nftType === gql.NFTType.GenesisKey) {
         const whitelist = helper.getGenesisKeyWhitelist()
         const ofacBool = OFAC[wallet.address]
@@ -78,7 +78,22 @@ const bid = (
               prevTopBidOwner: null,
             }))
           } else {
-            throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+            const ensList = helper.getEnsKeyWhitelist()
+            const ensAddress = await core.convertEthAddressToEns(wallet.address)
+            if (ensList.includes(ensAddress)) {
+              return repositories.bid.findOne({ where: {
+                nftType: gql.NFTType.GenesisKey,
+                walletId,
+              } }).then((previousGKBid) => ({
+                walletId,
+                profileId,
+                stakeWeight: null,
+                existingBid: previousGKBid,
+                prevTopBidOwner: null,
+              }))
+            } else {
+              throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
+            }
           }
         }
       } else if (input.nftType !== gql.NFTType.Profile) {
