@@ -278,6 +278,13 @@ export function getEnsKeyWhitelist(): Array<string> {
     '0xsbm.eth',
     '0xpooyan.eth',
     '0xgex.eth',
+    '424.eth',
+    'frankieboi.eth',
+    'huangxinstar.eth',
+    'leafereum.eth',
+    'Nftleaf.eth',
+    'Oh.eth',
+    'w3sley.eth',
   ]
 }
 
