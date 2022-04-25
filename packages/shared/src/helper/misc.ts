@@ -282,8 +282,8 @@ export function getEnsKeyWhitelist(): Array<string> {
     'frankieboi.eth',
     'huangxinstar.eth',
     'leafereum.eth',
-    'Nftleaf.eth',
-    'Oh.eth',
+    'nftleaf.eth',
+    'oh.eth',
     'w3sley.eth',
   ]
 }
