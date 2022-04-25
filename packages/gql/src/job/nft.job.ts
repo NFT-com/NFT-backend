@@ -147,14 +147,14 @@ const getCollectionNameFromContract = (
         provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
-    } else if (type === defs.NFTType.ERC1155) {
+    } else if (type === defs.NFTType.ERC1155 || type === defs.NFTType.UNKNOWN) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
         provider.provider(network),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
-      console.log('Token type should be ERC721 or ERC1155, not ', type)
+      console.log('Token type not ERC721, ERC1155, nor UNKNOWN', type)
       return Promise.resolve('Unknown Name')
     }
   } catch (error) {
