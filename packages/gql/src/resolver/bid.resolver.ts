@@ -48,6 +48,11 @@ const bid = (
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
+  if (input.nftType === gql.NFTType.GenesisKey &&
+    1651014000000 /* 4/26/2022, 7:00:00 PM in Milliseconds */ > new Date().getTime()) {
+    throw appError.buildForbidden('Auction  has not started.')
+  }
+
   return core.getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => {
       if (input.nftType !== gql.NFTType.Profile) {
