@@ -1,0 +1,16 @@
+// const fs = require('fs')
+// const whitelist = require('./packages/shared/src/helper/abis/whitelist.json')
+
+// console.log('starting whitelist ')
+
+// console.log('initial list length: ', whitelist.length)
+// const deduplicates = [...new Set(whitelist)]
+// console.log('dedup list length: ', deduplicates.length)
+
+// fs.writeFile('./whitelist-2.json', JSON.stringify(deduplicates, null, 2), 'utf8', function (err) {
+//   if (err) {
+//     return console.log(err)
+//   }
+
+//   console.log('saved')
+// })

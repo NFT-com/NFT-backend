@@ -184,7 +184,7 @@ const updateEntity = async (
     } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
       type = defs.NFTType.ERC1155
     } else {
-      console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType)
+      console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
       return
     }
     const traits = []
