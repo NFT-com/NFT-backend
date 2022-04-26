@@ -9,7 +9,6 @@ import { _logger, contracts, db, defs, entity, fp, helper,provider } from '@nftc
 
 import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'
-// import sampleAddresses from './sampleAddress.json'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -32,7 +31,6 @@ const getAddressBalanceMapping = async (
   walletIdAddressMapping: any,
   chainId: number,
 ) : Promise<[entity.Bid[], any, any]> => {
-  // const addresses: string[] = sampleAddresses
   const splitAddressArrays: string[][] = Lodash.chunk(
     Object.values(walletIdAddressMapping),
     perChunk,
@@ -40,7 +38,7 @@ const getAddressBalanceMapping = async (
 
   const genesisKeyBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
   const balanceArrays = []
-  await Promise.all(
+  await Promise.allSettled(
     splitAddressArrays.map(async (splitArray: string[]) => {
       const balances = await getAddressesBalances(
         provider.provider(Number(chainId)),
@@ -52,15 +50,6 @@ const getAddressBalanceMapping = async (
     }),
   )
   const addressBalanceMapping = Object.assign({}, ...balanceArrays)
-  // const addressBalanceMapping = splitAddressArrays.map(
-  //   splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
-  //     provider.provider(Number(chainId)),
-  //     splitArray,
-  //     ['0x0000000000000000000000000000000000000000'],
-  //     contracts.multiBalance(chainId),
-  //   ),
-  // )
-
   return [genesisKeyBids, walletIdAddressMapping, addressBalanceMapping]
 }
 
