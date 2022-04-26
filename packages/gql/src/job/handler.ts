@@ -87,7 +87,8 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
           return Promise.all([
             genesisKeyBids.map(async (bid: entity.Bid) => {
               try {
-                const balanceObj = (await addressBalanceMapping[0])[
+                const mergedBalance = [].concat(...await addressBalanceMapping)
+                const balanceObj = (await mergedBalance[0])[
                   walletIdAddressMapping[bid.walletId]]
                 const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
                   

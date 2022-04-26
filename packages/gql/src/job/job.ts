@@ -119,7 +119,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       return queues[chainId].add({ chainId }, {
         removeOnComplete: true,
         removeOnFail: true,
-        // repeat every minute
+        // repeat every 3 minutes
         repeat: { every: 3 * 60000 },
         jobId: `chainid_${chainId}_job`,
       })
