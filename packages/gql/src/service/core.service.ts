@@ -385,6 +385,8 @@ export const blacklistProfilePatterns = [
   /^officialjordanbelfort$/,
   /^jordanbelfortofficial$/,
   /^cryptohayes$/,
+  /^garyv$/,
+  /^veefriends$/,
   // temporarily "banned" profiles (reserved for insiders with a 2nd address)
   /^fitness$/,
   /^longevity$/,

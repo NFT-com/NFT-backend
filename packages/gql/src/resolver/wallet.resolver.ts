@@ -44,9 +44,22 @@ const isAddressWhitelisted = async (
   const whitelist = helper.getGenesisKeyWhitelist()
   const ensList = helper.getEnsKeyWhitelist()
 
-  if (whitelist.includes(args.input?.address)) {
-    return true
-  } else {
+  const lowercasedWhitelist = whitelist.map(
+    (address) => {
+      try {
+        return address?.toLowerCase()
+      } catch (e) {
+        return address
+      }
+    },
+  )
+
+  try {
+    if (lowercasedWhitelist.includes(args.input?.address?.toLowerCase())) {
+      return true
+    }
+    throw new Error('pure address not whitelisted')
+  } catch (e) {
     const ensAddress = await core.convertEthAddressToEns(args.input?.address)
     logger.debug('ensAddress: ', ensAddress)
     return Promise.resolve(ensList.includes(ensAddress))
