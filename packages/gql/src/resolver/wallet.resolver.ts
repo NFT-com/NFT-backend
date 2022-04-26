@@ -54,14 +54,10 @@ const isAddressWhitelisted = async (
     },
   )
 
-  try {
-    if (lowercasedWhitelist.includes(args.input?.address?.toLowerCase())) {
-      return true
-    }
-    throw new Error('pure address not whitelisted')
-  } catch (e) {
+  if (lowercasedWhitelist.includes(args.input?.address?.toLowerCase())) {
+    return true
+  } else {
     const ensAddress = await core.convertEthAddressToEns(args.input?.address)
-    logger.debug('ensAddress: ', ensAddress)
     return Promise.resolve(ensList.includes(ensAddress))
   }
 }
