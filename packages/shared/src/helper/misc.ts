@@ -257,6 +257,7 @@ export function getEnsKeyWhitelist(): Array<string> {
     'michaelconnery.eth',
     'midazofol.eth',
     'mikechase.eth',
+    'miniratman.eth',
     'mirrorswellnessclub.eth',
     'misspinkyb.eth',
     'mixedemotions.eth',
