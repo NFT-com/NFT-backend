@@ -3,12 +3,12 @@ import Bull from 'bull'
 import { redisConfig } from '@nftcom/gql/config'
 import {
   //MARKETPLACE_SYNC_JOB,
-  NFT_COLLECTION_JOB,
+  // NFT_COLLECTION_JOB,
   PROFILE_SYNC_JOB,
   //TYPESENSE_INDEX_SCHEMA_JOB,
 } from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
-import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
+// import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
 // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
 // import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
@@ -37,10 +37,10 @@ const createQueues = (): void => {
     })
   })
   // add users nft collection job to queue...
-  queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
-    prefix: queuePrefix,
-    redis,
-  })
+  // queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
+  //   prefix: queuePrefix,
+  //   redis,
+  // })
 
   queues[PROFILE_SYNC_JOB] = new Bull(PROFILE_SYNC_JOB, {
     prefix: queuePrefix,
@@ -62,8 +62,8 @@ const listenToJobs = (): Promise<void[]> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
     switch (queue.name) {
-    case NFT_COLLECTION_JOB:
-      return queue.process(getUsersNFTs)
+    // case NFT_COLLECTION_JOB:
+    //   return queue.process(getUsersNFTs)
     case PROFILE_SYNC_JOB:
       return queue.process(syncProfileNFTs)
     // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
@@ -82,14 +82,14 @@ const publishJobs = (): Promise<Bull.Job[]> => {
   const chainIds = Object.keys(queues)
   return Promise.all(chainIds.map((chainId) => {
     switch (chainId) {
-    case NFT_COLLECTION_JOB:
-      return queues[NFT_COLLECTION_JOB].add({ NFT_COLLECTION_JOB }, {
-        removeOnComplete: true,
-        removeOnFail: true,
-        // repeat every 8 minutes for nft collection job
-        repeat: { every: 60000 * 8 },
-        jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running) 
-      })
+    // case NFT_COLLECTION_JOB:
+    //   return queues[NFT_COLLECTION_JOB].add({ NFT_COLLECTION_JOB }, {
+    //     removeOnComplete: true,
+    //     removeOnFail: true,
+    //     // repeat every 8 minutes for nft collection job
+    //     repeat: { every: 60000 * 8 },
+    //     jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running) 
+    //   })
     case PROFILE_SYNC_JOB:
       return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
         removeOnComplete: true,
@@ -120,7 +120,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         removeOnComplete: true,
         removeOnFail: true,
         // repeat every minute
-        repeat: { every: 60000 },
+        repeat: { every: 3 * 60000 },
         jobId: `chainid_${chainId}_job`,
       })
     }
