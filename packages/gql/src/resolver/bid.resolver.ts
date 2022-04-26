@@ -68,10 +68,20 @@ const bid = (
         const whitelist = helper.getGenesisKeyWhitelist()
         const ofacBool = OFAC[wallet.address]
 
+        const lowercasedWhitelist = whitelist.map(
+          (address) => {
+            try {
+              return address?.toLowerCase()
+            } catch (e) {
+              return address
+            }
+          },
+        )
+
         if (ofacBool) {
           throw appError.buildForbidden(`${wallet.address} is on OFAC`)
         } else {
-          if (whitelist.includes(wallet.address)) {
+          if (lowercasedWhitelist.includes(wallet.address.toLowerCase())) {
             return repositories.bid.findOne({ where: {
               nftType: gql.NFTType.GenesisKey,
               walletId,
