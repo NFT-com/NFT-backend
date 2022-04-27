@@ -305,6 +305,7 @@ export const blacklistProfilePatterns = [
   /^wop$/,
   // "reserved" list
   /^you$/,
+  /^app$/,
   /^whitelist$/,
   /^dao$/,
   /^announcements$/,
