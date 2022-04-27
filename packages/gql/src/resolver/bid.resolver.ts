@@ -163,42 +163,42 @@ const bid = (
     .then(([newBid]) => newBid)
 }
 
-const getBids = (
-  _: any,
-  args: gql.QueryBidsArgs,
-  ctx: Context,
-): Promise<gql.BidsOutput> => {
-  const { user, repositories } = ctx
-  logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
+// const getBids = (
+//   _: any,
+//   args: gql.QueryBidsArgs,
+//   ctx: Context,
+// ): Promise<gql.BidsOutput> => {
+//   const { user, repositories } = ctx
+//   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
+//   const pageInput = args?.input?.pageInput
 
-  // TODO (eddie): add support for querying all public 
-  // bids for a user, given one of their wallet's details.
+//   // TODO (eddie): add support for querying all public 
+//   // bids for a user, given one of their wallet's details.
 
-  return Promise.resolve(args?.input?.wallet)
-    .then(fp.thruIfNotEmpty((walletInput) => {
-      return repositories.wallet.findByNetworkChainAddress(
-        walletInput.network,
-        walletInput.chainId,
-        walletInput.address,
-      )
-    }))
-    .then((wallet: entity.Wallet) => {
-      const inputFilters = {
-        profileId: args?.input?.profileId,
-        walletId: wallet?.id,
-        nftType: args?.input?.nftType,
-      }
-      const filters = [helper.inputT2SafeK(inputFilters)]
-      return core.paginatedEntitiesBy(
-        ctx.repositories.bid,
-        pageInput,
-        filters,
-        [], // relations
-      )
-    })
-    .then(pagination.toPageable(pageInput))
-}
+//   return Promise.resolve(args?.input?.wallet)
+//     .then(fp.thruIfNotEmpty((walletInput) => {
+//       return repositories.wallet.findByNetworkChainAddress(
+//         walletInput.network,
+//         walletInput.chainId,
+//         walletInput.address,
+//       )
+//     }))
+//     .then((wallet: entity.Wallet) => {
+//       const inputFilters = {
+//         profileId: args?.input?.profileId,
+//         walletId: wallet?.id,
+//         nftType: args?.input?.nftType,
+//       }
+//       const filters = [helper.inputT2SafeK(inputFilters)]
+//       return core.paginatedEntitiesBy(
+//         ctx.repositories.bid,
+//         pageInput,
+//         filters,
+//         [], // relations
+//       )
+//     })
+//     .then(pagination.toPageable(pageInput))
+// }
 
 const getMyBids = (
   _: any,
@@ -404,7 +404,7 @@ const setProfilePreferences = (
 
 export default {
   Query: {
-    bids: getBids,
+    // bids: getBids,
     myBids: combineResolvers(auth.isAuthenticated, getMyBids),
     topBids: getTopBids,
   },
