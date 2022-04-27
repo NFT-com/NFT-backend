@@ -17,38 +17,12 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
   try {
     logger.debug('syncing profile nfts', job.data)
 
-    let profiles = await repositories.profile.findAll()
-    let newTokenId = false
+    const profiles = await repositories.profile.findAll()
 
     const nftProfileContract = typechain.NftProfile__factory.connect(
       contracts.nftProfileAddress(job.data.chainId),
       provider.provider(Number(job.data.chainId)),
     )
-
-    await Promise.all(
-      profiles.map((profile: entity.Profile) => {
-        return async () => {
-          let tokenId
-          try {
-            tokenId = profile?.tokenId ?? await nftProfileContract.getTokenId(profile.url)
-            if (!profile?.tokenId) {
-              profile.tokenId = tokenId
-              await repositories.profile.save({
-                ...profile,
-              })
-              logger.debug('saved tokenId', tokenId)
-              newTokenId = true
-            }
-            logger.debug(`existing tokenId ${profile.url} => ${tokenId}`)
-          } catch (getTokenIdErr) {
-            // catch if profile doesn't exist yet
-            tokenId = -1
-          }
-        }
-      }),
-    )
-
-    profiles = newTokenId ? await repositories.profile.findAll() : profiles
 
     await Promise.all(profiles.map((profile: entity.Profile) => {
       return async () => {
