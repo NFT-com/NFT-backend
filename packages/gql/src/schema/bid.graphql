@@ -65,7 +65,7 @@ input ProfilePreferenceInput {
 }
 
 extend type Query {
-  bids(input: BidsInput): BidsOutput!
+  # bids(input: BidsInput): BidsOutput!
   myBids(input: BidsInput): BidsOutput!
   topBids(input: TopBidsInput): BidsOutput!
 }
