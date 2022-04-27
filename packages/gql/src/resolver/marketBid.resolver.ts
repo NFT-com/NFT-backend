@@ -7,33 +7,33 @@ import { appError, marketBidError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
-import { auth, joi, pagination, utils } from '../helper'
-import { core, sendgrid } from '../service'
+import { auth,joi, utils } from '../helper' // pagination, 
+import { sendgrid } from '../service' // core,
 
 const logger = _logger.Factory(_logger.Context.MarketBid, _logger.Context.GraphQL)
 
-const getBids = (
-  _: any,
-  args: gql.QueryGetBidsArgs,
-  ctx: Context,
-): Promise<gql.GetMarketBid> => {
-  const { repositories } = ctx
-  logger.debug('getBids', { input: args?.input })
-  const pageInput = args?.input?.pageInput
-  const { makerAddress, marketAskId } = helper.safeObject(args?.input)
+// const getBids = (
+//   _: any,
+//   args: gql.QueryGetBidsArgs,
+//   ctx: Context,
+// ): Promise<gql.GetMarketBid> => {
+//   const { repositories } = ctx
+//   logger.debug('getBids', { input: args?.input })
+//   const pageInput = args?.input?.pageInput
+//   const { makerAddress, marketAskId } = helper.safeObject(args?.input)
 
-  const filters: Partial<entity.MarketBid>[] = [helper.removeEmpty({
-    makerAddress,
-    marketAskId,
-  })]
-  return core.paginatedEntitiesBy(
-    repositories.marketBid,
-    pageInput,
-    filters,
-    [], // relations
-  )
-    .then(pagination.toPageable(pageInput))
-}
+//   const filters: Partial<entity.MarketBid>[] = [helper.removeEmpty({
+//     makerAddress,
+//     marketAskId,
+//   })]
+//   return core.paginatedEntitiesBy(
+//     repositories.marketBid,
+//     pageInput,
+//     filters,
+//     [], // relations
+//   )
+//     .then(pagination.toPageable(pageInput))
+// }
 
 const validOrderMatch = async (
   marketAsk: entity.MarketAsk,
@@ -325,7 +325,7 @@ const cancelMarketBid = (
 
 export default {
   Query: {
-    getBids,
+    // getBids,
   },
   Mutation: {
     createBid: combineResolvers(auth.isAuthenticated, createBid),
