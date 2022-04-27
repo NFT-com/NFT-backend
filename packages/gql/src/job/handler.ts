@@ -5,7 +5,7 @@ import { BigNumber, ethers, utils } from 'ethers'
 import * as Lodash from 'lodash'
 
 import { auth } from '@nftcom/gql/helper'
-import { _logger, contracts, db, defs, entity, fp, helper,provider } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'

@@ -49,7 +49,8 @@ const bid = (
   }
 
   if (input.nftType === gql.NFTType.GenesisKey &&
-    1651014000000 /* 4/26/2022, 7:00:00 PM in Milliseconds */ > new Date().getTime()) {
+    /* 4/26/2022, 7:00:00 PM in Milliseconds */
+    1651014000000 > new Date().getTime()) {
     throw appError.buildForbidden('Auction  has not started.')
   }
 
@@ -68,10 +69,20 @@ const bid = (
         const whitelist = helper.getGenesisKeyWhitelist()
         const ofacBool = OFAC[wallet.address]
 
+        const lowercasedWhitelist = whitelist.map(
+          (address) => {
+            try {
+              return address?.toLowerCase()
+            } catch (e) {
+              return address
+            }
+          },
+        )
+
         if (ofacBool) {
           throw appError.buildForbidden(`${wallet.address} is on OFAC`)
         } else {
-          if (whitelist.includes(wallet.address)) {
+          if (lowercasedWhitelist.includes(wallet.address.toLowerCase())) {
             return repositories.bid.findOne({ where: {
               nftType: gql.NFTType.GenesisKey,
               walletId,

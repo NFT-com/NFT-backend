@@ -254,31 +254,31 @@ const endProfileAuction = (
     .then(([topBid]) => topBid)
 }
 
-const getContracts = (
-  _: any,
-  args: gql.QueryGetContractsArgs,
-): gql.GetContracts => {
-  const { input } = args
-  const { chainId } = input
+// const getContracts = (
+//   _: any,
+//   args: gql.QueryGetContractsArgs,
+// ): gql.GetContracts => {
+//   const { input } = args
+//   const { chainId } = input
 
-  return {
-    marketplace: contracts.nftMarketplaceAddress(chainId),
-    marketplaceEvent: contracts.marketplaceEventAddress(chainId),
-    validationLogic: contracts.validationLogicAddress(chainId),
-    nftToken: contracts.nftTokenAddress(chainId),
-    profileAuction: contracts.profileAuctionAddress(chainId),
-    nftProfile: contracts.nftProfileAddress(chainId),
-    genesisKey: contracts.genesisKeyAddress(chainId),
-    genesisKeyStake: contracts.genesisKeyStakeAddress(chainId),
-    genesisKeyTeamClaim: contracts.genesisKeyTeamClaimAddress(chainId),
-    genesisKeyDistributor: contracts.genesisKeyDistributor(chainId),
-    genesisKeyTeamMerkle: contracts.genesisKeyTeamMerkleAddress(chainId),
-  }
-}
+//   return {
+//     marketplace: contracts.nftMarketplaceAddress(chainId),
+//     marketplaceEvent: contracts.marketplaceEventAddress(chainId),
+//     validationLogic: contracts.validationLogicAddress(chainId),
+//     nftToken: contracts.nftTokenAddress(chainId),
+//     profileAuction: contracts.profileAuctionAddress(chainId),
+//     nftProfile: contracts.nftProfileAddress(chainId),
+//     genesisKey: contracts.genesisKeyAddress(chainId),
+//     genesisKeyStake: contracts.genesisKeyStakeAddress(chainId),
+//     genesisKeyTeamClaim: contracts.genesisKeyTeamClaimAddress(chainId),
+//     genesisKeyDistributor: contracts.genesisKeyDistributor(chainId),
+//     genesisKeyTeamMerkle: contracts.genesisKeyTeamMerkleAddress(chainId),
+//   }
+// }
 
 export default {
   Query: {
-    getContracts,
+    // getContracts,
   },
   Mutation: {
     uploadFileSession: combineResolvers(auth.isAuthenticated, getFileUploadSession),

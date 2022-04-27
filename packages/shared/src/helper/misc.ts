@@ -300,6 +300,7 @@ export function getEnsKeyWhitelist(): Array<string> {
     'puschking.eth',
     'qinhaoyi.eth',
     'qwackson.eth',
+    'r0bster97.eth',
     'r0cketman.eth',
     'raghu.eth',
     'rahulsingh.eth',
