@@ -277,8 +277,10 @@ const getInsiderReservedProfileURIs = (
   args: gql.QueryInsiderReservedProfilesArgs,
   ctx: Context,
 ): Promise<string[]> => {
-  logger.debug('getInsiderReservedProfileURIs', args.input.address, ctx.user )
-  const reserved = core.reservedProfiles?.[args.input.address]
+  const { wallet } = ctx
+
+  logger.debug('getInsiderReservedProfileURIs', wallet.address, ctx.user)
+  const reserved = core.reservedProfiles?.[wallet.address]
   return Promise.resolve(reserved ?? [])
 }
 
@@ -538,7 +540,7 @@ export default {
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
     blockedProfileURI: getBlockedProfileURI,
-    insiderReservedProfiles: getInsiderReservedProfileURIs,
+    insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
   },
   Mutation: {
