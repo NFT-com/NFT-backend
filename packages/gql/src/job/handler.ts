@@ -209,8 +209,10 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
                         })
                     }))
                     .then(fp.thruIfNotEmpty((profile) => {
-                      profile.status = defs.ProfileStatus.Owned
-                      repositories.profile.save(profile)
+                      if (profile.status !== defs.ProfileStatus.Owned) {
+                        profile.status = defs.ProfileStatus.Owned
+                        repositories.profile.save(profile)
+                      }
                     })),
                 ])
               }
