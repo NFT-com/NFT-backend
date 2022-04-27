@@ -87,7 +87,7 @@ const endGKBlindAuction = (
         const price = BigNumber.from(bids[i]?.price ?? 0)
         const wallet = wallets[i]?.address
 
-        if (Object.keys(topBidPerWallet).length < 3001) {
+        if (Object.keys(topBidPerWallet).length < 3000) {
           const currentTopBid = topBidPerWallet[wallet] ?? 0
 
           topBidPerWallet[wallet] = price.gt(BigNumber.from(currentTopBid)) ?
@@ -96,7 +96,7 @@ const endGKBlindAuction = (
           logger.debug(`new top bid ${topBidPerWallet[wallet]} for ${wallet}`)
         } else {
           logger.debug(`1st loser bid is ${price} for ${wallet}`)
-          firstLosingBid.push({ key: wallet, value: price })
+          firstLosingBid.push({ key: wallet, value: price.toString() })
           break
         }
       }
