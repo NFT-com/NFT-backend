@@ -246,7 +246,7 @@ const signHash = (
           mintError.ErrorType.WalletEmpty,
         ),
       )).then((wallet) => {
-        const hmac = crypto.createHmac('sha256', process.env.SHARED_MINT_SECRET)
+        const hmac = crypto.createHmac('sha256', String(process.env.SHARED_MINT_SECRET))
         const { timestamp } = input
         const inputObject = {
           address: wallet[0]?.address,

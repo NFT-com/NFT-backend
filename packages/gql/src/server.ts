@@ -4,9 +4,12 @@ import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
+import { rateLimitDirective } from 'graphql-rate-limit-directive'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 
+import { makeExecutableSchema } from '@graphql-tools/schema'
 import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -171,11 +174,42 @@ export const start = async (): Promise<void> => {
     }
   })
 
+  const keyGenerator = (directiveArgs, source, args, context): string =>
+    `${context.user.id}`
+
+  class DebugRateLimiterMemory extends RateLimiterMemory {
+
+    consume(key, pointsToConsume, options): any {
+      logger.debug(`[CONSUME] ${key} for ${pointsToConsume}`)
+      return super.consume(key, pointsToConsume, options)
+    }
+  
+  }
+
+  const { rateLimitDirectiveTypeDefs, rateLimitDirectiveTransformer } = rateLimitDirective({
+    keyGenerator,
+    limiterClass: DebugRateLimiterMemory,
+  })
+
+  const schemaInput = makeExecutableSchema({
+    typeDefs: [
+      rateLimitDirectiveTypeDefs,
+      `
+      type Mutation {
+        signHash(input: SignHashInput!): SignHashOutput @rateLimit(limit: 1, duration: 15)
+      }
+      `,
+      typeDefs(),
+    ],
+    resolvers,
+  })
+
+  const schema = rateLimitDirectiveTransformer(schemaInput)
+
   server = new ApolloServer({
     //gql schema only visibly locally
+    schema,
     introspection: process.env.NODE_ENV === 'local',
-    resolvers: resolvers,
-    typeDefs: typeDefs(),
     context: createContext,
     formatError,
     // disable landingPage for prod
