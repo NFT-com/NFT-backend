@@ -249,7 +249,7 @@ const signHash = (
         const hmac = crypto.createHmac('sha256', String(process.env.SHARED_MINT_SECRET))
         const { timestamp } = input
         const inputObject = {
-          address: wallet[0]?.address,
+          address: wallet[0]?.address?.toLowerCase(),
           timestamp,
         }
         const calculatedSignature = hmac.update(JSON.stringify(inputObject)).digest('hex')
