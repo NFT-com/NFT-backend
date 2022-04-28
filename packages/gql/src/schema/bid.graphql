@@ -36,6 +36,10 @@ input BidInput {
   signature: SignatureInput!
 }
 
+input SignHashInput {
+  timestamp: String!
+}
+
 input BidsInput {
   pageInput: PageInput
   profileId: ID
@@ -74,6 +78,6 @@ extend type Mutation {
   bid(input: BidInput!): Bid!
   cancelBid(id: ID!): Boolean!
   signHashProfile(profileUrl: String!): SignHashOutput!
-  signHash: SignHashOutput!
+  signHash(input: SignHashInput!): SignHashOutput!
   setProfilePreferences(input: ProfilePreferenceInput!): [Bid!]!
 }

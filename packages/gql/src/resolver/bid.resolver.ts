@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { differenceInSeconds, isEqual } from 'date-fns'
 import abi from 'ethereumjs-abi'
 import { combineResolvers } from 'graphql-resolvers'
@@ -6,7 +7,7 @@ import Web3 from 'web3'
 
 import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError, profileError } from '@nftcom/gql/error'
+import { appError, mintError, profileError, userError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
@@ -220,31 +221,56 @@ const getMyBids = (
 
 const signHash = (
   _: any,
-  args: unknown,
+  args: gql.MutationSignHashArgs,
   ctx: Context,
 ): Promise<gql.SignHashOutput> => {
   const privateKey = process.env.PUBLIC_SALE_KEY
-  const { user } = ctx
-  
-  return ctx.repositories.wallet.findByUserId(user.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        mintError.buildWalletEmpty(),
-        mintError.ErrorType.WalletEmpty,
-      ),
-    )).then((wallet) => {
-      const hash = '0x' + abi.soliditySHA3(
-        ['address', 'string'],
-        [wallet[0]?.address, new Date().getTime().toString()],
-      ).toString('hex')
-    
-      const sigObj = web3.eth.accounts.sign(hash, privateKey)
-    
-      return {
-        hash: sigObj.messageHash,
-        signature: sigObj.signature,
-      }
-    })
+
+  const { user, xMintSignature } = ctx
+
+  logger.debug('signHash', { loggedInUserId: user.id, input: args.input, xMintSignature })
+
+  const schema = Joi.object().keys({
+    timestamp: Joi.string(),
+  })
+  const { input } = args
+  joi.validateSchema(schema, input)
+
+  if (!xMintSignature) {
+    throw userError.buildAuth()
+  } else {
+    return ctx.repositories.wallet.findByUserId(user.id)
+      .then(fp.rejectIfEmpty(
+        appError.buildNotFound(
+          mintError.buildWalletEmpty(),
+          mintError.ErrorType.WalletEmpty,
+        ),
+      )).then((wallet) => {
+        const hmac = crypto.createHmac('sha256', process.env.SHARED_MINT_SECRET)
+        const { timestamp } = input
+        const inputObject = {
+          address: wallet[0]?.address,
+          timestamp,
+        }
+        const calculatedSignature = hmac.update(JSON.stringify(inputObject)).digest('hex')
+        
+        if (xMintSignature != calculatedSignature) {
+          throw userError.buildAuth()
+        } else {
+          const hash = '0x' + abi.soliditySHA3(
+            ['string'],
+            [xMintSignature],
+          ).toString('hex')
+      
+          const sigObj = web3.eth.accounts.sign(hash, privateKey)
+      
+          return {
+            hash: sigObj.messageHash,
+            signature: sigObj.signature,
+          }
+        }
+      })
+  }
 }
 
 const signHashProfile = (

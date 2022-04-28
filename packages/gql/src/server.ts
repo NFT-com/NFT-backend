@@ -44,6 +44,7 @@ const createContext = async (ctx): Promise<Context> => {
   const network = headers[networkHeader] || null
   const chainId = headers[chainIdHeader] || null
   const authSignature = headers[authHeader] || null
+  const xMintSignature = headers['x-mint-signature'] || null
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
@@ -63,6 +64,7 @@ const createContext = async (ctx): Promise<Context> => {
     user,
     repositories,
     teamKey,
+    xMintSignature,
   }
 }
 
