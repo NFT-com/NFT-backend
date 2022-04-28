@@ -37,7 +37,7 @@
     "ethereumjs-abi": "^0.6.8",
     "ethers": "5.6.4",
     "express": "^4.17.2",
-    "graphql": "^16.0.0",
+    "graphql": "^15.8.0",
     "graphql-rate-limit-directive": "^2.0.2",
     "graphql-resolvers": "^0.4.2",
     "graphql-scalars": "^1.13.1",
