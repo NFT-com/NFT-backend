@@ -344,29 +344,6 @@ const cancelBid = (
   return repositories.bid.deleteById(args.id)
 }
 
-const getTopBids = (
-  _: any,
-  args: gql.QueryTopBidsArgs,
-  ctx: Context,
-): Promise<gql.BidsOutput> => {
-  const { user } = ctx
-  logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
-  const inputFilters = {
-    profileId: args?.input?.profileId,
-    status: args?.input?.status,
-  }
-  const filters = [helper.inputT2SafeK(inputFilters)]
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    pageInput,
-    filters,
-    [], // relations
-    'price',
-  )
-    .then(pagination.toPageable(pageInput, 'price'))
-}
-
 /**
  * Used for Genesis Key holders to set their Profile URI preferences.
  */
@@ -432,7 +409,6 @@ export default {
   Query: {
     // bids: getBids,
     myBids: combineResolvers(auth.isAuthenticated, getMyBids),
-    topBids: getTopBids,
   },
   Mutation: {
     bid: bid,
