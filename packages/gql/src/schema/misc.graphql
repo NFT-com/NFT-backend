@@ -5,17 +5,6 @@ type FileUploadOutput {
   sessionToken: String!
 }
 
-input EndAuctionInput {
-  profileId: String!
-  walletId: String!  
-}
-
-type EndAuctionOutput {
-  id: ID!
-  price: Uint256!
-  profile: Profile
-}
-
 type EndGkWinner {
   key: String
   value: String
@@ -62,6 +51,5 @@ extend type Query {
 
 extend type Mutation {
   uploadFileSession: FileUploadOutput!
-  endProfileAuction(input: EndAuctionInput!): EndAuctionOutput!
   endGKBlindAuction: EndGkOutput!
 }
