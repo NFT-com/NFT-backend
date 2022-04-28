@@ -35,7 +35,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
         logger.debug(`address: ${address}, profile: ${profile.url}, tokenId: ${tokenId}`)
 
         // wallet exists, so update user accordingly
-        if (foundWallet && foundWallet.id !== profile.id) {
+        if (foundWallet && foundWallet.id !== profile.ownerWalletId) {
           logger.debug('saved existing profile user wallet')
           repositories.profile.save({
             ...profile,
