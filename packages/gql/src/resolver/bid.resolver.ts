@@ -51,8 +51,11 @@ const bid = (
 
   if (input.nftType === gql.NFTType.GenesisKey &&
     /* 4/26/2022, 7:00:00 PM in Milliseconds */
-    1651014000000 > new Date().getTime()) {
-    throw appError.buildForbidden('Auction  has not started.')
+    1651014000000 > new Date().getTime() &&
+    /* 4/28/2022, 7:00:00 PM in Milliseconds */
+    1651186800000 < new Date().getTime()
+  ) {
+    throw appError.buildForbidden('Auction is not live.')
   }
 
   return core.getWallet(ctx, input.wallet)
