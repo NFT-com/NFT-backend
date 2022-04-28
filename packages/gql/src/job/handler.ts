@@ -92,7 +92,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                   walletIdAddressMapping[bid.walletId]]
                 const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
                   
-                if (ethBalance < Number(bid.price)) {
+                if (ethBalance < Number(bid.price) && new Date().getTime() < 1651186800000) {
                   logger.info('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance, wallet: walletIdAddressMapping[bid.walletId], mergedBalance })
                   repositories.bid.deleteById(bid.id)
                 }
