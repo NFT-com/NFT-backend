@@ -101,6 +101,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['HCS_ACCOUNT_ID'] = process.env.HCS_ACCOUNT_ID || parsedFile['HCS_ACCOUNT_ID']
   parsedFile['HCS_PRIVATE_KEY'] = process.env.HCS_PRIVATE_KEY || parsedFile['HCS_PRIVATE_KEY']
   parsedFile['PUBLIC_SALE_KEY'] = process.env.PUBLIC_SALE_KEY || parsedFile['PUBLIC_SALE_KEY']
+  parsedFile['SHARED_MINT_SECRET'] = process.env.SHARED_MINT_SECRET || parsedFile['SHARED_MINT_SECRET']
   parsedFile['SERVER_CONFIG'] = process.env.SERVER_CONFIG || ''
   parsedFile['SENTRY_DSN'] = process.env.SENTRY_DSN || parsedFile['SENTRY_DSN']
   parsedFile['ZMOK_API_URL'] = process.env.ZMOK_API_URL || parsedFile['ZMOK_API_URL']
