@@ -123,7 +123,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     const filter = {
       address: helper.checkSum(contracts.profileAuctionAddress(chainId)),
       topics: topics,
-      fromBlock: chainId == 4 ? 10540040 : 14629780, // mainnet
+      fromBlock: chainId == 4 ? 10540040 : 14675454, // mainnet
     }
 
     logger.debug('getting Ethereum Events')
