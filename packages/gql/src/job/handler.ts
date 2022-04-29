@@ -144,7 +144,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
         validateLiveBalances(filteredBids, chainId),
         events.map((unparsedEvent) => {
           const evt = profileAuctioninterface.parseLog(unparsedEvent)
-          // console.log(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
+          console.log(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
           const [owner,profileUrl,tokenId,,] = evt.args
 
           switch (evt.name) {
