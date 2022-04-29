@@ -126,13 +126,15 @@ export const start = async (): Promise<void> => {
     return repositories.profile.findByURL(username.toLowerCase())
       .then((profile: entity.Profile) => {
         if (!profile) {
-          return Promise.reject(appError.buildExists(
-            profileError.buildProfileNotFoundMsg(username),
-            profileError.ErrorType.ProfileNotFound,
-          ))
+          return res.send({
+            name: username.toLowerCase(),
+            image: 'https://cdn.nft.com/nullPhoto.png',
+            header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+            description: `NFT.com profile for ${username.toLowerCase()}`,
+          })
         } else {
           return res.send({
-            name: req.params.username,
+            name: username?.toLowerCase(),
             image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
             header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
             description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
