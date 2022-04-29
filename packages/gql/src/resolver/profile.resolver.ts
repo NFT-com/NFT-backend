@@ -1,5 +1,5 @@
 import aws from 'aws-sdk'
-import { utils } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
@@ -13,7 +13,8 @@ import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { generateCompositeImage, getAWSConfig } from '@nftcom/gql/service/core.service'
-import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { NftProfile } from '@nftcom/shared/helper/typechain'
 
 import { blacklistBool } from '../service/core.service'
 
@@ -531,6 +532,76 @@ const getLatestProfiles = (
     .then(pagination.toPageable(pageInput))
 }
 
+const getOwnerOfTokenIds = async (
+  nftProfileContract: NftProfile,
+  start: BigNumber,
+  end: BigNumber,
+  repositories: db.Repository,
+  chainId: string,
+): Promise<void> => {
+  const addresses = await nftProfileContract.multiOwnerOf(start, end)
+  await Promise.allSettled(
+    addresses.map(async (address, index) => {
+      const wallet = await repositories.wallet.findByChainAddress(chainId, address)
+      if (wallet) {
+        const tokenId = BigNumber.from(index).add(start)
+        const profile = await repositories.profile.findOne({
+          where: {
+            tokenId: tokenId.toString(),
+          },
+        })
+        if (profile) {
+          if (profile.ownerWalletId !== wallet.id) {
+            await repositories.profile.updateOneById(profile.id, {
+              ownerUserId: wallet.userId,
+              ownerWalletId: wallet.id,
+            })
+          }
+        }
+      }
+    }))
+}
+
+// const updateOwnerInformation = async (tokenIdChunks: number[][]) => {
+//   await Promise.allSettled(
+//     tokenIdChunks.map((tokenIds: number[]) => {
+//
+//     })
+//   )
+// }
+
+const syncProfiles = (
+  _: any,
+  args: gql.MutationSyncProfilesArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { repositories } = ctx
+  const { chainId } = args
+  console.log(repositories)
+  // logger.debug('syncProfiles', { loggedInUserId: user.id })
+  const nftProfileContract = typechain.NftProfile__factory.connect(
+    contracts.nftProfileAddress(chainId),
+    provider.provider(Number(chainId)),
+  )
+
+  // const chunkLength = 500
+
+  return nftProfileContract.totalSupply().then((totalSupply) => {
+    const counts = totalSupply.toNumber()
+    const tokenIds = new Array(counts)
+    tokenIds.fill(0)
+    return getOwnerOfTokenIds(nftProfileContract,
+      BigNumber.from(0),
+      BigNumber.from(counts),
+      repositories,
+      chainId,
+    )
+      .then(() => {
+        return true
+      })
+  })
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -550,6 +621,7 @@ export default {
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
+    syncProfiles: syncProfiles,
   },
   Profile: {
     followersCount: getFollowersCount,

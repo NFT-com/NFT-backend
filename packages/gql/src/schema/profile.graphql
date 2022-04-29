@@ -101,4 +101,5 @@ extend type Mutation {
   mintGKProfile(input: MintGKProfileInput): String!
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
   createCompositeImage(input: CreateCompositeImageInput): Profile!
+  syncProfiles(chainId: String): Boolean!
 }
