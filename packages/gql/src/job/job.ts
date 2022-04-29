@@ -4,12 +4,12 @@ import { redisConfig } from '@nftcom/gql/config'
 import {
 //MARKETPLACE_SYNC_JOB,
 // NFT_COLLECTION_JOB,
-  PROFILE_SYNC_JOB,
+// PROFILE_SYNC_JOB,
 //TYPESENSE_INDEX_SCHEMA_JOB,
 } from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 // import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
-import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
+// import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
 // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
 // import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
 // import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
@@ -42,10 +42,10 @@ const createQueues = (): void => {
   //   redis,
   // })
 
-  queues[PROFILE_SYNC_JOB] = new Bull(PROFILE_SYNC_JOB, {
-    prefix: queuePrefix,
-    redis,
-  })
+  // queues[PROFILE_SYNC_JOB] = new Bull(PROFILE_SYNC_JOB, {
+  //   prefix: queuePrefix,
+  //   redis,
+  // })
   // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
   // queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
   //   prefix: queuePrefix,
@@ -64,8 +64,8 @@ const listenToJobs = (): Promise<void[]> => {
     switch (queue.name) {
     // case NFT_COLLECTION_JOB:
     //   return queue.process(getUsersNFTs)
-    case PROFILE_SYNC_JOB:
-      return queue.process(syncProfileNFTs)
+    // case PROFILE_SYNC_JOB:
+    //   return queue.process(syncProfileNFTs)
     // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
     // case MARKETPLACE_SYNC_JOB:
     //   return queue.process(syncMarketplace)
@@ -90,14 +90,14 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     //     repeat: { every: 60000 * 8 },
     //     jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running) 
     //   })
-    case PROFILE_SYNC_JOB:
-      return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
-        removeOnComplete: true,
-        removeOnFail: true,
-        // repeat every 10 minutes for nft profile job
-        repeat: { every: 60000 * 10 },
-        jobId: 'profile_sync_job',
-      })
+    // case PROFILE_SYNC_JOB:
+    //   return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
+    //     removeOnComplete: true,
+    //     removeOnFail: true,
+    //     // repeat every 10 minutes for nft profile job
+    //     repeat: { every: 60000 * 10 },
+    //     jobId: 'profile_sync_job',
+    //   })
     // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
     // case MARKETPLACE_SYNC_JOB:
     //   return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
