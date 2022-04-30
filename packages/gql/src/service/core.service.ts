@@ -472,7 +472,7 @@ export const reservedProfiles = {
   '0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349': ['km', 'makishima'],
   '0x7a3a08f41fa1a97e23783C04ff1095598ce0132c': ['kevincage', 'kevincageofficial'],
   '0xF45B6966E588c5286D4397256B74bb9bfCf24296': ['mrwonderful', 'kevinoleary'],
-  '0xf9142440D22CE022b5d88062a0b0dce0149e5F65': ['khurram', 'shari'],
+  '0xf9142440D22CE022b5d88062a0b0dce0149e5F65': ['khurram', 'logic'],
   '0xa18376780EB719bA2d2abb02D1c6e4B8689329e0': ['k', 's'],
   '0x321dF32c66A18D4e085705d50325040a7dC9d76A': ['cryptozombie', 'zombie'],
   '0x5259871a09d00DF405857837B8348b320AAf24C1': ['larryantoine', 'larry'],
