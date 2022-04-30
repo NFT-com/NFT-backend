@@ -433,7 +433,7 @@ export const reservedProfiles = {
   '0x2a2E938eC0b8E2bD534795dE09AE722b78f46a3e': ['decentralized', 'sharemyart'],
   '0x8cb377959625E693986c6AdeF82fFF01d4d91aF8': ['fungibles', 'probablynothing'],
   '0x916D113ca8FbF529ab2565B2D528eF979b8f8004': ['gareb', 'shamus'],
-  '0xe5660Eb0fB9BBF7B7Aa9736f521099CDA3fB21D6': ['g', 'rentals'],
+  '0xe5660Eb0fB9BBF7B7Aa9736f521099CDA3fB21D6': ['cars', 'rentals'],
   '0xb56E74b28CFa1C4e4d30591227a02B5879155BAF': ['cryptosrus', 'mint'],
   '0xA593C8F83f8Ddaa378Fb9450B9dd29413069E420': ['crypto_tech_women', 'ctw'],
   '0x3B883B85Fd41b81Ef23B6041248bC6AC0b1C04A7': ['happy', 'david'],
