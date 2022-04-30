@@ -1,15 +1,23 @@
-import { utils } from 'ethers'
+import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import Redis from 'ioredis'
 import Joi from 'joi'
 
+import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, curationError, nftError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { checkNFTContractAddresses, updateWalletNFTs } from '@nftcom/gql/job/nft.job'
 import { core } from '@nftcom/gql/service'
-import { _logger, defs, entity, fp,helper } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp,helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
+
+import { redisConfig } from '@nftcom/gql/config'
+const redis = new Redis({
+  port: redisConfig.port,
+  host: redisConfig.host,
+})
 
 const getNFT = (
   _: unknown,
@@ -215,8 +223,45 @@ const refreshMyNFTs = (
     })
 }
 
+const getGkNFTs = async (
+  _: any,
+  args: { tokenId: gql.Scalars['String'] },
+  ctx: Context,
+): Promise<gql.GetGkNFTsOutput> => {
+  const { user } = ctx
+  logger.debug('getGkNFTs', { loggedInUserId: user?.id  })
+
+  const cachedData = await redis.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`)
+  if (cachedData) {
+    return JSON.parse(cachedData)
+  } else {
+    const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+    const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
+  
+    try {
+      const response: any = await web3.alchemy.getNftMetadata({
+        contractAddress: contracts.genesisKeyAddress(process.env.CHAIN_ID),
+        tokenId: ethers.BigNumber.from(args?.tokenId).toString(),
+        tokenType: 'erc721',
+      })
+  
+      await redis.set(
+        `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`,
+        JSON.stringify(response),
+        'ex',
+        60 * 60, // 60 minutes
+      )
+  
+      return response
+    } catch (err) {
+      throw nftError.buildNFTNotFoundMsg(args?.tokenId)
+    }
+  }
+}
+
 export default {
   Query: {
+    gkNFTs: getGkNFTs,
     nft: getContractNFT,
     nftById: getNFT,
     nfts: getNFTs,
