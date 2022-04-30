@@ -366,5 +366,5 @@ export const createEBInstance = (
       },
     ],
   },
-  { customTimeouts: { create: '30m' } } )
+  { customTimeouts: { create: '30m', update: '30m' } } )
 }
