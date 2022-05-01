@@ -505,10 +505,10 @@ export const reservedProfiles = {
   '0x9E3508a1dE57a459835a2DFDc451afa7677962DD': ['trading', 'tomcrown'],
   '0x05AE0683d8B39D13950c053E70538f5810737bC5': ['philosophy', 'conspiracy'],
   '0x3651c09BfAEccc9D03EB8f7181Ce58082377DA25': ['spirituality', 'metaphysics'],
-  '0x8Dbbca57Ea56290Efa14D835bBfd34fAF1d89753': ['vonmises ', 'vmvault '],
+  '0x8Dbbca57Ea56290Efa14D835bBfd34fAF1d89753': ['vonmises', 'vmvault'],
   '0xE0Ae80592E0be32f899A448FA927929530FCf2c5': ['fruit', 'vegetable'],
   '0xfA3ccA6a31E30Bf9A0133a679d33357bb282c995': ['yale', 'y'],
-  '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza ', 'gaming '],
+  '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza', 'gaming'],
 }
 
 export const OFAC = {
