@@ -388,9 +388,6 @@ export const blacklistProfilePatterns = [
   /^cryptohayes$/,
   /^garyv$/,
   /^veefriends$/,
-  // temporarily "banned" profiles (reserved for insiders with a 2nd address)
-  /^fitness$/,
-  /^longevity$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
@@ -408,26 +405,26 @@ export const reservedProfiles = {
   '0x12F37431468eb75c2a825e2Cf8Fde773aD94c8EA': ['ar', 'electricfeel'],
   '0x9f0d3E5aA86c242DbAB469486Fa4C2Ec04974A9a': ['nftgrails', 'averyandon'],
   '0xc2D558E4556B09519649749DC702D804E1F71FD4': ['lovewatts', 'knowgood'],
-  '0x699F3595e0a04800d2CDE34022D113853696e3c2': ['balajis', '1729'],
+  '0x5257B8a48Ff01182617f2Fd25E9C1dB0b2dD6475': ['balajis', '1729'],
   '0xc69004e5384391D86C002643D84da620B26e89D8': ['baronvonhustle', 'jasontheape'],
   '0x54D1F8745aB57c29d0Cec4877e75028Fe37689f1': ['bengreenfield', 'bengreenfieldlife'],
   // todo: 2nd address needed. remove these from the banlist above if you want to use this.
-  // '0x54D1F8745aB57c29d0Cec4877e75028Fe37689f1': ['fitness', 'longevity'],
+  '0x5aEfCB0F364AdbAFC197f91c8496a488bA90C3d1': ['fitness', 'longevity'],
   '0x2e50870053A015409269d9f9e26D3A6869887020': ['ben', 'tiktok'],
   '0xAe51b702Ee60279307437b13734D27078EF108AA': ['billy', 'newyork'],
   '0x577C0eEDccEbF9E0eeD9F64962535C56692e9FC1': ['hodl', 'p2e'],
   '0xcDe8B26f837A77A22d95bA2701c68D3E96351287': ['sex', '0'],
   '0xaCCc711035b1D2EBE8B184d4798AcF434f549103': ['brock', 'pierce'],
   '0x615E4c654Ba4a81970d9c3Ff25A3F602bB384045': ['artpartner', 'art_partner'],
-  '0xD8D46690Db9534eb3873aCf5792B8a12631D8229': ['chris', 'tesla'],
-  '0x61503aD92E94cA295926854b35dfced55797f5a1': ['cozomomedici', 'cozomo'],
+  '0x3F99345b567054BC89950Cb96e189FaF7e1bd0d4': ['chris', 'tesla'],
+  '0xCe90a7949bb78892F159F428D0dC23a8E3584d75': ['cozomomedici', 'cozomo'],
   '0xd5B94091505B8D578B154BE895D060fB1615ea84': ['crystal', 'unicorn'],
   '0x1e75E1c7e430b9a6863B531cfe6b3820d82b42f8': ['meta', 'pepsi'],
   '0x4C88FE50000606F1E61fE3F6Fa501423e2f60553': ['daniel ', '2lads'],
   '0x68e750DD425d962f255D3a10Ea649F52be58fe18': ['don', 'donald'],
   '0xF6c3c3621F42Ec1F1CD1207Bb1571d93646Ab29A': ['voskcoin', 'vosk'],
   '0x46E83273B865829CBE193642741ae46cC65463e0': ['art', 'drue'],
-  '0x0f33d6F1d69f87E5494cBfCAC9B9A3619f38Ca09': ['kim', 'matt'],
+  '0x86C8203Fe8F7d60Afaa0bddA4d92cc5abd901578': ['kim', 'matt'],
   '0xd83B7Af20636b7e1A0d62b5600B5ABf8d49D4C96': ['buddy', 'towner'],
   '0x56a065dFEB4616f89aD733003914A8e11dB6CEdD': ['fergal', 'fernando_galarcio'],
   '0x2a2E938eC0b8E2bD534795dE09AE722b78f46a3e': ['decentralized', 'sharemyart'],
@@ -456,7 +453,7 @@ export const reservedProfiles = {
   '0xaC72e2fa06f52De2352F1548F00858E81C6d39C0': ['entertainment', 'shopping'],
   '0x5c09f8b380140E40A4ADc744F9B199a9383553F9': ['joey', 'jp'],
   '0xAf68eFa7F52DF54C6888b53bD4AC66803Dc92A5b': ['nft', 'crypto'],
-  '0xf967ccd7b05B3938B1d0E211e473c5C485B6327d': ['johngeiger', 'geiger'],
+  '0xA0493410c8EAb06CbE48418021DcbacDB04303Ab': ['johngeiger', 'geiger'],
   '0xC9d4f1d9CAc71AE773dab932d01138f04Fc9e01f': ['stoopidbuddy', 'harvatine'],
   '0x78908a90A5e8AB9Fd0DbcA58E7aDE532Cf2c8667': ['lgbt', 'john'],
   '0x7F04084166e1F2478B8f7a99FafBA4238c7dDA83': ['real_estate', 'watches'],
@@ -477,7 +474,7 @@ export const reservedProfiles = {
   '0x321dF32c66A18D4e085705d50325040a7dC9d76A': ['cryptozombie', 'zombie'],
   '0x0088601C5F3E3D4ea452FBbC181Ed2d333a81460': ['larryantoine', 'larry'],
   '0xdc36F82FC3C6331975fB20C74d01B378f1d0EB78': ['gallery', 'lighthouse'],
-  '0xfF0BD4AA3496739D5667AdC10e2b843DFAB5712b': ['loganpaul', 'originals'],
+  '0xb74F011dac5862822FdF29Fb73dcdE7bCFDaBa7a': ['loganpaul', 'originals'],
   '0x4a5978Ba7C240347280Cdfb5dfaFbb1E87d25af8': ['metagirl', 'andersen'],
   '0x4c4c22c0C670607F5fd519d78c89925158f5Fe59': ['superbuddy', 'wizmatts'],
   '0xe95455414169FD5C89FAC460412a81A1daEe452e': ['amazon', 'irl'],
@@ -508,7 +505,7 @@ export const reservedProfiles = {
   '0x8Dbbca57Ea56290Efa14D835bBfd34fAF1d89753': ['vonmises', 'vmvault'],
   '0xE0Ae80592E0be32f899A448FA927929530FCf2c5': ['fruit', 'vegetable'],
   '0xfA3ccA6a31E30Bf9A0133a679d33357bb282c995': ['yale', 'y'],
-  '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza', 'gaming'],
+  '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza', 'pantherpunks'],
 }
 
 export const OFAC = {
