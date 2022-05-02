@@ -531,6 +531,30 @@ const getLatestProfiles = (
     .then(pagination.toPageable(pageInput))
 }
 
+const createAllCompositeImages = async (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<boolean> => {
+  const { user, repositories } = ctx
+  logger.debug('createAllCompositeImages', { loggedInUserId: user.id })
+  const profiles = await repositories.profile.findAll()
+  if (!profiles.length) return true
+  await Promise.allSettled(
+    profiles.map(async (profile: entity.Profile) => {
+      const imageURL = await generateCompositeImage(profile.url)
+      await repositories.profile.updateOneById(
+        profile.id,
+        {
+          photoURL: imageURL,
+          description: `NFT.com profile for ${profile.url}`,
+        },
+      )
+    }),
+  )
+  return true
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -550,6 +574,7 @@ export default {
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
+    createAllCompositeImages: combineResolvers(auth.isAuthenticated, createAllCompositeImages),
   },
   Profile: {
     followersCount: getFollowersCount,
