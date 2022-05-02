@@ -616,7 +616,7 @@ export const generateCompositeImage = async ( profileURL: string): Promise<strin
   const buffer = generateSVG(url.toUpperCase())
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
-  const imageKey = Date.now().toString() + '-' + profileURL + '.svg'
+  const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
   try {
     const res = await s3.upload({
       Bucket: assetBucket.name,
@@ -662,8 +662,12 @@ export const createProfile = (
             .then((imageURL: string) =>
               ctx.repositories.profile.updateOneById(
                 savedProfile.id,
-                { photoURL: imageURL },
-              )))
+                {
+                  photoURL: imageURL,
+                  description: `NFT.com profile for ${savedProfile.url}`,
+                },
+              ),
+            ))
     })
 }
 
