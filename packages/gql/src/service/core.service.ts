@@ -664,6 +664,7 @@ export const createProfile = (
                 savedProfile.id,
                 {
                   photoURL: imageURL,
+                  bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
                   description: `NFT.com profile for ${savedProfile.url}`,
                 },
               ),
