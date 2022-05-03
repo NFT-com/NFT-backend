@@ -9,7 +9,7 @@ import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { _logger, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
-
+export const DEFAULT_NFT_IMAGE = 'https://cdn.nft.com/Medallion.jpg'
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
 
@@ -607,13 +607,16 @@ export const s3ToCdn = (s3URL: string): string => {
   }
 }
 
-export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
+export const generateCompositeImage = async (
+  profileURL: string,
+  defaultImagePath: string,
+): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
-  const buffer = generateSVG(url.toUpperCase())
+  const buffer = generateSVG(url.toUpperCase(), defaultImagePath)
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
-  const imageKey = Date.now().toString() + '-' + profileURL + '.svg'
+  const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
   try {
     const res = await s3.upload({
       Bucket: assetBucket.name,
@@ -655,12 +658,17 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then((savedProfile: entity.Profile) =>
-          generateCompositeImage(savedProfile.url)
+          generateCompositeImage(savedProfile.url, 'https://cdn.nft.com/Medallion.jpg')
             .then((imageURL: string) =>
               ctx.repositories.profile.updateOneById(
                 savedProfile.id,
-                { photoURL: imageURL },
-              )))
+                {
+                  photoURL: imageURL,
+                  bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+                  description: `NFT.com profile for ${savedProfile.url}`,
+                },
+              ),
+            ))
     })
 }
 
