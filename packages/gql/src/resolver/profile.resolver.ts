@@ -12,7 +12,12 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { generateCompositeImage, getAWSConfig, s3ToCdn } from '@nftcom/gql/service/core.service'
+import {
+  DEFAULT_NFT_IMAGE,
+  generateCompositeImage,
+  getAWSConfig,
+  s3ToCdn,
+} from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { blacklistBool } from '../service/core.service'
@@ -408,7 +413,7 @@ const uploadProfileImages = async (
   ctx: Context,
 ): Promise<gql.Profile> => {
   const { repositories } = ctx
-  const { banner, avatar, profileId, description } = args.input
+  const { banner, avatar, profileId, description, compositeProfileURL } = args.input
   let profile = await repositories.profile.findById(profileId)
   if (!profile) {
     return Promise.reject(appError.buildNotFound(
@@ -475,9 +480,21 @@ const uploadProfileImages = async (
   if (avatarResponse && avatarStream) {
     const avatarUrl = await uploadStreamToS3(avatarResponse.filename, s3, avatarStream)
     if (avatarUrl) {
-      await repositories.profile.updateOneById(profileId, {
-        photoURL: avatarUrl,
-      })
+      // if user does not want to composite image with profile url, we just save image to photoURL
+      if (!compositeProfileURL) {
+        await repositories.profile.updateOneById(profileId, {
+          photoURL: avatarUrl,
+        })
+      }
+      // else, we will create composite image
+      else {
+        const compositeUrl = await generateCompositeImage(profile.url, avatarUrl)
+        if (compositeUrl) {
+          await repositories.profile.updateOneById(profileId, {
+            photoURL: compositeUrl,
+          })
+        }
+      }
     }
   }
 
@@ -504,7 +521,7 @@ const createCompositeImage = async (
     ))
   }
 
-  const imageURL = await generateCompositeImage(profile.url)
+  const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
   profile = await repositories.profile.updateOneById(profileId, {
     photoURL: imageURL,
   })
@@ -542,7 +559,7 @@ const createAllCompositeImages = async (
   if (!profiles.length) return true
   await Promise.allSettled(
     profiles.map(async (profile: entity.Profile) => {
-      const imageURL = await generateCompositeImage(profile.url)
+      const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
       await repositories.profile.updateOneById(
         profile.id,
         {

@@ -72,6 +72,7 @@ input UploadProfileImagesInput {
   banner: Upload
   avatar: Upload
   description: String
+  compositeProfileURL: Boolean!
 }
 
 input CreateCompositeImageInput {
