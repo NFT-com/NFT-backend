@@ -1,3 +1,4 @@
+import { nullPhotoBase64 } from './nullPhoto.base64'
 import { RubikBase64 } from './rubik.base64'
 import { RubikBlackBase64 } from './rubikBlack.base64'
 
@@ -5,6 +6,8 @@ export const generateSVG = (
   profileURL: string,
   defaultImagePath: string,
 ): string => {
+  console.log(defaultImagePath)
+
   return `<svg width="480" height="480"
   xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -19,7 +22,7 @@ export const generateSVG = (
       }
     </style>
   </defs>
-  <image href="${defaultImagePath}" height="480" width="480"/>
+  <image xmlns="http://www.w3.org/2000/svg" href="data:image/jpeg;base64,${nullPhotoBase64}" alt="Medallion"/>
   <text style="letter-spacing: 3px;" font-family="Rubik" x="50%" y="380" font-size="20"  text-anchor="middle" fill="#ccc">NFT.COM/</text>
   <text font-family="Rubik-Black" x="50%" y="420" font-size="30"  text-anchor="middle" fill="white">${profileURL}</text>
 </svg>`
