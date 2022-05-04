@@ -23,8 +23,10 @@ runs:
     - name: Login to AWS ECR
       id: login_ecr
       uses: aws-actions/amazon-ecr-login@v1
-    - name: Install Pulumi CLI
+    - name: Install pulumi
       uses: pulumi/setup-pulumi@v2
+      with:
+        pulumi-version: 3.31.0
     - name: Login to Pulumi backend
       shell: bash
       run: pulumi login s3://nftcom-pulumi-state
