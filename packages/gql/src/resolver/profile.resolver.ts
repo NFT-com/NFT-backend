@@ -550,15 +550,25 @@ const getLatestProfiles = (
 
 const createAllCompositeImages = async (
   _: any,
-  args: any,
+  args: gql.MutationCreateAllCompositeImagesArgs,
   ctx: Context,
-): Promise<boolean> => {
+): Promise<gql.ProfilesOutput> => {
   const { user, repositories } = ctx
-  logger.debug('createAllCompositeImages', { loggedInUserId: user.id })
+  logger.debug('createAllCompositeImages', { loggedInUserId: user.id, input: args?.input })
   const profiles = await repositories.profile.findAll()
-  if (!profiles.length) return true
+  if (!profiles.length) return
+  const pageInput = args?.input.pageInput
+  const filters = [helper.inputT2SafeK<entity.Profile>(args?.input)]
+  let result: defs.PageableResult<entity.Profile> = await core.paginatedEntitiesBy(
+    repositories.profile,
+    pageInput,
+    filters,
+    [],
+    'createdAt',
+    'ASC',
+  )
   await Promise.allSettled(
-    profiles.map(async (profile: entity.Profile) => {
+    result[0].map(async (profile: entity.Profile) => {
       const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
       await repositories.profile.updateOneById(
         profile.id,
@@ -570,7 +580,15 @@ const createAllCompositeImages = async (
       )
     }),
   )
-  return true
+  result = await core.paginatedEntitiesBy(
+    repositories.profile,
+    pageInput,
+    filters,
+    [],
+    'createdAt',
+    'ASC',
+  )
+  return pagination.toPageable(pageInput)(result)
 }
 
 export default {
