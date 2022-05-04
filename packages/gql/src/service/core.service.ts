@@ -506,6 +506,12 @@ export const reservedProfiles = {
   '0xE0Ae80592E0be32f899A448FA927929530FCf2c5': ['fruit', 'vegetable'],
   '0xfA3ccA6a31E30Bf9A0133a679d33357bb282c995': ['yale', 'y'],
   '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza', 'pantherpunks'],
+  '0xAd5B657416fbA43CAF6C65Ec8e8DD847d6700286': ['oscars', 'cokecola'],
+  '0xa6EFa954d13ABCe7786b2C65C356c8Ae46aaD261': ['upperdeck', 'loreal'],
+  '0x6F41a9ab54f7665314768Ebd72AF6bB97c6D85dA': ['bearbrick', 'happydad'],
+  '0x1623e9C3dE4D23e6dDF408Dcfa895AD64a63b6c4': ['baltimoreravens', 'livenation'],
+  '0x7C594337490Fab2f846b87E4016ECc8893A0659c': ['wme', 'wrestling'],
+  '0xB807D0789E5086bDf7D0A66d12406dB40fc8Bc90': ['mezcal', 'basel'],
 }
 
 export const OFAC = {
