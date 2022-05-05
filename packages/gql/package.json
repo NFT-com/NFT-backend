@@ -42,6 +42,7 @@
     "graphql-resolvers": "^0.4.2",
     "graphql-scalars": "^1.13.1",
     "graphql-upload": "^13.0.0",
+    "image-to-base64": "^2.2.0",
     "ioredis": "^4.28.5",
     "joi": "^17.4.2",
     "kill-port": "^1.6.1",

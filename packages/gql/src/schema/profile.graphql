@@ -106,5 +106,4 @@ extend type Mutation {
   mintGKProfile(input: MintGKProfileInput): String!
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
   createCompositeImage(input: CreateCompositeImageInput): Profile!
-  createAllCompositeImages(input: CreateAllCompositeImagesInput): ProfilesOutput!
 }

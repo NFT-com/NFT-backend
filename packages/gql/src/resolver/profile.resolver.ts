@@ -548,49 +548,6 @@ const getLatestProfiles = (
     .then(pagination.toPageable(pageInput))
 }
 
-const createAllCompositeImages = async (
-  _: any,
-  args: gql.MutationCreateAllCompositeImagesArgs,
-  ctx: Context,
-): Promise<gql.ProfilesOutput> => {
-  const { user, repositories } = ctx
-  logger.debug('createAllCompositeImages', { loggedInUserId: user.id, input: args?.input })
-  const profiles = await repositories.profile.findAll()
-  if (!profiles.length) return
-  const pageInput = args?.input.pageInput
-  const filters = [helper.inputT2SafeK<entity.Profile>(args?.input)]
-  let result: defs.PageableResult<entity.Profile> = await core.paginatedEntitiesBy(
-    repositories.profile,
-    pageInput,
-    filters,
-    [],
-    'createdAt',
-    'ASC',
-  )
-  await Promise.allSettled(
-    result[0].map(async (profile: entity.Profile) => {
-      const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
-      await repositories.profile.updateOneById(
-        profile.id,
-        {
-          photoURL: imageURL,
-          bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-          description: `NFT.com profile for ${profile.url}`,
-        },
-      )
-    }),
-  )
-  result = await core.paginatedEntitiesBy(
-    repositories.profile,
-    pageInput,
-    filters,
-    [],
-    'createdAt',
-    'ASC',
-  )
-  return pagination.toPageable(pageInput)(result)
-}
-
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -610,7 +567,6 @@ export default {
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
-    createAllCompositeImages: combineResolvers(auth.isAuthenticated, createAllCompositeImages),
   },
   Profile: {
     followersCount: getFollowersCount,
