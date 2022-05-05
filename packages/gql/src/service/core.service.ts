@@ -464,7 +464,7 @@ export const reservedProfiles = {
   '0x0448fb5d1E640eED801e7b98c26624834AaEb89b': ['sports', 'metamoney'],
   '0x7F8B5bdd5Cf38C425E93c54a9D8b924fD16a0a1F': ['jchains', 'cryptojchains'],
   '0x6AC9e51CA18B78307Fe7DF2A01CD3b871F6348D0': ['ijustine', 'jpig'],
-  '0x5b4245dC95831B0a10868aC09559b92cF36C8d8D': ['kathy', 'cybertron'],
+  '0x5b4245dC95831B0a10868aC09559b92cF36C8d8D': ['blizzardentertainment', 'fromsoftware'],
   '0xC857283243E3367dA2c79e6127B25B8f96e276ff': ['me', 'king'],
   '0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349': ['km', 'makishima'],
   '0x7a3a08f41fa1a97e23783C04ff1095598ce0132c': ['kevincage', 'kevincageofficial'],
