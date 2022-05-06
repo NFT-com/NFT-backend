@@ -1,11 +1,13 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
+import imageToBase64 from 'image-to-base64'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
+import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -619,7 +621,18 @@ export const generateCompositeImage = async (
 ): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
-  const buffer = generateSVG(url.toUpperCase(), defaultImagePath)
+  let buffer
+  if (defaultImagePath === DEFAULT_NFT_IMAGE) {
+    buffer = generateSVG(url.toUpperCase(), nullPhotoBase64)
+  } else {
+    try {
+      const base64String = await imageToBase64(defaultImagePath)
+      buffer = generateSVG(url.toUpperCase(), base64String)
+    } catch (e) {
+      logger.debug('generateCompositeImage', e)
+      throw e
+    }
+  }
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
   const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
@@ -664,7 +677,7 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then((savedProfile: entity.Profile) =>
-          generateCompositeImage(savedProfile.url, 'https://cdn.nft.com/Medallion.jpg')
+          generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
             .then((imageURL: string) =>
               ctx.repositories.profile.updateOneById(
                 savedProfile.id,
