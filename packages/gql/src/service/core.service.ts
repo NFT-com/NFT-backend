@@ -398,7 +398,7 @@ export const reservedProfiles = {
   '0xA06B01381c267318f2D65F05bE343c7A2e224713': ['miami', 'miamimind'],
   '0x6430B6b425657C3823683948638fe24431946efF': ['alec', 'eth'],
   '0xCd514eaE987A5A619e7F7EAf7D143fAAAe7fd289': ['guy', 'dude'],
-  '0xCDD6a63FeC8c5Dab5f10a139761aa5aCf729317E': ['alex ', 'ross '],
+  '0xCDD6a63FeC8c5Dab5f10a139761aa5aCf729317E': ['alex', 'ross'],
   '0xce6489bb151a73Fe82999443e8Ba6AF1571C28c9': ['wizards', 'earth'],
   '0x78C5Fa233Eb07486333B91aCA0A6CFa198B24459': ['a', 'am'],
   '0x7fEE3D50AE036F3E72071dDBa811F58472995Edc': ['z', 'nfts'],
@@ -422,7 +422,7 @@ export const reservedProfiles = {
   '0xCe90a7949bb78892F159F428D0dC23a8E3584d75': ['cozomomedici', 'cozomo'],
   '0xd5B94091505B8D578B154BE895D060fB1615ea84': ['crystal', 'unicorn'],
   '0x1e75E1c7e430b9a6863B531cfe6b3820d82b42f8': ['meta', 'pepsi'],
-  '0x4C88FE50000606F1E61fE3F6Fa501423e2f60553': ['daniel ', '2lads'],
+  '0x4C88FE50000606F1E61fE3F6Fa501423e2f60553': ['daniel', '2lads'],
   '0x68e750DD425d962f255D3a10Ea649F52be58fe18': ['don', 'donald'],
   '0xF6c3c3621F42Ec1F1CD1207Bb1571d93646Ab29A': ['voskcoin', 'vosk'],
   '0x46E83273B865829CBE193642741ae46cC65463e0': ['art', 'drue'],
@@ -514,6 +514,9 @@ export const reservedProfiles = {
   '0x1623e9C3dE4D23e6dDF408Dcfa895AD64a63b6c4': ['baltimoreravens', 'livenation'],
   '0x7C594337490Fab2f846b87E4016ECc8893A0659c': ['wme', 'wrestling'],
   '0xB807D0789E5086bDf7D0A66d12406dB40fc8Bc90': ['mezcal', 'basel'],
+  '0xD1ac1e553E029f5dE5732C041DfC9f8CEd937A20': ['venice', 'venicemusic'],
+  '0x4a9096220176a82fa8a7d2b4e1480e1d9bebf691': ['scottdonnell', 'heromaker'],
+  '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
 }
 
 export const OFAC = {
