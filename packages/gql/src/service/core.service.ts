@@ -1,11 +1,13 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
+import imageToBase64 from 'image-to-base64'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
+import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -464,12 +466,12 @@ export const reservedProfiles = {
   '0x0448fb5d1E640eED801e7b98c26624834AaEb89b': ['sports', 'metamoney'],
   '0x7F8B5bdd5Cf38C425E93c54a9D8b924fD16a0a1F': ['jchains', 'cryptojchains'],
   '0x6AC9e51CA18B78307Fe7DF2A01CD3b871F6348D0': ['ijustine', 'jpig'],
-  '0x5b4245dC95831B0a10868aC09559b92cF36C8d8D': ['kathy', 'cybertron'],
+  '0x5b4245dC95831B0a10868aC09559b92cF36C8d8D': ['blizzardentertainment', 'fromsoftware'],
   '0xC857283243E3367dA2c79e6127B25B8f96e276ff': ['me', 'king'],
   '0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349': ['km', 'makishima'],
   '0x7a3a08f41fa1a97e23783C04ff1095598ce0132c': ['kevincage', 'kevincageofficial'],
   '0xF45B6966E588c5286D4397256B74bb9bfCf24296': ['mrwonderful', 'kevinoleary'],
-  '0xf9142440d22ce022b5d88062a0b0dce0149e5f65': ['khurram', 'logic'],
+  '0xf9142440D22CE022b5d88062a0b0dce0149e5F65': ['khurram', 'logic'],
   '0xa18376780EB719bA2d2abb02D1c6e4B8689329e0': ['k', 's'],
   '0x321dF32c66A18D4e085705d50325040a7dC9d76A': ['cryptozombie', 'zombie'],
   '0x0088601C5F3E3D4ea452FBbC181Ed2d333a81460': ['larryantoine', 'larry'],
@@ -619,7 +621,18 @@ export const generateCompositeImage = async (
 ): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
-  const buffer = generateSVG(url.toUpperCase(), defaultImagePath)
+  let buffer
+  if (defaultImagePath === DEFAULT_NFT_IMAGE) {
+    buffer = generateSVG(url.toUpperCase(), nullPhotoBase64)
+  } else {
+    try {
+      const base64String = await imageToBase64(defaultImagePath)
+      buffer = generateSVG(url.toUpperCase(), base64String)
+    } catch (e) {
+      logger.debug('generateCompositeImage', e)
+      throw e
+    }
+  }
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
   const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
@@ -664,7 +677,7 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then((savedProfile: entity.Profile) =>
-          generateCompositeImage(savedProfile.url, 'https://cdn.nft.com/Medallion.jpg')
+          generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
             .then((imageURL: string) =>
               ctx.repositories.profile.updateOneById(
                 savedProfile.id,
