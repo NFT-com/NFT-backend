@@ -7,7 +7,8 @@ import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
-import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
+import { provider } from '@nftcom/gql/helper'
+import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const repositories = db.newRepositories()
@@ -64,7 +65,7 @@ const splitGetLogs = async (
  * @param toBlock
  * @param currentStackLv
  */
-const getPastLogs = async (
+export const getPastLogs = async (
   provider: ethers.providers.BaseProvider,
   address: string,
   topics: any[],
@@ -884,9 +885,9 @@ const listenBuyNowInfoEvents = async (
  * get cached block from redis to sync marketplace events
  * @param chainId
  */
-const getCachedBlock = async (chainId: number): Promise<number> => {
+const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   try {
-    const cachedBlock = await redis.get(`cached_block_${chainId}`)
+    const cachedBlock = await redis.get(key)
 
     // get 1000 blocks before incase of some blocks not being handled correctly
     if (cachedBlock) return Number(cachedBlock) > 10000
@@ -904,7 +905,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     const chainId = Number(job.data.chainId)
     const chainProvider = provider.provider(chainId)
     const latestBlock = await chainProvider.getBlock('latest')
-    const cachedBlock = await getCachedBlock(chainId)
+    const cachedBlock = await getCachedBlock(chainId, `cached_block_${chainId}`)
 
     await listenApprovalEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenNonceIncrementedEvents(chainId, chainProvider, cachedBlock, latestBlock.number)

@@ -2,9 +2,12 @@ import { Job } from 'bull'
 import cryptoRandomString from 'crypto-random-string'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { ethers, utils } from 'ethers'
+import Redis from 'ioredis'
 
-import { auth } from '@nftcom/gql/helper'
-import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
+import { redisConfig } from '@nftcom/gql/config'
+import { auth, provider } from '@nftcom/gql/helper'
+import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
+import { _logger, contracts, db, defs, entity, fp, helper } from '@nftcom/shared'
 
 import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'
@@ -13,6 +16,11 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
 
+const redis = new Redis({
+  port: redisConfig.port,
+  host: redisConfig.host,
+})
+
 const onlyUnique = (value, index, self: any[]): boolean => {
   return self.indexOf(value) === index
 }
@@ -20,7 +28,7 @@ const onlyUnique = (value, index, self: any[]): boolean => {
 // size of each array for balances for ETH
 // 900 balanceOf queries maxes sits comfortably below the 1000 maximum size limit on Ethereum
 // the size limit is mostly due to gas limits per ethereum call.
-// 
+//
 // Even though balanceOf is a view function, it has to conform to size limits on calls via the
 // ethereum nodes
 const perChunk = 900
@@ -31,13 +39,13 @@ const getAddressBalanceMapping =
     const splitAddressArrays: any = Object.values(walletIdAddressMapping)
       .reduce((resultArray, item, index) => {
         const chunkIndex = Math.floor(index/perChunk)
-  
+
         if (!resultArray[chunkIndex]) {
           resultArray[chunkIndex] = [] // start a new chunk
         }
-  
+
         resultArray[chunkIndex].push(item)
-  
+
         return resultArray
       }, [])
 
@@ -91,7 +99,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 const balanceObj = (await mergedBalance[0])[
                   walletIdAddressMapping[bid.walletId]]
                 const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
-                  
+
                 if (ethBalance < Number(bid.price) && new Date().getTime() < 1651186800000) {
                   logger.info('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance, wallet: walletIdAddressMapping[bid.walletId], mergedBalance })
                   repositories.bid.deleteById(bid.id)
@@ -110,6 +118,34 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
 
 const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
 
+const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
+  const startBlock = chainId == 4 ? 10540040 : 14675454
+  try {
+    const cachedBlock = await redis.get(key)
+
+    // get 1000 blocks before incase of some blocks not being handled correctly
+    if (cachedBlock) return Number(cachedBlock) > 10000
+      ? Number(cachedBlock) - 10000 : Number(cachedBlock)
+    else return startBlock
+  } catch (e) {
+    return startBlock
+  }
+}
+
+const getMintedProfileEvents = async (
+  topics: any[],
+  chainId: number,
+  provider: ethers.providers.BaseProvider,
+  address: string,
+): Promise<ethers.providers.Log[]> => {
+  const latestBlock = await provider.getBlock('latest')
+  const key = `minted_profile_cached_block_${chainId}`
+  const cachedBlock = await getCachedBlock(chainId, key)
+  const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock.number)
+  await redis.set(key, latestBlock.number)
+  return logs
+}
+
 export const getEthereumEvents = (job: Job): Promise<any> => {
   try {
     const { chainId } = job.data
@@ -119,12 +155,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     ]
 
     const chainProvider = provider.provider(Number(chainId))
-
-    const filter = {
-      address: helper.checkSum(contracts.profileAuctionAddress(chainId)),
-      topics: topics,
-      fromBlock: chainId == 4 ? 10540040 : 14675454, // mainnet
-    }
+    const address = helper.checkSum(contracts.profileAuctionAddress(chainId))
 
     logger.debug('getting Ethereum Events')
 
@@ -136,7 +167,7 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
     }).then((bids: entity.Bid[]) => {
       return Promise.all([
         bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey),
-        chainProvider.getLogs(filter),
+        getMintedProfileEvents(topics, chainId, chainProvider, address),
       ])}).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
       logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
 
