@@ -142,7 +142,14 @@ const getMintedProfileEvents = async (
     const latestBlock = await provider.getBlock('latest')
     const key = `minted_profile_cached_block_${chainId}`
     const cachedBlock = await getCachedBlock(chainId, key)
-    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock.number)
+    const logs = await getPastLogs(
+      provider,
+      address,
+      topics,
+      cachedBlock,
+      latestBlock.number,
+      50000,
+    )
     await redis.set(key, latestBlock.number)
     return logs
   } catch (e) {

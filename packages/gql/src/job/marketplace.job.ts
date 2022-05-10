@@ -29,40 +29,13 @@ const defaultBlock: {[chainId: number] : number} = {
 const MAX_BLOCKS = 100000 // we use this constant to split blocks to avoid any issues to get logs for event...
 
 /**
- * recursive method to split blocks for getting event logs
- * @param provider
- * @param fromBlock
- * @param toBlock
- * @param address
- * @param topics
- * @param currentStackLv
- */
-const splitGetLogs = async (
-  provider: ethers.providers.BaseProvider,
-  fromBlock: number,
-  toBlock: number,
-  address: string,
-  topics: any[],
-  currentStackLv: number,
-): Promise<ethers.providers.Log[]> => {
-  // split block range in half...
-  const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
-  // eslint-disable-next-line no-use-before-define
-  const first = await getPastLogs(provider, address, topics,
-    fromBlock, midBlock, currentStackLv + 1)
-  // eslint-disable-next-line no-use-before-define
-  const last = await getPastLogs(provider, address, topics,
-    midBlock + 1, toBlock, currentStackLv + 1)
-  return [...first, ...last]
-}
-
-/**
  * get past event logs
  * @param provider
  * @param address
  * @param topics
  * @param fromBlock
  * @param toBlock
+ * @param maxBlocks
  * @param currentStackLv
  */
 export const getPastLogs = async (
@@ -71,6 +44,7 @@ export const getPastLogs = async (
   topics: any[],
   fromBlock: number,
   toBlock: number,
+  maxBlocks?: number,
   currentStackLv = 0,
 ): Promise<ethers.providers.Log[]> => {
   // if there are too many recursive calls, we just return empty array...
@@ -81,11 +55,21 @@ export const getPastLogs = async (
     return []
   }
 
+  const max_Blocks = maxBlocks ? maxBlocks : MAX_BLOCKS
   try {
     // if there are too many blocks, we will split it up...
-    if ((toBlock - fromBlock) > MAX_BLOCKS) {
+    if ((toBlock - fromBlock) > max_Blocks) {
       logger.debug(`recursive getting logs from ${fromBlock} to ${toBlock}`)
-      return await splitGetLogs(provider, fromBlock, toBlock, address, topics, currentStackLv)
+      // eslint-disable-next-line no-use-before-define
+      return await splitGetLogs(
+        provider,
+        fromBlock,
+        toBlock,
+        address,
+        topics,
+        max_Blocks,
+        currentStackLv,
+      )
     } else {
       // we just get logs using provider...
       logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
@@ -101,6 +85,36 @@ export const getPastLogs = async (
     logger.error('error while getting past logs: ', e)
     return []
   }
+}
+
+/**
+ * recursive method to split blocks for getting event logs
+ * @param provider
+ * @param fromBlock
+ * @param toBlock
+ * @param address
+ * @param topics
+ * @param maxBlocks
+ * @param currentStackLv
+ */
+const splitGetLogs = async (
+  provider: ethers.providers.BaseProvider,
+  fromBlock: number,
+  toBlock: number,
+  address: string,
+  topics: any[],
+  maxBlocks: number,
+  currentStackLv: number,
+): Promise<ethers.providers.Log[]> => {
+  // split block range in half...
+  const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
+  // eslint-disable-next-line no-use-before-define
+  const first = await getPastLogs(provider, address, topics,
+    fromBlock, midBlock, maxBlocks, currentStackLv + 1)
+  // eslint-disable-next-line no-use-before-define
+  const last = await getPastLogs(provider, address, topics,
+    midBlock + 1, toBlock, maxBlocks,currentStackLv + 1)
+  return [...first, ...last]
 }
 
 /**
