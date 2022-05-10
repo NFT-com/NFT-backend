@@ -7,7 +7,7 @@ import Redis from 'ioredis'
 import { redisConfig } from '@nftcom/gql/config'
 import { auth, provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
-import { _logger, contracts, db, defs, entity, fp, helper } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
 import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'
@@ -124,8 +124,8 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
     const cachedBlock = await redis.get(key)
 
     // get 1000 blocks before incase of some blocks not being handled correctly
-    if (cachedBlock) return Number(cachedBlock) > 10000
-      ? Number(cachedBlock) - 10000 : Number(cachedBlock)
+    if (cachedBlock) return Number(cachedBlock) > 1000
+      ? Number(cachedBlock) - 1000 : Number(cachedBlock)
     else return startBlock
   } catch (e) {
     return startBlock
@@ -138,15 +138,20 @@ const getMintedProfileEvents = async (
   provider: ethers.providers.BaseProvider,
   address: string,
 ): Promise<ethers.providers.Log[]> => {
-  const latestBlock = await provider.getBlock('latest')
-  const key = `minted_profile_cached_block_${chainId}`
-  const cachedBlock = await getCachedBlock(chainId, key)
-  const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock.number)
-  await redis.set(key, latestBlock.number)
-  return logs
+  try {
+    const latestBlock = await provider.getBlock('latest')
+    const key = `minted_profile_cached_block_${chainId}`
+    const cachedBlock = await getCachedBlock(chainId, key)
+    const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock.number)
+    await redis.set(key, latestBlock.number)
+    return logs
+  } catch (e) {
+    logger.debug(e)
+    return []
+  }
 }
 
-export const getEthereumEvents = (job: Job): Promise<any> => {
+export const getEthereumEvents = async (job: Job): Promise<any> => {
   try {
     const { chainId } = job.data
 
@@ -159,101 +164,115 @@ export const getEthereumEvents = (job: Job): Promise<any> => {
 
     logger.debug('getting Ethereum Events')
 
-    return repositories.bid.find({
+    const bids = await repositories.bid.find({
       where: [{
         nftType: defs.NFTType.GenesisKey,
         status: defs.BidStatus.Submitted,
       }],
-    }).then((bids: entity.Bid[]) => {
-      return Promise.all([
-        bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey),
-        getMintedProfileEvents(topics, chainId, chainProvider, address),
-      ])}).then(([filteredBids, events]: [entity.Bid[], any[]]) => {
-      logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
+    })
+    const filteredBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
+    const events = await getMintedProfileEvents(topics, Number(chainId), chainProvider, address)
 
-      return Promise.all([
-        validateLiveBalances(filteredBids, chainId),
-        events.map((unparsedEvent) => {
+    logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
+
+    const validation = await validateLiveBalances(filteredBids, chainId)
+    if (validation) {
+      await Promise.allSettled(
+        events.map(async (unparsedEvent) => {
           const evt = profileAuctioninterface.parseLog(unparsedEvent)
           console.log(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
           const [owner,profileUrl,tokenId,,] = evt.args
 
-          switch (evt.name) {
-          case 'MintedProfile':
-            return repositories.event.exists({
+          if (evt.name === 'MintedProfile') {
+            const existsBool = await repositories.event.exists({
               chainId,
               ownerAddress: owner,
               profileUrl: profileUrl,
               txHash: unparsedEvent.transactionHash,
-            }).then(existsBool => {
-              if (!existsBool) {
-                // find and mark profile status as minted
-                return Promise.all([
-                  repositories.profile.findByURL(profileUrl)
-                    .then(fp.thruIfEmpty(() => {
-                      repositories.wallet.findByChainAddress(chainId, owner)
-                        .then(fp.thruIfEmpty(() => {
-                          const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-                          return repositories.user.save({
-                            // defaults
-                            username: 'ethereum-' + ethers.utils.getAddress(owner),
-                            referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-                          })
-                            .then((user: entity.User) =>
-                              repositories.wallet.save({
-                                address: ethers.utils.getAddress(owner),
-                                network: 'ethereum',
-                                chainId: chainId,
-                                chainName: chain.name,
-                                userId: user.id,
-                              }))
-                        }))
-                        .then((wallet: entity.Wallet) => {
-                          const ctx = {
-                            chain: {
-                              id: wallet.chainId,
-                              name: wallet.chainName,
-                            },
-                            network: 'Ethereum',
-                            repositories: repositories,
-                            user: null,
-                            wallet,
-                          }
-                          return core.createProfile(ctx, {
-                            status: defs.ProfileStatus.Owned,
-                            url: profileUrl,
-                            tokenId: tokenId.toString(),
-                            ownerWalletId: wallet.id,
-                            ownerUserId: wallet.userId,
-                          }).then(() => repositories.event.save(
-                            {
-                              chainId,
-                              contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
-                              eventName: evt.name,
-                              txHash: unparsedEvent.transactionHash,
-                              ownerAddress: owner,
-                              profileUrl: profileUrl,
-                            },
-                          )).then(() => HederaConsensusService.submitMessage(
-                            `Profile ${ profileUrl } was minted by address ${ owner }`,
-                          ))
-                        })
-                    }))
-                    .then(fp.thruIfNotEmpty((profile) => {
-                      if (profile.status !== defs.ProfileStatus.Owned) {
-                        profile.status = defs.ProfileStatus.Owned
-                        repositories.profile.save(profile)
-                      }
-                    })),
-                ])
-              }
             })
-          default:
-            return
+            if (!existsBool) {
+              // find and mark profile status as minted
+              const profile = await repositories.profile.findByURL(profileUrl)
+              if (!profile) {
+                let wallet = await repositories.wallet.findByChainAddress(chainId, owner)
+                if (!wallet) {
+                  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+                  let user = await repositories.user.findOne({
+                    where: {
+                      // defaults
+                      username: 'ethereum-' + ethers.utils.getAddress(owner),
+                      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+                    },
+                  })
+                  if (!user) {
+                    user = await repositories.user.save({
+                      // defaults
+                      username: 'ethereum-' + ethers.utils.getAddress(owner),
+                      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+                    })
+                  }
+                  wallet = await repositories.wallet.save({
+                    address: ethers.utils.getAddress(owner),
+                    network: 'ethereum',
+                    chainId: chainId,
+                    chainName: chain.name,
+                    userId: user.id,
+                  })
+                }
+                const ctx = {
+                  chain: {
+                    id: wallet.chainId,
+                    name: wallet.chainName,
+                  },
+                  network: 'Ethereum',
+                  repositories: repositories,
+                  user: null,
+                  wallet,
+                }
+                await core.createProfile(ctx, {
+                  status: defs.ProfileStatus.Owned,
+                  url: profileUrl,
+                  tokenId: tokenId.toString(),
+                  ownerWalletId: wallet.id,
+                  ownerUserId: wallet.userId,
+                })
+                const event = await repositories.event.findOne({
+                  where: {
+                    chainId,
+                    contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
+                    eventName: evt.name,
+                    txHash: unparsedEvent.transactionHash,
+                    ownerAddress: owner,
+                    profileUrl: profileUrl,
+                  },
+                })
+                if (!event) {
+                  await repositories.event.save(
+                    {
+                      chainId,
+                      contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
+                      eventName: evt.name,
+                      txHash: unparsedEvent.transactionHash,
+                      ownerAddress: owner,
+                      profileUrl: profileUrl,
+                    },
+                  )
+                  await HederaConsensusService.submitMessage(
+                    `Profile ${ profileUrl } was minted by address ${ owner }`,
+                  )
+                }
+              } else {
+                if (profile.status !== defs.ProfileStatus.Owned) {
+                  await repositories.profile.updateOneById(profile.id, {
+                    status: defs.ProfileStatus.Owned,
+                  })
+                }
+              }
+            }
           }
         }),
-      ])
-    })
+      )
+    }
   } catch (err) {
     console.log('error: ', err)
   }
