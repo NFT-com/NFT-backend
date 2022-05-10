@@ -898,6 +898,7 @@ const listenBuyNowInfoEvents = async (
 /**
  * get cached block from redis to sync marketplace events
  * @param chainId
+ * @param key
  */
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   try {
