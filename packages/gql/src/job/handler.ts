@@ -139,6 +139,7 @@ const getMintedProfileEvents = async (
   address: string,
 ): Promise<ethers.providers.Log[]> => {
   try {
+    const maxBlocks = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS
     const latestBlock = await provider.getBlock('latest')
     const key = `minted_profile_cached_block_${chainId}`
     const cachedBlock = await getCachedBlock(chainId, key)
@@ -148,7 +149,7 @@ const getMintedProfileEvents = async (
       topics,
       cachedBlock,
       latestBlock.number,
-      50000,
+      Number(maxBlocks),
     )
     await redis.set(key, latestBlock.number)
     return logs

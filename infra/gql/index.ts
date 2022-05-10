@@ -110,6 +110,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['INFURA_API_KEY'] = process.env.INFURA_API_KEY || parsedFile['INFURA_API_KEY']
   parsedFile['TYPESENSE_HOST'] = process.env.TYPESENSE_HOST || parsedFile['TYPESENSE_HOST']
   parsedFile['TYPESENSE_API_KEY'] = process.env.TYPESENSE_API_KEY || parsedFile['TYPESENSE_API_KEY']
+  parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS'] = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS || parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS']
 
   console.log(JSON.stringify(parsedFile))
 
