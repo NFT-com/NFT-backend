@@ -10,7 +10,7 @@ import {
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 // import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 // import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
-// DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+// DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
 // import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
 // import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
 
@@ -46,7 +46,7 @@ const createQueues = (): void => {
   //   prefix: queuePrefix,
   //   redis,
   // })
-  // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+  // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
   // queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
   //   prefix: queuePrefix,
   //   redis,
@@ -66,7 +66,7 @@ const listenToJobs = (): Promise<void[]> => {
     //   return queue.process(getUsersNFTs)
     // case PROFILE_SYNC_JOB:
     //   return queue.process(syncProfileNFTs)
-    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
     // case MARKETPLACE_SYNC_JOB:
     //   return queue.process(syncMarketplace)
     // case TYPESENSE_INDEX_SCHEMA_JOB:
@@ -88,7 +88,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     //     removeOnFail: true,
     //     // repeat every 8 minutes for nft collection job
     //     repeat: { every: 60000 * 8 },
-    //     jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running) 
+    //     jobId: 'nft_collection_job',  // use static jobId to ensure only one job run at a time (when multiple containers running)
     //   })
     // case PROFILE_SYNC_JOB:
     //   return queues[PROFILE_SYNC_JOB].add({ chainId: PROFILE_SYNC_JOB.split(':')?.[1] }, {
@@ -98,7 +98,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     //     repeat: { every: 60000 * 10 },
     //     jobId: 'profile_sync_job',
     //   })
-    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY  
+    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
     // case MARKETPLACE_SYNC_JOB:
     //   return queues[MARKETPLACE_SYNC_JOB].add({ chainId: MARKETPLACE_SYNC_JOB.split(':')?.[1] }, {
     //     removeOnComplete: true,
@@ -109,7 +109,7 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     //   })
     // case TYPESENSE_INDEX_SCHEMA_JOB:
     //   return queues[TYPESENSE_INDEX_SCHEMA_JOB].add({ TYPESENSE_INDEX_SCHEMA_JOB }, {
-    //     // no repeat options, only run once with top prio 
+    //     // no repeat options, only run once with top prio
     //     priority: 1,
     //     removeOnComplete: true,
     //     removeOnFail: true,
@@ -119,8 +119,8 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       return queues[chainId].add({ chainId }, {
         removeOnComplete: true,
         removeOnFail: true,
-        // repeat every 3 minutes
-        repeat: { every: 3 * 60000 },
+        // repeat every 10 minutes
+        repeat: { every: 10 * 60000 },
         jobId: `chainid_${chainId}_job`,
       })
     }
