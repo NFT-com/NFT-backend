@@ -253,7 +253,7 @@ const updateProfile = (
       p.bannerURL = args.input.bannerURL || p.bannerURL
       p.description = args.input.description || p.description
       p.photoURL = args.input.photoURL || p.photoURL
-      p.showGallery = args.input.showGallery || p.showGallery
+      p.showGallery = args.input.showGallery ?? p.showGallery
       return repositories.profile.save(p)
     })
 }
