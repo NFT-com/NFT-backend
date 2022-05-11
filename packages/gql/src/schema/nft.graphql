@@ -65,7 +65,7 @@ type NftMedia {
   uri: TokenUri
 }
 
-type Record {
+type NftAttributeRecord {
   type: String
   value: String
 }
@@ -74,7 +74,7 @@ type NftMetadataAlchemy {
   name: String
   description: String
   image: String
-  attributes: [Record]
+  attributes: [NftAttributeRecord]
 }
 
 type GetGkNFTSOutput {
