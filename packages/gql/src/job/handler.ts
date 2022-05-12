@@ -100,7 +100,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 if (ethBalance.lt(BigNumber.from(bid.price))
                   && new Date().getTime() < 1651186800000
                 ) {
-                  logger.debug('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
+                  logger.info('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
                   repositories.bid.deleteById(bid.id)
                 }
               } catch (err) {
