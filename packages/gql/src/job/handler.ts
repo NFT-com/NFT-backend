@@ -168,7 +168,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     const chainProvider = provider.provider(Number(chainId))
     const address = helper.checkSum(contracts.profileAuctionAddress(chainId))
 
-    logger.debug('>>> getting Ethereum Events')
+    logger.debug('getting Ethereum Events')
 
     const bids = await repositories.bid.find({
       where: [{
