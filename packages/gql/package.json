@@ -13,8 +13,7 @@
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
-    "start": "node -r source-map-support/register ./dist/index",
-    "doc:gen": "graphql-markdown http://localhost:10010/graphql > schema.md"
+    "start": "node -r source-map-support/register ./dist/index"
   },
   "dependencies": {
     "@alch/alchemy-web3": "^1.2.5",
@@ -39,9 +38,11 @@
     "ethers": "5.6.4",
     "express": "^4.17.2",
     "graphql": "^15.8.0",
+    "graphql-rate-limit-directive": "2.0.0",
     "graphql-resolvers": "^0.4.2",
     "graphql-scalars": "^1.13.1",
     "graphql-upload": "^13.0.0",
+    "image-to-base64": "^2.2.0",
     "ioredis": "^4.28.5",
     "joi": "^17.4.2",
     "kill-port": "^1.6.1",
@@ -61,7 +62,6 @@
     "@types/lodash": "^4.14.176",
     "@types/node": "^16.11.7",
     "concurrently": "^6.3.0",
-    "graphql-markdown": "^6.0.0",
     "nodemon": "^2.0.14",
     "rimraf": "^3.0.2",
     "ts-node": "^10.4.0",

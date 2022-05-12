@@ -16,6 +16,7 @@ export type Context = {
   user: entity.User
   wallet: entity.Wallet
   teamKey?: string
+  xMintSignature?: string
 }
 
 const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {

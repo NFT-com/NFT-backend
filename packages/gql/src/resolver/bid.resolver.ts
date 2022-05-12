@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { differenceInSeconds, isEqual } from 'date-fns'
 import abi from 'ethereumjs-abi'
 import { combineResolvers } from 'graphql-resolvers'
@@ -6,7 +7,7 @@ import Web3 from 'web3'
 
 import { serverConfigVar } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError, profileError } from '@nftcom/gql/error'
+import { appError, mintError, profileError, userError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
@@ -50,8 +51,11 @@ const bid = (
 
   if (input.nftType === gql.NFTType.GenesisKey &&
     /* 4/26/2022, 7:00:00 PM in Milliseconds */
-    1651014000000 > new Date().getTime()) {
-    throw appError.buildForbidden('Auction  has not started.')
+    1651014000000 > new Date().getTime() ||
+    /* 4/28/2022, 7:00:00 PM in Milliseconds */
+    1651186800000 < new Date().getTime()
+  ) {
+    throw appError.buildForbidden('Auction is not live.')
   }
 
   return core.getWallet(ctx, input.wallet)
@@ -163,42 +167,42 @@ const bid = (
     .then(([newBid]) => newBid)
 }
 
-const getBids = (
-  _: any,
-  args: gql.QueryBidsArgs,
-  ctx: Context,
-): Promise<gql.BidsOutput> => {
-  const { user, repositories } = ctx
-  logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
+// const getBids = (
+//   _: any,
+//   args: gql.QueryBidsArgs,
+//   ctx: Context,
+// ): Promise<gql.BidsOutput> => {
+//   const { user, repositories } = ctx
+//   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
+//   const pageInput = args?.input?.pageInput
 
-  // TODO (eddie): add support for querying all public 
-  // bids for a user, given one of their wallet's details.
+//   // TODO (eddie): add support for querying all public 
+//   // bids for a user, given one of their wallet's details.
 
-  return Promise.resolve(args?.input?.wallet)
-    .then(fp.thruIfNotEmpty((walletInput) => {
-      return repositories.wallet.findByNetworkChainAddress(
-        walletInput.network,
-        walletInput.chainId,
-        walletInput.address,
-      )
-    }))
-    .then((wallet: entity.Wallet) => {
-      const inputFilters = {
-        profileId: args?.input?.profileId,
-        walletId: wallet?.id,
-        nftType: args?.input?.nftType,
-      }
-      const filters = [helper.inputT2SafeK(inputFilters)]
-      return core.paginatedEntitiesBy(
-        ctx.repositories.bid,
-        pageInput,
-        filters,
-        [], // relations
-      )
-    })
-    .then(pagination.toPageable(pageInput))
-}
+//   return Promise.resolve(args?.input?.wallet)
+//     .then(fp.thruIfNotEmpty((walletInput) => {
+//       return repositories.wallet.findByNetworkChainAddress(
+//         walletInput.network,
+//         walletInput.chainId,
+//         walletInput.address,
+//       )
+//     }))
+//     .then((wallet: entity.Wallet) => {
+//       const inputFilters = {
+//         profileId: args?.input?.profileId,
+//         walletId: wallet?.id,
+//         nftType: args?.input?.nftType,
+//       }
+//       const filters = [helper.inputT2SafeK(inputFilters)]
+//       return core.paginatedEntitiesBy(
+//         ctx.repositories.bid,
+//         pageInput,
+//         filters,
+//         [], // relations
+//       )
+//     })
+//     .then(pagination.toPageable(pageInput))
+// }
 
 const getMyBids = (
   _: any,
@@ -220,31 +224,56 @@ const getMyBids = (
 
 const signHash = (
   _: any,
-  args: unknown,
+  args: gql.MutationSignHashArgs,
   ctx: Context,
 ): Promise<gql.SignHashOutput> => {
   const privateKey = process.env.PUBLIC_SALE_KEY
-  const { user } = ctx
-  
-  return ctx.repositories.wallet.findByUserId(user.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        mintError.buildWalletEmpty(),
-        mintError.ErrorType.WalletEmpty,
-      ),
-    )).then((wallet) => {
-      const hash = '0x' + abi.soliditySHA3(
-        ['address', 'string'],
-        [wallet[0]?.address, new Date().getTime().toString()],
-      ).toString('hex')
-    
-      const sigObj = web3.eth.accounts.sign(hash, privateKey)
-    
-      return {
-        hash: sigObj.messageHash,
-        signature: sigObj.signature,
-      }
-    })
+
+  const { user, xMintSignature } = ctx
+
+  logger.debug('signHash', { loggedInUserId: user.id, input: args.input, xMintSignature })
+
+  const schema = Joi.object().keys({
+    timestamp: Joi.string(),
+  })
+  const { input } = args
+  joi.validateSchema(schema, input)
+
+  if (!xMintSignature) {
+    throw userError.buildAuth()
+  } else {
+    return ctx.repositories.wallet.findByUserId(user.id)
+      .then(fp.rejectIfEmpty(
+        appError.buildNotFound(
+          mintError.buildWalletEmpty(),
+          mintError.ErrorType.WalletEmpty,
+        ),
+      )).then((wallet) => {
+        const hmac = crypto.createHmac('sha256', String(process.env.SHARED_MINT_SECRET))
+        const { timestamp } = input
+        const inputObject = {
+          address: wallet[0]?.address?.toLowerCase(),
+          timestamp,
+        }
+        const calculatedSignature = hmac.update(JSON.stringify(inputObject)).digest('hex')
+        
+        if (xMintSignature != calculatedSignature) {
+          throw userError.buildAuth()
+        } else {
+          const hash = '0x' + abi.soliditySHA3(
+            ['string'],
+            [xMintSignature],
+          ).toString('hex')
+      
+          const sigObj = web3.eth.accounts.sign(hash, privateKey)
+      
+          return {
+            hash: sigObj.messageHash,
+            signature: sigObj.signature,
+          }
+        }
+      })
+  }
 }
 
 const signHashProfile = (
@@ -318,29 +347,6 @@ const cancelBid = (
   return repositories.bid.deleteById(args.id)
 }
 
-const getTopBids = (
-  _: any,
-  args: gql.QueryTopBidsArgs,
-  ctx: Context,
-): Promise<gql.BidsOutput> => {
-  const { user } = ctx
-  logger.debug('getTopBids', { loggedInUserId: user?.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
-  const inputFilters = {
-    profileId: args?.input?.profileId,
-    status: args?.input?.status,
-  }
-  const filters = [helper.inputT2SafeK(inputFilters)]
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    pageInput,
-    filters,
-    [], // relations
-    'price',
-  )
-    .then(pagination.toPageable(pageInput, 'price'))
-}
-
 /**
  * Used for Genesis Key holders to set their Profile URI preferences.
  */
@@ -404,9 +410,8 @@ const setProfilePreferences = (
 
 export default {
   Query: {
-    bids: getBids,
+    // bids: getBids,
     myBids: combineResolvers(auth.isAuthenticated, getMyBids),
-    topBids: getTopBids,
   },
   Mutation: {
     bid: bid,

@@ -1,15 +1,17 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
+import imageToBase64 from 'image-to-base64'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
+import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
-
+export const DEFAULT_NFT_IMAGE = 'https://cdn.nft.com/Medallion.jpg'
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
 
@@ -305,6 +307,7 @@ export const blacklistProfilePatterns = [
   /^wop$/,
   // "reserved" list
   /^you$/,
+  /^app$/,
   /^whitelist$/,
   /^dao$/,
   /^announcements$/,
@@ -387,9 +390,6 @@ export const blacklistProfilePatterns = [
   /^cryptohayes$/,
   /^garyv$/,
   /^veefriends$/,
-  // temporarily "banned" profiles (reserved for insiders with a 2nd address)
-  /^fitness$/,
-  /^longevity$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
@@ -398,41 +398,41 @@ export const reservedProfiles = {
   '0xA06B01381c267318f2D65F05bE343c7A2e224713': ['miami', 'miamimind'],
   '0x6430B6b425657C3823683948638fe24431946efF': ['alec', 'eth'],
   '0xCd514eaE987A5A619e7F7EAf7D143fAAAe7fd289': ['guy', 'dude'],
-  '0xCDD6a63FeC8c5Dab5f10a139761aa5aCf729317E': ['alex ', 'ross '],
+  '0xCDD6a63FeC8c5Dab5f10a139761aa5aCf729317E': ['alex', 'ross'],
   '0xce6489bb151a73Fe82999443e8Ba6AF1571C28c9': ['wizards', 'earth'],
   '0x78C5Fa233Eb07486333B91aCA0A6CFa198B24459': ['a', 'am'],
   '0x7fEE3D50AE036F3E72071dDBa811F58472995Edc': ['z', 'nfts'],
-  '0x917cf39cff45328cd63fb25312861b3bcC0B2626': ['anthony', 'radian'],
+  '0x731ce77e9940e346DDDED2De1219c0F910d1Ff1d': ['anthony', 'radian'],
   '0x38a55929d4047aC9192De1bE35f9a957E4D03FA7': ['soccer', 'universal'],
-  '0x6B45A85c9F2eb0BDa157fB5740a313eD74A43717': ['ar', 'electricfeel'],
+  '0x12F37431468eb75c2a825e2Cf8Fde773aD94c8EA': ['ar', 'electricfeel'],
   '0x9f0d3E5aA86c242DbAB469486Fa4C2Ec04974A9a': ['nftgrails', 'averyandon'],
   '0xc2D558E4556B09519649749DC702D804E1F71FD4': ['lovewatts', 'knowgood'],
-  '0x699F3595e0a04800d2CDE34022D113853696e3c2': ['balajis', '1729'],
+  '0x5257B8a48Ff01182617f2Fd25E9C1dB0b2dD6475': ['balajis', '1729'],
   '0xc69004e5384391D86C002643D84da620B26e89D8': ['baronvonhustle', 'jasontheape'],
   '0x54D1F8745aB57c29d0Cec4877e75028Fe37689f1': ['bengreenfield', 'bengreenfieldlife'],
   // todo: 2nd address needed. remove these from the banlist above if you want to use this.
-  // '0x54D1F8745aB57c29d0Cec4877e75028Fe37689f1': ['fitness', 'longevity'],
+  '0x5aEfCB0F364AdbAFC197f91c8496a488bA90C3d1': ['fitness', 'longevity'],
   '0x2e50870053A015409269d9f9e26D3A6869887020': ['ben', 'tiktok'],
-  '0x1A9deC77516BA05316938D7Fb32F51D646f8d91f': ['billy', 'newyork'],
+  '0xAe51b702Ee60279307437b13734D27078EF108AA': ['billy', 'newyork'],
   '0x577C0eEDccEbF9E0eeD9F64962535C56692e9FC1': ['hodl', 'p2e'],
   '0xcDe8B26f837A77A22d95bA2701c68D3E96351287': ['sex', '0'],
   '0xaCCc711035b1D2EBE8B184d4798AcF434f549103': ['brock', 'pierce'],
   '0x615E4c654Ba4a81970d9c3Ff25A3F602bB384045': ['artpartner', 'art_partner'],
-  '0xD8D46690Db9534eb3873aCf5792B8a12631D8229': ['chris', 'tesla'],
-  '0x61503aD92E94cA295926854b35dfced55797f5a1': ['cozomomedici', 'cozomo'],
-  '0x8adE62052Cc7a2EB5ccbA58820Ef5E927A77a0f0': ['crystal', 'unicorn'],
+  '0x3F99345b567054BC89950Cb96e189FaF7e1bd0d4': ['chris', 'tesla'],
+  '0xCe90a7949bb78892F159F428D0dC23a8E3584d75': ['cozomomedici', 'cozomo'],
+  '0xd5B94091505B8D578B154BE895D060fB1615ea84': ['crystal', 'unicorn'],
   '0x1e75E1c7e430b9a6863B531cfe6b3820d82b42f8': ['meta', 'pepsi'],
-  '0x4C88FE50000606F1E61fE3F6Fa501423e2f60553': ['daniel ', '2lads'],
+  '0x4C88FE50000606F1E61fE3F6Fa501423e2f60553': ['daniel', '2lads'],
   '0x68e750DD425d962f255D3a10Ea649F52be58fe18': ['don', 'donald'],
   '0xF6c3c3621F42Ec1F1CD1207Bb1571d93646Ab29A': ['voskcoin', 'vosk'],
   '0x46E83273B865829CBE193642741ae46cC65463e0': ['art', 'drue'],
-  '0x0f33d6F1d69f87E5494cBfCAC9B9A3619f38Ca09': ['kim', 'matt'],
+  '0x86C8203Fe8F7d60Afaa0bddA4d92cc5abd901578': ['kim', 'matt'],
   '0xd83B7Af20636b7e1A0d62b5600B5ABf8d49D4C96': ['buddy', 'towner'],
   '0x56a065dFEB4616f89aD733003914A8e11dB6CEdD': ['fergal', 'fernando_galarcio'],
   '0x2a2E938eC0b8E2bD534795dE09AE722b78f46a3e': ['decentralized', 'sharemyart'],
   '0x8cb377959625E693986c6AdeF82fFF01d4d91aF8': ['fungibles', 'probablynothing'],
   '0x916D113ca8FbF529ab2565B2D528eF979b8f8004': ['gareb', 'shamus'],
-  '0xbCe52D4698fdE9484901121A7Feb0741BA6d4dF3': ['cars', 'rentals'],
+  '0xe5660Eb0fB9BBF7B7Aa9736f521099CDA3fB21D6': ['cars', 'rentals'],
   '0xb56E74b28CFa1C4e4d30591227a02B5879155BAF': ['cryptosrus', 'mint'],
   '0xA593C8F83f8Ddaa378Fb9450B9dd29413069E420': ['crypto_tech_women', 'ctw'],
   '0x3B883B85Fd41b81Ef23B6041248bC6AC0b1C04A7': ['happy', 'david'],
@@ -441,23 +441,23 @@ export const reservedProfiles = {
   '0xadA2f10a38B513c550F08DC4C8FEAEa3909F1a1B': ['porn', 'tokenmetrics'],
   '0x09726B46170FD47AC945912a6C0d69454f6445AA': ['fifa', 'nhl'],
   '0x37a3549d89a881b66529e82164bab42235981693': ['jakepaul', 'boxing'],
-  '0x2f0C7B6F3C44176aa6504eA57196A476E0a88686': ['jamesandrews', 'djrichcacao'],
+  '0xaa4629DfA35955FE83770c2e4c670152dbB25970': ['jamesandrews', 'djrichcacao'],
   '0x3C312Db5bC3af511e20Dcc8b256Ca887dfa9BF1C': ['playstation', 'trump'],
   '0xBc74c3Adc2aa6A85bda3Eca5b0E235CA08532772': ['genart', 'artnome'],
-  '0x1381d9F55D7a5aEe20a541C90B16a7c56030BaaB': ['jason', 'jb'],
+  '0xA25A8C2658E0b3a0649811A47Ed3bBfdcAB5Cf71': ['jason', 'jb'],
   '0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005': ['jasonliu19920126', 'jasonliu1992'],
   '0x3D50F0ec1a0825365CF3E6BBA90a67C37D08B77f': ['jv', 'jasonve'],
   '0xFda1e9cd11BA632005838f48367fc9e38E2B8EFB': ['faceflower', 'photography'],
-  '0x74bB476C99d2fad476DB75654e58404Db6EC4977': ['music', 'money'],
+  '0xe333681e63Ac0a4b063B0576DEC14dFf894bF8f0': ['music', 'money'],
   '0x1e82eDe518Dad3e385cFC0AD52203911D254bc91': ['jeff', 'antiques'],
   '0x8952D923F4D957725F699603afD44Da6Bdc748A5': ['detroit', 'chicago'],
   '0x58d0f3dA9C97dE3c39f481e146f3568081d328a2': ['computers', 'business'],
   '0xaC72e2fa06f52De2352F1548F00858E81C6d39C0': ['entertainment', 'shopping'],
   '0x5c09f8b380140E40A4ADc744F9B199a9383553F9': ['joey', 'jp'],
   '0xAf68eFa7F52DF54C6888b53bD4AC66803Dc92A5b': ['nft', 'crypto'],
-  '0xf967ccd7b05B3938B1d0E211e473c5C485B6327d': ['johngeiger', 'geiger'],
+  '0xA0493410c8EAb06CbE48418021DcbacDB04303Ab': ['johngeiger', 'geiger'],
   '0xC9d4f1d9CAc71AE773dab932d01138f04Fc9e01f': ['stoopidbuddy', 'harvatine'],
-  '0xe221D08a15bF66B0116E34CBdd1a216d95669d3B': ['lgbt', 'john'],
+  '0x78908a90A5e8AB9Fd0DbcA58E7aDE532Cf2c8667': ['lgbt', 'john'],
   '0x7F04084166e1F2478B8f7a99FafBA4238c7dDA83': ['real_estate', 'watches'],
   '0xa4e2367CF24a1AC4E06b4D94B9660730e6d35a25': ['wolfofwallst', 'jordanbelfort'],
   '0xc97F36837e25C150a22A9a5FBDd2445366F11245': ['j', 'jordan'],
@@ -466,17 +466,17 @@ export const reservedProfiles = {
   '0x0448fb5d1E640eED801e7b98c26624834AaEb89b': ['sports', 'metamoney'],
   '0x7F8B5bdd5Cf38C425E93c54a9D8b924fD16a0a1F': ['jchains', 'cryptojchains'],
   '0x6AC9e51CA18B78307Fe7DF2A01CD3b871F6348D0': ['ijustine', 'jpig'],
-  '0x5b4245dC95831B0a10868aC09559b92cF36C8d8D': ['kathy', 'cybertron'],
+  '0x5b4245dC95831B0a10868aC09559b92cF36C8d8D': ['blizzardentertainment', 'fromsoftware'],
   '0xC857283243E3367dA2c79e6127B25B8f96e276ff': ['me', 'king'],
   '0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349': ['km', 'makishima'],
   '0x7a3a08f41fa1a97e23783C04ff1095598ce0132c': ['kevincage', 'kevincageofficial'],
   '0xF45B6966E588c5286D4397256B74bb9bfCf24296': ['mrwonderful', 'kevinoleary'],
-  '0xf9142440D22CE022b5d88062a0b0dce0149e5F65': ['khurram', 'shari'],
+  '0xf9142440D22CE022b5d88062a0b0dce0149e5F65': ['khurram', 'logic'],
   '0xa18376780EB719bA2d2abb02D1c6e4B8689329e0': ['k', 's'],
   '0x321dF32c66A18D4e085705d50325040a7dC9d76A': ['cryptozombie', 'zombie'],
-  '0x5259871a09d00DF405857837B8348b320AAf24C1': ['larryantoine', 'larry'],
+  '0x0088601C5F3E3D4ea452FBbC181Ed2d333a81460': ['larryantoine', 'larry'],
   '0xdc36F82FC3C6331975fB20C74d01B378f1d0EB78': ['gallery', 'lighthouse'],
-  '0xfF0BD4AA3496739D5667AdC10e2b843DFAB5712b': ['loganpaul', 'originals'],
+  '0xb74F011dac5862822FdF29Fb73dcdE7bCFDaBa7a': ['loganpaul', 'originals'],
   '0x4a5978Ba7C240347280Cdfb5dfaFbb1E87d25af8': ['metagirl', 'andersen'],
   '0x4c4c22c0C670607F5fd519d78c89925158f5Fe59': ['superbuddy', 'wizmatts'],
   '0xe95455414169FD5C89FAC460412a81A1daEe452e': ['amazon', 'irl'],
@@ -486,7 +486,7 @@ export const reservedProfiles = {
   '0xC55f9f7F8662f7c0Da4643d1105D84Ad3Ac8dcF8': ['pilpeled', 'israel'],
   '0xb5AEddc7336a1aA2D18D6De315931972bEc2901B': ['byblood', 'x'],
   '0x88fd66ee0Da6B621290070E3d4CaB71907DB02B6': ['busyjordy', 'crypto_corner'],
-  '0x03e18Cda596fd78aa58D6283BFdFE5E1108a5BD5': ['fomo', 'fomosapiens'],
+  '0xf4615A18A0AC709D07d3EDc7a295fdAAfa6aBe1C': ['fomo', 'fomosapiens'],
   '0x56a9D77b41A80f0f499f56DFb8Cc2Bcf17c66CC8': ['rice', 'ricetvx'],
   '0xE86a716D6D3C4B85bF4cdD5c1BDe24C9865e5eC4': ['rogerrai007', 'mmp'],
   '0xbC828Cb03771DF942B79DaAF7d36266357A902f8': ['metaverse', 'play'],
@@ -498,16 +498,25 @@ export const reservedProfiles = {
   '0x4911E3049a846A2495C2474d45a4d578AbDeAEAB': ['gaming', 'cryptostache'],
   '0x67bF9c5a79C676A6D446cC391DB632704EB0f020': ['shiralazar', 'shira'],
   '0x67Ff9934c797DD104F86F6FAcc7feF23D8a6f9e3': ['twiitch', 'twiitchcreative'],
-  '0xAb135FE1CC98f49a3f47C1bf6Ab012E1E65d7B6F': ['zahira', 'hiphop'],
-  '0x9e437B064CFC7801808c5e476ABfafA5069aB55B': ['todd', 'picasso'],
+  '0xeCd49fA04513201450083C9B6dE1ba1e81d8B05F': ['zahira', 'hiphop'],
+  '0xA9Fe952EdD2958aB7Dea126c6d8B4413AfD3E771': ['todd', 'picasso'],
   '0xc5B746bDe254F5B88f4F906AafbD788EB282c760': ['nba', 'pfp'],
   '0x9E3508a1dE57a459835a2DFDc451afa7677962DD': ['trading', 'tomcrown'],
   '0x05AE0683d8B39D13950c053E70538f5810737bC5': ['philosophy', 'conspiracy'],
   '0x3651c09BfAEccc9D03EB8f7181Ce58082377DA25': ['spirituality', 'metaphysics'],
-  '0x8Dbbca57Ea56290Efa14D835bBfd34fAF1d89753': ['vonmises ', 'vmvault '],
-  '0xE0Ae80592E0be32f899A448FA927929530FCf2c5': ['cryptowendyo', 'wendyo'],
+  '0x8Dbbca57Ea56290Efa14D835bBfd34fAF1d89753': ['vonmises', 'vmvault'],
+  '0xE0Ae80592E0be32f899A448FA927929530FCf2c5': ['fruit', 'vegetable'],
   '0xfA3ccA6a31E30Bf9A0133a679d33357bb282c995': ['yale', 'y'],
-  '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza ', 'gaming '],
+  '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza', 'pantherpunks'],
+  '0xAd5B657416fbA43CAF6C65Ec8e8DD847d6700286': ['oscars', 'cokecola'],
+  '0xa6EFa954d13ABCe7786b2C65C356c8Ae46aaD261': ['upperdeck', 'loreal'],
+  '0x6F41a9ab54f7665314768Ebd72AF6bB97c6D85dA': ['bearbrick', 'happydad'],
+  '0x1623e9C3dE4D23e6dDF408Dcfa895AD64a63b6c4': ['baltimoreravens', 'livenation'],
+  '0x7C594337490Fab2f846b87E4016ECc8893A0659c': ['wme', 'wrestling'],
+  '0xB807D0789E5086bDf7D0A66d12406dB40fc8Bc90': ['mezcal', 'basel'],
+  '0xD1ac1e553E029f5dE5732C041DfC9f8CEd937A20': ['venice', 'venicemusic'],
+  '0x4a9096220176a82fa8a7d2b4e1480e1d9bebf691': ['scottdonnell', 'heromaker'],
+  '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
 }
 
 export const OFAC = {
@@ -609,13 +618,27 @@ export const s3ToCdn = (s3URL: string): string => {
   }
 }
 
-export const generateCompositeImage = async ( profileURL: string): Promise<string> => {
+export const generateCompositeImage = async (
+  profileURL: string,
+  defaultImagePath: string,
+): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
-  const buffer = generateSVG(url.toUpperCase())
+  let buffer
+  if (defaultImagePath === DEFAULT_NFT_IMAGE) {
+    buffer = generateSVG(url.toUpperCase(), nullPhotoBase64)
+  } else {
+    try {
+      const base64String = await imageToBase64(defaultImagePath)
+      buffer = generateSVG(url.toUpperCase(), base64String)
+    } catch (e) {
+      logger.debug('generateCompositeImage', e)
+      throw e
+    }
+  }
   // 2. upload buffer to s3...
   const s3 = await getAWSConfig()
-  const imageKey = Date.now().toString() + '-' + profileURL + '.svg'
+  const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
   try {
     const res = await s3.upload({
       Bucket: assetBucket.name,
@@ -657,12 +680,17 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then((savedProfile: entity.Profile) =>
-          generateCompositeImage(savedProfile.url)
+          generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
             .then((imageURL: string) =>
               ctx.repositories.profile.updateOneById(
                 savedProfile.id,
-                { photoURL: imageURL },
-              )))
+                {
+                  photoURL: imageURL,
+                  bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+                  description: `NFT.com profile for ${savedProfile.url}`,
+                },
+              ),
+            ))
     })
 }
 

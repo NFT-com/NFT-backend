@@ -7,7 +7,8 @@ import { LessThan } from 'typeorm'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
-import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
+import { provider } from '@nftcom/gql/helper'
+import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const repositories = db.newRepositories()
@@ -28,48 +29,22 @@ const defaultBlock: {[chainId: number] : number} = {
 const MAX_BLOCKS = 100000 // we use this constant to split blocks to avoid any issues to get logs for event...
 
 /**
- * recursive method to split blocks for getting event logs
- * @param provider
- * @param fromBlock
- * @param toBlock
- * @param address
- * @param topics
- * @param currentStackLv
- */
-const splitGetLogs = async (
-  provider: ethers.providers.BaseProvider,
-  fromBlock: number,
-  toBlock: number,
-  address: string,
-  topics: any[],
-  currentStackLv: number,
-): Promise<ethers.providers.Log[]> => {
-  // split block range in half...
-  const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
-  // eslint-disable-next-line no-use-before-define
-  const first = await getPastLogs(provider, address, topics,
-    fromBlock, midBlock, currentStackLv + 1)
-  // eslint-disable-next-line no-use-before-define
-  const last = await getPastLogs(provider, address, topics,
-    midBlock + 1, toBlock, currentStackLv + 1)
-  return [...first, ...last]
-}
-
-/**
  * get past event logs
  * @param provider
  * @param address
  * @param topics
  * @param fromBlock
  * @param toBlock
+ * @param maxBlocks
  * @param currentStackLv
  */
-const getPastLogs = async (
+export const getPastLogs = async (
   provider: ethers.providers.BaseProvider,
   address: string,
   topics: any[],
   fromBlock: number,
   toBlock: number,
+  maxBlocks?: number,
   currentStackLv = 0,
 ): Promise<ethers.providers.Log[]> => {
   // if there are too many recursive calls, we just return empty array...
@@ -80,11 +55,21 @@ const getPastLogs = async (
     return []
   }
 
+  const max_Blocks = maxBlocks ? maxBlocks : MAX_BLOCKS
   try {
     // if there are too many blocks, we will split it up...
-    if ((toBlock - fromBlock) > MAX_BLOCKS) {
+    if ((toBlock - fromBlock) > max_Blocks) {
       logger.debug(`recursive getting logs from ${fromBlock} to ${toBlock}`)
-      return await splitGetLogs(provider, fromBlock, toBlock, address, topics, currentStackLv)
+      // eslint-disable-next-line no-use-before-define
+      return await splitGetLogs(
+        provider,
+        fromBlock,
+        toBlock,
+        address,
+        topics,
+        max_Blocks,
+        currentStackLv,
+      )
     } else {
       // we just get logs using provider...
       logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
@@ -100,6 +85,36 @@ const getPastLogs = async (
     logger.error('error while getting past logs: ', e)
     return []
   }
+}
+
+/**
+ * recursive method to split blocks for getting event logs
+ * @param provider
+ * @param fromBlock
+ * @param toBlock
+ * @param address
+ * @param topics
+ * @param maxBlocks
+ * @param currentStackLv
+ */
+const splitGetLogs = async (
+  provider: ethers.providers.BaseProvider,
+  fromBlock: number,
+  toBlock: number,
+  address: string,
+  topics: any[],
+  maxBlocks: number,
+  currentStackLv: number,
+): Promise<ethers.providers.Log[]> => {
+  // split block range in half...
+  const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
+  // eslint-disable-next-line no-use-before-define
+  const first = await getPastLogs(provider, address, topics,
+    fromBlock, midBlock, maxBlocks, currentStackLv + 1)
+  // eslint-disable-next-line no-use-before-define
+  const last = await getPastLogs(provider, address, topics,
+    midBlock + 1, toBlock, maxBlocks,currentStackLv + 1)
+  return [...first, ...last]
 }
 
 /**
@@ -883,10 +898,11 @@ const listenBuyNowInfoEvents = async (
 /**
  * get cached block from redis to sync marketplace events
  * @param chainId
+ * @param key
  */
-const getCachedBlock = async (chainId: number): Promise<number> => {
+const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   try {
-    const cachedBlock = await redis.get(`cached_block_${chainId}`)
+    const cachedBlock = await redis.get(key)
 
     // get 1000 blocks before incase of some blocks not being handled correctly
     if (cachedBlock) return Number(cachedBlock) > 10000
@@ -904,7 +920,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     const chainId = Number(job.data.chainId)
     const chainProvider = provider.provider(chainId)
     const latestBlock = await chainProvider.getBlock('latest')
-    const cachedBlock = await getCachedBlock(chainId)
+    const cachedBlock = await getCachedBlock(chainId, `cached_block_${chainId}`)
 
     await listenApprovalEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenNonceIncrementedEvents(chainId, chainProvider, cachedBlock, latestBlock.number)

@@ -4,9 +4,12 @@ import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
+import { rateLimitDirective } from 'graphql-rate-limit-directive'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 
+import { makeExecutableSchema } from '@graphql-tools/schema'
 import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -44,6 +47,7 @@ const createContext = async (ctx): Promise<Context> => {
   const network = headers[networkHeader] || null
   const chainId = headers[chainIdHeader] || null
   const authSignature = headers[authHeader] || null
+  const xMintSignature = headers['x-mint-signature'] || null
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
@@ -63,6 +67,7 @@ const createContext = async (ctx): Promise<Context> => {
     user,
     repositories,
     teamKey,
+    xMintSignature,
   }
 }
 
@@ -121,13 +126,15 @@ export const start = async (): Promise<void> => {
     return repositories.profile.findByURL(username.toLowerCase())
       .then((profile: entity.Profile) => {
         if (!profile) {
-          return Promise.reject(appError.buildExists(
-            profileError.buildProfileNotFoundMsg(username),
-            profileError.ErrorType.ProfileNotFound,
-          ))
+          return res.send({
+            name: username.toLowerCase(),
+            image: 'https://cdn.nft.com/nullPhoto.png',
+            header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+            description: `NFT.com profile for ${username.toLowerCase()}`,
+          })
         } else {
           return res.send({
-            name: req.params.username,
+            name: username?.toLowerCase(),
             image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
             header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
             description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
@@ -169,11 +176,42 @@ export const start = async (): Promise<void> => {
     }
   })
 
+  const keyGenerator = (directiveArgs, source, args, context): string =>
+    `${context.user.id}`
+
+  class DebugRateLimiterMemory extends RateLimiterMemory {
+
+    consume(key, pointsToConsume, options): any {
+      logger.debug(`[CONSUME] ${key} for ${pointsToConsume}`)
+      return super.consume(key, pointsToConsume, options)
+    }
+  
+  }
+
+  const { rateLimitDirectiveTypeDefs, rateLimitDirectiveTransformer } = rateLimitDirective({
+    keyGenerator,
+    limiterClass: DebugRateLimiterMemory,
+  })
+
+  const schemaInput = makeExecutableSchema({
+    typeDefs: [
+      rateLimitDirectiveTypeDefs,
+      `
+      type Mutation {
+        signHash(input: SignHashInput!): SignHashOutput @rateLimit(limit: 1, duration: 15)
+      }
+      `,
+      typeDefs(),
+    ],
+    resolvers,
+  })
+
+  const schema = rateLimitDirectiveTransformer(schemaInput)
+
   server = new ApolloServer({
     //gql schema only visibly locally
+    schema,
     introspection: process.env.NODE_ENV === 'local',
-    resolvers: resolvers,
-    typeDefs: typeDefs(),
     context: createContext,
     formatError,
     // disable landingPage for prod

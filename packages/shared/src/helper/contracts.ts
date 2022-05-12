@@ -36,7 +36,7 @@ export function genesisKeyTeamMerkleAddress(chainId: string | number = 'mainnet'
   case '1':
   case 1:
   case 'mainnet':
-    return utils.getAddress('0xb2d0CEbcAE87063bc6aFf26B4E8BE8B676caCe7F')
+    return utils.getAddress('0x5fb1941b5415b4817d9CC62f8039F7A4B366Ff8F')
   }
 }
 
@@ -49,7 +49,7 @@ export function genesisKeyTeamClaimAddress(chainId: string | number = 'mainnet')
   case '1':
   case 1:
   case 'mainnet':
-    return utils.getAddress('0xaD670D2dEb99fd0ba154A4c09543Db26993720E0')
+    return utils.getAddress('0xfc99E6b4447a17EA0C6162854fcb572ddC8FbB37')
   }
 }
 
@@ -62,7 +62,7 @@ export function genesisKeyAddress(chainId: string | number = 'mainnet'): string 
   case '1':
   case 1:
   case 'mainnet':
-    return utils.getAddress('0x7AB0963A0066A232c30bab2a80B315F0a82178d9')
+    return utils.getAddress('0x8fB5a7894AB461a59ACdfab8918335768e411414')
   }
 }
 
@@ -89,7 +89,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 1:
   case 'mainnet':
   default:
-    return utils.getAddress('0x5ad4e998FC3Eb5807447b8104f171aBfFe48846C')
+    return utils.getAddress('0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D')
   }
 }
 
@@ -102,7 +102,7 @@ export function profileAuctionAddress(chainId: string | number = 'mainnet'): str
   case '1':
   case 1:
   case 'mainnet':
-    return utils.getAddress('0x3C987Bb1788Cd5ff266a96fbe16D840186c8C709')
+    return utils.getAddress('0x30f649D418AF7358f9c8CB036219fC7f1B646309')
   }
 }
 

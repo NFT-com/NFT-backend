@@ -12,7 +12,12 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { generateCompositeImage, getAWSConfig } from '@nftcom/gql/service/core.service'
+import {
+  DEFAULT_NFT_IMAGE,
+  generateCompositeImage,
+  getAWSConfig,
+  s3ToCdn,
+} from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { blacklistBool } from '../service/core.service'
@@ -248,7 +253,7 @@ const updateProfile = (
       p.bannerURL = args.input.bannerURL || p.bannerURL
       p.description = args.input.description || p.description
       p.photoURL = args.input.photoURL || p.photoURL
-      p.showGallery = args.input.showGallery || p.showGallery
+      p.showGallery = args.input.showGallery ?? p.showGallery
       return repositories.profile.save(p)
     })
 }
@@ -277,8 +282,10 @@ const getInsiderReservedProfileURIs = (
   args: gql.QueryInsiderReservedProfilesArgs,
   ctx: Context,
 ): Promise<string[]> => {
-  logger.debug('getInsiderReservedProfileURIs', args.input.address, ctx.user )
-  const reserved = core.reservedProfiles?.[args.input.address]
+  const { wallet } = ctx
+
+  logger.debug('getInsiderReservedProfileURIs', wallet.address, ctx.user)
+  const reserved = core.reservedProfiles?.[wallet.address]
   return Promise.resolve(reserved ?? [])
 }
 
@@ -389,11 +396,11 @@ const uploadStreamToS3 = async (
   stream: FileUpload['createReadStream'],
 ): Promise<string> => {
   try {
-    const bannerKey = Date.now().toString() + '-' + filename
+    const bannerKey = 'profiles/' + Date.now().toString() + '-' + filename
     const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
     stream.pipe(bannerUploadStream.writeStream)
     const result = await bannerUploadStream.promise
-    return result.Location
+    return s3ToCdn(result.Location)
   } catch (e) {
     logger.debug('uploadStreamToS3', e)
     throw e
@@ -406,7 +413,7 @@ const uploadProfileImages = async (
   ctx: Context,
 ): Promise<gql.Profile> => {
   const { repositories } = ctx
-  const { banner, avatar, profileId, description } = args.input
+  const { banner, avatar, profileId, description, compositeProfileURL } = args.input
   let profile = await repositories.profile.findById(profileId)
   if (!profile) {
     return Promise.reject(appError.buildNotFound(
@@ -473,9 +480,21 @@ const uploadProfileImages = async (
   if (avatarResponse && avatarStream) {
     const avatarUrl = await uploadStreamToS3(avatarResponse.filename, s3, avatarStream)
     if (avatarUrl) {
-      await repositories.profile.updateOneById(profileId, {
-        photoURL: avatarUrl,
-      })
+      // if user does not want to composite image with profile url, we just save image to photoURL
+      if (!compositeProfileURL) {
+        await repositories.profile.updateOneById(profileId, {
+          photoURL: avatarUrl,
+        })
+      }
+      // else, we will create composite image
+      else {
+        const compositeUrl = await generateCompositeImage(profile.url, avatarUrl)
+        if (compositeUrl) {
+          await repositories.profile.updateOneById(profileId, {
+            photoURL: compositeUrl,
+          })
+        }
+      }
     }
   }
 
@@ -502,7 +521,7 @@ const createCompositeImage = async (
     ))
   }
 
-  const imageURL = await generateCompositeImage(profile.url)
+  const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
   profile = await repositories.profile.updateOneById(profileId, {
     photoURL: imageURL,
   })
@@ -538,7 +557,7 @@ export default {
     profileFollowers: getProfileFollowers,
     profilesFollowedByMe: combineResolvers(auth.isAuthenticated, getProfilesFollowedByMe),
     blockedProfileURI: getBlockedProfileURI,
-    insiderReservedProfiles: getInsiderReservedProfileURIs,
+    insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
   },
   Mutation: {

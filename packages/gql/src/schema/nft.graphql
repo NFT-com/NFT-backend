@@ -56,6 +56,37 @@ input CollectionNFTsInput {
   pageInput: PageInput
 }
 
+type TokenUri {
+    raw: String!
+    gateway: String!
+}
+
+type NftMedia {
+  uri: TokenUri
+}
+
+type NftAttributeRecord {
+  type: String
+  value: String
+}
+
+type NftMetadataAlchemy {
+  name: String
+  description: String
+  image: String
+  attributes: [NftAttributeRecord]
+}
+
+type GetGkNFTSOutput {
+  title: String!
+  description: String!
+  tokenUri: TokenUri
+  media: [NftMedia]
+  metadata: NftMetadataAlchemy
+  timeLastUpdated: String!
+  error: String
+}
+
 type NFTsOutput {
   items: [NFT!]!
   pageInfo: PageInfo
@@ -80,6 +111,7 @@ type RefreshMyNFTsOutput {
 }
 
 extend type Query {
+  gkNFTs(tokenId: String!): GetGkNFTSOutput!
   nft(contract: Address!, id: String!): NFT!
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!

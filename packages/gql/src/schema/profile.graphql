@@ -72,6 +72,7 @@ input UploadProfileImagesInput {
   banner: Upload
   avatar: Upload
   description: String
+  compositeProfileURL: Boolean!
 }
 
 input CreateCompositeImageInput {
@@ -79,6 +80,10 @@ input CreateCompositeImageInput {
 }
 
 input LatestProfilesInput {
+  pageInput: PageInput
+}
+
+input CreateAllCompositeImagesInput {
   pageInput: PageInput
 }
 

@@ -17,65 +17,41 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
   try {
     logger.debug('syncing profile nfts', job.data)
 
-    let profiles = await repositories.profile.findAll()
-    let newTokenId = false
+    const profiles = await repositories.profile.findAll()
 
     const nftProfileContract = typechain.NftProfile__factory.connect(
       contracts.nftProfileAddress(job.data.chainId),
       provider.provider(Number(job.data.chainId)),
     )
 
-    // getTokenIds for everyone
-    profiles.forEach(async (profile: entity.Profile) => {
-      let tokenId
+    await Promise.all(profiles.map((profile: entity.Profile) => {
+      return async () => {
+        const tokenId = profile.tokenId
+        const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
+        const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
+          job.data.chainId,
+          address,
+        )
+        logger.debug(`address: ${address}, profile: ${profile.url}, tokenId: ${tokenId}`)
 
-      try {
-        tokenId = profile?.tokenId ?? await nftProfileContract.getTokenId(profile.url)
-        if (!profile?.tokenId) {
-          profile.tokenId = tokenId
-          await repositories.profile.save({
+        // wallet exists, so update user accordingly
+        if (foundWallet && foundWallet.id !== profile.ownerWalletId) {
+          logger.debug('saved existing profile user wallet')
+          repositories.profile.save({
             ...profile,
+            ownerUserId: foundWallet.userId,
+            ownerWalletId: foundWallet.id,
           })
-          logger.debug('saved tokenId', tokenId)
-          newTokenId = true
+        } else if (!foundWallet) {
+          logger.debug('non user wallet for profile')
+          repositories.profile.save({
+            ...profile,
+            ownerUserId: null,
+            ownerWalletId: null,
+          })
         }
-        logger.debug(`existing tokenId ${profile.url} => ${tokenId}`)
-      } catch (getTokenIdErr) {
-        // catch if profile doesn't exist yet
-        tokenId = -1
       }
-    })
-
-    profiles = newTokenId ? await repositories.profile.findAll() : profiles
-    
-    for (let i = 0; i < profiles.length; i++) {
-      const { tokenId } = profiles[i]
-      const address: string = tokenId !== null && Number(tokenId) >= 0 ? await nftProfileContract.ownerOf(tokenId) : '0x'
-  
-      const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
-        job.data.chainId,
-        address,
-      )
-
-      logger.debug(`address: ${address}, profile: ${profiles[i].url}, tokenId: ${tokenId}`)
-              
-      // wallet exists, so update user accordingly
-      if (foundWallet) {
-        logger.debug('saved existing profile user wallet')
-        repositories.profile.save({
-          ...profiles[i],
-          ownerUserId: foundWallet.userId,
-          ownerWalletId: foundWallet.id,
-        })
-      } else {
-        logger.debug('non user wallet for profile')
-        repositories.profile.save({
-          ...profiles[i],
-          ownerUserId: null,
-          ownerWalletId: null,
-        })
-      }
-    }
+    }))
   } catch (err) {
     console.log('error: ', err)
   }
