@@ -410,7 +410,6 @@ export const reservedProfiles = {
   '0x5257B8a48Ff01182617f2Fd25E9C1dB0b2dD6475': ['balajis', '1729'],
   '0xc69004e5384391D86C002643D84da620B26e89D8': ['baronvonhustle', 'jasontheape'],
   '0x54D1F8745aB57c29d0Cec4877e75028Fe37689f1': ['bengreenfield', 'bengreenfieldlife'],
-  // todo: 2nd address needed. remove these from the banlist above if you want to use this.
   '0x5aEfCB0F364AdbAFC197f91c8496a488bA90C3d1': ['fitness', 'longevity'],
   '0x2e50870053A015409269d9f9e26D3A6869887020': ['ben', 'tiktok'],
   '0xAe51b702Ee60279307437b13734D27078EF108AA': ['billy', 'newyork'],
@@ -509,7 +508,7 @@ export const reservedProfiles = {
   '0xfA3ccA6a31E30Bf9A0133a679d33357bb282c995': ['yale', 'y'],
   '0x1Bd8814B90372cc92e7FE0785948c981618cAa78': ['web3_plaza', 'pantherpunks'],
   '0xAd5B657416fbA43CAF6C65Ec8e8DD847d6700286': ['oscars', 'cokecola'],
-  '0xa6EFa954d13ABCe7786b2C65C356c8Ae46aaD261': ['upperdeck', 'loreal'],
+  '0xdc7B03E4F3a7B85F7A20e594D14a59B072000dfb': ['upperdeck', 'worldseries'],
   '0x6F41a9ab54f7665314768Ebd72AF6bB97c6D85dA': ['bearbrick', 'happydad'],
   '0x1623e9C3dE4D23e6dDF408Dcfa895AD64a63b6c4': ['baltimoreravens', 'livenation'],
   '0x7C594337490Fab2f846b87E4016ECc8893A0659c': ['wme', 'wrestling'],
