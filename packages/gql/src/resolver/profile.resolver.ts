@@ -11,6 +11,7 @@ import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
+import { checkNFTContractAddresses, updateWalletNFTs } from '@nftcom/gql/job/nft.job'
 import { core } from '@nftcom/gql/service'
 import {
   DEFAULT_NFT_IMAGE,
@@ -25,6 +26,7 @@ import { blacklistBool } from '../service/core.service'
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+const PROFILE_NFTS_EXPIRE_DURATION = 10 * 60 * 1000
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
@@ -548,6 +550,73 @@ const getLatestProfiles = (
     .then(pagination.toPageable(pageInput))
 }
 
+const fetchNFTsForProfile = (
+  _: any,
+  args: gql.MutationFetchNFTsForProfileArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  const { repositories } = ctx
+  logger.debug('fetchNFTsForProfile', { input: args?.input })
+  const pageInput = args?.input.pageInput
+
+  return repositories.profile.findById(args?.input.profileId)
+    .then((profile: entity.Profile | undefined) => {
+      if (!profile) {
+        return Promise.resolve({ items: [] })
+      } else {
+        const filters: Partial<entity.NFT>[] = [helper.removeEmpty({
+          profileId: profile.id,
+          userId: profile.ownerUserId,
+          walletId: profile.ownerWalletId,
+        })]
+        const now = Date.now()
+        // if there is no profile NFT or NFTs are expired and need to be updated...
+        if (!profile.nftsLastUpdated  ||
+          now - Number(profile.nftsLastUpdated) > PROFILE_NFTS_EXPIRE_DURATION
+        ) {
+          return repositories.wallet.findById(profile.ownerWalletId)
+            .then((wallet: entity.Wallet) => {
+              return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
+                .then(() => {
+                  return updateWalletNFTs(
+                    profile.ownerUserId,
+                    wallet.id,
+                    wallet.address,
+                    profile.id,
+                  )
+                    .then(() => {
+                      return repositories.profile.updateOneById(profile.id, {
+                        nftsLastUpdated: now.toString(),
+                      })
+                        .then(() => {
+                          return core.paginatedEntitiesBy(
+                            repositories.nft,
+                            pageInput,
+                            filters,
+                            [],
+                            'createdAt',
+                            'ASC',
+                          )
+                            .then(pagination.toPageable(pageInput))
+                        })
+                    })
+                })
+            })
+        } else {
+          return core.paginatedEntitiesBy(
+            repositories.nft,
+            pageInput,
+            filters,
+            [],
+            'createdAt',
+            'ASC',
+          )
+            .then(pagination.toPageable(pageInput))
+        }
+      }
+    })
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -567,6 +636,7 @@ export default {
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
+    fetchNFTsForProfile: combineResolvers(fetchNFTsForProfile),
   },
   Profile: {
     followersCount: getFollowersCount,

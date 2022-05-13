@@ -42,4 +42,7 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   showGallery: boolean
 
+  @Column({ nullable: true })
+  nftsLastUpdated: string
+
 }

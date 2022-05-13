@@ -61,13 +61,17 @@ interface NFTMetaDataResponse {
   timeLastUpdated: string
 }
 
-const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
+export const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
   try {
     const response = await web3.alchemy.getNfts({
       owner: owner,
       withMetadata: false,
     })
-    return response.ownedNfts as OwnedNFT[]
+    if (response.ownedNfts) {
+      return response.ownedNfts as OwnedNFT[]
+    } else {
+      return []
+    }
   } catch (err) {
     console.log('error: ', err)
     return []
@@ -93,11 +97,14 @@ const filterNFTsWithAlchemy = async (
       owner: owner,
       contractAddresses: contracts,
     })
+    if (!response.ownedNfts) {
+      return []
+    }
     const ownedNfts = response.ownedNfts
 
     const checksum = ethers.utils.getAddress
 
-    return await Promise.all(
+    return await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
           checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
@@ -167,6 +174,7 @@ const updateEntity = async (
   nftInfo: NFTMetaDataResponse,
   userId: string,
   walletId: string,
+  profileId?: string,
 ): Promise<void> => {
   let newNFT
   // let newCollection
@@ -225,6 +233,11 @@ const updateEntity = async (
     })
 
     if (newNFT) {
+      if (profileId) {
+        newNFT = await repositories.nft.updateOneById(newNFT.id, {
+          profileId: profileId,
+        })
+      }
       await repositories.collection.findOne({
         where: { contract: ethers.utils.getAddress(newNFT.contract) },
       })
@@ -242,7 +255,7 @@ const updateEntity = async (
             })
         }))
         .then(async (collection: entity.Collection) => {
-          // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY 
+          // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
           // save collection in typesense search  if new
           // if (newCollection) {
           //   const indexCollection = []
@@ -271,7 +284,7 @@ const updateEntity = async (
           //     description: newNFT.metadata.description,
           //     createdAt: newNFT.createdAt,
           //   })
-  
+
           //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
           //     .then(() => logger.debug('nft added to typesense index'))
           //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
@@ -349,20 +362,23 @@ const checkOwnedNFTs = async (users: entity.User[]): Promise<void[]> => {
  * @param userId
  * @param walletId
  * @param walletAddress
+ * @param profileId
  */
 export const updateWalletNFTs = async (
   userId: string,
   walletId: string,
   walletAddress: string,
+  profileId?: string,
 ): Promise<void> => {
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
-  ownedNFTs.reduce(async (memo: any, nft: OwnedNFT) => {
-    await memo
-    const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
-    if (response) {
-      await updateEntity(response, userId, walletId)
-    }
-  }, null)
+  await Promise.allSettled(
+    ownedNFTs.map(async (nft: OwnedNFT) => {
+      const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
+      if (response) {
+        await updateEntity(response, userId, walletId, profileId)
+      }
+    }),
+  )
 }
 
 /**

@@ -87,6 +87,11 @@ input CreateAllCompositeImagesInput {
   pageInput: PageInput
 }
 
+input FetchNFTsForProfileInput {
+  profileId: ID!
+  pageInput: PageInput
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -106,4 +111,5 @@ extend type Mutation {
   mintGKProfile(input: MintGKProfileInput): String!
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
   createCompositeImage(input: CreateCompositeImageInput): Profile!
+  fetchNFTsForProfile(input: FetchNFTsForProfileInput): NFTsOutput!
 }
