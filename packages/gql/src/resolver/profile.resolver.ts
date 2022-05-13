@@ -555,11 +555,16 @@ const fetchNFTsForProfile = (
   args: gql.MutationFetchNFTsForProfileArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
-  const { repositories } = ctx
-  logger.debug('fetchNFTsForProfile', { input: args?.input })
+  const { user, repositories } = ctx
+  logger.debug('fetchNFTsForProfile', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input.pageInput
 
-  return repositories.profile.findById(args?.input.profileId)
+  return repositories.profile.findOne({
+    where: {
+      id: args?.input.profileId,
+      ownerUserId: user.id,
+    },
+  })
     .then((profile: entity.Profile | undefined) => {
       if (!profile) {
         return Promise.resolve({ items: [] })
@@ -636,7 +641,7 @@ export default {
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
-    fetchNFTsForProfile: combineResolvers(fetchNFTsForProfile),
+    fetchNFTsForProfile: combineResolvers(auth.isAuthenticated, fetchNFTsForProfile),
   },
   Profile: {
     followersCount: getFollowersCount,
