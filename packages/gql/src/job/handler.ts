@@ -1,8 +1,9 @@
 import { Job } from 'bull'
 import cryptoRandomString from 'crypto-random-string'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
-import { ethers, utils } from 'ethers'
+import { BigNumber, ethers, utils } from 'ethers'
 import Redis from 'ioredis'
+import * as Lodash from 'lodash'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { auth, provider } from '@nftcom/gql/helper'
@@ -33,34 +34,32 @@ const onlyUnique = (value, index, self: any[]): boolean => {
 // ethereum nodes
 const perChunk = 900
 
-const getAddressBalanceMapping =
-  async (bids: entity.Bid[], walletIdAddressMapping: any, chainId: number):
-  Promise<[entity.Bid[], any, any]> => {
-    const splitAddressArrays: any = Object.values(walletIdAddressMapping)
-      .reduce((resultArray, item, index) => {
-        const chunkIndex = Math.floor(index/perChunk)
+const getAddressBalanceMapping = async (
+  bids: entity.Bid[],
+  walletIdAddressMapping: any,
+  chainId: number,
+) : Promise<[entity.Bid[], any, any]> => {
+  const splitAddressArrays: string[][] = Lodash.chunk(
+    Object.values(walletIdAddressMapping),
+    perChunk,
+  )
 
-        if (!resultArray[chunkIndex]) {
-          resultArray[chunkIndex] = [] // start a new chunk
-        }
-
-        resultArray[chunkIndex].push(item)
-
-        return resultArray
-      }, [])
-
-    const genesisKeyBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
-    const addressBalanceMapping = splitAddressArrays.map(
-      splitArray => getAddressesBalances( // returns balances in object, need Object.assign to combine into one single object
+  const genesisKeyBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
+  const balanceArrays = []
+  await Promise.allSettled(
+    splitAddressArrays.map(async (splitArray: string[]) => {
+      const balances = await getAddressesBalances(
         provider.provider(Number(chainId)),
         splitArray,
-        ['0x0000000000000000000000000000000000000000'],
+        [ethers.constants.AddressZero],
         contracts.multiBalance(chainId),
-      ),
-    )
-
-    return [genesisKeyBids, walletIdAddressMapping, addressBalanceMapping]
-  }
+      )
+      balanceArrays.push(balances)
+    }),
+  )
+  const addressBalanceMapping = Object.assign({}, ...balanceArrays)
+  return [genesisKeyBids, walletIdAddressMapping, addressBalanceMapping]
+}
 
 // validates live balances for all the filtered bids
 const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<boolean> => {
@@ -95,13 +94,13 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
           return Promise.all([
             genesisKeyBids.map(async (bid: entity.Bid) => {
               try {
-                const mergedBalance = [].concat(...await addressBalanceMapping)
-                const balanceObj = (await mergedBalance[0])[
-                  walletIdAddressMapping[bid.walletId]]
-                const ethBalance = Number(balanceObj['0x0000000000000000000000000000000000000000']) ?? 0
-
-                if (ethBalance < Number(bid.price) && new Date().getTime() < 1651186800000) {
-                  logger.info('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance, wallet: walletIdAddressMapping[bid.walletId], mergedBalance })
+                const balanceObj = addressBalanceMapping[walletIdAddressMapping[bid.walletId]]
+                const ethBalance = BigNumber.from(balanceObj[ethers.constants.AddressZero]) ??
+                  BigNumber.from(0)
+                if (ethBalance.lt(BigNumber.from(bid.price))
+                  && new Date().getTime() < 1651186800000
+                ) {
+                  logger.info('softDeleteGenesisBid', { type: bid.nftType, bidAmount: Number(bid.price), ethBalance })
                   repositories.bid.deleteById(bid.id)
                 }
               } catch (err) {
@@ -115,7 +114,6 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
     console.log('error while validateLiveBalances: ', err)
   }
 }
-
 const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
 
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
