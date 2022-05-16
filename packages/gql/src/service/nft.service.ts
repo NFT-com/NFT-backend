@@ -340,28 +340,6 @@ export const checkNFTContractAddresses = async (
 }
 
 /**
- * check if NFTs of users are sold or transferred to different address...
- * @param users
- */
-// const checkOwnedNFTs = async (users: entity.User[]): Promise<void[]> => {
-//   try {
-//     return await Promise.all(
-//       users.map(async (user: entity.User) => {
-//         const wallets = await repositories.wallet.findByUserId(user.id)
-//         await Promise.all(
-//           wallets.map(async (wallet: entity.Wallet) => {
-//             await checkNFTContractAddresses(user.id, wallet.id, wallet.address)
-//           }),
-//         )
-//       }),
-//     )
-//   } catch (err) {
-//     console.log('error check owned NFTs: ', err)
-//     return []
-//   }
-// }
-
-/**
  * update wallet NFTs using data from alchemy api
  * @param userId
  * @param walletId
@@ -384,31 +362,3 @@ export const updateWalletNFTs = async (
     }),
   )
 }
-
-/**
- * get owned NFTs of users...
- * @param users
- */
-// const getOwnedNFTs = async (users: entity.User[]): Promise<void[]> => {
-//   return await Promise.all(
-//     users.map(async (user: entity.User) => {
-//       const wallets = await repositories.wallet.findByUserId(user.id)
-//       await Promise.all(
-//         wallets.map(async (wallet: entity.Wallet) => {
-//           await updateWalletNFTs(user.id, wallet.id, wallet.address)
-//         }),
-//       )
-//     }),
-//   )
-// }
-
-// export const getUsersNFTs = async (job: Job): Promise<any> => {
-//   try {
-//     logger.debug('user nft job', { job })
-//     const users = await repositories.user.findAll()
-//     await checkOwnedNFTs(users)
-//     return await getOwnedNFTs(users)
-//   } catch (err) {
-//     console.log('error fetching nft data: ', err)
-//   }
-// }

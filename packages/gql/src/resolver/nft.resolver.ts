@@ -22,7 +22,7 @@ const redis = new Redis({
   port: redisConfig.port,
   host: redisConfig.host,
 })
-const PROFILE_NFTS_EXPIRE_DURATION = 10 * 60 * 1000
+const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 
 const getNFT = (
   _: unknown,

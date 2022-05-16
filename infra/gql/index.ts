@@ -111,6 +111,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['TYPESENSE_HOST'] = process.env.TYPESENSE_HOST || parsedFile['TYPESENSE_HOST']
   parsedFile['TYPESENSE_API_KEY'] = process.env.TYPESENSE_API_KEY || parsedFile['TYPESENSE_API_KEY']
   parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS'] = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS || parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS']
+  parsedFile['PROFILE_NFTS_EXPIRE_DURATION'] = process.env.PROFILE_NFTS_EXPIRE_DURATION || parsedFile['PROFILE_NFTS_EXPIRE_DURATION']
 
   console.log(JSON.stringify(parsedFile))
 
