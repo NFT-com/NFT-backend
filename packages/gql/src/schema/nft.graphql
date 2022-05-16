@@ -110,6 +110,12 @@ type RefreshMyNFTsOutput {
   message: String
 }
 
+input FetchNFTsForProfileInput {
+  profileId: ID!
+  pageInput: PageInput
+  chainId: String!
+}
+
 extend type Query {
   gkNFTs(tokenId: String!): GetGkNFTSOutput!
   nft(contract: Address!, id: String!): NFT!
@@ -122,4 +128,5 @@ extend type Query {
 
 extend type Mutation {
   refreshMyNFTs: RefreshMyNFTsOutput!
+  fetchNFTsForProfile(input: FetchNFTsForProfileInput): NFTsOutput!
 }
