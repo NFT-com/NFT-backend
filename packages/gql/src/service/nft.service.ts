@@ -10,8 +10,7 @@ const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
-const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
-const ALCHEMY_API_URL_MAINNET = process.env.ALCHEMY_API_URL_MAINNET
+const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 let web3: AlchemyWeb3
 
 // TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
@@ -61,9 +60,8 @@ interface NFTMetaDataResponse {
   timeLastUpdated: string
 }
 
-export const initiateWeb3 = (chainId: string): void => {
-  web3 = chainId === '1' ? createAlchemyWeb3(ALCHEMY_API_URL_MAINNET) :
-    createAlchemyWeb3(ALCHEMY_API_URL_RINKEBY)
+export const initiateWeb3 = (): void => {
+  web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 }
 
 export const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {

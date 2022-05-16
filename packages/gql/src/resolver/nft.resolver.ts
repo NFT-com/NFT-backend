@@ -272,7 +272,7 @@ const fetchNFTsForProfile = (
   const { user, repositories } = ctx
   logger.debug('fetchNFTsForProfile', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input.pageInput
-  initiateWeb3(args?.input.chainId)
+  initiateWeb3()
   return repositories.profile.findOne({
     where: {
       id: args?.input.profileId,
