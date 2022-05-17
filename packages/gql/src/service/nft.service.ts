@@ -339,7 +339,7 @@ export const checkNFTContractAddresses = async (
       }),
     )
   } catch (err) {
-    console.log('error check nft contract address: ', err)
+    logger.error('error check nft contract address: ', err)
     return []
   }
 }
