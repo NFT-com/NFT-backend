@@ -367,3 +367,80 @@ export const updateWalletNFTs = async (
     }),
   )
 }
+
+const showOrHideAllNFTs = async (
+  repositories: db.Repository,
+  profileId: string,
+  visibility: boolean,
+): Promise<void> => {
+  const nfts = await repositories.nft.find({ where: { profileId: profileId } })
+  if (nfts.length) {
+    await Promise.allSettled(
+      nfts.map(async (nft) => {
+        await repositories.nft.updateOneById(nft.id, { visibility: visibility })
+      }),
+    )
+  }
+}
+
+/**
+ * change visibility of profile NFTs
+ * @param repositories
+ * @param profileId
+ * @param showAll
+ * @param hideAll
+ * @param showNFTIds
+ * @param hideNFTIds
+ */
+export const changeNFTsVisibility = async (
+  repositories: db.Repository,
+  profileId: string,
+  showAll: boolean,
+  hideAll: boolean,
+  showNFTIds: Array<string>,
+  hideNFTIds: Array<string>,
+): Promise<void> => {
+  try {
+    if (showAll) {
+      await showOrHideAllNFTs(repositories, profileId, true)
+      return
+    } else if (hideAll) {
+      await showOrHideAllNFTs(repositories, profileId, false)
+    } else {
+      if (showNFTIds.length) {
+        await Promise.allSettled(
+          showNFTIds.map(async (id) => {
+            const nft = await repositories.nft.findOne({
+              where: {
+                id: id,
+                profileId: profileId,
+              },
+            })
+            if (nft) {
+              nft.visibility = true
+              await repositories.nft.save(nft)
+            }
+          }),
+        )
+      }
+      if (hideNFTIds) {
+        await Promise.allSettled(
+          hideNFTIds.map(async (id) => {
+            const nft = await repositories.nft.findOne({
+              where: {
+                id: id,
+                profileId: profileId,
+              },
+            })
+            if (nft) {
+              nft.visibility = false
+              await repositories.nft.save(nft)
+            }
+          }),
+        )
+      }
+    }
+  } catch (e) {
+    logger.error('change visibility of NFTs is failed. ', e)
+  }
+}
