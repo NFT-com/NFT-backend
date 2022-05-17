@@ -385,12 +385,14 @@ const showOrHideAllNFTs = async (
 
 /**
  * change visibility of profile NFTs
+ * hideNFTIds takes priority over showNFTIds (like if the same ID is in both arrays)
+ * showAll, hideAll, and -Ids arrays are mutually exclusive (only one of those 3 will be respected, with priority to showAll)
  * @param repositories
  * @param profileId
  * @param showAll
  * @param hideAll
- * @param showNFTIds
- * @param hideNFTIds
+ * @param showNFTIds - set the NFTs' visibility as show, without regard to the previous value
+ * @param hideNFTIds - set the NFTs' visibility as hide, without regard to the previous value
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
