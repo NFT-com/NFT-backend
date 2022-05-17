@@ -48,6 +48,8 @@ input UpdateProfileInput {
   bannerURL: String
   description: String
   photoURL: String
+  showNFTIds: [String]
+  hideNFTIds: [String]
 }
 
 input ProfileClaimedInput {
