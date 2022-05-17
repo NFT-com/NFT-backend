@@ -30,7 +30,6 @@ type Profile {
   status: ProfileStatus
   url: String!
   winningBid: Bid
-  showGallery: Boolean
 }
 
 input ProfilesInput {
@@ -49,7 +48,6 @@ input UpdateProfileInput {
   bannerURL: String
   description: String
   photoURL: String
-  showGallery: Boolean
 }
 
 input ProfileClaimedInput {

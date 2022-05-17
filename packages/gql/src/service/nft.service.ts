@@ -233,6 +233,7 @@ const updateEntity = async (
       type: type,
       userId: userId,
       walletId: walletId,
+      visibility: false,
     })
 
     if (newNFT) {

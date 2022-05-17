@@ -12,6 +12,8 @@ import { _logger, contracts, defs, entity, fp,helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
+import { differenceInMilliseconds } from 'date-fns'
+
 import { redisConfig } from '@nftcom/gql/config'
 import {
   checkNFTContractAddresses,
@@ -269,29 +271,31 @@ const fetchNFTsForProfile = (
   args: gql.MutationFetchNFTsForProfileArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
-  const { user, repositories } = ctx
-  logger.debug('fetchNFTsForProfile', { loggedInUserId: user.id, input: args?.input })
+  const { repositories } = ctx
+  logger.debug('fetchNFTsForProfile', { input: args?.input })
   const pageInput = args?.input.pageInput
+  const includeHidden = args?.input.includeHidden
   initiateWeb3()
-  return repositories.profile.findOne({
-    where: {
-      id: args?.input.profileId,
-      ownerUserId: user.id,
-    },
-  })
+  return repositories.profile.findOne({ where: { id: args?.input.profileId } })
     .then((profile: entity.Profile | undefined) => {
       if (!profile) {
         return Promise.resolve({ items: [] })
       } else {
-        const filters: Partial<entity.NFT>[] = [helper.removeEmpty({
+        const filterObj = helper.removeEmpty({
           profileId: profile.id,
           userId: profile.ownerUserId,
           walletId: profile.ownerWalletId,
-        })]
-        const now = Date.now()
+        })
+        const filters: Partial<entity.NFT>[] = includeHidden ?
+          [{ ...filterObj }] : [{ ...filterObj, visibility: true }]
+        const now = helper.toUTCDate()
+        let duration
+        if (profile.nftsLastUpdated) {
+          duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
+        }
         // if there is no profile NFT or NFTs are expired and need to be updated...
         if (!profile.nftsLastUpdated  ||
-          now - Number(profile.nftsLastUpdated) > PROFILE_NFTS_EXPIRE_DURATION
+          (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
         ) {
           return repositories.wallet.findById(profile.ownerWalletId)
             .then((wallet: entity.Wallet) => {
@@ -305,7 +309,7 @@ const fetchNFTsForProfile = (
                   )
                     .then(() => {
                       return repositories.profile.updateOneById(profile.id, {
-                        nftsLastUpdated: now.toString(),
+                        nftsLastUpdated: now,
                       })
                         .then(() => {
                           return core.paginatedEntitiesBy(
@@ -348,7 +352,7 @@ export default {
   },
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
-    fetchNFTsForProfile: combineResolvers(auth.isAuthenticated, fetchNFTsForProfile),
+    fetchNFTsForProfile: fetchNFTsForProfile,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

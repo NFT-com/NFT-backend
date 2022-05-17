@@ -36,6 +36,7 @@ type NFT {
   type: NFTType!
 #  user: User
   wallet: Wallet
+  visibility: Boolean!
   createdAt: DateTime!
 }
 
@@ -113,7 +114,7 @@ type RefreshMyNFTsOutput {
 input FetchNFTsForProfileInput {
   profileId: ID!
   pageInput: PageInput
-  chainId: String!
+  includeHidden: Boolean!
 }
 
 extend type Query {
