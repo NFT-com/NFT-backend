@@ -4,7 +4,7 @@
   "types": "src/index",
   "scripts": {
     "prebuild": "npx json -I -f package.json -e \"this.main='dist/index'\" -e \"this.types='dist/index.d.ts'\"",
-    "build": "npm run clean && npm run compile && npm run copy:cert",
+    "build": "npm run clean && npm run compile && && npm run typeorm:cli --  migration:revert && npm run copy:cert",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/db/rds-combined-ca-bundle.cer",
     "compile": "tsc && tsc-alias",
