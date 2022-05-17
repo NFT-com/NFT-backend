@@ -286,8 +286,7 @@ const fetchNFTsForProfile = (
           userId: profile.ownerUserId,
           walletId: profile.ownerWalletId,
         })
-        const filters: Partial<entity.NFT>[] = includeHidden ?
-          [{ ...filterObj }] : [{ ...filterObj, visibility: true }]
+        const filters: Partial<entity.NFT>[] = [{ ...filterObj, visibility: !includeHidden }]
         const now = helper.toUTCDate()
         let duration
         if (profile.nftsLastUpdated) {
