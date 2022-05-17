@@ -111,7 +111,7 @@ type RefreshMyNFTsOutput {
   message: String
 }
 
-input FetchNFTsForProfileInput {
+input UpdateNFTsForProfileInput {
   profileId: ID!
   pageInput: PageInput
   includeHidden: Boolean!
@@ -129,5 +129,5 @@ extend type Query {
 
 extend type Mutation {
   refreshMyNFTs: RefreshMyNFTsOutput!
-  fetchNFTsForProfile(input: FetchNFTsForProfileInput): NFTsOutput!
+  updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
 }

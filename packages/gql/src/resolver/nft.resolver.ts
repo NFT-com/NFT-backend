@@ -266,9 +266,9 @@ const getGkNFTs = async (
   }
 }
 
-const fetchNFTsForProfile = (
+const updateNFTsForProfile = (
   _: any,
-  args: gql.MutationFetchNFTsForProfileArgs,
+  args: gql.MutationUpdateNFTsForProfileArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { repositories } = ctx
@@ -352,7 +352,7 @@ export default {
   },
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
-    fetchNFTsForProfile: fetchNFTsForProfile,
+    updateNFTsForProfile: updateNFTsForProfile,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
