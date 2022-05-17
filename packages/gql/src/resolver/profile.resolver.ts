@@ -237,6 +237,8 @@ const updateProfile = (
     bannerURL: Joi.string().uri().allow(null),
     description: Joi.string().allow(null),
     photoURL: Joi.string().uri().allow(null),
+    showNFTIds: Joi.array().required().items(Joi.string()),
+    hideNFTIds: Joi.array().required().items(Joi.string()),
   })
   joi.validateSchema(schema, args.input)
 
