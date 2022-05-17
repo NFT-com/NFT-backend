@@ -7,17 +7,24 @@ import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, curationError, nftError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { checkNFTContractAddresses, updateWalletNFTs } from '@nftcom/gql/job/nft.job'
 import { core } from '@nftcom/gql/service'
 import { _logger, contracts, defs, entity, fp,helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
+import { differenceInMilliseconds } from 'date-fns'
+
 import { redisConfig } from '@nftcom/gql/config'
+import {
+  checkNFTContractAddresses,
+  initiateWeb3,
+  updateWalletNFTs,
+} from '@nftcom/gql/service/nft.service'
 const redis = new Redis({
   port: redisConfig.port,
   host: redisConfig.host,
 })
+const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 
 const getNFT = (
   _: unknown,
@@ -76,7 +83,7 @@ const getNFTs = (
     if (curations == null || curations.length === 0) {
       // If no curations associated with this Profile,
       // (e.g. before user-curated curations are available)
-      // we'll return all the owner's NFTs (at this wallet) 
+      // we'll return all the owner's NFTs (at this wallet)
       return repositories.profile.findById(profileId)
         .then((profile: entity.Profile) =>
           repositories.nft.findByWalletId(profile.ownerWalletId)
@@ -237,26 +244,100 @@ const getGkNFTs = async (
   } else {
     const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
-  
+
     try {
       const response: any = await web3.alchemy.getNftMetadata({
         contractAddress: contracts.genesisKeyAddress(process.env.CHAIN_ID),
         tokenId: ethers.BigNumber.from(args?.tokenId).toString(),
         tokenType: 'erc721',
       })
-  
+
       await redis.set(
         `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`,
         JSON.stringify(response),
         'ex',
         60 * 60, // 60 minutes
       )
-  
+
       return response
     } catch (err) {
       throw nftError.buildNFTNotFoundMsg(args?.tokenId)
     }
   }
+}
+
+const updateNFTsForProfile = (
+  _: any,
+  args: gql.MutationUpdateNFTsForProfileArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  const { repositories } = ctx
+  logger.debug('fetchNFTsForProfile', { input: args?.input })
+  const pageInput = args?.input.pageInput
+  const includeHidden = args?.input.includeHidden
+  initiateWeb3()
+  return repositories.profile.findOne({ where: { id: args?.input.profileId } })
+    .then((profile: entity.Profile | undefined) => {
+      if (!profile) {
+        return Promise.resolve({ items: [] })
+      } else {
+        const filterObj = helper.removeEmpty({
+          profileId: profile.id,
+          userId: profile.ownerUserId,
+          walletId: profile.ownerWalletId,
+        })
+        const filters: Partial<entity.NFT>[] = includeHidden ?
+          [{ ...filterObj }] : [{ ...filterObj, visibility: true }]
+        const now = helper.toUTCDate()
+        let duration
+        if (profile.nftsLastUpdated) {
+          duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
+        }
+        // if there is no profile NFT or NFTs are expired and need to be updated...
+        if (!profile.nftsLastUpdated  ||
+          (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
+        ) {
+          return repositories.wallet.findById(profile.ownerWalletId)
+            .then((wallet: entity.Wallet) => {
+              return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
+                .then(() => {
+                  return updateWalletNFTs(
+                    profile.ownerUserId,
+                    wallet.id,
+                    wallet.address,
+                    profile.id,
+                  )
+                    .then(() => {
+                      return repositories.profile.updateOneById(profile.id, {
+                        nftsLastUpdated: now,
+                      })
+                        .then(() => {
+                          return core.paginatedEntitiesBy(
+                            repositories.nft,
+                            pageInput,
+                            filters,
+                            [],
+                            'createdAt',
+                            'ASC',
+                          )
+                            .then(pagination.toPageable(pageInput))
+                        })
+                    })
+                })
+            })
+        } else {
+          return core.paginatedEntitiesBy(
+            repositories.nft,
+            pageInput,
+            filters,
+            [],
+            'createdAt',
+            'ASC',
+          )
+            .then(pagination.toPageable(pageInput))
+        }
+      }
+    })
 }
 
 export default {
@@ -271,6 +352,7 @@ export default {
   },
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
+    updateNFTsForProfile: updateNFTsForProfile,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

@@ -70,6 +70,7 @@ runs:
         TYPESENSE_HOST: ${{ fromJSON(inputs.secrets).TYPESENSE_HOST }}
         TYPESENSE_API_KEY: ${{ fromJSON(inputs.secrets).TYPESENSE_API_KEY }}
         MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ fromJSON(inputs.secrets).MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
+        PROFILE_NFTS_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_NFTS_EXPIRE_DURATION }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash

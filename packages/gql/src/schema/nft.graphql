@@ -36,6 +36,7 @@ type NFT {
   type: NFTType!
 #  user: User
   wallet: Wallet
+  visibility: Boolean!
   createdAt: DateTime!
 }
 
@@ -110,6 +111,12 @@ type RefreshMyNFTsOutput {
   message: String
 }
 
+input UpdateNFTsForProfileInput {
+  profileId: ID!
+  pageInput: PageInput
+  includeHidden: Boolean!
+}
+
 extend type Query {
   gkNFTs(tokenId: String!): GetGkNFTSOutput!
   nft(contract: Address!, id: String!): NFT!
@@ -122,4 +129,5 @@ extend type Query {
 
 extend type Mutation {
   refreshMyNFTs: RefreshMyNFTsOutput!
+  updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
 }

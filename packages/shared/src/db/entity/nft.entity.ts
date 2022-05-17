@@ -35,4 +35,7 @@ export class NFT extends BaseEntity {
   @Column({ nullable: false })
   walletId: string
 
+  @Column({ nullable: true, default: false })
+  visibility: boolean
+
 }
