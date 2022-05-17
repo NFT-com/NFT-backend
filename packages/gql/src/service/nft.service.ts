@@ -220,6 +220,10 @@ const updateEntity = async (
         logger.error('error while parsing traits', err, nftInfo, nftInfo.metadata, nftInfo.metadata.attributes)
       }
     }
+    let visibility = false
+    if (existingNFT) {
+      visibility = existingNFT.visibility
+    }
     newNFT = await repositories.nft.save({
       ...existingNFT,
       contract: ethers.utils.getAddress(nftInfo.contract.address),
@@ -233,7 +237,7 @@ const updateEntity = async (
       type: type,
       userId: userId,
       walletId: walletId,
-      visibility: false,
+      visibility: visibility,
     })
 
     if (newNFT) {
