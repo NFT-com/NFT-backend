@@ -50,6 +50,8 @@ input UpdateProfileInput {
   photoURL: String
   showNFTIds: [String]
   hideNFTIds: [String]
+  showAllNFTs: Boolean
+  hideAllNFTs: Boolean
 }
 
 input ProfileClaimedInput {

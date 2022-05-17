@@ -18,6 +18,7 @@ import {
   getAWSConfig,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
+import { changeNFTsVisibility } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
 
 import { blacklistBool } from '../service/core.service'
@@ -237,6 +238,10 @@ const updateProfile = (
     bannerURL: Joi.string().uri().allow(null),
     description: Joi.string().allow(null),
     photoURL: Joi.string().uri().allow(null),
+    showNFTIds: Joi.array().items(Joi.string()).allow(null),
+    hideNFTIds: Joi.array().items(Joi.string()).allow(null),
+    showAllNFTs: Joi.boolean().allow(null),
+    hideAllNFTs: Joi.boolean().allow(null),
   })
   joi.validateSchema(schema, args.input)
 
@@ -252,7 +257,16 @@ const updateProfile = (
       p.bannerURL = args.input.bannerURL || p.bannerURL
       p.description = args.input.description || p.description
       p.photoURL = args.input.photoURL || p.photoURL
-      return repositories.profile.save(p)
+      return changeNFTsVisibility(
+        repositories,
+        p.id,
+        args.input.showAllNFTs,
+        args.input.hideAllNFTs,
+        args.input.showNFTIds,
+        args.input.hideNFTIds,
+      ).then(() => {
+        return repositories.profile.save(p)
+      })
     })
 }
 
