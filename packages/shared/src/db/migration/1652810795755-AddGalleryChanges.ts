@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
-export class AddNftVisibility1652806301517 implements MigrationInterface {
+export class AddGalleryChanges1652810795755 implements MigrationInterface {
 
-  name = 'AddNftVisibility1652806301517'
+  name = 'AddGalleryChanges1652810795755'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('ALTER TABLE "profile" RENAME COLUMN "showGallery" TO "nftsLastUpdated"')
