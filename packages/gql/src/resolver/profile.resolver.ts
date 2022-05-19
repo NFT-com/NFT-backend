@@ -283,7 +283,8 @@ const updateProfile = (
       p.photoURL = args.input.photoURL || p.photoURL
       return changeNFTsVisibility(
         repositories,
-        p.id,
+        user.id,
+        p.id, // profileId
         args.input.showAllNFTs,
         args.input.hideAllNFTs,
         args.input.showNFTIds,
