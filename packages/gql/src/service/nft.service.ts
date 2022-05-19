@@ -372,7 +372,7 @@ const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<void> => {
-  await repositories.edge.delete({
+  await repositories.edge.hardDelete({
     thisEntityType: defs.EntityType.Profile,
     thisEntityId: profileId,
     edgeType: defs.EdgeType.Displays,
@@ -471,7 +471,7 @@ export const changeNFTsVisibility = async (
             if (!existingNFT) {
               return
             }
-            return repositories.edge.delete({
+            return repositories.edge.hardDelete({
               thisEntityId: profileId,
               thisEntityType: defs.EntityType.Profile,
               thatEntityId: existingNFT.id,
