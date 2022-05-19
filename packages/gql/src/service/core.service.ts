@@ -703,14 +703,13 @@ export const createProfileFromEvent = async (
   repositories: db.Repository,
   profileUrl: string,
 ): Promise<entity.Profile> => {
-  let wallet = await repositories.wallet.findByChainAddress(chainId, owner)
+  let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
   if (!wallet) {
     const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
     let user = await repositories.user.findOne({
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
-        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
       },
     })
     if (!user) {
