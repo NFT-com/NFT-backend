@@ -1,5 +1,5 @@
 import aws from 'aws-sdk'
-import { utils } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
@@ -19,7 +19,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import { changeNFTsVisibility } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, defs, entity, fp, helper, provider } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 import { blacklistBool } from '../service/core.service'
 
@@ -212,7 +212,31 @@ const getProfileByURL = (
   })
   joi.validateSchema(schema, args)
 
-  return core.createProfile(ctx, { url: args.url })
+  const chainId = process.env.SUPPORTED_NETWORKS.replace('ethereum:', '').split(':')[0]
+  const nftProfileContract = typechain.NftProfile__factory.connect(
+    contracts.nftProfileAddress(chainId),
+    provider.provider(Number(chainId)),
+  )
+
+  return ctx.repositories.profile.findByURL(args.url)
+    .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
+      .then(fp.rejectIfEmpty(appError.buildExists(
+        profileError.buildProfileNotFoundMsg(args.url),
+        profileError.ErrorType.ProfileNotFound,
+      )))
+      .then((tokenId: BigNumber) => {
+        return nftProfileContract.ownerOf(tokenId)
+          .then((owner: string) => [tokenId, owner])
+      })
+      .then(([tokenId, owner]: [BigNumber, string]) => {
+        return core.createProfileFromEvent(
+          chainId,
+          owner,
+          tokenId,
+          ctx.repositories,
+          args.url,
+        )
+      })))
 }
 
 const getWinningBid = (

@@ -1,14 +1,16 @@
 import aws from 'aws-sdk'
 import STS from 'aws-sdk/clients/sts'
+import cryptoRandomString from 'crypto-random-string'
+import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
-import { pagination } from '@nftcom/gql/helper'
+import { auth, pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
-import { _logger, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 export const DEFAULT_NFT_IMAGE = 'https://cdn.nft.com/Medallion.jpg'
@@ -692,6 +694,57 @@ export const createProfile = (
               ),
             ))
     })
+}
+
+export const createProfileFromEvent = async (
+  chainId: string,
+  owner: string,
+  tokenId: BigNumber,
+  repositories: db.Repository,
+  profileUrl: string,
+): Promise<entity.Profile> => {
+  let wallet = await repositories.wallet.findByChainAddress(chainId, owner)
+  if (!wallet) {
+    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+    let user = await repositories.user.findOne({
+      where: {
+        // defaults
+        username: 'ethereum-' + ethers.utils.getAddress(owner),
+        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+      },
+    })
+    if (!user) {
+      user = await repositories.user.save({
+        // defaults
+        username: 'ethereum-' + ethers.utils.getAddress(owner),
+        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+      })
+    }
+    wallet = await repositories.wallet.save({
+      address: ethers.utils.getAddress(owner),
+      network: 'ethereum',
+      chainId: chainId,
+      chainName: chain.name,
+      userId: user.id,
+    })
+  }
+  const ctx = {
+    chain: {
+      id: wallet.chainId,
+      name: wallet.chainName,
+    },
+    network: 'Ethereum',
+    repositories: repositories,
+    user: null,
+    wallet,
+  }
+  return createProfile(ctx, {
+    status: defs.ProfileStatus.Owned,
+    url: profileUrl,
+    tokenId: tokenId.toString(),
+    ownerWalletId: wallet.id,
+    ownerUserId: wallet.userId,
+  })
 }
 
 export const createEdge = (

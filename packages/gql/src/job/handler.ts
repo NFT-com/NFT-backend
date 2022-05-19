@@ -1,12 +1,11 @@
 import { Job } from 'bull'
-import cryptoRandomString from 'crypto-random-string'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { BigNumber, ethers, utils } from 'ethers'
 import Redis from 'ioredis'
 import * as Lodash from 'lodash'
 
 import { redisConfig } from '@nftcom/gql/config'
-import { auth, provider } from '@nftcom/gql/helper'
+import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
@@ -200,48 +199,13 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               // find and mark profile status as minted
               const profile = await repositories.profile.findByURL(profileUrl)
               if (!profile) {
-                let wallet = await repositories.wallet.findByChainAddress(chainId, owner)
-                if (!wallet) {
-                  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-                  let user = await repositories.user.findOne({
-                    where: {
-                      // defaults
-                      username: 'ethereum-' + ethers.utils.getAddress(owner),
-                      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-                    },
-                  })
-                  if (!user) {
-                    user = await repositories.user.save({
-                      // defaults
-                      username: 'ethereum-' + ethers.utils.getAddress(owner),
-                      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-                    })
-                  }
-                  wallet = await repositories.wallet.save({
-                    address: ethers.utils.getAddress(owner),
-                    network: 'ethereum',
-                    chainId: chainId,
-                    chainName: chain.name,
-                    userId: user.id,
-                  })
-                }
-                const ctx = {
-                  chain: {
-                    id: wallet.chainId,
-                    name: wallet.chainName,
-                  },
-                  network: 'Ethereum',
-                  repositories: repositories,
-                  user: null,
-                  wallet,
-                }
-                await core.createProfile(ctx, {
-                  status: defs.ProfileStatus.Owned,
-                  url: profileUrl,
-                  tokenId: tokenId.toString(),
-                  ownerWalletId: wallet.id,
-                  ownerUserId: wallet.userId,
-                })
+                await core.createProfileFromEvent(
+                  chainId,
+                  owner,
+                  tokenId,
+                  repositories,
+                  profileUrl,
+                )
                 const event = await repositories.event.findOne({
                   where: {
                     chainId,
