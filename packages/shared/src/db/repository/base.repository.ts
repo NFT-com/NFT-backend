@@ -24,6 +24,11 @@ export class BaseRepository<T> {
     return this.getRepository().softDelete(opts)
       .then((r) => r.affected > 0)
   }
+
+  public hardDelete = (opts: typeorm.FindConditions<T>): Promise<boolean> => {
+    return this.getRepository().delete(opts)
+      .then((r) => r.affected > 0)
+  }
   
   public deleteById = (id: string): Promise<boolean> => {
     return this.getRepository().softDelete(id)

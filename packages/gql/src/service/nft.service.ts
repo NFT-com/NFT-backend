@@ -368,16 +368,46 @@ export const updateWalletNFTs = async (
   )
 }
 
-const showOrHideAllNFTs = async (
+const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
-  visibility: boolean,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { profileId: profileId } })
+  await repositories.edge.hardDelete({
+    thisEntityType: defs.EntityType.Profile,
+    thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+    thatEntityType: defs.EntityType.NFT,
+  })
+}
+
+const showAllNFTs = async (
+  repositories: db.Repository,
+  userId: string,
+  profileId: string,
+): Promise<void> => {
+  const nfts = await repositories.nft.find({ where: { userId } })
   if (nfts.length) {
     await Promise.allSettled(
       nfts.map(async (nft) => {
-        await repositories.nft.updateOneById(nft.id, { visibility: visibility })
+        const displayEdge = await repositories.edge.findOne({
+          where: {
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: profileId,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Displays,
+          },
+        })
+        if (displayEdge == null) {
+          return
+        }
+        await repositories.edge.save({
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nft.id,
+          edgeType: defs.EdgeType.Displays,
+        })
       }),
     )
   }
@@ -388,6 +418,7 @@ const showOrHideAllNFTs = async (
  * hideNFTIds takes priority over showNFTIds (like if the same ID is in both arrays)
  * showAll, hideAll, and -Ids arrays are mutually exclusive (only one of those 3 will be respected, with priority to showAll)
  * @param repositories
+ * @param userId
  * @param profileId
  * @param showAll
  * @param hideAll
@@ -396,53 +427,62 @@ const showOrHideAllNFTs = async (
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
+  userId: string,
   profileId: string,
   showAll: boolean,
   hideAll: boolean,
-  showNFTIds: Array<string>,
-  hideNFTIds: Array<string>,
+  showNFTIds: Array<string> | null,
+  hideNFTIds: Array<string> | null,
 ): Promise<void> => {
   try {
     if (showAll) {
-      await showOrHideAllNFTs(repositories, profileId, true)
+      await showAllNFTs(repositories, userId, profileId)
       return
     } else if (hideAll) {
-      await showOrHideAllNFTs(repositories, profileId, false)
+      await hideAllNFTs(repositories, profileId)
+      return
     } else {
-      if (showNFTIds.length) {
+      if (showNFTIds?.length) {
         await Promise.allSettled(
-          showNFTIds.map(async (id) => {
-            const nft = await repositories.nft.findOne({
-              where: {
-                id: id,
-                profileId: profileId,
-              },
-            })
-            if (nft) {
-              nft.visibility = true
-              await repositories.nft.save(nft)
+          showNFTIds?.map(async (id) => {
+            const existingNFT = await repositories.nft.findOne({ where: { id } })
+            if (!existingNFT) {
+              return
             }
+            const edgeVals = {
+              thisEntityId: profileId,
+              thisEntityType: defs.EntityType.Profile,
+              thatEntityId: existingNFT.id,
+              thatEntityType: defs.EntityType.NFT,
+              edgeType: defs.EdgeType.Displays,
+            }
+            const existingEdge = await repositories.edge.findOne({ where: edgeVals })
+            if (existingEdge) {
+              return
+            }
+            repositories.edge.save(edgeVals)
           }),
         )
       }
       if (hideNFTIds) {
         await Promise.allSettled(
-          hideNFTIds.map(async (id) => {
-            const nft = await repositories.nft.findOne({
-              where: {
-                id: id,
-                profileId: profileId,
-              },
-            })
-            if (nft) {
-              nft.visibility = false
-              await repositories.nft.save(nft)
+          hideNFTIds?.map(async (id) => {
+            const existingNFT = await repositories.nft.findOne({ where: { id: id } })
+            if (!existingNFT) {
+              return
             }
+            return repositories.edge.hardDelete({
+              thisEntityId: profileId,
+              thisEntityType: defs.EntityType.Profile,
+              thatEntityId: existingNFT.id,
+              thatEntityType: defs.EntityType.NFT,
+              edgeType: defs.EdgeType.Displays,
+            })
           }),
         )
       }
     }
   } catch (e) {
-    logger.error('change visibility of NFTs is failed. ', e)
+    logger.error('change visibility of NFTs failed. ', e)
   }
 }
