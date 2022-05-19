@@ -392,14 +392,14 @@ const showAllNFTs = async (
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
           thatEntityId: nft.id,
-          edgeType: defs.EdgeType.Includes,
+          edgeType: defs.EdgeType.Displays,
         },
       }).then(fp.thruIfEmpty(() => repositories.edge.save({
         thisEntityType: defs.EntityType.Profile,
         thatEntityType: defs.EntityType.NFT,
         thisEntityId: profileId,
         thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Includes,
+        edgeType: defs.EdgeType.Displays,
       })))),
     )
   }
@@ -432,6 +432,7 @@ export const changeNFTsVisibility = async (
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
+      return
     } else {
       if (showNFTIds?.length) {
         await Promise.allSettled(
