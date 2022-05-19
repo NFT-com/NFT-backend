@@ -243,6 +243,36 @@ export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<
   return repositories.edge.count({ ...filter, deletedAt: null })
 }
 
+export const paginatedThatEntitiesOfEdgesBy = <T>(
+  ctx: Context,
+  repo: repository.BaseRepository<T>,
+  filter: Partial<entity.Edge>,
+  pageInput: gql.PageInput,
+  orderKey= 'createdAt',
+  orderDirection = 'DESC',
+): Promise<any> => {
+  const { repositories } = ctx
+  return paginatedEntitiesBy(
+    repositories.edge,
+    pageInput,
+    [{ ...filter }],
+    [],
+    orderKey,
+    orderDirection,
+  ).then((result: defs.PageableResult<entity.Edge>) => {
+    const edges = result[0] as entity.Edge[]
+    return Promise.all(
+      edges.map((edge: entity.Edge) => {
+        return repo.findOne({ where: { id: edge.thatEntityId } })
+          .then(fp.thruIfNotEmpty((entry: T) => entry,
+          ))
+      }),
+    ).then((entries: T[]) => {
+      return [entries, result[1]]
+    }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
+  })
+}
+
 // global object for blacklist profiles
 export const blacklistProfiles = {
   'nike': true,
