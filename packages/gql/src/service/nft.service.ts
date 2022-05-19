@@ -375,6 +375,8 @@ const hideAllNFTs = async (
   await repositories.edge.delete({
     thisEntityType: defs.EntityType.Profile,
     thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+    thatEntityType: defs.EntityType.NFT,
   })
 }
 
@@ -386,21 +388,27 @@ const showAllNFTs = async (
   const nfts = await repositories.nft.find({ where: { userId } })
   if (nfts.length) {
     await Promise.allSettled(
-      nfts.map(async (nft) => repositories.edge.findOne({
-        where: {
+      nfts.map(async (nft) => {
+        const displayEdge = await repositories.edge.findOne({
+          where: {
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: profileId,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Displays,
+          },
+        })
+        if (displayEdge == null) {
+          return
+        }
+        await repositories.edge.save({
           thisEntityType: defs.EntityType.Profile,
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
           thatEntityId: nft.id,
           edgeType: defs.EdgeType.Displays,
-        },
-      }).then(fp.thruIfEmpty(() => repositories.edge.save({
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Displays,
-      })))),
+        })
+      }),
     )
   }
 }
@@ -437,34 +445,39 @@ export const changeNFTsVisibility = async (
       if (showNFTIds?.length) {
         await Promise.allSettled(
           showNFTIds?.map(async (id) => {
-            await repositories.nft.findOne({ where: { id } })
-              .then(fp.thruIfNotEmpty((nft: entity.NFT) => {
-                const edgeVals = {
-                  thisEntityId: profileId,
-                  thisEntityType: defs.EntityType.Profile,
-                  thatEntityId: nft.id,
-                  thatEntityType: defs.EntityType.NFT,
-                  edgeType: defs.EdgeType.Displays,
-                }
-                return repositories.edge.findOne({ where: edgeVals })
-                  .then(fp.thruIfEmpty(() => repositories.edge.save(edgeVals)))
-              }))
+            const existingNFT = await repositories.nft.findOne({ where: { id } })
+            if (!existingNFT) {
+              return
+            }
+            const edgeVals = {
+              thisEntityId: profileId,
+              thisEntityType: defs.EntityType.Profile,
+              thatEntityId: existingNFT.id,
+              thatEntityType: defs.EntityType.NFT,
+              edgeType: defs.EdgeType.Displays,
+            }
+            const existingEdge = await repositories.edge.findOne({ where: edgeVals })
+            if (existingEdge) {
+              return
+            }
+            repositories.edge.save(edgeVals)
           }),
         )
       }
       if (hideNFTIds) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
-            await repositories.nft.findOne({ where: { id: id } })
-              .then(fp.thruIfNotEmpty((nft: entity.NFT) => {
-                return repositories.edge.delete({
-                  thisEntityId: profileId,
-                  thisEntityType: defs.EntityType.Profile,
-                  thatEntityId: nft.id,
-                  thatEntityType: defs.EntityType.NFT,
-                  edgeType: defs.EdgeType.Displays,
-                })
-              }))
+            const existingNFT = await repositories.nft.findOne({ where: { id: id } })
+            if (!existingNFT) {
+              return
+            }
+            return repositories.edge.delete({
+              thisEntityId: profileId,
+              thisEntityType: defs.EntityType.Profile,
+              thatEntityId: existingNFT.id,
+              thatEntityType: defs.EntityType.NFT,
+              edgeType: defs.EdgeType.Displays,
+            })
           }),
         )
       }
