@@ -117,7 +117,7 @@ const setCuration = (
 ): Promise<gql.Profile> => {
   const { user, repositories } = ctx
   logger.debug('setCuration', { loggedInUserId: user?.id, input: args?.input })
-  
+
   const schema = Joi.object().keys({ curationId: Joi.string(), profileId: Joi.string() })
   joi.validateSchema(schema, args?.input)
 
@@ -148,7 +148,7 @@ const setCuration = (
       ),
     ))
     .then(fp.tapWait(
-      (profile: entity.Profile) => repositories.edge.delete({
+      (profile: entity.Profile) => repositories.edge.hardDelete({
         thisEntityId: profile.id,
         thisEntityType: defs.EntityType.Profile,
         edgeType: defs.EdgeType.Displays,
@@ -172,7 +172,7 @@ const removeCurations = (
 ): Promise<gql.Profile> => {
   const { user, repositories } = ctx
   logger.debug('removeCuration', { loggedInUserId: user?.id, input: args?.input })
-  
+
   const schema = Joi.object().keys({ profileId: Joi.string() })
   joi.validateSchema(schema, args?.input)
 

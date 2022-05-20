@@ -144,11 +144,13 @@ export const toPageInfo = <T>(
   pageInput: gql.PageInput,
   orderKey: string,
   cursorValueFn: (v: Date | string | number) => string,
+  firstVal?: any,
+  lastVal?: any,
 ): gql.PageInfo => {
   const [values, total] = result
   const numRequested = pageInput.last || pageInput.first
-  const firstValue = _.first(values)
-  const lastValue = total <= numRequested ? null : _.last(values)
+  const firstValue = firstVal ?? _.first(values)
+  const lastValue = lastVal ?? (total <= numRequested ? null : _.last(values))
   return {
     firstCursor: cursorValueFn(firstValue?.[orderKey]),
     lastCursor: cursorValueFn(lastValue?.[orderKey]),
@@ -157,6 +159,8 @@ export const toPageInfo = <T>(
 
 /**
  * @param pageInput: gql.PageInput
+ * @param firstValue: pre-defined first value
+ * @param lastValue: pre-defined last value
  * @param orderKey: string -> cursor key name
  * @param cursorValueFn: (v: Date|string|number): string -> cursor value parsing function
  * @param result: [T[], number]
@@ -166,11 +170,13 @@ export const toPageInfo = <T>(
  */
 export const toPageable = (
   pageInput: gql.PageInput,
+  firstValue?: any,
+  lastValue?: any,
   orderKey = 'createdAt',
   cursorValueFn = (v: Date | string | number): string => parseCursorValue(v),
 ): FnResult2Pageable => {
   return <T>(result: defs.PageableResult<T>): Pageable<T> => {
-    const pageInfo = toPageInfo(result, pageInput, orderKey, cursorValueFn)
+    const pageInfo = toPageInfo(result, pageInput, orderKey, cursorValueFn, firstValue, lastValue)
     return {
       items: result[0],
       totalItems: result[1],

@@ -272,22 +272,20 @@ const updateNFTsForProfile = (
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { repositories } = ctx
-  logger.debug('fetchNFTsForProfile', { input: args?.input })
+  logger.debug('updateNFTsForProfile', { input: args?.input })
   const pageInput = args?.input.pageInput
-  const includeHidden = args?.input.includeHidden
   initiateWeb3()
   return repositories.profile.findOne({ where: { id: args?.input.profileId } })
     .then((profile: entity.Profile | undefined) => {
       if (!profile) {
         return Promise.resolve({ items: [] })
       } else {
-        const filterObj = helper.removeEmpty({
-          profileId: profile.id,
-          userId: profile.ownerUserId,
-          walletId: profile.ownerWalletId,
+        const filter: Partial<entity.Edge> = helper.removeEmpty({
+          thisEntityType: defs.EntityType.Profile,
+          thisEntityId: profile.id,
+          thatEntityType: defs.EntityType.NFT,
+          edgeType: defs.EdgeType.Displays,
         })
-        const filters: Partial<entity.NFT>[] = includeHidden ?
-          [{ ...filterObj }] : [{ ...filterObj, visibility: true }]
         const now = helper.toUTCDate()
         let duration
         if (profile.nftsLastUpdated) {
@@ -305,36 +303,33 @@ const updateNFTsForProfile = (
                     profile.ownerUserId,
                     wallet.id,
                     wallet.address,
-                    profile.id,
                   )
                     .then(() => {
                       return repositories.profile.updateOneById(profile.id, {
                         nftsLastUpdated: now,
                       })
                         .then(() => {
-                          return core.paginatedEntitiesBy(
+                          return core.paginatedThatEntitiesOfEdgesBy(
+                            ctx,
                             repositories.nft,
+                            filter,
                             pageInput,
-                            filters,
-                            [],
                             'createdAt',
                             'ASC',
                           )
-                            .then(pagination.toPageable(pageInput))
                         })
                     })
                 })
             })
         } else {
-          return core.paginatedEntitiesBy(
+          return core.paginatedThatEntitiesOfEdgesBy(
+            ctx,
             repositories.nft,
+            filter,
             pageInput,
-            filters,
-            [],
             'createdAt',
             'ASC',
           )
-            .then(pagination.toPageable(pageInput))
         }
       }
     })

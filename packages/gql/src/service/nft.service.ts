@@ -64,14 +64,62 @@ export const initiateWeb3 = (): void => {
   web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 }
 
-export const getNFTsFromAlchemy = async (owner: string): Promise<OwnedNFT[]> => {
+export const getNFTsFromAlchemy = async (
+  owner: string,
+  contracts?: string[],
+): Promise<OwnedNFT[]> => {
   try {
-    const response = await web3.alchemy.getNfts({
-      owner: owner,
-      withMetadata: false,
-    })
+    let pageKey
+    const ownedNFTs: Array<OwnedNFT> = []
+    let response
+    if (contracts) {
+      response = await web3.alchemy.getNfts({
+        owner: owner,
+        withMetadata: false,
+        contractAddresses: contracts,
+      })
+    } else {
+      response = await web3.alchemy.getNfts({
+        owner: owner,
+        withMetadata: false,
+      })
+    }
+
     if (response.ownedNfts) {
-      return response.ownedNfts as OwnedNFT[]
+      ownedNFTs.push(...response.ownedNfts as OwnedNFT[])
+      if (response.pageKey) {
+        pageKey = response.pageKey
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          let res
+          if (contracts) {
+            res = await web3.alchemy.getNfts({
+              owner: owner,
+              withMetadata: false,
+              pageKey: pageKey,
+              contractAddresses: contracts,
+            })
+          } else {
+            res = await web3.alchemy.getNfts({
+              owner: owner,
+              withMetadata: false,
+              pageKey: pageKey,
+            })
+          }
+          if (res.ownedNfts) {
+            ownedNFTs.push(...res.ownedNfts as OwnedNFT[])
+            if (res.pageKey) {
+              pageKey = res.pageKey
+            } else {
+              break
+            }
+          } else {
+            break
+          }
+        }
+      }
+
+      return ownedNFTs
     } else {
       return []
     }
@@ -96,15 +144,7 @@ const filterNFTsWithAlchemy = async (
     contracts.push(nft.contract)
   })
   try {
-    const response = await web3.alchemy.getNfts({
-      owner: owner,
-      contractAddresses: contracts,
-    })
-    if (!response.ownedNfts) {
-      return []
-    }
-    const ownedNfts = response.ownedNfts
-
+    const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
     const checksum = ethers.utils.getAddress
 
     return await Promise.allSettled(
@@ -116,8 +156,8 @@ const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.edge.delete({ thatEntityId: dbNFT.id } )
-            .then(() => repositories.nft.delete({
+          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+            .then(() => repositories.nft.hardDelete({
               id: dbNFT.id,
             }))
         }
@@ -177,7 +217,6 @@ const updateEntity = async (
   nftInfo: NFTMetaDataResponse,
   userId: string,
   walletId: string,
-  profileId?: string,
 ): Promise<void> => {
   let newNFT
   // let newCollection
@@ -220,10 +259,6 @@ const updateEntity = async (
         logger.error('error while parsing traits', err, nftInfo, nftInfo.metadata, nftInfo.metadata.attributes)
       }
     }
-    let visibility = false
-    if (existingNFT) {
-      visibility = existingNFT.visibility
-    }
     newNFT = await repositories.nft.save({
       ...existingNFT,
       contract: ethers.utils.getAddress(nftInfo.contract.address),
@@ -237,15 +272,9 @@ const updateEntity = async (
       type: type,
       userId: userId,
       walletId: walletId,
-      visibility: visibility,
     })
 
     if (newNFT) {
-      if (profileId) {
-        newNFT = await repositories.nft.updateOneById(newNFT.id, {
-          profileId: profileId,
-        })
-      }
       await repositories.collection.findOne({
         where: { contract: ethers.utils.getAddress(newNFT.contract) },
       })
@@ -349,20 +378,18 @@ export const checkNFTContractAddresses = async (
  * @param userId
  * @param walletId
  * @param walletAddress
- * @param profileId
  */
 export const updateWalletNFTs = async (
   userId: string,
   walletId: string,
   walletAddress: string,
-  profileId?: string,
 ): Promise<void> => {
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
       const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
       if (response) {
-        await updateEntity(response, userId, walletId, profileId)
+        await updateEntity(response, userId, walletId)
       }
     }),
   )
@@ -398,16 +425,15 @@ const showAllNFTs = async (
             edgeType: defs.EdgeType.Displays,
           },
         })
-        if (displayEdge == null) {
-          return
+        if (!displayEdge) {
+          await repositories.edge.save({
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: profileId,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Displays,
+          })
         }
-        await repositories.edge.save({
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: profileId,
-          thatEntityId: nft.id,
-          edgeType: defs.EdgeType.Displays,
-        })
       }),
     )
   }
@@ -457,10 +483,9 @@ export const changeNFTsVisibility = async (
               edgeType: defs.EdgeType.Displays,
             }
             const existingEdge = await repositories.edge.findOne({ where: edgeVals })
-            if (existingEdge) {
-              return
+            if (!existingEdge) {
+              repositories.edge.save(edgeVals)
             }
-            repositories.edge.save(edgeVals)
           }),
         )
       }
@@ -468,16 +493,15 @@ export const changeNFTsVisibility = async (
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
             const existingNFT = await repositories.nft.findOne({ where: { id: id } })
-            if (!existingNFT) {
-              return
+            if (existingNFT) {
+              return repositories.edge.hardDelete({
+                thisEntityId: profileId,
+                thisEntityType: defs.EntityType.Profile,
+                thatEntityId: existingNFT.id,
+                thatEntityType: defs.EntityType.NFT,
+                edgeType: defs.EdgeType.Displays,
+              })
             }
-            return repositories.edge.hardDelete({
-              thisEntityId: profileId,
-              thisEntityType: defs.EntityType.Profile,
-              thatEntityId: existingNFT.id,
-              thatEntityType: defs.EntityType.NFT,
-              edgeType: defs.EdgeType.Displays,
-            })
           }),
         )
       }
