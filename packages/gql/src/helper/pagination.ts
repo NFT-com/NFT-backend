@@ -149,8 +149,8 @@ export const toPageInfo = <T>(
 ): gql.PageInfo => {
   const [values, total] = result
   const numRequested = pageInput.last || pageInput.first
-  const firstValue = firstVal ? firstVal : _.first(values)
-  const lastValue = lastVal ? lastVal : (total <= numRequested ? null : _.last(values))
+  const firstValue = firstVal ?? _.first(values)
+  const lastValue = lastVal ?? (total <= numRequested ? null : _.last(values))
   return {
     firstCursor: cursorValueFn(firstValue?.[orderKey]),
     lastCursor: cursorValueFn(lastValue?.[orderKey]),
