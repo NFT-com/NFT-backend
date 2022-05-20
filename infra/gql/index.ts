@@ -40,6 +40,11 @@ const createAndUploadEBDeployFile = async (
   })
   archive.pipe(output)
   archive.append(JSON.stringify(dockerFile), { name: 'Dockerrun.aws.json' })
+  
+  // add nginx config file to eb application zip to upload > 1MB 
+  const nginxFile = __dirname + '/proxy.conf'
+  archive.append(fs.createReadStream(nginxFile), { name: '.platform/nginx/conf.d/proxy.conf' })
+
   await archive.finalize()
 
   new aws.s3.BucketObject('default', {
