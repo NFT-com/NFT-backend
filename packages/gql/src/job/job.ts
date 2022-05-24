@@ -29,33 +29,55 @@ networks.set(
   networkList[1], // human readable network name
 )
 
-const createQueues = (): void => {
-  networks.forEach((chainId: string, network: string) => {
-    queues[network] = new Bull(chainId, {
-      prefix: queuePrefix,
-      redis,
+const createQueues = (): Promise<void> => {
+  return new Promise((resolve) => {
+    networks.forEach((chainId: string, network: string) => {
+      queues[network] = new Bull(chainId, {
+        prefix: queuePrefix,
+        redis,
+      })
     })
+    // add users nft collection job to queue...
+    // queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
+    //   prefix: queuePrefix,
+    //   redis,
+    // })
+
+    // queues[PROFILE_SYNC_JOB] = new Bull(PROFILE_SYNC_JOB, {
+    //   prefix: queuePrefix,
+    //   redis,
+    // })
+    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
+    // queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
+    //   prefix: queuePrefix,
+    //   redis,
+    // })
+
+    // queues[TYPESENSE_INDEX_SCHEMA_JOB] = new Bull(TYPESENSE_INDEX_SCHEMA_JOB, {
+    //   prefix: queuePrefix,
+    //   redis,
+    // })
+    resolve()
   })
-  // add users nft collection job to queue...
-  // queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
-  //   prefix: queuePrefix,
-  //   redis,
-  // })
+}
 
-  // queues[PROFILE_SYNC_JOB] = new Bull(PROFILE_SYNC_JOB, {
-  //   prefix: queuePrefix,
-  //   redis,
-  // })
-  // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
-  // queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
-  //   prefix: queuePrefix,
-  //   redis,
-  // })
+const getExistingJobs = (): Promise<Bull.Job[][]> => {
+  const values = Object.values(queues)
+  return Promise.all(values.map((queue) => {
+    return queue.getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
+  }))
+}
 
-  // queues[TYPESENSE_INDEX_SCHEMA_JOB] = new Bull(TYPESENSE_INDEX_SCHEMA_JOB, {
-  //   prefix: queuePrefix,
-  //   redis,
-  // })
+const checkJobQueues = (jobs: Bull.Job[][]): Promise<void[]> => {
+  return Promise.all(jobs.flat().map(async (job) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore: @types/bull is outdated
+    if (job.opts.repeat && job.opts.repeat.count >= 250) {
+      await job.queue.obliterate({ force: true })
+    } else if (!job.opts.repeat) {
+      await job.remove()
+    }
+  }))
 }
 
 const listenToJobs = (): Promise<void[]> => {
@@ -78,7 +100,6 @@ const listenToJobs = (): Promise<void[]> => {
 }
 
 const publishJobs = (): Promise<Bull.Job[]> => {
-  createQueues()
   const chainIds = Object.keys(queues)
   return Promise.all(chainIds.map((chainId) => {
     switch (chainId) {
@@ -128,7 +149,10 @@ const publishJobs = (): Promise<Bull.Job[]> => {
 }
 
 export const startAndListen = (): Promise<void> => {
-  return publishJobs()
+  return createQueues()
+    .then(() => getExistingJobs())
+    .then((jobs) => void checkJobQueues(jobs))
+    .then(() => void publishJobs())
     .then(() => void listenToJobs())
     .then(() => console.log('🍊 listening for jobs...'))
 }
