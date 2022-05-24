@@ -19,6 +19,7 @@ import * as Tracing from '@sentry/tracing'
 import { authMessage, isProduction, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
+import { job } from './job'
 import { resolvers } from './resolver'
 import { typeDefs } from './schema'
 
@@ -174,6 +175,12 @@ export const start = async (): Promise<void> => {
         profileError.ErrorType.KeyInvalid,
       ))
     }
+  })
+
+  app.post('/queue', function (req, res) {
+    logger.info('restarting queue:', req.body.jobName)
+    job.startAndListen()
+    return res.send({ msg: 'OK' })
   })
 
   const keyGenerator = (directiveArgs, source, args, context): string =>
