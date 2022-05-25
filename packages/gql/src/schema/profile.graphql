@@ -58,6 +58,7 @@ input UpdateProfileInput {
   hideNFTIds: [String]
   showAllNFTs: Boolean
   hideAllNFTs: Boolean
+  displayType: ProfileDisplayType
 }
 
 input ProfileClaimedInput {
