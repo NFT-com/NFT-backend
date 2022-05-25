@@ -1,5 +1,5 @@
 import aws from 'aws-sdk'
-import { BigNumber, utils } from 'ethers'
+import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
@@ -200,6 +200,31 @@ const getProfileByURLPassive = (
     )))
 }
 
+type FnProfileToProfile = (profile: entity.Profile) => Promise<entity.Profile>
+
+/**
+ * Takes a profile, checks the on-chain owner, and updates the entity if it is not the same.
+ * When updating, we also clear all customization options.
+ */
+const maybeUpdateProfileOwnership = (
+  ctx: Context,
+  nftProfileContract: typechain.NftProfile,
+): FnProfileToProfile => {
+  return (profile: entity.Profile): Promise<entity.Profile> => {
+    return Promise.all([
+      nftProfileContract.ownerOf(profile.tokenId),
+      ctx.repositories.wallet.findById(profile.ownerWalletId),
+    ])
+      .then(([owner, wallet]) => {
+        if (ethers.utils.getAddress(owner) !== ethers.utils.getAddress(wallet.address)) {
+          // todo: update profile owner, clear customization options.
+          // todo: delete all "Displays" edges from this profile to NFTs.
+        }
+      })
+      .then(() => ctx.repositories.profile.findByURL(profile.url))
+  }
+}
+
 const getProfileByURL = (
   _: any,
   args: gql.QueryProfileArgs,
@@ -219,6 +244,7 @@ const getProfileByURL = (
   )
 
   return ctx.repositories.profile.findByURL(args.url)
+    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract)))
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
         profileError.buildProfileNotFoundMsg(args.url),
