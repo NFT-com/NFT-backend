@@ -48,9 +48,6 @@
     },
     {
       "path": "packages/gql"
-    },
-    {
-      "path": "packages/redis-watcher"
     }
   ],
   "exclude": [
