@@ -70,25 +70,6 @@ const createQueues = (): Promise<void> => {
   })
 }
 
-const getExistingJobs = (): Promise<Bull.Job[][]> => {
-  const values = Object.values(queues)
-  return Promise.all(values.map((queue) => {
-    return queue.getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
-  }))
-}
-
-const checkJobQueues = (jobs: Bull.Job[][]): Promise<void[]> => {
-  return Promise.all(jobs.flat().map(async (job) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore: @types/bull is outdated
-    if (job.opts.repeat && job.opts.repeat.count >= 250) {
-      await job.queue.obliterate({ force: true })
-    } else if (!job.opts.repeat) {
-      await job.remove()
-    }
-  }))
-}
-
 const listenToJobs = (): Promise<void[]> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
@@ -101,8 +82,8 @@ const listenToJobs = (): Promise<void[]> => {
   }))
 }
 
-const publishJobs = (): Promise<Bull.Job[]> => {
-  const chainIds = Object.keys(queues)
+const publishJobs = (chainId?: string): Promise<Bull.Job[]> => {
+  const chainIds = chainId ? [chainId] : Object.keys(queues)
   return Promise.all(chainIds.map((chainId) => {
     switch (chainId) {
     case GENERATE_COMPOSITE_IMAGE:
@@ -121,6 +102,25 @@ const publishJobs = (): Promise<Bull.Job[]> => {
         repeat: { every: 10 * 60000 },
         jobId: `chainid_${chainId}_job`,
       })
+    }
+  }))
+}
+
+const getExistingJobs = (): Promise<Bull.Job[][]> => {
+  const values = Object.values(queues)
+  return Promise.all(values.map((queue) => {
+    return queue.getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
+  }))
+}
+
+const checkJobQueues = (jobs: Bull.Job[][]): Promise<void[]> => {
+  return Promise.all(jobs.flat().map((job) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore: @types/bull is outdated
+    if (job.opts.repeat && job.opts.repeat.count >= 250) {
+      return job.queue.obliterate({ force: true }).then(() => void publishJobs(job.data.chainId))
+    } else if (!job.opts.repeat) {
+      return job.remove()
     }
   }))
 }
