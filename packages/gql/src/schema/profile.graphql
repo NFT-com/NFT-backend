@@ -30,6 +30,7 @@ type Profile {
   followersCount: Int
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
+  gkIconVisible: Boolean
   owner: Wallet
   tokenId: String
   photoURL: String
@@ -58,6 +59,7 @@ input UpdateProfileInput {
   hideNFTIds: [String]
   showAllNFTs: Boolean
   hideAllNFTs: Boolean
+  gkIconVisible: Boolean
   displayType: ProfileDisplayType
 }
 
