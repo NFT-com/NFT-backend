@@ -16,11 +16,17 @@ enum ProfileStatus {
   Owned
 }
 
+enum ProfileDisplayType {
+  NFT
+  Collection
+}
+
 type Profile {
   id: ID!
   bannerURL: String
   createdAt: DateTime!
   description: String
+  displayType: ProfileDisplayType
   followersCount: Int
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
@@ -52,6 +58,7 @@ input UpdateProfileInput {
   hideNFTIds: [String]
   showAllNFTs: Boolean
   hideAllNFTs: Boolean
+  displayType: ProfileDisplayType
 }
 
 input ProfileClaimedInput {

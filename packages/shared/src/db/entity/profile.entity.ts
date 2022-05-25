@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { ProfileStatus } from '@nftcom/shared/defs'
+import { ProfileDisplayType, ProfileStatus } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
@@ -41,5 +41,13 @@ export class Profile extends BaseEntity {
 
   @Column({ nullable: true, type: 'timestamp with time zone' })
   nftsLastUpdated: Date
+
+  @Column({
+    type: 'enum',
+    enum: ProfileDisplayType,
+    nullable: false,
+    default: ProfileDisplayType.NFT,
+  })
+  displayType: ProfileDisplayType
 
 }

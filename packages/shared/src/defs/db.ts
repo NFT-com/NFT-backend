@@ -101,6 +101,11 @@ export enum ProfileStatus {
   Owned = 'Owned'
 }
 
+export enum ProfileDisplayType {
+  NFT = 'NFT',
+  Collection = 'Collection',
+}
+
 export type Signature = {
   v: number
   r: string

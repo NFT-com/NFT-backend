@@ -266,6 +266,9 @@ const updateProfile = (
     hideNFTIds: Joi.array().items(Joi.string()).allow(null),
     showAllNFTs: Joi.boolean().allow(null),
     hideAllNFTs: Joi.boolean().allow(null),
+    displayType: Joi.string()
+      .valid(defs.ProfileDisplayType.NFT, defs.ProfileDisplayType.Collection)
+      .allow(null),
   })
   joi.validateSchema(schema, args.input)
 
@@ -277,10 +280,11 @@ const updateProfile = (
       profileError.buildProfileNotOwnedMsg(id),
       profileError.ErrorType.ProfileNotOwned,
     )))
-    .then((p) => {
-      p.bannerURL = args.input.bannerURL || p.bannerURL
-      p.description = args.input.description || p.description
-      p.photoURL = args.input.photoURL || p.photoURL
+    .then((p: entity.Profile) => {
+      p.bannerURL = args.input.bannerURL ?? p.bannerURL
+      p.description = args.input.description ?? p.description
+      p.photoURL = args.input.photoURL ?? p.photoURL
+      p.displayType = args.input.displayType ?? p.displayType
       return changeNFTsVisibility(
         repositories,
         user.id,
