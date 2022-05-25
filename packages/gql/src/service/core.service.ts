@@ -688,6 +688,7 @@ export const generateCompositeImage = async (
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
+  noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   return ctx.repositories.profile.findByURL(profile.url)
     .then(fp.thruIfEmpty(() => {
@@ -711,18 +712,22 @@ export const createProfile = (
     }))
     .then(() => {
       return ctx.repositories.profile.save(profile)
-        .then((savedProfile: entity.Profile) =>
-          generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
-            .then((imageURL: string) =>
-              ctx.repositories.profile.updateOneById(
-                savedProfile.id,
-                {
-                  photoURL: imageURL,
-                  bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-                  description: `NFT.com profile for ${savedProfile.url}`,
-                },
-              ),
-            ))
+        .then((savedProfile: entity.Profile) => {
+          if (!noAvatar) {
+            return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
+              .then((imageURL: string) =>
+                ctx.repositories.profile.updateOneById(
+                  savedProfile.id,
+                  {
+                    photoURL: imageURL,
+                    bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+                    description: `NFT.com profile for ${savedProfile.url}`,
+                  },
+                ))
+          } else {
+            return savedProfile
+          }
+        })
     })
 }
 
@@ -732,6 +737,7 @@ export const createProfileFromEvent = async (
   tokenId: BigNumber,
   repositories: db.Repository,
   profileUrl: string,
+  noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
   if (!wallet) {
@@ -773,7 +779,7 @@ export const createProfileFromEvent = async (
     tokenId: tokenId.toString(),
     ownerWalletId: wallet.id,
     ownerUserId: wallet.userId,
-  })
+  }, noAvatar)
 }
 
 export const createEdge = (
