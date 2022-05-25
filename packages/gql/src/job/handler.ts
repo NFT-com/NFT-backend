@@ -248,6 +248,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                       profileUrl: profileUrl,
                     },
                   )
+                  logger.debug(`Profile ${ profileUrl } was minted by address ${ owner }`)
                   await HederaConsensusService.submitMessage(
                     `Profile ${ profileUrl } was minted by address ${ owner }`,
                   )
