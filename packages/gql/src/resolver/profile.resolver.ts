@@ -1,4 +1,6 @@
 import aws from 'aws-sdk'
+import cryptoRandomString from 'crypto-random-string'
+import { addDays } from 'date-fns'
 import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
@@ -209,19 +211,66 @@ type FnProfileToProfile = (profile: entity.Profile) => Promise<entity.Profile>
 const maybeUpdateProfileOwnership = (
   ctx: Context,
   nftProfileContract: typechain.NftProfile,
+  chainId: string,
 ): FnProfileToProfile => {
   return (profile: entity.Profile): Promise<entity.Profile> => {
     return Promise.all([
       nftProfileContract.ownerOf(profile.tokenId),
       ctx.repositories.wallet.findById(profile.ownerWalletId),
     ])
-      .then(([owner, wallet]) => {
-        if (ethers.utils.getAddress(owner) !== ethers.utils.getAddress(wallet.address)) {
-          // todo: update profile owner, clear customization options.
-          // todo: delete all "Displays" edges from this profile to NFTs.
+      .then(([trueOwner, wallet]: [string, entity.Wallet]) => {
+        const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+        if (ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
+          return ctx.repositories.wallet.findByChainAddress(chainId, trueOwner)
+            .then(fp.thruIfEmpty(() =>
+              ctx.repositories.user.save({
+                email: null,
+                username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
+                referredBy: null,
+                avatarURL: null,
+                confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
+                confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+                referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+              })
+                .then((user: entity.User) =>
+                  ctx.repositories.wallet.save({
+                    userId: user.id,
+                    network: 'ethereum',
+                    chainId,
+                    chainName: chain.name,
+                    address: trueOwner,
+                  }),
+                ),
+            ))
+            .then((wallet: entity.Wallet) => {
+              return Promise.all([
+                ctx.repositories.user.findById(wallet.userId),
+                Promise.resolve(wallet),
+              ])
+            })
+            .then(([user, wallet]) => ctx.repositories.profile.save({
+              id: profile.id,
+              url: profile.url,
+              ownerUserId: user.id,
+              ownerWalletId: wallet.id,
+              tokenId: profile.tokenId,
+              status: profile.status,
+              bannerURL: null,
+              photoURL: null,
+              description: null,
+              nftsLastUpdated: null,
+              displayType: defs.ProfileDisplayType.NFT,
+            }))
+            .then(fp.tap(() => ctx.repositories.edge.hardDelete({
+              edgeType: defs.EdgeType.Displays,
+              thisEntityType: defs.EntityType.Profile,
+              thatEntityType: defs.EntityType.NFT,
+              thisEntityId: profile.id,
+            })))
+        } else {
+          return profile
         }
       })
-      .then(() => ctx.repositories.profile.findByURL(profile.url))
   }
 }
 
@@ -244,7 +293,7 @@ const getProfileByURL = (
   )
 
   return ctx.repositories.profile.findByURL(args.url)
-    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract)))
+    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chainId)))
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
         profileError.buildProfileNotFoundMsg(args.url),
