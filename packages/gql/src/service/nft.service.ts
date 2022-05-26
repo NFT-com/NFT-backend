@@ -5,6 +5,7 @@ import * as typeorm from 'typeorm'
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -124,7 +125,8 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    logger.error('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     return []
   }
 }
@@ -164,7 +166,8 @@ const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
-    logger.error('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     return []
   }
 }
@@ -180,7 +183,8 @@ const getNFTMetaDataFromAlchemy = async (
     })
     return response as NFTMetaDataResponse
   } catch (err) {
-    logger.error('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getNFTMetaDataFromAlchemy: ${err}`)
     return undefined
   }
 }
@@ -342,7 +346,8 @@ const updateEntity = async (
         })
     }
   } catch (err) {
-    logger.error('error update entity: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateEntity: ${err}`)
   }
 }
 
@@ -370,7 +375,8 @@ export const checkNFTContractAddresses = async (
       }),
     )
   } catch (err) {
-    logger.error('error check nft contract address: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
     return []
   }
 }
@@ -508,7 +514,8 @@ export const changeNFTsVisibility = async (
         )
       }
     }
-  } catch (e) {
-    logger.error('change visibility of NFTs failed. ', e)
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
   }
 }
