@@ -124,7 +124,7 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    console.log('error: ', err)
+    logger.error('error: ', err)
     return []
   }
 }
@@ -164,7 +164,7 @@ const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
-    console.log('error: ', err)
+    logger.error('error: ', err)
     return []
   }
 }
@@ -180,7 +180,7 @@ const getNFTMetaDataFromAlchemy = async (
     })
     return response as NFTMetaDataResponse
   } catch (err) {
-    console.log('error: ', err)
+    logger.error('error: ', err)
     return undefined
   }
 }
@@ -204,11 +204,11 @@ const getCollectionNameFromContract = (
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
-      console.log('Token type not ERC721, ERC1155, nor UNKNOWN', type)
+      logger.error('Token type not ERC721, ERC1155, nor UNKNOWN', type)
       return Promise.resolve('Unknown Name')
     }
   } catch (error) {
-    console.log('ethers failed: ', error)
+    logger.error('ethers failed: ', error)
     return Promise.resolve('Unknown Name')
   }
 }
@@ -236,7 +236,7 @@ const updateEntity = async (
     } else if (nftInfo.title.endsWith('.eth')) { // if token is ENS token...
       type = defs.NFTType.UNKNOWN
     } else {
-      console.log('Token type should be ERC721 or ERC1155 or ENS, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
+      logger.debug('Token type should be ERC721 or ERC1155 or ENS, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
       return
     }
     const traits = []
@@ -342,7 +342,7 @@ const updateEntity = async (
         })
     }
   } catch (err) {
-    console.log('error update entity: ', err)
+    logger.error('error update entity: ', err)
   }
 }
 
