@@ -233,7 +233,7 @@ const updateEntity = async (
       type = defs.NFTType.ERC721
     } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
       type = defs.NFTType.ERC1155
-    } else if (nftInfo.title.endsWith('.eth')) {
+    } else if (nftInfo.title.endsWith('.eth')) { // if token is ENS token...
       type = defs.NFTType.UNKNOWN
     } else {
       console.log('Token type should be ERC721 or ERC1155 or ENS, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
