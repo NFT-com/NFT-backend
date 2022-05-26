@@ -25,7 +25,7 @@ const createArRole = (): aws.iam.Role => {
 
   new aws.iam.RolePolicyAttachment('policy_gql_ar_ecr', {
     role: role.name,
-    policyArn: 'arn:aws:iam::aws:policy/service-role/AppRunnerECRAccessRole',
+    policyArn: 'arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess',
   })
 
   return role
