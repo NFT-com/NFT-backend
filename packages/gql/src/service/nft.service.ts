@@ -322,11 +322,8 @@ const updateEntity = async (
         logger.error('error while parsing traits', err, nftInfo, nftInfo.metadata, nftInfo.metadata.attributes)
       }
     }
-    
     newNFT = await repositories.nft.save({
       ...existingNFT,
-      userId: userId,
-      walletId: walletId,
       contract: ethers.utils.getAddress(nftInfo.contract.address),
       tokenId: BigNumber.from(nftInfo.id.tokenId).toHexString(),
       metadata: {
@@ -336,6 +333,8 @@ const updateEntity = async (
         traits: traits,
       },
       type: type,
+      userId: userId,
+      walletId: walletId,
     })
 
     if (newNFT) {
