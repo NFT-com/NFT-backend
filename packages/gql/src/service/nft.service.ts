@@ -229,45 +229,55 @@ const updateNFTOwnershipAndMetadata = async (
     },
   })
   if (existingNFT?.userId !== userId || existingNFT?.walletId !== walletId) {
-    const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
-      nft.contract.address,
-      nft.id.tokenId,
-    )
-    let type: defs.NFTType
-    if (nftMetadata.id.tokenMetadata.tokenType === 'ERC721') {
-      type = defs.NFTType.ERC721
-    } else if (nftMetadata.id.tokenMetadata.tokenType === 'ERC1155') {
-      type = defs.NFTType.ERC1155
-    }
-    const traits = []
-    try {
-      if (Array.isArray(nftMetadata.metadata.attributes)) {
-        nftMetadata.metadata.attributes.map((trait) => {
-          traits.push(({
-            type: trait?.trait_type,
-            value: trait?.value,
-          }))
-        })
-      } else {
-        Object.keys(nftMetadata.metadata.attributes).map(keys => {
-          traits.push(({
-            type: keys,
-            value: nftMetadata.metadata.attributes[keys],
-          }))
-        })
+    let type: defs.NFTType = existingNFT?.type
+    const traits = existingNFT?.metadata?.traits
+    let name = existingNFT?.metadata?.name
+    let description = existingNFT?.metadata?.description
+    let image = existingNFT?.metadata?.imageURL
+
+    if (existingNFT == null) {
+      const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+        nft.contract.address,
+        nft.id.tokenId,
+      )
+      name = nftMetadata?.title
+      description = nftMetadata?.description
+      image = nftMetadata?.metadata?.image
+      if (nftMetadata.id.tokenMetadata.tokenType === 'ERC721') {
+        type = defs.NFTType.ERC721
+      } else if (nftMetadata.id.tokenMetadata.tokenType === 'ERC1155') {
+        type = defs.NFTType.ERC1155
       }
-    } catch (err) {
-      logger.error('error while parsing traits', err, nftMetadata, nftMetadata.metadata, nftMetadata.metadata.attributes)
+      try {
+        if (Array.isArray(nftMetadata.metadata.attributes)) {
+          nftMetadata.metadata.attributes.map((trait) => {
+            traits.push(({
+              type: trait?.trait_type,
+              value: trait?.value,
+            }))
+          })
+        } else {
+          Object.keys(nftMetadata.metadata.attributes).map(keys => {
+            traits.push(({
+              type: keys,
+              value: nftMetadata.metadata.attributes[keys],
+            }))
+          })
+        }
+      } catch (err) {
+        logger.error('error while parsing traits', err, nftMetadata, nftMetadata.metadata, nftMetadata.metadata.attributes)
+      }
     }
+
     await repositories.nft.save({
       ...existingNFT,
       userId,
       walletId,
       type,
       metadata: {
-        name: nftMetadata.title,
-        description: nftMetadata.description,
-        imageURL: nftMetadata.metadata.image,
+        name,
+        description,
+        imageURL: image,
         traits: traits,
       },
     })
