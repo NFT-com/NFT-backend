@@ -265,7 +265,8 @@ const updateNFTOwnershipAndMetadata = async (
           })
         }
       } catch (err) {
-        logger.error('error while parsing traits', err, nftMetadata, nftMetadata.metadata, nftMetadata.metadata.attributes)
+        Sentry.captureException(err)
+        Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
       }
     }
 
