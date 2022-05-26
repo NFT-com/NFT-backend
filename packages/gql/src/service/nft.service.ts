@@ -217,7 +217,7 @@ const getCollectionNameFromContract = (
   }
 }
 
-const updateNFTOwnership = async (
+const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
@@ -228,7 +228,7 @@ const updateNFTOwnership = async (
       tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
     },
   })
-  if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+  if (existingNFT?.userId !== userId || existingNFT?.walletId !== walletId) {
     const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
       nft.contract.address,
       nft.id.tokenId,
@@ -240,18 +240,24 @@ const updateNFTOwnership = async (
       type = defs.NFTType.ERC1155
     }
     const traits = []
-    if (nftMetadata.metadata.attributes) {
+    try {
       if (Array.isArray(nftMetadata.metadata.attributes)) {
-        traits.push(...(nftMetadata.metadata.attributes.map(trait => ({
-          type: trait?.trait_type,
-          value: trait?.value,
-        }))))
+        nftMetadata.metadata.attributes.map((trait) => {
+          traits.push(({
+            type: trait?.trait_type,
+            value: trait?.value,
+          }))
+        })
       } else {
-        traits.push(...(Object.keys(nftMetadata.metadata.attributes).map(key => ({
-          type: key,
-          value: nftMetadata.metadata.attributes[key],
-        }))))
+        Object.keys(nftMetadata.metadata.attributes).map(keys => {
+          traits.push(({
+            type: keys,
+            value: nftMetadata.metadata.attributes[keys],
+          }))
+        })
       }
+    } catch (err) {
+      logger.error('error while parsing traits', err, nftMetadata, nftMetadata.metadata, nftMetadata.metadata.attributes)
     }
     await repositories.nft.save({
       ...existingNFT,
@@ -447,7 +453,7 @@ export const updateWalletNFTs = async (
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      await updateNFTOwnership(nft, userId, walletId)
+      await updateNFTOwnershipAndMetadata(nft, userId, walletId)
     }),
   )
 }
