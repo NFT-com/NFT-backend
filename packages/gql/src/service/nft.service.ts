@@ -208,11 +208,11 @@ const getCollectionNameFromContract = (
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
-      console.log('Token type not ERC721, ERC1155, nor UNKNOWN', type)
+      logger.error('Token type not ERC721, ERC1155, nor UNKNOWN', type)
       return Promise.resolve('Unknown Name')
     }
   } catch (error) {
-    console.log('ethers failed: ', error)
+    logger.error('ethers failed: ', error)
     return Promise.resolve('Unknown Name')
   }
 }
@@ -237,8 +237,10 @@ const updateEntity = async (
       type = defs.NFTType.ERC721
     } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
       type = defs.NFTType.ERC1155
+    } else if (nftInfo.title.endsWith('.eth')) { // if token is ENS token...
+      type = defs.NFTType.UNKNOWN
     } else {
-      console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
+      logger.debug('Token type should be ERC721 or ERC1155 or ENS, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
       return
     }
     const traits = []
