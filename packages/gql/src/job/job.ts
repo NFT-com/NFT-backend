@@ -14,6 +14,8 @@ import { getEthereumEvents } from '@nftcom/gql/job/handler'
 // import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
 // import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
 
+const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
+
 const redis = {
   host: redisConfig.host,
   port: redisConfig.port,
@@ -140,7 +142,7 @@ const checkJobQueues = (jobs: Bull.Job[][]): Promise<void[]> => {
   return Promise.all(jobs.flat().map((job) => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore: @types/bull is outdated
-    if (job.opts.repeat && job.opts.repeat.count >= 250) {
+    if (job.opts.repeat && job.opts.repeat.count >= BULL_MAX_REPEAT_COUNT) {
       return job.queue.obliterate({ force: true }).then(() => void publishJobs(job.data.chainId))
     } else if (!job.opts.repeat) {
       return job.remove()
