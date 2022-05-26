@@ -69,6 +69,7 @@ runs:
         TYPESENSE_API_KEY: ${{ fromJSON(inputs.secrets).TYPESENSE_API_KEY }}
         MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ fromJSON(inputs.secrets).MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
         PROFILE_NFTS_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_NFTS_EXPIRE_DURATION }}
+        BULL_MAX_REPEAT_COUNT: ${{ fromJSON(inputs.secrets).BULL_MAX_REPEAT_COUNT }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
