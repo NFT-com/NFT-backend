@@ -217,6 +217,76 @@ const getCollectionNameFromContract = (
   }
 }
 
+const updateNFTOwnershipAndMetadata = async (
+  nft: OwnedNFT,
+  userId: string,
+  walletId: string,
+): Promise<void> => {
+  const existingNFT = await repositories.nft.findOne({
+    where: {
+      contract: ethers.utils.getAddress(nft.contract.address),
+      tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+    },
+  })
+  if (existingNFT?.userId !== userId || existingNFT?.walletId !== walletId) {
+    let type: defs.NFTType = existingNFT?.type
+    const traits = existingNFT?.metadata?.traits
+    let name = existingNFT?.metadata?.name
+    let description = existingNFT?.metadata?.description
+    let image = existingNFT?.metadata?.imageURL
+
+    if (existingNFT == null) {
+      const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+        nft.contract.address,
+        nft.id.tokenId,
+      )
+      name = nftMetadata?.title
+      description = nftMetadata?.description
+      image = nftMetadata?.metadata?.image
+      if (nftMetadata.id.tokenMetadata.tokenType === 'ERC721') {
+        type = defs.NFTType.ERC721
+      } else if (nftMetadata.id.tokenMetadata.tokenType === 'ERC1155') {
+        type = defs.NFTType.ERC1155
+      }
+      try {
+        if (Array.isArray(nftMetadata.metadata.attributes)) {
+          nftMetadata.metadata.attributes.map((trait) => {
+            traits.push(({
+              type: trait?.trait_type,
+              value: trait?.value,
+            }))
+          })
+        } else {
+          Object.keys(nftMetadata.metadata.attributes).map(keys => {
+            traits.push(({
+              type: keys,
+              value: nftMetadata.metadata.attributes[keys],
+            }))
+          })
+        }
+      } catch (err) {
+        Sentry.captureException(err)
+        Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
+      }
+    }
+
+    await repositories.nft.save({
+      ...existingNFT,
+      userId,
+      walletId,
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+  }
+}
+
+// TODO: use this function for updating all metadata for the NFT and corresponding Collection.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const updateEntity = async (
   nftInfo: NFTMetaDataResponse,
   userId: string,
@@ -395,10 +465,7 @@ export const updateWalletNFTs = async (
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
-      if (response) {
-        await updateEntity(response, userId, walletId)
-      }
+      await updateNFTOwnershipAndMetadata(nft, userId, walletId)
     }),
   )
 }
