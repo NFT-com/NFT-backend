@@ -208,8 +208,6 @@ type FnProfileToProfile = (profile: entity.Profile) => Promise<entity.Profile>
  * Takes a profile, checks the on-chain owner, and updates the entity if it is not the same.
  * When updating, we also clear all customization options.
  */
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const maybeUpdateProfileOwnership = (
   ctx: Context,
   nftProfileContract: typechain.NftProfile,
@@ -295,7 +293,7 @@ const getProfileByURL = (
   )
 
   return ctx.repositories.profile.findByURL(args.url)
-    // .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chainId)))
+    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chainId)))
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
         profileError.buildProfileNotFoundMsg(args.url),
