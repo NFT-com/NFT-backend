@@ -1,6 +1,7 @@
 import * as process from 'process'
 
 import * as aws from '@pulumi/aws'
+import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
 import { getEnv, getResourceName } from '../helper'
@@ -21,6 +22,11 @@ const createArRole = (): aws.iam.Role => {
         },
       ],
     },
+  })
+
+  new aws.iam.RolePolicyAttachment('policy_gql_ar_s3', {
+    role: role.name,
+    policyArn: 'arn:aws:iam::aws:policy/AmazonS3FullAccess',
   })
 
   new aws.iam.RolePolicyAttachment('policy_gql_ar_ecr', {
@@ -70,6 +76,8 @@ export const createArService = (infraOutput: SharedInfraOutput): aws.apprunner.S
         vpcConnectorArn: arVpcConnector.arn,
       },
     },
+  }, {
+    dependsOn: [pulumi.output(arRole)],
   })
 
   return service
