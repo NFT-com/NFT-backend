@@ -1,5 +1,6 @@
 import { exec } from 'child_process'
 import * as console from 'console'
+import * as envfile from 'envfile'
 import * as fs from 'fs'
 import * as _ from 'lodash'
 import * as upath from 'upath'
@@ -12,6 +13,13 @@ import { SharedInfraOutput, sharedOutputFileName } from '../defs'
 export const joinStrings = (sep: string, ...strs: string[]): string => strs.join(sep)
 
 export const joinStringsByDash = (...strs: string[]): string => joinStrings('-', ...strs)
+
+export const getEnv = (pkg: string, env='.env'): { parsedFile: envfile.Data; workDir: string } => {
+  const workDir = upath.joinSafe(__dirname, '..', '..', 'packages', pkg)
+  const sourceFile = upath.joinSafe(workDir, env)
+  const envFileStr = fs.readFileSync(sourceFile).toString()
+  return { parsedFile: envfile.parse(envFileStr), workDir }
+}
 
 export const getStage = (): string => {
   const stackName = pulumi.getStack()
@@ -62,7 +70,7 @@ export const deployInfra = async (
   console.info('Successfully initialized stack')
 
   console.info('Installing plugins...')
-  await stack.workspace.installPlugin('aws', 'v4.29.0')
+  await stack.workspace.installPlugin('aws', 'v5.4.0')
 
   if (preview) {
     await stack.preview({ onOutput: console.info })

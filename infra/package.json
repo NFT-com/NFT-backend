@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@actions/core": "^1.6.0",
-    "@pulumi/aws": "^4.28.0",
+    "@pulumi/aws": "^5.4.0",
     "@pulumi/awsx": "^0.32.0",
     "@pulumi/pulumi": "^3.0.0",
     "archiver": "^5.3.0",
