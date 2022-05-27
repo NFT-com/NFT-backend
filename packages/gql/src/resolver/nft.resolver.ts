@@ -296,7 +296,6 @@ const updateNFTsForProfile = (
         if (!profile.nftsLastUpdated  ||
           (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
         ) {
-          logger.debug(`refresh NFTs: ${now} - ${profile.nftsLastUpdated} = ${Number(duration) / 1000} seconds. ${Number(PROFILE_NFTS_EXPIRE_DURATION) / 1000} seconds wait needed`)
           repositories.profile.updateOneById(profile.id, {
             nftsLastUpdated: now,
           }).then(() => repositories.wallet.findById(profile.ownerWalletId)
