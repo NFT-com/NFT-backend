@@ -441,7 +441,6 @@ export const reservedProfiles = {
   '0x9f0d3E5aA86c242DbAB469486Fa4C2Ec04974A9a': ['nftgrails', 'averyandon'],
   '0xc2D558E4556B09519649749DC702D804E1F71FD4': ['lovewatts', 'knowgood'],
   '0x5257B8a48Ff01182617f2Fd25E9C1dB0b2dD6475': ['balajis', '1729'],
-  '0xc69004e5384391D86C002643D84da620B26e89D8': ['baronvonhustle', 'jasontheape'],
   '0x54D1F8745aB57c29d0Cec4877e75028Fe37689f1': ['bengreenfield', 'bengreenfieldlife'],
   '0x5aEfCB0F364AdbAFC197f91c8496a488bA90C3d1': ['fitness', 'longevity'],
   '0x2e50870053A015409269d9f9e26D3A6869887020': ['ben', 'tiktok'],
