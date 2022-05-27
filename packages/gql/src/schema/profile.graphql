@@ -31,6 +31,7 @@ type Profile {
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
   gkIconVisible: Boolean
+  nftsDescriptionsVisible: Boolean
   owner: Wallet
   tokenId: String
   photoURL: String
@@ -60,6 +61,7 @@ input UpdateProfileInput {
   showAllNFTs: Boolean
   hideAllNFTs: Boolean
   gkIconVisible: Boolean
+  nftsDescriptionsVisible: Boolean
   displayType: ProfileDisplayType
 }
 
