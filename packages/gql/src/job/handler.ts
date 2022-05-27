@@ -157,7 +157,6 @@ const getMintedProfileEvents = async (
       latestBlock.number,
       Number(maxBlocks),
     )
-    // await redis.set(key, latestBlock.number)
     return {
       logs: logs,
       latestBlockNumber: latestBlock.number,
