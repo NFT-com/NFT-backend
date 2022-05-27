@@ -66,8 +66,8 @@ const publishJobs = (): Promise<Bull.Job[]> => {
       return queues[GENERATE_COMPOSITE_IMAGE].add({ GENERATE_COMPOSITE_IMAGE }, {
         removeOnComplete: true,
         removeOnFail: true,
-        // repeat every  minute
-        repeat: { every: 60000 },
+        // repeat every  2 minutes
+        repeat: { every: 2 * 60000 },
         jobId: 'generate_composite_image',
       })
     default:
