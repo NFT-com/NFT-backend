@@ -291,11 +291,15 @@ const updateNFTsForProfile = (
         if (profile.nftsLastUpdated) {
           duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
         }
+
         // if there is no profile NFT or NFTs are expired and need to be updated...
         if (!profile.nftsLastUpdated  ||
           (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
         ) {
-          return repositories.wallet.findById(profile.ownerWalletId)
+          logger.debug(`refresh NFTs: ${now} - ${profile.nftsLastUpdated} = ${Number(duration) / 1000} seconds. ${Number(PROFILE_NFTS_EXPIRE_DURATION) / 1000} seconds wait needed`)
+          repositories.profile.updateOneById(profile.id, {
+            nftsLastUpdated: now,
+          }).then(() => repositories.wallet.findById(profile.ownerWalletId)
             .then((wallet: entity.Wallet) => {
               return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
                 .then(() => {
@@ -304,33 +308,18 @@ const updateNFTsForProfile = (
                     wallet.id,
                     wallet.address,
                   )
-                    .then(() => {
-                      return repositories.profile.updateOneById(profile.id, {
-                        nftsLastUpdated: now,
-                      })
-                        .then(() => {
-                          return core.paginatedThatEntitiesOfEdgesBy(
-                            ctx,
-                            repositories.nft,
-                            filter,
-                            pageInput,
-                            'createdAt',
-                            'ASC',
-                          )
-                        })
-                    })
                 })
-            })
-        } else {
-          return core.paginatedThatEntitiesOfEdgesBy(
-            ctx,
-            repositories.nft,
-            filter,
-            pageInput,
-            'createdAt',
-            'ASC',
-          )
+            }))
         }
+
+        return core.paginatedThatEntitiesOfEdgesBy(
+          ctx,
+          repositories.nft,
+          filter,
+          pageInput,
+          'createdAt',
+          'ASC',
+        )
       }
     })
 }
