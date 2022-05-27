@@ -8,6 +8,7 @@ import {
 //TYPESENSE_INDEX_SCHEMA_JOB,
 } from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
+import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 // import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 // import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
 // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
@@ -19,6 +20,7 @@ const redis = {
   port: redisConfig.port,
 }
 const queuePrefix = 'queue'
+const GENERATE_COMPOSITE_IMAGE = 'GENERATE_COMPOSITE_IMAGE'
 
 const queues: { [key: string]: Bull.Queue } = {}
 
@@ -35,6 +37,11 @@ const createQueues = (): void => {
       prefix: queuePrefix,
       redis,
     })
+  })
+  // add composite image generation job to queue...
+  queues[GENERATE_COMPOSITE_IMAGE] = new Bull(GENERATE_COMPOSITE_IMAGE, {
+    prefix: queuePrefix,
+    redis,
   })
   // add users nft collection job to queue...
   // queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
@@ -62,6 +69,8 @@ const listenToJobs = (): Promise<void[]> => {
   const values = Object.values(queues)
   return Promise.all(values.map((queue) => {
     switch (queue.name) {
+    case GENERATE_COMPOSITE_IMAGE:
+      return queue.process(generateCompositeImages)
     // case NFT_COLLECTION_JOB:
     //   return queue.process(getUsersNFTs)
     // case PROFILE_SYNC_JOB:
@@ -115,6 +124,14 @@ const publishJobs = (): Promise<Bull.Job[]> => {
     //     removeOnFail: true,
     //     jobId: 'typesense_index_job',
     //   })
+    case GENERATE_COMPOSITE_IMAGE:
+      return queues[GENERATE_COMPOSITE_IMAGE].add({ GENERATE_COMPOSITE_IMAGE }, {
+        removeOnComplete: true,
+        removeOnFail: true,
+        // repeat every  minute
+        repeat: { every: 60000 },
+        jobId: 'generate_composite_image',
+      })
     default:
       return queues[chainId].add({ chainId }, {
         removeOnComplete: true,
