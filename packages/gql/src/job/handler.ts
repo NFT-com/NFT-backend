@@ -21,6 +21,11 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 
+type Log = {
+  logs: ethers.providers.Log[]
+  latestBlockNumber: number
+}
+
 const onlyUnique = (value, index, self: any[]): boolean => {
   return self.indexOf(value) === index
 }
@@ -129,16 +134,20 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
   }
 }
 
+const chainIdToRedisKey = (chainId: number): string => {
+  return `minted_profile_cached_block_${chainId}`
+}
+
 const getMintedProfileEvents = async (
   topics: any[],
   chainId: number,
   provider: ethers.providers.BaseProvider,
   address: string,
-): Promise<ethers.providers.Log[]> => {
+): Promise<Log> => {
+  const latestBlock = await provider.getBlock('latest')
   try {
     const maxBlocks = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS
-    const latestBlock = await provider.getBlock('latest')
-    const key = `minted_profile_cached_block_${chainId}`
+    const key = chainIdToRedisKey(chainId)
     const cachedBlock = await getCachedBlock(chainId, key)
     const logs = await getPastLogs(
       provider,
@@ -148,11 +157,16 @@ const getMintedProfileEvents = async (
       latestBlock.number,
       Number(maxBlocks),
     )
-    await redis.set(key, latestBlock.number)
-    return logs
+    return {
+      logs: logs,
+      latestBlockNumber: latestBlock.number,
+    }
   } catch (e) {
     logger.debug(e)
-    return []
+    return {
+      logs: [],
+      latestBlockNumber: latestBlock.number,
+    }
   }
 }
 
@@ -176,14 +190,14 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       }],
     })
     const filteredBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
-    const events = await getMintedProfileEvents(topics, Number(chainId), chainProvider, address)
+    const log = await getMintedProfileEvents(topics, Number(chainId), chainProvider, address)
 
     logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
-
     const validation = await validateLiveBalances(filteredBids, chainId)
     if (validation) {
+      // await Promise.allSettled(
       await Promise.allSettled(
-        events.map(async (unparsedEvent) => {
+        log.logs.map(async (unparsedEvent) => {
           const evt = profileAuctioninterface.parseLog(unparsedEvent)
           console.log(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
           const [owner,profileUrl,tokenId,,] = evt.args
@@ -197,7 +211,12 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
             })
             if (!existsBool) {
               // find and mark profile status as minted
-              const profile = await repositories.profile.findByURL(profileUrl)
+              const profile = await repositories.profile.findOne({
+                where: {
+                  tokenId: tokenId.toString(),
+                  url: profileUrl,
+                },
+              })
               if (!profile) {
                 await core.createProfileFromEvent(
                   chainId,
@@ -205,6 +224,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                   tokenId,
                   repositories,
                   profileUrl,
+                  true,
                 )
                 const event = await repositories.event.findOne({
                   where: {
@@ -227,6 +247,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                       profileUrl: profileUrl,
                     },
                   )
+                  logger.debug(`Profile ${ profileUrl } was minted by address ${ owner }`)
                   await HederaConsensusService.submitMessage(
                     `Profile ${ profileUrl } was minted by address ${ owner }`,
                   )
@@ -242,6 +263,8 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           }
         }),
       )
+      await redis.set(chainIdToRedisKey(chainId), log.latestBlockNumber)
+      logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
     }
   } catch (err) {
     console.log('error: ', err)

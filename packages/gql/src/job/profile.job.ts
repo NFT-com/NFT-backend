@@ -2,6 +2,7 @@ import { Job } from 'bull'
 import Redis from 'ioredis'
 
 import { redisConfig } from '@nftcom/gql/config'
+import { DEFAULT_NFT_IMAGE, generateCompositeImage } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, db, entity, provider, typechain } from '@nftcom/shared'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -54,5 +55,31 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
     }))
   } catch (err) {
     console.log('error: ', err)
+  }
+}
+
+export const generateCompositeImages = async (job: Job): Promise<any> => {
+  try {
+    logger.debug('generate Composite Images', job.data)
+
+    const MAX_PROFILE_COUNTS = 200
+    const profiles = await repositories.profile.find({
+      where: {
+        photoURL: null,
+      },
+    })
+    const slicedProfiles = profiles.slice(0, MAX_PROFILE_COUNTS)
+    await Promise.allSettled(
+      slicedProfiles.map(async (profile) => {
+        const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
+        await repositories.profile.updateOneById(profile.id, {
+          photoURL: imageURL,
+        })
+        logger.debug(`Composite Image for Profile ${ profile.url } was generated`)
+      }),
+    )
+    logger.debug('generated composite images for profiles', { counts: MAX_PROFILE_COUNTS })
+  } catch (err) {
+    logger.debug('error: ', err)
   }
 }
