@@ -8,6 +8,7 @@ import { redisConfig } from '@nftcom/gql/config'
 import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'
@@ -115,7 +116,8 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
         },
       ).then(() => true)
   } catch (err) {
-    console.log('error while validateLiveBalances: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in validateLiveBalances: ${err}`)
   }
 }
 const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
@@ -267,6 +269,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
     }
   } catch (err) {
-    console.log('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getEthereumEvents Job: ${err}`)
   }
 }

@@ -22,6 +22,7 @@ import {
 } from '@nftcom/gql/service/core.service'
 import { changeNFTsVisibility } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
 
@@ -520,7 +521,8 @@ const uploadStreamToS3 = async (
     const result = await bannerUploadStream.promise
     return s3ToCdn(result.Location)
   } catch (e) {
-    logger.debug('uploadStreamToS3', e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in uploadStreamToS3: ${e}`)
     throw e
   }
 }

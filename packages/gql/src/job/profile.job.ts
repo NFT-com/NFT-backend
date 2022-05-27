@@ -4,6 +4,7 @@ import Redis from 'ioredis'
 import { redisConfig } from '@nftcom/gql/config'
 import { DEFAULT_NFT_IMAGE, generateCompositeImage } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, db, entity, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const redis = new Redis({
@@ -80,6 +81,7 @@ export const generateCompositeImages = async (job: Job): Promise<any> => {
     )
     logger.debug('generated composite images for profiles', { counts: MAX_PROFILE_COUNTS })
   } catch (err) {
-    logger.debug('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in generateCompositeImages Job: ${err}`)
   }
 }
