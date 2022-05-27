@@ -9,6 +9,7 @@ import { BaseEntity } from './base.entity'
 @Index(['type', 'deletedAt', 'createdAt'])
 @Index(['userId', 'deletedAt', 'createdAt'])
 @Index(['walletId', 'deletedAt', 'createdAt'])
+@Index(['contract', 'deletedAt', 'createdAt'])
 export class NFT extends BaseEntity {
 
   @Column({ nullable: true })

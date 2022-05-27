@@ -5,6 +5,7 @@ import * as typeorm from 'typeorm'
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -124,7 +125,8 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    console.log('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     return []
   }
 }
@@ -164,7 +166,8 @@ const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
-    console.log('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     return []
   }
 }
@@ -180,7 +183,8 @@ const getNFTMetaDataFromAlchemy = async (
     })
     return response as NFTMetaDataResponse
   } catch (err) {
-    console.log('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getNFTMetaDataFromAlchemy: ${err}`)
     return undefined
   }
 }
@@ -204,15 +208,85 @@ const getCollectionNameFromContract = (
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
-      console.log('Token type not ERC721, ERC1155, nor UNKNOWN', type)
+      logger.error('Token type not ERC721, ERC1155, nor UNKNOWN', type)
       return Promise.resolve('Unknown Name')
     }
   } catch (error) {
-    console.log('ethers failed: ', error)
+    logger.error('ethers failed: ', error)
     return Promise.resolve('Unknown Name')
   }
 }
 
+const updateNFTOwnershipAndMetadata = async (
+  nft: OwnedNFT,
+  userId: string,
+  walletId: string,
+): Promise<void> => {
+  const existingNFT = await repositories.nft.findOne({
+    where: {
+      contract: ethers.utils.getAddress(nft.contract.address),
+      tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+    },
+  })
+  if (existingNFT?.userId !== userId || existingNFT?.walletId !== walletId) {
+    let type: defs.NFTType = existingNFT?.type
+    const traits = existingNFT?.metadata?.traits
+    let name = existingNFT?.metadata?.name
+    let description = existingNFT?.metadata?.description
+    let image = existingNFT?.metadata?.imageURL
+
+    if (existingNFT == null) {
+      const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+        nft.contract.address,
+        nft.id.tokenId,
+      )
+      name = nftMetadata?.title
+      description = nftMetadata?.description
+      image = nftMetadata?.metadata?.image
+      if (nftMetadata.id.tokenMetadata.tokenType === 'ERC721') {
+        type = defs.NFTType.ERC721
+      } else if (nftMetadata.id.tokenMetadata.tokenType === 'ERC1155') {
+        type = defs.NFTType.ERC1155
+      }
+      try {
+        if (Array.isArray(nftMetadata.metadata.attributes)) {
+          nftMetadata.metadata.attributes.map((trait) => {
+            traits.push(({
+              type: trait?.trait_type,
+              value: trait?.value,
+            }))
+          })
+        } else {
+          Object.keys(nftMetadata.metadata.attributes).map(keys => {
+            traits.push(({
+              type: keys,
+              value: nftMetadata.metadata.attributes[keys],
+            }))
+          })
+        }
+      } catch (err) {
+        Sentry.captureException(err)
+        Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
+      }
+    }
+
+    await repositories.nft.save({
+      ...existingNFT,
+      userId,
+      walletId,
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+  }
+}
+
+// TODO: use this function for updating all metadata for the NFT and corresponding Collection.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const updateEntity = async (
   nftInfo: NFTMetaDataResponse,
   userId: string,
@@ -233,8 +307,10 @@ const updateEntity = async (
       type = defs.NFTType.ERC721
     } else if (nftInfo.id.tokenMetadata.tokenType === 'ERC1155') {
       type = defs.NFTType.ERC1155
+    } else if (nftInfo.title.endsWith('.eth')) { // if token is ENS token...
+      type = defs.NFTType.UNKNOWN
     } else {
-      console.log('Token type should be ERC721 or ERC1155, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
+      logger.debug('Token type should be ERC721 or ERC1155 or ENS, not ', nftInfo?.id?.tokenMetadata?.tokenType, nftInfo)
       return
     }
     const traits = []
@@ -340,7 +416,8 @@ const updateEntity = async (
         })
     }
   } catch (err) {
-    console.log('error update entity: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateEntity: ${err}`)
   }
 }
 
@@ -368,7 +445,8 @@ export const checkNFTContractAddresses = async (
       }),
     )
   } catch (err) {
-    logger.error('error check nft contract address: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
     return []
   }
 }
@@ -387,10 +465,7 @@ export const updateWalletNFTs = async (
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      const response = await getNFTMetaDataFromAlchemy(nft.contract.address, nft.id.tokenId)
-      if (response) {
-        await updateEntity(response, userId, walletId)
-      }
+      await updateNFTOwnershipAndMetadata(nft, userId, walletId)
     }),
   )
 }
@@ -506,7 +581,8 @@ export const changeNFTsVisibility = async (
         )
       }
     }
-  } catch (e) {
-    logger.error('change visibility of NFTs failed. ', e)
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
   }
 }
