@@ -342,6 +342,7 @@ const updateProfile = (
     showAllNFTs: Joi.boolean().allow(null),
     hideAllNFTs: Joi.boolean().allow(null),
     gkIconVisible: Joi.boolean().allow(null),
+    nftsDescriptionsVisible: Joi.boolean().allow(null),
     displayType: Joi.string()
       .valid(defs.ProfileDisplayType.NFT, defs.ProfileDisplayType.Collection)
       .allow(null),
@@ -362,6 +363,7 @@ const updateProfile = (
       p.photoURL = args.input.photoURL ?? p.photoURL
       p.displayType = args.input.displayType ?? p.displayType
       p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
+      p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible
       return changeNFTsVisibility(
         repositories,
         user.id,
