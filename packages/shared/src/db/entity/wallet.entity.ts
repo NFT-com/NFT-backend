@@ -1,9 +1,10 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity, Index, Unique } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
 @Index(['chainId', 'address', 'network'], { unique: true })
 @Entity()
+@Unique(['address', 'network', 'chainId'])
 export class Wallet extends BaseEntity {
 
   @Index()

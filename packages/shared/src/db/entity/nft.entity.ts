@@ -1,4 +1,4 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity, Index, Unique } from 'typeorm'
 
 import { NFTMetadata, NFTType } from '@nftcom/shared/defs'
 
@@ -10,6 +10,7 @@ import { BaseEntity } from './base.entity'
 @Index(['userId', 'deletedAt', 'createdAt'])
 @Index(['walletId', 'deletedAt', 'createdAt'])
 @Index(['contract', 'deletedAt', 'createdAt'])
+@Unique(['contract', 'tokenId'])
 export class NFT extends BaseEntity {
 
   @Column({ nullable: true })
