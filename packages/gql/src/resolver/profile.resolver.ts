@@ -662,7 +662,7 @@ const getLatestProfiles = (
     pageInput,
     filters,
     [],
-    'createdAt',
+    'updatedAt',
     'DESC',
   )
     .then(pagination.toPageable(pageInput))
