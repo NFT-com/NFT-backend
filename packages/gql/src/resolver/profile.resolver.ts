@@ -665,7 +665,7 @@ const getLatestProfiles = (
     'updatedAt',
     'DESC',
   )
-    .then(pagination.toPageable(pageInput))
+    .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
 }
 
 export default {
