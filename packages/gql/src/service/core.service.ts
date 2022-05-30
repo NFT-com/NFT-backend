@@ -609,6 +609,8 @@ export const convertEthAddressToEns = async (
     const ens = await provider.provider().lookupAddress(ethAddress)
     return ens
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`error converting eth address to ens: ${JSON.stringify(e)}`)
     return `error converting eth address to ens: ${JSON.stringify(e)}`
   }
 }
@@ -620,6 +622,8 @@ export const convertEnsToEthAddress = async (
     const address = await provider.provider().resolveName(ensAddress?.toLowerCase())
     return address
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`error converting ens to eth address: ${JSON.stringify(e)}`)
     return `error converting ens to eth address: ${JSON.stringify(e)}`
   }
 }

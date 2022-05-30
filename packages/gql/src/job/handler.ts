@@ -132,6 +132,8 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
       ? Number(cachedBlock) - 1000 : Number(cachedBlock)
     else return startBlock
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getCachedBlock: ${e}`)
     return startBlock
   }
 }
@@ -165,6 +167,8 @@ const getMintedProfileEvents = async (
     }
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getMintedProfileEvents: ${e}`)
     return {
       logs: [],
       latestBlockNumber: latestBlock.number,

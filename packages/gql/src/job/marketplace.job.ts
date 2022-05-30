@@ -9,6 +9,7 @@ import { redisConfig } from '@nftcom/gql/config'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
 import { provider } from '@nftcom/gql/helper'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const repositories = db.newRepositories()
@@ -83,6 +84,8 @@ export const getPastLogs = async (
     }
   } catch (e) {
     logger.error('error while getting past logs: ', e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getPastLogs: ${e}`)
     return []
   }
 }

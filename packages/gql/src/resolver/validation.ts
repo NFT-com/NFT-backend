@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 
 import { _logger, contracts, db, provider } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -72,6 +73,8 @@ export const validateTxHashForCancel = async (
     return eventEmitted
   } catch (e) {
     logger.debug(`${txHash} is not valid`, e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in validateTxHashForCancel: ${e}`)
     return false
   }
 }
