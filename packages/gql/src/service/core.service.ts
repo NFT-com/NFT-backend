@@ -11,6 +11,7 @@ import { auth, pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 export const DEFAULT_NFT_IMAGE = 'https://cdn.nft.com/Medallion.jpg'
@@ -607,6 +608,8 @@ export const convertEthAddressToEns = async (
     const ens = await provider.provider().lookupAddress(ethAddress)
     return ens
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`error converting eth address to ens: ${JSON.stringify(e)}`)
     return `error converting eth address to ens: ${JSON.stringify(e)}`
   }
 }
@@ -618,6 +621,8 @@ export const convertEnsToEthAddress = async (
     const address = await provider.provider().resolveName(ensAddress?.toLowerCase())
     return address
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`error converting ens to eth address: ${JSON.stringify(e)}`)
     return `error converting ens to eth address: ${JSON.stringify(e)}`
   }
 }
@@ -663,7 +668,8 @@ export const generateCompositeImage = async (
       const base64String = await imageToBase64(defaultImagePath)
       buffer = generateSVG(url.toUpperCase(), base64String)
     } catch (e) {
-      logger.debug('generateCompositeImage', e)
+      Sentry.captureException(e)
+      Sentry.captureMessage(`Error while svg generation: ${e}`)
       throw e
     }
   }
@@ -680,6 +686,8 @@ export const generateCompositeImage = async (
     return s3ToCdn(res.Location)
   } catch (e) {
     logger.debug('generateCompositeImage', e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error while uploading svg to S3: ${e}`)
     throw e
   }
 }

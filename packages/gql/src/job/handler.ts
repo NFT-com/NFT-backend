@@ -8,6 +8,7 @@ import { redisConfig } from '@nftcom/gql/config'
 import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 import { core } from '../service'
 import HederaConsensusService from '../service/hedera.service'
@@ -109,13 +110,16 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 }
               } catch (err) {
                 logger.debug('gk balance: ', err)
+                Sentry.captureException(err)
+                Sentry.captureMessage(`gk balance error in validateLiveBalances: ${err}`)
               }
             }),
           ])
         },
       ).then(() => true)
   } catch (err) {
-    console.log('error while validateLiveBalances: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in validateLiveBalances: ${err}`)
   }
 }
 const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
@@ -130,6 +134,8 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
       ? Number(cachedBlock) - 1000 : Number(cachedBlock)
     else return startBlock
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getCachedBlock: ${e}`)
     return startBlock
   }
 }
@@ -163,6 +169,8 @@ const getMintedProfileEvents = async (
     }
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getMintedProfileEvents: ${e}`)
     return {
       logs: [],
       latestBlockNumber: latestBlock.number,
@@ -267,6 +275,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
     }
   } catch (err) {
-    console.log('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getEthereumEvents Job: ${err}`)
   }
 }

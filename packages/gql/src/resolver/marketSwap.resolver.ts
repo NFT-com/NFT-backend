@@ -4,6 +4,7 @@ import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 import { appError, marketAskError, marketBidError, marketSwapError } from '../error'
 import { auth, joi, pagination } from '../helper'
@@ -174,6 +175,8 @@ const validateTxHashForSwapNFT = async (
     else return undefined
   } catch (e) {
     logger.debug(`${txHash} is not valid`, e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in validateTxHashForSwapNFT: ${e}`)
     return undefined
   }
 }

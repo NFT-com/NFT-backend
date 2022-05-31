@@ -22,6 +22,7 @@ import {
   provider,
   typechain,
 } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core } from '../service'
@@ -163,6 +164,8 @@ const validAsk = async (
     }
   } catch (err) {
     logger.error('order validation error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Order validation error: ${err}`)
     return false
   }
 
@@ -472,6 +475,8 @@ const validateTxHashForBuyNow = async (
     else return undefined
   } catch (e) {
     logger.debug(`${txHash} is not valid`, e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in validateTxHashForBuyNow: ${e}`)
     return undefined
   }
 }
