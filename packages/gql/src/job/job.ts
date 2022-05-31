@@ -41,33 +41,13 @@ const createQueues = (): Promise<void> => {
         redis,
       })
     })
-    // add users nft collection job to queue...
-    // queues[NFT_COLLECTION_JOB] = new Bull(NFT_COLLECTION_JOB, {
-    //   prefix: queuePrefix,
-    //   redis,
-    // })
 
-    // queues[PROFILE_SYNC_JOB] = new Bull(PROFILE_SYNC_JOB, {
-    //   prefix: queuePrefix,
-    //   redis,
-    // })
-    // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
-    // queues[MARKETPLACE_SYNC_JOB] = new Bull(MARKETPLACE_SYNC_JOB, {
-    //   prefix: queuePrefix,
-    //   redis,
-    // })
-
-    // queues[TYPESENSE_INDEX_SCHEMA_JOB] = new Bull(TYPESENSE_INDEX_SCHEMA_JOB, {
-    //   prefix: queuePrefix,
-    //   redis,
-    // })
-    
     // add composite image generation job to queue...
     queues[GENERATE_COMPOSITE_IMAGE] = new Bull(GENERATE_COMPOSITE_IMAGE, {
       prefix: queuePrefix,
       redis,
     })
-    
+
     resolve()
   })
 }
