@@ -110,6 +110,8 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 }
               } catch (err) {
                 logger.debug('gk balance: ', err)
+                Sentry.captureException(err)
+                Sentry.captureMessage(`gk balance error in validateLiveBalances: ${err}`)
               }
             }),
           ])

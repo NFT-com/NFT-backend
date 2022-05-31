@@ -180,6 +180,8 @@ const listenApprovalEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenApprovalEvents: ${e}`)
   }
   return
 }
@@ -249,6 +251,8 @@ const listenNonceIncrementedEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in nonceIncrementedEvents: ${e}`)
   }
   return
 }
@@ -314,6 +318,8 @@ const listenCancelEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenCancelEvents: ${e}`)
   }
   return
 }
@@ -511,12 +517,16 @@ const listenMatchEvents = async (
         }
       } catch (e) {
         logger.error('error while parsing match event: ', e)
+        Sentry.captureException(e)
+        Sentry.captureMessage(`Error while parsing match event: ${e}`)
       }
     })
 
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenMatchEvents: ${e}`)
   }
   return
 }
@@ -596,6 +606,8 @@ const listenMatchTwoAEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenMatchTwoAEvents: ${e}`)
   }
   return
 }
@@ -684,6 +696,8 @@ const listenMatchTwoBEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenMatchTwoBEvents: ${e}`)
   }
   return
 }
@@ -763,6 +777,8 @@ const listenMatchThreeAEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenMatchThreeAEvents: ${e}`)
   }
   return
 }
@@ -849,6 +865,8 @@ const listenMatchThreeBEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenMatchThreeBEvents: ${e}`)
   }
   return
 }
@@ -894,6 +912,8 @@ const listenBuyNowInfoEvents = async (
     await Promise.allSettled(promises)
   } catch (e) {
     logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in listenBuyNowInfoEvents: ${e}`)
   }
   return
 }
@@ -912,6 +932,8 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
       ? Number(cachedBlock) - 10000 : Number(cachedBlock)
     else return defaultBlock[chainId]
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getCachedBlock in marketplace: ${e}`)
     return defaultBlock[chainId]
   }
 }
@@ -939,5 +961,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await redis.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
     logger.debug('error', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in syncMarketplace: ${err}`)
   }
 }

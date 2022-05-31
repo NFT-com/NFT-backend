@@ -560,6 +560,8 @@ const uploadProfileImages = async (
       await checkFileSize(bannerStream, bannerMaxSize)
     }
     catch (e) {
+      Sentry.captureException(e)
+      Sentry.captureMessage(`Error in uploadProfileImages: ${e}`)
       if (typeof e === 'number') {
         return Promise.reject(appError.buildInvalid(
           profileError.buildProfileBannerFileSize(),
@@ -576,6 +578,8 @@ const uploadProfileImages = async (
       await checkFileSize(avatarStream, avatarMaxSize)
     }
     catch (e) {
+      Sentry.captureException(e)
+      Sentry.captureMessage(`Error in uploadProfileImages: ${e}`)
       if (typeof e === 'number') {
         return Promise.reject(appError.buildInvalid(
           profileError.buildProfileAvatarFileSize(),

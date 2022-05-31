@@ -56,6 +56,8 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
     }))
   } catch (err) {
     console.log('error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in syncProfileNFTs Job: ${err}`)
   }
 }
 

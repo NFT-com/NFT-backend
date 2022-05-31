@@ -20,6 +20,7 @@ import {
   initiateWeb3,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
+import * as Sentry from '@sentry/node'
 const redis = new Redis({
   port: redisConfig.port,
   host: redisConfig.host,
@@ -261,6 +262,8 @@ const getGkNFTs = async (
 
       return response
     } catch (err) {
+      Sentry.captureException(err)
+      Sentry.captureMessage(`Error in getGKNFTs: ${err}`)
       throw nftError.buildNFTNotFoundMsg(args?.tokenId)
     }
   }

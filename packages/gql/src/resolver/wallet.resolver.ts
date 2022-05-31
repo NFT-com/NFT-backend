@@ -6,6 +6,7 @@ import { appError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, helper } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Wallet, _logger.Context.GraphQL)
 
@@ -49,6 +50,8 @@ const isAddressWhitelisted = async (
       try {
         return address?.toLowerCase()
       } catch (e) {
+        Sentry.captureException(e)
+        Sentry.captureMessage(`Error in isAddressWhitelisted: ${e}`)
         return address
       }
     },

@@ -6,6 +6,7 @@ import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { appError, marketBidError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import { _logger, contracts, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core, sendgrid } from '../service'
@@ -76,6 +77,8 @@ const validOrderMatch = async (
     }
   } catch (err) {
     logger.error('order validation error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Order validation error: ${err}`)
     return false
   }
 
@@ -141,6 +144,8 @@ const validOrderMatch = async (
     }
   } catch (err) {
     logger.error('order matching validation error: ', err)
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Order matching validation error: ${err}`)
     return false
   }
 

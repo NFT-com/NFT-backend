@@ -3,6 +3,7 @@ import 'dotenv/config'
 import { isString } from 'lodash'
 
 import { defs, helper } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 export const verifyConfiguration = (): void => {
   console.log('Loading configurations...')
@@ -30,6 +31,8 @@ export const serverConfigVar = (): any => {
   try {
     return JSON.parse(process.env.SERVER_CONFIG) ?? defaultConfig
   } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in serverConfigVar: ${e}`)
     return defaultConfig
   }
 }
@@ -77,7 +80,7 @@ export const blockchainConfig = {
 
 export const isNetworkSupported = (network: string): boolean =>
   helper.isNotEmpty(supportedNetworks[network])
-  
+
 export const getChain = (network: string, chainId: string): defs.Chain =>
   supportedNetworks[network].find((chain: defs.Chain) => chain.id === chainId)
 
