@@ -43,13 +43,12 @@ const createQueues = (): Promise<void> => {
         redis,
       }))
     })
-
+    
     // add composite image generation job to queue...
     queues.set(GENERATE_COMPOSITE_IMAGE, new Bull(GENERATE_COMPOSITE_IMAGE, {
       prefix: queuePrefix,
       redis,
     }))
-
     resolve()
   })
 }
@@ -71,6 +70,7 @@ const jobHasNotRunRecently = (job: Bull.Job<any>): boolean  => {
 const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
   const values = [...queues.values()]
   if (jobs.flat().length < queues.size) {
+    console.log('🐮 fewer bull jobs than queues -- wiping queues for restart')
     return Promise.all(values.map((queue) => {
       return queue.obliterate({ force: true })
     })).then(() => true)
@@ -79,11 +79,12 @@ const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
   for (const network of networks.keys()) {
     const queue = queues.get(network)
     const job = jobs.flat().find(job => job.queue === queue)
-    if (( job.opts.repeat
+    if ((job.opts.repeat
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore: @types/bull is outdated
           && (job.opts.repeat.count >= BULL_MAX_REPEAT_COUNT || jobHasNotRunRecently(job)))
         || !job.opts.repeat) {
+      console.log('🐮 bull job needs to restart -- wiping queues for restart')
       return Promise.all(values.map((queue) => {
         return queue.obliterate({ force: true })
       })).then(() => true)
@@ -144,7 +145,10 @@ export const startAndListen = (): Promise<void> => {
     .then((jobs) => checkJobQueues(jobs))
     .then((shouldPublish) => publishJobs(shouldPublish))
     .then((shouldListen) => void listenToJobs(shouldListen))
-    .then(() => isListening ? console.log('🍊 listening for jobs...') : console.log('🍊 no jobs to listen to this time...'))
+    .then(() => {
+      isListening ? console.log('🍊 queue was restarted -- listening for jobs...')
+        : console.log('🍊 bull jobs running healthy, no restart necessary')
+    })
 }
 
 export const stopAndDisconnect = (): Promise<any> => {
