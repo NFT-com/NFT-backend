@@ -214,6 +214,8 @@ const getCollectionNameFromContract = (
     }
   } catch (error) {
     logger.error('ethers failed: ', error)
+    Sentry.captureException(error)
+    Sentry.captureMessage(`Error in getCollectionNameFromContract: ${error}`)
     return Promise.resolve('Unknown Name')
   }
 }
@@ -348,6 +350,8 @@ const updateEntity = async (
           })
         }
       } catch (err) {
+        Sentry.captureException(err)
+        Sentry.captureMessage(`error while parsing traits: ${err}, ${nftInfo}, ${nftInfo.metadata}, ${nftInfo.metadata.attributes}`)
         logger.error('error while parsing traits', err, nftInfo, nftInfo.metadata, nftInfo.metadata.attributes)
       }
     }
