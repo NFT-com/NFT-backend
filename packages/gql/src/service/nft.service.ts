@@ -239,7 +239,7 @@ const updateNFTOwnershipAndMetadata = async (
     let description = existingNFT?.metadata?.description
     let image = existingNFT?.metadata?.imageURL
 
-    if (existingNFT == null) {
+    if (!existingNFT) {
       const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
         nft.contract.address,
         nft.id.tokenId,
@@ -280,26 +280,29 @@ const updateNFTOwnershipAndMetadata = async (
             throw Error(`nftMetadata?.metadata doesn't conform ${JSON.stringify(nftMetadata?.metadata, null, 2)}`)
           }
         }
+        await repositories.nft.save({
+          userId,
+          walletId,
+          contract: ethers.utils.getAddress(nft.contract.address),
+          tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+          type,
+          metadata: {
+            name,
+            description,
+            imageURL: image,
+            traits: traits,
+          },
+        })
       } catch (err) {
         Sentry.captureException(err)
         Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
       }
+    } else {
+      await repositories.nft.updateOneById(existingNFT.id, {
+        userId,
+        walletId,
+      })
     }
-
-    await repositories.nft.save({
-      ...existingNFT,
-      userId,
-      walletId,
-      contract: ethers.utils.getAddress(nft.contract.address),
-      tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
-      type,
-      metadata: {
-        name,
-        description,
-        imageURL: image,
-        traits: traits,
-      },
-    })
   }
 }
 
