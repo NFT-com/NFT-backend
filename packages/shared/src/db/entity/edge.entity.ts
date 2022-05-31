@@ -33,4 +33,7 @@ export class Edge extends BaseEntity {
   @Column({ type: 'enum', enum: EdgeType })
   edgeType: EdgeType
 
+  @Column({ nullable: true })
+  weight: string
+
 }
