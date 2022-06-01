@@ -795,3 +795,71 @@ export const createEdge = (
 ): Promise<entity.Edge> => {
   return ctx.repositories.edge.save(edge)
 }
+
+const replaceAt = (index: number, str: string, replacement): string => {
+  return str.substring(0, index) + replacement + str.substring(index + replacement.length)
+}
+
+export const generateWeight = (prevWeight?: string): string => {
+  if (!prevWeight) return 'aaa'
+  let order = 'aaa'
+  if (prevWeight.length === 3) {
+    let update = String.fromCharCode(prevWeight.charCodeAt(2) + 1)
+    if (update <= 'z') {
+      order = replaceAt(2, order, update)
+    } else {
+      update = String.fromCharCode(prevWeight.charCodeAt(1) + 1)
+      if (update <= 'z') {
+        order = replaceAt(1, order, update)
+      } else {
+        update = String.fromCharCode(prevWeight.charCodeAt(0) + 1)
+        order = replaceAt(0, order, update)
+        order = replaceAt(1, order, 'a')
+      }
+      order = replaceAt(2, order, 'a')
+    }
+  }
+  return order
+}
+
+export const midWeight = (prev: string, next: string): string => {
+  let p, n, pos, str
+  // find leftmost non-matching character
+  for (pos = 0; p == n; pos++) {
+    p = pos < prev.length ? prev.charCodeAt(pos) : 96
+    n = pos < next.length ? next.charCodeAt(pos) : 123
+  }
+  // copy identical part of string
+  str = prev.slice(0, pos - 1)
+  // prev string equals beginning of next
+  if (p == 96) {
+    // next character is 'a'
+    while (n == 97) {
+      // get char from next
+      n = pos < next.length ? next.charCodeAt(pos++) : 123
+      // insert an 'a' to match the 'a'
+      str += 'a'
+    }
+    // next character is 'b'
+    if (n == 98) {
+      // insert an 'a' to match the 'b'
+      str += 'a'
+      // set to end of alphabet
+      n = 123
+    }
+  }
+  // found consecutive characters
+  else if (p + 1 == n) {
+    // insert character from prev
+    str += String.fromCharCode(p)
+    // set to end of alphabet
+    n = 123
+    // p='z'
+    while ((p = pos < prev.length ? prev.charCodeAt(pos++) : 96) == 122) {
+      // insert 'z' to match 'z'
+      str += 'z'
+    }
+  }
+  // append middle character
+  return str + String.fromCharCode(Math.ceil((p + n) / 2))
+}
