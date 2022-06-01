@@ -195,7 +195,6 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
     const validation = await validateLiveBalances(filteredBids, chainId)
     if (validation) {
-      // await Promise.allSettled(
       await Promise.allSettled(
         log.logs.map(async (unparsedEvent) => {
           const evt = profileAuctioninterface.parseLog(unparsedEvent)
