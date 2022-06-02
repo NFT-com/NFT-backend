@@ -1,7 +1,7 @@
 {
-  "name": "@nftcom/typesense",
+  "name": "@nftcom/semper",
   "version": "1.0.0",
-  "description": "Typesense utilities",
+  "description": "Search engine utilities",
   "main": "dist/index",
   "types": "dist/index",
   "scripts": {
