@@ -863,3 +863,22 @@ export const midWeight = (prev: string, next: string): string => {
   // append middle character
   return str + String.fromCharCode(Math.ceil((p + n) / 2))
 }
+
+export const getLastWeight = async (
+  repositories: db.Repository,
+  profileId: string,
+): Promise<string | undefined> => {
+  const edges = await repositories.edge.find({ where: {
+    thisEntityType: defs.EntityType.Profile,
+    thatEntityType: defs.EntityType.NFT,
+    thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+  } })
+  if (!edges.length) return
+  let biggest = edges[0].weight
+  for (let i = 1; i < edges.length; i++) {
+    if (biggest < edges[i].weight)
+      biggest = edges[i].weight
+  }
+  return biggest
+}

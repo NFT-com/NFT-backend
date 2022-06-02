@@ -4,7 +4,7 @@ import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { generateWeight } from '@nftcom/gql/service/core.service'
+import { generateWeight, getLastWeight } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -525,6 +525,49 @@ const hideAllNFTs = async (
     )
   }
 }
+const addNFTsToEdgeWithWeight = async (nfts: entity.NFT[], profileId: string): Promise<void> => {
+  const nftsToBeAdded = []
+  const nftsWithWeight = []
+  // filter nfts are not added to edge yet...
+  await Promise.allSettled(
+    nfts.map(async (nft: entity.NFT) => {
+      const displayEdge = await repositories.edge.findOne({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nft.id,
+          edgeType: defs.EdgeType.Displays,
+        },
+      })
+      if (!displayEdge) nftsToBeAdded.push(nft)
+    }),
+  )
+  // generate weights for nfts...
+  let weight = await getLastWeight(repositories, profileId)
+  for (let i = 0; i < nftsToBeAdded.length; i++) {
+    const newWeight = generateWeight(weight)
+    nftsWithWeight.push({
+      nft: nftsToBeAdded[i],
+      weight: newWeight,
+    })
+    weight = newWeight
+  }
+  // save nfts to edge...
+  await Promise.allSettled(
+    nftsWithWeight.map(async (nftWithWeight: NFTWithWeight) => {
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        thatEntityId: nftWithWeight.nft.id,
+        edgeType: defs.EdgeType.Displays,
+        weight: nftWithWeight.weight,
+        hide: false,
+      })
+    }),
+  )
+}
 
 const showAllNFTs = async (
   repositories: db.Repository,
@@ -533,42 +576,51 @@ const showAllNFTs = async (
 ): Promise<void> => {
   const nfts = await repositories.nft.find({ where: { userId } })
   if (nfts.length) {
-    const nftsWithWeight: Array<NFTWithWeight> = []
-    let weight = undefined
-    for (let i = 0; i < nfts.length; i++) {
-      const newWeight = generateWeight(weight)
-      nftsWithWeight.push({
-        nft: nfts[i],
-        weight: newWeight,
-      })
-      weight = newWeight
+    await addNFTsToEdgeWithWeight(nfts, profileId)
+    // change hide column to false which ones are true...
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        edgeType: defs.EdgeType.Displays,
+        hide: true,
+      },
+    })
+    if (edges.length) {
+      await Promise.allSettled(
+        edges.map(async (edge: entity.Edge) => {
+          await repositories.edge.updateOneById(edge.id, { hide: false })
+        }),
+      )
     }
+  }
+}
+
+const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> => {
+  const nfts = []
+  await Promise.allSettled(
+    showNFTIds.map(async (id) => {
+      const existingNFT = await repositories.nft.findOne({ where: { id } })
+      if (existingNFT) nfts.push(existingNFT)
+    }),
+  )
+  if (nfts.length) {
+    await addNFTsToEdgeWithWeight(nfts, profileId)
+    // change hide column to false which ones are true...
     await Promise.allSettled(
-      nftsWithWeight.map(async (nftWithWeight: NFTWithWeight) => {
+      nfts.map(async (nft: entity.NFT) => {
         const displayEdge = await repositories.edge.findOne({
           where: {
             thisEntityType: defs.EntityType.Profile,
             thatEntityType: defs.EntityType.NFT,
             thisEntityId: profileId,
-            thatEntityId: nftWithWeight.nft.id,
+            thatEntityId: nft.id,
             edgeType: defs.EdgeType.Displays,
+            hide: true,
           },
         })
-        if (!displayEdge) {
-          await repositories.edge.save({
-            thisEntityType: defs.EntityType.Profile,
-            thatEntityType: defs.EntityType.NFT,
-            thisEntityId: profileId,
-            thatEntityId: nftWithWeight.nft.id,
-            edgeType: defs.EdgeType.Displays,
-            weight: nftWithWeight.weight,
-            hide: false,
-          })
-        } else {
-          await repositories.edge.updateOneById(displayEdge.id, {
-            hide: false,
-          })
-        }
+        if (displayEdge) await repositories.edge.updateOneById(displayEdge.id, { hide: false })
       }),
     )
   }
@@ -595,7 +647,7 @@ export const changeNFTsVisibility = async (
   showNFTIds: Array<string> | null,
   hideNFTIds: Array<string> | null,
 ): Promise<void> => {
-  userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
+  // userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
   try {
     if (showAll) {
       await showAllNFTs(repositories, userId, profileId)
@@ -605,38 +657,25 @@ export const changeNFTsVisibility = async (
       return
     } else {
       if (showNFTIds?.length) {
-        await Promise.allSettled(
-          showNFTIds?.map(async (id) => {
-            const existingNFT = await repositories.nft.findOne({ where: { id } })
-            if (!existingNFT) {
-              return
-            }
-            const edgeVals = {
-              thisEntityId: profileId,
-              thisEntityType: defs.EntityType.Profile,
-              thatEntityId: existingNFT.id,
-              thatEntityType: defs.EntityType.NFT,
-              edgeType: defs.EdgeType.Displays,
-            }
-            const existingEdge = await repositories.edge.findOne({ where: edgeVals })
-            if (!existingEdge) {
-              repositories.edge.save(edgeVals)
-            }
-          }),
-        )
+        await showNFTs(showNFTIds, profileId)
       }
       if (hideNFTIds) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
-            const existingNFT = await repositories.nft.findOne({ where: { id: id } })
+            const existingNFT = await repositories.nft.findOne({ where: { id } })
             if (existingNFT) {
-              return repositories.edge.hardDelete({
+              const edgeVals = {
                 thisEntityId: profileId,
                 thisEntityType: defs.EntityType.Profile,
                 thatEntityId: existingNFT.id,
                 thatEntityType: defs.EntityType.NFT,
                 edgeType: defs.EdgeType.Displays,
-              })
+                hide: false,
+              }
+              const existingEdge = await repositories.edge.findOne({ where: edgeVals })
+              if (existingEdge) {
+                await repositories.edge.updateOneById(existingEdge.id, { hide: true })
+              }
             }
           }),
         )
