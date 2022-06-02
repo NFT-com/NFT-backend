@@ -4,6 +4,7 @@ import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { generateWeight } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -59,6 +60,11 @@ interface NFTMetaDataResponse {
     attributes?: Array<Record<string, any>>
   }
   timeLastUpdated: string
+}
+
+type NFTWithWeight = {
+  nft: entity.NFT
+  weight: string
 }
 
 export const initiateWeb3 = (): void => {
@@ -233,73 +239,83 @@ const updateNFTOwnershipAndMetadata = async (
   })
 
   if (existingNFT?.userId !== userId || existingNFT?.walletId !== walletId) {
-    let type: defs.NFTType = existingNFT?.type
-    const traits = existingNFT?.metadata?.traits ?? []
-    let name = existingNFT?.metadata?.name
-    let description = existingNFT?.metadata?.description
-    let image = existingNFT?.metadata?.imageURL
+    let type: defs.NFTType
+    const traits = []
 
-    if (existingNFT == null) {
-      const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
-        nft.contract.address,
-        nft.id.tokenId,
-      )
+    const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+      nft.contract.address,
+      nft.id.tokenId,
+    )
 
-      name = nftMetadata?.title
-      description = nftMetadata?.description
-      image = nftMetadata?.metadata?.image
-      if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
-        type = defs.NFTType.ERC721
-      } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
-        type = defs.NFTType.ERC1155
-      }
-      try {
-        if (Array.isArray(nftMetadata?.metadata?.attributes)) {
-          nftMetadata?.metadata?.attributes.map((trait) => {
+    const name = nftMetadata?.title
+    const description = nftMetadata?.description
+    const image = nftMetadata?.metadata?.image
+    if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
+      type = defs.NFTType.ERC721
+    } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
+      type = defs.NFTType.ERC1155
+    } else if (nftMetadata?.title.endsWith('.eth')) { // if token is ENS token...
+      type = defs.NFTType.UNKNOWN
+    }
+    try {
+      if (Array.isArray(nftMetadata?.metadata?.attributes)) {
+        nftMetadata?.metadata?.attributes.map((trait) => {
+          traits.push(({
+            type: trait?.trait_type,
+            value: trait?.value,
+          }))
+        })
+      } else {
+        if (nftMetadata?.metadata?.attributes) {
+          Object.keys(nftMetadata?.metadata?.attributes).map(keys => {
             traits.push(({
-              type: trait?.trait_type,
-              value: trait?.value,
+              type: keys,
+              value: nftMetadata?.metadata?.attributes?.[keys],
+            }))
+          })
+        } else if (nftMetadata?.metadata) {
+          Object.keys(nftMetadata?.metadata).map(keys => {
+            traits.push(({
+              type: keys,
+              value: nftMetadata?.metadata?.[keys],
             }))
           })
         } else {
-          if (nftMetadata?.metadata?.attributes) {
-            Object.keys(nftMetadata?.metadata?.attributes).map(keys => {
-              traits.push(({
-                type: keys,
-                value: nftMetadata?.metadata?.attributes?.[keys],
-              }))
-            })
-          } else if (nftMetadata?.metadata) {
-            Object.keys(nftMetadata?.metadata).map(keys => {
-              traits.push(({
-                type: keys,
-                value: nftMetadata?.metadata?.[keys],
-              }))
-            })
-          } else {
-            throw Error(`nftMetadata?.metadata doesn't conform ${JSON.stringify(nftMetadata?.metadata, null, 2)}`)
-          }
+          throw Error(`nftMetadata?.metadata doesn't conform ${JSON.stringify(nftMetadata?.metadata, null, 2)}`)
         }
-      } catch (err) {
-        Sentry.captureException(err)
-        Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
       }
+    } catch (err) {
+      Sentry.captureException(err)
+      Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     }
 
-    await repositories.nft.save({
-      ...existingNFT,
-      userId,
-      walletId,
-      contract: ethers.utils.getAddress(nft.contract.address),
-      tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
-      type,
-      metadata: {
-        name,
-        description,
-        imageURL: image,
-        traits: traits,
-      },
-    })
+    if (!existingNFT) {
+      await repositories.nft.save({
+        userId,
+        walletId,
+        contract: ethers.utils.getAddress(nft.contract.address),
+        tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+        type,
+        metadata: {
+          name,
+          description,
+          imageURL: image,
+          traits: traits,
+        },
+      })
+    } else {
+      await repositories.nft.updateOneById(existingNFT.id, {
+        userId,
+        walletId,
+        type,
+        metadata: {
+          name,
+          description,
+          imageURL: image,
+          traits: traits,
+        },
+      })
+    }
   }
 }
 
@@ -494,12 +510,20 @@ const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<void> => {
-  await repositories.edge.hardDelete({
+  const edges = await repositories.edge.find({ where: {
     thisEntityType: defs.EntityType.Profile,
     thisEntityId: profileId,
     edgeType: defs.EdgeType.Displays,
     thatEntityType: defs.EntityType.NFT,
-  })
+    hide: false,
+  } })
+  if (edges.length) {
+    await Promise.allSettled(
+      edges.map(async (edge: entity.Edge) => {
+        await repositories.edge.updateOneById(edge.id, { hide: true })
+      }),
+    )
+  }
 }
 
 const showAllNFTs = async (
@@ -509,14 +533,24 @@ const showAllNFTs = async (
 ): Promise<void> => {
   const nfts = await repositories.nft.find({ where: { userId } })
   if (nfts.length) {
+    const nftsWithWeight: Array<NFTWithWeight> = []
+    let weight = undefined
+    for (let i = 0; i < nfts.length; i++) {
+      const newWeight = generateWeight(weight)
+      nftsWithWeight.push({
+        nft: nfts[i],
+        weight: newWeight,
+      })
+      weight = newWeight
+    }
     await Promise.allSettled(
-      nfts.map(async (nft) => {
+      nftsWithWeight.map(async (nftWithWeight: NFTWithWeight) => {
         const displayEdge = await repositories.edge.findOne({
           where: {
             thisEntityType: defs.EntityType.Profile,
             thatEntityType: defs.EntityType.NFT,
             thisEntityId: profileId,
-            thatEntityId: nft.id,
+            thatEntityId: nftWithWeight.nft.id,
             edgeType: defs.EdgeType.Displays,
           },
         })
@@ -525,8 +559,14 @@ const showAllNFTs = async (
             thisEntityType: defs.EntityType.Profile,
             thatEntityType: defs.EntityType.NFT,
             thisEntityId: profileId,
-            thatEntityId: nft.id,
+            thatEntityId: nftWithWeight.nft.id,
             edgeType: defs.EdgeType.Displays,
+            weight: nftWithWeight.weight,
+            hide: false,
+          })
+        } else {
+          await repositories.edge.updateOneById(displayEdge.id, {
+            hide: false,
           })
         }
       }),
@@ -555,6 +595,7 @@ export const changeNFTsVisibility = async (
   showNFTIds: Array<string> | null,
   hideNFTIds: Array<string> | null,
 ): Promise<void> => {
+  userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
   try {
     if (showAll) {
       await showAllNFTs(repositories, userId, profileId)
