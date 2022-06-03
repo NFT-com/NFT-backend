@@ -530,7 +530,7 @@ const hideAllNFTs = async (
     )
   }
 }
-const addNFTsToEdgeWithWeight = async (nfts: entity.NFT[], profileId: string): Promise<void> => {
+const saveEdgesWithWeight = async (nfts: entity.NFT[], profileId: string): Promise<void> => {
   const nftsToBeAdded = []
   const nftsWithWeight = []
   // filter nfts are not added to edge yet...
@@ -581,7 +581,7 @@ const showAllNFTs = async (
 ): Promise<void> => {
   const nfts = await repositories.nft.find({ where: { userId } })
   if (nfts.length) {
-    await addNFTsToEdgeWithWeight(nfts, profileId)
+    await saveEdgesWithWeight(nfts, profileId)
     // change hide column to false which ones are true...
     const edges = await repositories.edge.find({
       where: {
@@ -611,7 +611,7 @@ const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> 
     }),
   )
   if (nfts.length) {
-    await addNFTsToEdgeWithWeight(nfts, profileId)
+    await saveEdgesWithWeight(nfts, profileId)
     // change hide column to false which ones are true...
     await Promise.allSettled(
       nfts.map(async (nft: entity.NFT) => {
