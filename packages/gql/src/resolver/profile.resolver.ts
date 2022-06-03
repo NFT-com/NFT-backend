@@ -482,17 +482,16 @@ const checkFileSize = async (
 ): Promise<number> =>
   new Promise((resolves, rejects) => {
     let filesize = 0
-    const stream = createReadStream()
-    stream.on('data', (chunk: Buffer) => {
+    createReadStream.on('data', (chunk: Buffer) => {
       filesize += chunk.length
       if (filesize > maxSize) {
         rejects(filesize)
       }
     })
-    stream.on('end', () =>
+    createReadStream.on('end', () =>
       resolves(filesize),
     )
-    stream.on('error', rejects)
+    createReadStream.on('error', rejects)
   })
 
 const createUploadStream = (
