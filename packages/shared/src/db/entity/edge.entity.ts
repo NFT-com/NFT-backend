@@ -36,4 +36,7 @@ export class Edge extends BaseEntity {
   @Column({ nullable: true })
   weight: string
 
+  @Column({ nullable: true })
+  hide: boolean
+
 }

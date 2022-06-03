@@ -800,24 +800,29 @@ const replaceAt = (index: number, str: string, replacement): string => {
   return str.substring(0, index) + replacement + str.substring(index + replacement.length)
 }
 
-export const generateWeight = (prevWeight?: string): string => {
-  if (!prevWeight) return 'aaa'
-  let order = 'aaa'
-  if (prevWeight.length === 3) {
-    let update = String.fromCharCode(prevWeight.charCodeAt(2) + 1)
+export const generateWeight = (prevWeight: string | undefined): string => {
+  if (!prevWeight) return 'aaaa'
+  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
+  let order = weight
+  let update = String.fromCharCode(weight.charCodeAt(3) + 1)
+  if (update <= 'z') {
+    order = replaceAt(3, order, update)
+  } else {
+    update = String.fromCharCode(weight.charCodeAt(2) + 1)
     if (update <= 'z') {
       order = replaceAt(2, order, update)
     } else {
-      update = String.fromCharCode(prevWeight.charCodeAt(1) + 1)
+      update = String.fromCharCode(weight.charCodeAt(1) + 1)
       if (update <= 'z') {
         order = replaceAt(1, order, update)
       } else {
-        update = String.fromCharCode(prevWeight.charCodeAt(0) + 1)
+        update = String.fromCharCode(weight.charCodeAt(0) + 1)
         order = replaceAt(0, order, update)
         order = replaceAt(1, order, 'a')
       }
       order = replaceAt(2, order, 'a')
     }
+    order = replaceAt(3, order, 'a')
   }
   return order
 }
@@ -862,4 +867,23 @@ export const midWeight = (prev: string, next: string): string => {
   }
   // append middle character
   return str + String.fromCharCode(Math.ceil((p + n) / 2))
+}
+
+export const getLastWeight = async (
+  repositories: db.Repository,
+  profileId: string,
+): Promise<string | undefined> => {
+  const edges = await repositories.edge.find({ where: {
+    thisEntityType: defs.EntityType.Profile,
+    thatEntityType: defs.EntityType.NFT,
+    thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+  } })
+  if (!edges.length) return
+  let biggest = edges[0].weight
+  for (let i = 1; i < edges.length; i++) {
+    if (biggest < edges[i].weight)
+      biggest = edges[i].weight
+  }
+  return biggest
 }
