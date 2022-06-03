@@ -100,6 +100,16 @@ input CreateAllCompositeImagesInput {
   pageInput: PageInput
 }
 
+input OrderUpdateInput {
+  nftId: ID!
+  newIndex: Int!
+}
+
+input OrderingUpdatesInput {
+  profileId: ID!
+  updates: [OrderUpdateInput!]!
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -119,4 +129,5 @@ extend type Mutation {
   mintGKProfile(input: MintGKProfileInput): String!
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
   createCompositeImage(input: CreateCompositeImageInput): Profile!
+  orderingUpdates(input: OrderingUpdatesInput!): Profile!
 }

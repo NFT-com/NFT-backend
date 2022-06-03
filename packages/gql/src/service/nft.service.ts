@@ -4,7 +4,7 @@ import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { generateWeight, getLastWeight } from '@nftcom/gql/service/core.service'
+import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -65,6 +65,11 @@ interface NFTMetaDataResponse {
 type NFTWithWeight = {
   nft: entity.NFT
   weight: string
+}
+
+type NFTOrder = {
+  nftId: string
+  newIndex: number
 }
 
 export const initiateWeb3 = (): void => {
@@ -647,7 +652,6 @@ export const changeNFTsVisibility = async (
   showNFTIds: Array<string> | null,
   hideNFTIds: Array<string> | null,
 ): Promise<void> => {
-  // userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
   try {
     if (showAll) {
       await showAllNFTs(repositories, userId, profileId)
@@ -684,5 +688,77 @@ export const changeNFTsVisibility = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
+  }
+}
+
+export const updateNFTsOrder = async (
+  profileId: string,
+  orders: Array<NFTOrder>,
+): Promise<void> => {
+  try {
+    for (let i = 0; i < orders.length; i++) {
+      const edges = await repositories.edge.find({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          edgeType: defs.EdgeType.Displays,
+          hide: false,
+        },
+        order: {
+          weight: 'ASC',
+        },
+      })
+      const existingNFT = await repositories.nft.findOne({
+        where: {
+          id: orders[i].nftId,
+        },
+      })
+      if (existingNFT) {
+        const existingEdge = await repositories.edge.findOne({
+          where: {
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: profileId,
+            thatEntityId: orders[i].nftId,
+            edgeType: defs.EdgeType.Displays,
+            hide: false,
+          },
+        })
+        if (existingEdge) {
+          const index = edges.findIndex((edge) => edge.id === existingEdge.id)
+          if (orders[i].newIndex <= 0) {
+            // if new index is first place of nft order...
+            if (index !== 0) {
+              await repositories.edge.updateOneById(edges[0].id, {
+                weight: midWeight('aaaa', edges[1].weight),
+              })
+              await repositories.edge.updateOneById(existingEdge.id, {
+                weight: 'aaaa',
+              })
+            }
+          } else if (orders[i].newIndex >= edges.length - 1) {
+            // if new index is last place of nft order...
+            if (index !== edges.length - 1) {
+              await repositories.edge.updateOneById(existingEdge.id, {
+                weight: generateWeight(edges[edges.length - 1].weight),
+              })
+            }
+          } else {
+            // if new index is inside nft order...
+            if (index !== orders[i].newIndex) {
+              await repositories.edge.updateOneById(existingEdge.id, {
+                weight:
+                  midWeight(edges[orders[i].newIndex - 1].weight,
+                    edges[orders[i].newIndex].weight),
+              })
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
   }
 }

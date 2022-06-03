@@ -801,23 +801,28 @@ const replaceAt = (index: number, str: string, replacement): string => {
 }
 
 export const generateWeight = (prevWeight: string | undefined): string => {
-  if (!prevWeight) return 'aaa'
-  let order = prevWeight
-  if (prevWeight.length === 3) {
-    let update = String.fromCharCode(prevWeight.charCodeAt(2) + 1)
+  if (!prevWeight) return 'aaaa'
+  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
+  let order = weight
+  let update = String.fromCharCode(weight.charCodeAt(3) + 1)
+  if (update <= 'z') {
+    order = replaceAt(3, order, update)
+  } else {
+    update = String.fromCharCode(weight.charCodeAt(2) + 1)
     if (update <= 'z') {
       order = replaceAt(2, order, update)
     } else {
-      update = String.fromCharCode(prevWeight.charCodeAt(1) + 1)
+      update = String.fromCharCode(weight.charCodeAt(1) + 1)
       if (update <= 'z') {
         order = replaceAt(1, order, update)
       } else {
-        update = String.fromCharCode(prevWeight.charCodeAt(0) + 1)
+        update = String.fromCharCode(weight.charCodeAt(0) + 1)
         order = replaceAt(0, order, update)
         order = replaceAt(1, order, 'a')
       }
       order = replaceAt(2, order, 'a')
     }
+    order = replaceAt(3, order, 'a')
   }
   return order
 }
