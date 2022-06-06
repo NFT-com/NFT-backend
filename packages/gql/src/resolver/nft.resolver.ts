@@ -17,7 +17,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { redisConfig } from '@nftcom/gql/config'
 import {
   checkNFTContractAddresses,
-  initiateWeb3,
+  initiateWeb3, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import * as Sentry from '@sentry/node'
@@ -309,7 +309,9 @@ const updateNFTsForProfile = (
                     profile.ownerUserId,
                     wallet.id,
                     wallet.address,
-                  )
+                  ).then(() => {
+                    return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+                  })
                 })
             }))
         }
@@ -317,7 +319,7 @@ const updateNFTsForProfile = (
         return core.paginatedThatEntitiesOfEdgesBy(
           ctx,
           repositories.nft,
-          filter,
+          { ...filter, hide: false },
           pageInput,
           'createdAt',
           'ASC',

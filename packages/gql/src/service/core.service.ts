@@ -904,10 +904,12 @@ export const getLastWeight = async (
     edgeType: defs.EdgeType.Displays,
   } })
   if (!edges.length) return
-  let biggest = edges[0].weight
-  for (let i = 1; i < edges.length; i++) {
-    if (biggest < edges[i].weight)
-      biggest = edges[i].weight
+  const filterEdges = edges.filter((edge) => edge.weight !== null)
+  if (!filterEdges.length) return
+  let biggest = filterEdges[0].weight
+  for (let i = 1; i < filterEdges.length; i++) {
+    if (biggest < filterEdges[i].weight)
+      biggest = filterEdges[i].weight
   }
   return biggest
 }
