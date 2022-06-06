@@ -778,6 +778,7 @@ export const updateEdgesWeightForProfile = async (
   userId: string,
 ): Promise<void> => {
   try {
+    const MAX_SAVE_COUNTS = 500
     const nfts = await repositories.nft.find({ where: { userId } })
     if (!nfts.length) return
     const nullEdges = await repositories.edge.find({
@@ -802,7 +803,7 @@ export const updateEdgesWeightForProfile = async (
         })
         weight = newWeight
       }
-      await repositories.edge.saveMany(edgesWithWeight)
+      await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
     }
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
