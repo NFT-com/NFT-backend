@@ -795,3 +795,121 @@ export const createEdge = (
 ): Promise<entity.Edge> => {
   return ctx.repositories.edge.save(edge)
 }
+
+const replaceAt = (index: number, str: string, replacement): string => {
+  return str.substring(0, index) + replacement + str.substring(index + replacement.length)
+}
+
+/**
+ * Generate next weight from previous weight
+ * This method is always used to save new edges which are not existing on edge table.
+ * If length of previous weight is bigger than 4, we cut it to 4.
+ * i.e. aaaa -> aaab, aaaz -> aaba, azzz -> zaaa, aaaan -> aaab
+ * @param prevWeight
+ */
+
+export const generateWeight = (prevWeight: string | undefined): string => {
+  if (!prevWeight) return 'aaaa'
+  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
+  let order = weight
+  let update = String.fromCharCode(weight.charCodeAt(3) + 1)
+  if (update <= 'z') {
+    order = replaceAt(3, order, update)
+  } else {
+    update = String.fromCharCode(weight.charCodeAt(2) + 1)
+    if (update <= 'z') {
+      order = replaceAt(2, order, update)
+    } else {
+      update = String.fromCharCode(weight.charCodeAt(1) + 1)
+      if (update <= 'z') {
+        order = replaceAt(1, order, update)
+      } else {
+        update = String.fromCharCode(weight.charCodeAt(0) + 1)
+        order = replaceAt(0, order, update)
+        order = replaceAt(1, order, 'a')
+      }
+      order = replaceAt(2, order, 'a')
+    }
+    order = replaceAt(3, order, 'a')
+  }
+  return order
+}
+
+/**
+ * Generate middle weight using previous and next weight
+ * This method is always used to insert weight of existing edge between two edges.
+ * i.e. abcde ~ abchi -> abcf, abc ~ abchi -> abcd,
+ * abhs ~ abit -> abhw, abh ~ abit -> abhn,
+ * Detailed explanation for this method is below.
+ * https://stackoverflow.com/questions/38923376/return-a-new-string-that-sorts-between-two-given-strings/38927158#38927158
+ * @param prev
+ * @param next
+ */
+export const midWeight = (prev: string, next: string): string => {
+  let p, n, pos, str
+  // find leftmost non-matching character
+  for (pos = 0; p == n; pos++) {
+    p = pos < prev.length ? prev.charCodeAt(pos) : 96
+    n = pos < next.length ? next.charCodeAt(pos) : 123
+  }
+  // copy identical part of string
+  str = prev.slice(0, pos - 1)
+  // prev string equals beginning of next
+  if (p == 96) {
+    // next character is 'a'
+    while (n == 97) {
+      // get char from next
+      n = pos < next.length ? next.charCodeAt(pos++) : 123
+      // insert an 'a' to match the 'a'
+      str += 'a'
+    }
+    // next character is 'b'
+    if (n == 98) {
+      // insert an 'a' to match the 'b'
+      str += 'a'
+      // set to end of alphabet
+      n = 123
+    }
+  }
+  // found consecutive characters
+  else if (p + 1 == n) {
+    // insert character from prev
+    str += String.fromCharCode(p)
+    // set to end of alphabet
+    n = 123
+    // p='z'
+    while ((p = pos < prev.length ? prev.charCodeAt(pos++) : 96) == 122) {
+      // insert 'z' to match 'z'
+      str += 'z'
+    }
+  }
+  // append middle character
+  return str + String.fromCharCode(Math.ceil((p + n) / 2))
+}
+
+/**
+ * Get the biggest weight of edges for profile NFTs
+ * We may want to use this method before action to save new edges on edge table for profile NFTs
+ * @param repositories
+ * @param profileId
+ */
+export const getLastWeight = async (
+  repositories: db.Repository,
+  profileId: string,
+): Promise<string | undefined> => {
+  const edges = await repositories.edge.find({ where: {
+    thisEntityType: defs.EntityType.Profile,
+    thatEntityType: defs.EntityType.NFT,
+    thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+  } })
+  if (!edges.length) return
+  const filterEdges = edges.filter((edge) => edge.weight !== null)
+  if (!filterEdges.length) return
+  let biggest = filterEdges[0].weight
+  for (let i = 1; i < filterEdges.length; i++) {
+    if (biggest < filterEdges[i].weight)
+      biggest = filterEdges[i].weight
+  }
+  return biggest
+}

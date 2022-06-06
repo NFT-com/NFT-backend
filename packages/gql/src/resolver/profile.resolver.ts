@@ -20,7 +20,7 @@ import {
   getAWSConfig,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
-import { changeNFTsVisibility } from '@nftcom/gql/service/nft.service'
+import { changeNFTsVisibility, updateNFTsOrder } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -673,6 +673,25 @@ const getLatestProfiles = (
     .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
 }
 
+const orderingUpdates = (
+  _: any,
+  args: gql.MutationOrderingUpdatesArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  const { repositories, user } = ctx
+  logger.debug('orderingUpdates', { input: args?.input })
+
+  const notOwner = (p: entity.Profile): boolean => p.ownerUserId !== user.id
+  const { profileId, updates } = args.input
+
+  return getProfile(profileId, repositories.profile.findById)
+    .then(fp.rejectIf(notOwner)(appError.buildForbidden(
+      profileError.buildProfileNotOwnedMsg(profileId),
+      profileError.ErrorType.ProfileNotOwned,
+    )))
+    .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -692,6 +711,7 @@ export default {
     profileClaimed: combineResolvers(auth.isAuthenticated, profileClaimed),
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
+    orderingUpdates: combineResolvers(auth.isAuthenticated, orderingUpdates),
   },
   Profile: {
     followersCount: getFollowersCount,
