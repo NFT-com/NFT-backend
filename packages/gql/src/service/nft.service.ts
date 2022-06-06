@@ -68,8 +68,9 @@ type NFTWithWeight = {
 }
 
 type EdgeWithWeight = {
-  edge: entity.Edge
+  id: string
   weight: string
+  hide: boolean
 }
 
 type NFTOrder = {
@@ -795,20 +796,13 @@ export const updateEdgesWeightForProfile = async (
       for (let i = 0; i < nullEdges.length; i++) {
         const newWeight = generateWeight(weight)
         edgesWithWeight.push({
-          edge: nullEdges[i],
+          id: nullEdges[i].id,
           weight: newWeight,
+          hide: nullEdges[i].hide ?? false,
         })
         weight = newWeight
       }
-      await Promise.allSettled(
-        edgesWithWeight.map(async (edgeWithWeight) => {
-          await repositories.edge.updateOneById(edgeWithWeight.edge.id,
-            {
-              weight: edgeWithWeight.weight,
-              hide: edgeWithWeight.edge.hide ?? false,
-            })
-        }),
-      )
+      await repositories.edge.saveMany(edgesWithWeight)
     }
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
