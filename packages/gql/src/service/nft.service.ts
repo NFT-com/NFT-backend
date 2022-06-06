@@ -67,6 +67,11 @@ type NFTWithWeight = {
   weight: string
 }
 
+type EdgeWithWeight = {
+  edge: entity.Edge
+  weight: string
+}
+
 type NFTOrder = {
   nftId: string
   newIndex: number
@@ -760,5 +765,47 @@ export const updateNFTsOrder = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
+  }
+}
+
+export const updateEdgesWeightForProfile = async (
+  profileId: string,
+  userId: string,
+): Promise<void> => {
+  try {
+    const nfts = await repositories.nft.find({ where: { userId } })
+    if (!nfts.length) return
+    const nullEdges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        edgeType: defs.EdgeType.Displays,
+        weight: null,
+      },
+    })
+    if (nullEdges.length) {
+      // fill weight of edges which have null as weight
+      let weight = await getLastWeight(repositories, profileId)
+      const edgesWithWeight: EdgeWithWeight[] = []
+      for (let i = 0; i < nullEdges.length; i++) {
+        const newWeight = generateWeight(weight)
+        edgesWithWeight.push({
+          edge: nullEdges[i],
+          weight: newWeight,
+        })
+        weight = newWeight
+      }
+      await Promise.allSettled(
+        edgesWithWeight.map(async (edgeWithWeight) => {
+          await repositories.edge.updateOneById(edgeWithWeight.edge.id,
+            { weight: edgeWithWeight.weight })
+        }),
+      )
+    }
+    await saveEdgesWithWeight(nfts, profileId)
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
   }
 }
