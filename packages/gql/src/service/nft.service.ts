@@ -13,6 +13,7 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 
 // TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
@@ -69,8 +70,8 @@ type NFTWithWeight = {
 
 type EdgeWithWeight = {
   id: string
-  weight: string
-  hide: boolean
+  weight?: string
+  hide?: boolean
 }
 
 type NFTOrder = {
@@ -529,11 +530,14 @@ const hideAllNFTs = async (
     hide: false,
   } })
   if (edges.length) {
-    await Promise.allSettled(
-      edges.map(async (edge: entity.Edge) => {
-        await repositories.edge.updateOneById(edge.id, { hide: true })
-      }),
-    )
+    const updatedEdges = []
+    for (let i = 0; i < edges.length; i++) {
+      updatedEdges.push({
+        id: edges[i].id,
+        hide: true,
+      })
+    }
+    await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
   }
 }
 const saveEdgesWithWeight = async (
@@ -603,11 +607,14 @@ const showAllNFTs = async (
       },
     })
     if (edges.length) {
-      await Promise.allSettled(
-        edges.map(async (edge: entity.Edge) => {
-          await repositories.edge.updateOneById(edge.id, { hide: false })
-        }),
-      )
+      const updatedEdges = []
+      for (let i = 0; i < edges.length; i++) {
+        updatedEdges.push({
+          id: edges[i].id,
+          hide: false,
+        })
+      }
+      await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
     }
   }
 }
@@ -778,7 +785,6 @@ export const updateEdgesWeightForProfile = async (
   userId: string,
 ): Promise<void> => {
   try {
-    const MAX_SAVE_COUNTS = 500
     const nfts = await repositories.nft.find({ where: { userId } })
     if (!nfts.length) return
     const nullEdges = await repositories.edge.find({
