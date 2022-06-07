@@ -800,6 +800,14 @@ const replaceAt = (index: number, str: string, replacement): string => {
   return str.substring(0, index) + replacement + str.substring(index + replacement.length)
 }
 
+/**
+ * Generate next weight from previous weight
+ * This method is always used to save new edges which are not existing on edge table.
+ * If length of previous weight is bigger than 4, we cut it to 4.
+ * i.e. aaaa -> aaab, aaaz -> aaba, azzz -> zaaa, aaaan -> aaab
+ * @param prevWeight
+ */
+
 export const generateWeight = (prevWeight: string | undefined): string => {
   if (!prevWeight) return 'aaaa'
   const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
@@ -827,6 +835,16 @@ export const generateWeight = (prevWeight: string | undefined): string => {
   return order
 }
 
+/**
+ * Generate middle weight using previous and next weight
+ * This method is always used to insert weight of existing edge between two edges.
+ * i.e. abcde ~ abchi -> abcf, abc ~ abchi -> abcd,
+ * abhs ~ abit -> abhw, abh ~ abit -> abhn,
+ * Detailed explanation for this method is below.
+ * https://stackoverflow.com/questions/38923376/return-a-new-string-that-sorts-between-two-given-strings/38927158#38927158
+ * @param prev
+ * @param next
+ */
 export const midWeight = (prev: string, next: string): string => {
   let p, n, pos, str
   // find leftmost non-matching character
@@ -869,6 +887,12 @@ export const midWeight = (prev: string, next: string): string => {
   return str + String.fromCharCode(Math.ceil((p + n) / 2))
 }
 
+/**
+ * Get the biggest weight of edges for profile NFTs
+ * We may want to use this method before action to save new edges on edge table for profile NFTs
+ * @param repositories
+ * @param profileId
+ */
 export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
@@ -880,10 +904,12 @@ export const getLastWeight = async (
     edgeType: defs.EdgeType.Displays,
   } })
   if (!edges.length) return
-  let biggest = edges[0].weight
-  for (let i = 1; i < edges.length; i++) {
-    if (biggest < edges[i].weight)
-      biggest = edges[i].weight
+  const filterEdges = edges.filter((edge) => edge.weight !== null)
+  if (!filterEdges.length) return
+  let biggest = filterEdges[0].weight
+  for (let i = 1; i < filterEdges.length; i++) {
+    if (biggest < filterEdges[i].weight)
+      biggest = filterEdges[i].weight
   }
   return biggest
 }

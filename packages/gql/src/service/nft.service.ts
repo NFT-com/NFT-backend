@@ -13,6 +13,7 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 
 // TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
@@ -65,6 +66,12 @@ interface NFTMetaDataResponse {
 type NFTWithWeight = {
   nft: entity.NFT
   weight: string
+}
+
+type EdgeWithWeight = {
+  id: string
+  weight?: string
+  hide?: boolean
 }
 
 type NFTOrder = {
@@ -452,14 +459,21 @@ const hideAllNFTs = async (
     hide: false,
   } })
   if (edges.length) {
-    await Promise.allSettled(
-      edges.map(async (edge: entity.Edge) => {
-        await repositories.edge.updateOneById(edge.id, { hide: true })
-      }),
-    )
+    const updatedEdges = []
+    for (let i = 0; i < edges.length; i++) {
+      updatedEdges.push({
+        id: edges[i].id,
+        hide: true,
+      })
+    }
+    await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
   }
 }
-const addNFTsToEdgeWithWeight = async (nfts: entity.NFT[], profileId: string): Promise<void> => {
+const saveEdgesWithWeight = async (
+  nfts: entity.NFT[],
+  profileId: string,
+  hide: boolean,
+): Promise<void> => {
   const nftsToBeAdded = []
   const nftsWithWeight = []
   // filter nfts are not added to edge yet...
@@ -497,7 +511,7 @@ const addNFTsToEdgeWithWeight = async (nfts: entity.NFT[], profileId: string): P
         thatEntityId: nftWithWeight.nft.id,
         edgeType: defs.EdgeType.Displays,
         weight: nftWithWeight.weight,
-        hide: false,
+        hide: hide,
       })
     }),
   )
@@ -510,7 +524,7 @@ const showAllNFTs = async (
 ): Promise<void> => {
   const nfts = await repositories.nft.find({ where: { userId } })
   if (nfts.length) {
-    await addNFTsToEdgeWithWeight(nfts, profileId)
+    await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
     const edges = await repositories.edge.find({
       where: {
@@ -522,11 +536,14 @@ const showAllNFTs = async (
       },
     })
     if (edges.length) {
-      await Promise.allSettled(
-        edges.map(async (edge: entity.Edge) => {
-          await repositories.edge.updateOneById(edge.id, { hide: false })
-        }),
-      )
+      const updatedEdges = []
+      for (let i = 0; i < edges.length; i++) {
+        updatedEdges.push({
+          id: edges[i].id,
+          hide: false,
+        })
+      }
+      await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
     }
   }
 }
@@ -540,7 +557,7 @@ const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> 
     }),
   )
   if (nfts.length) {
-    await addNFTsToEdgeWithWeight(nfts, profileId)
+    await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
     await Promise.allSettled(
       nfts.map(async (nft: entity.NFT) => {
@@ -689,5 +706,44 @@ export const updateNFTsOrder = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
+  }
+}
+
+export const updateEdgesWeightForProfile = async (
+  profileId: string,
+  userId: string,
+): Promise<void> => {
+  try {
+    const nfts = await repositories.nft.find({ where: { userId } })
+    if (!nfts.length) return
+    const nullEdges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        edgeType: defs.EdgeType.Displays,
+        weight: null,
+      },
+    })
+    if (nullEdges.length) {
+      // fill weight of edges which have null as weight...
+      let weight = await getLastWeight(repositories, profileId)
+      const edgesWithWeight: EdgeWithWeight[] = []
+      for (let i = 0; i < nullEdges.length; i++) {
+        const newWeight = generateWeight(weight)
+        edgesWithWeight.push({
+          id: nullEdges[i].id,
+          weight: newWeight,
+          hide: nullEdges[i].hide ?? false,
+        })
+        weight = newWeight
+      }
+      await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+    }
+    // save edges for new nfts...
+    await saveEdgesWithWeight(nfts, profileId, true)
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
   }
 }
