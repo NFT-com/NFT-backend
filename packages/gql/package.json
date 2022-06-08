@@ -13,8 +13,7 @@
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
-    "start": "node -r source-map-support/register ./dist/index",
-    "pre-commit": "npm run dev"
+    "start": "node -r source-map-support/register ./dist/index"
   },
   "dependencies": {
     "@alch/alchemy-web3": "^1.2.5",
