@@ -50,5 +50,5 @@ The script uses a hardcoded private key. But you can specify your own private ke
 
 You can see generated GQL schema documentation in [docs/schema/index.html](doc/schema/index.html)
 
-To update GQL schema documentation, run `npm run gqldoc` after GQL server startup
+GQL schema documentation will be auto-generated after GQL server startup
 
