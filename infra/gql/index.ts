@@ -12,8 +12,8 @@ import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
 import { deployInfra, getEnv, getResourceName, getSharedInfraOutput } from '../helper'
-import { createArService } from './app-runner'
 import { createEBInstance } from './beanstalk'
+import { createEcsService } from './ecs'
 
 const createAndUploadEBDeployFile = async (
   config: pulumi.Config,
@@ -62,7 +62,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const sharedInfraOutput = getSharedInfraOutput()
   const appFileName = await createAndUploadEBDeployFile(config, sharedInfraOutput)
   createEBInstance(config, sharedInfraOutput, appFileName)
-  createArService(sharedInfraOutput)
+  createEcsService(config, sharedInfraOutput)
 }
 
 export const createGQLServer = (

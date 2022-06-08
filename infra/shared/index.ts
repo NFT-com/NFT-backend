@@ -31,6 +31,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     publicSubnetIds: vpc.publicSubnetIds,
     vpcId: vpc.id,
     webSGId: sgs.web.id,
+    webEcsSGId: sgs.webEcs.id,
   }
 }
 
