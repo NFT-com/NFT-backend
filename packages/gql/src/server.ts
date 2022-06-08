@@ -253,7 +253,9 @@ export const start = async (): Promise<void> => {
   await server.start()
   server.applyMiddleware({ app })
   await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
-  await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
+  if (process.env.NODE_ENV === 'local') {
+    await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
+  }
   console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 
