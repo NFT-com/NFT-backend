@@ -14,7 +14,7 @@
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
     "start": "node -r source-map-support/register ./dist/index",
-    "gqldoc": "graphdoc -e http://localhost:10010/graphql -o ./../../doc/schema -f"
+    "gqldoc": "graphdoc -e http://localhost:10010/graphql -o ./../../docs -f"
   },
   "dependencies": {
     "@alch/alchemy-web3": "^1.2.5",
