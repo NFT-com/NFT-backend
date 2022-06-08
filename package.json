@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix",
+    "gqldoc": "graphdoc -e http://localhost:10010/graphql -o ./doc/schema -f",
     "prepare": "npx husky install"
   },
   "commitlint": {
@@ -26,8 +27,10 @@
     "*.(js|ts)": "eslint --color . --ext .ts,.mjs,.js --cache --fix"
   },
   "devDependencies": {
+    "@2fd/graphdoc": "^2.4.0",
     "@commitlint/cli": "^15.0.0",
     "@commitlint/config-conventional": "^15.0.0",
+    "@salesforce-ux/design-system": "^2.18.0",
     "@types/node": "^16.11.7",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",
