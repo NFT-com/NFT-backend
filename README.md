@@ -48,7 +48,6 @@ The script uses a hardcoded private key. But you can specify your own private ke
 
 #### 3.3 GQL schema documentation
 
-You can see generated GQL schema documentation in [docs/schema/index.html](doc/schema/index.html)
-
-GQL schema documentation will be auto-generated after GQL server startup
+You can see generated GQL schema documentation at [http://prod-gql-docs.nft.com/](http://prod-gql-docs.nft.com/) 
+since you're logged into GitHub
 
