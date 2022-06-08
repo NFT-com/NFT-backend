@@ -45,3 +45,10 @@ This is very useful when testing GQL via playground.
 The script uses a hardcoded private key. But you can specify your own private key like this
 
 `npm run signature:gen $YOUR_PRIVATE_KEY`
+
+#### 3.3 GQL schema documentation
+
+You can see generated GQL schema documentation in `docs/schema/index.html`
+
+To update GQL schema documentation, run `npm run gqldoc` in root directory after GQL server startup
+
