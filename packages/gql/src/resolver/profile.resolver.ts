@@ -689,9 +689,7 @@ const orderingUpdates = (
       profileError.buildProfileNotOwnedMsg(profileId),
       profileError.ErrorType.ProfileNotOwned,
     )))
-    .then((p: entity.Profile) =>
-      updateNFTsOrder(profileId, updates).then(() => p),
-    )
+    .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
 }
 
 export default {
