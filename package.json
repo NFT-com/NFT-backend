@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix",
+    "gqldoc": "graphdoc -e http://localhost:10010/graphql -o ./doc/schema -f",
     "prepare": "npx husky install"
   },
   "commitlint": {
@@ -24,10 +25,6 @@
   },
   "lint-staged": {
     "*.(js|ts)": "eslint --color . --ext .ts,.mjs,.js --cache --fix"
-  },
-  "graphdoc": {
-    "endpoint": "http://localhost:10010/graphql",
-    "output": "./doc/schema"
   },
   "devDependencies": {
     "@commitlint/cli": "^15.0.0",

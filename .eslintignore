@@ -2,3 +2,4 @@ old-code
 gql-naming-fn.js
 packages/*/dist
 packages/gql/src/defs/gql.ts
+doc/schema/*.html
