@@ -27,6 +27,7 @@
     "*.(js|ts)": "eslint --color . --ext .ts,.mjs,.js --cache --fix"
   },
   "devDependencies": {
+    "@2fd/graphdoc": "^2.4.0",
     "@commitlint/cli": "^15.0.0",
     "@commitlint/config-conventional": "^15.0.0",
     "@salesforce-ux/design-system": "^2.18.0",
