@@ -115,9 +115,30 @@ input UpdateNFTsForProfileInput {
   pageInput: PageInput
 }
 
+enum SupportedExternalExchange {
+  looksrare
+  opensea
+  x2y2
+  rarible
+}
+
+type ExternalListing {
+  url: String
+  exchange: SupportedExternalExchange
+  price: Int # 18 decimals
+  highestOffer: Int # 18 decimals
+  expiration: DateTime
+  creation: DateTime
+}
+
+type ExternalListingsOutput {
+  listings: [ExternalListing]!
+}
+
 extend type Query {
   gkNFTs(tokenId: String!): GetGkNFTSOutput!
   nft(contract: Address!, id: String!): NFT!
+  externalListings(contract: Address!, tokenId: String!): ExternalListingsOutput!
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!

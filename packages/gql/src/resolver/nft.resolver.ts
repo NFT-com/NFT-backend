@@ -63,6 +63,9 @@ const getContractNFT = (
         nftError.ErrorType.NFTNotFound,
       ),
     ))
+    .then(fp.tap((nft) => {
+      console.log(nft) // todo: refresh metadata?
+    }))
 }
 
 const getNFTs = (
@@ -328,6 +331,20 @@ const updateNFTsForProfile = (
     })
 }
 
+const getExternalListings = (
+  _: any,
+  args: gql.QueryExternalListingsArgs,
+  ctx: Context,
+): Promise<gql.ExternalListingsOutput> => {
+  logger.debug('getExternalListings', {
+    contract: args?.contract,
+    id: args?.tokenId,
+    caller: ctx.user?.id,
+  })
+  // todo: fetch listing info from 3rd party marketplaces.
+  return null
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -337,6 +354,7 @@ export default {
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
     collectionNFTs: getCollectionNFTs,
+    externalListings: getExternalListings,
   },
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
