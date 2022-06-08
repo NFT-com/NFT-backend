@@ -1,0 +1,31 @@
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-var-requires */
+const fs = require('fs')
+
+const { makeExecutableSchema } = require('@graphql-tools/schema')
+
+const { resolvers } = require('@nftcom/gql/resolver')
+const { typeDefs } = require('@nftcom/gql/schema')
+
+/**
+ *
+ * @return bool
+ */
+function generateSchema() {
+  const schemaInput = makeExecutableSchema({
+    typeDefs: [
+      typeDefs(),
+    ],
+    resolvers,
+  })
+
+  try {
+    fs.writeFileSync('schema.graphql', schemaInput)
+    return true
+  } catch (err) {
+    console.error('error while saving schema', err)
+    return false
+  }
+}
+
+module.exports = generateSchema
