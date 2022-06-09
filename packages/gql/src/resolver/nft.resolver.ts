@@ -284,50 +284,50 @@ const updateNFTsForProfile = (
         if (!profile) {
           return Promise.resolve({ items: [] })
         } else {
-          return syncEdgesWithNFTs(profile.id)
-            .then(() => {
-              const filter: Partial<entity.Edge> = helper.removeEmpty({
-                thisEntityType: defs.EntityType.Profile,
-                thisEntityId: profile.id,
-                thatEntityType: defs.EntityType.NFT,
-                edgeType: defs.EdgeType.Displays,
-              })
-              const now = helper.toUTCDate()
-              let duration
-              if (profile.nftsLastUpdated) {
-                duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
-              }
+          const filter: Partial<entity.Edge> = helper.removeEmpty({
+            thisEntityType: defs.EntityType.Profile,
+            thisEntityId: profile.id,
+            thatEntityType: defs.EntityType.NFT,
+            edgeType: defs.EdgeType.Displays,
+          })
+          const now = helper.toUTCDate()
+          let duration
+          if (profile.nftsLastUpdated) {
+            duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
+          }
 
-              // if there is no profile NFT or NFTs are expired and need to be updated...
-              if (!profile.nftsLastUpdated  ||
-                (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
-              ) {
-                repositories.profile.updateOneById(profile.id, {
-                  nftsLastUpdated: now,
-                }).then(() => repositories.wallet.findById(profile.ownerWalletId)
-                  .then((wallet: entity.Wallet) => {
-                    return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
-                      .then(() => {
-                        return updateWalletNFTs(
-                          profile.ownerUserId,
-                          wallet.id,
-                          wallet.address,
-                        ).then(() => {
-                          return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+          // if there is no profile NFT or NFTs are expired and need to be updated...
+          if (!profile.nftsLastUpdated  ||
+            (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
+          ) {
+            repositories.profile.updateOneById(profile.id, {
+              nftsLastUpdated: now,
+            }).then(() => repositories.wallet.findById(profile.ownerWalletId)
+              .then((wallet: entity.Wallet) => {
+                return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
+                  .then(() => {
+                    return updateWalletNFTs(
+                      profile.ownerUserId,
+                      wallet.id,
+                      wallet.address,
+                    ).then(() => {
+                      return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+                        .then(() => {
+                          return syncEdgesWithNFTs(profile.id)
                         })
-                      })
-                  }))
-              }
+                    })
+                  })
+              }))
+          }
 
-              return core.paginatedThatEntitiesOfEdgesBy(
-                ctx,
-                repositories.nft,
-                { ...filter, hide: false },
-                pageInput,
-                'createdAt',
-                'ASC',
-              )
-            })
+          return core.paginatedThatEntitiesOfEdgesBy(
+            ctx,
+            repositories.nft,
+            { ...filter, hide: false },
+            pageInput,
+            'createdAt',
+            'ASC',
+          )
         }
       })
   } catch (err) {
