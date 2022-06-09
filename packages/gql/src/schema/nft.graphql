@@ -123,10 +123,10 @@ extend type Query {
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
   collectionNFTs(input: CollectionNFTsInput!): NFTsOutput!
-  refreshNft(id: ID!): NFT!
 }
 
 extend type Mutation {
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
+  refreshNft(id: ID!): NFT!
 }
