@@ -385,7 +385,6 @@ export default {
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
     collectionNFTs: getCollectionNFTs,
-    refreshNft: refreshNft,
   },
   Mutation: {
     refreshNft: refreshNft,
