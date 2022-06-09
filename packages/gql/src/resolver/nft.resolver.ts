@@ -358,7 +358,7 @@ const refreshNft = (
 
 const refreshNft = (
   _: any,
-  args: gql.QueryRefreshNFTArgs,
+  args: gql.MutationRefreshNFTArgs,
   ctx: Context,
 ): Promise<gql.NFT> => {
   const { repositories } = ctx
