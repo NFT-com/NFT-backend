@@ -747,3 +747,29 @@ export const updateEdgesWeightForProfile = async (
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
   }
 }
+
+export const syncEdgesWithNFTs = async (
+  profileId: string,
+): Promise<void> => {
+  try {
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        edgeType: defs.EdgeType.Displays,
+      },
+    })
+    await Promise.allSettled(
+      edges.map(async (edge) => {
+        const nft = await repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+        if (!nft) {
+          await repositories.edge.hardDelete({ id: edge.id })
+        }
+      }),
+    )
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
+  }
+}
