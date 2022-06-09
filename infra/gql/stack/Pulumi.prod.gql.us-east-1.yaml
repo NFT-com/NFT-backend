@@ -6,5 +6,7 @@ config:
   nftcom:ebAutoScaleMax: 6
   nftcom:ecsAutoScaleMin: 3
   nftcom:ecsAutoScaleMax: 6
+  nftcom:ecsTaskCpu: 1024
+  nftcom:ecsTaskMemory: 2048
   nftcom:nodeEnv: production
   nftcom:logLevel: INFO

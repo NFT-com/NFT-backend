@@ -146,9 +146,10 @@ const createEcsTaskRole = (): aws.iam.Role => {
 }
 
 const createEcsTaskDefinition = (
+  config: pulumi.Config,
   gqlECRRepo: string,
 ): aws.ecs.TaskDefinition => {
-  const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:latest`
+  const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
 
   return new aws.ecs.TaskDefinition(
@@ -166,18 +167,18 @@ const createEcsTaskDefinition = (
               'awslogs-stream-prefix': 'ecs',
             },
           },
-          memoryReservation: 512,
+          memoryReservation: parseInt(config.require('ecsTaskMemory')),
           name: getResourceName('gql'),
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
         },
       ]),
-      cpu: '256',
+      cpu: config.require('ecsTaskCpu'),
+      memory: config.require('ecsTaskMemory'),
       taskRoleArn: role.arn,
       executionRoleArn: 'arn:aws:iam::016437323894:role/ECSServiceTask',
       family: getResourceName('gql'),
-      memory: '512',
       networkMode: 'awsvpc',
       requiresCompatibilities: ['FARGATE'],
       runtimePlatform: {
@@ -222,7 +223,7 @@ export const createEcsService = (
   infraOutput: SharedInfraOutput,
 ): void => {
   const cluster = createEcsCluster()
-  const taskDefinition = createEcsTaskDefinition(infraOutput.gqlECRRepo)
+  const taskDefinition = createEcsTaskDefinition(config, infraOutput.gqlECRRepo)
   const targetGroup = createEcsTargetGroup(infraOutput)
   const loadBalancer = createEcsLoadBalancer(infraOutput)
   attachLBListeners(loadBalancer, targetGroup)
