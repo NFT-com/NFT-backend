@@ -18,7 +18,7 @@ import { _logger } from '@nftcom/shared'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 
-const logger = _logger.Factory(_logger.Context.General, _logger.Context.Bull)
+const logger = _logger.Factory(_logger.Context.Bull)
 
 const redis = {
   host: redisConfig.host,
@@ -145,8 +145,10 @@ export const startAndListen = (): Promise<void> => {
     .then((shouldPublish) => publishJobs(shouldPublish))
     .then(() => listenToJobs())
     .then(() => {
-      didPublish ? logger.info('🍊 queue was restarted -- listening for jobs...')
-        : logger.info('🍊 bull queue is healthy -- listening for jobs...')
+      setTimeout(() => {
+        didPublish ? logger.info('🍊 queue was restarted -- listening for jobs...')
+          : logger.info('🍊 queue is healthy -- listening for jobs...')
+      })
     })
 }
 
