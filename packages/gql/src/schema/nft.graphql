@@ -138,7 +138,7 @@ type ExternalListingsOutput {
 extend type Query {
   gkNFTs(tokenId: String!): GetGkNFTSOutput!
   nft(contract: Address!, id: String!): NFT!
-  externalListings(contract: Address!, tokenId: String!): ExternalListingsOutput!
+  externalListings(contract: Address!, tokenId: String!, chainId: String!): ExternalListingsOutput!
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
   myNFTs(input: NFTsInput): NFTsOutput!

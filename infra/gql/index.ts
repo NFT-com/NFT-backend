@@ -11,8 +11,9 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { deployInfra, getResourceName, getSharedInfraOutput } from '../helper'
+import { deployInfra, getEnv, getResourceName, getSharedInfraOutput } from '../helper'
 import { createEBInstance } from './beanstalk'
+import { createEcsService } from './ecs'
 
 const createAndUploadEBDeployFile = async (
   config: pulumi.Config,
@@ -40,8 +41,8 @@ const createAndUploadEBDeployFile = async (
   })
   archive.pipe(output)
   archive.append(JSON.stringify(dockerFile), { name: 'Dockerrun.aws.json' })
-  
-  // add nginx config file to eb application zip to upload > 1MB 
+
+  // add nginx config file to eb application zip to upload > 1MB
   const nginxFile = __dirname + '/proxy.conf'
   archive.append(fs.createReadStream(nginxFile), { name: '.platform/nginx/conf.d/proxy.conf' })
 
@@ -61,6 +62,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const sharedInfraOutput = getSharedInfraOutput()
   const appFileName = await createAndUploadEBDeployFile(config, sharedInfraOutput)
   createEBInstance(config, sharedInfraOutput, appFileName)
+  createEcsService(config, sharedInfraOutput)
 }
 
 export const createGQLServer = (
@@ -82,10 +84,8 @@ export const updateGQLEnvFile = (): void => {
   const stackConfig = ymlDoc.config as { [key: string]: string }
 
   console.log('Update server environment file...')
-  const workDir = upath.joinSafe(__dirname, '..', '..', 'packages', 'gql')
-  const sourceFile = upath.joinSafe(workDir, '.env.example')
-  const envFileStr = fs.readFileSync(sourceFile).toString()
-  let parsedFile = envfile.parse(envFileStr)
+  const env = getEnv('gql', '.env.example')
+  let { parsedFile } = env
   parsedFile = omit(parsedFile, 'PORT', 'DB_PORT', 'REDIS_PORT')
   parsedFile['NODE_ENV'] = stackConfig['nftcom:nodeEnv']
   parsedFile['DB_HOST'] = infraOutput.dbHost
@@ -118,9 +118,10 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS'] = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS || parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS']
   parsedFile['PROFILE_NFTS_EXPIRE_DURATION'] = process.env.PROFILE_NFTS_EXPIRE_DURATION || parsedFile['PROFILE_NFTS_EXPIRE_DURATION']
   parsedFile['BULL_MAX_REPEAT_COUNT'] = process.env.BULL_MAX_REPEAT_COUNT || parsedFile['BULL_MAX_REPEAT_COUNT']
+  parsedFile['OPENSEA_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_API_KEY']
 
   console.log(JSON.stringify(parsedFile))
 
-  const targetFile = upath.joinSafe(workDir, '.env')
+  const targetFile = upath.joinSafe(env.workDir, '.env')
   fs.writeFileSync(targetFile, envfile.stringify(parsedFile))
 }

@@ -9,5 +9,6 @@ export type SharedInfraOutput = {
   redisHost: string
   vpcId: string
   webSGId: string
+  webEcsSGId: string
   gqlECRRepo: string
 }

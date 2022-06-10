@@ -4,5 +4,9 @@ config:
   nftcom:ebInstance: t3.small
   nftcom:ebAutoScaleMin: 2
   nftcom:ebAutoScaleMax: 3
+  nftcom:ecsAutoScaleMin: 2
+  nftcom:ecsAutoScaleMax: 3
+  nftcom:ecsTaskCpu: 512 
+  nftcom:ecsTaskMemory: 1024
   nftcom:nodeEnv: staging
   nftcom:logLevel: INFO

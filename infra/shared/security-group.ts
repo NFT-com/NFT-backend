@@ -8,6 +8,7 @@ export type SGOutput = {
   aurora: awsEC2.SecurityGroup
   redis: awsEC2.SecurityGroup
   web: awsEC2.SecurityGroup
+  webEcs: awsEC2.SecurityGroup
 }
 
 const buildIngressRule = (
@@ -58,6 +59,18 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     ],
   })
 
+  const webEcs = new awsEC2.SecurityGroup('sg_webEcs', {
+    description: 'Allow traffic to ECS (gql) service',
+    name: getResourceName('webEcs'),
+    vpcId: vpc.id,
+    ingress: [
+      buildIngressRule(8080, 'tcp', [web.id]),
+    ],
+    egress: [
+      buildEgressRule(0, '-1'),
+    ],
+  })
+
   const aurora = new awsEC2.SecurityGroup('sg_aurora_main', {
     name: getResourceName('aurora-main'),
     description: 'Allow traffic to Aurora (Postgres) main instance',
@@ -90,5 +103,6 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     aurora,
     redis,
     web,
+    webEcs,
   }
 }

@@ -20,6 +20,7 @@ export enum LoggerContext {
   MarketBid = 'marketBid',
   MarketSwap = 'marketSwap',
   Typesense = 'typesense',
+  Bull = 'bull',
 }
 
 export enum LogLevel {

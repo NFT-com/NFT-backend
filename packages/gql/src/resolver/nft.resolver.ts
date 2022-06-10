@@ -20,6 +20,7 @@ import {
   initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
+import { retrieveOrderOpensea } from '@nftcom/gql/service/opeansea.service'
 import * as Sentry from '@sentry/node'
 const redis = new Redis({
   port: redisConfig.port,
@@ -339,7 +340,7 @@ const updateNFTsForProfile = (
   }
 }
 
-const getExternalListings = (
+const getExternalListings = async (
   _: any,
   args: gql.QueryExternalListingsArgs,
   ctx: Context,
@@ -347,9 +348,12 @@ const getExternalListings = (
   logger.debug('getExternalListings', {
     contract: args?.contract,
     id: args?.tokenId,
+    chainId: args?.chainId,
     caller: ctx.user?.id,
   })
   // todo: fetch listing info from 3rd party marketplaces.
+  const result = await retrieveOrderOpensea(args?.contract, args?.tokenId, args?.chainId)
+  console.log(result)
   return null
 }
 
