@@ -9,6 +9,7 @@ import {
 } from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
+import { _logger } from '@nftcom/shared'
 // import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
 // import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
 // DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
@@ -16,6 +17,8 @@ import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 // import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
+
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.Bull)
 
 const redis = {
   host: redisConfig.host,
@@ -33,7 +36,7 @@ networks.set(
   networkList[1], // human readable network name
 )
 
-let isListening: boolean
+let didPublish: boolean
 
 const createQueues = (): Promise<void> => {
   return new Promise((resolve) => {
@@ -70,7 +73,7 @@ const jobHasNotRunRecently = (job: Bull.Job<any>): boolean  => {
 const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
   const values = [...queues.values()]
   if (jobs.flat().length < queues.size) {
-    console.log('🐮 fewer bull jobs than queues -- wiping queues for restart')
+    logger.info('🐮 fewer bull jobs than queues -- wiping queues for restart')
     return Promise.all(values.map((queue) => {
       return queue.obliterate({ force: true })
     })).then(() => true)
@@ -84,7 +87,7 @@ const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
           // @ts-ignore: @types/bull is outdated
           && (job.opts.repeat.count >= BULL_MAX_REPEAT_COUNT || jobHasNotRunRecently(job)))
         || !job.opts.repeat) {
-      console.log('🐮 bull job needs to restart -- wiping queues for restart')
+      logger.info('🐮 bull job needs to restart -- wiping queues for restart')
       return Promise.all(values.map((queue) => {
         return queue.obliterate({ force: true })
       })).then(() => true)
@@ -94,8 +97,9 @@ const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
   return new Promise(resolve => resolve(false))
 }
 
-const publishJobs = (shouldPublish: boolean): Promise<boolean> => {
+const publishJobs = (shouldPublish: boolean): Promise<void> => {
   if (shouldPublish) {
+    didPublish = true
     const chainIds = [...queues.keys()]
     return Promise.all(chainIds.map((chainId) => {
       switch (chainId) {
@@ -116,27 +120,22 @@ const publishJobs = (shouldPublish: boolean): Promise<boolean> => {
           jobId: `chainid_${chainId}_job`,
         })
       }
-    })).then(() => shouldPublish)
+    })).then(() => undefined)
   }
 
-  return new Promise(resolve => resolve(false))
+  return new Promise(resolve => resolve(undefined))
 }
 
-const listenToJobs = (shouldListen: boolean): Promise<boolean> => {
-  isListening = shouldListen
-  if (shouldListen) {
-    const values = [...queues.values()]
-    return Promise.all(values.map((queue) => {
-      switch (queue.name) {
-      case GENERATE_COMPOSITE_IMAGE:
-        return queue.process(generateCompositeImages)
-      default:
-        return queue.process(getEthereumEvents)
-      }
-    })).then(() => shouldListen)
+const listenToJobs = async (): Promise<void> => {
+  for (const queue of queues.values()) {
+    switch (queue.name) {
+    case GENERATE_COMPOSITE_IMAGE:
+      queue.process(generateCompositeImages)
+      break
+    default:
+      queue.process(getEthereumEvents)
+    }
   }
-  
-  return new Promise(resolve => resolve(false))
 }
 
 export const startAndListen = (): Promise<void> => {
@@ -144,10 +143,10 @@ export const startAndListen = (): Promise<void> => {
     .then(() => getExistingJobs())
     .then((jobs) => checkJobQueues(jobs))
     .then((shouldPublish) => publishJobs(shouldPublish))
-    .then((shouldListen) => void listenToJobs(shouldListen))
+    .then(() => listenToJobs())
     .then(() => {
-      isListening ? console.log('🍊 queue was restarted -- listening for jobs...')
-        : console.log('🍊 bull jobs running healthy, no restart necessary')
+      didPublish ? logger.info('🍊 queue was restarted -- listening for jobs...')
+        : logger.info('🍊 bull queue is healthy -- listening for jobs...')
     })
 }
 
