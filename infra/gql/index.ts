@@ -11,8 +11,9 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { deployInfra, getResourceName, getSharedInfraOutput } from '../helper'
+import { deployInfra, getEnv, getResourceName, getSharedInfraOutput } from '../helper'
 import { createEBInstance } from './beanstalk'
+import { createEcsService } from './ecs'
 
 const createAndUploadEBDeployFile = async (
   config: pulumi.Config,
@@ -61,6 +62,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const sharedInfraOutput = getSharedInfraOutput()
   const appFileName = await createAndUploadEBDeployFile(config, sharedInfraOutput)
   createEBInstance(config, sharedInfraOutput, appFileName)
+  createEcsService(config, sharedInfraOutput)
 }
 
 export const createGQLServer = (
@@ -82,10 +84,8 @@ export const updateGQLEnvFile = (): void => {
   const stackConfig = ymlDoc.config as { [key: string]: string }
 
   console.log('Update server environment file...')
-  const workDir = upath.joinSafe(__dirname, '..', '..', 'packages', 'gql')
-  const sourceFile = upath.joinSafe(workDir, '.env.example')
-  const envFileStr = fs.readFileSync(sourceFile).toString()
-  let parsedFile = envfile.parse(envFileStr)
+  const env = getEnv('gql', '.env.example')
+  let { parsedFile } = env
   parsedFile = omit(parsedFile, 'PORT', 'DB_PORT', 'REDIS_PORT')
   parsedFile['NODE_ENV'] = stackConfig['nftcom:nodeEnv']
   parsedFile['DB_HOST'] = infraOutput.dbHost
@@ -121,6 +121,6 @@ export const updateGQLEnvFile = (): void => {
 
   console.log(JSON.stringify(parsedFile))
 
-  const targetFile = upath.joinSafe(workDir, '.env')
+  const targetFile = upath.joinSafe(env.workDir, '.env')
   fs.writeFileSync(targetFile, envfile.stringify(parsedFile))
 }
