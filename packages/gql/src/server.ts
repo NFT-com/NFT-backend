@@ -1,5 +1,7 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
+import { exec } from 'child_process'
+import console from 'console'
 import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
@@ -8,6 +10,7 @@ import { rateLimitDirective } from 'graphql-rate-limit-directive'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
+import * as util from 'util'
 
 import { makeExecutableSchema } from '@graphql-tools/schema'
 import { appError, profileError } from '@nftcom/gql/error'
@@ -88,6 +91,27 @@ const formatError = (error: GraphQLError): GQLError => {
     message,
     path,
   }
+}
+
+const execShellCommand = (
+  command: string,
+  swallowError = false,
+  description: string,
+): Promise<void> => {
+  const promisifiedExec = util.promisify(exec)
+  return promisifiedExec(command)
+    .then(({ stdout, stderr }) => {
+      const err = stderr.replace('\n', '').trim()
+      if (helper.isNotEmpty(err) && helper.isFalse(swallowError)) {
+        return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
+      }
+      if (helper.isNotEmpty(err) && swallowError) {
+        console.error('SWALLOWING ERROR', err)
+        return Promise.resolve()
+      }
+      console.log(description, stdout.replace('\n', '').trim())
+      return Promise.resolve()
+    })
 }
 
 let server: ApolloServer
@@ -185,7 +209,7 @@ export const start = async (): Promise<void> => {
       logger.debug(`[CONSUME] ${key} for ${pointsToConsume}`)
       return super.consume(key, pointsToConsume, options)
     }
-  
+
   }
 
   const { rateLimitDirectiveTypeDefs, rateLimitDirectiveTransformer } = rateLimitDirective({
@@ -229,6 +253,9 @@ export const start = async (): Promise<void> => {
   await server.start()
   server.applyMiddleware({ app })
   await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
+  if (process.env.NODE_ENV === 'local') {
+    await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
+  }
   console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 

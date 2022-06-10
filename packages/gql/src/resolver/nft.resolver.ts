@@ -17,7 +17,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { redisConfig } from '@nftcom/gql/config'
 import {
   checkNFTContractAddresses,
-  initiateWeb3, updateEdgesWeightForProfile,
+  initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import * as Sentry from '@sentry/node'
@@ -277,58 +277,66 @@ const updateNFTsForProfile = (
   args: gql.MutationUpdateNFTsForProfileArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
-  const { repositories } = ctx
-  logger.debug('updateNFTsForProfile', { input: args?.input })
-  const pageInput = args?.input.pageInput
-  initiateWeb3()
-  return repositories.profile.findOne({ where: { id: args?.input.profileId } })
-    .then((profile: entity.Profile | undefined) => {
-      if (!profile) {
-        return Promise.resolve({ items: [] })
-      } else {
-        const filter: Partial<entity.Edge> = helper.removeEmpty({
-          thisEntityType: defs.EntityType.Profile,
-          thisEntityId: profile.id,
-          thatEntityType: defs.EntityType.NFT,
-          edgeType: defs.EdgeType.Displays,
-        })
-        const now = helper.toUTCDate()
-        let duration
-        if (profile.nftsLastUpdated) {
-          duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
-        }
+  try {
+    const { repositories } = ctx
+    logger.debug('updateNFTsForProfile', { input: args?.input })
+    const pageInput = args?.input.pageInput
+    initiateWeb3()
+    return repositories.profile.findOne({ where: { id: args?.input.profileId } })
+      .then((profile: entity.Profile | undefined) => {
+        if (!profile) {
+          return Promise.resolve({ items: [] })
+        } else {
+          const filter: Partial<entity.Edge> = helper.removeEmpty({
+            thisEntityType: defs.EntityType.Profile,
+            thisEntityId: profile.id,
+            thatEntityType: defs.EntityType.NFT,
+            edgeType: defs.EdgeType.Displays,
+          })
+          const now = helper.toUTCDate()
+          let duration
+          if (profile.nftsLastUpdated) {
+            duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
+          }
 
-        // if there is no profile NFT or NFTs are expired and need to be updated...
-        if (!profile.nftsLastUpdated  ||
-          (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
-        ) {
-          repositories.profile.updateOneById(profile.id, {
-            nftsLastUpdated: now,
-          }).then(() => repositories.wallet.findById(profile.ownerWalletId)
-            .then((wallet: entity.Wallet) => {
-              return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
-                .then(() => {
-                  return updateWalletNFTs(
-                    profile.ownerUserId,
-                    wallet.id,
-                    wallet.address,
-                  ).then(() => {
-                    return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+          // if there is no profile NFT or NFTs are expired and need to be updated...
+          if (!profile.nftsLastUpdated  ||
+            (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
+          ) {
+            repositories.profile.updateOneById(profile.id, {
+              nftsLastUpdated: now,
+            }).then(() => repositories.wallet.findById(profile.ownerWalletId)
+              .then((wallet: entity.Wallet) => {
+                return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
+                  .then(() => {
+                    return updateWalletNFTs(
+                      profile.ownerUserId,
+                      wallet.id,
+                      wallet.address,
+                    ).then(() => {
+                      return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+                        .then(() => {
+                          return syncEdgesWithNFTs(profile.id)
+                        })
+                    })
                   })
-                })
-            }))
-        }
+              }))
+          }
 
-        return core.paginatedThatEntitiesOfEdgesBy(
-          ctx,
-          repositories.nft,
-          { ...filter, hide: false },
-          pageInput,
-          'createdAt',
-          'ASC',
-        )
-      }
-    })
+          return core.paginatedThatEntitiesOfEdgesBy(
+            ctx,
+            repositories.nft,
+            { ...filter, hide: false },
+            pageInput,
+            'createdAt',
+            'ASC',
+          )
+        }
+      })
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
+  }
 }
 
 const getExternalListings = (
