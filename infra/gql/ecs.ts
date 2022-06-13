@@ -163,7 +163,7 @@ const createEcsTaskDefinition = (
 ): aws.ecs.TaskDefinition => {
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
-  const resourceName = getResourceName('gql-ecs')
+  const resourceName = getResourceName('gql')
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
@@ -176,7 +176,7 @@ const createEcsTaskDefinition = (
             logDriver: 'awslogs',
             options: {
               'awslogs-create-group': 'true',
-              'awslogs-group': `/ecs/${getResourceName('gql')}`,
+              'awslogs-group': `/ecs/${resourceName}`,
               'awslogs-region': 'us-east-1',
               'awslogs-stream-prefix': 'gql',
             },
