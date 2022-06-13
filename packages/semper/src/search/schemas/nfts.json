@@ -6,6 +6,7 @@
     {"name": "tokenId", "type": "string", "facet": false, "index": true },
     {"name": "nftName", "type": "string", "facet": true, "index": true },
     {"name": "nftType", "type": "string", "facet": true, "index": true },
+    {"name": "nftDescription", "type": "string", "facet": false, "optional": true },
     {"name": "listingType", "type": "string", "facet": true, "index": true },
     {"name": "chain", "type": "string", "facet": true, "index": true },
     {"name": "ownerAddr", "type": "string", "facet": false, "index": true },
