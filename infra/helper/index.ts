@@ -35,6 +35,13 @@ export const getResourceName = (name: string): string => {
   return joinStringsByDash(getStage(), name)
 }
 
+export const getTags = (tags = {}): {[key: string]: string} => {
+  return {
+    ...tags,
+    env: getStage(),
+  }
+}
+
 export const pulumiOutToValue = <T>(output: pulumi.Output<T>): Promise<T> => {
   return new Promise<T>((resolve) => {
     output.apply(resolve)

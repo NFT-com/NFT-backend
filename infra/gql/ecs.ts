@@ -2,7 +2,11 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { getResourceName } from '../helper'
+import { getResourceName, getTags } from '../helper'
+
+const tags = {
+  service: 'gql',
+}
 
 const attachLBListeners = (
   lb: aws.lb.LoadBalancer,
@@ -23,6 +27,7 @@ const attachLBListeners = (
     loadBalancerArn: lb.arn,
     port: 80,
     protocol: 'HTTP',
+    tags: getTags(tags),
   })
 
   new aws.lb.Listener('listener_https_dev_gql_ecs', {
@@ -38,6 +43,7 @@ const attachLBListeners = (
     port: 443,
     protocol: 'HTTPS',
     sslPolicy: 'ELBSecurityPolicy-2016-08',
+    tags: getTags(tags),
   })
 }
 
@@ -62,6 +68,7 @@ const createEcsTargetGroup = (
     },
     targetType: 'ip',
     vpcId: infraOutput.vpcId,
+    tags: getTags(tags),
   })
 }
 
@@ -73,6 +80,7 @@ const createEcsLoadBalancer = (
     name: getResourceName('gql-ecs'),
     securityGroups: [infraOutput.webSGId],
     subnets: infraOutput.publicSubnets,
+    tags: getTags(tags),
   })
 }
 
@@ -85,6 +93,7 @@ const createEcsCluster = (): aws.ecs.Cluster => {
         value: 'disabled',
       },
     ],
+    tags: getTags(tags),
   })
 
   new aws.ecs.ClusterCapacityProviders('ccp_gql', {
@@ -117,6 +126,7 @@ const createEcsTaskRole = (): aws.iam.Role => {
         },
       ],
     },
+    tags: getTags(tags),
   })
 
   const policy = new aws.iam.Policy('policy_gql_ecs_ssm', {
@@ -136,6 +146,7 @@ const createEcsTaskRole = (): aws.iam.Role => {
         },
       ],
     },
+    tags: getTags(tags),
   })
 
   new aws.iam.RolePolicyAttachment('rpa_gql_ecs_ssm', {
@@ -164,7 +175,7 @@ const createEcsTaskDefinition = (
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-create-group': true,
+              'awslogs-create-group': 'true',
               'awslogs-group': `/ecs/${getResourceName('gql')}`,
               'awslogs-region': 'us-east-1',
               'awslogs-stream-prefix': 'gql',
@@ -187,6 +198,7 @@ const createEcsTaskDefinition = (
       runtimePlatform: {
         operatingSystemFamily: 'LINUX',
       },
+      tags: getTags(tags),
     },
     {
       dependsOn: [pulumi.output(role)],
@@ -255,6 +267,7 @@ export const createEcsService = (
       subnets: infraOutput.publicSubnets,
     },
     taskDefinition: taskDefinition.arn,
+    tags: getTags(tags),
   })
 
   applyEcsServiceAutoscaling(config, service)
