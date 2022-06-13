@@ -130,6 +130,7 @@ const createEcsTaskRole = (): aws.iam.Role => {
             'ssmmessages:CreateDataChannel',
             'ssmmessages:OpenControlChannel',
             'ssmmessages:OpenDataChannel',
+            'logs:CreateLogGroup',
           ],
           Resource: '*',
         },
@@ -151,9 +152,10 @@ const createEcsTaskDefinition = (
 ): aws.ecs.TaskDefinition => {
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
+  const resourceName = getResourceName('gql-ecs')
 
   return new aws.ecs.TaskDefinition(
-    'dev-gql-td',
+    'gql-td',
     {
       containerDefinitions: JSON.stringify([
         {
@@ -162,13 +164,14 @@ const createEcsTaskDefinition = (
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-group': '/ecs/dev-gql',
+              'awslogs-create-group': true,
+              'awslogs-group': `/aws/ecs/${getResourceName('gql')}`,
               'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'ecs',
+              'awslogs-stream-prefix': 'gql',
             },
           },
           memoryReservation: parseInt(config.require('ecsTaskMemory')),
-          name: getResourceName('gql'),
+          name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
@@ -178,7 +181,7 @@ const createEcsTaskDefinition = (
       memory: config.require('ecsTaskMemory'),
       taskRoleArn: role.arn,
       executionRoleArn: 'arn:aws:iam::016437323894:role/ECSServiceTask',
-      family: getResourceName('gql'),
+      family: resourceName,
       networkMode: 'awsvpc',
       requiresCompatibilities: ['FARGATE'],
       runtimePlatform: {
