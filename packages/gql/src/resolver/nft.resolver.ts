@@ -1,4 +1,4 @@
-import { ethers, utils } from 'ethers'
+import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Redis from 'ioredis'
 import Joi from 'joi'
@@ -15,12 +15,13 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { redisConfig } from '@nftcom/gql/config'
+import { delay } from '@nftcom/gql/service/core.service'
 import {
   checkNFTContractAddresses,
   initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
-import { retrieveOrderOpensea } from '@nftcom/gql/service/opeansea.service'
+import { retrieveOrdersOpensea } from '@nftcom/gql/service/opeansea.service'
 import * as Sentry from '@sentry/node'
 const redis = new Redis({
   port: redisConfig.port,
@@ -351,10 +352,41 @@ const getExternalListings = async (
     chainId: args?.chainId,
     caller: ctx.user?.id,
   })
-  // todo: fetch listing info from 3rd party marketplaces.
-  const result = await retrieveOrderOpensea(args?.contract, args?.tokenId, args?.chainId)
-  console.log(result)
-  return null
+  // 1. Opensea
+  // get selling orders...
+  try {
+    const buyOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 0)
+    await delay(1000)
+    const sellOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 1)
+
+    let bestOffer = undefined
+    if (buyOrders.length) {
+      bestOffer = buyOrders[0]
+      for (let i = 1; i < buyOrders.length; i++) {
+        if (BigNumber.from(bestOffer.current_price) < BigNumber.from(buyOrders[i].current_price))
+          bestOffer = buyOrders[i]
+      }
+    }
+
+    let createdDate, expiration
+    if (sellOrders.length) {
+      createdDate = new Date(sellOrders[0].created_date)
+      expiration = new Date(sellOrders[0].expiration_time * 1000)
+    }
+    const opensea = {
+      url: sellOrders.length ? sellOrders[0].asset.permalink : null,
+      exchange: gql.SupportedExternalExchange.Opensea,
+      price: sellOrders.length ? sellOrders[0].current_price : null,
+      highestOffer: bestOffer ? bestOffer.current_price : null,
+      expiration: createdDate ?? null,
+      creation: expiration ?? null,
+    }
+
+    return { listings: [opensea] }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getExternalListings: ${err}`)
+  }
 }
 
 export default {
