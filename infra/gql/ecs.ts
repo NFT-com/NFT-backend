@@ -165,7 +165,7 @@ const createEcsTaskDefinition = (
             logDriver: 'awslogs',
             options: {
               'awslogs-create-group': true,
-              'awslogs-group': `/aws/ecs/${getResourceName('gql')}`,
+              'awslogs-group': `/ecs/${getResourceName('gql')}`,
               'awslogs-region': 'us-east-1',
               'awslogs-stream-prefix': 'gql',
             },
