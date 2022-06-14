@@ -42,5 +42,5 @@ jobs:
     #   run: npm list
     
     - run: cd packages/gql && npm i
-    - run: cd packages/gql && tsc build
+    - run: cd packages/gql && tsc --build
     - run: cd packages/gql && npm run test
