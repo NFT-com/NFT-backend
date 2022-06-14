@@ -50,7 +50,7 @@ jobs:
         envkey_MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
         envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
         envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
-        file_name: .env
+        file_name: packages/gql/.env
         fail_on_empty: false
 
     # - name: Cache node modules
