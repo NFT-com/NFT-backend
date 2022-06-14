@@ -11,6 +11,7 @@ tsconfig.tsbuildinfo
 !.env
 packages/*/.env
 .eslintcache
+infra/package-lock.json
 
 # logs
 log-debug
