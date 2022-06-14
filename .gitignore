@@ -7,7 +7,6 @@ Thumbs.db
 # compiled / dependencies
 node_modules
 dist
-package-lock.json
 tsconfig.tsbuildinfo
 !.env
 packages/*/.env
