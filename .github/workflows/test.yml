@@ -1,6 +1,10 @@
 name: Node.js CI
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -14,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        ref: ${{ github.ref_name }}
+        ref: ${{ github.event.pull_request.head.ref }}
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
@@ -80,10 +84,10 @@ jobs:
     - run: cd packages/gql && npm run test
 
     - name: Commit coverage on feat/fix
-      if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
+      if: ${{ startsWith(github.event.pull_request.head.ref, 'feat') || startsWith(github.event.pull_request.head.ref, 'fix') }}
       uses: EndBug/add-and-commit@v9
       with:
         author_name: github-ci/cd
         author_email: engineering@nft.com
         message: 'fix: add coverage into docs'
-        add: '*'
+        add: 'docs/*'
