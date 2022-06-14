@@ -141,6 +141,9 @@ const createEcsTaskRole = (): aws.iam.Role => {
             'ssmmessages:OpenControlChannel',
             'ssmmessages:OpenDataChannel',
             'logs:CreateLogGroup',
+            'logs:CreateLogStream',
+            'logs:PutLogEvents',
+            'logs:DescribeLogStreams',
           ],
           Resource: '*',
         },
@@ -165,6 +168,18 @@ const createEcsTaskDefinition = (
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
 
+  new aws.ssm.Parameter('ecs-cwagent', {
+    name: 'ecs-cwagent',
+    type: 'String',
+    value: JSON.stringify({
+      logs: {
+        metrics_collected: {
+          emf: {},
+        },
+      },
+    }),
+  })
+
   return new aws.ecs.TaskDefinition(
     'gql-td',
     {
@@ -175,17 +190,35 @@ const createEcsTaskDefinition = (
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-create-group': 'true',
+              'awslogs-create-group': 'True',
               'awslogs-group': `/ecs/${resourceName}`,
               'awslogs-region': 'us-east-1',
               'awslogs-stream-prefix': 'gql',
             },
           },
-          memoryReservation: parseInt(config.require('ecsTaskMemory')),
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
+        },
+        {
+          name: 'cloudwatch-agent',
+          image: 'public.ecr.aws/cloudwatch-agent/cloudwatch-agent:latest',
+          secrets: [
+            {
+              name: 'CW_CONFIG_CONTENT',
+              valueFrom: 'ecs-cwagent',
+            },
+          ],
+          logConfiguration: {
+            logDriver: 'awslogs',
+            options: {
+              'awslogs-create-group': 'True',
+              'awslogs-group': `/ecs/ecs-cwagent-fargate/${resourceName}`,
+              'awslogs-region': 'us-east-1',
+              'awslogs-stream-prefix': 'ecs',
+            },
+          },
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
