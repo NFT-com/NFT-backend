@@ -1,0 +1,82 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Make envfile
+      uses: SpicyPizza/create-envfile@v1.3
+      with:
+        envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
+        envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
+        envkey_CONFIRM_EMAIL_URL: "tbd"
+        envkey_ASSET_BUCKET: "tbd"
+        envkey_ASSET_BUCKET_ROLE: "tbd"
+        envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
+        envkey_PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
+        envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
+        envkey_MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
+        envkey_HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
+        envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
+        envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
+        envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
+        envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+        envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+        envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
+        envkey_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        envkey_PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
+        envkey_SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
+        envkey_SHARED_MINT_SECRET: ${{ secrets.SHARED_MINT_SECRET }}
+        envkey_SUPPORTED_NETWORKS: ${{ secrets.SUPPORTED_NETWORKS }}
+        envkey_TYPESENSE_HOST: ${{ secrets.TYPESENSE_HOST }}
+        envkey_TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+        envkey_MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
+        envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
+        envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
+        file_name: packages/gql/.env
+        fail_on_empty: false
+
+    - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-node-modules
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - if: ${{ steps.cache-npm.outputs.cache-hit == 'false' }}
+      name: List the state of node modules
+      continue-on-error: true
+      run: npm list
+    
+    - run: npm i
+    - run: cd packages/gql && npm i
+    - run: cd packages/shared && npm i
+    - run: cd packages/shared && npm run compile
+    - run: cd packages/gql && npm run gql:gen
+    - run: cd packages/gql && npm run test
