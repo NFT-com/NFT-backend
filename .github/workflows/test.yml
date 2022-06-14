@@ -1,6 +1,10 @@
 name: Node.js CI
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -78,6 +82,7 @@ jobs:
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
     - run: cd packages/gql && npm run test
+
     - name: Commit coverage on feat/fix
       if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
       uses: EndBug/add-and-commit@v9
