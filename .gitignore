@@ -12,7 +12,6 @@ tsconfig.tsbuildinfo
 packages/*/.env
 .eslintcache
 infra/package-lock.json
-docs/coverage/*
 
 # logs
 log-debug
