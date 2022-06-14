@@ -80,7 +80,6 @@ jobs:
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
     - run: cd packages/gql && npm run test
-
     - name: Commit changes
       uses: EndBug/add-and-commit@v9
       with:
