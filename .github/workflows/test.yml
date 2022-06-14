@@ -84,7 +84,6 @@ jobs:
     - run: cd packages/gql && npm run test
 
     - name: Commit coverage on feat/fix
-      if: ${{ startsWith(github.event.pull_request.head.ref, 'feat') || startsWith(github.event.pull_request.head.ref, 'fix') }}
       uses: EndBug/add-and-commit@v9
       with:
         author_name: github-ci/cd
