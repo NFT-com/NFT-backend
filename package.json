@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix",
+    "generate:coverage": "cd packages/gql && npm run test",
     "prepare": "npx husky install"
   },
   "commitlint": {
