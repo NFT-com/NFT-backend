@@ -19,34 +19,39 @@ jobs:
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
-      env:
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
-        SG_API_KEY: ${{ secrets.SG_API_KEY }}
-        ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
-        PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
-        MNEMONIC: ${{ secrets.MNEMONIC }}
-        MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
-        HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
-        HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
-        HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
-        ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
-        INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
-        ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-        ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
-        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
-        SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
-        SHARED_MINT_SECRET: ${{ secrets.SHARED_MINT_SECRET }}
-        SUPPORTED_NETWORKS: ${{ secrets.SUPPORTED_NETWORKS }}
-        TYPESENSE_HOST: ${{ secrets.TYPESENSE_HOST }}
-        TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
-        MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
-        PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
-        BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+
+    - name: Make envfile
+      uses: SpicyPizza/create-envfile@v1.3
+      with:
+        envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
+        envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
+        envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
+        envkey_PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
+        envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
+        envkey_MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
+        envkey_HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
+        envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
+        envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
+        envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
+        envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+        envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+        envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
+        envkey_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        envkey_PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
+        envkey_SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
+        envkey_SHARED_MINT_SECRET: ${{ secrets.SHARED_MINT_SECRET }}
+        envkey_SUPPORTED_NETWORKS: ${{ secrets.SUPPORTED_NETWORKS }}
+        envkey_TYPESENSE_HOST: ${{ secrets.TYPESENSE_HOST }}
+        envkey_TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+        envkey_MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
+        envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
+        envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
+        file_name: .env
+        fail_on_empty: false
 
     # - name: Cache node modules
     #   id: cache-npm
