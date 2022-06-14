@@ -11,7 +11,7 @@
     "compile": "tsc && tsc-alias",
     "copy:schema": "cp -r ./src/schema/*.graphql ./dist/schema/",
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
-    "test": "jest --coverage && mv coverage/lcov-report ./../../docs/coverage && rm -rf coverage",
+    "test": "jest --coverage && rm -rf ../../docs/coverage && mv coverage/lcov-report ./../../docs/coverage && rm -rf coverage",
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
     "start": "node -r source-map-support/register ./dist/index",
