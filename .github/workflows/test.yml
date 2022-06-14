@@ -29,6 +29,9 @@ jobs:
         envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
         envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
+        envkey_CONFIRM_EMAIL_URL: "tbd"
+        envkey_ASSET_BUCKET: "tbd"
+        envkey_ASSET_BUCKET_ROLE: "tbd"
         envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
         envkey_PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
         envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
