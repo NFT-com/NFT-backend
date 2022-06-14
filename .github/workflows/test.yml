@@ -19,6 +19,31 @@ jobs:
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
+      env:
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
+        SG_API_KEY: ${{ secrets.SG_API_KEY }}
+        ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
+        PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
+        MNEMONIC: ${{ secrets.MNEMONIC }}
+        MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
+        HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
+        HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
+        HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
+        ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
+        INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+        ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+        ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
+        SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
+        SHARED_MINT_SECRET: ${{ secrets.SHARED_MINT_SECRET }}
+        SUPPORTED_NETWORKS: ${{ secrets.SUPPORTED_NETWORKS }}
+        TYPESENSE_HOST: ${{ secrets.TYPESENSE_HOST }}
+        TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+        MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
+        PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
+        BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
@@ -46,30 +71,4 @@ jobs:
     - run: cd packages/shared && npm i
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
-      env:
-        STAGE: ${{ inputs.stage }}
-        DB_PASSWORD: ${{ toJSON(secrets).DB_PASSWORD }}
-        AUTH_MESSAGE: ${{ toJSON(secrets).AUTH_MESSAGE }}
-        SG_API_KEY: ${{ toJSON(secrets).SG_API_KEY }}
-        ETH_GAS_STATION_API_KEY: ${{ toJSON(secrets).ETH_GAS_STATION_API_KEY }}
-        PROFILE_AUCTION_END_PASSWORD: ${{ toJSON(secrets).PROFILE_AUCTION_END_PASSWORD }}
-        MNEMONIC: ${{ toJSON(secrets).MNEMONIC }}
-        MNEMONIC_RINKEBY: ${{ toJSON(secrets).MNEMONIC_RINKEBY }}
-        HCS_TOPIC_ID: ${{ toJSON(secrets).HCS_TOPIC_ID }}
-        HCS_ACCOUNT_ID: ${{ toJSON(secrets).HCS_ACCOUNT_ID }}
-        HCS_PRIVATE_KEY: ${{ toJSON(secrets).HCS_PRIVATE_KEY }}
-        ZMOK_API_URL: ${{ toJSON(secrets).ZMOK_API_URL }}
-        INFURA_API_KEY: ${{ toJSON(secrets).INFURA_API_KEY }}
-        ALCHEMY_API_KEY: ${{ toJSON(secrets).ALCHEMY_API_KEY }}
-        ALCHEMY_API_URL: ${{ toJSON(secrets).ALCHEMY_API_URL }}
-        SENTRY_DSN: ${{ toJSON(secrets).SENTRY_DSN }}
-        PUBLIC_SALE_KEY: ${{ toJSON(secrets).PUBLIC_SALE_KEY }}
-        SERVER_CONFIG: ${{ toJSON(secrets).SERVER_CONFIG }}
-        SHARED_MINT_SECRET: ${{ toJSON(secrets).SHARED_MINT_SECRET }}
-        SUPPORTED_NETWORKS: ${{ toJSON(secrets).SUPPORTED_NETWORKS }}
-        TYPESENSE_HOST: ${{ toJSON(secrets).TYPESENSE_HOST }}
-        TYPESENSE_API_KEY: ${{ toJSON(secrets).TYPESENSE_API_KEY }}
-        MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ toJSON(secrets).MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
-        PROFILE_NFTS_EXPIRE_DURATION: ${{ toJSON(secrets).PROFILE_NFTS_EXPIRE_DURATION }}
-        BULL_MAX_REPEAT_COUNT: ${{ toJSON(secrets).BULL_MAX_REPEAT_COUNT }}
     - run: cd packages/gql && npm run test
