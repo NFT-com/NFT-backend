@@ -356,26 +356,6 @@ const refreshNft = (
     }))
 }
 
-const refreshNft = (
-  _: any,
-  args: gql.MutationRefreshNFTArgs,
-  ctx: Context,
-): Promise<gql.NFT> => {
-  const { repositories } = ctx
-  logger.debug('refreshNft', { id: args?.id })
-  return repositories.nft.findById(args?.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-        nftError.ErrorType.NFTNotFound,
-      ),
-    ))
-    .then(fp.tap((nft: entity.NFT) => {
-      return repositories.wallet.findById(nft.walletId)
-        .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
-    }))
-}
-
 export default {
   Query: {
     gkNFTs: getGkNFTs,
