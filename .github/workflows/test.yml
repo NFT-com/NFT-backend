@@ -85,4 +85,4 @@ jobs:
         author_name: github-ci/cd
         author_email: engineering@nft.com
         message: 'fix: add coverage into docs'
-        add: 'docs/*'
+        add: '*'
