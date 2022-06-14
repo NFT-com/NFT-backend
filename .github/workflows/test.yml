@@ -41,7 +41,5 @@ jobs:
     #   continue-on-error: true
     #   run: npm list
     
-    - run: npm i
-      working-directory: ./packages/gql
-    - run: npm test
-      working-directory: ./packages/gql
+    - run: cd packages/gql && npm i
+    - run: cd packages/gql && npm run test
