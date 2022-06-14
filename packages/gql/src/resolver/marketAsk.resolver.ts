@@ -163,7 +163,6 @@ export const validAsk = async (
       throw Error(`provided signature ${JSON.stringify(marketAskArgs.input.signature)} doesn't match`)
     }
   } catch (err) {
-    logger.error('order validation error: ', err)
     Sentry.captureException(err)
     Sentry.captureMessage(`Order validation error: ${err}`)
     return false
