@@ -41,6 +41,8 @@ jobs:
     #   continue-on-error: true
     #   run: npm list
     
+    - run: npm i
     - run: cd packages/gql && npm i
-    - run: cd packages/gql && tsc --build
+    - run: cd packages/shared && npm i
+    - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run test
