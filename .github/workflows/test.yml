@@ -1,10 +1,6 @@
 name: Node.js CI
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push]
 
 jobs:
   build:
@@ -83,8 +79,8 @@ jobs:
     - run: cd packages/gql && npm run gql:gen
     - run: cd packages/gql && npm run test
     - name: Commit coverage on feat/fix
-      uses: EndBug/add-and-commit@v9
       if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
+      uses: EndBug/add-and-commit@v9
       with:
         author_name: github-ci/cd
         author_email: engineering@nft.com
