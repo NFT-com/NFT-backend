@@ -15,7 +15,7 @@ import userResolvers from './user.resolver'
 import walletResolvers from './wallet.resolver'
 import watchlistResolvers from './watchlist.resolver'
 
-export const resolvers = mergeResolvers([
+export const resolvers: any = mergeResolvers([
   scalarResolvers,
   approvalResolvers,
   bidResolvers,
