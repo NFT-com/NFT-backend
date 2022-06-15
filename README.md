@@ -48,6 +48,8 @@ The script uses a hardcoded private key. But you can specify your own private ke
 
 #### 3.3 GQL schema documentation
 
-You can see generated GQL schema documentation at [http://prod-gql-docs.nft.com/](http://prod-gql-docs.nft.com/) 
+You can see generated GQL schema documentation at [https://prod-gql-docs.nft.com/documentation/index.html](https://prod-gql-docs.nft.com/documentation/index.html)
 since you're logged into GitHub
+
+You can see the automated coverage report at [https://prod-gql-docs.nft.com/coverage/index.html](https://prod-gql-docs.nft.com/coverage/index.html)
 

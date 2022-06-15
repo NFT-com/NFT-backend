@@ -7,11 +7,11 @@ Thumbs.db
 # compiled / dependencies
 node_modules
 dist
-package-lock.json
 tsconfig.tsbuildinfo
 !.env
 packages/*/.env
 .eslintcache
+infra/package-lock.json
 
 # logs
 log-debug
