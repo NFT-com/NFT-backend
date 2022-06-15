@@ -120,13 +120,13 @@ const getNFTOffers = (
     .then(filterOffersForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
 
-const validAsk = async (
+export const validAsk = async (
   marketAskArgs: gql.MutationCreateAskArgs,
-  wallet: entity.Wallet,
+  chainId: string,
 ): Promise<boolean> => {
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
-    contracts.nftMarketplaceAddress(wallet.chainId),
-    provider.provider(Number(wallet.chainId)),
+    contracts.nftMarketplaceAddress(chainId),
+    provider.provider(Number(chainId)),
   )
 
   // STEP 1 basic validation of order structure (if not used before)
@@ -163,7 +163,6 @@ const validAsk = async (
       throw Error(`provided signature ${JSON.stringify(marketAskArgs.input.signature)} doesn't match`)
     }
   } catch (err) {
-    logger.error('order validation error: ', err)
     Sentry.captureException(err)
     Sentry.captureMessage(`Order validation error: ${err}`)
     return false
@@ -338,7 +337,7 @@ const createAsk = (
       marketAskError.buildMarketAskExistingMsg(),
       marketAskError.ErrorType.MarketAskExisting,
     ))))
-    .then(() => validAsk(args, wallet))
+    .then(() => validAsk(args, wallet.chainId))
     .then(fp.rejectIfFalse((appError.buildInvalid(
       marketAskError.buildMarketAskInvalidMsg(),
       marketAskError.ErrorType.MarketAskInvalid,
