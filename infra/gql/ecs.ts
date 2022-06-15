@@ -90,7 +90,7 @@ const createEcsCluster = (): aws.ecs.Cluster => {
     settings: [
       {
         name: 'containerInsights',
-        value: 'disabled',
+        value: 'enabled',
       },
     ],
     tags: getTags(tags),
