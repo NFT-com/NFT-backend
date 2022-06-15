@@ -5,6 +5,8 @@ import { getTestApolloServer } from './util/testApolloServer'
 
 jest.setTimeout(20000)
 
+jest.mock('ioredis', () => jest.fn())
+
 describe('nft resolver', () => {
   describe('refresh nft endpoint', () => {
     let testServer
