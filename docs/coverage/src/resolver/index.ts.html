@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/error/marketBid.error.ts</title>
+    <title>Code coverage report for src/resolver/index.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/error</a> marketBid.error.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/resolver</a> index.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75.75% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>25/33</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>0/0</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11.11% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/9</span>
+                <span class='fraction'>0/0</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>17/17</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -89,58 +89,79 @@
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export enum ErrorType {
-  MarketAskNotFound = 'MARKET_ASK_NOT_FOUND',
-  MarketBidInvalid = 'MARKET_BID_INVALID',
-  MarketBidExisting = 'MARKET_BID_EXISTING',
-  MarketBidNotFound = 'MARKET_BID_NOT_FOUND',
-  MarketBidNotOwned = 'MARKET_BID_NOT_OWNED',
-  MarketBidUnavailable = 'MARKET_BID_UNAVAILABLE',
-  MakerAddressNotOwned = 'MAKER_ADDRESS_NOT_OWNED',
-  TxHashInvalid = 'TX_HASH_INVALID',
-}
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { mergeResolvers } from '@graphql-tools/merge'
 &nbsp;
-export const buildMarketAskNotFoundMsg = <span class="fstat-no" title="function not covered" >(): string =</span>&gt; <span class="cstat-no" title="statement not covered" >'MarketAsk not found'</span>
+import approvalResolvers from './approval.resolver'
+import bidResolvers from './bid.resolver'
+import collectionResolvers from './collection.resolver'
+import curationResolvers from './curation.resolver'
+import marketAskResolvers from './marketAsk.resolver'
+import marketBidResolvers from './marketBid.resolver'
+import marketSwapResolvers from './marketSwap.resolver'
+import miscResolvers from './misc.resolver'
+import nftResolvers from './nft.resolver'
+import profileResolvers from './profile.resolver'
+import scalarResolvers from './scalar.resolver'
+import userResolvers from './user.resolver'
+import walletResolvers from './wallet.resolver'
+import watchlistResolvers from './watchlist.resolver'
 &nbsp;
-export const buildMarketBidInvalidMsg = <span class="fstat-no" title="function not covered" >(): string =</span>&gt; <span class="cstat-no" title="statement not covered" >'MarketBid invalid'</span>
-&nbsp;
-export const buildMarketBidExistingMsg = <span class="fstat-no" title="function not covered" >(): string =</span>&gt; <span class="cstat-no" title="statement not covered" >'MarketBid is already existing'</span>
-&nbsp;
-export const buildMarketBidNotFoundMsg = <span class="fstat-no" title="function not covered" >(i</span>d: string): string =&gt; <span class="cstat-no" title="statement not covered" >`MarketBid ${id} not found`</span>
-&nbsp;
-export const buildMarketBidNotOwnedMsg = <span class="fstat-no" title="function not covered" >(): string =</span>&gt; <span class="cstat-no" title="statement not covered" >'MarketBid not owned'</span>
-&nbsp;
-export const buildMarketBidUnavailableMsg = <span class="fstat-no" title="function not covered" >(w</span>alletAddress: string): string =&gt; <span class="cstat-no" title="statement not covered" >`Active MarketBid is already existing for wallet ${walletAddress} `</span>
-&nbsp;
-export const buildMakerAddressNotOwnedMsg = <span class="fstat-no" title="function not covered" >(): string =</span>&gt; <span class="cstat-no" title="statement not covered" >'MakerAddress is not owned'</span>
-&nbsp;
-export const buildTxHashInvalidMsg = <span class="fstat-no" title="function not covered" >(t</span>xHash: string): string =&gt; <span class="cstat-no" title="statement not covered" >`TxHash ${txHash} is not valid`</span>
+export const resolvers: any = mergeResolvers([
+  scalarResolvers,
+  approvalResolvers,
+  bidResolvers,
+  curationResolvers,
+  collectionResolvers,
+  marketAskResolvers,
+  marketBidResolvers,
+  marketSwapResolvers,
+  miscResolvers,
+  nftResolvers,
+  profileResolvers,
+  userResolvers,
+  walletResolvers,
+  watchlistResolvers,
+])
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
