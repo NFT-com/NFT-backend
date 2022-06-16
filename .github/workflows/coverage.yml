@@ -79,13 +79,8 @@ jobs:
     - run: cd packages/shared && npm i
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
-    - run: cd packages/gql && npm run test
-
-    - name: Commit coverage on feat/fix
-      if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
-      uses: EndBug/add-and-commit@v9
+    - run: cd packages/gql && npm run test -- --coverage
+    - name: ✅ Upload coverage to Codecov
+      uses: codecov/codecov-action@v3.1.0
       with:
-        author_name: github-ci/cd
-        author_email: engineering@nft.com
-        message: 'fix: add coverage into docs'
-        add: 'docs/*'
+        token: ${{ secrets.CODECOV_TOKEN }}
