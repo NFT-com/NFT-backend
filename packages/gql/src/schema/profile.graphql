@@ -21,12 +21,20 @@ enum ProfileDisplayType {
   Collection
 }
 
+enum ProfileLayoutType {
+  Default
+  Mosaic
+  Featured
+  Spotlight
+}
+
 type Profile {
   id: ID!
   bannerURL: String
   createdAt: DateTime!
   description: String
   displayType: ProfileDisplayType
+  layoutType: ProfileLayoutType
   followersCount: Int
   isFollowedByMe: Boolean
   isOwnedByMe: Boolean
@@ -63,6 +71,7 @@ input UpdateProfileInput {
   gkIconVisible: Boolean
   nftsDescriptionsVisible: Boolean
   displayType: ProfileDisplayType
+  layoutType: ProfileLayoutType
 }
 
 input ProfileClaimedInput {
