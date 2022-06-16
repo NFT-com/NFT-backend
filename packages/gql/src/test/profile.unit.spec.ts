@@ -46,7 +46,11 @@ describe('profile resolver', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         profile: {
-          findByURL: () => Promise.resolve(null),
+          findByURL: (url: any) => Promise.resolve({
+            id: 'test',
+            url: url,
+            layoutType: 'Mosaic',
+          }),
         },
       })
     })
