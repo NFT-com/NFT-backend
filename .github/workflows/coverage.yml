@@ -78,7 +78,7 @@ jobs:
     - run: cd packages/shared && npm i
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
-    - run: cd packages/gql && npm run test -- --coverage
+    - run: cd packages/gql && npm run test
     - name: ✅ Upload coverage to Codecov
       uses: codecov/codecov-action@v3.1.0
       with:
