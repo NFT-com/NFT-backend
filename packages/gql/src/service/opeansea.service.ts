@@ -14,6 +14,10 @@ export interface OpenseaResponse {
   asset: {
     permalink: string
   }
+  payment_token_contract: {
+    decimals: number
+    usd_price: number
+  }
 }
 
 /**
@@ -75,7 +79,7 @@ export const retrieveOffersOpensea = async (
   let url
   let config
   if (chainId === '4') {
-    return await retrieveOrdersOpensea(contract, tokenId, chainId, 0)
+    return []
   } else {
     url = `https://api.opensea.io/api/v1/asset/${contract}/${tokenId}/offers?limit=50`
     config = {

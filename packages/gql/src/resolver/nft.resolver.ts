@@ -1,4 +1,5 @@
-import { BigNumber, ethers, utils } from 'ethers'
+import { BigNumber as BN } from 'bignumber.js'
+import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Redis from 'ioredis'
 import Joi from 'joi'
@@ -358,12 +359,18 @@ const getExternalListings = async (
     const buyOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 0)
     await delay(1000)
     const sellOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 1)
-
+    await delay(1000)
     let bestOffer = undefined
     if (buyOrders && buyOrders.length) {
       bestOffer = buyOrders[0]
       for (let i = 1; i < buyOrders.length; i++) {
-        if (BigNumber.from(bestOffer.current_price) < BigNumber.from(buyOrders[i].current_price))
+        const usdPrice0 = new BN(bestOffer.current_price)
+          .shiftedBy(-bestOffer.payment_token_contract.decimals)
+          .multipliedBy(bestOffer.payment_token_contract.usd_price)
+        const usdPrice1 = new BN(buyOrders[i].current_price)
+          .shiftedBy(-buyOrders[i].payment_token_contract.decimals)
+          .multipliedBy(buyOrders[i].payment_token_contract.usd_price)
+        if (usdPrice0.lt(usdPrice1))
           bestOffer = buyOrders[i]
       }
     }
