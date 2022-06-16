@@ -2,6 +2,8 @@
 
 NFT.com platform's GraphQL server and worker to sync Blockchain data.
 
+[![codecov](https://codecov.io/gh/NFT-com/NFT-backend/branch/main/graph/badge.svg?token=ZD5WGF7BNS)](https://codecov.io/gh/NFT-com/NFT-backend)
+
 ## Getting Started
 
 ### 1. Requirements
