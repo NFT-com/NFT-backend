@@ -360,7 +360,7 @@ const getExternalListings = async (
     const sellOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 1)
 
     let bestOffer = undefined
-    if (buyOrders.length) {
+    if (buyOrders && buyOrders.length) {
       bestOffer = buyOrders[0]
       for (let i = 1; i < buyOrders.length; i++) {
         if (BigNumber.from(bestOffer.current_price) < BigNumber.from(buyOrders[i].current_price))
@@ -369,14 +369,14 @@ const getExternalListings = async (
     }
 
     let createdDate, expiration
-    if (sellOrders.length) {
+    if (sellOrders && sellOrders.length) {
       createdDate = new Date(sellOrders[0].created_date)
       expiration = new Date(sellOrders[0].expiration_time * 1000)
     }
     const opensea = {
-      url: sellOrders.length ? sellOrders[0].asset.permalink : null,
+      url: sellOrders && sellOrders.length ? sellOrders[0].asset.permalink : null,
       exchange: gql.SupportedExternalExchange.Opensea,
-      price: sellOrders.length ? sellOrders[0].current_price : null,
+      price: sellOrders && sellOrders.length ? sellOrders[0].current_price : null,
       highestOffer: bestOffer ? bestOffer.current_price : null,
       expiration: createdDate ?? null,
       creation: expiration ?? null,
@@ -387,6 +387,26 @@ const getExternalListings = async (
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getExternalListings: ${err}`)
   }
+}
+
+export const refreshNft = (
+  _: any,
+  args: gql.MutationRefreshNFTArgs,
+  ctx: Context,
+): Promise<gql.NFT> => {
+  const { repositories } = ctx
+  logger.debug('refreshNft', { id: args?.id })
+  return repositories.nft.findById(args?.id)
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      ),
+    ))
+    .then(fp.tap((nft: entity.NFT) => {
+      return repositories.wallet.findById(nft.walletId)
+        .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
+    }))
 }
 
 export default {
@@ -403,6 +423,7 @@ export default {
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
+    refreshNft,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

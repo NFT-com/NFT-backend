@@ -29,7 +29,7 @@ export const retrieveOrdersOpensea = async (
   tokenId: string,
   chainId: string,
   buyOrSell: number,
-): Promise<Array<OpenseaResponse>> => {
+): Promise<Array<OpenseaResponse> | undefined> => {
   let url
   const baseUrl = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
   const config = chainId === '4' ? {
@@ -43,6 +43,7 @@ export const retrieveOrdersOpensea = async (
   try {
     const responses: Array<OpenseaResponse> = []
     let offset = 0
+
     // eslint-disable-next-line no-constant-condition
     while (true) {
       url = `${baseUrl}/orders?asset_contract_address=${contract}&bundled=false&include_bundled=false&token_id=${tokenId}&side=${buyOrSell}&limit=50&offset=${offset}&order_by=created_date&order_direction=desc`
@@ -62,7 +63,7 @@ export const retrieveOrdersOpensea = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
-    return []
+    return undefined
   }
 }
 
@@ -70,7 +71,7 @@ export const retrieveOffersOpensea = async (
   contract: string,
   tokenId: string,
   chainId: string,
-): Promise<Array<OpenseaResponse>> => {
+): Promise<Array<OpenseaResponse> | undefined> => {
   let url
   let config
   if (chainId === '4') {
@@ -90,7 +91,7 @@ export const retrieveOffersOpensea = async (
     } catch (err) {
       Sentry.captureException(err)
       Sentry.captureMessage(`Error in retrieveOffersOpensea: ${err}`)
-      return []
+      return undefined
     }
   }
 }

@@ -6,13 +6,10 @@ import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
-import { rateLimitDirective } from 'graphql-rate-limit-directive'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
-import { RateLimiterMemory } from 'rate-limiter-flexible'
 import * as util from 'util'
 
-import { makeExecutableSchema } from '@graphql-tools/schema'
 import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -22,8 +19,7 @@ import * as Tracing from '@sentry/tracing'
 import { authMessage, isProduction, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
-import { resolvers } from './resolver'
-import { typeDefs } from './schema'
+import { rateLimitedSchema } from './schema'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
@@ -42,10 +38,10 @@ type GQLError = {
 const getAddressFromSignature = (signature: string): string =>
   utils.verifyMessage(authMessage, signature)
 
-const createContext = async (ctx): Promise<Context> => {
+export const createContext = async (ctx): Promise<Context> => {
   const { req, connection } = ctx
   // * For subscription and query-mutation, gql handles headers differently 😪
-  const headers = connection && connection.context ? connection.context : req.headers
+  const headers = connection && connection.context ? connection.context : req?.headers
 
   const network = headers[networkHeader] || null
   const chainId = headers[chainIdHeader] || null
@@ -74,7 +70,7 @@ const createContext = async (ctx): Promise<Context> => {
   }
 }
 
-const formatError = (error: GraphQLError): GQLError => {
+export const formatError = (error: GraphQLError): GQLError => {
   const { message, path, extensions } = error
   const errorKey = extensions?.['errorKey'] || 'UNKNOWN'
   const statusCode = extensions?.['code'] || ''
@@ -200,37 +196,7 @@ export const start = async (): Promise<void> => {
     }
   })
 
-  const keyGenerator = (directiveArgs, source, args, context): string =>
-    `${context.user.id}`
-
-  class DebugRateLimiterMemory extends RateLimiterMemory {
-
-    consume(key, pointsToConsume, options): any {
-      logger.debug(`[CONSUME] ${key} for ${pointsToConsume}`)
-      return super.consume(key, pointsToConsume, options)
-    }
-
-  }
-
-  const { rateLimitDirectiveTypeDefs, rateLimitDirectiveTransformer } = rateLimitDirective({
-    keyGenerator,
-    limiterClass: DebugRateLimiterMemory,
-  })
-
-  const schemaInput = makeExecutableSchema({
-    typeDefs: [
-      rateLimitDirectiveTypeDefs,
-      `
-      type Mutation {
-        signHash(input: SignHashInput!): SignHashOutput @rateLimit(limit: 1, duration: 15)
-      }
-      `,
-      typeDefs(),
-    ],
-    resolvers,
-  })
-
-  const schema = rateLimitDirectiveTransformer(schemaInput)
+  const schema = rateLimitedSchema()
 
   server = new ApolloServer({
     //gql schema only visibly locally
