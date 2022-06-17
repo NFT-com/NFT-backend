@@ -18,6 +18,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { redisConfig } from '@nftcom/gql/config'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { delay } from '@nftcom/gql/service/core.service'
+import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
@@ -30,6 +31,65 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
+
+const baseCoins = [
+  {
+    symbol: 'ETH',
+    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+    address: '0x0000000000000000000000000000000000000000',
+    decimals: 18,
+    chainId: 1,
+  },
+  {
+    symbol: 'ETH',
+    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+    address: '0x0000000000000000000000000000000000000000',
+    decimals: 18,
+    chainId: 4,
+  },
+  {
+    symbol: 'WETH',
+    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+    address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    decimals: 18,
+    chainId: 1,
+  },
+  {
+    symbol: 'WETH',
+    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+    address: '0xc778417e063141139fce010982780140aa0cd5ab',
+    decimals: 18,
+    chainId: 4,
+  },
+  {
+    symbol: 'USDC',
+    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+    address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+    decimals: 6,
+    chainId: 1,
+  },
+  {
+    symbol: 'USDC',
+    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+    address: '0x4dbcdf9b62e891a7cec5a2568c3f4faf9e8abe2b',
+    decimals: 6,
+    chainId: 4,
+  },
+  {
+    symbol: 'DAI',
+    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
+    address: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    decimals: 18,
+    chainId: 1,
+  },
+  {
+    symbol: 'DAI',
+    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
+    address: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
+    decimals: 18,
+    chainId: 4,
+  },
+]
 
 const getNFT = (
   _: unknown,
@@ -354,13 +414,12 @@ const getExternalListings = async (
     chainId: args?.chainId,
     caller: ctx.user?.id,
   })
-  // 1. Opensea
-  // get selling orders...
   try {
+    // 1. Opensea
+    // get selling & buying orders...
     const buyOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 0)
     await delay(1000)
     const sellOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 1)
-    await delay(1000)
     let bestOffer = undefined
     if (buyOrders && buyOrders.length) {
       bestOffer = buyOrders[0]
@@ -397,7 +456,34 @@ const getExternalListings = async (
       baseCoin: baseCoin ?? null,
     }
 
-    return { listings: [opensea] }
+    // 2. Looksrare
+    const looksrareSellOrders = await retrieveOrdersLooksrare(
+      args?.contract,
+      args?.tokenId,
+      args?.chainId,
+      true,
+    )
+    const url = args?.chainId === '4' ? `https://rinkeby.looksrare.org/collections/${args?.contract}/${args?.tokenId}` :
+      `https://looksrare.org/collections/${args?.contract}/${args?.tokenId}`
+    let looksrareCreatedDate, looksrareExpiration, looksrareBaseCoin
+    if (looksrareSellOrders && looksrareSellOrders.length) {
+      looksrareCreatedDate = new Date(looksrareSellOrders[0].startTime * 1000)
+      looksrareExpiration = new Date(looksrareSellOrders[0].endTime * 1000)
+      looksrareBaseCoin = baseCoins.find((coin) =>
+        coin.address === looksrareSellOrders[0].currencyAddress.toLowerCase(),
+      )
+    }
+    const looksrare = {
+      url: looksrareSellOrders && looksrareSellOrders.length ? url : null,
+      exchange: gql.SupportedExternalExchange.Looksrare,
+      price: looksrareSellOrders && looksrareSellOrders.length ?
+        looksrareSellOrders[0].price : null,
+      highestOffer: null,
+      expiration: looksrareExpiration ?? null,
+      creation: looksrareCreatedDate ?? null,
+      baseCoin: looksrareBaseCoin ?? null,
+    }
+    return { listings: [opensea, looksrare] }
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getExternalListings: ${err}`)
