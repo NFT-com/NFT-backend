@@ -8,10 +8,12 @@
     "build": "npm run clean && npm run compile",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "compile": "tsc && tsc-alias",
-    "test": "npm run build && node dist/index"
+    "pretest": "npm run build",
+    "test": "artillery run artillery.yml"
   },
   "devDependencies": {
     "@types/k6": "^0.37.0",
+    "artillery": "^2.0.0-18",
     "tsc-alias": "^1.6.10",
     "typescript": "^4.7.3"
   },
