@@ -18,6 +18,13 @@ type UserPreferences {
   outbidNotifications: Boolean
   purchaseSuccessNotifications: Boolean
   promotionalNotifications: Boolean
+  nftSoldNotifications: Boolean
+  nftListingChangeNotifications: Boolean
+  nftOwnerChangeNotifications: Boolean
+  nftNewBidNotifications: Boolean
+  collectionFloorChangeNotifications: Boolean
+  collectionAssetSoldNotifications: Boolean
+  collectionNewListingNotifications: Boolean
 }
 
 type Attributes {
@@ -44,6 +51,13 @@ input UserPreferencesInput {
   outbidNotifications: Boolean
   purchaseSuccessNotifications: Boolean
   promotionalNotifications: Boolean
+  nftSoldNotifications: Boolean
+  nftListingChangeNotifications: Boolean
+  nftOwnerChangeNotifications: Boolean
+  nftNewBidNotifications: Boolean
+  collectionFloorChangeNotifications: Boolean
+  collectionAssetSoldNotifications: Boolean
+  collectionNewListingNotifications: Boolean
 }
 
 input SignUpInput {

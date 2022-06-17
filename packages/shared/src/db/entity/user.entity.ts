@@ -39,6 +39,13 @@ export class User extends BaseEntity {
     outbidNotifications: true,
     purchaseSuccessNotifications: true,
     promotionalNotifications: true,
+    nftSoldNotifications: true,
+    nftListingChangeNotifications: true,
+    nftOwnerChangeNotifications: true,
+    nftNewBidNotifications: true,
+    collectionFloorChangeNotifications: true,
+    collectionAssetSoldNotifications: true,
+    collectionNewListingNotifications: true,
   } })
   preferences: UserPreferences
 

@@ -93,6 +93,13 @@ export type UserPreferences = {
   outbidNotifications: boolean
   purchaseSuccessNotifications: boolean
   promotionalNotifications: boolean
+  nftSoldNotifications: boolean
+  nftListingChangeNotifications: boolean
+  nftOwnerChangeNotifications: boolean
+  nftNewBidNotifications: boolean
+  collectionFloorChangeNotifications: boolean
+  collectionAssetSoldNotifications: boolean
+  collectionNewListingNotifications: boolean
 }
 
 export enum ProfileStatus {
