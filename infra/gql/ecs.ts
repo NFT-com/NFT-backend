@@ -184,6 +184,7 @@ const createEcsTaskDefinition = (
               'awslogs-stream-prefix': 'gql',
             },
           },
+          memoryReservation: config.requireNumber('ecsTaskMemory'),
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
@@ -213,8 +214,8 @@ const applyEcsServiceAutoscaling = (
   service: aws.ecs.Service,
 ): void => {
   const target = new aws.appautoscaling.Target('target_gql_ecs', {
-    maxCapacity: parseInt(config.require('ecsAutoScaleMax')),
-    minCapacity: parseInt(config.require('ecsAutoScaleMin')),
+    maxCapacity: config.requireNumber('ecsAutoScaleMax'),
+    minCapacity: config.requireNumber('ecsAutoScaleMin'),
     resourceId: service.id.apply((id) => id.split(':').pop() || ''),
     scalableDimension: 'ecs:service:DesiredCount',
     serviceNamespace: 'ecs',
@@ -251,8 +252,10 @@ export const createEcsService = (
       enable: true,
       rollback: true,
     },
+    desiredCount: config.requireNumber('ecsAutoScaleMin'),
     enableEcsManagedTags: true,
     enableExecuteCommand: true,
+    forceNewDeployment: true,
     healthCheckGracePeriodSeconds: 20,
     launchType: 'FARGATE',
     loadBalancers: [
