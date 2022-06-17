@@ -261,6 +261,7 @@ const maybeUpdateProfileOwnership = (
               description: null,
               nftsLastUpdated: null,
               displayType: defs.ProfileDisplayType.NFT,
+              layoutType: defs.ProfileLayoutType.Default,
             }))
             .then(fp.tap(() => ctx.repositories.edge.hardDelete({
               edgeType: defs.EdgeType.Displays,
@@ -347,6 +348,14 @@ const updateProfile = (
     displayType: Joi.string()
       .valid(defs.ProfileDisplayType.NFT, defs.ProfileDisplayType.Collection)
       .allow(null),
+    layoutType: Joi.string()
+      .valid(
+        defs.ProfileLayoutType.Default,
+        defs.ProfileLayoutType.Mosaic,
+        defs.ProfileLayoutType.Featured,
+        defs.ProfileLayoutType.Spotlight,
+      )
+      .allow(null),
   })
   joi.validateSchema(schema, args.input)
 
@@ -363,6 +372,7 @@ const updateProfile = (
       p.description = args.input.description ?? p.description
       p.photoURL = args.input.photoURL ?? p.photoURL
       p.displayType = args.input.displayType ?? p.displayType
+      p.layoutType = args.input.layoutType ?? p.layoutType
       p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
       p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible
       return changeNFTsVisibility(

@@ -106,6 +106,13 @@ export enum ProfileDisplayType {
   Collection = 'Collection',
 }
 
+export enum ProfileLayoutType {
+  Default = 'Default',
+  Mosaic = 'Mosaic',
+  Featured = 'Featured',
+  Spotlight = 'Spotlight',
+}
+
 export type Signature = {
   v: number
   r: string
