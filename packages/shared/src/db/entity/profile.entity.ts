@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { ProfileDisplayType, ProfileStatus } from '@nftcom/shared/defs'
+import { ProfileDisplayType, ProfileLayoutType, ProfileStatus } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
 
@@ -55,5 +55,13 @@ export class Profile extends BaseEntity {
     default: ProfileDisplayType.NFT,
   })
   displayType: ProfileDisplayType
+
+  @Column({
+    type: 'enum',
+    enum: ProfileLayoutType,
+    nullable: false,
+    default: ProfileLayoutType.Default,
+  })
+  layoutType: ProfileLayoutType
 
 }
