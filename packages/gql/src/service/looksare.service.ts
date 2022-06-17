@@ -22,12 +22,15 @@ export interface LookrareResponse {
  * @param contract
  * @param tokenId
  * @param chainId
+ * @param isOrderAsk
+ * @param status
  */
 export const retrieveOrdersLooksrare = async (
   contract: string,
   tokenId: string,
   chainId: string,
   isOrderAsk: boolean,
+  status: string,
 ): Promise<Array<LookrareResponse> | undefined> => {
   let url
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
@@ -35,7 +38,7 @@ export const retrieveOrdersLooksrare = async (
     headers: { Accept: 'application/json' },
   }
   try {
-    url = `${baseUrl}/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=VALID&sort=PRICE_ASC`
+    url = `${baseUrl}/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=${status}&sort=PRICE_ASC`
     const res = await axios.get(url, config)
     if (res && res.data && res.data.data) {
       const orders = res.data.data as Array<LookrareResponse>

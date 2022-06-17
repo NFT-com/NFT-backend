@@ -30,12 +30,14 @@ export interface OpenseaResponse {
  * @param tokenId
  * @param chainId
  * @param buyOrSell
+ * @param listedBefore
  */
 export const retrieveOrdersOpensea = async (
   contract: string,
   tokenId: string,
   chainId: string,
   buyOrSell: number,
+  listedBefore?: string,
 ): Promise<Array<OpenseaResponse> | undefined> => {
   let url
   const baseUrl = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
@@ -53,7 +55,11 @@ export const retrieveOrdersOpensea = async (
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      url = `${baseUrl}/orders?asset_contract_address=${contract}&bundled=false&include_bundled=false&token_id=${tokenId}&side=${buyOrSell}&limit=50&offset=${offset}&order_by=created_date&order_direction=desc`
+      if (listedBefore) {
+        url = `${baseUrl}/orders?asset_contract_address=${contract}&bundled=false&include_bundled=false&listed_before=${listedBefore}&token_id=${tokenId}&side=${buyOrSell}&limit=50&offset=${offset}&order_by=created_date&order_direction=desc`
+      } else {
+        url = `${baseUrl}/orders?asset_contract_address=${contract}&bundled=false&include_bundled=false&token_id=${tokenId}&side=${buyOrSell}&limit=50&offset=${offset}&order_by=created_date&order_direction=desc`
+      }
       const res = await axios.get(url, config)
       if (res && res.data && res.data.orders) {
         const orders = res.data.orders as Array<OpenseaResponse>
