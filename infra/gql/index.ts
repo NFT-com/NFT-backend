@@ -41,8 +41,8 @@ const createAndUploadEBDeployFile = async (
   })
   archive.pipe(output)
   archive.append(JSON.stringify(dockerFile), { name: 'Dockerrun.aws.json' })
-  
-  // add nginx config file to eb application zip to upload > 1MB 
+
+  // add nginx config file to eb application zip to upload > 1MB
   const nginxFile = __dirname + '/proxy.conf'
   archive.append(fs.createReadStream(nginxFile), { name: '.platform/nginx/conf.d/proxy.conf' })
 
@@ -118,6 +118,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS'] = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS || parsedFile['MINTED_PROFILE_EVENTS_MAX_BLOCKS']
   parsedFile['PROFILE_NFTS_EXPIRE_DURATION'] = process.env.PROFILE_NFTS_EXPIRE_DURATION || parsedFile['PROFILE_NFTS_EXPIRE_DURATION']
   parsedFile['BULL_MAX_REPEAT_COUNT'] = process.env.BULL_MAX_REPEAT_COUNT || parsedFile['BULL_MAX_REPEAT_COUNT']
+  parsedFile['OPENSEA_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_API_KEY']
 
   console.log(JSON.stringify(parsedFile))
 
