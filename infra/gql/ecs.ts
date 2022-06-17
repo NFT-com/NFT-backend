@@ -2,7 +2,11 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { getResourceName } from '../helper'
+import { getResourceName, getTags } from '../helper'
+
+const tags = {
+  service: 'gql',
+}
 
 const attachLBListeners = (
   lb: aws.lb.LoadBalancer,
@@ -23,6 +27,7 @@ const attachLBListeners = (
     loadBalancerArn: lb.arn,
     port: 80,
     protocol: 'HTTP',
+    tags: getTags(tags),
   })
 
   new aws.lb.Listener('listener_https_dev_gql_ecs', {
@@ -38,6 +43,7 @@ const attachLBListeners = (
     port: 443,
     protocol: 'HTTPS',
     sslPolicy: 'ELBSecurityPolicy-2016-08',
+    tags: getTags(tags),
   })
 }
 
@@ -62,6 +68,7 @@ const createEcsTargetGroup = (
     },
     targetType: 'ip',
     vpcId: infraOutput.vpcId,
+    tags: getTags(tags),
   })
 }
 
@@ -73,6 +80,7 @@ const createEcsLoadBalancer = (
     name: getResourceName('gql-ecs'),
     securityGroups: [infraOutput.webSGId],
     subnets: infraOutput.publicSubnets,
+    tags: getTags(tags),
   })
 }
 
@@ -82,9 +90,10 @@ const createEcsCluster = (): aws.ecs.Cluster => {
     settings: [
       {
         name: 'containerInsights',
-        value: 'disabled',
+        value: 'enabled',
       },
     ],
+    tags: getTags(tags),
   })
 
   new aws.ecs.ClusterCapacityProviders('ccp_gql', {
@@ -117,6 +126,7 @@ const createEcsTaskRole = (): aws.iam.Role => {
         },
       ],
     },
+    tags: getTags(tags),
   })
 
   const policy = new aws.iam.Policy('policy_gql_ecs_ssm', {
@@ -130,11 +140,16 @@ const createEcsTaskRole = (): aws.iam.Role => {
             'ssmmessages:CreateDataChannel',
             'ssmmessages:OpenControlChannel',
             'ssmmessages:OpenDataChannel',
+            'logs:CreateLogGroup',
+            'logs:CreateLogStream',
+            'logs:PutLogEvents',
+            'logs:DescribeLogStreams',
           ],
           Resource: '*',
         },
       ],
     },
+    tags: getTags(tags),
   })
 
   new aws.iam.RolePolicyAttachment('rpa_gql_ecs_ssm', {
@@ -151,9 +166,10 @@ const createEcsTaskDefinition = (
 ): aws.ecs.TaskDefinition => {
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
+  const resourceName = getResourceName('gql')
 
   return new aws.ecs.TaskDefinition(
-    'dev-gql-td',
+    'gql-td',
     {
       containerDefinitions: JSON.stringify([
         {
@@ -162,13 +178,13 @@ const createEcsTaskDefinition = (
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-group': '/ecs/dev-gql',
+              'awslogs-create-group': 'True',
+              'awslogs-group': `/ecs/${resourceName}`,
               'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'ecs',
+              'awslogs-stream-prefix': 'gql',
             },
           },
-          memoryReservation: parseInt(config.require('ecsTaskMemory')),
-          name: getResourceName('gql'),
+          name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
@@ -178,12 +194,13 @@ const createEcsTaskDefinition = (
       memory: config.require('ecsTaskMemory'),
       taskRoleArn: role.arn,
       executionRoleArn: 'arn:aws:iam::016437323894:role/ECSServiceTask',
-      family: getResourceName('gql'),
+      family: resourceName,
       networkMode: 'awsvpc',
       requiresCompatibilities: ['FARGATE'],
       runtimePlatform: {
         operatingSystemFamily: 'LINUX',
       },
+      tags: getTags(tags),
     },
     {
       dependsOn: [pulumi.output(role)],
@@ -252,6 +269,7 @@ export const createEcsService = (
       subnets: infraOutput.publicSubnets,
     },
     taskDefinition: taskDefinition.arn,
+    tags: getTags(tags),
   })
 
   applyEcsServiceAutoscaling(config, service)
