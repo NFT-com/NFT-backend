@@ -46,7 +46,5 @@ jobs:
     - name: Install k6
       run: |
         curl https://github.com/loadimpact/k6/releases/download/v0.26.2/k6-v0.26.2-linux64.tar.gz -L | tar xvz --strip-components 1
-        mv k6-v0.26.2-linux64/k6 $HOME/.local/bin
-        ls $HOME/.local/bin
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo "$(pwd)/k6-v0.26.2-linux64" >> $GITHUB_PATH
     - run: cd packages/gql_loadtest && npm test
