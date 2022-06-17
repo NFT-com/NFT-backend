@@ -13,6 +13,15 @@ const printedTypeDefs = print(typeDefs)
 
 const easyGraphQLLoadTester = new LoadTesting(printedTypeDefs, args)
 
+// const testCases = easyGraphQLLoadTester.artillery({
+//   selectedQueries: ['collection', 'gkNFTs'],
+//   queryFile: true,
+// })
+
+// module.exports = {
+//   testCases,
+// }
+
 easyGraphQLLoadTester.k6('k6.js', {
   selectedQueries: ['collection', 'gkNFTs'],
   vus: 10,
