@@ -122,6 +122,13 @@ enum SupportedExternalExchange {
   rarible
 }
 
+type BaseCoin {
+  symbol: String
+  logoURI: String
+  address: String
+  decimals: Int
+}
+
 type ExternalListing {
   url: String
   exchange: SupportedExternalExchange
@@ -129,6 +136,7 @@ type ExternalListing {
   highestOffer: String # 18 decimals
   expiration: DateTime
   creation: DateTime
+  baseCoin: BaseCoin
 }
 
 type ExternalListingsOutput {

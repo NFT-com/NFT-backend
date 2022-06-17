@@ -16,6 +16,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { redisConfig } from '@nftcom/gql/config'
+import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { delay } from '@nftcom/gql/service/core.service'
 import {
   checkNFTContractAddresses,
@@ -375,10 +376,16 @@ const getExternalListings = async (
       }
     }
 
-    let createdDate, expiration
+    let createdDate, expiration, baseCoin
     if (sellOrders && sellOrders.length) {
       createdDate = new Date(sellOrders[0].created_date)
       expiration = new Date(sellOrders[0].expiration_time * 1000)
+      baseCoin = {
+        symbol: sellOrders[0].payment_token_contract.symbol,
+        logoURI: sellOrders[0].payment_token_contract.image_url,
+        address: sellOrders[0].payment_token_contract.address,
+        decimals: sellOrders[0].payment_token_contract.decimals,
+      } as BaseCoin
     }
     const opensea = {
       url: sellOrders && sellOrders.length ? sellOrders[0].asset.permalink : null,
@@ -387,6 +394,7 @@ const getExternalListings = async (
       highestOffer: bestOffer ? bestOffer.current_price : null,
       expiration: createdDate ?? null,
       creation: expiration ?? null,
+      baseCoin: baseCoin ?? null,
     }
 
     return { listings: [opensea] }

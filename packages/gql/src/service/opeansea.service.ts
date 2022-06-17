@@ -17,6 +17,9 @@ export interface OpenseaResponse {
   payment_token_contract: {
     decimals: number
     usd_price: number
+    symbol: string
+    address: string
+    image_url: string
   }
 }
 
