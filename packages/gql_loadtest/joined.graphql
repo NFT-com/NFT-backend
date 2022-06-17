@@ -1,0 +1,821 @@
+type Approval {
+  id: ID!
+  amount: Uint256!
+  currency: Address!
+  deadline: String!
+  nonce: Int!
+  signature: Signature!
+  txHash: String!
+  wallet: Wallet
+  spender: String
+  createdAt: DateTime!
+}
+
+input ApprovalInput {
+  amount: Uint256!
+  currency: Address!
+  deadline: String!
+  nonce: Int!
+  signature: SignatureInput!
+  spender: String!
+  txHash: String!
+  wallet: WalletInput!
+}
+
+type Mutation {
+  approveAmount(input: ApprovalInput!): Approval!
+  bid(input: BidInput!): Bid!
+  cancelBid(id: ID!): Boolean!
+  signHashProfile(profileUrl: String!): SignHashOutput!
+  signHash(input: SignHashInput!): SignHashOutput!
+  setProfilePreferences(input: ProfilePreferenceInput!): [Bid!]!
+  createCuration(input: CreateCurationInput!): Curation!
+  updateCuration(input: UpdateCurationInput!): Curation!
+  setCuration(input: SetCurationInput!): Profile!
+  removeCuration(input: RemoveCurationInput!): Profile!
+  createAsk(input: CreateAskInput!): MarketAsk!
+  cancelAsk(input: CancelAskInput!): Boolean!
+  buyNow(input: BuyNowInput!): MarketSwap!
+  createBid(input: CreateBidInput!): MarketBid!
+  cancelMarketBid(input: CancelBidInput!): Boolean!
+  swapNFT(input: SwapNFTInput!): MarketSwap!
+  uploadFileSession: FileUploadOutput!
+  refreshMyNFTs: RefreshMyNFTsOutput!
+  updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
+  refreshNft(id: ID!): NFT!
+  followProfile(url: String): Profile!
+  unfollowProfile(id: ID!): Profile!
+  updateProfile(input: UpdateProfileInput!): Profile!
+  profileClaimed(input: ProfileClaimedInput!): Profile!
+  mintGKProfile(input: MintGKProfileInput): String!
+  uploadProfileImages(input: UploadProfileImagesInput): Profile!
+  createCompositeImage(input: CreateCompositeImageInput): Profile!
+  orderingUpdates(input: OrderingUpdatesInput!): Profile!
+  signUp(input: SignUpInput!): User!
+  updateMe(input: UpdateUserInput!): User!
+  updateEmail(input: UpdateEmailInput!): User!
+  confirmEmail(token: String!): Boolean!
+  resendEmailConfirm: User!
+  addAddress(input: WalletInput!): Wallet!
+  addToWatchlist(input: WatchlistInput!): Boolean
+  deleteFromWatchlist(input: WatchlistInput!): Boolean
+}
+
+enum BidStatus {
+  Executed
+  Submitted
+}
+
+type Bid {
+  id: ID!
+  nftType: NFTType!
+  price: Uint256!
+  profile: Profile
+  signature: Signature!
+  stakeWeightedSeconds: Int
+  status: BidStatus!
+  wallet: Wallet
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input BidInput {
+  nftType: NFTType!
+  wallet: WalletInput!
+  price: Uint256!
+  profileURL: String
+  signature: SignatureInput!
+}
+
+input SignHashInput {
+  timestamp: String!
+}
+
+input BidsInput {
+  pageInput: PageInput
+  profileId: ID
+  wallet: WalletInput
+  nftType: NFTType
+}
+
+type BidsOutput {
+  items: [Bid!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type SignHashOutput {
+  signature: String!
+  hash: String!
+}
+
+input TopBidsInput {
+  pageInput: PageInput
+  profileId: ID
+  status: BidStatus
+}
+
+input ProfilePreferenceInput {
+  urls: [String!]!
+}
+
+type Query {
+  myBids(input: BidsInput): BidsOutput!
+  topBids(input: TopBidsInput): BidsOutput!
+  collection(input: CollectionInput!): Collection
+  myCurations(input: CurationsInput!): CurationsOutput
+  getAsks(input: AsksInput!): GetMarketAsk!
+  getNFTAsks(input: NftAsksInput!): [MarketAsk!]!
+  getNFTOffers(input: NftAsksInput!): [MarketAsk!]!
+  filterAsks(input: FilterAskInput!): GetMarketAsk!
+  getBids(input: MarketBidsInput!): GetMarketBid!
+  getSwaps(input: SwapsInput!): GetMarketSwap!
+  getUserSwaps(input: UserSwapsInput!): GetMarketSwap!
+  getContracts(input: getContractsInput!): GetContracts!
+  convertEnsToEthAddress(input: convertEnsToEthAddressInput!): ConvertEnsToEthAddress!
+  gkNFTs(tokenId: String!): GetGkNFTSOutput!
+  nft(contract: Address!, id: String!): NFT!
+  nftById(id: ID!): NFT!
+  nfts(input: NFTsInput!): CurationNFTsOutput!
+  myNFTs(input: NFTsInput): NFTsOutput!
+  curationNFTs(input: CurationInput!): CurationNFTsOutput!
+  collectionNFTs(input: CollectionNFTsInput!): NFTsOutput!
+  profileFollowers(input: FollowersInput!): FollowersOutput!
+  profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
+  myProfiles(input: ProfilesInput): ProfilesOutput!
+  profile(url: String!): Profile!
+  profilePassive(url: String!): Profile!
+  blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
+  insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
+  latestProfiles(input: LatestProfilesInput): ProfilesOutput!
+  me: User!
+  getMyGenesisKeys: [GkOutput]!
+  isAddressWhitelisted(input: WhitelistCheckInput): Boolean!
+  watchlist(userId: ID!): Watchlist!
+}
+
+type Collection {
+  id: ID!
+  contract: Address!
+  name: String
+}
+
+input CollectionInput {
+  contract: Address
+  network: String
+}
+
+type CurationItem {
+  size: NFTSize
+  id: ID!
+}
+
+type Curation {
+  id: ID!
+  items: [CurationItem!]
+}
+
+input CurationsInput {
+  pageInput: PageInput
+}
+
+type CurationsOutput {
+  items: [Curation!]!
+  totalItems: Int
+  pageInfo: PageInfo
+}
+
+input CurationItemInput {
+  size: NFTSize
+  id: ID!
+}
+
+input CreateCurationInput {
+  items: [CurationItemInput!]!
+}
+
+input UpdateCurationInput {
+  id: ID!
+  items: [CurationItemInput!]!
+}
+
+input SetCurationInput {
+  profileId: ID!
+  curationId: ID!
+}
+
+input RemoveCurationInput {
+  profileId: ID!
+}
+
+enum AssetClass {
+  ETH
+  ERC20
+  ERC721
+  ERC1155
+}
+
+enum AuctionType {
+  FixedPrice
+  English
+  Decreasing
+}
+
+enum AskSortType {
+  RecentlyCreated
+  RecentlySold
+  EndingSoon
+  Oldest
+}
+
+type GetMarketAsk {
+  items: [MarketAsk!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type AssetType {
+  assetClass: AssetClass!
+  bytes: String!
+  contractAddress: Address!
+  tokenId: Uint256!
+  allowAll: Boolean!
+}
+
+type MarketplaceAsset {
+  standard: AssetType!
+  nftId: String
+  bytes: String!
+  value: Uint256!
+  minimumBid: Uint256!
+}
+
+type MarketAsk {
+  id: ID!
+  structHash: String!
+  nonce: Int!
+  signature: Signature!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAsset!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAsset!]
+  buyNowTaker: String
+  marketSwapId: String
+  approvalTxHash: String
+  cancelTxHash: String
+  start: Int!
+  end: Int!
+  salt: Int!
+  offerAcceptedAt: DateTime
+  chainId: String!
+  auctionType: AuctionType!
+}
+
+input AsksInput {
+  makerAddress: Address
+  pageInput: PageInput
+}
+
+input NftAsksInput {
+  nftTokenId: Uint256!
+  nftContractAddress: Address!
+  makerAddress: Address
+}
+
+input AssetTypeInput {
+  assetClass: AssetClass!
+  bytes: String!
+  contractAddress: String!
+  tokenId: Uint256
+  allowAll: Boolean!
+}
+
+input MarketplaceAssetInput {
+  standard: AssetTypeInput!
+  bytes: String!
+  value: Uint256!
+  minimumBid: Uint256!
+}
+
+input CreateAskInput {
+  structHash: String!
+  nonce: Int!
+  auctionType: AuctionType!
+  signature: SignatureInput!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
+  start: Int!
+  end: Int!
+  salt: Int!
+  chainId: String!
+}
+
+input CancelAskInput {
+  marketAskId: ID!
+  txHash: String!
+}
+
+input BuyNowInput {
+  marketAskId: ID!
+  txHash: String!
+}
+
+input FilterAskInput {
+  auctionType: AuctionType
+  sortBy: AskSortType
+  chainId: String
+  pageInput: PageInput
+}
+
+type GetMarketBid {
+  items: [MarketBid!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type MarketBid {
+  id: ID!
+  structHash: String!
+  nonce: Int!
+  signature: Signature!
+  marketAskId: String!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAsset!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAsset!]
+  marketSwapId: String
+  approvalTxHash: String
+  cancelTxHash: String
+  message: String!
+  start: Int!
+  end: Int!
+  salt: Int!
+  offerAcceptedAt: DateTime
+  acceptedAt: DateTime
+  rejectedAt: DateTime
+  rejectedReason: String
+  chainId: String!
+  auctionType: AuctionType!
+}
+
+input MarketBidsInput {
+  makerAddress: Address
+  marketAskId: String
+  pageInput: PageInput
+}
+
+input CreateBidInput {
+  structHash: String!
+  nonce: Int!
+  signature: SignatureInput!
+  marketAskId: String!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
+  message: String!
+  start: Int!
+  end: Int!
+  salt: Int!
+  chainId: String!
+  auctionType: AuctionType!
+}
+
+input CancelBidInput {
+  marketBidId: ID!
+  txHash: String!
+}
+
+type MarketSwap {
+  marketAsk: MarketAsk
+  marketBid: MarketBid
+  txHash: String!
+  blockNumber: String!
+  private: Boolean
+}
+
+type GetMarketSwap {
+  items: [MarketSwap!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input SwapsInput {
+  marketAskIds: [ID]
+  marketBidIds: [ID]
+  pageInput: PageInput
+}
+
+input UserSwapsInput {
+  participant: Address!
+  pageInput: PageInput
+}
+
+input SwapNFTInput {
+  marketAskId: ID!
+  marketBidId: ID!
+  txHash: String!
+}
+
+type FileUploadOutput {
+  bucket: String!
+  accessKey: String!
+  secretKey: String!
+  sessionToken: String!
+}
+
+input getContractsInput {
+  chainId: String!
+}
+
+input convertEnsToEthAddressInput {
+  ensAddresses: [String!]!
+}
+
+type ConvertEnsToEthAddress {
+  ethAddresses: [String!]!
+}
+
+type GetContracts {
+  marketplace: String!
+  marketplaceEvent: String!
+  validationLogic: String!
+  nftToken: String!
+  profileAuction: String!
+  genesisKey: String!
+  nftProfile: String!
+  genesisKeyStake: String!
+  genesisKeyTeamClaim: String!
+  genesisKeyDistributor: String!
+  genesisKeyTeamMerkle: String!
+}
+
+enum NFTType {
+  ERC721
+  ERC1155
+  UNKNOWN
+  Profile
+  GenesisKey
+  GenesisKeyProfile
+}
+
+enum NFTSize {
+  Small
+  Medium
+  Large
+}
+
+type NFTTrait {
+  type: String!
+  value: String!
+}
+
+type NFTMetadata {
+  name: String
+  description: String
+  imageURL: String
+  traits: [NFTTrait!]!
+}
+
+type NFT {
+  id: ID!
+  contract: Address
+  tokenId: Uint256!
+  isOwnedByMe: Boolean
+  metadata: NFTMetadata!
+  price: Uint256
+  type: NFTType!
+  wallet: Wallet
+  createdAt: DateTime!
+}
+
+input NFTsInput {
+  pageInput: PageInput
+  types: [NFTType!]
+  profileId: ID
+}
+
+input CurationInput {
+  curationId: ID!
+  pageInput: PageInput
+}
+
+input CollectionNFTsInput {
+  collectionAddress: Address!
+  pageInput: PageInput
+}
+
+type TokenUri {
+  raw: String!
+  gateway: String!
+}
+
+type NftMedia {
+  uri: TokenUri
+}
+
+type NftAttributeRecord {
+  type: String
+  value: String
+}
+
+type NftMetadataAlchemy {
+  name: String
+  description: String
+  image: String
+  attributes: [NftAttributeRecord]
+}
+
+type GetGkNFTSOutput {
+  title: String!
+  description: String!
+  tokenUri: TokenUri
+  media: [NftMedia]
+  metadata: NftMetadataAlchemy
+  timeLastUpdated: String!
+  error: String
+}
+
+type NFTsOutput {
+  items: [NFT!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type CurationNFT {
+  nft: NFT!
+  size: NFTSize
+}
+
+type CurationNFTsOutput {
+  items: [CurationNFT!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+type RefreshMyNFTsOutput {
+  status: Boolean!
+  message: String
+}
+
+input UpdateNFTsForProfileInput {
+  profileId: ID!
+  pageInput: PageInput
+}
+
+type FollowersOutput {
+  items: [Wallet!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input FollowersInput {
+  profileId: ID!
+  pageInput: PageInput
+}
+
+enum ProfileStatus {
+  Available
+  Pending
+  Owned
+}
+
+enum ProfileDisplayType {
+  NFT
+  Collection
+}
+
+type Profile {
+  id: ID!
+  bannerURL: String
+  createdAt: DateTime!
+  description: String
+  displayType: ProfileDisplayType
+  followersCount: Int
+  isFollowedByMe: Boolean
+  isOwnedByMe: Boolean
+  gkIconVisible: Boolean
+  nftsDescriptionsVisible: Boolean
+  owner: Wallet
+  tokenId: String
+  photoURL: String
+  status: ProfileStatus
+  url: String!
+  winningBid: Bid
+}
+
+input ProfilesInput {
+  pageInput: PageInput
+  statuses: [ProfileStatus]
+}
+
+type ProfilesOutput {
+  items: [Profile!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input UpdateProfileInput {
+  id: ID!
+  bannerURL: String
+  description: String
+  photoURL: String
+  showNFTIds: [String]
+  hideNFTIds: [String]
+  showAllNFTs: Boolean
+  hideAllNFTs: Boolean
+  gkIconVisible: Boolean
+  nftsDescriptionsVisible: Boolean
+  displayType: ProfileDisplayType
+}
+
+input ProfileClaimedInput {
+  profileId: ID!
+  walletId: ID!
+  txHash: String!
+}
+
+input MintGKProfileInput {
+  startIndex: Int
+  count: Int
+}
+
+input InsiderReservedProfilesInput {
+  address: Address!
+}
+
+input UploadProfileImagesInput {
+  profileId: ID!
+  banner: Upload
+  avatar: Upload
+  description: String
+  compositeProfileURL: Boolean!
+}
+
+input CreateCompositeImageInput {
+  profileId: ID!
+}
+
+input LatestProfilesInput {
+  pageInput: PageInput
+}
+
+input CreateAllCompositeImagesInput {
+  pageInput: PageInput
+}
+
+input OrderUpdateInput {
+  nftId: ID!
+  newIndex: Int!
+}
+
+input OrderingUpdatesInput {
+  profileId: ID!
+  updates: [OrderUpdateInput!]!
+}
+
+scalar Address
+
+scalar Uint256
+
+scalar Bytes
+
+scalar DateTime
+
+scalar Date
+
+scalar Upload
+
+type PageInfo {
+  firstCursor: String
+  lastCursor: String
+}
+
+input PageInput {
+  first: Int
+  last: Int
+  afterCursor: String
+  beforeCursor: String
+}
+
+type Signature {
+  v: Int!
+  r: Bytes!
+  s: Bytes!
+}
+
+input SignatureInput {
+  v: Int!
+  r: Bytes!
+  s: Bytes!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type User {
+  id: ID!
+  avatarURL: String
+  email: String
+  username: String
+  isEmailConfirmed: Boolean!
+  myAddresses: [Wallet!]
+  myApprovals: [Approval!]
+  preferences: UserPreferences!
+  referredBy: String
+  referralId: String!
+}
+
+type UserPreferences {
+  bidActivityNotifications: Boolean
+  priceChangeNotifications: Boolean
+  outbidNotifications: Boolean
+  purchaseSuccessNotifications: Boolean
+  promotionalNotifications: Boolean
+}
+
+type Attributes {
+  trait_type: String!
+  value: String!
+}
+
+type Metadata {
+  name: String!
+  image: String!
+  description: String!
+  attributes: [Attributes]
+  animation_url: String
+}
+
+type GkOutput {
+  tokenId: String!
+  metadata: Metadata!
+}
+
+input UserPreferencesInput {
+  bidActivityNotifications: Boolean
+  priceChangeNotifications: Boolean
+  outbidNotifications: Boolean
+  purchaseSuccessNotifications: Boolean
+  promotionalNotifications: Boolean
+}
+
+input SignUpInput {
+  avatarURL: String
+  email: String
+  username: String
+  referredBy: String
+  wallet: WalletInput!
+}
+
+input UpdateUserInput {
+  email: String
+  avatarURL: String
+  preferences: UserPreferencesInput
+}
+
+input UpdateEmailInput {
+  email: String!
+}
+
+type Wallet {
+  id: ID!
+  address: Address!
+  chainId: String!
+  chainName: String!
+  network: String!
+  user: User
+  createdAt: DateTime!
+}
+
+input WalletInput {
+  address: Address!
+  chainId: String!
+  network: String!
+}
+
+input WhitelistCheckInput {
+  address: Address!
+}
+
+type Watchlist {
+  nftItems: [NFT!]!
+  profileItems: [Profile!]!
+  collectionItems: [Collection!]!
+}
+
+enum WatchlistItemType {
+  NFT
+  Profile
+  Collection
+}
+
+input WatchlistInput {
+  userId: ID!
+  itemId: ID!
+  itemType: WatchlistItemType!
+}
