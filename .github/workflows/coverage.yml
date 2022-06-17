@@ -52,6 +52,7 @@ jobs:
         envkey_MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
         envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
         envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
+        envkey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
@@ -72,7 +73,7 @@ jobs:
       name: List the state of node modules
       continue-on-error: true
       run: npm list
-    
+
     - run: npm i
     - run: cd packages/gql && npm i
     - run: cd packages/shared && npm i
