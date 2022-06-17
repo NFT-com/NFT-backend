@@ -1,0 +1,24 @@
+{
+  "name": "@nftcom/gql_loadtest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index",
+  "types": "dist/index",
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "rimraf dist tsconfig.tsbuildinfo",
+    "compile": "tsc && tsc-alias",
+    "test": "npm run build && node dist/index"
+  },
+  "devDependencies": {
+    "@types/k6": "^0.37.0",
+    "tsc-alias": "^1.6.10",
+    "typescript": "^4.7.3"
+  },
+  "dependencies": {
+    "@graphql-tools/load-files": "^6.5.4",
+    "@graphql-tools/merge": "^8.2.14",
+    "@graphql-tools/schema": "^8.3.14",
+    "easygraphql-load-tester": "^2.0.5"
+  }
+}
