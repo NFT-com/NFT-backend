@@ -44,6 +44,7 @@ jobs:
         envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
         envkey_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         envkey_PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
+        envKey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
         envkey_SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
         envkey_SHARED_MINT_SECRET: ${{ secrets.SHARED_MINT_SECRET }}
         envkey_SUPPORTED_NETWORKS: ${{ secrets.SUPPORTED_NETWORKS }}
