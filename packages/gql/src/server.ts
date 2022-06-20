@@ -149,28 +149,35 @@ export const start = async (): Promise<void> => {
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
 
-  // TODO: user CDN urls later for default image and header
-  app.get('/uri/:username', function (req, res) {
+  app.get('/uri/:username', async function (req, res) {
     const { username } = req.params
 
-    return repositories.profile.findByURL(username.toLowerCase())
-      .then((profile: entity.Profile) => {
-        if (!profile) {
-          return res.send({
-            name: username.toLowerCase(),
-            image: 'https://cdn.nft.com/nullPhoto.png',
-            header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-            description: `NFT.com profile for ${username.toLowerCase()}`,
-          })
-        } else {
-          return res.send({
-            name: username?.toLowerCase(),
-            image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
-            header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-            description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
-          })
-        }
-      })
+    const cachedData = await redis.get(username)
+
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    } else {
+      return repositories.profile.findByURL(username.toLowerCase())
+        .then(async (profile: entity.Profile) => {
+          if (!profile) {
+            return res.send({
+              name: username.toLowerCase(),
+              image: 'https://cdn.nft.com/nullPhoto.png',
+              header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+              description: `NFT.com profile for ${username.toLowerCase()}`,
+            })
+          } else {
+            const data = {
+              name: username?.toLowerCase(),
+              image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
+              header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+              description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
+            }
+            await redis.set(username, JSON.stringify(data), 'EX', 60)
+            return res.send(data)
+          }
+        })
+    }
   })
 
   app.get('/gk/:key', function (req, res) {
