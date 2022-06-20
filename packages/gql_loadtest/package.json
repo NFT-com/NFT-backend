@@ -12,7 +12,7 @@
     "prestart": "npm run build && node dist/index.js",
     "start": "k6 run -e MY_HOSTNAME=${GQL_HOSTNAME:-localhost} k6.js",
     "prestart:ci": "npm run build && node dist/index.js",
-    "start:ci": "k6 run -e GQL_HOSTNAME=${GQL_HOSTNAME:-dev-api.nft.com} k6.js"
+    "start:ci": "./k6 run -e GQL_HOSTNAME=${GQL_HOSTNAME:-dev-api.nft.com} k6.js"
   },
   "devDependencies": {
     "@types/k6": "^0.37.0",
