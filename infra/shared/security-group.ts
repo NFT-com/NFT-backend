@@ -78,8 +78,8 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     ingress:
       isProduction()
         ? [
-          buildIngressRule(6379, 'tcp', [web.id]),
-          buildIngressRule(6379, 'tcp', [webEcs.id]),
+          buildIngressRule(5432, 'tcp', [web.id]),
+          buildIngressRule(5432, 'tcp', [webEcs.id]),
         ]
         : [buildIngressRule(5432)],
     egress: [
