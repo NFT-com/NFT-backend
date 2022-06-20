@@ -42,7 +42,7 @@ const baseCoins = [
   },
   {
     symbol: 'ETH',
-    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+    logoURI: 'https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg',
     address: '0x0000000000000000000000000000000000000000',
     decimals: 18,
     chainId: 4,
