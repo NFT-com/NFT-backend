@@ -8,8 +8,13 @@ import express from 'express'
 import { GraphQLError } from 'graphql'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
+import Redis from 'ioredis'
+import Keyv from 'keyv'
 import * as util from 'util'
 
+import { KeyvAdapter } from '@apollo/utils.keyvadapter'
+import KeyvRedis from '@keyv/redis'
+import { redisConfig } from '@nftcom/gql/config'
 import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -34,6 +39,11 @@ type GQLError = {
   message: string
   path: Array<string | number>
 }
+
+const redis = new Redis({
+  host: redisConfig.host,
+  port: redisConfig.port,
+})
 
 const getAddressFromSignature = (signature: string): string =>
   utils.verifyMessage(authMessage, signature)
@@ -201,6 +211,9 @@ export const start = async (): Promise<void> => {
   server = new ApolloServer({
     //gql schema only visibly locally
     schema,
+    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(redis) }), {
+      disableBatchReads: true,
+    }),
     introspection: process.env.NODE_ENV === 'local',
     context: createContext,
     formatError,
