@@ -46,5 +46,5 @@ jobs:
     - name: Install k6
       run: |
         cd packages/gql_loadtest
-        curl https://github.com/loadimpact/k6/releases/download/v0.26.2/k6-v0.26.2-linux64.tar.gz -L | tar xvz --strip-components 1
+        curl https://github.com/grafana/k6/releases/download/v0.38.3/k6-v0.38.3-linux-amd64.tar.gz -L | tar xvz --strip-components 1
     - run: cd packages/gql_loadtest && npm run start:ci

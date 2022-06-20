@@ -2,7 +2,7 @@ import http from 'k6/http'
 
 const queries = JSON.parse(open('./k6-gql-queries.json'))
 
-const options = {
+export const options = {
   vus: 10,
   duration: '30s'
 }
