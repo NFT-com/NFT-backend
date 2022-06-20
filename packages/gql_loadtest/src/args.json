@@ -17,10 +17,13 @@
   },
   "nfts": [
     {
-      "types": "ERC721"
+      "types": ["ERC721"]
     },
     {
-      "types": "ERC1155"
+      "types": ["ERC1155"]
+    },
+    {
+      "types": ["ERC721","ERC1155"]
     }
   ],
   "myNFTs": {

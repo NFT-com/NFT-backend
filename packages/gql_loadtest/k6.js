@@ -1,10 +1,15 @@
 import http from 'k6/http'
 
-const queries = JSON.parse(open('./easygraphql-load-tester-queries.json'))
+const queries = JSON.parse(open('./k6-gql-queries.json'))
 
-export default function(): void {
+const options = {
+  vus: 10,
+  duration: '30s'
+}
+
+export default function() {
   for (const query of queries) {
-    const url = 'https://dev-api.nft.com/graphql/'
+    const url = `https://${__ENV.GQL_HOSTNAME}/graphql/`
     const payload = JSON.stringify({
       query: query.query,
       variables: query.variables,

@@ -1,4 +1,5 @@
 import LoadTesting from 'easygraphql-load-tester'
+import fs from 'fs'
 import { print } from 'graphql'
 import path from 'path'
 
@@ -13,19 +14,20 @@ const printedTypeDefs = print(typeDefs)
 
 const easyGraphQLLoadTester = new LoadTesting(printedTypeDefs, args)
 
-// const testCases = easyGraphQLLoadTester.artillery({
-//   selectedQueries: ['collection', 'gkNFTs'],
-//   queryFile: true,
-// })
+const queries = easyGraphQLLoadTester.createQueries({ selectedQueries: [
+  'collection',
+  'gkNFTs',
+  'nft',
+  'nftById',
+  // 'nfts',
+  'myNFTs',
+  // 'collectionNFTs',
+  'myProfiles',
+  'profile',
+  'profilePassive',
+  'latestProfiles',
+  'me',
+  'getMyGenesisKeys',
+] })
 
-// module.exports = {
-//   testCases,
-// }
-
-easyGraphQLLoadTester.k6('k6.js', {
-  selectedQueries: ['collection', 'gkNFTs'],
-  vus: 10,
-  duration: '10s',
-  queryFile: true,
-  out: ['json=my_test_result.json'],
-})
+fs.writeFileSync('k6-gql-queries.json', JSON.stringify(queries))
