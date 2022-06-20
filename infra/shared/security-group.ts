@@ -75,11 +75,13 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     name: getResourceName('aurora-main'),
     description: 'Allow traffic to Aurora (Postgres) main instance',
     vpcId: vpc.id,
-    ingress: [
+    ingress:
       isProduction()
-        ? buildIngressRule(5432, 'tcp', [web.id])
-        : buildIngressRule(5432),
-    ],
+        ? [
+          buildIngressRule(6379, 'tcp', [web.id]),
+          buildIngressRule(6379, 'tcp', [webEcs.id]),
+        ]
+        : [buildIngressRule(5432)],
     egress: [
       buildEgressRule(5432),
     ],
@@ -89,14 +91,11 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     name: getResourceName('redis-main'),
     description: 'Allow traffic to Elasticache (Redis) main instance',
     vpcId: vpc.id,
-    ingress:
+    ingress: [
       isProduction()
-        ? [
-          buildIngressRule(6379, 'tcp', [web.id]),
-          buildIngressRule(6379, 'tcp', [webEcs.id]),
-        ]
-        : [buildIngressRule(6379)]
-    ,
+        ? buildIngressRule(6379, 'tcp', [web.id])
+        : buildIngressRule(6379),
+    ],
     egress: [
       buildEgressRule(6379),
     ],
