@@ -323,7 +323,7 @@ const getGkNFTs = async (
       await redis.set(
         `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`,
         JSON.stringify(response),
-        'ex',
+        'EX',
         60 * 60, // 60 minutes
       )
 

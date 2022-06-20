@@ -8,8 +8,13 @@ import express from 'express'
 import { GraphQLError } from 'graphql'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
+import Redis from 'ioredis'
+import Keyv from 'keyv'
 import * as util from 'util'
 
+import { KeyvAdapter } from '@apollo/utils.keyvadapter'
+import KeyvRedis from '@keyv/redis'
+import { redisConfig } from '@nftcom/gql/config'
 import { appError, profileError } from '@nftcom/gql/error'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -34,6 +39,11 @@ type GQLError = {
   message: string
   path: Array<string | number>
 }
+
+const redis = new Redis({
+  host: redisConfig.host,
+  port: redisConfig.port,
+})
 
 const getAddressFromSignature = (signature: string): string =>
   utils.verifyMessage(authMessage, signature)
@@ -139,28 +149,35 @@ export const start = async (): Promise<void> => {
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
 
-  // TODO: user CDN urls later for default image and header
-  app.get('/uri/:username', function (req, res) {
+  app.get('/uri/:username', async function (req, res) {
     const { username } = req.params
 
-    return repositories.profile.findByURL(username.toLowerCase())
-      .then((profile: entity.Profile) => {
-        if (!profile) {
-          return res.send({
-            name: username.toLowerCase(),
-            image: 'https://cdn.nft.com/nullPhoto.png',
-            header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-            description: `NFT.com profile for ${username.toLowerCase()}`,
-          })
-        } else {
-          return res.send({
-            name: username?.toLowerCase(),
-            image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
-            header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-            description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
-          })
-        }
-      })
+    const cachedData = await redis.get(username)
+
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    } else {
+      return repositories.profile.findByURL(username.toLowerCase())
+        .then(async (profile: entity.Profile) => {
+          if (!profile) {
+            return res.send({
+              name: username.toLowerCase(),
+              image: 'https://cdn.nft.com/nullPhoto.png',
+              header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+              description: `NFT.com profile for ${username.toLowerCase()}`,
+            })
+          } else {
+            const data = {
+              name: username?.toLowerCase(),
+              image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
+              header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+              description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
+            }
+            await redis.set(username, JSON.stringify(data), 'EX', 60)
+            return res.send(data)
+          }
+        })
+    }
   })
 
   app.get('/gk/:key', function (req, res) {
@@ -201,6 +218,9 @@ export const start = async (): Promise<void> => {
   server = new ApolloServer({
     //gql schema only visibly locally
     schema,
+    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(redis) }), {
+      disableBatchReads: true,
+    }),
     introspection: process.env.NODE_ENV === 'local',
     context: createContext,
     formatError,

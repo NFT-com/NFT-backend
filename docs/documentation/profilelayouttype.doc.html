@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href="./styles/graphdoc.css" />
-    <title>CancelAskInput</title>
+    <title>ProfileLayoutType</title>
     <link href="https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700" rel="stylesheet"><link type="text/css" rel="stylesheet" href="./assets/code.css" /><link type="text/css" rel="stylesheet" href="./assets/require-by.css" />
 </head>
 <body class="slds-scrollable--y">
@@ -130,7 +130,7 @@
                 ProfileDisplayType
             </a>
         </li>
-        <li  title="ProfileLayoutType">
+        <li class="slds-is-active" title="ProfileLayoutType">
             <a href="profilelayouttype.doc.html" class="slds-navigation-list--vertical__action slds-text-link--reset slds-truncate">
                 ProfileLayoutType
             </a>
@@ -460,7 +460,7 @@
                 BuyNowInput
             </a>
         </li>
-        <li class="slds-is-active" title="CancelAskInput">
+        <li  title="CancelAskInput">
             <a href="cancelaskinput.doc.html" class="slds-navigation-list--vertical__action slds-text-link--reset slds-truncate">
                 CancelAskInput
             </a>
@@ -745,8 +745,8 @@
         </div>
     </div>
     <div class="container">
-        <p class="slds-text-title--caps slds-text-color--weak">INPUT_OBJECT</p>
-        <h1 class="slds-text-heading--large">CancelAskInput</h1>
+        <p class="slds-text-title--caps slds-text-color--weak">ENUM</p>
+        <h1 class="slds-text-heading--large">ProfileLayoutType</h1>
         <div class="slds-text-body--regular"></div>
     </div>
 </section>
@@ -758,7 +758,7 @@
             </a>
             GraphQL Schema definition
         </h2>
-        <code class="highlight"><ul class="code" style="padding-left:28px"><li><span class="keyword operator ts">input</span> <span class="identifier">CancelAskInput</span> {</li><li><span class="tab"><li><span class="tab"><span class="meta">marketAskId</span>: <a class="support type" href="id.doc.html">ID</a>!</span></li></span></li><li><span class="tab"><li><span class="tab"><span class="meta">txHash</span>: <a class="support type" href="string.doc.html">String</a>!</span></li></span></li><li>}</li></ul></code>
+        <code class="highlight"><ul class="code" style="padding-left:42px"><li><span class="keyword operator ts">enum</span> <span class="identifier">ProfileLayoutType</span> {</li><li><span class="tab"></span></li><li><span class="tab"><span class="meta">Default</span></span></li><li><span class="tab"></span></li><li><span class="tab"><span class="meta">Mosaic</span></span></li><li><span class="tab"></span></li><li><span class="tab"><span class="meta">Featured</span></span></li><li><span class="tab"></span></li><li><span class="tab"><span class="meta">Spotlight</span></span></li><li>}</li></ul></code>
     </div>
 </section>
 <section>
@@ -769,7 +769,7 @@
             </a>
             Require by
         </h2>
-        <ul class="require-by"><li><a href="mutation.doc.html" title="Mutation - ">Mutation<em>null</em></a><li></ul>
+        <ul class="require-by"><li><a href="profile.doc.html" title="Profile - ">Profile<em>null</em></a><li><li><a href="updateprofileinput.doc.html" title="UpdateProfileInput - ">UpdateProfileInput<em>null</em></a><li></ul>
     </div>
 </section>
 <footer>
