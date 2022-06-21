@@ -33,7 +33,7 @@ interface OpenseaAsset {
   decimals: number
 }
 
-export interface OpenseaResponse {
+interface OpenseaResponse {
   expiration_time: number
   created_date: string
   current_price: string
@@ -45,6 +45,11 @@ export interface OpenseaResponse {
   taker_asset_bundle: {
     assets: Array<OpenseaAsset>
   }
+}
+
+export interface OpenseaOrderResponse {
+  listings: Array<OpenseaResponse>
+  offers: Array<OpenseaResponse>
 }
 
 /**
@@ -60,8 +65,8 @@ export const retrieveOrdersOpensea = async (
   contract: string,
   tokenId: string,
   chainId: string,
-): Promise<Array<OpenseaResponse> | undefined> => {
-  let url
+): Promise<OpenseaOrderResponse | undefined> => {
+  let listingUrl, offerUrl
   const baseUrl = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
   const config = chainId === '4' ? {
     headers: { Accept: 'application/json' },
@@ -72,26 +77,38 @@ export const retrieveOrdersOpensea = async (
     },
   }
   try {
-    const responses: Array<OpenseaResponse> = []
+    const responses: OpenseaOrderResponse = {
+      listings: [],
+      offers: [],
+    }
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      // listings
-      // https://api.opensea.io/v2/orders/ethereum/seaport/listings?asset_contract_address=0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D&limit=50&token_ids=8781
-      url = `${baseUrl}/orders/ethereum/seaport/listings?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
-
-      // offers
-      // https://api.opensea.io/v2/orders/ethereum/seaport/offers?asset_contract_address=0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D&limit=50&token_ids=8781
+      listingUrl = `${baseUrl}/orders/ethereum/seaport/listings?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
+      offerUrl = `${baseUrl}/orders/ethereum/seaport/offers?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
       
-      const res = await axios.get(url, config)
+      const res = await axios.get(listingUrl, config)
       if (res && res.data && res.data.orders) {
         console.log('res.data: ', res.data)
         const orders = res.data.orders as Array<OpenseaResponse>
-        responses.push(...orders)
+        responses.listings.push(...orders)
         if (orders.length < LIMIT) {
           break
         } else {
-          url = res.data.next
+          listingUrl = res.data.next
+          await delay(1000)
+        }
+      }
+
+      const res2 = await axios.get(offerUrl, config)
+      if (res2 && res2.data && res2.data.orders) {
+        console.log('res2.data: ', res2.data)
+        const orders = res2.data.orders as Array<OpenseaResponse>
+        responses.offers.push(...orders)
+        if (orders.length < LIMIT) {
+          break
+        } else {
+          offerUrl = res2.data.next
           await delay(1000)
         }
       }
