@@ -3,23 +3,47 @@ import axios from 'axios'
 import { delay } from '@nftcom/gql/service/core.service'
 import * as Sentry from '@sentry/node'
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
-const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
-const OPENSEA_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
+const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
+const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
 const LIMIT = 50
+
+interface OpenseaAsset {
+  image_url: string
+  image_preview_url: string
+  image_thumbnail_url: string
+  name: string
+  description: string
+  asset_contract: {
+    address: string
+    image_url: string
+    default_to_fiat: boolean
+    dev_buyer_fee_basis_points: number
+    dev_seller_fee_basis_points: number
+    only_proxied_transfers: boolean
+    opensea_buyer_fee_basis_points: number
+    opensea_seller_fee_basis_points: number
+    buyer_fee_basis_points: number
+    seller_fee_basis_points: number
+    payout_address: string
+  }
+  permalink: string
+  collection: {
+    banner_image_url: string
+  }
+  decimals: number
+}
 
 export interface OpenseaResponse {
   expiration_time: number
   created_date: string
   current_price: string
-  asset: {
-    permalink: string
+  maker: any
+  maker_asset_bundle: {
+    assets: Array<OpenseaAsset>
   }
-  payment_token_contract: {
-    decimals: number
-    usd_price: number
-    symbol: string
-    address: string
-    image_url: string
+  taker: any
+  taker_asset_bundle: {
+    assets: Array<OpenseaAsset>
   }
 }
 
@@ -36,8 +60,6 @@ export const retrieveOrdersOpensea = async (
   contract: string,
   tokenId: string,
   chainId: string,
-  buyOrSell: number,
-  listedBefore?: string,
 ): Promise<Array<OpenseaResponse> | undefined> => {
   let url
   const baseUrl = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
@@ -51,29 +73,32 @@ export const retrieveOrdersOpensea = async (
   }
   try {
     const responses: Array<OpenseaResponse> = []
-    let offset = 0
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      if (listedBefore) {
-        url = `${baseUrl}/orders?asset_contract_address=${contract}&bundled=false&include_bundled=false&listed_before=${listedBefore}&token_id=${tokenId}&side=${buyOrSell}&limit=50&offset=${offset}&order_by=created_date&order_direction=desc`
-      } else {
-        url = `${baseUrl}/orders?asset_contract_address=${contract}&bundled=false&include_bundled=false&token_id=${tokenId}&side=${buyOrSell}&limit=50&offset=${offset}&order_by=created_date&order_direction=desc`
-      }
+      // listings
+      // https://api.opensea.io/v2/orders/ethereum/seaport/listings?asset_contract_address=0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D&limit=50&token_ids=8781
+      url = `${baseUrl}/orders/ethereum/seaport/listings?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
+
+      // offers
+      // https://api.opensea.io/v2/orders/ethereum/seaport/offers?asset_contract_address=0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D&limit=50&token_ids=8781
+      
       const res = await axios.get(url, config)
       if (res && res.data && res.data.orders) {
+        console.log('res.data: ', res.data)
         const orders = res.data.orders as Array<OpenseaResponse>
         responses.push(...orders)
         if (orders.length < LIMIT) {
           break
         } else {
-          offset = responses.length
+          url = res.data.next
           await delay(1000)
         }
       }
     }
     return responses
   } catch (err) {
+    console.log('error while external: ', err)
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined

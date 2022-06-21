@@ -17,7 +17,6 @@ import { differenceInMilliseconds } from 'date-fns'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
-import { delay } from '@nftcom/gql/service/core.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -417,9 +416,10 @@ const getExternalListings = async (
   try {
     // 1. Opensea
     // get selling & buying orders...
-    const buyOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 0)
-    await delay(1000)
-    const sellOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 1)
+    const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
+    logger.debug('allOrder: ', allOrder)
+    const buyOrders = [] // allOrder... (add logic here)
+    const sellOrders = [] // allOrder... (add logic here)
     let bestOffer = undefined
     if (buyOrders && buyOrders.length) {
       bestOffer = buyOrders[0]
