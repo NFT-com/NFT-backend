@@ -150,7 +150,6 @@ export const retrieveOrdersOpensea = async (
 
     return responses
   } catch (err) {
-    console.log('error while external: ', err)
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined
