@@ -5,11 +5,13 @@ import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
+import Redis from 'ioredis'
 import Joi from 'joi'
+import * as lodash from 'lodash'
 import stream from 'stream'
 import Typesense from 'typesense'
 
-import { assetBucket } from '@nftcom/gql/config'
+import { assetBucket, redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
@@ -29,6 +31,11 @@ import { blacklistBool } from '../service/core.service'
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+
+const redis = new Redis({
+  port: redisConfig.port,
+  host: redisConfig.host,
+})
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
@@ -702,6 +709,71 @@ const orderingUpdates = (
     .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
 }
 
+const leaderboard = async (
+  _: any,
+  args: gql.QueryLeaderboardArgs,
+  ctx: Context,
+): Promise<gql.LeaderboardOutput> => {
+  const { repositories } = ctx
+  logger.debug('leaderboard', { input: args?.input })
+
+  const cachedData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}`)
+  let leaderboard: Array<gql.LeaderboardProfile>
+  if (cachedData) {
+    leaderboard = JSON.parse(cachedData)
+  } else {
+    // generate leaderboard array with profiles ( by genesis key )
+    const profiles = await repositories.profile.findAll()
+    const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
+    const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
+    await Promise.allSettled(
+      profiles.map(async (profile) => {
+        const nfts = await repositories.nft.find({
+          where: { userId: profile.ownerUserId },
+        })
+        const gkNFTs = nfts.filter((nft) => nft.contract === gkContractAddress)
+        leaderboardProfiles.push({
+          id: profile.id,
+          url: profile.url,
+          photoURL: profile.photoURL,
+          numberOfGenesisKeys: gkNFTs.length,
+          ItemsCollected: 0,
+        })
+      }),
+    )
+
+    leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys'], ['desc'])
+    for (let i = 0; i< leaderboard.length; i++) {
+      leaderboard[i].index = i
+    }
+    await redis.set(
+      `profile_leaderboard_${process.env.CHAIN_ID}`,
+      JSON.stringify(leaderboard),
+      'EX',
+      1 * 60, // 1 minute
+    )
+  }
+
+  const { pageInput } = helper.safeObject(args?.input)
+  let paginatedLeaderboard: Array<gql.LeaderboardProfile> = []
+  if (pagination.hasFirst(pageInput)) {
+    const cursor = pagination.hasAfter(pageInput) ? pageInput.afterCursor : pageInput.beforeCursor
+    paginatedLeaderboard = leaderboard.filter((leader) => leader.index > Number(cursor))
+    paginatedLeaderboard = paginatedLeaderboard.slice(0, pageInput.first)
+  } else {
+    const cursor = pagination.hasAfter(pageInput) ? pageInput.afterCursor : pageInput.beforeCursor
+    paginatedLeaderboard = leaderboard.filter((leader) => leader.index < Number(cursor))
+    paginatedLeaderboard = paginatedLeaderboard.slice(paginatedLeaderboard.length - pageInput.last)
+  }
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedLeaderboard[0],
+    paginatedLeaderboard[leaderboard.length - 1],
+    'index',
+  )([paginatedLeaderboard, paginatedLeaderboard.length])
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -713,6 +785,7 @@ export default {
     blockedProfileURI: getBlockedProfileURI,
     insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
+    leaderboard: leaderboard,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

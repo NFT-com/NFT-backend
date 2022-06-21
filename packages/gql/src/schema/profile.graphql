@@ -48,6 +48,15 @@ type Profile {
   winningBid: Bid
 }
 
+type LeaderboardProfile {
+  index: Int
+  id: ID!
+  url: String!
+  photoURL: String
+  numberOfGenesisKeys: Int
+  ItemsCollected: Int
+}
+
 input ProfilesInput {
   pageInput: PageInput
   statuses: [ProfileStatus]
@@ -119,6 +128,16 @@ input OrderingUpdatesInput {
   updates: [OrderUpdateInput!]!
 }
 
+input LeaderboardInput {
+  pageInput: PageInput
+}
+
+type LeaderboardOutput {
+  items: [LeaderboardProfile!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -128,6 +147,7 @@ extend type Query {
   blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
+  leaderboard(input: LeaderboardInput): LeaderboardOutput!
 }
 
 extend type Mutation {
