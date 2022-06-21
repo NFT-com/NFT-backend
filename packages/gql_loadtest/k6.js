@@ -18,7 +18,12 @@ export default function() {
       query: query.query,
       variables: query.variables,
     })
-    const params = { headers: { 'Content-Type': 'application/json' } }
+    const params = { headers: {
+      'Content-Type': 'application/json',
+      'network': 'ethereum',
+      'chain-id': '4',
+      'authorization': '0x3e28a0402f9a3b2fa2c6ca855cf1335ce9637513af7e5e029f2b78d75b44c5f0233b479a16ca772efcf1574ba593195b8c1164df48825d146a2acef9badc52331c'
+    }}
     http.post(url, payload, params)
   }
 }
