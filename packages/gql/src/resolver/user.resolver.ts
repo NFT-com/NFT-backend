@@ -277,7 +277,7 @@ const getMyGenesisKeys = async (
           })
         }
 
-        await redis.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'ex', 60 * 2) // 2 minutest
+        await redis.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
       } else {
         gk_owners = JSON.parse(cachedGks)
       }
