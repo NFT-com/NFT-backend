@@ -417,40 +417,37 @@ const getExternalListings = async (
     // 1. Opensea
     // get selling & buying orders...
     const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
-    logger.debug('allOrder: ', allOrder)
-    const buyOrders = [] // allOrder... (add logic here)
-    const sellOrders = [] // allOrder... (add logic here)
     let bestOffer = undefined
-    if (buyOrders && buyOrders.length) {
-      bestOffer = buyOrders[0]
-      for (let i = 1; i < buyOrders.length; i++) {
-        const usdPrice0 = new BN(bestOffer.current_price)
-          .shiftedBy(-bestOffer.payment_token_contract.decimals)
-          .multipliedBy(bestOffer.payment_token_contract.usd_price)
-        const usdPrice1 = new BN(buyOrders[i].current_price)
-          .shiftedBy(-buyOrders[i].payment_token_contract.decimals)
-          .multipliedBy(buyOrders[i].payment_token_contract.usd_price)
-        if (usdPrice0.lt(usdPrice1))
-          bestOffer = buyOrders[i]
+    if (allOrder && allOrder?.offers?.length) {
+      bestOffer = allOrder.offers[0]
+      for (let i = 1; i < allOrder.offers.length; i++) {
+        const price0 = new BN(bestOffer.current_price)
+          .shiftedBy(-bestOffer.maker_asset_bundle.assets?.[0].decimals)
+        const price1 = new BN(allOrder.offers[i].current_price)
+          .shiftedBy(-allOrder.offers[i].maker_asset_bundle?.[0].decimals)
+        if (price0.lt(price1))
+          bestOffer = allOrder.offers[0]
       }
     }
 
     let createdDate, expiration, baseCoin
-    if (sellOrders && sellOrders.length) {
-      createdDate = new Date(sellOrders[0].created_date)
-      expiration = new Date(sellOrders[0].expiration_time * 1000)
+    if (allOrder?.listings?.length) {
+      createdDate = new Date(allOrder.listings?.[0].created_date)
+      expiration = new Date(allOrder.listings?.[0].expiration_time * 1000)
       baseCoin = {
-        symbol: sellOrders[0].payment_token_contract.symbol,
-        logoURI: sellOrders[0].payment_token_contract.image_url,
-        address: sellOrders[0].payment_token_contract.address,
-        decimals: sellOrders[0].payment_token_contract.decimals,
+        symbol: bestOffer.maker_asset_bundle.assets?.[0].asset_contract.symbol ??
+          bestOffer.maker_asset_bundle.assets?.[0].asset_contract.name,
+        logoURI: bestOffer.maker_asset_bundle.assets?.[0].image_url,
+        address: bestOffer.maker_asset_bundle.assets?.[0].asset_contract.address,
+        decimals: bestOffer.maker_asset_bundle.assets?.[0].decimals,
       } as BaseCoin
     }
     const opensea = {
-      url: sellOrders && sellOrders.length ? sellOrders[0].asset.permalink : null,
+      url: (allOrder?.listings?.length) ?
+        allOrder.listings?.[0]?.maker_asset_bundle.assets?.[0]?.permalink : null,
       exchange: gql.SupportedExternalExchange.Opensea,
-      price: sellOrders && sellOrders.length ? sellOrders[0].current_price : null,
-      highestOffer: bestOffer ? bestOffer.current_price : null,
+      price: allOrder?.listings?.length ? allOrder.listings?.[0]?.current_price : null,
+      highestOffer: bestOffer ? bestOffer?.current_price : null,
       expiration: expiration ?? null,
       creation:  createdDate?? null,
       baseCoin: baseCoin ?? null,

@@ -1,11 +1,18 @@
 import axios from 'axios'
+import Redis from 'ioredis'
 
+import { redisConfig } from '@nftcom/gql/config'
 import { delay } from '@nftcom/gql/service/core.service'
 import * as Sentry from '@sentry/node'
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
 const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
 const LIMIT = 50
+
+const redis = new Redis({
+  host: redisConfig.host,
+  port: redisConfig.port,
+})
 
 interface OpenseaAsset {
   image_url: string
@@ -50,6 +57,19 @@ interface OpenseaResponse {
 export interface OpenseaOrderResponse {
   listings: Array<OpenseaResponse>
   offers: Array<OpenseaResponse>
+  prices: any
+}
+
+const cids = (): string => {
+  const ids = [
+    'ethereum',
+    'usd-coin',
+    'ape',
+    'dai',
+    'the-sandbox',
+  ]
+
+  return ids.join('%2C')
 }
 
 /**
@@ -67,6 +87,7 @@ export const retrieveOrdersOpensea = async (
   chainId: string,
 ): Promise<OpenseaOrderResponse | undefined> => {
   let listingUrl, offerUrl
+  const baseCoinGeckoUrl = 'https://api.coingecko.com/api/v3/simple/price'
   const baseUrl = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
   const config = chainId === '4' ? {
     headers: { Accept: 'application/json' },
@@ -80,16 +101,15 @@ export const retrieveOrdersOpensea = async (
     const responses: OpenseaOrderResponse = {
       listings: [],
       offers: [],
+      prices: {},
     }
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
       listingUrl = `${baseUrl}/orders/ethereum/seaport/listings?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
-      offerUrl = `${baseUrl}/orders/ethereum/seaport/offers?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
-      
+
       const res = await axios.get(listingUrl, config)
       if (res && res.data && res.data.orders) {
-        console.log('res.data: ', res.data)
         const orders = res.data.orders as Array<OpenseaResponse>
         responses.listings.push(...orders)
         if (orders.length < LIMIT) {
@@ -99,10 +119,13 @@ export const retrieveOrdersOpensea = async (
           await delay(1000)
         }
       }
+    }
 
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      offerUrl = `${baseUrl}/orders/ethereum/seaport/offers?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
       const res2 = await axios.get(offerUrl, config)
       if (res2 && res2.data && res2.data.orders) {
-        console.log('res2.data: ', res2.data)
         const orders = res2.data.orders as Array<OpenseaResponse>
         responses.offers.push(...orders)
         if (orders.length < LIMIT) {
@@ -113,6 +136,18 @@ export const retrieveOrdersOpensea = async (
         }
       }
     }
+
+    const coinGeckoPriceUrl = `${baseCoinGeckoUrl}?ids=${cids()}&vs_currencies=usd`
+
+    const cachedPrice = await redis.get(coinGeckoPriceUrl)
+    if (cachedPrice) {
+      responses.prices = JSON.parse(cachedPrice)
+    } else {
+      const res3 = await axios.get(coinGeckoPriceUrl)
+      responses.prices = res3.data
+      redis.set(coinGeckoPriceUrl, JSON.stringify(res3.data), 'EX', 60) // 1 minute
+    }
+
     return responses
   } catch (err) {
     console.log('error while external: ', err)
