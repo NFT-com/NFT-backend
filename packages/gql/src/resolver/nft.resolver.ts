@@ -530,17 +530,20 @@ export const refreshNft = (
   const { repositories } = ctx
   logger.debug('refreshNft', { id: args?.id })
   initiateWeb3()
-  return repositories.nft.findById(args?.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-        nftError.ErrorType.NFTNotFound,
-      ),
-    ))
-    .then(fp.tapWait((nft: entity.NFT) => {
-      return repositories.wallet.findById(nft.walletId)
-        .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
-    }))
+  return redis.set('refreshNFT', `${args?.id}`, 'EX', 60)
+    .then(() => {
+      return repositories.nft.findById(args?.id)
+        .then(fp.rejectIfEmpty(
+          appError.buildNotFound(
+            nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+            nftError.ErrorType.NFTNotFound,
+          ),
+        ))
+        .then(fp.tapWait((nft: entity.NFT) => {
+          return repositories.wallet.findById(nft.walletId)
+            .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
+        }))
+    })
 }
 
 export default {
