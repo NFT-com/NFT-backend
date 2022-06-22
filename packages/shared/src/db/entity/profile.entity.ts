@@ -42,7 +42,7 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   gkIconVisible: boolean
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: true })
   nftsDescriptionsVisible: boolean
 
   @Column({ nullable: true, type: 'timestamp with time zone' })

@@ -15,6 +15,7 @@ import { assetBucket, redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
+import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
 import {
   DEFAULT_NFT_IMAGE,
@@ -750,26 +751,35 @@ const leaderboard = async (
       `profile_leaderboard_${process.env.CHAIN_ID}`,
       JSON.stringify(leaderboard),
       'EX',
-      1 * 60, // 1 minute
+      5 * 60, // 5 minutes
     )
   }
 
   const { pageInput } = helper.safeObject(args?.input)
-  let paginatedLeaderboard: Array<gql.LeaderboardProfile> = []
-  if (pagination.hasFirst(pageInput)) {
-    const cursor = pagination.hasAfter(pageInput) ? pageInput.afterCursor : pageInput.beforeCursor
+  let paginatedLeaderboard: Array<gql.LeaderboardProfile>
+  let defaultCursor
+  if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+      { afterCursor: leaderboard.length.toString() }
+  }
+  const safePageInput = safeInput(pageInput, defaultCursor)
+  if (pagination.hasFirst(safePageInput)) {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
     paginatedLeaderboard = leaderboard.filter((leader) => leader.index > Number(cursor))
-    paginatedLeaderboard = paginatedLeaderboard.slice(0, pageInput.first)
+    paginatedLeaderboard = paginatedLeaderboard.slice(0, safePageInput.first)
   } else {
-    const cursor = pagination.hasAfter(pageInput) ? pageInput.afterCursor : pageInput.beforeCursor
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
     paginatedLeaderboard = leaderboard.filter((leader) => leader.index < Number(cursor))
-    paginatedLeaderboard = paginatedLeaderboard.slice(paginatedLeaderboard.length - pageInput.last)
+    paginatedLeaderboard =
+      paginatedLeaderboard.slice(paginatedLeaderboard.length - safePageInput.last)
   }
 
   return pagination.toPageable(
     pageInput,
     paginatedLeaderboard[0],
-    paginatedLeaderboard[leaderboard.length - 1],
+    paginatedLeaderboard[paginatedLeaderboard.length - 1],
     'index',
   )([paginatedLeaderboard, paginatedLeaderboard.length])
 }
