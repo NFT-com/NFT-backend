@@ -22,6 +22,8 @@ interface OpenseaAsset {
   description: string
   asset_contract: {
     address: string
+    name: string
+    symbol: string
     image_url: string
     default_to_fiat: boolean
     dev_buyer_fee_basis_points: number

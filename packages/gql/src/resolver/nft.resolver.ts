@@ -432,14 +432,14 @@ const getExternalListings = async (
 
     let createdDate, expiration, baseCoin
     if (allOrder?.listings?.length) {
-      createdDate = new Date(allOrder.listings?.[0].created_date)
-      expiration = new Date(allOrder.listings?.[0].expiration_time * 1000)
+      createdDate = new Date(allOrder.listings?.[0]?.created_date)
+      expiration = new Date(allOrder.listings?.[0]?.expiration_time * 1000)
       baseCoin = {
-        symbol: bestOffer.maker_asset_bundle.assets?.[0].asset_contract.symbol ??
-          bestOffer.maker_asset_bundle.assets?.[0].asset_contract.name,
-        logoURI: bestOffer.maker_asset_bundle.assets?.[0].image_url,
-        address: bestOffer.maker_asset_bundle.assets?.[0].asset_contract.address,
-        decimals: bestOffer.maker_asset_bundle.assets?.[0].decimals,
+        symbol: allOrder.listings?.[0]?.taker_asset_bundle.assets?.[0]?.asset_contract?.symbol ??
+          allOrder.listings?.[0]?.taker_asset_bundle.assets?.[0]?.asset_contract.name,
+        logoURI: allOrder.listings?.[0]?.taker_asset_bundle?.assets?.[0]?.image_url,
+        address: allOrder.listings?.[0]?.taker_asset_bundle?.assets?.[0]?.asset_contract.address,
+        decimals: allOrder.listings?.[0]?.taker_asset_bundle?.assets?.[0]?.decimals,
       } as BaseCoin
     }
     const opensea = {
@@ -481,6 +481,7 @@ const getExternalListings = async (
       creation: looksrareCreatedDate ?? null,
       baseCoin: looksrareBaseCoin ?? null,
     }
+
     return { listings: [opensea, looksrare] }
   } catch (err) {
     Sentry.captureException(err)
