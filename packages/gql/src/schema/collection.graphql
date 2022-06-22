@@ -1,14 +1,83 @@
+type OpenseaCollectionV1 {
+  banner_image_url: String
+  created_date: String
+  description: String
+  discord_url: String
+  external_url: String
+  featured: Boolean
+  featured_image_url: String
+  safelist_request_status: String
+  image_url: String
+  large_image_url: String
+  name: String
+  opensea_buyer_fee_basis_points: String
+  opensea_seller_fee_basis_points: String
+  short_description: String
+  slug: String
+  telegram_url: String
+  twitter_username: String
+  instagram_username: String
+  wiki_url: String
+}
+
+type OpenseaStatsV1 {
+  one_day_volume: String
+  one_day_change: String
+  one_day_sales: String
+  one_day_average_price: String
+  seven_day_volume: String
+  seven_day_change: String
+  seven_day_sales: String
+  seven_day_average_price: String
+  thirty_day_volume: String
+  thirty_day_change: String
+  thirty_day_sales: String
+  thirty_day_average_price: String
+  total_volume: String
+  total_sales: String
+  total_supply: String
+  count: String
+  num_owners: String
+  average_price: String
+  num_reports: String
+  market_cap: String
+  floor_price: String
+}
+
+type OpenseaContract {
+  collection: OpenseaCollectionV1
+  address: String
+  created_date: String
+  name: String
+  symbol: String
+  total_supply: String
+  description: String
+  external_link: String
+  image_url: String
+}
+
+type OpenseaStats {
+  stats: OpenseaStatsV1
+}
+
 type Collection {
-    id: ID!
-    contract: Address!
-    name: String
+  id: ID
+  contract: Address
+  name: String
+}
+
+type CollectionInfo {
+  collection: Collection
+  openseaInfo: OpenseaContract
+  openseaStats: OpenseaStats
 }
 
 input CollectionInput {
-    contract: Address
-    network: String
+  contract: Address!
+  chainId: String!
+  network: String!
 }
 
 extend type Query {
-  collection(input: CollectionInput!): Collection
+  collection(input: CollectionInput!): CollectionInfo
 }
