@@ -2,6 +2,7 @@ import axios from 'axios'
 import Redis from 'ioredis'
 
 import { redisConfig } from '@nftcom/gql/config'
+import { gql } from '@nftcom/gql/defs'
 import { delay } from '@nftcom/gql/service/core.service'
 import * as Sentry from '@sentry/node'
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
@@ -206,6 +207,46 @@ export const retrieveOrdersOpensea = async (
     Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined
   }
+}
+
+export const retrieveCollectionOpensea = async (
+  contract: string,
+  chainId: string,
+) : Promise<gql.OpenseaContract> => {
+  const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
+
+  const config = chainId === '4' ? {
+    headers: { Accept: 'application/json' },
+  } :  {
+    headers: {
+      Accept: 'application/json',
+      'X-API-KEY': OPENSEA_API_KEY,
+    },
+  }
+
+  const url = `${baseUrl}/asset_contract/${contract}`
+  const res = await axios.get(url, config)
+  return res.data
+}
+
+export const retrieveCollectionStatsOpensea = async (
+  slug: string,
+  chainId: string,
+) : Promise<gql.OpenseaStats> => {
+  const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
+
+  const config = chainId === '4' ? {
+    headers: { Accept: 'application/json' },
+  } :  {
+    headers: {
+      Accept: 'application/json',
+      'X-API-KEY': OPENSEA_API_KEY,
+    },
+  }
+
+  const url = `${baseUrl}/collection/${slug}/stats`
+  const res = await axios.get(url, config)
+  return res.data
 }
 
 export const retrieveOffersOpensea = async (

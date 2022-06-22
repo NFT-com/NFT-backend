@@ -1,4 +1,4 @@
-import { retrieveOrdersOpensea } from '@nftcom/gql/service/opeansea.service'
+import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 
 jest.setTimeout(150000)
 
