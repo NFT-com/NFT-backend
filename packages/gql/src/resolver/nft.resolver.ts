@@ -469,10 +469,16 @@ const getExternalListings = async (
 
     const opensea = {
       url: (allOrder?.listings?.seaport?.length) ?
-        allOrder.listings?.seaport?.[0]?.maker_asset_bundle.assets?.[0]?.permalink : null,
+        allOrder.listings?.seaport?.[0]?.maker_asset_bundle.assets?.[0]?.permalink :
+        allOrder?.listings?.v1?.length ?
+          `https://opensea.io/assets/ethereum/${args?.contract}/${args?.tokenId}`
+          : null,
       exchange: gql.SupportedExternalExchange.Opensea,
       price: allOrder?.listings?.seaport?.length ?
-        allOrder.listings?.seaport?.[0]?.current_price : null,
+        allOrder.listings?.seaport?.[0]?.current_price :
+        allOrder?.listings?.v1?.length ?
+          allOrder?.listings?.v1?.[0]?.current_price :
+          null,
       highestOffer: bestOffer ? bestOffer?.current_price : null,
       expiration: expiration ?? null,
       creation:  createdDate?? null,
