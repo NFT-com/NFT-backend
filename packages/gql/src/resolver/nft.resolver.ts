@@ -23,7 +23,7 @@ import {
   initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
-import { retrieveOrdersOpensea } from '@nftcom/gql/service/opeansea.service'
+import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
 const redis = new Redis({
   port: redisConfig.port,
