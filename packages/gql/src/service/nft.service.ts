@@ -79,6 +79,14 @@ type NFTOrder = {
   newIndex: number
 }
 
+type NFTMetaData = {
+  type: defs.NFTType
+  name: string
+  description: string
+  image: string
+  traits: defs.Trait[]
+}
+
 export const initiateWeb3 = (): void => {
   web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 }
@@ -305,25 +313,17 @@ const updateCollection = async (
     })
 }
 
-const updateNFTOwnershipAndMetadata = async (
-  nft: OwnedNFT,
-  userId: string,
-  walletId: string,
-): Promise<void> => {
+const getNFTMetaData = async (
+  contract: string,
+  tokenId: string,
+): Promise<NFTMetaData> => {
   try {
-    const existingNFT = await repositories.nft.findOne({
-      where: {
-        contract: ethers.utils.getAddress(nft.contract.address),
-        tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
-      },
-    })
-
     let type: defs.NFTType
     const traits: Array<defs.Trait> = []
 
     const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
-      nft.contract.address,
-      nft.id.tokenId,
+      contract,
+      tokenId,
     )
 
     const name = nftMetadata?.title
@@ -364,6 +364,33 @@ const updateNFTOwnershipAndMetadata = async (
       }
     }
 
+    return {
+      type,
+      name,
+      description,
+      image,
+      traits,
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
+  }
+}
+
+const updateNFTOwnershipAndMetadata = async (
+  nft: OwnedNFT,
+  userId: string,
+  walletId: string,
+): Promise<void> => {
+  try {
+    const existingNFT = await repositories.nft.findOne({
+      where: {
+        contract: ethers.utils.getAddress(nft.contract.address),
+        tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+      },
+    })
+    const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+    const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
       await repositories.nft.save({
@@ -472,6 +499,43 @@ export const updateWalletNFTs = async (
       await updateNFTOwnershipAndMetadata(nft, userId, walletId)
     }),
   )
+}
+
+export const refreshNFTMetadata = async (
+  nft: entity.NFT,
+): Promise<entity.NFT> => {
+  try {
+    const metadata = await getNFTMetaData(
+      nft.contract,
+      BigNumber.from(nft.tokenId).toString(),
+    )
+    const { type, name, description, image, traits } = metadata
+    const isTraitSame = (nft.metadata.traits.length == traits.length) &&
+      nft.metadata.traits.every(function(element, index) {
+        return element.type === traits[index].type && element.value === traits[index].value
+      })
+    // if metadata changed, we update metadata...
+    if (nft.type !== type ||
+      nft.metadata.name !== name ||
+      nft.metadata.description !== description ||
+      nft.metadata.imageURL !== image ||
+      !isTraitSame
+    ) {
+      return await repositories.nft.updateOneById(nft.id, {
+        type,
+        metadata: {
+          name,
+          description,
+          imageURL: image,
+          traits: traits,
+        },
+      })
+    }
+    return nft
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
+  }
 }
 
 const hideAllNFTs = async (

@@ -20,7 +20,7 @@ import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
+  initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
@@ -522,7 +522,7 @@ const getExternalListings = async (
   }
 }
 
-export const refreshNft = (
+export const refreshNft = async (
   _: any,
   args: gql.MutationRefreshNFTArgs,
   ctx: Context,
@@ -530,20 +530,27 @@ export const refreshNft = (
   const { repositories } = ctx
   logger.debug('refreshNft', { id: args?.id })
   initiateWeb3()
-  return redis.set('refreshNFT', `${args?.id}`, 'EX', 60)
-    .then(() => {
-      return repositories.nft.findById(args?.id)
-        .then(fp.rejectIfEmpty(
-          appError.buildNotFound(
-            nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-            nftError.ErrorType.NFTNotFound,
-          ),
-        ))
-        .then(fp.tapWait((nft: entity.NFT) => {
-          return repositories.wallet.findById(nft.walletId)
-            .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
-        }))
-    })
+  const cachedData = await redis.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
+  if (cachedData) {
+    return JSON.parse(cachedData)
+  } else {
+    const nft = await repositories.nft.findById(args?.id)
+    if (nft) {
+      const refreshedNFT = await refreshNFTMetadata(nft)
+      await redis.set(
+        `refreshNFT_${process.env.CHAIN_ID}_${args?.id}`,
+        JSON.stringify(refreshedNFT),
+        'EX',
+        5 * 60, // 5 minutes
+      )
+      return refreshedNFT
+    } else {
+      throw appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      )
+    }
+  }
 }
 
 export default {
