@@ -763,15 +763,18 @@ const leaderboard = async (
       { afterCursor: leaderboard.length.toString() }
   }
   const safePageInput = safeInput(pageInput, defaultCursor)
+  let totalItems
   if (pagination.hasFirst(safePageInput)) {
     const cursor = pagination.hasAfter(safePageInput) ?
       safePageInput.afterCursor : safePageInput.beforeCursor
     paginatedLeaderboard = leaderboard.filter((leader) => leader.index > Number(cursor))
+    totalItems = paginatedLeaderboard.length
     paginatedLeaderboard = paginatedLeaderboard.slice(0, safePageInput.first)
   } else {
     const cursor = pagination.hasAfter(safePageInput) ?
       safePageInput.afterCursor : safePageInput.beforeCursor
     paginatedLeaderboard = leaderboard.filter((leader) => leader.index < Number(cursor))
+    totalItems = paginatedLeaderboard.length
     paginatedLeaderboard =
       paginatedLeaderboard.slice(paginatedLeaderboard.length - safePageInput.last)
   }
@@ -781,7 +784,7 @@ const leaderboard = async (
     paginatedLeaderboard[0],
     paginatedLeaderboard[paginatedLeaderboard.length - 1],
     'index',
-  )([paginatedLeaderboard, paginatedLeaderboard.length])
+  )([paginatedLeaderboard, totalItems])
 }
 
 export default {
