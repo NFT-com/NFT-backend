@@ -277,6 +277,7 @@ const refreshMyNFTs = (
   ctx: Context,
 ): Promise<gql.RefreshMyNFTsOutput> => {
   const { user, repositories } = ctx
+  initiateWeb3()
   logger.debug('refreshNFTs', { loggedInUserId: user.id })
   return repositories.wallet.findByUserId(user.id)
     .then((wallets: entity.Wallet[]) => {
@@ -528,6 +529,7 @@ export const refreshNft = (
 ): Promise<gql.NFT> => {
   const { repositories } = ctx
   logger.debug('refreshNft', { id: args?.id })
+  initiateWeb3()
   return repositories.nft.findById(args?.id)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
@@ -535,7 +537,7 @@ export const refreshNft = (
         nftError.ErrorType.NFTNotFound,
       ),
     ))
-    .then(fp.tap((nft: entity.NFT) => {
+    .then(fp.tapWait((nft: entity.NFT) => {
       return repositories.wallet.findById(nft.walletId)
         .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
     }))
