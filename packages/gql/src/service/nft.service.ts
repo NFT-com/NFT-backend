@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { BigNumber, ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
@@ -505,6 +506,11 @@ export const refreshNFTMetadata = async (
   nft: entity.NFT,
 ): Promise<entity.NFT> => {
   try {
+    // hard refresh for now
+    // until Alchemy SDK incorporates this
+    // TODO: remove in future
+    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=${nft.type == defs.NFTType.ERC1155 ? 'erc1155' : 'erc721'}&refreshCache=true`)
+
     const metadata = await getNFTMetaData(
       nft.contract,
       BigNumber.from(nft.tokenId).toString(),
