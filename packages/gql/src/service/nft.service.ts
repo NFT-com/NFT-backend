@@ -509,7 +509,7 @@ export const refreshNFTMetadata = async (
     // hard refresh for now
     // until Alchemy SDK incorporates this
     // TODO: remove in future
-    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&refreshCache=true`)
+    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=erc721&refreshCache=true`)
 
     const metadata = await getNFTMetaData(
       nft.contract,
