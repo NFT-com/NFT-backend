@@ -527,29 +527,34 @@ export const refreshNft = async (
   args: gql.MutationRefreshNFTArgs,
   ctx: Context,
 ): Promise<gql.NFT> => {
-  const { repositories } = ctx
-  logger.debug('refreshNft', { id: args?.id })
-  initiateWeb3()
-  const cachedData = await redis.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
-  if (cachedData) {
-    return JSON.parse(cachedData)
-  } else {
-    const nft = await repositories.nft.findById(args?.id)
-    if (nft) {
-      const refreshedNFT = await refreshNFTMetadata(nft)
-      await redis.set(
-        `refreshNFT_${process.env.CHAIN_ID}_${args?.id}`,
-        JSON.stringify(refreshedNFT),
-        'EX',
-        5 * 60, // 5 minutes
-      )
-      return refreshedNFT
+  try {
+    const { repositories } = ctx
+    logger.debug('refreshNft', { id: args?.id })
+    initiateWeb3()
+    const cachedData = await redis.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
+    if (cachedData) {
+      return JSON.parse(cachedData)
     } else {
-      throw appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-        nftError.ErrorType.NFTNotFound,
-      )
+      const nft = await repositories.nft.findById(args?.id)
+      if (nft) {
+        const refreshedNFT = await refreshNFTMetadata(nft)
+        await redis.set(
+          `refreshNFT_${process.env.CHAIN_ID}_${args?.id}`,
+          JSON.stringify(refreshedNFT),
+          'EX',
+          5 * 60, // 5 minutes
+        )
+        return refreshedNFT
+      } else {
+        throw appError.buildNotFound(
+          nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+          nftError.ErrorType.NFTNotFound,
+        )
+      }
     }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in refreshNft: ${err}`)
   }
 }
 
