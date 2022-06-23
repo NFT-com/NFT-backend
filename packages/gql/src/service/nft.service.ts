@@ -319,11 +319,6 @@ const getNFTMetaData = async (
   tokenId: string,
 ): Promise<NFTMetaData> => {
   try {
-    // hard refresh for now
-    // until Alchemy SDK incorporates this
-    // TODO: remove in future
-    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=true`)
-
     let type: defs.NFTType
     const traits: Array<defs.Trait> = []
 
@@ -511,6 +506,11 @@ export const refreshNFTMetadata = async (
   nft: entity.NFT,
 ): Promise<entity.NFT> => {
   try {
+    // hard refresh for now
+    // until Alchemy SDK incorporates this
+    // TODO: remove in future
+    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&refreshCache=true`)
+
     const metadata = await getNFTMetaData(
       nft.contract,
       BigNumber.from(nft.tokenId).toString(),
