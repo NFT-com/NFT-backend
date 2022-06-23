@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { BigNumber, ethers, providers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
@@ -318,6 +319,11 @@ const getNFTMetaData = async (
   tokenId: string,
 ): Promise<NFTMetaData> => {
   try {
+    // hard refresh for now
+    // until Alchemy SDK incorporates this
+    // TODO: remove in future
+    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=true`)
+
     let type: defs.NFTType
     const traits: Array<defs.Trait> = []
 
