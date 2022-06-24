@@ -87,7 +87,7 @@ export const formatError = (error: GraphQLError): GQLError => {
     message,
     statusCode,
     errorKey,
-    stacktrace: extensions?.['exception']?.['stacktrace'],
+    stacktrace: extensions?.['exception']?.['stacktrace'].join('\n'),
     path,
   }))
   return <GQLError>{
@@ -100,10 +100,10 @@ export const formatError = (error: GraphQLError): GQLError => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const errorHandler = (err, req, res, next): void => {
-  const { stack: stacktrace, message } = err
+  const { stack, message } = err
   const path = req.path || req.originalUrl
   const responseData = { path, statusCode: '500', message: 'An error has occured' }
-  logger.error(JSON.stringify({ ...responseData, message, stacktrace }))
+  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack.join('\n') }))
   res.status(500)
   if (req.xhr) {
     res.send(responseData)
