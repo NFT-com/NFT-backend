@@ -70,7 +70,7 @@ export const getDefaultCursor = (orderBy: string): DefaultCursor => {
  * @param input
  * @param cursor
  */
-const safeInput = (
+export const safeInput = (
   input: gql.PageInput,
   cursor: DefaultCursor,
 ): gql.PageInput => {
