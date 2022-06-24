@@ -5,7 +5,7 @@ const { core } = jest.requireActual('@nftcom/gql/service')
 
 import { getTestApolloServer } from './util/testApolloServer'
 
-jest.setTimeout(20000)
+jest.setTimeout(30000)
 
 jest.mock('ioredis', () => jest.fn())
 jest.mock('@nftcom/gql/service', () => {
@@ -40,9 +40,9 @@ jest.mock('@nftcom/shared', () => {
   }
 })
 
+let testServer
 describe('profile resolver', () => {
   describe('get profile endpoint', () => {
-    let testServer
     beforeEach(async () => {
       testServer = getTestApolloServer({
         profile: {
@@ -51,8 +51,9 @@ describe('profile resolver', () => {
       })
     })
 
-    afterEach(() => {
+    afterEach(async () => {
       jest.clearAllMocks()
+      await testServer.stop()
     })
 
     it('should query profile by URL', async () => {

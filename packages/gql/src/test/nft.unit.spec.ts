@@ -1,15 +1,12 @@
-
 import * as nftService from '@nftcom/gql/service/nft.service'
 
 import { getTestApolloServer } from './util/testApolloServer'
 
-jest.setTimeout(20000)
+jest.setTimeout(30000)
 
-jest.mock('ioredis', () => jest.fn())
-
+let testServer
 describe('nft resolver', () => {
   describe('refresh nft endpoint', () => {
-    let testServer
     beforeEach(async () => {
       testServer = getTestApolloServer({
         nft: {
@@ -28,8 +25,9 @@ describe('nft resolver', () => {
       })
     })
 
-    afterEach(() => {
+    afterEach(async () => {
       jest.clearAllMocks()
+      await testServer.stop()
     })
 
     it('calles updateWalletNFTs when given valid input', async () => {
