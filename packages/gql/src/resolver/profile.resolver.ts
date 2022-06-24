@@ -772,21 +772,27 @@ const leaderboard = async (
   logger.debug('leaderboard', { input: args?.input })
 
   const cachedData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}`)
-  let leaderboard: Array<gql.LeaderboardProfile> = []
+  // rollingData is used to fill time gap when cache expires, and new leaderboard is being generated
+  const rollingData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_rolling`)
+  let leaderboard: Array<gql.LeaderboardProfile> = JSON.parse(rollingData) ?? []
   if (cachedData) {
     leaderboard = JSON.parse(cachedData)
   } else {
     // mutex prevents overlap
     const cachedMutex = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`)
 
-    if (cachedMutex == '0') {
-      await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, '1')
+    if (!Number(cachedMutex)) {
+      await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, 1)
 
       // generate leaderboard array with profiles ( by genesis key, items visible, collections )
       getLeaderboardProfiles(repositories)
         .then(async (leaderboardProfiles) => {
           leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
-          await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, '0')
+          await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, 0)
+          await redis.set(
+            `profile_leaderboard_${process.env.CHAIN_ID}_rolling`,
+            JSON.stringify(leaderboard),
+          )
           return redis.set(
             `profile_leaderboard_${process.env.CHAIN_ID}`,
             JSON.stringify(leaderboard),
