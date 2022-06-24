@@ -11,7 +11,7 @@ import { BaseEntity } from './base.entity'
 @Index(['thisEntityId', 'edgeType', 'deletedAt', 'createdAt'])
 @Index(['thatEntityId', 'edgeType', 'deletedAt', 'createdAt'])
 @Index(['thisEntityId', 'thatEntityId', 'edgeType', 'deletedAt'])
-@Unique(['thisEntityType', 'thatEntityType', 'thisEntityId', 'edgeType'])
+@Unique(['thisEntityType', 'thatEntityType', 'thisEntityId', 'thatEntityId', 'edgeType'])
 @Entity()
 export class Edge extends BaseEntity {
 

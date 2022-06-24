@@ -859,8 +859,10 @@ export const syncEdgesWithNFTs = async (
       },
     })
 
+    const duplicatedIds: Array<string> = []
     await Promise.allSettled(
       edges.map(async (edge) => {
+        // check duplicates in edges
         const key = [
           edge.thisEntityId,
           edge.thatEntityId,
@@ -870,7 +872,7 @@ export const syncEdgesWithNFTs = async (
         ].join('-')
 
         if (seen[key]) {
-          await repositories.edge.hardDelete({ id: edge.id })
+          duplicatedIds.push(edge.id)
         } else {
           seen[key] = true
         }
@@ -881,6 +883,7 @@ export const syncEdgesWithNFTs = async (
         }
       }),
     )
+    await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)

@@ -29,7 +29,12 @@ export class BaseRepository<T> {
     return this.getRepository().delete(opts)
       .then((r) => r.affected > 0)
   }
-  
+
+  public hardDeleteByIds = (ids: string[]): Promise<boolean> => {
+    return this.getRepository().delete(ids)
+      .then((r) => r.affected > 0)
+  }
+
   public deleteById = (id: string): Promise<boolean> => {
     return this.getRepository().softDelete(id)
       .then((r) => r.affected === 1)
