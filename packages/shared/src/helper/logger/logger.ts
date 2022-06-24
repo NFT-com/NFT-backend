@@ -33,7 +33,7 @@ class AppLogger {
         if (typeof arg === 'object') {
           arg = JSON.stringify(arg)
         }
-        arg.replaceAll(/(\r\n|\n|\r)/g, '\u2028')
+        return arg.replaceAll(/(\r\n|\n|\r)/g, '\u2028')
       })
     }
     return [
