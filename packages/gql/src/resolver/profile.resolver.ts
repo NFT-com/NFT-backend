@@ -24,7 +24,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import { changeNFTsVisibility, updateNFTsOrder } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
@@ -710,6 +710,59 @@ const orderingUpdates = (
     .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
 }
 
+const getLeaderboardProfiles = async (
+  repositories: db.Repository,
+): Promise<Array<gql.LeaderboardProfile>> => {
+  const profiles = await repositories.profile.findAll()
+  const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
+  const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
+  await Promise.allSettled(
+    profiles.map(async (profile) => {
+      // get genesis key numbers
+      const gkNFTs = await repositories.nft.find({
+        where: { userId: profile.ownerUserId, contract: gkContractAddress },
+      })
+      // get collections
+      const nfts = await repositories.nft.find({
+        where: { userId: profile.ownerUserId },
+      })
+      const collections: Array<string> = []
+      await Promise.allSettled(
+        nfts.map(async (nft) => {
+          const collection = await repositories.collection.findOne({
+            where: { contract: nft.contract },
+          })
+          if (collection) {
+            const isExisting = collections.find((existingCollection) =>
+              existingCollection === collection.contract,
+            )
+            if (!isExisting) collections.push(collection.contract)
+          }
+        }),
+      )
+      // get visible items
+      const edges = await repositories.edge.find({
+        where: {
+          thisEntityId: profile.id,
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          edgeType: defs.EdgeType.Displays,
+          hide: false,
+        },
+      })
+      leaderboardProfiles.push({
+        id: profile.id,
+        url: profile.url,
+        photoURL: profile.photoURL,
+        numberOfGenesisKeys: gkNFTs.length,
+        numberOfCollections: collections.length,
+        itemsVisible: edges.length,
+      })
+    }),
+  )
+  return leaderboardProfiles
+}
+
 const leaderboard = async (
   _: any,
   args: gql.QueryLeaderboardArgs,
@@ -719,71 +772,26 @@ const leaderboard = async (
   logger.debug('leaderboard', { input: args?.input })
 
   const cachedData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}`)
-  let leaderboard: Array<gql.LeaderboardProfile>
+  let leaderboard: Array<gql.LeaderboardProfile> = []
   if (cachedData) {
     leaderboard = JSON.parse(cachedData)
   } else {
     // generate leaderboard array with profiles ( by genesis key, items visible, collections )
-    const profiles = await repositories.profile.findAll()
-    const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
-    const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
-    await Promise.allSettled(
-      profiles.map(async (profile) => {
-        // get genesis key numbers
-        const gkNFTs = await repositories.nft.find({
-          where: { userId: profile.ownerUserId, contract: gkContractAddress },
-        })
-        // get collections
-        const nfts = await repositories.nft.find({
-          where: { userId: profile.ownerUserId },
-        })
-        const collections: Array<string> = []
-        await Promise.allSettled(
-          nfts.map(async (nft) => {
-            const collection = await repositories.collection.findOne({
-              where: { contract: nft.contract },
-            })
-            if (collection) {
-              const isExisting = collections.find((existingCollection) =>
-                existingCollection === collection.contract,
-              )
-              if (!isExisting) collections.push(collection.contract)
-            }
-          }),
+    getLeaderboardProfiles(repositories)
+      .then((leaderboardProfiles) => {
+        leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
+        return redis.set(
+          `profile_leaderboard_${process.env.CHAIN_ID}`,
+          JSON.stringify(leaderboard),
+          'EX',
+          5 * 60, // 5 minutes
         )
-        // get visible items
-        const edges = await repositories.edge.find({
-          where: {
-            thisEntityId: profile.id,
-            thisEntityType: defs.EntityType.Profile,
-            thatEntityType: defs.EntityType.NFT,
-            edgeType: defs.EdgeType.Displays,
-            hide: false,
-          },
-        })
-        leaderboardProfiles.push({
-          id: profile.id,
-          url: profile.url,
-          photoURL: profile.photoURL,
-          numberOfGenesisKeys: gkNFTs.length,
-          numberOfCollections: collections.length,
-          itemsVisible: edges.length,
-        })
-      }),
-    )
-
-    leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
-    for (let i = 0; i< leaderboard.length; i++) {
-      leaderboard[i].index = i
-    }
-    await redis.set(
-      `profile_leaderboard_${process.env.CHAIN_ID}`,
-      JSON.stringify(leaderboard),
-      'EX',
-      5 * 60, // 5 minutes
-    )
+      })
   }
 
+  for (let i = 0; i< leaderboard.length; i++) {
+    leaderboard[i].index = i
+  }
   const { pageInput } = helper.safeObject(args?.input)
   let paginatedLeaderboard: Array<gql.LeaderboardProfile>
   let defaultCursor
