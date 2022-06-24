@@ -857,6 +857,25 @@ export const syncEdgesWithNFTs = async (
         edgeType: defs.EdgeType.Displays,
       },
     })
+    // remove duplicates from edge table
+    const uniqueEdges = edges.filter((value, index, self) =>
+      index === self.findIndex((edge) => (
+        edge.thisEntityType === value.thisEntityType &&
+        edge.thisEntityId === value.thisEntityId &&
+        edge.thatEntityId === value.thatEntityId &&
+        edge.thatEntityType === value.thatEntityType &&
+        edge.edgeType === value.edgeType
+      )),
+    )
+    await Promise.allSettled(
+      edges.map(async (edge) => {
+        const index = uniqueEdges.indexOf(edge)
+        if (index === -1) {
+          await repositories.edge.hardDelete({ id: edge.id })
+        }
+      }),
+    )
+    // remove edges which are not existing on nft table
     await Promise.allSettled(
       edges.map(async (edge) => {
         const nft = await repositories.nft.findOne({ where: { id: edge.thatEntityId } })
