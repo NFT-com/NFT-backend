@@ -776,17 +776,25 @@ const leaderboard = async (
   if (cachedData) {
     leaderboard = JSON.parse(cachedData)
   } else {
-    // generate leaderboard array with profiles ( by genesis key, items visible, collections )
-    getLeaderboardProfiles(repositories)
-      .then((leaderboardProfiles) => {
-        leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
-        return redis.set(
-          `profile_leaderboard_${process.env.CHAIN_ID}`,
-          JSON.stringify(leaderboard),
-          'EX',
-          5 * 60, // 5 minutes
-        )
-      })
+    // mutex prevents overlap
+    const cachedMutex = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`)
+
+    if (cachedMutex == '0') {
+      await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, '1')
+
+      // generate leaderboard array with profiles ( by genesis key, items visible, collections )
+      getLeaderboardProfiles(repositories)
+        .then(async (leaderboardProfiles) => {
+          leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
+          await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, '0')
+          return redis.set(
+            `profile_leaderboard_${process.env.CHAIN_ID}`,
+            JSON.stringify(leaderboard),
+            'EX',
+            5 * 60, // 5 minutes
+          )
+        })
+    }
   }
 
   for (let i = 0; i< leaderboard.length; i++) {
