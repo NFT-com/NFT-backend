@@ -729,12 +729,14 @@ const leaderboard = async (
     const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
     await Promise.allSettled(
       profiles.map(async (profile) => {
+        // get genesis key numbers
+        const gkNFTs = await repositories.nft.find({
+          where: { userId: profile.ownerUserId, contract: gkContractAddress },
+        })
+        // get collections
         const nfts = await repositories.nft.find({
           where: { userId: profile.ownerUserId },
         })
-        // get genesis key numbers
-        const gkNFTs = nfts.filter((nft) => nft.contract === gkContractAddress)
-        // get collections
         const collections: Array<string> = []
         await Promise.allSettled(
           nfts.map(async (nft) => {
