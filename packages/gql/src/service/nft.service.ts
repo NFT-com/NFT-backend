@@ -849,6 +849,7 @@ export const syncEdgesWithNFTs = async (
   profileId: string,
 ): Promise<void> => {
   try {
+    const seen = {}
     const edges = await repositories.edge.find({
       where: {
         thisEntityType: defs.EntityType.Profile,
@@ -857,14 +858,32 @@ export const syncEdgesWithNFTs = async (
         edgeType: defs.EdgeType.Displays,
       },
     })
+
+    const duplicatedIds: Array<string> = []
     await Promise.allSettled(
       edges.map(async (edge) => {
+        // check duplicates in edges
+        const key = [
+          edge.thisEntityId,
+          edge.thatEntityId,
+          edge.edgeType,
+          edge.thisEntityType,
+          edge.thatEntityType,
+        ].join('-')
+
+        if (seen[key]) {
+          duplicatedIds.push(edge.id)
+        } else {
+          seen[key] = true
+        }
+
         const nft = await repositories.nft.findOne({ where: { id: edge.thatEntityId } })
         if (!nft) {
           await repositories.edge.hardDelete({ id: edge.id })
         }
       }),
     )
+    await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
