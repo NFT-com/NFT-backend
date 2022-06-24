@@ -1,4 +1,4 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity, Index, Unique } from 'typeorm'
 
 import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
@@ -11,6 +11,7 @@ import { BaseEntity } from './base.entity'
 @Index(['thisEntityId', 'edgeType', 'deletedAt', 'createdAt'])
 @Index(['thatEntityId', 'edgeType', 'deletedAt', 'createdAt'])
 @Index(['thisEntityId', 'thatEntityId', 'edgeType', 'deletedAt'])
+@Unique(['thisEntityType', 'thatEntityType', 'thisEntityId', 'thatEntityId', 'edgeType'])
 @Entity()
 export class Edge extends BaseEntity {
 
