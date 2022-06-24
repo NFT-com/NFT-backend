@@ -723,7 +723,7 @@ const leaderboard = async (
   if (cachedData) {
     leaderboard = JSON.parse(cachedData)
   } else {
-    // generate leaderboard array with profiles ( by genesis key )
+    // generate leaderboard array with profiles ( by genesis key, items visible, collections )
     const profiles = await repositories.profile.findAll()
     const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
     const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
@@ -732,18 +732,45 @@ const leaderboard = async (
         const nfts = await repositories.nft.find({
           where: { userId: profile.ownerUserId },
         })
+        // get genesis key numbers
         const gkNFTs = nfts.filter((nft) => nft.contract === gkContractAddress)
+        // get collections
+        const collections: Array<string> = []
+        await Promise.allSettled(
+          nfts.map(async (nft) => {
+            const collection = await repositories.collection.findOne({
+              where: { contract: nft.contract },
+            })
+            if (collection) {
+              const isExisting = collections.find((existingCollection) =>
+                existingCollection === collection.contract,
+              )
+              if (!isExisting) collections.push(collection.contract)
+            }
+          }),
+        )
+        // get visible items
+        const edges = await repositories.edge.find({
+          where: {
+            thisEntityId: profile.id,
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            edgeType: defs.EdgeType.Displays,
+            hide: false,
+          },
+        })
         leaderboardProfiles.push({
           id: profile.id,
           url: profile.url,
           photoURL: profile.photoURL,
           numberOfGenesisKeys: gkNFTs.length,
-          ItemsCollected: 0,
+          numberOfCollections: collections.length,
+          itemsVisible: edges.length,
         })
       }),
     )
 
-    leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys'], ['desc'])
+    leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
     for (let i = 0; i< leaderboard.length; i++) {
       leaderboard[i].index = i
     }

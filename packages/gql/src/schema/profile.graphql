@@ -54,7 +54,8 @@ type LeaderboardProfile {
   url: String!
   photoURL: String
   numberOfGenesisKeys: Int
-  ItemsCollected: Int
+  numberOfCollections: Int
+  itemsVisible: Int
 }
 
 input ProfilesInput {
