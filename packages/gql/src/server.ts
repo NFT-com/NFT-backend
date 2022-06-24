@@ -114,7 +114,7 @@ const execShellCommand = (
         logger.error('SWALLOWING ERROR', err)
         return Promise.resolve()
       }
-      logger.log(description, stdout.replace('\n', '').trim())
+      logger.info(description, stdout.replace('\n', '').trim())
       return Promise.resolve()
     })
 }
@@ -241,7 +241,7 @@ export const start = async (): Promise<void> => {
   if (process.env.NODE_ENV === 'local') {
     await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
   }
-  logger.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
+  logger.info(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 
 export const stop = (): Promise<void> => {

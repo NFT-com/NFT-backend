@@ -127,7 +127,7 @@ const getContractNFT = (
       ),
     ))
     .then(fp.tap((nft) => {
-      logger.log(nft) // todo: refresh metadata?
+      logger.info(nft) // todo: refresh metadata?
     }))
 }
 
@@ -418,7 +418,7 @@ const getExternalListings = async (
     // 1. Opensea
     // get selling & buying orders...
     const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
-    logger.log('========== allOrder: ', JSON.stringify(allOrder, null, 2))
+    logger.debug('========== allOrder: ', JSON.stringify(allOrder, null, 2))
     let bestOffer = undefined
     if (allOrder?.offers?.seaport?.length) {
       bestOffer = allOrder.offers?.seaport?.[0]

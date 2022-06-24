@@ -62,7 +62,7 @@ export const getAssetList = (
     if (assetTypeBytes !== asset.standard.bytes) {
       throw Error(`Calculated Asset Type Bytes ${assetTypeBytes} mismatch sent bytes ${asset.standard.bytes}`)
     } else if (assetBytes !== asset.bytes) {
-      logger.log(assets)
+      logger.debug(assets)
       throw Error(`Calculated Asset Bytes ${assetBytes} mismatch sent bytes ${asset.bytes}`)
     }
 

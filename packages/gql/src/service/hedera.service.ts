@@ -38,7 +38,7 @@ class _HederaConsensusService implements IHederaConsensusService {
         response => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const message = response.contents.toString()
-          // logger.log(message)
+          // logger.info(message)
         })
   }
 

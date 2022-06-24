@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/node'
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.Misc)
 
 export const verifyConfiguration = (): void => {
-  logger.log('Loading configurations...')
+  logger.debug('Loading configurations...')
 }
 
 const lookupEnvKeyOrThrow = (key: string): string => {

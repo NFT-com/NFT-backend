@@ -480,7 +480,7 @@ const profileClaimed = (
 
       client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
         .then(() => logger.debug('profile added to typesense index'))
-        .catch((err) => logger.info('error: could not save profile in typesense: ' + err))
+        .catch((err) => logger.error('error: could not save profile in typesense: ' + err))
 
       return saveProfile
     })

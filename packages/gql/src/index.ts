@@ -28,11 +28,11 @@ const killPort = (): Promise<unknown> => {
   return kill(serverPort)
     // Without this small delay sometimes it's not killed in time
     .then(fp.pause(500))
-    .catch((err: any) => logger.log(err))
+    .catch((err: any) => logger.error(err))
 }
 
 const logGoodbye = (): void => {
-  logger.log('Cya! Thanks for stopping by.')
+  logger.info('Cya! Thanks for stopping by.')
 }
 
 const cleanExit = (): Promise<void> => {
