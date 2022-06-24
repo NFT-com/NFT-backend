@@ -28,6 +28,9 @@ class AppLogger {
 
   private argumentsToList(level: LogLevel, ...args: any[]): any[] {
     const colorFn = this.getLogColorFn(level)
+    if (process.env.NODE_ENV !== 'local') {
+      args = args.map((arg) => arg.replaceAll(/(\r\n|\n|\r)/g, '\u2028'))
+    }
     return [
       `${this.dateString()} ${colorFn(`[${level}]`)}${colorFn(`[${this.context}]`)}${this.name ? colorFn(`[${this.name}]`) : ''}`,
       ...args,

@@ -1,5 +1,5 @@
 import { gql } from '@nftcom/gql/defs'
-import { db, defs, entity, helper, provider } from '@nftcom/shared'
+import { _logger, db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { PageInfo } from './gql'
 
@@ -18,6 +18,8 @@ export type Context = {
   teamKey?: string
   xMintSignature?: string
 }
+
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
   switch (asset.standard.assetClass) {
@@ -60,7 +62,7 @@ export const getAssetList = (
     if (assetTypeBytes !== asset.standard.bytes) {
       throw Error(`Calculated Asset Type Bytes ${assetTypeBytes} mismatch sent bytes ${asset.standard.bytes}`)
     } else if (assetBytes !== asset.bytes) {
-      console.log(assets)
+      logger.log(assets)
       throw Error(`Calculated Asset Bytes ${assetBytes} mismatch sent bytes ${asset.bytes}`)
     }
 

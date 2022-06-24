@@ -1,7 +1,6 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
 import { exec } from 'child_process'
-import console from 'console'
 import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
@@ -112,10 +111,10 @@ const execShellCommand = (
         return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
       }
       if (helper.isNotEmpty(err) && swallowError) {
-        console.error('SWALLOWING ERROR', err)
+        logger.error('SWALLOWING ERROR', err)
         return Promise.resolve()
       }
-      console.log(description, stdout.replace('\n', '').trim())
+      logger.log(description, stdout.replace('\n', '').trim())
       return Promise.resolve()
     })
 }
@@ -242,7 +241,7 @@ export const start = async (): Promise<void> => {
   if (process.env.NODE_ENV === 'local') {
     await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
   }
-  console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
+  logger.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 
 export const stop = (): Promise<void> => {
