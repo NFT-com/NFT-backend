@@ -17,14 +17,13 @@ import { differenceInMilliseconds } from 'date-fns'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
-import { delay } from '@nftcom/gql/service/core.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  initiateWeb3, syncEdgesWithNFTs, updateEdgesWeightForProfile,
+  initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
-import { retrieveOrdersOpensea } from '@nftcom/gql/service/opeansea.service'
+import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
 const redis = new Redis({
   port: redisConfig.port,
@@ -278,6 +277,7 @@ const refreshMyNFTs = (
   ctx: Context,
 ): Promise<gql.RefreshMyNFTsOutput> => {
   const { user, repositories } = ctx
+  initiateWeb3()
   logger.debug('refreshNFTs', { loggedInUserId: user.id })
   return repositories.wallet.findByUserId(user.id)
     .then((wallets: entity.Wallet[]) => {
@@ -415,100 +415,159 @@ const getExternalListings = async (
     caller: ctx.user?.id,
   })
   try {
-    // 1. Opensea
-    // get selling & buying orders...
-    const buyOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 0)
-    await delay(1000)
-    const sellOrders = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId, 1)
-    let bestOffer = undefined
-    if (buyOrders && buyOrders.length) {
-      bestOffer = buyOrders[0]
-      for (let i = 1; i < buyOrders.length; i++) {
-        const usdPrice0 = new BN(bestOffer.current_price)
-          .shiftedBy(-bestOffer.payment_token_contract.decimals)
-          .multipliedBy(bestOffer.payment_token_contract.usd_price)
-        const usdPrice1 = new BN(buyOrders[i].current_price)
-          .shiftedBy(-buyOrders[i].payment_token_contract.decimals)
-          .multipliedBy(buyOrders[i].payment_token_contract.usd_price)
-        if (usdPrice0.lt(usdPrice1))
-          bestOffer = buyOrders[i]
+    const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${args?.chainId}`
+    const cachedData = await redis.get(key)
+
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    } else {
+      // 1. Opensea
+      // get selling & buying orders...
+      const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
+      console.log('========== allOrder: ', JSON.stringify(allOrder, null, 2))
+      let bestOffer = undefined
+      if (allOrder?.offers?.seaport?.length) {
+        bestOffer = allOrder.offers?.seaport?.[0]
+        for (let i = 1; i < allOrder.offers?.seaport?.length; i++) {
+          const price0 = new BN(bestOffer.current_price)
+            .shiftedBy(-bestOffer.maker_asset_bundle.assets?.[0].decimals)
+          const price1 = new BN(allOrder.offers?.seaport?.[i].current_price)
+            .shiftedBy(-allOrder.offers?.seaport?.[i].maker_asset_bundle?.[0].decimals)
+          if (price0.lt(price1))
+            bestOffer = allOrder.offers?.seaport?.[0]
+        }
+      } else if (allOrder?.offers?.v1?.length) {
+        bestOffer = allOrder?.offers?.v1?.[0]
+        for (let i = 1; i < allOrder?.offers?.v1?.length; i++) {
+          const usdPrice0 = new BN(bestOffer.current_price)
+            .shiftedBy(-bestOffer.payment_token_contract.decimals)
+            .multipliedBy(bestOffer.payment_token_contract.usd_price)
+          const usdPrice1 = new BN(allOrder?.offers?.v1?.[i].current_price)
+            .shiftedBy(-allOrder?.offers?.v1?.[i].payment_token_contract.decimals)
+            .multipliedBy(allOrder?.offers?.v1?.[i].payment_token_contract.usd_price)
+          if (usdPrice0.lt(usdPrice1))
+            bestOffer = allOrder?.offers?.v1?.[i]
+        }
       }
-    }
 
-    let createdDate, expiration, baseCoin
-    if (sellOrders && sellOrders.length) {
-      createdDate = new Date(sellOrders[0].created_date)
-      expiration = new Date(sellOrders[0].expiration_time * 1000)
-      baseCoin = {
-        symbol: sellOrders[0].payment_token_contract.symbol,
-        logoURI: sellOrders[0].payment_token_contract.image_url,
-        address: sellOrders[0].payment_token_contract.address,
-        decimals: sellOrders[0].payment_token_contract.decimals,
-      } as BaseCoin
-    }
-    const opensea = {
-      url: sellOrders && sellOrders.length ? sellOrders[0].asset.permalink : null,
-      exchange: gql.SupportedExternalExchange.Opensea,
-      price: sellOrders && sellOrders.length ? sellOrders[0].current_price : null,
-      highestOffer: bestOffer ? bestOffer.current_price : null,
-      expiration: expiration ?? null,
-      creation:  createdDate?? null,
-      baseCoin: baseCoin ?? null,
-    }
+      let createdDate, expiration, baseCoin
+      if (allOrder?.listings?.seaport?.length) {
+        const seaportListing = allOrder.listings?.seaport?.[0]
+        createdDate = new Date(seaportListing?.created_date)
+        expiration = new Date(seaportListing?.expiration_time * 1000)
+        baseCoin = {
+          symbol:
+            seaportListing?.taker_asset_bundle.assets?.[0]?.asset_contract?.symbol ??
+            seaportListing?.taker_asset_bundle.assets?.[0]?.asset_contract.name,
+          logoURI: seaportListing?.taker_asset_bundle?.assets?.[0]?.image_url,
+          address:
+            seaportListing?.taker_asset_bundle?.assets?.[0]?.asset_contract.address,
+          decimals: seaportListing?.taker_asset_bundle?.assets?.[0]?.decimals,
+        } as BaseCoin
+      } else if (allOrder?.listings?.v1?.length) {
+        createdDate = new Date(allOrder?.listings?.v1?.[0].created_date)
+        expiration = new Date(allOrder?.listings?.v1?.[0].expiration_time * 1000)
+        baseCoin = {
+          symbol: allOrder?.listings?.v1?.[0].payment_token_contract.symbol,
+          logoURI: allOrder?.listings?.v1?.[0].payment_token_contract.image_url,
+          address: allOrder?.listings?.v1?.[0].payment_token_contract.address,
+          decimals: allOrder?.listings?.v1?.[0].payment_token_contract.decimals,
+        } as BaseCoin
+      }
 
-    // 2. Looksrare
-    const looksrareSellOrders = await retrieveOrdersLooksrare(
-      args?.contract,
-      args?.tokenId,
-      args?.chainId,
-      true,
-      'VALID',
-    )
-    const url = args?.chainId === '4' ? `https://rinkeby.looksrare.org/collections/${args?.contract}/${args?.tokenId}` :
-      `https://looksrare.org/collections/${args?.contract}/${args?.tokenId}`
-    let looksrareCreatedDate, looksrareExpiration, looksrareBaseCoin
-    if (looksrareSellOrders && looksrareSellOrders.length) {
-      looksrareCreatedDate = new Date(looksrareSellOrders[0].startTime * 1000)
-      looksrareExpiration = new Date(looksrareSellOrders[0].endTime * 1000)
-      looksrareBaseCoin = baseCoins.find((coin) =>
-        coin.address === looksrareSellOrders[0].currencyAddress.toLowerCase(),
+      const opensea = {
+        url: (allOrder?.listings?.seaport?.length) ?
+          allOrder.listings?.seaport?.[0]?.maker_asset_bundle.assets?.[0]?.permalink :
+          allOrder?.listings?.v1?.length ?
+            `https://opensea.io/assets/ethereum/${args?.contract}/${args?.tokenId}`
+            : null,
+        exchange: gql.SupportedExternalExchange.Opensea,
+        price: allOrder?.listings?.seaport?.length ?
+          allOrder.listings?.seaport?.[0]?.current_price :
+          allOrder?.listings?.v1?.length ?
+            allOrder?.listings?.v1?.[0]?.current_price :
+            null,
+        highestOffer: bestOffer ? bestOffer?.current_price : null,
+        expiration: expiration ?? null,
+        creation:  createdDate?? null,
+        baseCoin: baseCoin ?? null,
+      }
+
+      // 2. Looksrare
+      const looksrareSellOrders = await retrieveOrdersLooksrare(
+        args?.contract,
+        args?.tokenId,
+        args?.chainId,
+        true,
+        'VALID',
       )
+      const url = args?.chainId === '4' ? `https://rinkeby.looksrare.org/collections/${args?.contract}/${args?.tokenId}` :
+        `https://looksrare.org/collections/${args?.contract}/${args?.tokenId}`
+      let looksrareCreatedDate, looksrareExpiration, looksrareBaseCoin
+      if (looksrareSellOrders && looksrareSellOrders.length) {
+        looksrareCreatedDate = new Date(looksrareSellOrders[0].startTime * 1000)
+        looksrareExpiration = new Date(looksrareSellOrders[0].endTime * 1000)
+        looksrareBaseCoin = baseCoins.find((coin) =>
+          coin.address === looksrareSellOrders[0].currencyAddress.toLowerCase(),
+        )
+      }
+      const looksrare = {
+        url: looksrareSellOrders && looksrareSellOrders.length ? url : null,
+        exchange: gql.SupportedExternalExchange.Looksrare,
+        price: looksrareSellOrders && looksrareSellOrders.length ?
+          looksrareSellOrders[0].price : null,
+        highestOffer: null,
+        expiration: looksrareExpiration ?? null,
+        creation: looksrareCreatedDate ?? null,
+        baseCoin: looksrareBaseCoin ?? null,
+      }
+
+      const finalData = { listings: [opensea, looksrare] }
+
+      redis.set(key, JSON.stringify(finalData), 'EX', 60)
+
+      return finalData
     }
-    const looksrare = {
-      url: looksrareSellOrders && looksrareSellOrders.length ? url : null,
-      exchange: gql.SupportedExternalExchange.Looksrare,
-      price: looksrareSellOrders && looksrareSellOrders.length ?
-        looksrareSellOrders[0].price : null,
-      highestOffer: null,
-      expiration: looksrareExpiration ?? null,
-      creation: looksrareCreatedDate ?? null,
-      baseCoin: looksrareBaseCoin ?? null,
-    }
-    return { listings: [opensea, looksrare] }
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getExternalListings: ${err}`)
   }
 }
 
-export const refreshNft = (
+export const refreshNft = async (
   _: any,
   args: gql.MutationRefreshNFTArgs,
   ctx: Context,
 ): Promise<gql.NFT> => {
-  const { repositories } = ctx
-  logger.debug('refreshNft', { id: args?.id })
-  return repositories.nft.findById(args?.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-        nftError.ErrorType.NFTNotFound,
-      ),
-    ))
-    .then(fp.tap((nft: entity.NFT) => {
-      return repositories.wallet.findById(nft.walletId)
-        .then((wallet) => updateWalletNFTs(nft.userId, nft.walletId, wallet.address))
-    }))
+  try {
+    const { repositories } = ctx
+    logger.debug('refreshNft', { id: args?.id })
+    initiateWeb3()
+    const cachedData = await redis.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    } else {
+      const nft = await repositories.nft.findById(args?.id)
+      if (nft) {
+        const refreshedNFT = await refreshNFTMetadata(nft)
+        await redis.set(
+          `refreshNFT_${process.env.CHAIN_ID}_${args?.id}`,
+          JSON.stringify(refreshedNFT),
+          'EX',
+          5 * 60, // 5 minutes
+        )
+        return refreshedNFT
+      } else {
+        throw appError.buildNotFound(
+          nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+          nftError.ErrorType.NFTNotFound,
+        )
+      }
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in refreshNft: ${err}`)
+  }
 }
 
 export default {
