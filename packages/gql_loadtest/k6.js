@@ -27,7 +27,7 @@ export default function() {
         'authorization': '0x3e28a0402f9a3b2fa2c6ca855cf1335ce9637513af7e5e029f2b78d75b44c5f0233b479a16ca772efcf1574ba593195b8c1164df48825d146a2acef9badc52331c'
       },
       tags: {
-        rw: data.query.contains('mutation') ? 'write' : 'read'
+        rw: payload.contains('mutation') ? 'write' : 'read'
       }
   }
     const res = http.post(url, payload, params)
