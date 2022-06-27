@@ -1,8 +1,11 @@
 import { Client, TopicMessageQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk'
 import SubscriptionHandle from '@hashgraph/sdk/lib/topic/SubscriptionHandle'
+import { _logger } from '@nftcom/shared'
 
 import { isProduction } from '../config'
 import { IHederaConsensusService } from '../defs/hedera'
+
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 class _HederaConsensusService implements IHederaConsensusService {
 
@@ -31,11 +34,11 @@ class _HederaConsensusService implements IHederaConsensusService {
     this.HCS = new TopicMessageQuery()
       .setTopicId(this.topicId)
       .subscribe(this.client,
-        error => { console.log( error ) },
+        error => { logger.error( error ) },
         response => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const message = response.contents.toString()
-          // console.log(message)
+          // logger.info(message)
         })
   }
 
