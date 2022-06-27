@@ -13,9 +13,13 @@ import * as stagingArgs from './args-staging.json' // File needs to be updated w
 let args = undefined
 switch (process.env.NODE_ENV) {
 case 'production':
+  console.error('Production GQL load testing is not available at this time.')
+  process.exit(1)
   args = prodArgs
   break
 case 'staging':
+  console.error('Staging GQL load testing is not available at this time.')
+  process.exit(1)
   args = stagingArgs
   break
 default:

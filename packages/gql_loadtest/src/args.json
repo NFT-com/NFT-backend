@@ -2,6 +2,7 @@
   "collection": {
     "input": {
       "contract": "0xbAE022721cfa57024781c3362724D5fBCE7443Da",
+      "chainId": "4",
       "network": "rinkeby"
     }
   },
@@ -9,8 +10,8 @@
     "tokenId": "0x1b"
   },
   "nft": {
-    "contract": "0x483d9729c15bd7A4e749F20066235f0D6974eA78",
-    "id": "zHZeMIcAaP1CmvGbSS5t1"
+    "contract": "0x734a14f4df41f2fA90f8bF7fb7Ce3E2ab68d9cF0",
+    "id": "i773VRBhddmp_274P6mpi"
   },
   "nftById": {
     "id": "Qxf1YVk1UfD39UZBniZzB"
@@ -27,6 +28,9 @@
     }
   ],
   "myNFTs": {
+    "pageInput": {
+      "first": 100
+    },
     "profileId": "ZiqCT2I8b2kIHej_ZUrFi"
   },
   "collectionNFTs": {
