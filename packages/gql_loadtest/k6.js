@@ -1,6 +1,6 @@
 import http from 'k6/http'
 
-const queries = JSON.parse(open('./k6-gql-queries.json'))
+const queryData = JSON.parse(open('./k6-gql-queries.json'))
 
 export const options = {
   vus: 4,
@@ -13,11 +13,11 @@ export const options = {
 }
 
 export default function() {
-  for (const query of queries) {
+  for (const data of queryData) {
     const url = `https://${__ENV.GQL_HOSTNAME}/graphql/`
     const payload = JSON.stringify({
-      query: query.query,
-      variables: query.variables,
+      query: data.query,
+      variables: data.variables,
     })
     const params = { 
       headers: {
@@ -27,7 +27,7 @@ export default function() {
         'authorization': '0x3e28a0402f9a3b2fa2c6ca855cf1335ce9637513af7e5e029f2b78d75b44c5f0233b479a16ca772efcf1574ba593195b8c1164df48825d146a2acef9badc52331c'
       },
       tags: {
-        rw: query.contains('mutation') ? 'write' : 'read'
+        rw: data.query.contains('mutation') ? 'write' : 'read'
       }
   }
     const res = http.post(url, payload, params)
