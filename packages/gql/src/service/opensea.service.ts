@@ -106,8 +106,6 @@ const cids = (): string => {
  * @param contract
  * @param tokenId
  * @param chainId
- * @param buyOrSell
- * @param listedBefore
  */
 export const retrieveOrdersOpensea = async (
   contract: string,
