@@ -1,7 +1,6 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
 import { exec } from 'child_process'
-import console from 'console'
 import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
@@ -84,18 +83,32 @@ export const formatError = (error: GraphQLError): GQLError => {
   const { message, path, extensions } = error
   const errorKey = extensions?.['errorKey'] || 'UNKNOWN'
   const statusCode = extensions?.['code'] || ''
-  logger.error('formatError', {
+  logger.error('formatError', JSON.stringify({
     message,
     statusCode,
     errorKey,
-    stacktrace: extensions?.['exception']?.['stacktrace'],
+    stacktrace: extensions?.['exception']?.['stacktrace'].join('\n'),
     path,
-  })
+  }))
   return <GQLError>{
     statusCode,
     errorKey,
     message,
     path,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const errorHandler = (err, req, res, next): void => {
+  const { stack, message } = err
+  const path = req.path || req.originalUrl
+  const responseData = { path, statusCode: '500', message: 'An error has occured' }
+  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack.join('\n') }))
+  res.status(500)
+  if (req.xhr) {
+    res.send(responseData)
+  } else {
+    res.render('error', responseData)
   }
 }
 
@@ -112,10 +125,10 @@ const execShellCommand = (
         return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
       }
       if (helper.isNotEmpty(err) && swallowError) {
-        console.error('SWALLOWING ERROR', err)
+        logger.error('SWALLOWING ERROR', err)
         return Promise.resolve()
       }
-      console.log(description, stdout.replace('\n', '').trim())
+      logger.info(description, stdout.replace('\n', '').trim())
       return Promise.resolve()
     })
 }
@@ -235,6 +248,7 @@ export const start = async (): Promise<void> => {
   app.use(Sentry.Handlers.errorHandler())
   app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
   app.use(cors())
+  app.use(errorHandler)
 
   await server.start()
   server.applyMiddleware({ app })
@@ -242,7 +256,7 @@ export const start = async (): Promise<void> => {
   if (process.env.NODE_ENV === 'local') {
     await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
   }
-  console.log(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
+  logger.info(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 
 export const stop = (): Promise<void> => {

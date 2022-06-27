@@ -2,11 +2,13 @@ import 'dotenv/config'
 
 import { isString } from 'lodash'
 
-import { defs, helper } from '@nftcom/shared'
+import { _logger, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.Misc)
+
 export const verifyConfiguration = (): void => {
-  console.log('Loading configurations...')
+  logger.debug('Loading configurations...')
 }
 
 const lookupEnvKeyOrThrow = (key: string): string => {
