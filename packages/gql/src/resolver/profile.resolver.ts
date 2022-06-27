@@ -716,51 +716,65 @@ const getLeaderboardProfiles = async (
   const profiles = await repositories.profile.findAll()
   const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
   const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
-  await Promise.allSettled(
-    profiles.map(async (profile) => {
-      // get genesis key numbers
-      const gkNFTs = await repositories.nft.find({
-        where: { userId: profile.ownerUserId, contract: gkContractAddress },
-      })
-      // get collections
-      const nfts = await repositories.nft.find({
-        where: { userId: profile.ownerUserId },
-      })
-      const collections: Array<string> = []
-      await Promise.allSettled(
-        nfts.map(async (nft) => {
-          const collection = await repositories.collection.findOne({
-            where: { contract: nft.contract },
-          })
-          if (collection) {
-            const isExisting = collections.find((existingCollection) =>
-              existingCollection === collection.contract,
-            )
-            if (!isExisting) collections.push(collection.contract)
-          }
-        }),
-      )
-      // get visible items
-      const edges = await repositories.edge.find({
-        where: {
-          thisEntityId: profile.id,
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          edgeType: defs.EdgeType.Displays,
-          hide: false,
-        },
-      })
-      leaderboardProfiles.push({
-        id: profile.id,
-        url: profile.url,
-        photoURL: profile.photoURL,
-        numberOfGenesisKeys: gkNFTs.length,
-        numberOfCollections: collections.length,
-        itemsVisible: edges.length,
-      })
-    }),
-  )
-  return leaderboardProfiles
+  try {
+    const startTime = Date.now()
+    await Promise.allSettled(
+      profiles.map(async (profile) => {
+        const start = Date.now()
+        // get genesis key numbers
+        const gkNFTs = await repositories.nft.find({
+          where: { userId: profile.ownerUserId, contract: gkContractAddress },
+        })
+        // get collections
+        const nfts = await repositories.nft.find({
+          where: { userId: profile.ownerUserId },
+        })
+        const collections: Array<string> = []
+        await Promise.allSettled(
+          nfts.map(async (nft) => {
+            const collection = await repositories.collection.findOne({
+              where: { contract: nft.contract },
+            })
+            if (collection) {
+              const isExisting = collections.find((existingCollection) =>
+                existingCollection === collection.contract,
+              )
+              if (!isExisting) collections.push(collection.contract)
+            }
+          }),
+        )
+        // get visible items
+        const edges = await repositories.edge.find({
+          where: {
+            thisEntityId: profile.id,
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            edgeType: defs.EdgeType.Displays,
+            hide: false,
+          },
+        })
+        leaderboardProfiles.push({
+          id: profile.id,
+          url: profile.url,
+          photoURL: profile.photoURL,
+          numberOfGenesisKeys: gkNFTs.length,
+          numberOfCollections: collections.length,
+          itemsVisible: edges.length,
+        })
+        const end = Date.now()
+        const duration = (end - start) / 1000
+        logger.debug(`profile id ${profile.id}: ${duration} seconds`)
+        Sentry.captureMessage(`profile id ${profile.id}: ${duration} seconds`)
+      }),
+    )
+    const endTime = Date.now()
+    logger.debug(`Leaderboard endpoint took ${(endTime - startTime) / 1000} seconds`)
+    Sentry.captureMessage(`Leaderboard endpoint took ${(endTime - startTime) / 1000} seconds`)
+    return leaderboardProfiles
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in leaderboard: ${err}`)
+  }
 }
 
 const leaderboard = async (
