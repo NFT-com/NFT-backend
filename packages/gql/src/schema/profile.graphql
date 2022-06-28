@@ -139,6 +139,10 @@ type LeaderboardOutput {
   totalItems: Int
 }
 
+type SaveScoreForProfilesOutput {
+  message: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
@@ -160,4 +164,5 @@ extend type Mutation {
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
   createCompositeImage(input: CreateCompositeImageInput): Profile!
   orderingUpdates(input: OrderingUpdatesInput!): Profile!
+  saveScoreForProfiles: SaveScoreForProfilesOutput!
 }

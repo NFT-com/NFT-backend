@@ -16,6 +16,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
+import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
 // import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
 import {
@@ -749,13 +750,12 @@ const leaderboard = async (
   logger.debug('leaderboard', { input: args?.input })
 
   const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
-  console.log(repositories, profilesWithScore)
-
   const leaderboard: Array<gql.LeaderboardProfile> = []
   let index = 0
   // get leaderboard for top 100...
   const TOP = 100
-  for (let i = 0; i < TOP * 2 - 1; i+= 2) {
+  const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
+  for (let i = 0; i < length - 1; i+= 2) {
     const profileId = profilesWithScore[i]
     const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
     const profile = await repositories.profile.findOne({ where: { id: profileId } })
@@ -802,6 +802,41 @@ const leaderboard = async (
   )([paginatedLeaderboard, totalItems])
 }
 
+const saveScoreForProfiles = async (
+  _: any,
+  args: gql.MutationOrderingUpdatesArgs,
+  ctx: Context,
+): Promise<gql.SaveScoreForProfilesOutput> => {
+  const { repositories } = ctx
+  logger.debug('saveScoreForProfiles')
+  try {
+    const MAX_PROFILE_COUNTS = 1000
+    const profiles = await repositories.profile.find({
+      where: {
+        lastScored: null,
+      },
+    })
+    const slicedProfiles = profiles.slice(0, MAX_PROFILE_COUNTS)
+    await Promise.allSettled(
+      slicedProfiles.map(async (profile) => {
+        await saveProfileScore(repositories, profile)
+        const now = Date.now()
+        await repositories.profile.updateOneById(profile.id, {
+          lastScored: now,
+        })
+        logger.debug(`Score is cached for Profile ${ profile.id }`)
+      }),
+    )
+    logger.debug('Profile scores are cached', { counts: slicedProfiles.length })
+    return {
+      message: 'Saved score for profiles',
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in saveScoreForProfiles Job: ${err}`)
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -823,6 +858,7 @@ export default {
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
     orderingUpdates: combineResolvers(auth.isAuthenticated, orderingUpdates),
+    saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
   },
   Profile: {
     followersCount: getFollowersCount,

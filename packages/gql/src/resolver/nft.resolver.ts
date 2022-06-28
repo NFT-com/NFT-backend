@@ -337,7 +337,7 @@ const getGkNFTs = async (
   }
 }
 
-const saveProfileScore = async (
+export const saveProfileScore = async (
   repositories: db.Repository,
   profile: entity.Profile,
 ): Promise<void> => {
