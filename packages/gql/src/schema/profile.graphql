@@ -130,6 +130,7 @@ input OrderingUpdatesInput {
 }
 
 input LeaderboardInput {
+  count: Int
   pageInput: PageInput
 }
 
@@ -137,6 +138,14 @@ type LeaderboardOutput {
   items: [LeaderboardProfile!]!
   pageInfo: PageInfo
   totalItems: Int
+}
+
+input SaveScoreForProfilesInput {
+  count: Int
+}
+
+type SaveScoreForProfilesOutput {
+  message: String
 }
 
 extend type Query {
@@ -160,4 +169,5 @@ extend type Mutation {
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
   createCompositeImage(input: CreateCompositeImageInput): Profile!
   orderingUpdates(input: OrderingUpdatesInput!): Profile!
+  saveScoreForProfiles(input: SaveScoreForProfilesInput!): SaveScoreForProfilesOutput!
 }
