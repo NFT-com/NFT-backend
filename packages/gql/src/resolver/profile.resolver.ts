@@ -7,7 +7,6 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Redis from 'ioredis'
 import Joi from 'joi'
-// import * as lodash from 'lodash'
 import stream from 'stream'
 import Typesense from 'typesense'
 
@@ -17,7 +16,6 @@ import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
-// import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
 import {
   DEFAULT_NFT_IMAGE,
@@ -760,27 +758,40 @@ const leaderboard = async (
   const { repositories } = ctx
   logger.debug('leaderboard', { input: args?.input })
 
-  const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
-  const leaderboard: Array<gql.LeaderboardProfile> = []
-  let index = 0
-  // get leaderboard for top 100...
-  const TOP = 100
-  const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
-  for (let i = 0; i < length - 1; i+= 2) {
-    const profileId = profilesWithScore[i]
-    const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
-    const profile = await repositories.profile.findOne({ where: { id: profileId } })
-    leaderboard.push({
-      index: index,
-      id: profileId,
-      itemsVisible: collectionInfo.edgeCount,
-      numberOfGenesisKeys: collectionInfo.gkCount,
-      numberOfCollections: collectionInfo.collectionCount,
-      photoURL: profile.photoURL,
-      url: profile.url,
-    })
-    index++
+  const cachedData = await redis.get(`Leaderboard_response_${process.env.CHAIN_ID}`)
+  let leaderboard: Array<gql.LeaderboardProfile> = []
+  if (cachedData) {
+    leaderboard = JSON.parse(cachedData)
+  } else {
+    const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
+
+    let index = 0
+    // get leaderboard for top 100...
+    const TOP = 100
+    const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
+    for (let i = 0; i < length - 1; i+= 2) {
+      const profileId = profilesWithScore[i]
+      const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
+      const profile = await repositories.profile.findOne({ where: { id: profileId } })
+      leaderboard.push({
+        index: index,
+        id: profileId,
+        itemsVisible: collectionInfo.edgeCount,
+        numberOfGenesisKeys: collectionInfo.gkCount,
+        numberOfCollections: collectionInfo.collectionCount,
+        photoURL: profile.photoURL,
+        url: profile.url,
+      })
+      index++
+    }
+    await redis.set(
+      `Leaderboard_response_${process.env.CHAIN_ID}`,
+      JSON.stringify(leaderboard),
+      'EX',
+      5 * 60, // 5 minutes
+    )
   }
+
   const { pageInput } = helper.safeObject(args?.input)
   let paginatedLeaderboard: Array<gql.LeaderboardProfile>
   let defaultCursor
