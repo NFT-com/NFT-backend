@@ -130,6 +130,7 @@ input OrderingUpdatesInput {
 }
 
 input LeaderboardInput {
+  count: Int
   pageInput: PageInput
 }
 

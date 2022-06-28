@@ -758,7 +758,8 @@ const leaderboard = async (
   const { repositories } = ctx
   logger.debug('leaderboard', { input: args?.input })
 
-  const cachedData = await redis.get(`Leaderboard_response_${process.env.CHAIN_ID}`)
+  const TOP = args?.input.count ? Number(args?.input.count) : 100
+  const cachedData = await redis.get(`Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`)
   let leaderboard: Array<gql.LeaderboardProfile> = []
   if (cachedData) {
     leaderboard = JSON.parse(cachedData)
@@ -766,8 +767,7 @@ const leaderboard = async (
     const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
 
     let index = 0
-    // get leaderboard for top 100...
-    const TOP = 100
+    // get leaderboard for TOP items...
     const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
     for (let i = 0; i < length - 1; i+= 2) {
       const profileId = profilesWithScore[i]
@@ -785,7 +785,7 @@ const leaderboard = async (
       index++
     }
     await redis.set(
-      `Leaderboard_response_${process.env.CHAIN_ID}`,
+      `Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`,
       JSON.stringify(leaderboard),
       'EX',
       5 * 60, // 5 minutes
@@ -832,7 +832,7 @@ const saveScoreForProfiles = async (
   const { repositories } = ctx
   logger.debug('saveScoreForProfiles', { input: args?.input })
   try {
-    const count = args?.input.count > 1000 ? 1000 : args?.input.count
+    const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
     const profiles = await repositories.profile.find({
       where: {
         lastScored: null,
