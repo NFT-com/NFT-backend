@@ -9,7 +9,7 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, curationError, nftError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts, defs, entity, fp,helper } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp,helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -30,6 +30,7 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
+const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 
 const baseCoins = [
   {
@@ -336,6 +337,63 @@ const getGkNFTs = async (
   }
 }
 
+const saveProfileScore = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
+    // get genesis key numbers
+    const gkNFTs = await repositories.nft.find({
+      where: { userId: profile.ownerUserId, contract: gkContractAddress },
+    })
+    // get collections
+    const nfts = await repositories.nft.find({
+      where: { userId: profile.ownerUserId },
+    })
+
+    const collections: Array<string> = []
+    await Promise.allSettled(
+      nfts.map(async (nft) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: nft.contract },
+        })
+        if (collection) {
+          const isExisting = collections.find((existingCollection) =>
+            existingCollection === collection.contract,
+          )
+          if (!isExisting) collections.push(collection.contract)
+        }
+      }),
+    )
+    // get visible items
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    const paddedItems = edges.length.toString().padStart(5, '0')
+    const paddedCollections = collections.length.toString().padStart(5, '0')
+    const score = gkNFTs.length.toString().concat(paddedItems).concat(paddedCollections)
+    const key = {
+      profileId: profile.id,
+      url: profile.url,
+      photoURL: profile.photoURL,
+      gkNumbers: gkNFTs.length,
+      edgeNumbers: edges.length,
+      collectionNumbers: collections.length,
+    }
+    await redis.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, JSON.stringify(key))
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
+  }
+}
+
 const updateNFTsForProfile = (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
@@ -385,6 +443,21 @@ const updateNFTsForProfile = (
                     })
                   })
               }))
+          }
+
+          let scoreDuration
+          if (profile.lastScored) {
+            scoreDuration = differenceInMilliseconds(now, profile.lastScored)
+          }
+          // if there is profile score is not calculated yet or should be updated,
+          if (!profile.lastScored ||
+            (scoreDuration && scoreDuration > PROFILE_SCORE_EXPIRE_DURATION)
+          ) {
+            repositories.profile.updateOneById(profile.id, {
+              lastScored: now,
+            }).then(() => {
+              return saveProfileScore(repositories, profile)
+            })
           }
 
           return core.paginatedThatEntitiesOfEdgesBy(

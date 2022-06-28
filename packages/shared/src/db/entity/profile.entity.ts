@@ -64,4 +64,7 @@ export class Profile extends BaseEntity {
   })
   layoutType: ProfileLayoutType
 
+  @Column({ nullable: true, type: 'timestamp with time zone' })
+  lastScored: Date
+
 }
