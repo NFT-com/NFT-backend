@@ -379,15 +379,7 @@ const saveProfileScore = async (
     const paddedItems = edges.length.toString().padStart(5, '0')
     const paddedCollections = collections.length.toString().padStart(5, '0')
     const score = gkNFTs.length.toString().concat(paddedItems).concat(paddedCollections)
-    const key = {
-      profileId: profile.id,
-      url: profile.url,
-      photoURL: profile.photoURL,
-      gkNumbers: gkNFTs.length,
-      edgeNumbers: edges.length,
-      collectionNumbers: collections.length,
-    }
-    await redis.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, JSON.stringify(key))
+    await redis.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)

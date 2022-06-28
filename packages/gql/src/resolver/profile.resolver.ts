@@ -15,6 +15,7 @@ import { assetBucket, redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
+import { safeInput } from '@nftcom/gql/helper/pagination'
 // import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
 import {
@@ -42,6 +43,12 @@ type S3UploadStream = {
   writeStream: stream.PassThrough
   promise: Promise<aws.S3.ManagedUpload.SendData>
 };
+
+type LeaderboardInfo = {
+  gkCount: number
+  collectionCount: number
+  edgeCount: number
+}
 
 const client = new Typesense.Client({
   'nodes': [{
@@ -710,78 +717,27 @@ const orderingUpdates = (
     .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
 }
 
-// const getLeaderboardProfiles = async (
-//   repositories: db.Repository,
-// ): Promise<Array<gql.LeaderboardProfile>> => {
-//   const profiles = await repositories.profile.findAll()
-//   const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
-//   const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
-//   try {
-//     const startTime = Date.now()
-//     await Promise.allSettled(
-//       profiles.map(async (profile) => {
-//         const start = Date.now()
-//         // get genesis key numbers
-//         const gkNFTs = await repositories.nft.find({
-//           where: { userId: profile.ownerUserId, contract: gkContractAddress },
-//         })
-//         console.log(`gkNFTs: ${(Date.now() - start) / 1000}s`)
-//         const startCollection = Date.now()
-//         // get collections
-//         const nfts = await repositories.nft.find({
-//           where: { userId: profile.ownerUserId },
-//         })
-//
-//         const collections: Array<string> = []
-//         await Promise.allSettled(
-//           nfts.map(async (nft) => {
-//             const collection = await repositories.collection.findOne({
-//               where: { contract: nft.contract },
-//             })
-//             if (collection) {
-//               const isExisting = collections.find((existingCollection) =>
-//                 existingCollection === collection.contract,
-//               )
-//               if (!isExisting) collections.push(collection.contract)
-//             }
-//           }),
-//         )
-//         console.log(`collections: ${(Date.now() - startCollection) / 1000}s`)
-//         const startEdges = Date.now()
-//         // get visible items
-//         const edges = await repositories.edge.find({
-//           where: {
-//             thisEntityId: profile.id,
-//             thisEntityType: defs.EntityType.Profile,
-//             thatEntityType: defs.EntityType.NFT,
-//             edgeType: defs.EdgeType.Displays,
-//             hide: false,
-//           },
-//         })
-//         console.log(`edges: ${(Date.now() - startEdges) / 1000}s`)
-//         leaderboardProfiles.push({
-//           id: profile.id,
-//           url: profile.url,
-//           photoURL: profile.photoURL,
-//           numberOfGenesisKeys: gkNFTs.length,
-//           numberOfCollections: collections.length,
-//           itemsVisible: edges.length,
-//         })
-//         const end = Date.now()
-//         const duration = (end - start) / 1000
-//         logger.debug(`profile id ${profile.id}: ${duration} seconds`)
-//         Sentry.captureMessage(`profile id ${profile.id}: ${duration} seconds`)
-//       }),
-//     )
-//     const endTime = Date.now()
-//     logger.debug(`Leaderboard endpoint took ${(endTime - startTime) / 1000} seconds`)
-//     Sentry.captureMessage(`Leaderboard endpoint took ${(endTime - startTime) / 1000} seconds`)
-//     return leaderboardProfiles
-//   } catch (err) {
-//     Sentry.captureException(err)
-//     Sentry.captureMessage(`Error in leaderboard: ${err}`)
-//   }
-// }
+const collectInfoFromScore = (score: string): LeaderboardInfo => {
+  if (score.length <= 5) {
+    return {
+      gkCount: 0,
+      collectionCount: 0,
+      edgeCount: Number(score),
+    }
+  } else if (score.length <= 10) {
+    return {
+      gkCount: 0,
+      collectionCount: Number(score.slice(0, score.length - 5)),
+      edgeCount: Number(score.slice(score.length - 5, score.length)),
+    }
+  } else {
+    return {
+      gkCount: Number(score.slice(0, score.length - 10)),
+      collectionCount: Number(score.slice(score.length - 10, score.length - 5)),
+      edgeCount: Number(score.slice(score.length - 5, score.length)),
+    }
+  }
+}
 
 const leaderboard = async (
   _: any,
@@ -792,75 +748,58 @@ const leaderboard = async (
   const { repositories } = ctx
   logger.debug('leaderboard', { input: args?.input })
 
-  const leaders = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf')
-  console.log(repositories, leaders)
+  const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
+  console.log(repositories, profilesWithScore)
 
-  return null
-  // const cachedData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}`)
-  // rollingData is used to fill time gap when cache expires, and new leaderboard is being generated
-  // const rollingData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_rolling`)
-  // let leaderboard: Array<gql.LeaderboardProfile> = JSON.parse(rollingData) ?? []
-  // if (cachedData) {
-  //   leaderboard = JSON.parse(cachedData)
-  // } else {
-  //   // mutex prevents overlap
-  //   const cachedMutex = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`)
-  //
-  //   if (!Number(cachedMutex)) {
-  //     await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, 1)
-  //
-  //     // generate leaderboard array with profiles ( by genesis key, items visible, collections )
-  //     getLeaderboardProfiles(repositories)
-  //       .then(async (leaderboardProfiles) => {
-  //         leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
-  //         await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, 0)
-  //         await redis.set(
-  //           `profile_leaderboard_${process.env.CHAIN_ID}_rolling`,
-  //           JSON.stringify(leaderboard),
-  //         )
-  //         return redis.set(
-  //           `profile_leaderboard_${process.env.CHAIN_ID}`,
-  //           JSON.stringify(leaderboard),
-  //           'EX',
-  //           5 * 60, // 5 minutes
-  //         )
-  //       })
-  //   }
-  // }
-  //
-  // for (let i = 0; i< leaderboard.length; i++) {
-  //   leaderboard[i].index = i
-  // }
-  // const { pageInput } = helper.safeObject(args?.input)
-  // let paginatedLeaderboard: Array<gql.LeaderboardProfile>
-  // let defaultCursor
-  // if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
-  //   defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
-  //     { afterCursor: leaderboard.length.toString() }
-  // }
-  // const safePageInput = safeInput(pageInput, defaultCursor)
-  // let totalItems
-  // if (pagination.hasFirst(safePageInput)) {
-  //   const cursor = pagination.hasAfter(safePageInput) ?
-  //     safePageInput.afterCursor : safePageInput.beforeCursor
-  //   paginatedLeaderboard = leaderboard.filter((leader) => leader.index > Number(cursor))
-  //   totalItems = paginatedLeaderboard.length
-  //   paginatedLeaderboard = paginatedLeaderboard.slice(0, safePageInput.first)
-  // } else {
-  //   const cursor = pagination.hasAfter(safePageInput) ?
-  //     safePageInput.afterCursor : safePageInput.beforeCursor
-  //   paginatedLeaderboard = leaderboard.filter((leader) => leader.index < Number(cursor))
-  //   totalItems = paginatedLeaderboard.length
-  //   paginatedLeaderboard =
-  //     paginatedLeaderboard.slice(paginatedLeaderboard.length - safePageInput.last)
-  // }
-  //
-  // return pagination.toPageable(
-  //   pageInput,
-  //   paginatedLeaderboard[0],
-  //   paginatedLeaderboard[paginatedLeaderboard.length - 1],
-  //   'index',
-  // )([paginatedLeaderboard, totalItems])
+  const leaderboard: Array<gql.LeaderboardProfile> = []
+  let index = 0
+  // get leaderboard for top 100...
+  const TOP = 100
+  for (let i = 0; i < TOP * 2 - 1; i+= 2) {
+    const profileId = profilesWithScore[i]
+    const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
+    const profile = await repositories.profile.findOne({ where: { id: profileId } })
+    leaderboard.push({
+      index: index,
+      id: profileId,
+      itemsVisible: collectionInfo.edgeCount,
+      numberOfGenesisKeys: collectionInfo.gkCount,
+      numberOfCollections: collectionInfo.collectionCount,
+      photoURL: profile.photoURL,
+      url: profile.url,
+    })
+    index++
+  }
+  const { pageInput } = helper.safeObject(args?.input)
+  let paginatedLeaderboard: Array<gql.LeaderboardProfile>
+  let defaultCursor
+  if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+      { afterCursor: leaderboard.length.toString() }
+  }
+  const safePageInput = safeInput(pageInput, defaultCursor)
+  let totalItems
+  if (pagination.hasFirst(safePageInput)) {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedLeaderboard = leaderboard.filter((leader) => leader.index > Number(cursor))
+    totalItems = paginatedLeaderboard.length
+    paginatedLeaderboard = paginatedLeaderboard.slice(0, safePageInput.first)
+  } else {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedLeaderboard = leaderboard.filter((leader) => leader.index < Number(cursor))
+    totalItems = paginatedLeaderboard.length
+    paginatedLeaderboard =
+      paginatedLeaderboard.slice(paginatedLeaderboard.length - safePageInput.last)
+  }
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedLeaderboard[0],
+    paginatedLeaderboard[paginatedLeaderboard.length - 1],
+    'index',
+  )([paginatedLeaderboard, totalItems])
 }
 
 export default {
