@@ -745,7 +745,6 @@ const leaderboard = async (
   args: gql.QueryLeaderboardArgs,
   ctx: Context,
 ): Promise<gql.LeaderboardOutput> => {
-  console.log(parseInt('abc'))
   const { repositories } = ctx
   logger.debug('leaderboard', { input: args?.input })
 
