@@ -842,7 +842,7 @@ const saveScoreForProfiles = async (
     await Promise.allSettled(
       slicedProfiles.map(async (profile) => {
         await saveProfileScore(repositories, profile)
-        const now = Date.now()
+        const now = helper.toUTCDate()
         await repositories.profile.updateOneById(profile.id, {
           lastScored: now,
         })
