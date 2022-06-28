@@ -719,23 +719,35 @@ const orderingUpdates = (
 }
 
 const collectInfoFromScore = (score: string): LeaderboardInfo => {
+  /*
+    If score length is less than 5 or equal to 5, gk count and collection count will be zero
+    And edge count will be score
+   */
   if (score.length <= 5) {
     return {
       gkCount: 0,
-      collectionCount: 0,
-      edgeCount: Number(score),
+      edgeCount: 0,
+      collectionCount: Number(score),
     }
   } else if (score.length <= 10) {
+    /*
+      If score length is greater than 5 and less than 10 or equal to 10, gk count will be 0
+      i.e. 1000025 -> gkCount = 0, edgeCount = 10, collectionCount = 25
+     */
     return {
       gkCount: 0,
-      collectionCount: Number(score.slice(0, score.length - 5)),
-      edgeCount: Number(score.slice(score.length - 5, score.length)),
+      edgeCount: Number(score.slice(0, score.length - 5)),
+      collectionCount: Number(score.slice(score.length - 5, score.length)),
     }
   } else {
+    /*
+      If score length is greater than 10
+      i.e. 60000000005 -> gkCount = 6, edgeCount = 0, collectionCount = 5
+     */
     return {
       gkCount: Number(score.slice(0, score.length - 10)),
-      collectionCount: Number(score.slice(score.length - 10, score.length - 5)),
-      edgeCount: Number(score.slice(score.length - 5, score.length)),
+      edgeCount: Number(score.slice(score.length - 10, score.length - 5)),
+      collectionCount: Number(score.slice(score.length - 5, score.length)),
     }
   }
 }
