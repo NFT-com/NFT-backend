@@ -7,7 +7,6 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Redis from 'ioredis'
 import Joi from 'joi'
-import * as lodash from 'lodash'
 import stream from 'stream'
 import Typesense from 'typesense'
 
@@ -16,6 +15,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
+import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
 import {
   DEFAULT_NFT_IMAGE,
@@ -24,7 +24,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import { changeNFTsVisibility, updateNFTsOrder } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
@@ -42,6 +42,12 @@ type S3UploadStream = {
   writeStream: stream.PassThrough
   promise: Promise<aws.S3.ManagedUpload.SendData>
 };
+
+type LeaderboardInfo = {
+  gkCount: number
+  collectionCount: number
+  edgeCount: number
+}
 
 const client = new Typesense.Client({
   'nodes': [{
@@ -488,7 +494,7 @@ const profileClaimed = (
 
       client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
         .then(() => logger.debug('profile added to typesense index'))
-        .catch((err) => logger.info('error: could not save profile in typesense: ' + err))
+        .catch((err) => logger.error('error: could not save profile in typesense: ' + err))
 
       return saveProfile
     })
@@ -710,57 +716,38 @@ const orderingUpdates = (
     .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
 }
 
-const getLeaderboardProfiles = async (
-  repositories: db.Repository,
-): Promise<Array<gql.LeaderboardProfile>> => {
-  const profiles = await repositories.profile.findAll()
-  const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
-  const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
-  await Promise.allSettled(
-    profiles.map(async (profile) => {
-      // get genesis key numbers
-      const gkNFTs = await repositories.nft.find({
-        where: { userId: profile.ownerUserId, contract: gkContractAddress },
-      })
-      // get collections
-      const nfts = await repositories.nft.find({
-        where: { userId: profile.ownerUserId },
-      })
-      const collections: Array<string> = []
-      await Promise.allSettled(
-        nfts.map(async (nft) => {
-          const collection = await repositories.collection.findOne({
-            where: { contract: nft.contract },
-          })
-          if (collection) {
-            const isExisting = collections.find((existingCollection) =>
-              existingCollection === collection.contract,
-            )
-            if (!isExisting) collections.push(collection.contract)
-          }
-        }),
-      )
-      // get visible items
-      const edges = await repositories.edge.find({
-        where: {
-          thisEntityId: profile.id,
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          edgeType: defs.EdgeType.Displays,
-          hide: false,
-        },
-      })
-      leaderboardProfiles.push({
-        id: profile.id,
-        url: profile.url,
-        photoURL: profile.photoURL,
-        numberOfGenesisKeys: gkNFTs.length,
-        numberOfCollections: collections.length,
-        itemsVisible: edges.length,
-      })
-    }),
-  )
-  return leaderboardProfiles
+const collectInfoFromScore = (score: string): LeaderboardInfo => {
+  /*
+    If score length is less than 5 or equal to 5, gk count and collection count will be zero
+    And edge count will be score
+   */
+  if (score.length <= 5) {
+    return {
+      gkCount: 0,
+      edgeCount: 0,
+      collectionCount: Number(score),
+    }
+  } else if (score.length <= 10) {
+    /*
+      If score length is greater than 5 and less than 10 or equal to 10, gk count will be 0
+      i.e. 1000025 -> gkCount = 0, edgeCount = 10, collectionCount = 25
+     */
+    return {
+      gkCount: 0,
+      edgeCount: Number(score.slice(0, score.length - 5)),
+      collectionCount: Number(score.slice(score.length - 5, score.length)),
+    }
+  } else {
+    /*
+      If score length is greater than 10
+      i.e. 60000000005 -> gkCount = 6, edgeCount = 0, collectionCount = 5
+     */
+    return {
+      gkCount: Number(score.slice(0, score.length - 10)),
+      edgeCount: Number(score.slice(score.length - 10, score.length - 5)),
+      collectionCount: Number(score.slice(score.length - 5, score.length)),
+    }
+  }
 }
 
 const leaderboard = async (
@@ -771,35 +758,40 @@ const leaderboard = async (
   const { repositories } = ctx
   logger.debug('leaderboard', { input: args?.input })
 
-  const cachedData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}`)
+  const TOP = args?.input.count ? Number(args?.input.count) : 100
+  const cachedData = await redis.get(`Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`)
   let leaderboard: Array<gql.LeaderboardProfile> = []
   if (cachedData) {
     leaderboard = JSON.parse(cachedData)
   } else {
-    // mutex prevents overlap
-    const cachedMutex = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`)
+    const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
 
-    if (cachedMutex == '0') {
-      await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, '1')
-
-      // generate leaderboard array with profiles ( by genesis key, items visible, collections )
-      getLeaderboardProfiles(repositories)
-        .then(async (leaderboardProfiles) => {
-          leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
-          await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, '0')
-          return redis.set(
-            `profile_leaderboard_${process.env.CHAIN_ID}`,
-            JSON.stringify(leaderboard),
-            'EX',
-            5 * 60, // 5 minutes
-          )
-        })
+    let index = 0
+    // get leaderboard for TOP items...
+    const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
+    for (let i = 0; i < length - 1; i+= 2) {
+      const profileId = profilesWithScore[i]
+      const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
+      const profile = await repositories.profile.findOne({ where: { id: profileId } })
+      leaderboard.push({
+        index: index,
+        id: profileId,
+        itemsVisible: collectionInfo.edgeCount,
+        numberOfGenesisKeys: collectionInfo.gkCount,
+        numberOfCollections: collectionInfo.collectionCount,
+        photoURL: profile.photoURL,
+        url: profile.url,
+      })
+      index++
     }
+    await redis.set(
+      `Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`,
+      JSON.stringify(leaderboard),
+      'EX',
+      5 * 60, // 5 minutes
+    )
   }
 
-  for (let i = 0; i< leaderboard.length; i++) {
-    leaderboard[i].index = i
-  }
   const { pageInput } = helper.safeObject(args?.input)
   let paginatedLeaderboard: Array<gql.LeaderboardProfile>
   let defaultCursor
@@ -832,6 +824,41 @@ const leaderboard = async (
   )([paginatedLeaderboard, totalItems])
 }
 
+const saveScoreForProfiles = async (
+  _: any,
+  args: gql.MutationSaveScoreForProfilesArgs,
+  ctx: Context,
+): Promise<gql.SaveScoreForProfilesOutput> => {
+  const { repositories } = ctx
+  logger.debug('saveScoreForProfiles', { input: args?.input })
+  try {
+    const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
+    const profiles = await repositories.profile.find({
+      where: {
+        lastScored: null,
+      },
+    })
+    const slicedProfiles = profiles.slice(0, count)
+    await Promise.allSettled(
+      slicedProfiles.map(async (profile) => {
+        await saveProfileScore(repositories, profile)
+        const now = Date.now()
+        await repositories.profile.updateOneById(profile.id, {
+          lastScored: now,
+        })
+        logger.debug(`Score is cached for Profile ${ profile.id }`)
+      }),
+    )
+    logger.debug('Profile scores are cached', { counts: slicedProfiles.length })
+    return {
+      message: 'Saved score for profiles',
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in saveScoreForProfiles Job: ${err}`)
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -853,6 +880,7 @@ export default {
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
     orderingUpdates: combineResolvers(auth.isAuthenticated, orderingUpdates),
+    saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
   },
   Profile: {
     followersCount: getFollowersCount,

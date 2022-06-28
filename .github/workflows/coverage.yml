@@ -53,6 +53,7 @@ jobs:
         envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
         envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
         envkey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
+        envkey_PROFILE_SCORE_EXPIRE_DURATION: ${{ secrets.PROFILE_SCORE_EXPIRE_DURATION }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
