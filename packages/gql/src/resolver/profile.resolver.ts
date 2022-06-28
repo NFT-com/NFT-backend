@@ -826,19 +826,19 @@ const leaderboard = async (
 
 const saveScoreForProfiles = async (
   _: any,
-  args: gql.MutationOrderingUpdatesArgs,
+  args: gql.MutationSaveScoreForProfilesArgs,
   ctx: Context,
 ): Promise<gql.SaveScoreForProfilesOutput> => {
   const { repositories } = ctx
-  logger.debug('saveScoreForProfiles')
+  logger.debug('saveScoreForProfiles', { input: args?.input })
   try {
-    const MAX_PROFILE_COUNTS = 1000
+    const count = args?.input.count > 1000 ? 1000 : args?.input.count
     const profiles = await repositories.profile.find({
       where: {
         lastScored: null,
       },
     })
-    const slicedProfiles = profiles.slice(0, MAX_PROFILE_COUNTS)
+    const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async (profile) => {
         await saveProfileScore(repositories, profile)
