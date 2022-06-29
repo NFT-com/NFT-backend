@@ -618,7 +618,8 @@ const uploadProfileImages = async (
   const s3 = await getAWSConfig()
 
   if (bannerResponse && bannerStream) {
-    const bannerUrl = await uploadStreamToS3(bannerResponse.filename, s3, bannerStream)
+    const fileName = profile.url + '-banner' + '.' + bannerResponse.filename.split('.').pop()
+    const bannerUrl = await uploadStreamToS3(fileName, s3, bannerStream)
     if (bannerUrl) {
       await repositories.profile.updateOneById(profileId, {
         bannerURL: bannerUrl,
@@ -627,7 +628,8 @@ const uploadProfileImages = async (
   }
 
   if (avatarResponse && avatarStream) {
-    const avatarUrl = await uploadStreamToS3(avatarResponse.filename, s3, avatarStream)
+    const fileName = profile.url + '.' + avatarResponse.filename.split('.').pop()
+    const avatarUrl = await uploadStreamToS3(fileName, s3, avatarStream)
     if (avatarUrl) {
       // if user does not want to composite image with profile url, we just save image to photoURL
       if (!compositeProfileURL) {
