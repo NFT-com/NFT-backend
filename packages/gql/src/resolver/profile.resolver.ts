@@ -552,6 +552,14 @@ const uploadStreamToS3 = async (
   }
 }
 
+const extensionFromFilename = (filename: string): string | undefined => {
+  const strArray = filename.split('.')
+  // if filename has no extension
+  if (strArray.length < 2) return undefined
+  // else return extension
+  return strArray.pop()
+}
+
 const uploadProfileImages = async (
   _: any,
   args: gql.MutationUploadProfileImagesArgs,
@@ -618,7 +626,8 @@ const uploadProfileImages = async (
   const s3 = await getAWSConfig()
 
   if (bannerResponse && bannerStream) {
-    const fileName = profile.url + '-banner' + '.' + bannerResponse.filename.split('.').pop()
+    const ext = extensionFromFilename(bannerResponse.filename as string)
+    const fileName = ext ? profile.url + '-banner' + '.' + ext : profile.url + '-banner'
     const bannerUrl = await uploadStreamToS3(fileName, s3, bannerStream)
     if (bannerUrl) {
       await repositories.profile.updateOneById(profileId, {
@@ -628,7 +637,8 @@ const uploadProfileImages = async (
   }
 
   if (avatarResponse && avatarStream) {
-    const fileName = profile.url + '.' + avatarResponse.filename.split('.').pop()
+    const ext = extensionFromFilename(avatarResponse.filename as string)
+    const fileName = ext ? profile.url + '.' + ext : profile.url
     const avatarUrl = await uploadStreamToS3(fileName, s3, avatarStream)
     if (avatarUrl) {
       // if user does not want to composite image with profile url, we just save image to photoURL
