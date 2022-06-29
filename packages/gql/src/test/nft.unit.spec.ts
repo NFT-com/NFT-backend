@@ -30,7 +30,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it.skip('calles updateWalletNFTs when given valid input', async () => {
+    it('calles updateWalletNFTs when given valid input', async () => {
       const spy = jest.spyOn(nftService, 'updateWalletNFTs')
 
       const result = await testServer.executeOperation({
@@ -43,7 +43,7 @@ describe('nft resolver', () => {
       // expect(spy).toBeCalledWith('test-user-id', 'test-wallet-id', 'test-address')
     })
 
-    it.skip('throws an error when given invalid input', async () => {
+    it('throws an error when given invalid input', async () => {
       const spy = jest.spyOn(nftService, 'updateWalletNFTs')
 
       const result = await testServer.executeOperation({
