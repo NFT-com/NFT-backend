@@ -75,6 +75,19 @@ export enum AuctionType {
   Decreasing = 'Decreasing',
 }
 
+export enum ActivityType {
+  Listing = 'Listing',
+  Bid = 'Bid',
+  Cancel = 'Cancel',
+  Sale = 'Sale',
+  Transfer = 'Transfer',
+}
+
+export enum ExchangeType {
+  OpenSea = 'OpenSea',
+  LooksRare = 'LooksRare',
+}
+
 export type Trait = {
   type: string
   value: string
