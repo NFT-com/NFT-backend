@@ -1,7 +1,9 @@
+import { combineResolvers } from 'graphql-resolvers'
 import Redis from 'ioredis'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
+import { auth } from '@nftcom/gql/helper'
 import {
   retrieveCollectionOpensea,
   retrieveCollectionStatsOpensea,
@@ -33,7 +35,7 @@ const getCollection = async (
       if (args?.input?.withOpensea) {
         const slugKey = `${key}-slug`
         const cachedData = JSON.parse(await redis.get(slugKey))
-  
+
         if (cachedData?.collection?.slug) {
           data = cachedData
           stats = await retrieveCollectionStatsOpensea(
@@ -42,7 +44,7 @@ const getCollection = async (
           )
         } else {
           data = await retrieveCollectionOpensea(args?.input?.contract, args?.input?.chainId)
-    
+
           if (data) {
             if (data?.collection?.slug) {
               stats = await retrieveCollectionStatsOpensea(
@@ -51,7 +53,7 @@ const getCollection = async (
               )
             }
           }
-  
+
           await redis.set(slugKey, JSON.stringify(data)) // set cache
         }
       }
@@ -63,7 +65,7 @@ const getCollection = async (
       }
 
       await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
-  
+
       return returnObject
     }
   } catch (err) {
@@ -72,8 +74,27 @@ const getCollection = async (
   }
 }
 
+const removeCollectionDuplicates = async (
+  _: any,
+  ctx: Context,
+): Promise<gql.RemoveDuplicatesOutput> => {
+  const { repositories } = ctx
+  logger.debug('removeCollectionDuplicates', repositories)
+  try {
+    return {
+      message: 'Removed collection duplicates',
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in removeCollectionDuplicates: ${err}`)
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
+  },
+  Mutation: {
+    removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
   },
 }
