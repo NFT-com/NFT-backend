@@ -547,7 +547,7 @@ export const reservedProfiles = {
   '0x7C594337490Fab2f846b87E4016ECc8893A0659c': ['wme', 'wrestling'],
   '0xB807D0789E5086bDf7D0A66d12406dB40fc8Bc90': ['mezcal', 'basel'],
   '0xD1ac1e553E029f5dE5732C041DfC9f8CEd937A20': ['venice', 'venicemusic'],
-  '0x4a9096220176a82fa8a7d2b4e1480e1d9bebf691': ['scottdonnell', 'heromaker'],
+  '0x1598535C9e05E2130F9F239B2F23215166Bb41a7': ['scottdonnell', 'heromaker'],
   '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
 }
 
