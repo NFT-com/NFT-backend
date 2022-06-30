@@ -62,7 +62,7 @@ const getCollection = async (
         openseaStats: stats,
       }
 
-      await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * 5) // 5 minutes cache
+      await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
   
       return returnObject
     }
