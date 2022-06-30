@@ -196,7 +196,7 @@ export const retrieveOrdersOpensea = async (
     } else {
       const res3 = await axios.get(coinGeckoPriceUrl)
       responses.prices = res3.data
-      redis.set(coinGeckoPriceUrl, JSON.stringify(res3.data), 'EX', 60) // 1 minute
+      await redis.set(coinGeckoPriceUrl, JSON.stringify(res3.data), 'EX', 60) // 1 minute
     }
 
     return responses
