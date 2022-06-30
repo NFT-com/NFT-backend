@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm'
 
-import { ExchangeType } from '@nftcom/shared/defs'
+import { CurrencyType, ExchangeType } from '@nftcom/shared/defs'
 
 import { TxTransferBaseEntity } from './txTransferBase.entity'
 
@@ -13,7 +13,7 @@ export class TxSale extends TxTransferBaseEntity {
   @Column({ nullable: false })
   price: string
 
-  @Column({ nullable: false })
-  currency: string
+  @Column({ type: 'enum', enum: CurrencyType, nullable: false })
+  currency: CurrencyType
 
 }

@@ -88,6 +88,13 @@ export enum ExchangeType {
   LooksRare = 'LooksRare',
 }
 
+export enum CurrencyType {
+  ETH = 'ETH',
+  WETH = 'WETH',
+  USDC = 'USDC',
+  DAI = 'DAI'
+}
+
 export type Trait = {
   type: string
   value: string

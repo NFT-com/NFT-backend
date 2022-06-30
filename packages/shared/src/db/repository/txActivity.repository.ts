@@ -9,10 +9,10 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     super(TxActivity)
   }
 
-  public findActivityByType = (
+  public findActivitiesByType = (
     foreignType: ActivityType,
-  ): Promise<TxActivity> => {
-    return this.findOne({
+  ): Promise<TxActivity[]> => {
+    return this.getRepository().find({
       where: {
         foreignType,
         deletedAt: null,
@@ -20,30 +20,37 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       join: {
         alias: 'a',
         leftJoinAndSelect: {
-          'fkId': `a.${foreignType.toLowerCase}`,
+          'fkId': `a.${foreignType.toLowerCase()}`,
         },
       },
       order: { timestamp: 'DESC' },
     })
   }
 
-  public findActivityByUserId = (
+  public findActivitiesByUserId = (
     userId: string,
-  ): Promise<TxActivity> => {
-    return this.findOne({
+  ): Promise<TxActivity[]> => {
+    return this.find({
       where: {
         userId,
         deletedAt: null,
       },
       order: { timestamp: 'DESC' },
+      relations: [
+        'bid',
+        'cancel',
+        'listing',
+        'sale',
+        'transfer',
+      ],
     })
   }
 
-  public findActivityByUserIdAndType = (
+  public findActivitiesByUserIdAndType = (
     foreignType: ActivityType,
     userId: string,
-  ): Promise<TxActivity> => {
-    return this.findOne({
+  ): Promise<TxActivity[]> => {
+    return this.find({
       where: {
         foreignType,
         userId,
@@ -52,7 +59,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       join: {
         alias: 'a',
         leftJoinAndSelect: {
-          'fkId': `a.${foreignType.toLowerCase}`,
+          'fkId': `a.${foreignType.toLowerCase()}`,
         },
       },
       order: { timestamp: 'DESC' },

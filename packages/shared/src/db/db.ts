@@ -3,8 +3,11 @@ import { Connection, createConnection } from 'typeorm'
 
 import { DBConfig } from '@nftcom/shared/defs'
 
+import { _logger } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
+
+const logger = _logger.Factory(_logger.Context.General)
 
 let connection: Connection
 export const connect = async (dbConfig: DBConfig): Promise<void> => {
@@ -25,6 +28,12 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.NFT,
     entity.Profile,
     entity.User,
+    entity.TxActivity,
+    entity.TxBid,
+    entity.TxCancel,
+    entity.TxList,
+    entity.TxSale,
+    entity.TxTransfer,
     entity.Wallet,
   ]
 
@@ -51,7 +60,7 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
   })
     .then((con) => {
       connection = con
-      console.log('Connected to database :)!!')
+      logger.info('Connected to database :)!!')
     })
 }
 
@@ -75,6 +84,7 @@ export type Repository = {
   nft: repo.NFTRepository
   profile: repo.ProfileRepository
   user: repo.UserRepository
+  txActivity: repo.TxActivityRepository
   wallet: repo.WalletRepository
 }
 
@@ -91,5 +101,6 @@ export const newRepositories = (): Repository => ({
   nft: new repo.NFTRepository(),
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
+  txActivity: new repo.TxActivityRepository(),
   wallet: new repo.WalletRepository(),
 })
