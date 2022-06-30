@@ -53,6 +53,7 @@ runs:
         PROFILE_AUCTION_END_PASSWORD: ${{ fromJSON(inputs.secrets).PROFILE_AUCTION_END_PASSWORD }}
         MNEMONIC: ${{ fromJSON(inputs.secrets).MNEMONIC }}
         MNEMONIC_RINKEBY: ${{ fromJSON(inputs.secrets).MNEMONIC_RINKEBY }}
+        MNEMONIC_GOERLI: ${{ fromJSON(inputs.secrets).MNEMONIC_GOERLI }}
         HCS_TOPIC_ID: ${{ fromJSON(inputs.secrets).HCS_TOPIC_ID }}
         HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
         HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}

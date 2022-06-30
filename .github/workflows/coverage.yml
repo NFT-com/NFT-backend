@@ -35,6 +35,7 @@ jobs:
         envkey_PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
         envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
         envkey_MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
+        envkey_MNEMONIC_GOERLI: ${{ secrets.MNEMONIC_GOERLI }}
         envkey_HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
         envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
