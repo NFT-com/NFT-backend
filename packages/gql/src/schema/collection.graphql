@@ -76,6 +76,7 @@ input CollectionInput {
   contract: Address!
   chainId: String!
   network: String!
+  withOpensea: Boolean
 }
 
 extend type Query {
