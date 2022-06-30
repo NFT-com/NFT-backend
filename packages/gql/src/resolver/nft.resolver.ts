@@ -589,7 +589,7 @@ const getExternalListings = async (
 
       const finalData = { listings: [opensea, looksrare] }
 
-      redis.set(key, JSON.stringify(finalData), 'EX', 60)
+      await redis.set(key, JSON.stringify(finalData), 'EX', 60)
 
       return finalData
     }
