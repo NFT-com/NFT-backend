@@ -17,6 +17,12 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         foreignType,
         deletedAt: null,
       },
+      join: {
+        alias: 'a',
+        leftJoinAndSelect: {
+          'fkId': `a.${foreignType.toLowerCase}`,
+        },
+      },
       order: { timestamp: 'DESC' },
     })
   }
@@ -42,6 +48,12 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         foreignType,
         userId,
         deletedAt: null,
+      },
+      join: {
+        alias: 'a',
+        leftJoinAndSelect: {
+          'fkId': `a.${foreignType.toLowerCase}`,
+        },
       },
       order: { timestamp: 'DESC' },
     })
