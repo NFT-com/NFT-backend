@@ -6,7 +6,7 @@ import * as typeorm from 'typeorm'
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
-import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
+import { _logger, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -248,24 +248,33 @@ const getCollectionNameFromContract = (
 }
 
 const updateCollection = async (
-  nft: entity.NFT,
+  nfts: Array<entity.NFT>,
 ): Promise<void> => {
-  return repositories.collection.findOne({
-    where: { contract: ethers.utils.getAddress(nft.contract) },
+  const seen = {}
+  const nonDuplicates: Array<entity.NFT> = []
+  nfts.map((nft: entity.NFT) => {
+    const key = ethers.utils.getAddress(nft.contract)
+    if (!seen[key]) {
+      nonDuplicates.push(nft)
+      seen[key] = true
+    }
   })
-    .then(fp.thruIfEmpty(() => {
-      // find & save collection name
-      return getCollectionNameFromContract(nft.contract, nft.type, network)
-        .then(async (collectionName: string) => {
-          logger.debug('new collection', { collectionName, contract: nft.contract })
+  // save collections...
+  await Promise.allSettled(
+    nonDuplicates.map(async (nft: entity.NFT) => {
+      const collection = await repositories.collection.findOne({
+        where: { contract: ethers.utils.getAddress(nft.contract) },
+      })
+      if (!collection) {
+        const collectionName = await getCollectionNameFromContract(nft.contract, nft.type, network)
+        logger.debug('new collection', { collectionName, contract: nft.contract })
 
-          return repositories.collection.save({
-            contract: ethers.utils.getAddress(nft.contract),
-            name: collectionName,
-          })
+        await repositories.collection.save({
+          contract: ethers.utils.getAddress(nft.contract),
+          name: collectionName,
         })
-    }))
-    .then(async (collection: entity.Collection) => {
+      }
+
       // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
       // save collection in typesense search  if new
       // if (newCollection) {
@@ -300,18 +309,28 @@ const updateCollection = async (
       //     .then(() => logger.debug('nft added to typesense index'))
       //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
       // }
+    }),
+  )
 
-      // update edgeVals
-      const edgeVals = {
-        thisEntityType: defs.EntityType.Collection,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: collection.id,
-        thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Includes,
+  // save edges for collection and nfts...
+  await Promise.allSettled(
+    nfts.map(async (nft) => {
+      const collection = await repositories.collection.findOne({
+        where: { contract: ethers.utils.getAddress(nft.contract) },
+      })
+      if (collection) {
+        const edgeVals = {
+          thisEntityType: defs.EntityType.Collection,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: collection.id,
+          thatEntityId: nft.id,
+          edgeType: defs.EdgeType.Includes,
+        }
+        const edge = await repositories.edge.findOne({ where: edgeVals })
+        if (!edge) await repositories.edge.save(edgeVals)
       }
-      repositories.edge.findOne({ where: edgeVals })
-        .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
-    })
+    }),
+  )
 }
 
 const getNFTMetaData = async (
@@ -382,7 +401,7 @@ const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
-): Promise<void> => {
+): Promise<entity.NFT> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -394,7 +413,7 @@ const updateNFTOwnershipAndMetadata = async (
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      await repositories.nft.save({
+      return await repositories.nft.save({
         userId,
         walletId,
         contract: ethers.utils.getAddress(nft.contract.address),
@@ -406,11 +425,11 @@ const updateNFTOwnershipAndMetadata = async (
           imageURL: image,
           traits: traits,
         },
-      }).then(fp.tap(updateCollection))
+      })
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
-        await repositories.nft.updateOneById(existingNFT.id, {
+        return await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
           type,
@@ -433,7 +452,7 @@ const updateNFTOwnershipAndMetadata = async (
           existingNFT.metadata.imageURL !== image ||
           !isTraitSame
         ) {
-          await repositories.nft.updateOneById(existingNFT.id, {
+          return await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId,
             type,
@@ -495,11 +514,13 @@ export const updateWalletNFTs = async (
   walletAddress: string,
 ): Promise<void> => {
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
+  const savedNFTs: entity.NFT[] = []
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      await updateNFTOwnershipAndMetadata(nft, userId, walletId)
+      savedNFTs.push(await updateNFTOwnershipAndMetadata(nft, userId, walletId))
     }),
   )
+  await updateCollection(savedNFTs)
 }
 
 export const refreshNFTMetadata = async (
