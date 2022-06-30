@@ -188,7 +188,7 @@ export function genesisKeyDistributor(chainId: string | number = 'mainnet'): str
   case '5':
   case 'goerli':
   case 5:
-    return utils.getAddress('')
+    return ''
   case '1':
   case 1:
   case 'mainnet':
