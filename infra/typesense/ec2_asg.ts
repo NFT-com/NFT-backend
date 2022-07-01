@@ -2,7 +2,7 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { getResourceName, getTags } from '../helper'
+import { getResourceName, getTags, isProduction } from '../helper'
 
 const tags = {
   service: 'gql',
@@ -313,7 +313,7 @@ const createAutoScalingGroup = (
       availabilityZone: az,
       filters: [{
         name: 'tag:type',
-        values: ['public'],
+        values: [isProduction() ? 'private' : 'public'],
       }],
     })).id
   })
