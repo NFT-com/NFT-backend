@@ -7,6 +7,7 @@ import { getResourceName, isNotEmpty, isProduction } from '../helper'
 export type SGOutput = {
   aurora: awsEC2.SecurityGroup
   redis: awsEC2.SecurityGroup
+  typesense: awsEC2.SecurityGroup
   web: awsEC2.SecurityGroup
   webEcs: awsEC2.SecurityGroup
 }
@@ -15,6 +16,7 @@ const buildIngressRule = (
   port: number,
   protocol = 'tcp',
   sourceSecurityGroupId?: pulumi.Output<string>[],
+  selfSource?: boolean,
 ): any => {
   const rule = {
     protocol,
@@ -25,6 +27,13 @@ const buildIngressRule = (
     return {
       ...rule,
       securityGroups: sourceSecurityGroupId,
+    }
+  }
+
+  if (selfSource) {
+    return {
+      ...rule,
+      self: selfSource,
     }
   }
 
@@ -102,9 +111,23 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     ],
   })
 
+  const typesense = new awsEC2.SecurityGroup('sg_typesense', {
+    description: 'Allow traffic to Typesense service',
+    name: getResourceName('typesense'),
+    vpcId: 'vpc-0ece7558a4ee8e424',
+    ingress: [
+      buildIngressRule(8108, 'tcp', [web.id]),
+      buildIngressRule(0, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
+      buildIngressRule(0, 'tcp', undefined, true),
+      buildIngressRule(-1, 'icmp', undefined, true),
+    ],
+    egress: [buildEgressRule(0, '-1')],
+  })
+
   return {
     aurora,
     redis,
+    typesense,
     web,
     webEcs,
   }
