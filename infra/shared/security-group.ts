@@ -119,7 +119,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
   const typesense = new awsEC2.SecurityGroup('sg_typesense', {
     description: 'Allow traffic to Typesense service',
     name: getResourceName('typesense'),
-    vpcId: 'vpc-0ece7558a4ee8e424',
+    vpcId: vpc.id,
     ingress:
       isProduction() ?
         [

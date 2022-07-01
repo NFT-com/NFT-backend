@@ -105,7 +105,7 @@ const getUserData = (): string => {
   return `#!/bin/bash -ex
   # Download and install packages
   apt-get update
-  apt-get install -y awscli docker.io jq
+  apt-get install -y awscli jq
 
   # Attach and mount EBS volume
   EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
