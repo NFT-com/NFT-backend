@@ -845,9 +845,13 @@ const saveScoreForProfiles = async (
   logger.debug('saveScoreForProfiles', { input: args?.input })
   try {
     const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
-    const profiles = await repositories.profile.find({
+    const profiles = await repositories.profile.find(args?.input.nullOnly ? {
       where: {
         lastScored: null,
+      },
+    } : {
+      order: {
+        lastScored: 'ASC',
       },
     })
     const slicedProfiles = profiles.slice(0, count)
