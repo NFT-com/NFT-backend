@@ -5,7 +5,7 @@ import { SharedInfraOutput } from '../defs'
 import { getResourceName, getTags, isProduction } from '../helper'
 
 const tags = {
-  service: 'gql',
+  service: 'typesense',
 }
 
 const createTargetGroup = (infraOutput: SharedInfraOutput): aws.lb.TargetGroup => {
