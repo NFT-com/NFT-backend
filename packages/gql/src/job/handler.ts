@@ -125,7 +125,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
 const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
 
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
-  const startBlock = chainId == 4 ? 10540040 : 14675454
+  const startBlock = chainId == 5 ? 7128440 : 14675454
   try {
     const cachedBlock = await redis.get(key)
 
