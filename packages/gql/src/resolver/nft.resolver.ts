@@ -376,9 +376,9 @@ export const saveProfileScore = async (
         hide: false,
       },
     })
-    const paddedItems = edges.length.toString().padStart(5, '0')
+    const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
     const paddedCollections = collections.length.toString().padStart(5, '0')
-    const score = gkNFTs.length.toString().concat(paddedItems).concat(paddedCollections)
+    const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
     await redis.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
   } catch (err) {
     Sentry.captureException(err)
