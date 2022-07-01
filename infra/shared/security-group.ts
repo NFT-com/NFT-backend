@@ -111,16 +111,22 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     ],
   })
 
+  const typesenseIngressRules = [
+    buildIngressRule(8108, 'tcp', [web.id]),
+    buildIngressRule(0, 'tcp', undefined, true),
+    buildIngressRule(-1, 'icmp', undefined, true),
+  ]
   const typesense = new awsEC2.SecurityGroup('sg_typesense', {
     description: 'Allow traffic to Typesense service',
     name: getResourceName('typesense'),
     vpcId: 'vpc-0ece7558a4ee8e424',
-    ingress: [
-      buildIngressRule(8108, 'tcp', [web.id]),
-      buildIngressRule(0, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
-      buildIngressRule(0, 'tcp', undefined, true),
-      buildIngressRule(-1, 'icmp', undefined, true),
-    ],
+    ingress:
+      isProduction() ?
+        [
+          ...typesenseIngressRules,
+          buildIngressRule(0, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
+        ]
+        : typesenseIngressRules,
     egress: [buildEgressRule(0, '-1')],
   })
 
