@@ -8,6 +8,7 @@ export type SharedInfraOutput = {
   publicSubnets: string[]
   redisHost: string
   vpcId: string
+  typesenseSGId: string
   webSGId: string
   webEcsSGId: string
   gqlECRRepo: string
