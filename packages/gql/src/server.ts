@@ -168,7 +168,7 @@ export const start = async (): Promise<void> => {
     const cachedData = await redis.get(username)
 
     if (cachedData) {
-      return JSON.parse(cachedData)
+      return res.send(JSON.parse(cachedData))
     } else {
       return repositories.profile.findByURL(username.toLowerCase())
         .then(async (profile: entity.Profile) => {
