@@ -105,7 +105,7 @@ runs:
           typesense:
             - 'infra/typesense/**'
     - name: Deploy Typesense Infra
-      if: steps.filter.outputs.typesense == 'true'
+      if: ${{ steps.filter.outputs.typesense == 'true' || inputs.stage == 'prod' }}
       shell: bash
       working-directory: infra
       env:
