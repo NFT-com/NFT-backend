@@ -40,6 +40,7 @@ export const mapCollectionData = (
         tokenId: nft.tokenId,
         nftName: nft.metadata.name,
         nftType: nft.type,
+        nftDescription: nft.metadata.description,
         listingType: '',
         chain: '',
         ownerAddr: nft.walletId,
