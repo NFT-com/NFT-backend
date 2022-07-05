@@ -190,6 +190,21 @@ const createEcsTaskDefinition = (
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
         },
+        {
+          name: 'aws-otel-collector',
+          image: 'amazon/aws-otel-collector',
+          command:['{{command}}'],
+          essential: true,
+          logConfiguration: {
+            logDriver: 'awslogs',
+            options: {
+              'awslogs-group': '/ecs/ecs-aws-otel-sidecar-collector',
+              'awslogs-region': '{{region}}',
+              'awslogs-stream-prefix': 'ecs',
+              'awslogs-create-group': 'True',
+            },
+          },
+        },
       ]),
       cpu: config.require('ecsTaskCpu'),
       memory: config.require('ecsTaskMemory'),

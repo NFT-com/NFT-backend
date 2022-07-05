@@ -8,6 +8,9 @@ import { dbConfig, serverPort, verifyConfiguration } from './config'
 import { job } from './job'
 import * as server from './server'
 import HederaConsensusService from './service/hedera.service'
+import { setupTracing } from './tracer'
+
+setupTracing('example-express-server')
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
