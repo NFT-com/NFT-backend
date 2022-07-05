@@ -84,6 +84,7 @@ const removeCollectionDuplicates = async (
   logger.debug('removeCollectionDuplicates', { contracts: args?.contracts })
   try {
     const { contracts } = args
+    let removedDuplicates = false
     await Promise.allSettled(
       contracts.map(async (contract) => {
         const collections = await repositories.collection.find({ where: { contract: contract } })
@@ -112,12 +113,11 @@ const removeCollectionDuplicates = async (
           )
           const removeIds = toRemove.map((collection) => collection.id)
           await repositories.collection.hardDeleteByIds(removeIds)
+          removedDuplicates = true
         }
       }),
     )
-    return {
-      message: 'Removed collection duplicates',
-    }
+    return removedDuplicates ? { message: 'Removed collection duplicates' } : { message: 'No duplicates found' }
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in removeCollectionDuplicates: ${err}`)
