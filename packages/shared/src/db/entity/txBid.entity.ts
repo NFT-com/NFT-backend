@@ -2,7 +2,7 @@ import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
 import { ExchangeType } from '@nftcom/shared/defs'
 
-import { BaseEntity, TxActivity } from './'
+import { BaseEntity, TxActivity } from '.'
 
 @Entity()
 export class TxBid extends BaseEntity {

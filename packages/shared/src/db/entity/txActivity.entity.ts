@@ -2,7 +2,7 @@ import { Column, Entity, Index } from 'typeorm'
 
 import { ActivityType } from '@nftcom/shared/defs'
 
-import { BaseEntity } from './'
+import { BaseEntity } from '.'
 
 @Index(['userId', 'timestamp'], { unique: true })
 @Entity()

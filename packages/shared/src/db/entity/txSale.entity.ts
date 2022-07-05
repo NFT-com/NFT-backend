@@ -2,7 +2,7 @@ import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
 import { CurrencyType, ExchangeType } from '@nftcom/shared/defs'
 
-import { BaseEntity,TxActivity } from './'
+import { BaseEntity,TxActivity } from '.'
 
 @Entity()
 export class TxSale extends BaseEntity {

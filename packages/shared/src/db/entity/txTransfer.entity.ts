@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { BaseEntity, TxActivity } from './'
+import { BaseEntity, TxActivity } from '.'
 
 @Entity()
 export class TxTransfer extends BaseEntity {

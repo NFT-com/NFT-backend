@@ -3,7 +3,7 @@ import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 import { CancelActivities, CancelActivityType } from '@nftcom/shared/defs'
 import { ExchangeType } from '@nftcom/shared/defs'
 
-import { BaseEntity, TxActivity } from './'
+import { BaseEntity, TxActivity } from '.'
 
 @Entity()
 export class TxCancel extends BaseEntity {
