@@ -294,7 +294,8 @@ const createLaunchTemplate = (
     tagSpecifications: [{
       resourceType: 'instance',
       tags: getTags({
-        service: 'typesense',
+        ...tags,
+        Name: getResourceName('typesense'),
       }),
     }],
     tags: getTags(tags),
