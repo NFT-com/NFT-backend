@@ -489,7 +489,7 @@ const getExternalListings = async (
       // 1. Opensea
       // get selling & buying orders...
       const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
-      console.log('========== allOrder: ', JSON.stringify(allOrder, null, 2))
+      logger.info('========== allOrder: ', JSON.stringify(allOrder, null, 2))
       let bestOffer = undefined
       if (allOrder?.offers?.seaport?.length) {
         bestOffer = allOrder.offers?.seaport?.[0]
