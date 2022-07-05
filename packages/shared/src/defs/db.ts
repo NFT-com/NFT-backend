@@ -83,6 +83,9 @@ export enum ActivityType {
   Transfer = 'Transfer',
 }
 
+export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
+export type CancelActivityType = typeof CancelActivities[number]
+
 export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',

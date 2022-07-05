@@ -1,8 +1,17 @@
-import { Entity } from 'typeorm'
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { TxBaseEntity } from './txBase.entity'
+import { ExchangeType } from '@nftcom/shared/defs'
+
+import { BaseEntity, TxActivity } from '.'
 
 @Entity()
-export class TxList extends TxBaseEntity {
+export class TxList extends BaseEntity {
+
+  @OneToOne(() => TxActivity, (activity) => activity.activityTypeId, { nullable: false })
+  @JoinColumn()
+  activity: TxActivity
+
+  @Column({ type: 'enum', enum: ExchangeType, nullable: false })
+  exchange: ExchangeType
 
 }

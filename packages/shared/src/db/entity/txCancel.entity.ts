@@ -1,15 +1,21 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { ActivityType } from '@nftcom/shared/defs'
+import { CancelActivities, CancelActivityType } from '@nftcom/shared/defs'
+import { ExchangeType } from '@nftcom/shared/defs'
 
-import { TxBaseEntity } from './txBase.entity'
+import { BaseEntity, TxActivity } from './'
 
-const cancelActivities = [ActivityType.Listing, ActivityType.Sale] as const
-type CancelActivityType = typeof cancelActivities[number]
 @Entity()
-export class TxCancel extends TxBaseEntity {
+export class TxCancel extends BaseEntity {
+
+  @OneToOne(() => TxActivity, (activity) => activity.activityTypeId, { nullable: false })
+  @JoinColumn()
+  activity: TxActivity
+
+  @Column({ type: 'enum', enum: ExchangeType, nullable: false })
+  exchange: ExchangeType
   
-  @Column({ type: 'enum', enum: cancelActivities, nullable: true })
+  @Column({ type: 'enum', enum: CancelActivities, nullable: true })
   foreignType: CancelActivityType
 
   @Column({ nullable: false })

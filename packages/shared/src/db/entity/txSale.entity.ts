@@ -1,11 +1,15 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
 import { CurrencyType, ExchangeType } from '@nftcom/shared/defs'
 
-import { TxTransferBaseEntity } from './txTransferBase.entity'
+import { BaseEntity,TxActivity } from './'
 
 @Entity()
-export class TxSale extends TxTransferBaseEntity {
+export class TxSale extends BaseEntity {
+
+  @OneToOne(() => TxActivity, (activity) => activity.activityTypeId, { nullable: false })
+  @JoinColumn()
+  activity: TxActivity
   
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
   exchange: ExchangeType
@@ -15,5 +19,23 @@ export class TxSale extends TxTransferBaseEntity {
 
   @Column({ type: 'enum', enum: CurrencyType, nullable: false })
   currency: CurrencyType
+
+  @Column({ nullable: false })
+  transactionHash: string
+
+  @Column({ nullable: false })
+  blockNumber: string
+
+  @Column({ nullable: false })
+  nftContractAddress: string
+
+  @Column({ nullable: false })
+  nftContractTokenId: string
+
+  @Column({ nullable: false })
+  sender: string
+
+  @Column({ nullable: false })
+  receiver: string
 
 }
