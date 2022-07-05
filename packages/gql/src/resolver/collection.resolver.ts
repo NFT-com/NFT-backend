@@ -8,10 +8,11 @@ import {
   retrieveCollectionOpensea,
   retrieveCollectionStatsOpensea,
 } from '@nftcom/gql/service/opensea.service'
-import { _logger } from '@nftcom/shared'
+import { _logger, defs } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 
+const MAX_SAVE_COUNTS = 500
 const redis = new Redis({
   host: redisConfig.host,
   port: redisConfig.port,
@@ -76,11 +77,44 @@ const getCollection = async (
 
 const removeCollectionDuplicates = async (
   _: any,
+  args: gql.MutationRemoveDuplicatesArgs,
   ctx: Context,
 ): Promise<gql.RemoveDuplicatesOutput> => {
   const { repositories } = ctx
-  logger.debug('removeCollectionDuplicates', repositories)
+  logger.debug('removeCollectionDuplicates', { contracts: args?.contracts })
   try {
+    const { contracts } = args
+    await Promise.allSettled(
+      contracts.map(async (contract) => {
+        const collections = await repositories.collection.find({ where: { contract: contract } })
+        if (collections.length > 1) {
+          const toRemove = collections.slice(1, collections.length)
+          await Promise.allSettled(
+            toRemove.map(async (collection) => {
+              const edgeVals = {
+                thisEntityType: defs.EntityType.Collection,
+                thatEntityType: defs.EntityType.NFT,
+                thisEntityId: collection.id,
+                edgeType: defs.EdgeType.Includes,
+              }
+              const edges = await repositories.edge.find({ where: edgeVals })
+              if (edges.length) {
+                const updatedEdges = []
+                for (let i = 0; i < edges.length; i++) {
+                  updatedEdges.push({
+                    id: edges[i].id,
+                    thisEntityId: collections[0].id,
+                  })
+                }
+                await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
+              }
+            }),
+          )
+          const removeIds = toRemove.map((collection) => collection.id)
+          await repositories.collection.hardDeleteByIds(removeIds)
+        }
+      }),
+    )
     return {
       message: 'Removed collection duplicates',
     }
