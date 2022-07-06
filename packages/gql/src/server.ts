@@ -20,7 +20,7 @@ import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authMessage, isProduction, serverPort } from './config'
+import { authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
 import { rateLimitedSchema } from './schema'

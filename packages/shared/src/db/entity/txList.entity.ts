@@ -14,4 +14,19 @@ export class TxList extends BaseEntity {
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
   exchange: ExchangeType
 
+  @Column({ nullable: false })
+  orderHash: string
+
+  @Column({ nullable: false })
+  makerAddress: string
+
+  @Column({ nullable: true })
+  takerAddress: string
+
+  @Column('json', { nullable: false })
+  offer: any[]
+
+  @Column('json', { nullable: false })
+  consideration: any[]
+
 }

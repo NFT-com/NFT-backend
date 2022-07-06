@@ -50,8 +50,8 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   }
 
   public findActivitiesByUserIdAndType = (
-    activityType: ActivityType,
     userId: string,
+    activityType: ActivityType,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(`activity.${activityType.toLowerCase()}`,
