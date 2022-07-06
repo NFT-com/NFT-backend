@@ -250,87 +250,96 @@ const getCollectionNameFromContract = (
 const updateCollection = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
-  const seen = {}
-  const nonDuplicates: Array<entity.NFT> = []
-  nfts.map((nft: entity.NFT) => {
-    const key = ethers.utils.getAddress(nft.contract)
-    if (!seen[key]) {
-      nonDuplicates.push(nft)
-      seen[key] = true
-    }
-  })
-  // save collections...
-  await Promise.allSettled(
-    nonDuplicates.map(async (nft: entity.NFT) => {
-      const collection = await repositories.collection.findOne({
-        where: { contract: ethers.utils.getAddress(nft.contract) },
-      })
-      if (!collection) {
-        const collectionName = await getCollectionNameFromContract(nft.contract, nft.type, network)
-        logger.debug('new collection', { collectionName, contract: nft.contract })
-
-        await repositories.collection.save({
-          contract: ethers.utils.getAddress(nft.contract),
-          name: collectionName,
+  try {
+    const seen = {}
+    const nonDuplicates: Array<entity.NFT> = []
+    nfts.map((nft: entity.NFT) => {
+      const key = ethers.utils.getAddress(nft.contract)
+      if (!seen[key]) {
+        nonDuplicates.push(nft)
+        seen[key] = true
+      }
+    })
+    // save collections...
+    await Promise.allSettled(
+      nonDuplicates.map(async (nft: entity.NFT) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: ethers.utils.getAddress(nft.contract) },
         })
-      }
+        if (!collection) {
+          const collectionName = await getCollectionNameFromContract(
+            nft.contract,
+            nft.type,
+            network,
+          )
+          logger.debug('new collection', { collectionName, contract: nft.contract })
 
-      // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
-      // save collection in typesense search  if new
-      // if (newCollection) {
-      //   const indexCollection = []
-      //   indexCollection.push({
-      //     id: collection.id,
-      //     contract: collection.contract,
-      //     name: collection.name,
-      //     createdAt: collection.createdAt,
-      //   })
-      //   client.collections('collections').documents().import(indexCollection, { action: 'create' })
-      //     .then(() => logger.debug('collection added to typesense index'))
-      //     .catch(() => logger.info('error: could not save collection in typesense: '))
-      // }
-
-      // add new nft to search (Typesense)
-      // if(newNFT && !existingNFT) {
-      //   const indexNft = []
-      //   indexNft.push({
-      //     id: newNFT.id,
-      //     contract: nftInfo.contract.address,
-      //     tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-      //     imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
-      //     contractName: collection.name ? collection.name : '',
-      //     type: type,
-      //     name: nftInfo.title,
-      //     description: newNFT.metadata.description,
-      //     createdAt: newNFT.createdAt,
-      //   })
-
-      //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
-      //     .then(() => logger.debug('nft added to typesense index'))
-      //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
-      // }
-    }),
-  )
-
-  // save edges for collection and nfts...
-  await Promise.allSettled(
-    nfts.map(async (nft) => {
-      const collection = await repositories.collection.findOne({
-        where: { contract: ethers.utils.getAddress(nft.contract) },
-      })
-      if (collection) {
-        const edgeVals = {
-          thisEntityType: defs.EntityType.Collection,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: collection.id,
-          thatEntityId: nft.id,
-          edgeType: defs.EdgeType.Includes,
+          await repositories.collection.save({
+            contract: ethers.utils.getAddress(nft.contract),
+            name: collectionName,
+          })
         }
-        const edge = await repositories.edge.findOne({ where: edgeVals })
-        if (!edge) await repositories.edge.save(edgeVals)
-      }
-    }),
-  )
+
+        // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
+        // save collection in typesense search  if new
+        // if (newCollection) {
+        //   const indexCollection = []
+        //   indexCollection.push({
+        //     id: collection.id,
+        //     contract: collection.contract,
+        //     name: collection.name,
+        //     createdAt: collection.createdAt,
+        //   })
+        //   client.collections('collections').documents().import(indexCollection, { action: 'create' })
+        //     .then(() => logger.debug('collection added to typesense index'))
+        //     .catch(() => logger.info('error: could not save collection in typesense: '))
+        // }
+
+        // add new nft to search (Typesense)
+        // if(newNFT && !existingNFT) {
+        //   const indexNft = []
+        //   indexNft.push({
+        //     id: newNFT.id,
+        //     contract: nftInfo.contract.address,
+        //     tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+        //     imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
+        //     contractName: collection.name ? collection.name : '',
+        //     type: type,
+        //     name: nftInfo.title,
+        //     description: newNFT.metadata.description,
+        //     createdAt: newNFT.createdAt,
+        //   })
+
+        //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
+        //     .then(() => logger.debug('nft added to typesense index'))
+        //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
+        // }
+      }),
+    )
+
+    // save edges for collection and nfts...
+    await Promise.allSettled(
+      nfts.map(async (nft) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: ethers.utils.getAddress(nft.contract) },
+        })
+        if (collection) {
+          const edgeVals = {
+            thisEntityType: defs.EntityType.Collection,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: collection.id,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Includes,
+          }
+          const edge = await repositories.edge.findOne({ where: edgeVals })
+          if (!edge) await repositories.edge.save(edgeVals)
+        }
+      }),
+    )
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateCollection: ${err}`)
+  }
 }
 
 const getNFTMetaData = async (
