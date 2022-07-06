@@ -65,14 +65,18 @@ input UpdateEmailInput {
 }
 
 extend type Query {
+  "AUTHENTICATED"
   me: User!
+  "AUTHENTICATED"
   getMyGenesisKeys: [GkOutput]!
 }
 
 extend type Mutation {
   signUp(input: SignUpInput!): User!
+  "AUTHENTICATED"
   updateMe(input: UpdateUserInput!): User!
   updateEmail(input: UpdateEmailInput!): User!
   confirmEmail(token: String!): Boolean!
+  "AUTHENTICATED"
   resendEmailConfirm: User!
 }
