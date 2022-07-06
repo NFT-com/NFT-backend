@@ -2,7 +2,7 @@
   "name": "nfts",
   "fields": [
     {"name": "id", "type": "string", "facet": false, "index": false },
-    {"name": "contractAddr", "type": "string", "facet": false, "index": true },
+    {"name": "contractAddr", "type": "string", "facet": true, "index": true },
     {"name": "tokenId", "type": "string", "facet": false, "index": true },
     {"name": "nftName", "type": "string", "facet": true, "index": true },
     {"name": "nftType", "type": "string", "facet": true, "index": true },
