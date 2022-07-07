@@ -211,40 +211,50 @@ export const retrieveCollectionOpensea = async (
   contract: string,
   chainId: string,
 ) : Promise<gql.OpenseaContract> => {
-  const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
+  try {
+    const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
 
-  const config = chainId === '4' ? {
-    headers: { Accept: 'application/json' },
-  } :  {
-    headers: {
-      Accept: 'application/json',
-      'X-API-KEY': OPENSEA_API_KEY,
-    },
+    const config = chainId === '4' ? {
+      headers: { Accept: 'application/json' },
+    } :  {
+      headers: {
+        Accept: 'application/json',
+        'X-API-KEY': OPENSEA_API_KEY,
+      },
+    }
+
+    const url = `${baseUrl}/asset_contract/${contract}`
+    const res = await axios.get(url, config)
+    return res.data
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
   }
-
-  const url = `${baseUrl}/asset_contract/${contract}`
-  const res = await axios.get(url, config)
-  return res.data
 }
 
 export const retrieveCollectionStatsOpensea = async (
   slug: string,
   chainId: string,
 ) : Promise<gql.OpenseaStats> => {
-  const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
+  try {
+    const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
 
-  const config = chainId === '4' ? {
-    headers: { Accept: 'application/json' },
-  } :  {
-    headers: {
-      Accept: 'application/json',
-      'X-API-KEY': OPENSEA_API_KEY,
-    },
+    const config = chainId === '4' ? {
+      headers: { Accept: 'application/json' },
+    } :  {
+      headers: {
+        Accept: 'application/json',
+        'X-API-KEY': OPENSEA_API_KEY,
+      },
+    }
+
+    const url = `${baseUrl}/collection/${slug}/stats`
+    const res = await axios.get(url, config)
+    return res.data
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
   }
-
-  const url = `${baseUrl}/collection/${slug}/stats`
-  const res = await axios.get(url, config)
-  return res.data
 }
 
 export const retrieveOffersOpensea = async (

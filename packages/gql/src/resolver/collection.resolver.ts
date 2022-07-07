@@ -22,9 +22,9 @@ const getCollection = async (
 ): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
-    const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea ? 'true' : 'false'}`
+    const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea}`
     const cachedData = await redis.get(key)
-
+    
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
@@ -52,7 +52,9 @@ const getCollection = async (
             }
           }
   
-          await redis.set(slugKey, JSON.stringify(data)) // set cache
+          if (data?.collection?.slug) {
+            await redis.set(slugKey, JSON.stringify(data)) // set cache
+          }
         }
       }
 
@@ -62,7 +64,13 @@ const getCollection = async (
         openseaStats: stats,
       }
 
-      await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
+      if (args?.input?.withOpensea) {
+        if (data && stats) {
+          await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * 30)
+        }
+      } else {
+        await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * 5)
+      }
   
       return returnObject
     }
