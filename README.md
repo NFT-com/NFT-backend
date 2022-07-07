@@ -50,7 +50,7 @@ The script uses a hardcoded private key. But you can specify your own private ke
 
 #### 3.3 GraphQL API Reference
 
-While the graphql server is running, run `npm run gqldoc` to get the Grapql API reference locally at `localhost:4400`
+While the graphql server is running, run `npm run gqldoc` to get the Graphql API reference locally at `localhost:4400`
 
 #### 3.4 GQL schema documentation
 
