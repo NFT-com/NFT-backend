@@ -181,7 +181,7 @@ export const start = async (): Promise<void> => {
               header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
               description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
             }
-            await redis.set(username, JSON.stringify(data), 'EX', 60)
+            await redis.set(username, JSON.stringify(data), 'EX', 60 * 10)
             return res.send(data)
           }
         })

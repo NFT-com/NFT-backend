@@ -152,7 +152,6 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     return []
   }
@@ -193,7 +192,6 @@ const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     return []
   }
@@ -211,7 +209,6 @@ const getNFTMetaDataFromAlchemy = async (
 
     return response as NFTMetaDataResponse
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getNFTMetaDataFromAlchemy: ${err}`)
     return undefined
   }
@@ -337,7 +334,6 @@ const updateCollection = async (
       }),
     )
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateCollection: ${err}`)
   }
 }
@@ -401,7 +397,6 @@ const getNFTMetaData = async (
       traits,
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
   }
 }
@@ -476,7 +471,6 @@ const updateNFTOwnershipAndMetadata = async (
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
   }
 }
@@ -505,7 +499,6 @@ export const checkNFTContractAddresses = async (
       }),
     )
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
     return []
   }
@@ -569,7 +562,6 @@ export const refreshNFTMetadata = async (
     }
     return nft
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
   }
 }
@@ -759,7 +751,6 @@ export const changeNFTsVisibility = async (
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
   }
 }
@@ -831,7 +822,6 @@ export const updateNFTsOrder = async (
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
   }
 }
@@ -870,7 +860,6 @@ export const updateEdgesWeightForProfile = async (
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
   }
 }
@@ -915,7 +904,6 @@ export const syncEdgesWithNFTs = async (
     )
     await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
   }
 }
