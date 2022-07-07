@@ -16,7 +16,7 @@
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
     "start": "node -r source-map-support/register ./dist/index",
-    "gqldoc": "nodemon -x 'spectaql' -t ../../docs/public -D",
+    "gqldoc": "nodemon -x 'spectaql ./doc-config.yml' -t ../../docs/public -D",
     "gqldoc-old": "graphdoc -e http://localhost:10010/graphql -o ./../../docs/documentation -f"
   },
   "dependencies": {
