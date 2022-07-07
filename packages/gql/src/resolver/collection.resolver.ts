@@ -67,7 +67,6 @@ const getCollection = async (
       return returnObject
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getCollection: ${err}`)
   }
 }

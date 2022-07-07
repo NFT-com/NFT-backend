@@ -77,7 +77,7 @@ const validOrderMatch = async (
     }
   } catch (err) {
     logger.error('order validation error: ', err)
-    Sentry.captureException(err)
+    
     Sentry.captureMessage(`Order validation error: ${err}`)
     return false
   }
@@ -144,7 +144,7 @@ const validOrderMatch = async (
     }
   } catch (err) {
     logger.error('order matching validation error: ', err)
-    Sentry.captureException(err)
+    
     Sentry.captureMessage(`Order matching validation error: ${err}`)
     return false
   }
