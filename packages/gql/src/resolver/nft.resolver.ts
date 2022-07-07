@@ -330,7 +330,6 @@ const getGkNFTs = async (
 
       return response
     } catch (err) {
-      Sentry.captureException(err)
       Sentry.captureMessage(`Error in getGKNFTs: ${err}`)
       throw nftError.buildNFTNotFoundMsg(args?.tokenId)
     }
@@ -381,7 +380,6 @@ export const saveProfileScore = async (
     const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
     await redis.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
   }
 }
@@ -463,7 +461,6 @@ const updateNFTsForProfile = (
         }
       })
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
   }
 }
@@ -489,7 +486,7 @@ const getExternalListings = async (
       // 1. Opensea
       // get selling & buying orders...
       const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
-      logger.info('========== allOrder: ', JSON.stringify(allOrder, null, 2))
+      if (allOrder) logger.info('========== allOrder: ', JSON.stringify(allOrder, null, 2))
       let bestOffer = undefined
       if (allOrder?.offers?.seaport?.length) {
         bestOffer = allOrder.offers?.seaport?.[0]
@@ -589,12 +586,11 @@ const getExternalListings = async (
 
       const finalData = { listings: [opensea, looksrare] }
 
-      await redis.set(key, JSON.stringify(finalData), 'EX', 60)
+      await redis.set(key, JSON.stringify(finalData), 'EX', 60 * 30)
 
       return finalData
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getExternalListings: ${err}`)
   }
 }
@@ -630,7 +626,6 @@ export const refreshNft = async (
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in refreshNft: ${err}`)
   }
 }

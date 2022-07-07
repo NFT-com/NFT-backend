@@ -25,7 +25,7 @@ const getCollection = async (
 ): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
-    const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea ? 'true' : 'false'}`
+    const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea}`
     const cachedData = await redis.get(key)
 
     if (cachedData) {
@@ -55,7 +55,7 @@ const getCollection = async (
             }
           }
 
-          await redis.set(slugKey, JSON.stringify(data)) // set cache
+          await redis.set(slugKey, JSON.stringify(data), 'EX', 60 * 5) // set cache
         }
       }
 
@@ -70,7 +70,6 @@ const getCollection = async (
       return returnObject
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getCollection: ${err}`)
   }
 }

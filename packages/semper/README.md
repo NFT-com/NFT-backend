@@ -20,7 +20,9 @@ This project uses TypeScript and must be transpiled before running:
 
 For convenience, `package.json` contains a `start` script to run the commands to clear, rebuild, and insert data into Typesense.
 
-Remember to set up a tunnel if connecting to dev/staging/prod. Also, some environment variables may also need to be overwritten:
+Remember to set up a tunnel if connecting prod. Also, some environment variables may need to be set:
+- TYPESENSE_HOST
+- TYPESENSE_API_KEY
 - DB_HOST
 - DB_PORT
 - DB_USE_SSL
@@ -29,7 +31,7 @@ Remember to set up a tunnel if connecting to dev/staging/prod. Also, some enviro
 
 or
 
-`DB_HOST=dev-main.cluster-clmsk3iud7e0.us-east-1.rds.amazonaws.com DB_PORT=5432 DB_USE_SSL=true npm start`
+`TYPESENSE_HOST=dev-typesense.nft.com TYPESENSE_API_KEY=F45LvXmQz7Vtu2tgUdEmpPVxY7dVd7K1uXH8N9iMnlV8LW7N DB_HOST=dev-main.cluster-clmsk3iud7e0.us-east-1.rds.amazonaws.com DB_PORT=5432 DB_USE_SSL=true npm start`
 
 ## Typesense Schemas
 

@@ -59,7 +59,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
     }))
   } catch (err) {
     logger.error(err)
-    Sentry.captureException(err)
+    
     Sentry.captureMessage(`Error in syncProfileNFTs Job: ${err}`)
   }
 }
@@ -86,7 +86,6 @@ export const generateCompositeImages = async (job: Job): Promise<any> => {
     )
     logger.debug('generated composite images for profiles', { counts: MAX_PROFILE_COUNTS })
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in generateCompositeImages Job: ${err}`)
   }
 }

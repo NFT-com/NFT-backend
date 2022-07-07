@@ -58,6 +58,19 @@ export const dbConfig = {
   useSSL: helper.parseBoolean(process.env.DB_USE_SSL),
 }
 
+export const testDBConfig = {
+  type: 'postgres',
+  host: process.env.TEST_DB_HOST || 'localhost',
+  port: parseInt(process.env.TEST_DB_PORT) || 10031,
+  user: process.env.TEST_DB_USERNAME || 'test',
+  password: process.env.TEST_DB_PASSWORD || 'password',
+  database: process.env.TEST_DB_DATABASE || 'test',
+  logging: false,
+  useSSL: false,
+  dropSchema: true,
+  synchronize: false,
+}
+
 const toNetwork = (str: string): defs.Network => {
   const list = str.split('|')
   return list.reduce((agg: defs.Network, val: string) => {
