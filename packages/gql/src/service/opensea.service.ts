@@ -227,7 +227,6 @@ export const retrieveCollectionOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
-    console.log('retrieveCollectionOpensea err: ', err)
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
   }
@@ -253,7 +252,6 @@ export const retrieveCollectionStatsOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
-    console.log('retrieveCollectionStatsOpensea err: ', err)
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
   }
