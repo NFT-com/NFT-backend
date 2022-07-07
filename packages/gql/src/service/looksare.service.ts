@@ -46,7 +46,6 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }

@@ -4,7 +4,9 @@ import Redis from 'ioredis'
 import { redisConfig } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { delay } from '@nftcom/gql/service/core.service'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as Sentry from '@sentry/node'
+
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
 const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
@@ -201,8 +203,7 @@ export const retrieveOrdersOpensea = async (
 
     return responses
   } catch (err) {
-    Sentry.captureException(err)
-    Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
+    // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined
   }
 }
@@ -227,8 +228,8 @@ export const retrieveCollectionOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
-    Sentry.captureException(err)
-    Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
+    // Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
+    return undefined
   }
 }
 
@@ -252,8 +253,8 @@ export const retrieveCollectionStatsOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
-    Sentry.captureException(err)
-    Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
+    // Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
+    return undefined
   }
 }
 
@@ -279,8 +280,7 @@ export const retrieveOffersOpensea = async (
       const offers = result.data.offers as Array<OpenseaResponse>
       return offers
     } catch (err) {
-      Sentry.captureException(err)
-      Sentry.captureMessage(`Error in retrieveOffersOpensea: ${err}`)
+      // Sentry.captureMessage(`Error in retrieveOffersOpensea: ${err}`)
       return undefined
     }
   }
