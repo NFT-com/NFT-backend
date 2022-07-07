@@ -51,10 +51,8 @@ const getCollection = async (
               )
             }
           }
-  
-          if (data?.collection?.slug) {
-            await redis.set(slugKey, JSON.stringify(data)) // set cache
-          }
+
+          await redis.set(slugKey, JSON.stringify(data), 'EX', 60 * 5) // set cache
         }
       }
 
@@ -64,13 +62,7 @@ const getCollection = async (
         openseaStats: stats,
       }
 
-      if (args?.input?.withOpensea) {
-        if (data && stats) {
-          await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * 30)
-        }
-      } else {
-        await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * 5)
-      }
+      await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
   
       return returnObject
     }
