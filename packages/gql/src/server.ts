@@ -20,7 +20,7 @@ import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authMessage, isProduction, serverPort } from './config'
+import { authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -99,17 +99,12 @@ export const formatError = (error: GraphQLError): GQLError => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler = (err, req, res, next): void => {
+const errorHandler = (err: Error, req, res, next): void => {
   const { stack, message } = err
   const path = req.path || req.originalUrl
   const responseData = { path, statusCode: '500', message: 'An error has occured' }
-  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack.join('\n') }))
-  res.status(500)
-  if (req.xhr) {
-    res.send(responseData)
-  } else {
-    res.render('error', responseData)
-  }
+  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack }))
+  res.status(500).send(responseData)
 }
 
 const execShellCommand = (

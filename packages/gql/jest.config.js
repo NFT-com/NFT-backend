@@ -1,3 +1,12 @@
+require('dotenv').config();
+if (!process.env.PROFILE_AUCTION_END_PASSWORD) {
+  require('child_process').execSync('doppler run -- printenv').toString().split('\n').reduce((acc, envStr) => {
+    const name = envStr.split('=')[0];
+    acc[name] = envStr.substring(name.length + 1);
+    return acc;
+  }, process.env);
+}
+
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',

@@ -1,0 +1,87 @@
+type TxActivity {
+  id: ID!
+  activityType: String!
+  read: String!
+  timestamp: String!
+  userId: String!
+  bid: TxBid
+  cancel: TxCancel
+  listing: TxList
+  sale: TxSale
+  transfer: TxTransfer
+}
+
+type TxBid {
+  id: ID!
+  exchange: String!
+  orderHash: String!
+  makerAddress: String!
+  takerAddresss: String
+  offer: [TxOffer]
+  consideration: [TxConsideration]
+}
+
+type TxCancel {
+  id: ID!
+  exchange: String!
+  foreignType: String!
+  foreignKeyId: String!
+  transactionHash: String!
+}
+
+type TxList {
+  id: ID!
+  exchange: String!
+  orderHash: String!
+  makerAddress: String!
+  takerAddresss: String
+  offer: [TxOffer]
+  consideration: [TxConsideration]
+}
+
+type TxSale {
+  id: ID!
+  exchange: String!
+  price: String!
+  currency: String!
+  transactionHash: String!
+  blockNumber: String!
+  nftContractAddress: String!
+  nftContractTokenId: String!
+  sender: String!
+  receiver: String!
+}
+
+type TxTransfer {
+  id: ID!
+  transactionHash: String!
+  blockNumber: String!
+  nftContractAddress: String!
+  nftContractTokenId: String!
+  sender: String!
+  receiver: String!
+}
+
+type TxOffer {
+  token: String!
+  startAmount: String!
+  endAmount: String
+}
+
+type TxConsideration {
+  token: String!
+  startAmount: String!
+  endAmount: String
+  recipient: String
+}
+
+input TxUserIdAndTypeInput {
+  userId: ID!
+  activityType: String!
+}
+
+extend type Query {
+  getActivitiesByType(activityType: String): [TxActivity]
+  getActivitiesByUserId(userId: ID): [TxActivity]
+  getActivitiesByUserIdAndType(input: TxUserIdAndTypeInput): [TxActivity]
+}

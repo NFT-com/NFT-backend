@@ -11,6 +11,7 @@ import miscResolvers from './misc.resolver'
 import nftResolvers from './nft.resolver'
 import profileResolvers from './profile.resolver'
 import scalarResolvers from './scalar.resolver'
+import txActivityResolvers from './txActivity.resolver'
 import userResolvers from './user.resolver'
 import walletResolvers from './wallet.resolver'
 import watchlistResolvers from './watchlist.resolver'
@@ -27,6 +28,7 @@ export const resolvers: any = mergeResolvers([
   miscResolvers,
   nftResolvers,
   profileResolvers,
+  txActivityResolvers,
   userResolvers,
   walletResolvers,
   watchlistResolvers,
