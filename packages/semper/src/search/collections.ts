@@ -1,10 +1,13 @@
+import { BigNumber } from 'ethers'
+
 import {
   BaseEntity,
   Collection,
-  NFT,
   Profile,
   Wallet,
 } from '@nftcom/shared/db/entity'
+
+import { NFTDao } from './model'
 
 export const collectionNames = ['collections', 'nfts', 'profiles', 'wallets']
 
@@ -33,19 +36,19 @@ export const mapCollectionData = (
     })
     break
   case 'nfts':
-    result = data.map((nft: NFT) => {
+    result = data.map((nft: NFTDao) => {
       return {
         id: nft.id,
         contractAddr: nft.contract,
-        tokenId: nft.tokenId,
+        tokenId: BigNumber.from(nft.tokenId).toString(),
         nftName: nft.metadata.name,
         nftType: nft.type,
         nftDescription: nft.metadata.description,
         listingType: '',
-        chain: '',
+        chain: nft.wallet.chainName,
         ownerAddr: nft.walletId,
         status: '',
-        contractName: '',
+        contractName: nft.collection?.name || '',
         imageURL: nft.metadata.imageURL,
         listedPx: getRandomFloat(0.3, 500, 2),
         lastSoldPx: getRandomFloat(0.01, 400, 2),
