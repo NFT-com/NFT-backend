@@ -1,3 +1,4 @@
+require('dotenv').config();
 if (!process.env.PROFILE_AUCTION_END_PASSWORD) {
   require('child_process').execSync('doppler run -- printenv').toString().split('\n').reduce((acc, envStr) => {
     const name = envStr.split('=')[0];
