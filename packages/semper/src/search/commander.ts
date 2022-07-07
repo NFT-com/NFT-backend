@@ -36,13 +36,21 @@ class Commander {
     )
   }
 
+  private _retrieveData = async (name: string): Promise<any[]> => {
+    if (name === 'nfts') {
+      return this.repositories.nft.findAllWithRelations()
+    }
+    return await this.repositories[name.slice(0, -1)].findAll()
+  }
+
   restore = async (): Promise<void> => {
     for (const schema of schemas) {
       await this.client.collections().create(schema as CollectionCreateSchema)
     }
 
     for (const name of collectionNames) {
-      const data = await this.repositories[name.slice(0, -1)].findAll()
+      const data = await this._retrieveData(name)
+      
       const collection = mapCollectionData(name, data)
 
       try {
