@@ -12,8 +12,8 @@ let testData
 
 describe('transaction activity resolver', () => {
   beforeAll(async () => {
-    testServer = getTestApolloServer(repositories)
     await db.connect(dbConfig)
+    testServer = getTestApolloServer(repositories)
     const timestamp = new Date().getTime()
     testData = await Promise.all(['txBid', 'txBid', 'txList'].map(async (table, i) => {
       let activity = new TxActivity()
@@ -66,6 +66,7 @@ describe('transaction activity resolver', () => {
       await repositories.txActivity.hardDeleteByIds([item.activity.id])
     }
     await testServer.stop()
+    await db.disconnect()
   })
 
   it('should query activity by type', async () => {

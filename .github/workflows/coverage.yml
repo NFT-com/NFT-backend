@@ -12,6 +12,22 @@ jobs:
       matrix:
         node-version: [16.x]
 
+    services:
+      postgres:
+        image: postgres:13.4-alpine
+        env:
+          POSTGRES_DB: app
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -26,6 +42,8 @@ jobs:
       uses: SpicyPizza/create-envfile@v1.3
       with:
         envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        envkey_DB_HOST: 'postgres'
+        envkey_DB_PORT: '5432'
         envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
         envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
         envkey_CONFIRM_EMAIL_URL: "tbd"
