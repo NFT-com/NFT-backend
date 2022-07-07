@@ -961,7 +961,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await redis.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
     logger.debug('error', err)
-    Sentry.captureException(err)
+    
     Sentry.captureMessage(`Error in syncMarketplace: ${err}`)
   }
 }
