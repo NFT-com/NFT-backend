@@ -151,24 +151,35 @@ type SaveScoreForProfilesOutput {
 
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
+  "AUTHENTICATED"
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
+  "AUTHENTICATED"
   myProfiles(input: ProfilesInput): ProfilesOutput!
   profile(url: String!): Profile!
   profilePassive(url: String!): Profile!
   blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
+  "AUTHENTICATED"
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
   leaderboard(input: LeaderboardInput): LeaderboardOutput!
 }
 
 extend type Mutation {
+  "AUTHENTICATED"
   followProfile(url: String): Profile!
+  "AUTHENTICATED"
   unfollowProfile(id: ID!): Profile!
+  "AUTHENTICATED"
   updateProfile(input: UpdateProfileInput!): Profile!
+  "AUTHENTICATED"
   profileClaimed(input: ProfileClaimedInput!): Profile!
   mintGKProfile(input: MintGKProfileInput): String!
+  "AUTHENTICATED"
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
+  "AUTHENTICATED"
   createCompositeImage(input: CreateCompositeImageInput): Profile!
+  "AUTHENTICATED"
   orderingUpdates(input: OrderingUpdatesInput!): Profile!
+  "AUTHENTICATED"
   saveScoreForProfiles(input: SaveScoreForProfilesInput!): SaveScoreForProfilesOutput!
 }

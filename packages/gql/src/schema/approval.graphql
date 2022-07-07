@@ -28,5 +28,6 @@ input ApprovalInput {
 #}
 
 extend type Mutation {
+  "AUTHENTICATED"
   approveAmount(input: ApprovalInput!): Approval!
 }

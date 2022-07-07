@@ -18,10 +18,12 @@ input WhitelistCheckInput {
   address: Address!
 }
 
-extend type Mutation {
-  addAddress(input: WalletInput!): Wallet!
-}
-
 extend type Query {
   isAddressWhitelisted(input: WhitelistCheckInput): Boolean!
 }
+
+extend type Mutation {
+  "AUTHENTICATED"
+  addAddress(input: WalletInput!): Wallet!
+}
+

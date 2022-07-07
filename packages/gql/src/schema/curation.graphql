@@ -43,14 +43,19 @@ input RemoveCurationInput {
 }
 
 extend type Query {
+    "AUTHENTICATED"
     myCurations(input: CurationsInput!): CurationsOutput
 }
 
 extend type Mutation {
     # by Curation owner only
+    "AUTHENTICATED - create by curation owner only"
     createCuration(input: CreateCurationInput!): Curation!
+    "AUTHENTICATED"
     updateCuration(input: UpdateCurationInput!): Curation!
     # by Curation + profile owner
+    "AUTHETICATED - set by curation + profile owner"
     setCuration(input: SetCurationInput!): Profile!
+    "AUTHENTICATED"
     removeCuration(input: RemoveCurationInput!): Profile!
 }

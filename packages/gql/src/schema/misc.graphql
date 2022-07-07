@@ -37,5 +37,6 @@ extend type Query {
 }
 
 extend type Mutation {
+  "AUTHENTICATED"
   uploadFileSession: FileUploadOutput!
 }
