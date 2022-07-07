@@ -14,6 +14,7 @@ packages/*/.env
 infra/package-lock.json
 docs/*
 gql/coverage/*
+gql/public/*
 
 # logs
 log-debug

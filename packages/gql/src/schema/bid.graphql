@@ -70,14 +70,19 @@ input ProfilePreferenceInput {
 
 extend type Query {
   # bids(input: BidsInput): BidsOutput!
+  "AUTHENTICATED"
   myBids(input: BidsInput): BidsOutput!
   topBids(input: TopBidsInput): BidsOutput!
 }
 
 extend type Mutation {
   bid(input: BidInput!): Bid!
+  "AUTHENTICATED"
   cancelBid(id: ID!): Boolean!
+  "AUTHENTICATED"
   signHashProfile(profileUrl: String!): SignHashOutput!
+  "AUTHENTICATED"
   signHash(input: SignHashInput!): SignHashOutput!
+  "AUTHENTICATED"
   setProfilePreferences(input: ProfilePreferenceInput!): [Bid!]!
 }
