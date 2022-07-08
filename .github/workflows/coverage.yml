@@ -72,6 +72,12 @@ jobs:
         envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
         envkey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
         envkey_PROFILE_SCORE_EXPIRE_DURATION: ${{ secrets.PROFILE_SCORE_EXPIRE_DURATION }}
+        envkey_TEST_DB_HOST: ${{ secrets.TEST_DB_HOST }}
+        envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
+        envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
+        envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
+        envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         file_name: packages/gql/.env
         fail_on_empty: false
 

@@ -5,6 +5,8 @@ import { formatError } from '@nftcom/gql/server'
 
 export function getTestApolloServer(
   testDB: any,
+  user?: any,
+  wallet?: any,
 ): ApolloServer {
   return new ApolloServer({
     schema: rateLimitedSchema(),
@@ -13,8 +15,8 @@ export function getTestApolloServer(
       return {
         network: 'ethereum',
         chain: '4',
-        wallet: null,
-        user: null,
+        wallet: wallet ?? null,
+        user: user ?? null,
         repositories: testDB,
       }
     },
