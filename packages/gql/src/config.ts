@@ -60,11 +60,11 @@ export const dbConfig = {
 
 export const testDBConfig = {
   type: 'postgres',
-  host: process.env.TEST_DB_HOST || 'localhost',
-  port: parseInt(process.env.TEST_DB_PORT) || 10031,
-  user: process.env.TEST_DB_USERNAME || 'test',
-  password: process.env.TEST_DB_PASSWORD || 'password',
-  database: process.env.TEST_DB_DATABASE || 'test',
+  host: process.env.TEST_DB_HOST,
+  port: parseInt(process.env.TEST_DB_PORT),
+  user: process.env.TEST_DB_USERNAME,
+  password: process.env.TEST_DB_PASSWORD,
+  database: process.env.TEST_DB_DATABASE,
   logging: false,
   useSSL: helper.parseBoolean(process.env.TEST_DB_USE_SSL),
   dropSchema: true,
