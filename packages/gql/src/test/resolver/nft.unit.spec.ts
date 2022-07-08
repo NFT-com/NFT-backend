@@ -1,4 +1,4 @@
-import { nftTestMockData } from '../util/constants'
+import { nftTestErrorMockData, nftTestMockData } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 let testServer
@@ -11,11 +11,16 @@ describe('nft resolver', () => {
     }
     testServer = getTestApolloServer({
       nft: {
-        findById: (id: string) => Promise.resolve({
-          id,
-          contract: mockArgs.contract,
-          tokenId: mockArgs.tokenId,
-        }),
+        findById: (id) => {
+          if (id === nftTestMockData.id) {
+            return Promise.resolve({
+              id,
+              contract: mockArgs.contract,
+              tokenId: mockArgs.tokenId,
+            })
+          }
+          return null
+        },
         findOne: ({ where: mockArgs }) => Promise.resolve({
           contract: mockArgs.contract,
           tokenId: mockArgs.tokenId,
@@ -30,7 +35,7 @@ describe('nft resolver', () => {
     await testServer.stop()
   })
 
-  describe('getNFT', () => {
+  describe('get NFT', () => {
     // get NFT
     it('should get NFT', async () => {
       const result = await testServer.executeOperation({
@@ -59,7 +64,7 @@ describe('nft resolver', () => {
                 }
               }`,
         variables: {
-          contract: nftTestMockData.errorContract,
+          contract: nftTestErrorMockData.contract,
           nftId: nftTestMockData.tokenId,
         },
       })
@@ -78,7 +83,39 @@ describe('nft resolver', () => {
               }`,
         variables: {
           contract: nftTestMockData.contract,
-          nftId: nftTestMockData.errorTokenId,
+          nftId: nftTestErrorMockData.tokenId,
+        },
+      })
+      expect(result?.errors).toHaveLength(1)
+    })
+  })
+
+  describe('get NFT By Id', () => {
+    // get NFT By Id
+    it('should get NFT By Id', async () => {
+      const result = await testServer.executeOperation({
+        query: `query NftById($nftByIdId: ID!) {
+          nftById(id: $nftByIdId) {
+            id
+          }
+        }`,
+        variables: {
+          nftByIdId: nftTestMockData.id,
+        },
+      })
+      expect(result?.data?.nftById?.id).toBe(nftTestMockData.id)
+    })
+
+    // error
+    it('should throw an error', async () => {
+      const result = await testServer.executeOperation({
+        query: `query NftById($nftByIdId: ID!) {
+          nftById(id: $nftByIdId) {
+            id
+          }
+        }`,
+        variables: {
+          nftByIdId: 'abcd',
         },
       })
       expect(result?.errors).toHaveLength(1)
