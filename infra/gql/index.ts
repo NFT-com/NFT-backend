@@ -120,6 +120,12 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['BULL_MAX_REPEAT_COUNT'] = process.env.BULL_MAX_REPEAT_COUNT || parsedFile['BULL_MAX_REPEAT_COUNT']
   parsedFile['OPENSEA_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_API_KEY']
   parsedFile['PROFILE_SCORE_EXPIRE_DURATION'] = process.env.PROFILE_SCORE_EXPIRE_DURATION || parsedFile['PROFILE_SCORE_EXPIRE_DURATION']
+  parsedFile['TEST_DB_HOST'] = process.env.TEST_DB_HOST || parsedFile['TEST_DB_HOST']
+  parsedFile['TEST_DB_DATABASE'] = process.env.TEST_DB_DATABASE || parsedFile['TEST_DB_DATABASE']
+  parsedFile['TEST_DB_USERNAME'] = process.env.TEST_DB_USERNAME || parsedFile['TEST_DB_USERNAME']
+  parsedFile['TEST_DB_PORT'] = process.env.TEST_DB_PORT || parsedFile['TEST_DB_PORT']
+  parsedFile['TEST_DB_PASSWORD'] = process.env.TEST_DB_PASSWORD || parsedFile['TEST_DB_PASSWORD']
+  parsedFile['TEST_DB_USE_SSL'] = process.env.TEST_DB_USE_SSL || parsedFile['TEST_DB_USE_SSL']
 
   console.log(JSON.stringify(parsedFile))
 

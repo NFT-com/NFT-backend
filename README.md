@@ -48,7 +48,11 @@ The script uses a hardcoded private key. But you can specify your own private ke
 
 `npm run signature:gen $YOUR_PRIVATE_KEY`
 
-#### 3.3 GQL schema documentation
+#### 3.3 GraphQL API Reference
+
+While the graphql server is running, run `npm run gqldoc` to get the Graphql API reference locally at `localhost:4400`
+
+#### 3.4 GQL schema documentation
 
 You can see generated GQL schema documentation at [https://prod-gql-docs.nft.com/documentation/index.html](https://prod-gql-docs.nft.com/documentation/index.html)
 since you're logged into GitHub

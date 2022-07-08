@@ -140,21 +140,23 @@ type ExternalListing {
 }
 
 type ExternalListingsOutput {
-  listings: [ExternalListing]!
+  listings: [ExternalListing]
 }
 
 extend type Query {
   gkNFTs(tokenId: String!): GetGkNFTSOutput!
   nft(contract: Address!, id: String!): NFT!
-  externalListings(contract: Address!, tokenId: String!, chainId: String!): ExternalListingsOutput!
+  externalListings(contract: Address!, tokenId: String!, chainId: String!): ExternalListingsOutput
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
+  "AUTHETICATED"
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
   collectionNFTs(input: CollectionNFTsInput!): NFTsOutput!
 }
 
 extend type Mutation {
+  "AUTHETICATED"
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
   refreshNft(id: ID!): NFT!

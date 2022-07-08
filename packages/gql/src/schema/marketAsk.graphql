@@ -127,7 +127,10 @@ extend type Query {
 }
 
 extend type Mutation {
+  "AUTHENTICATED"
   createAsk(input: CreateAskInput!): MarketAsk!
+  "AUTHENTICATED"
   cancelAsk(input: CancelAskInput!): Boolean!
+  "AUTHENTICATED"
   buyNow(input: BuyNowInput!): MarketSwap!
 }

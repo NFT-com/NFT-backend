@@ -20,7 +20,7 @@ import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authMessage, isProduction, serverPort } from './config'
+import { authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -99,17 +99,12 @@ export const formatError = (error: GraphQLError): GQLError => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler = (err, req, res, next): void => {
+const errorHandler = (err: Error, req, res, next): void => {
   const { stack, message } = err
   const path = req.path || req.originalUrl
   const responseData = { path, statusCode: '500', message: 'An error has occured' }
-  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack.join('\n') }))
-  res.status(500)
-  if (req.xhr) {
-    res.send(responseData)
-  } else {
-    res.render('error', responseData)
-  }
+  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack }))
+  res.status(500).send(responseData)
 }
 
 const execShellCommand = (
@@ -168,7 +163,7 @@ export const start = async (): Promise<void> => {
     const cachedData = await redis.get(username)
 
     if (cachedData) {
-      return JSON.parse(cachedData)
+      return res.send(JSON.parse(cachedData))
     } else {
       return repositories.profile.findByURL(username.toLowerCase())
         .then(async (profile: entity.Profile) => {
@@ -186,7 +181,7 @@ export const start = async (): Promise<void> => {
               header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
               description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
             }
-            await redis.set(username, JSON.stringify(data), 'EX', 60)
+            await redis.set(username, JSON.stringify(data), 'EX', 60 * 10)
             return res.send(data)
           }
         })

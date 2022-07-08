@@ -1,13 +1,16 @@
 import * as fs from 'fs'
 import { Connection, createConnection } from 'typeorm'
 
-import { DBConfig } from '@nftcom/shared/defs'
+import { defs } from '@nftcom/shared'
 
+import { _logger } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
+const logger = _logger.Factory(_logger.Context.General)
+
 let connection: Connection
-export const connect = async (dbConfig: DBConfig): Promise<void> => {
+export const connect = async (dbConfig: defs.DBConfig): Promise<void> => {
   if (connection) {
     return
   }
@@ -25,6 +28,12 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.NFT,
     entity.Profile,
     entity.User,
+    entity.TxActivity,
+    entity.TxBid,
+    entity.TxCancel,
+    entity.TxList,
+    entity.TxSale,
+    entity.TxTransfer,
     entity.Wallet,
   ]
 
@@ -51,8 +60,32 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
   })
     .then((con) => {
       connection = con
-      console.log('Connected to database :)!!')
+      logger.info('Connected to database :)!!')
     })
+}
+
+export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
+  return await createConnection({
+    type: 'postgres',
+    host: dbConfig.host,
+    port: dbConfig.port,
+    username: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database,
+    synchronize: false,
+    logging: dbConfig.logging,
+    migrationsRun: true,
+    migrations: [
+      `${__dirname}/migration/*.ts`,
+      `${__dirname}/migration/*.js`,
+    ],
+    cli: {
+      migrationsDir: `${__dirname}/migration`,
+    },
+    ssl: dbConfig.useSSL,
+    entities: [`${__dirname}/entity/*.entity.ts`],
+    dropSchema: true,
+  })
 }
 
 export const disconnect = async (): Promise<void> => {
@@ -75,6 +108,12 @@ export type Repository = {
   nft: repo.NFTRepository
   profile: repo.ProfileRepository
   user: repo.UserRepository
+  txActivity: repo.TxActivityRepository
+  txBid: repo.TxBidRepository
+  txCancel: repo.TxCancelRepository
+  txList: repo.TxListRepository
+  txSale: repo.TxSaleRepository
+  txTransfer: repo.TxTransferRepository
   wallet: repo.WalletRepository
 }
 
@@ -91,5 +130,11 @@ export const newRepositories = (): Repository => ({
   nft: new repo.NFTRepository(),
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
+  txActivity: new repo.TxActivityRepository(),
+  txBid: new repo.TxBidRepository(),
+  txCancel: new repo.TxCancelRepository(),
+  txList: new repo.TxListRepository(),
+  txSale: new repo.TxSaleRepository(),
+  txTransfer: new repo.TxTransferRepository(),
   wallet: new repo.WalletRepository(),
 })

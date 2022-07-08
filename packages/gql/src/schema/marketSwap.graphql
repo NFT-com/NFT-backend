@@ -35,5 +35,6 @@ extend type Query {
 }
 
 extend type Mutation {
+  "AUTHENTICATED"
   swapNFT(input: SwapNFTInput!): MarketSwap!
 }

@@ -12,11 +12,13 @@
     "copy:schema": "cp -r ./src/schema/*.graphql ./dist/schema/",
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon\"",
     "test": "jest --coverage",
-    "testlocal": "doppler run `jest --detectOpenHandles`",
+    "testlocal": "doppler run jest",
+    "test:vscode": "jest --detectOpenHandles",
     "gql:gen": "graphql-codegen",
     "signature:gen": "ts-node script/gen-signature.ts",
     "start": "node -r source-map-support/register ./dist/index",
-    "gqldoc": "graphdoc -e http://localhost:10010/graphql -o ./../../docs/documentation -f"
+    "gqldoc": "nodemon -x 'spectaql ./doc-config.yml' -t ../../docs/public -D",
+    "gqldoc-old": "graphdoc -e http://localhost:10010/graphql -o ./../../docs/documentation -f"
   },
   "dependencies": {
     "@alch/alchemy-web3": "^1.2.5",

@@ -72,6 +72,12 @@ runs:
         BULL_MAX_REPEAT_COUNT: ${{ fromJSON(inputs.secrets).BULL_MAX_REPEAT_COUNT }}
         OPENSEA_API_KEY: ${{ fromJSON(inputs.secrets).OPENSEA_API_KEY }}
         PROFILE_SCORE_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_SCORE_EXPIRE_DURATION }}
+        TEST_DB_HOST: ${{ fromJSON(inputs.secrets).TEST_DB_HOST }}
+        TEST_DB_DATABASE: ${{ fromJSON(inputs.secrets).TEST_DB_DATABASE }}
+        TEST_DB_USERNAME: ${{ fromJSON(inputs.secrets).TEST_DB_USERNAME }}
+        TEST_DB_PORT: ${{ fromJSON(inputs.secrets).TEST_DB_PORT }}
+        TEST_DB_PASSWORD: ${{ fromJSON(inputs.secrets).TEST_DB_PASSWORD }}
+        TEST_DB_USE_SSL: ${{ fromJSON(inputs.secrets).TEST_DB_USE_SSL }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
@@ -98,3 +104,20 @@ runs:
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
         GIT_SHA: ${{ github.sha }}
       run: npm run deploy:gql
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          typesense:
+            - 'infra/typesense/**'
+    - name: Deploy Typesense Infra
+      if: ${{ steps.filter.outputs.typesense == 'true' || inputs.stage == 'prod' }}
+      shell: bash
+      working-directory: infra
+      env:
+        STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        GIT_SHA: ${{ github.sha }}
+      run: npm run deploy:typesense
