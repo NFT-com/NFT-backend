@@ -1,7 +1,7 @@
 import { helper } from '@nftcom/shared'
 
-import { gql } from '../defs'
-import { validAsk } from '../resolver/marketAsk.resolver'
+import { gql } from '../../defs'
+import { validAsk } from '../../resolver/marketAsk.resolver'
 
 jest.setTimeout(20000)
 

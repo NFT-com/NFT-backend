@@ -1,6 +1,6 @@
 import * as nftService from '@nftcom/gql/service/nft.service'
 
-import { getTestApolloServer } from './util/testApolloServer'
+import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(30000)
 

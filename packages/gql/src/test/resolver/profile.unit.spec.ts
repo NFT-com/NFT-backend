@@ -3,7 +3,7 @@ import { BigNumber } from 'ethers'
 const sharedLibs = jest.requireActual('@nftcom/shared')
 const { core } = jest.requireActual('@nftcom/gql/service')
 
-import { getTestApolloServer } from './util/testApolloServer'
+import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(30000)
 

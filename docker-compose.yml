@@ -43,9 +43,26 @@ services:
       - postgres:/var/lib/postgresql/data/
     restart: unless-stopped
 
+  postgres-test-db:
+    image: postgres:13.4-alpine
+    container_name: nftcom-db-test
+    environment:
+      - POSTGRES_DB=test
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=password
+    networks:
+      - nftcom
+    ports:
+      - "10031:5432"
+    # volumes:
+    #   - postgres-test-db:/var/lib/postgres-test-db/data/
+    restart: unless-stopped
+
 volumes:
   postgres:
     name: nftcom-postgres
+  # postgres-test-db:
+  #   name: nftcom-db-test
   redis:
     name: nftcom-redis
 
