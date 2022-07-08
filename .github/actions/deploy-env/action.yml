@@ -77,6 +77,7 @@ runs:
         TEST_DB_USER: ${{ fromJSON(inputs.secrets).TEST_DB_USER }}
         TEST_DB_PORT: ${{ fromJSON(inputs.secrets).TEST_DB_PORT }}
         TEST_DB_PASSWORD: ${{ fromJSON(inputs.secrets).TEST_DB_PASSWORD }}
+        TEST_DB_USE_SSL: ${{ fromJSON(inputs.secrets).TEST_DB_USE_SSL }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash

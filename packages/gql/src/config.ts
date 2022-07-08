@@ -66,7 +66,7 @@ export const testDBConfig = {
   password: process.env.TEST_DB_PASSWORD || 'password',
   database: process.env.TEST_DB_DATABASE || 'test',
   logging: false,
-  useSSL: false,
+  useSSL: helper.parseBoolean(process.env.TEST_DB_USE_SSL),
   dropSchema: true,
   synchronize: false,
 }

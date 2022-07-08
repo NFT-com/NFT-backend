@@ -82,7 +82,7 @@ export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
     cli: {
       migrationsDir: `${__dirname}/migration`,
     },
-    ssl: false,
+    ssl: dbConfig.useSSL,
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
   })
