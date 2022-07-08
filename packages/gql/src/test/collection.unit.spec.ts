@@ -9,7 +9,7 @@ import { db, defs } from '@nftcom/shared'
 
 import { getTestApolloServer } from './util/testApolloServer'
 
-jest.setTimeout(30000)
+jest.setTimeout(120000)
 
 jest.mock('@nftcom/shared', () => {
   return {
