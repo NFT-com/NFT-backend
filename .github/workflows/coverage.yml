@@ -74,7 +74,7 @@ jobs:
         envkey_PROFILE_SCORE_EXPIRE_DURATION: ${{ secrets.PROFILE_SCORE_EXPIRE_DURATION }}
         envkey_TEST_DB_HOST: ${{ secrets.TEST_DB_HOST }}
         envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
-        envkey_TEST_DB_USER: ${{ secrets.TEST_DB_USER }}
+        envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
         envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
         envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
         envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}

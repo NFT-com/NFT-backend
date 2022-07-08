@@ -74,7 +74,7 @@ runs:
         PROFILE_SCORE_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_SCORE_EXPIRE_DURATION }}
         TEST_DB_HOST: ${{ fromJSON(inputs.secrets).TEST_DB_HOST }}
         TEST_DB_DATABASE: ${{ fromJSON(inputs.secrets).TEST_DB_DATABASE }}
-        TEST_DB_USER: ${{ fromJSON(inputs.secrets).TEST_DB_USER }}
+        TEST_DB_USERNAME: ${{ fromJSON(inputs.secrets).TEST_DB_USERNAME }}
         TEST_DB_PORT: ${{ fromJSON(inputs.secrets).TEST_DB_PORT }}
         TEST_DB_PASSWORD: ${{ fromJSON(inputs.secrets).TEST_DB_PASSWORD }}
         TEST_DB_USE_SSL: ${{ fromJSON(inputs.secrets).TEST_DB_USE_SSL }}

@@ -122,7 +122,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['PROFILE_SCORE_EXPIRE_DURATION'] = process.env.PROFILE_SCORE_EXPIRE_DURATION || parsedFile['PROFILE_SCORE_EXPIRE_DURATION']
   parsedFile['TEST_DB_HOST'] = process.env.TEST_DB_HOST || parsedFile['TEST_DB_HOST']
   parsedFile['TEST_DB_DATABASE'] = process.env.TEST_DB_DATABASE || parsedFile['TEST_DB_DATABASE']
-  parsedFile['TEST_DB_USER'] = process.env.TEST_DB_USER || parsedFile['TEST_DB_USER']
+  parsedFile['TEST_DB_USERNAME'] = process.env.TEST_DB_USERNAME || parsedFile['TEST_DB_USERNAME']
   parsedFile['TEST_DB_PORT'] = process.env.TEST_DB_PORT || parsedFile['TEST_DB_PORT']
   parsedFile['TEST_DB_PASSWORD'] = process.env.TEST_DB_PASSWORD || parsedFile['TEST_DB_PASSWORD']
   parsedFile['TEST_DB_USE_SSL'] = process.env.TEST_DB_USE_SSL || parsedFile['TEST_DB_USE_SSL']
