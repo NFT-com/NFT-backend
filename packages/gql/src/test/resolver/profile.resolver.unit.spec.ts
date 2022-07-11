@@ -56,7 +56,7 @@ describe('profile resolver', () => {
       await testServer.stop()
     })
 
-    it.skip('should query profile by URL', async () => {
+    it('should query profile by URL', async () => {
       const result = await testServer.executeOperation({
         query: `query Profile($url: String!) { 
           profile(url: $url) { 

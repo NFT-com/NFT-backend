@@ -14,5 +14,8 @@ describe('wallet resolver', () => {
     })
 
     // TO WORK ON THE CASES
+    it.skip('job executes', () => {
+      expect(null).toBeNull()
+    })
   })
 })

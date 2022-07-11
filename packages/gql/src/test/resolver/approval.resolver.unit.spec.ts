@@ -8,7 +8,7 @@ import { getTestApolloServer } from '../util/testApolloServer'
 
 const approvalInput: ApprovalInput = {
   amount: 1,
-  currency: '0x6dc0c0be4c8b2dfe750156dc7d59faabfb5b923d',
+  currency: '0x0000000000000000000000000000000000000000',
   deadline: 'test-deadline',
   nonce: 0,
   signature: {

@@ -12,6 +12,22 @@ jobs:
       matrix:
         node-version: [16.x]
 
+    services:
+      postgres:
+        image: postgres:13.6-alpine
+        env:
+          POSTGRES_DB: app
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -26,6 +42,8 @@ jobs:
       uses: SpicyPizza/create-envfile@v1.3
       with:
         envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        envkey_DB_HOST: 'localhost'
+        envkey_DB_PORT: '5432'
         envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
         envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
         envkey_CONFIRM_EMAIL_URL: "tbd"
@@ -54,6 +72,12 @@ jobs:
         envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
         envkey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
         envkey_PROFILE_SCORE_EXPIRE_DURATION: ${{ secrets.PROFILE_SCORE_EXPIRE_DURATION }}
+        envkey_TEST_DB_HOST: ${{ secrets.TEST_DB_HOST }}
+        envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
+        envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
+        envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
+        envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         file_name: packages/gql/.env
         fail_on_empty: false
 

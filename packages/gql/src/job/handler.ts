@@ -110,7 +110,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 }
               } catch (err) {
                 logger.debug('gk balance: ', err)
-                Sentry.captureException(err)
+                
                 Sentry.captureMessage(`gk balance error in validateLiveBalances: ${err}`)
               }
             }),
@@ -118,7 +118,6 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
         },
       ).then(() => true)
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in validateLiveBalances: ${err}`)
   }
 }
@@ -274,7 +273,6 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getEthereumEvents Job: ${err}`)
   }
 }

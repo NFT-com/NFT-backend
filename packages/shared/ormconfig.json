@@ -29,6 +29,12 @@
       "src/db/entity/marketSwap.entity.ts",
       "src/db/entity/nft.entity.ts",
       "src/db/entity/profile.entity.ts",
+      "src/db/entity/txActivity.entity.ts",
+      "src/db/entity/txBid.entity.ts",
+      "src/db/entity/txCancel.entity.ts",
+      "src/db/entity/txList.entity.ts",
+      "src/db/entity/txSale.entity.ts",
+      "src/db/entity/txTransfer.entity.ts",
       "src/db/entity/user.entity.ts",
       "src/db/entity/wallet.entity.ts"
     ],

@@ -872,7 +872,6 @@ const saveScoreForProfiles = async (
       message: 'Saved score for profiles',
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in saveScoreForProfiles Job: ${err}`)
   }
 }
