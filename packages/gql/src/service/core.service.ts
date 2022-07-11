@@ -39,6 +39,7 @@ export const getWallet = (
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
   const chain = getChain(network, chainId)
+  // confirm this
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
     .then(fp.rejectIfEmpty(appError.buildExists(

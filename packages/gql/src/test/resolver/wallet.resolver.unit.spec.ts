@@ -1,3 +1,4 @@
+import { nonWhitelistedAddress, whitelistedAddress } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 let testServer
@@ -19,7 +20,7 @@ describe('wallet resolver', () => {
         query: `query Query($input: WhitelistCheckInput) {
                 isAddressWhitelisted(input: $input)
               }`,
-        variables: { input: { address: '0xDF3c501ef5aBeFff2d7Ce1eB75B205F60C66778A' } },
+        variables: { input: { address: whitelistedAddress } },
       })
       
       expect(result?.data?.isAddressWhitelisted).toBe(true)
@@ -31,7 +32,7 @@ describe('wallet resolver', () => {
         query: `query Query($input: WhitelistCheckInput) {
                 isAddressWhitelisted(input: $input)
               }`,
-        variables: { input: { address: '0xDEA2c39552A5bc259c520F64320e2D1008010d44' } },
+        variables: { input: { address: nonWhitelistedAddress } },
       })
       
       expect(result?.data?.isAddressWhitelisted).toBe(false)
