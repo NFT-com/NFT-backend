@@ -1,9 +1,10 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity, Index, Unique } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
 @Entity()
 @Index(['contract'])
+@Unique(['contract'])
 export class Collection extends BaseEntity {
 
   @Column({ nullable: false })
