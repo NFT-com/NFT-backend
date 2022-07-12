@@ -37,8 +37,7 @@ export const getWallet = (
   const { network, chainId, address } = input
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
-
-  //const chain = getChain(network, chainId)
+  
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
     .then(fp.rejectIfEmpty(appError.buildExists(

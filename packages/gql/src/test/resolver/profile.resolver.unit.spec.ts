@@ -132,7 +132,7 @@ describe('profile resolver', () => {
       await testServer.stop()
     })
 
-    it('should send my profiles', async () => {
+    it('should query owned profiles', async () => {
       const result = await testServer.executeOperation({
         query: `query MyProfiles($input: ProfilesInput) {
           myProfiles(input: $input) {
