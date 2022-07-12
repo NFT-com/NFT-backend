@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { Connection, createConnection } from 'typeorm'
 
-import { defs } from '@nftcom/shared'
+import { DBConfig } from '@nftcom/shared/defs'
 
 import { _logger } from '../helper'
 import * as entity from './entity'
@@ -10,7 +10,7 @@ import * as repo from './repository'
 const logger = _logger.Factory(_logger.Context.General)
 
 let connection: Connection
-export const connect = async (dbConfig: defs.DBConfig): Promise<void> => {
+export const connect = async (dbConfig: DBConfig): Promise<void> => {
   if (connection) {
     return
   }
