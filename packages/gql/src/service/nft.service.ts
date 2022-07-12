@@ -468,6 +468,7 @@ const updateNFTOwnershipAndMetadata = async (
             },
           })
         } else {
+          logger.debug('No need to update owner and metadata', existingNFT.contract)
           return undefined
         }
       }
