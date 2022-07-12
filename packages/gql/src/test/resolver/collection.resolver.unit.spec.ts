@@ -7,7 +7,8 @@ import { ethers } from 'ethers'
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'
 
-import { getTestApolloServer } from './util/testApolloServer'
+import { testMockUser, testMockWallet } from '../util/constants'
+import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(120000)
 
@@ -29,9 +30,11 @@ const repositories = db.newRepositories()
 describe('collection resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
+    
     testServer = getTestApolloServer(repositories,
-      { id: 'test-user-id' },
-      { id: 'test-wallet-id' })
+      testMockUser,
+      testMockWallet,
+    )
   })
 
   afterAll(async () => {
@@ -46,6 +49,7 @@ describe('collection resolver', () => {
     await repositories.edge.hardDeleteByIds(edgeIds)
 
     await testServer.stop()
+
     if (!connection) return
     await connection.close()
   })

@@ -28,7 +28,6 @@ const approveAmount = (
   })
   const { input } = args
   joi.validateSchema(schema, input)
-
   return core.getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => repositories.approval.save({
       amount: helper.bigNumberToString(input.amount),

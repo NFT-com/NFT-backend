@@ -65,15 +65,15 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
 }
 
 export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
-  return await createConnection({
+  return createConnection({
     type: 'postgres',
     host: dbConfig.host,
     port: dbConfig.port,
     username: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database,
-    synchronize: false,
     logging: dbConfig.logging,
+    synchronize: false,
     migrationsRun: true,
     migrations: [
       `${__dirname}/migration/*.ts`,

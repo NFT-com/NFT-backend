@@ -59,11 +59,13 @@ const client = new Typesense.Client({
   'connectionTimeoutSeconds': 10,
 })
 
-const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
-  items: profiles,
-  pageInfo: null,
-  totalItems: profiles.length,
-})
+const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => {
+  return {
+    items: profiles,
+    pageInfo: null,
+    totalItems: profiles.length,
+  }
+}
 
 // TODO implement pagination
 const getProfilesFollowedByMe = (

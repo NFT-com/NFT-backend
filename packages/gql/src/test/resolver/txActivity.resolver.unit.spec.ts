@@ -2,8 +2,8 @@ import { db } from '@nftcom/shared'
 import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
 import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
 
-import { dbConfig } from '../config'
-import { getTestApolloServer } from './util/testApolloServer'
+import { dbConfig } from '../../config'
+import { getTestApolloServer } from '../util/testApolloServer'
 
 const repositories = db.newRepositories()
 

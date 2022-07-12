@@ -1,12 +1,13 @@
 import { ApolloServer } from 'apollo-server-express'
 
+import { User, Wallet } from '@nftcom/gql/defs/gql'
 import { rateLimitedSchema } from '@nftcom/gql/schema'
 import { formatError } from '@nftcom/gql/server'
 
 export function getTestApolloServer(
   testDB: any,
-  user?: any,
-  wallet?: any,
+  user?: User,
+  wallet?: Wallet,
 ): ApolloServer {
   return new ApolloServer({
     schema: rateLimitedSchema(),
@@ -15,8 +16,8 @@ export function getTestApolloServer(
       return {
         network: 'ethereum',
         chain: '4',
-        wallet: wallet ?? null,
         user: user ?? null,
+        wallet: wallet ?? null,
         repositories: testDB,
       }
     },
