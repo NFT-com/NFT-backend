@@ -1,10 +1,31 @@
-import { NFT, NFTType, User, Wallet } from '@nftcom/gql/defs/gql'
+import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, UpdateProfileInput,User, Wallet } from '@nftcom/gql/defs/gql'
 
 export const testMockUser: User = {
   id: 'test-user-id',
   email: 'rohan@immutableholdings.com',
   isEmailConfirmed: false,
-  preferences: null,
+  preferences: {
+    bidActivityNotifications: true,
+    priceChangeNotifications: true,
+    outbidNotifications: true,
+    purchaseSuccessNotifications: true,
+    promotionalNotifications: true,
+  },
+  referralId: '',
+}
+
+// watchlist user is needed separately for suite to run without duplicates
+export const testMockWatchlistUser: User = {
+  id: 'test-user-id-watchlist',
+  email: 'watchlist@immutableholdings.com',
+  isEmailConfirmed: false,
+  preferences: {
+    bidActivityNotifications: true,
+    priceChangeNotifications: true,
+    outbidNotifications: true,
+    purchaseSuccessNotifications: true,
+    promotionalNotifications: true,
+  },
   referralId: '',
 }
 
@@ -15,6 +36,39 @@ export const testMockWallet: Wallet = {
   chainName: 'rinkeby',
   network: 'ethereum',
   createdAt: 'test-timestamp',
+}
+
+export const testMockProfiles: Profile = {
+  id: 'TQ2tZbp3y3DyXD9iSHUL8',
+  bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+  createdAt: '2022-07-10T15:31:28.780Z',
+  description: 'NFT.com profile for rohantest',
+  displayType: ProfileDisplayType.NFT,
+  layoutType: ProfileLayoutType.Default,
+  followersCount: 0,
+  isFollowedByMe: false,
+  isOwnedByMe: true,
+  gkIconVisible: null,
+  nftsDescriptionsVisible: true,
+  owner: {
+    id: 'test-user-id',
+    address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+    chainId: '4',
+    chainName: 'rinkeby',
+    network: 'ethereum',
+    createdAt: '2022-07-10T15:19:57.290Z',
+  },
+  tokenId: '64',
+  photoURL: 'https://cdn.nft.com/dev/profiles/1657467089107-rohantest.svg',
+  status: ProfileStatus.Owned,
+  url: 'testprofile',
+
+}
+
+export const mockUpdateProfileInput: UpdateProfileInput =
+{
+  description: 'test description',
+  id: 'TQ2tZbp3y3DyXD9iSHUL8',
 }
 
 export const nftTestMockData: NFT = {

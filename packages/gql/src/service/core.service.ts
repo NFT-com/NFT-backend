@@ -4,7 +4,7 @@ import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 
-import { assetBucket, getChain } from '@nftcom/gql/config'
+import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
@@ -38,13 +38,12 @@ export const getWallet = (
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
-  const chain = getChain(network, chainId)
-  // confirm this
+  //const chain = getChain(network, chainId)
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
     .then(fp.rejectIfEmpty(appError.buildExists(
-      walletError.buildAddressExistsMsg(network, chain, address),
-      walletError.ErrorType.AddressAlreadyExists,
+      walletError.buildAddressNotFoundMsg(),
+      walletError.ErrorType.AddressNotFound,
     )))
 }
 

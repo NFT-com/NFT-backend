@@ -65,7 +65,7 @@ export const connect = async (dbConfig: defs.DBConfig): Promise<void> => {
 }
 
 export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
-  return await createConnection({
+  return createConnection({
     type: 'postgres',
     host: dbConfig.host,
     port: dbConfig.port,

@@ -15,7 +15,8 @@ const redis = new Redis({
   host: redisConfig.host,
 })
 
-const repositories = db.newRepositories()
+// exported for tests
+export const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 export const syncProfileNFTs = async (job: Job): Promise<any> => {

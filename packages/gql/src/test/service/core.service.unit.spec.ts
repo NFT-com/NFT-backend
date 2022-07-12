@@ -45,7 +45,7 @@ const walletInputFailure: WalletInput = {
   chainId: '4',
 }
 
-const walletFailureResponse = 'Address test-address-failure already exists for chain ethereum:4:rinkeby'
+const walletFailureResponse = 'Please signup or add this address before using'
 
 describe('core service', () => {
   describe('get Wallet', () => {

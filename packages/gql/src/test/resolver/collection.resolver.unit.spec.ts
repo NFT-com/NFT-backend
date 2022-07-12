@@ -30,6 +30,7 @@ const repositories = db.newRepositories()
 describe('collection resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
+    
     testServer = getTestApolloServer(repositories,
       testMockUser,
       testMockWallet,
@@ -48,6 +49,7 @@ describe('collection resolver', () => {
     await repositories.edge.hardDeleteByIds(edgeIds)
 
     await testServer.stop()
+
     if (!connection) return
     await connection.close()
   })
