@@ -467,6 +467,8 @@ const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
+        } else {
+          return undefined
         }
       }
     }
