@@ -72,8 +72,8 @@ export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
     username: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database,
-    synchronize: false,
     logging: dbConfig.logging,
+    synchronize: false,
     migrationsRun: true,
     migrations: [
       `${__dirname}/migration/*.ts`,
