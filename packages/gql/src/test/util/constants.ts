@@ -1,3 +1,5 @@
+import { DeepPartial } from 'typeorm'
+
 import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, UpdateProfileInput,User, Wallet } from '@nftcom/gql/defs/gql'
 
 export const testMockUser: User = {
@@ -96,3 +98,26 @@ export const nftTestErrorMockData: NFT = {
 export const whitelistedAddress = '0xDF3c501ef5aBeFff2d7Ce1eB75B205F60C66778A'
 
 export const nonWhitelistedAddress = '0xDEA2c39552A5bc259c520F64320e2D1008010d44'
+
+export const mockProfilesData: Array<DeepPartial<Profile>> = [
+  {
+    id: 'test-id-1',
+    photoURL: null,
+  },
+  {
+    id: 'test-id-2',
+    photoURL: null,
+  },
+  {
+    id: 'test-id-3',
+    photoURL: null,
+  },
+  {
+    id: 'test-id-4',
+    photoURL: null,
+  },
+  {
+    id: 'test-id-5',
+    photoURL: null,
+  },
+]

@@ -2,30 +2,10 @@ import { DeepPartial } from 'typeorm'
 
 import * as coreService from '@nftcom/gql/service/core.service'
 import { Profile } from '@nftcom/shared/db/entity'
+
+import { mockProfilesData } from '../util/constants'
 const { repositories, generateCompositeImages } = jest.requireActual('@nftcom/gql/job/profile.job')
 
-const mockProfilesData = [
-  {
-    id: 'test-id-1',
-    photoURL: null,
-  },
-  {
-    id: 'test-id-2',
-    photoURL: null,
-  },
-  {
-    id: 'test-id-3',
-    photoURL: null,
-  },
-  {
-    id: 'test-id-4',
-    photoURL: null,
-  },
-  {
-    id: 'test-id-5',
-    photoURL: null,
-  },
-]
 jest.mock('@nftcom/gql/job/profile.job', () => {
   return {
     repositories: {
