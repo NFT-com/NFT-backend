@@ -405,7 +405,7 @@ const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
-): Promise<entity.NFT> => {
+): Promise<entity.NFT| undefined> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -519,7 +519,8 @@ export const updateWalletNFTs = async (
   const savedNFTs: entity.NFT[] = []
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      savedNFTs.push(await updateNFTOwnershipAndMetadata(nft, userId, walletId))
+      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId)
+      if (savedNFT) savedNFTs.push(savedNFT)
     }),
   )
   await updateCollection(savedNFTs)
