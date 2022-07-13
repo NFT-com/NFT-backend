@@ -24,7 +24,7 @@ export class NFTRepository extends BaseRepository<NFT> {
       .getMany()
   }
 
-  findDistinctContracts(): Promise<string[]> {
+  findDistinctContracts(): Promise<any[]> {
     return this.getRepository()
       .createQueryBuilder('nft')
       .select('nft.contract')

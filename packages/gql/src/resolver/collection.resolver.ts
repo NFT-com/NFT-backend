@@ -205,9 +205,9 @@ const syncCollectionsWithNFTs = async (
     await Promise.allSettled(
       contracts.map(async (contract) => {
         const collection = await repositories.collection.findOne({
-          where: { contract: ethers.utils.getAddress(contract) },
+          where: { contract: ethers.utils.getAddress(contract.nft_contract) },
         })
-        if (!collection) missingContracts.push(collection)
+        if (!collection) missingContracts.push(contract.nft_contract)
       }),
     )
     const length = missingContracts.length > count ? count : missingContracts.length
