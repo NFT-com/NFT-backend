@@ -83,10 +83,15 @@ type RemoveDuplicatesOutput {
   message: String
 }
 
+type saveCollectionForContractOutput {
+  message: String
+}
+
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
 }
 
 extend type Mutation {
   removeDuplicates(contracts: [Address!]!): RemoveDuplicatesOutput!
+  saveCollectionForContract(contract: Address!): saveCollectionForContractOutput!
 }

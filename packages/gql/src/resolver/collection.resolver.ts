@@ -1,9 +1,11 @@
+import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Redis from 'ioredis'
 
 import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
+import { getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import {
   retrieveCollectionOpensea,
   retrieveCollectionStatsOpensea,
@@ -123,11 +125,67 @@ const removeCollectionDuplicates = async (
   }
 }
 
+const saveCollectionForContract = async (
+  _: any,
+  args: gql.MutationSaveCollectionForContractArgs,
+  ctx: Context,
+): Promise<gql.SaveCollectionForContractOutput> => {
+  const { repositories } = ctx
+  logger.debug('saveCollectionForContract', { contract: args?.contract })
+  try {
+    const { contract } = args
+    let collection = await repositories.collection.findOne({ where: {
+      contract: ethers.utils.getAddress(contract),
+    } })
+    if (!collection) {
+      const nfts = await repositories.nft.find({ where: {
+        contract: ethers.utils.getAddress(contract),
+      } })
+      if (nfts.length) {
+        const collectionName = await getCollectionNameFromContract(
+          nfts[0].contract,
+          nfts[0].type,
+        )
+        collection = await repositories.collection.save({
+          contract: ethers.utils.getAddress(contract),
+          name: collectionName,
+        })
+
+        await Promise.allSettled(
+          nfts.map(async (nft) => {
+            const edgeVals = {
+              thisEntityType: defs.EntityType.Collection,
+              thatEntityType: defs.EntityType.NFT,
+              thisEntityId: collection.id,
+              thatEntityId: nft.id,
+              edgeType: defs.EdgeType.Includes,
+            }
+            const edge = await repositories.edge.findOne({ where: edgeVals })
+            if (!edge) await repositories.edge.save(edgeVals)
+          }),
+        )
+
+        return {
+          message: 'Collection is saved.',
+        }
+      }
+    } else {
+      return {
+        message: 'Collection is already existing.',
+      }
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in saveCollectionForContract: ${err}`)
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
   },
   Mutation: {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
+    saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
   },
 }

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { BigNumber, ethers, providers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
 
@@ -214,10 +214,9 @@ const getNFTMetaDataFromAlchemy = async (
   }
 }
 
-const getCollectionNameFromContract = (
+export const getCollectionNameFromContract = (
   contractAddress: string,
   type:  defs.NFTType,
-  network: providers.Networkish,
 ): Promise<string> => {
   try {
     if (type === defs.NFTType.ERC721) {
@@ -267,7 +266,6 @@ const updateCollection = async (
           const collectionName = await getCollectionNameFromContract(
             nft.contract,
             nft.type,
-            network,
           )
           logger.debug('new collection', { collectionName, contract: nft.contract })
 
