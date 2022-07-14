@@ -1,6 +1,5 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
-import { exec } from 'child_process'
 import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
@@ -8,7 +7,6 @@ import { GraphQLError } from 'graphql'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
 import Keyv from 'keyv'
-import * as util from 'util'
 
 import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
@@ -99,27 +97,6 @@ const errorHandler = (err: Error, req, res, next): void => {
   const responseData = { path, statusCode: '500', message: 'An error has occured' }
   logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack }))
   res.status(500).send(responseData)
-}
-
-const execShellCommand = (
-  command: string,
-  swallowError = false,
-  description: string,
-): Promise<void> => {
-  const promisifiedExec = util.promisify(exec)
-  return promisifiedExec(command)
-    .then(({ stdout, stderr }) => {
-      const err = stderr.replace('\n', '').trim()
-      if (helper.isNotEmpty(err) && helper.isFalse(swallowError)) {
-        return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
-      }
-      if (helper.isNotEmpty(err) && swallowError) {
-        logger.error('SWALLOWING ERROR', err)
-        return Promise.resolve()
-      }
-      logger.info(description, stdout.replace('\n', '').trim())
-      return Promise.resolve()
-    })
 }
 
 let server: ApolloServer
@@ -242,9 +219,6 @@ export const start = async (): Promise<void> => {
   await server.start()
   server.applyMiddleware({ app })
   await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
-  if (process.env.NODE_ENV === 'local') {
-    await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
-  }
   logger.info(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 
