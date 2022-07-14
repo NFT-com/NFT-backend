@@ -14,7 +14,7 @@ export class TxCancel extends BaseEntity {
 
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
   exchange: ExchangeType
-  
+
   @Column({ type: 'enum', enum: CancelActivities, nullable: true })
   foreignType: CancelActivityType
 
@@ -23,5 +23,8 @@ export class TxCancel extends BaseEntity {
 
   @Column({ nullable: false })
   transactionHash: string
+
+  @Column({ nullable: true })
+  chainId: string
 
 }

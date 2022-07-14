@@ -39,4 +39,7 @@ export class Bid extends BaseEntity {
   @Column({ nullable: false })
   walletId: string
 
+  @Column({ nullable: true })
+  chainId: string
+
 }

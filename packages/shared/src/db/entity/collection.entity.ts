@@ -13,4 +13,7 @@ export class Collection extends BaseEntity {
   @Column({ nullable: true })
   name: string
 
+  @Column({ nullable: true })
+  chainId: string
+
 }

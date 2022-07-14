@@ -27,4 +27,7 @@ export class TxTransfer extends BaseEntity {
   @Column({ nullable: false })
   receiver: string
 
+  @Column({ nullable: true })
+  chainId: string
+
 }
