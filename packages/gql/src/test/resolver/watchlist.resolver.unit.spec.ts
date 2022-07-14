@@ -7,6 +7,11 @@ import { Profile, User } from '@nftcom/shared/db/entity'
 import { testMockProfiles, testMockWallet,testMockWatchlistUser } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 let testServer
 let connection: Connection
 

@@ -1,12 +1,11 @@
 import { Job } from 'bull'
 import { getAddressesBalances } from 'eth-balance-checker/lib/ethers'
 import { BigNumber, ethers, utils } from 'ethers'
-import Redis from 'ioredis'
 import * as Lodash from 'lodash'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -16,11 +15,6 @@ import HederaConsensusService from '../service/hedera.service'
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const repositories = db.newRepositories()
-
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 type Log = {
   logs: ethers.providers.Log[]
@@ -126,7 +120,7 @@ const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI(
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   const startBlock = chainId == 4 ? 10540040 : 14675454
   try {
-    const cachedBlock = await redis.get(key)
+    const cachedBlock = await cache.get(key)
 
     // get 1000 blocks before incase of some blocks not being handled correctly
     if (cachedBlock) return Number(cachedBlock) > 1000
@@ -139,7 +133,7 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
   }
 }
 
-const chainIdToRedisKey = (chainId: number): string => {
+const chainIdToCacheKey = (chainId: number): string => {
   return `minted_profile_cached_block_${chainId}`
 }
 
@@ -152,7 +146,7 @@ const getMintedProfileEvents = async (
   const latestBlock = await provider.getBlock('latest')
   try {
     const maxBlocks = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS
-    const key = chainIdToRedisKey(chainId)
+    const key = chainIdToCacheKey(chainId)
     const cachedBlock = await getCachedBlock(chainId, key)
     const logs = await getPastLogs(
       provider,
@@ -269,7 +263,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           }
         }),
       )
-      await redis.set(chainIdToRedisKey(chainId), log.latestBlockNumber)
+      await cache.set(chainIdToCacheKey(chainId), log.latestBlockNumber)
       logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
     }
   } catch (err) {

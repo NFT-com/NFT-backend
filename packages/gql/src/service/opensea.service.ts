@@ -1,11 +1,8 @@
 import axios from 'axios'
-import Redis from 'ioredis'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import * as Sentry from '@sentry/node'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
@@ -13,11 +10,6 @@ const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
 const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
 const LIMIT = 50
-
-const redis = new Redis({
-  host: redisConfig.host,
-  port: redisConfig.port,
-})
 
 interface OpenseaAsset {
   image_url: string
@@ -192,13 +184,13 @@ export const retrieveOrdersOpensea = async (
 
     const coinGeckoPriceUrl = `${baseCoinGeckoUrl}?ids=${cids()}&vs_currencies=usd`
 
-    const cachedPrice = await redis.get(coinGeckoPriceUrl)
+    const cachedPrice = await cache.get(coinGeckoPriceUrl)
     if (cachedPrice) {
       responses.prices = JSON.parse(cachedPrice)
     } else {
       const res3 = await axios.get(coinGeckoPriceUrl)
       responses.prices = res3.data
-      await redis.set(coinGeckoPriceUrl, JSON.stringify(res3.data), 'EX', 60 * 10) // 10 minute
+      await cache.set(coinGeckoPriceUrl, JSON.stringify(res3.data), 'EX', 60 * 10) // 10 minute
     }
 
     return responses

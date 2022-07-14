@@ -31,6 +31,11 @@ let entityCreatedAt
 
 let testServer
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 jest.mock('@nftcom/gql/service', () => {
   return {
     core: {
