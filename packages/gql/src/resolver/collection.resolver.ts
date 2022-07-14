@@ -1,9 +1,8 @@
 import { combineResolvers } from 'graphql-resolvers'
-import Redis from 'ioredis'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
+import { cache } from '@nftcom/gql/service/cache.service'
 import {
   retrieveCollectionOpensea,
   retrieveCollectionStatsOpensea,
@@ -13,10 +12,6 @@ import * as Sentry from '@sentry/node'
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 
 const MAX_SAVE_COUNTS = 500
-const redis = new Redis({
-  host: redisConfig.host,
-  port: redisConfig.port,
-})
 
 const getCollection = async (
   _: any,
@@ -26,7 +21,7 @@ const getCollection = async (
   try {
     logger.debug('getCollection', { input: args?.input })
     const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea}`
-    const cachedData = await redis.get(key)
+    const cachedData = await cache.get(key)
 
     if (cachedData) {
       return JSON.parse(cachedData)
@@ -35,7 +30,7 @@ const getCollection = async (
 
       if (args?.input?.withOpensea) {
         const slugKey = `${key}-slug`
-        const cachedData = JSON.parse(await redis.get(slugKey))
+        const cachedData = JSON.parse(await cache.get(slugKey))
 
         if (cachedData?.collection?.slug) {
           data = cachedData
@@ -55,7 +50,7 @@ const getCollection = async (
             }
           }
 
-          await redis.set(slugKey, JSON.stringify(data), 'EX', 60 * 5) // set cache
+          await cache.set(slugKey, JSON.stringify(data), 'EX', 60 * 5) // set cache
         }
       }
 
@@ -65,7 +60,7 @@ const getCollection = async (
         openseaStats: stats,
       }
 
-      await redis.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
+      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
 
       return returnObject
     }

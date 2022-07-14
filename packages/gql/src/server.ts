@@ -7,14 +7,13 @@ import express from 'express'
 import { GraphQLError } from 'graphql'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
-import Redis from 'ioredis'
 import Keyv from 'keyv'
 import * as util from 'util'
 
 import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
-import { redisConfig } from '@nftcom/gql/config'
 import { appError, profileError } from '@nftcom/gql/error'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
@@ -38,11 +37,6 @@ type GQLError = {
   message: string
   path: Array<string | number>
 }
-
-const redis = new Redis({
-  host: redisConfig.host,
-  port: redisConfig.port,
-})
 
 const getAddressFromSignature = (signature: string): string =>
   utils.verifyMessage(authMessage, signature)
@@ -160,10 +154,10 @@ export const start = async (): Promise<void> => {
   app.get('/uri/:username', async function (req, res) {
     const { username } = req.params
 
-    const cachedData = await redis.get(username)
+    const cachedData = await cache.get(username)
 
     if (cachedData) {
-      return res.send(JSON.parse(cachedData))
+      return res.send(JSON.parse(cachedData as string))
     } else {
       return repositories.profile.findByURL(username.toLowerCase())
         .then(async (profile: entity.Profile) => {
@@ -181,7 +175,7 @@ export const start = async (): Promise<void> => {
               header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
               description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
             }
-            await redis.set(username, JSON.stringify(data), 'EX', 60 * 10)
+            await cache.set(username, JSON.stringify(data), 'EX', 60 * 10)
             return res.send(data)
           }
         })
@@ -226,7 +220,7 @@ export const start = async (): Promise<void> => {
   server = new ApolloServer({
     //gql schema only visibly locally
     schema,
-    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(redis) }), {
+    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(cache) }), {
       disableBatchReads: true,
     }),
     introspection: process.env.NODE_ENV === 'local',

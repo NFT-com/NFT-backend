@@ -1,6 +1,11 @@
 import { nftTestErrorMockData, nftTestMockData } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 let testServer
 
 describe('nft resolver', () => {

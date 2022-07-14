@@ -5,6 +5,11 @@ import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
 import { dbConfig } from '../../config'
 import { getTestApolloServer } from '../util/testApolloServer'
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 const repositories = db.newRepositories()
 
 let testServer

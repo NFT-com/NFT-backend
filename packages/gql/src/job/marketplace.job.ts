@@ -2,21 +2,16 @@ import { Job } from 'bull'
 import { BigNumber, utils } from 'ethers'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
-import Redis from 'ioredis'
 import { LessThan } from 'typeorm'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
 import { provider } from '@nftcom/gql/helper'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const repositories = db.newRepositories()
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 const eventABI = contracts.marketplaceEventABI()
 const marketplaceABI = contracts.marketplaceABIJSON()
@@ -925,7 +920,7 @@ const listenBuyNowInfoEvents = async (
  */
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   try {
-    const cachedBlock = await redis.get(key)
+    const cachedBlock = await cache.get(key)
 
     // get 1000 blocks before incase of some blocks not being handled correctly
     if (cachedBlock) return Number(cachedBlock) > 10000
@@ -958,7 +953,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await listenMatchEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     await listenBuyNowInfoEvents(chainId, chainProvider, cachedBlock, latestBlock.number)
     // update cached block number to the latest block number
-    await redis.set(`cached_block_${chainId}`, latestBlock.number)
+    await cache.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
     logger.debug('error', err)
     

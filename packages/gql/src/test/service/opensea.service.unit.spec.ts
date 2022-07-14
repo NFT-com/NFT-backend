@@ -2,6 +2,11 @@ import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 
 jest.setTimeout(150000)
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 describe('opensea', () => {
   describe('retrieveOrdersOpensea', () => {
     // TODO: jason to add more

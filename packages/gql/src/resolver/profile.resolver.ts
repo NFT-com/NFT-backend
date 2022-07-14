@@ -1,3 +1,5 @@
+import '@nftcom/gql/service/cache.service'
+
 import aws from 'aws-sdk'
 import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
@@ -5,18 +7,18 @@ import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
-import Redis from 'ioredis'
 import Joi from 'joi'
 import stream from 'stream'
 import Typesense from 'typesense'
 
-import { assetBucket, redisConfig } from '@nftcom/gql/config'
+import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
+import { cache } from '@nftcom/gql/service/cache.service'
 import {
   DEFAULT_NFT_IMAGE,
   generateCompositeImage,
@@ -32,11 +34,6 @@ import { blacklistBool } from '../service/core.service'
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
-
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
@@ -770,15 +767,16 @@ const leaderboard = async (
   ctx: Context,
 ): Promise<gql.LeaderboardOutput> => {
   const { repositories } = ctx
-  logger.debug('leaderboard', { input: args?.input })
 
   const TOP = args?.input.count ? Number(args?.input.count) : 100
-  const cachedData = await redis.get(`Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`)
+  const cachedData = await cache.get(`Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`)
   let leaderboard: Array<gql.LeaderboardProfile> = []
-  if (cachedData) {
+
+  // if cached data is not null and not an empty array
+  if (cachedData?.length) {
     leaderboard = JSON.parse(cachedData)
   } else {
-    const profilesWithScore = await redis.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
+    const profilesWithScore = await cache.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
 
     let index = 0
     // get leaderboard for TOP items...
@@ -798,7 +796,7 @@ const leaderboard = async (
       })
       index++
     }
-    await redis.set(
+    await cache.set(
       `Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`,
       JSON.stringify(leaderboard),
       'EX',
@@ -813,7 +811,9 @@ const leaderboard = async (
     defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
       { afterCursor: leaderboard.length.toString() }
   }
+
   const safePageInput = safeInput(pageInput, defaultCursor)
+
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
     const cursor = pagination.hasAfter(safePageInput) ?

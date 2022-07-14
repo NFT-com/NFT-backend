@@ -1,7 +1,6 @@
 import { BigNumber as BN } from 'bignumber.js'
 import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
-import Redis from 'ioredis'
 import Joi from 'joi'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
@@ -13,10 +12,12 @@ import { _logger, contracts, db,defs, entity, fp,helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
+import '@nftcom/gql/service/cache.service'
+
 import { differenceInMilliseconds } from 'date-fns'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -25,10 +26,7 @@ import {
 } from '@nftcom/gql/service/nft.service'
 import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
+
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 
@@ -307,7 +305,7 @@ const getGkNFTs = async (
   const { user } = ctx
   logger.debug('getGkNFTs', { loggedInUserId: user?.id  })
 
-  const cachedData = await redis.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`)
+  const cachedData = await cache.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`)
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
@@ -321,7 +319,7 @@ const getGkNFTs = async (
         tokenType: 'erc721',
       })
 
-      await redis.set(
+      await cache.set(
         `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`,
         JSON.stringify(response),
         'EX',
@@ -378,7 +376,7 @@ export const saveProfileScore = async (
     const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
     const paddedCollections = collections.length.toString().padStart(5, '0')
     const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
-    await redis.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
+    await cache.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
   } catch (err) {
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
   }
@@ -478,7 +476,7 @@ const getExternalListings = async (
   })
   try {
     const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${args?.chainId}`
-    const cachedData = await redis.get(key)
+    const cachedData = await cache.get(key)
 
     if (cachedData) {
       return JSON.parse(cachedData)
@@ -586,7 +584,7 @@ const getExternalListings = async (
 
       const finalData = { listings: [opensea, looksrare] }
 
-      await redis.set(key, JSON.stringify(finalData), 'EX', 60 * 30)
+      await cache.set(key, JSON.stringify(finalData), 'EX', 60 * 30)
 
       return finalData
     }
@@ -604,14 +602,14 @@ export const refreshNft = async (
     const { repositories } = ctx
     logger.debug('refreshNft', { id: args?.id })
     initiateWeb3()
-    const cachedData = await redis.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
+    const cachedData = await cache.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
       const nft = await repositories.nft.findById(args?.id)
       if (nft) {
         const refreshedNFT = await refreshNFTMetadata(nft)
-        await redis.set(
+        await cache.set(
           `refreshNFT_${process.env.CHAIN_ID}_${args?.id}`,
           JSON.stringify(refreshedNFT),
           'EX',

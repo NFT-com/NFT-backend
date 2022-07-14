@@ -1,19 +1,11 @@
 import { Job } from 'bull'
-import Redis from 'ioredis'
 
-import { redisConfig } from '@nftcom/gql/config'
 import {
   DEFAULT_NFT_IMAGE,
   generateCompositeImage,
 } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, db, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 // exported for tests
 export const repositories = db.newRepositories()
