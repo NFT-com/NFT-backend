@@ -37,7 +37,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
           logger.debug('saved existing profile user wallet')
           repositories.profile.save({
             ...profile,
-            chainId: process.env.CHAIN_ID,
+            chainId: foundWallet.chainId || process.env.CHAIN_ID,
             ownerUserId: foundWallet.userId,
             ownerWalletId: foundWallet.id,
           })
@@ -45,7 +45,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
           logger.debug('non user wallet for profile')
           repositories.profile.save({
             ...profile,
-            chainId: process.env.CHAIN_ID,
+            chainId: foundWallet.chainId || process.env.CHAIN_ID,
             ownerUserId: null,
             ownerWalletId: null,
           })

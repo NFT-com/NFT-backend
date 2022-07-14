@@ -135,7 +135,7 @@ const fetchAndSaveCollectionInfo = async (
       )
       const collection = await repositories.collection.save({
         contract: ethers.utils.getAddress(contract),
-        chainId: process.env.CHAIN_ID,
+        chainId: nfts[0]?.chainId || process.env.CHAIN_ID,
         name: collectionName,
       })
 
