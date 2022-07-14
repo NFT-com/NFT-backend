@@ -5,6 +5,7 @@ import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -271,6 +272,7 @@ const updateCollection = async (
 
           await repositories.collection.save({
             contract: ethers.utils.getAddress(nft.contract),
+            chainId: nft?.chainId || process.env.CHAIN_ID,
             name: collectionName,
           })
         }
@@ -411,11 +413,21 @@ const updateNFTOwnershipAndMetadata = async (
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
       },
     })
+
+    let walletChainId: string = await cache.get(`chainId_${walletId}`)
+
+    if (!walletChainId) {
+      const wallet = await repositories.wallet.findById(walletId)
+      await cache.set(`chainId_${walletId}`, wallet.chainId)
+      walletChainId = wallet.chainId
+    }
+
     const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
       return await repositories.nft.save({
+        chainId: walletChainId || process.env.CHAIN_ID,
         userId,
         walletId,
         contract: ethers.utils.getAddress(nft.contract.address),
