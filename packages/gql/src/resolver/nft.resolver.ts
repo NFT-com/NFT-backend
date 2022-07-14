@@ -12,8 +12,6 @@ import { _logger, contracts, db,defs, entity, fp,helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
-import '@nftcom/gql/service/cache.service'
-
 import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'

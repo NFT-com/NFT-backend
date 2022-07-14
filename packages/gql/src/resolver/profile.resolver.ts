@@ -1,5 +1,3 @@
-import '@nftcom/gql/service/cache.service'
-
 import aws from 'aws-sdk'
 import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'

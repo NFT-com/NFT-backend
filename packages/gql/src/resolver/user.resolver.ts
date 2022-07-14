@@ -245,7 +245,6 @@ const getMyGenesisKeys = async (
       ),
     )).then(async (wallet) => {
       const address = wallet[0]?.address
-      console.log('wallet address', address)
       const cachedGks = await cache.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
       let gk_owners
 
