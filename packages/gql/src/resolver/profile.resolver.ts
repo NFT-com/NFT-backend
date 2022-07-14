@@ -267,6 +267,7 @@ const maybeUpdateProfileOwnership = (
               ownerWalletId: wallet.id,
               tokenId: profile.tokenId,
               status: profile.status,
+              chainId: process.env.CHAIN_ID,
               bannerURL: null,
               photoURL: null,
               description: null,
@@ -479,6 +480,7 @@ const profileClaimed = (
     ))
     .then((profile: entity.Profile) => {
       profile.status = defs.ProfileStatus.Owned
+      profile.chainId = process.env.CHAIN_ID
 
       const saveProfile = repositories.profile.save(profile)
 

@@ -271,6 +271,7 @@ const updateCollection = async (
 
           await repositories.collection.save({
             contract: ethers.utils.getAddress(nft.contract),
+            chainId: process.env.CHAIN_ID,
             name: collectionName,
           })
         }
@@ -416,6 +417,7 @@ const updateNFTOwnershipAndMetadata = async (
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
       return await repositories.nft.save({
+        chainId: process.env.CHAIN_ID,
         userId,
         walletId,
         contract: ethers.utils.getAddress(nft.contract.address),
