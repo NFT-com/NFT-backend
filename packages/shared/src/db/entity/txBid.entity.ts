@@ -29,4 +29,7 @@ export class TxBid extends BaseEntity {
   @Column('json', { nullable: false })
   consideration: any[]
 
+  @Column({ nullable: true })
+  chainId: string
+
 }

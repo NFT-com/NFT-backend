@@ -23,4 +23,7 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false })
   userId: string
 
+  @Column({ nullable: true })
+  chainId: string
+
 }
