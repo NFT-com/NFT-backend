@@ -79,6 +79,11 @@ input CollectionInput {
   withOpensea: Boolean
 }
 
+input FillChainIdsInput {
+  chainId: String!
+  entity: String!
+}
+
 type RemoveDuplicatesOutput {
   message: String
 }
@@ -91,6 +96,11 @@ type SyncCollectionsWithNFTsOutput {
   message: String
 }
 
+type FillChainIdsOutput {
+  message: String
+}
+
+
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
 }
@@ -99,4 +109,5 @@ extend type Mutation {
   removeDuplicates(contracts: [Address!]!): RemoveDuplicatesOutput!
   saveCollectionForContract(contract: Address!): saveCollectionForContractOutput!
   syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
+  fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!
 }
