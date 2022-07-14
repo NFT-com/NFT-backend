@@ -32,26 +32,63 @@ let nftA, nftB, nftC
 
 const repositories = db.newRepositories()
 
+const clearCollectionEdge = async (): Promise<void> => {
+  const collections = await repositories.collection.findAll()
+  const edges = await repositories.edge.findAll()
+  const collectionIds = collections.map((collection) => collection.id)
+  const edgeIds = edges.map((edge) => edge.id)
+  await repositories.collection.hardDeleteByIds(collectionIds)
+  await repositories.edge.hardDeleteByIds(edgeIds)
+}
+
 describe('collection resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
-    
+
     testServer = getTestApolloServer(repositories,
       testMockUser,
       testMockWallet,
     )
+
+    nftA = await repositories.nft.save({
+      userId,
+      walletId,
+      contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+      tokenId: '0x086a79',
+      type: defs.NFTType.ERC721,
+      metadata: {
+        name: 'MultiFaucet Test NFT',
+        description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+      },
+    })
+    nftB = await repositories.nft.save({
+      userId,
+      walletId,
+      contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+      tokenId: '0x086a76',
+      type: defs.NFTType.ERC721,
+      metadata: {
+        name: 'MultiFaucet Test NFT',
+        description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+      },
+    })
+    nftC = await repositories.nft.save({
+      userId,
+      walletId,
+      contract:ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+      tokenId: '0x05',
+      type: defs.NFTType.ERC721,
+      metadata: {
+        name: 'The Elon Musk Twitter Experience #5',
+        description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+      },
+    })
   })
 
   afterAll(async () => {
     const nfts = await repositories.nft.findAll()
-    const collections = await repositories.collection.findAll()
-    const edges = await repositories.edge.findAll()
     const nftIds = nfts.map((nft) => nft.id)
-    const collectionIds = collections.map((collection) => collection.id)
-    const edgeIds = edges.map((edge) => edge.id)
     await repositories.nft.hardDeleteByIds(nftIds)
-    await repositories.collection.hardDeleteByIds(collectionIds)
-    await repositories.edge.hardDeleteByIds(edgeIds)
 
     await testServer.stop()
 
@@ -61,48 +98,11 @@ describe('collection resolver', () => {
 
   describe('removeDuplicates', () => {
     beforeAll(async () => {
-      nftA = await repositories.nft.save({
-        userId,
-        walletId,
-        contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-        tokenId: '0x086a79',
-        type: defs.NFTType.ERC721,
-        metadata: {
-          name: 'MultiFaucet Test NFT',
-          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
-        },
-      })
-      nftB = await repositories.nft.save({
-        userId,
-        walletId,
-        contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-        tokenId: '0x086a76',
-        type: defs.NFTType.ERC721,
-        metadata: {
-          name: 'MultiFaucet Test NFT',
-          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
-        },
-      })
-      nftC = await repositories.nft.save({
-        userId,
-        walletId,
-        contract:ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
-        tokenId: '0x05',
-        type: defs.NFTType.ERC721,
-        metadata: {
-          name: 'The Elon Musk Twitter Experience #5',
-          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
-        },
-      })
       const collectionA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
       })
       const collectionB = await repositories.collection.save({
-        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-        name: 'MultiFaucet NFT',
-      })
-      const collectionC = await repositories.collection.save({
         contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
         name: 'tinyMusktweetz',
       })
@@ -118,7 +118,7 @@ describe('collection resolver', () => {
       await repositories.edge.save({
         thisEntityType: defs.EntityType.Collection,
         thatEntityType: defs.EntityType.NFT,
-        thisEntityId: collectionB.id,
+        thisEntityId: collectionA.id,
         thatEntityId: nftB.id,
         edgeType: defs.EdgeType.Includes,
       })
@@ -126,10 +126,14 @@ describe('collection resolver', () => {
       await repositories.edge.save({
         thisEntityType: defs.EntityType.Collection,
         thatEntityType: defs.EntityType.NFT,
-        thisEntityId: collectionC.id,
+        thisEntityId: collectionB.id,
         thatEntityId: nftC.id,
         edgeType: defs.EdgeType.Includes,
       })
+    })
+
+    afterAll(async () => {
+      await clearCollectionEdge()
     })
 
     it('should remove duplicated collections', async () => {
@@ -141,26 +145,9 @@ describe('collection resolver', () => {
       })
 
       expect(result.data.removeDuplicates.message).toBeDefined()
-      expect(result.data.removeDuplicates.message).toEqual('Removed collection duplicates')
+      expect(result.data.removeDuplicates.message).toEqual('No duplicates found')
       const existingCollections = await repositories.collection.findAll()
       expect(existingCollections.length).toEqual(2)
-      const edgeOne = await repositories.edge.findOne({
-        where: {
-          thisEntityType: defs.EntityType.Collection,
-          thatEntityType: defs.EntityType.NFT,
-          thatEntityId: nftA.id,
-          edgeType: defs.EdgeType.Includes,
-        },
-      })
-      const edgeTwo = await repositories.edge.findOne({
-        where: {
-          thisEntityType: defs.EntityType.Collection,
-          thatEntityType: defs.EntityType.NFT,
-          thatEntityId: nftB.id,
-          edgeType: defs.EdgeType.Includes,
-        },
-      })
-      expect(edgeOne.thisEntityId).toEqual(edgeTwo.thisEntityId)
 
       result = await testServer.executeOperation({
         query: 'query CollectionNFTs($input: CollectionNFTsInput!) { collectionNFTs(input: $input) { items { id contract } } }',
@@ -176,6 +163,28 @@ describe('collection resolver', () => {
 
       expect(result.data.collectionNFTs.items.length).toBeDefined()
       expect(result.data.collectionNFTs.items.length).toEqual(2)
+    })
+  })
+
+  describe('syncCollectionsWithNFTs', () => {
+    afterAll(async () => {
+      await clearCollectionEdge()
+    })
+
+    it('should sync collections with nfts', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation SyncCollectionsWithNFTs($count: Int!) { syncCollectionsWithNFTs(count: $count) { message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.syncCollectionsWithNFTs.message).toBeDefined()
+      expect(result.data.syncCollectionsWithNFTs.message).toEqual('Saved new 2 collections')
+      const collections = await repositories.collection.findAll()
+      expect(collections.length).toEqual(2)
+      const edges = await repositories.edge.findAll()
+      expect(edges.length).toEqual(3)
     })
   })
 })
