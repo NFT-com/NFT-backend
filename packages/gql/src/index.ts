@@ -39,7 +39,7 @@ const bootstrap = (): Promise<void> => {
     .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
     .then(() => job.startAndListen())
-    // documentation for local
+    // document watcher for local 
     .then(() => {
       if (process.env.NODE_ENV === 'local') {
         return Promise.resolve(execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:'))
