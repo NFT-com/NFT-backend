@@ -6,6 +6,11 @@ import { Profile } from '@nftcom/shared/db/entity'
 import { mockProfilesData } from '../util/constants'
 const { repositories, generateCompositeImages } = jest.requireActual('@nftcom/gql/job/profile.job')
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 jest.mock('@nftcom/gql/job/profile.job', () => {
   return {
     repositories: {

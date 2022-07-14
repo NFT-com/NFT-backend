@@ -3,20 +3,14 @@ import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
-import Redis from 'ioredis'
 import Joi from 'joi'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError,userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
@@ -251,7 +245,7 @@ const getMyGenesisKeys = async (
       ),
     )).then(async (wallet) => {
       const address = wallet[0]?.address
-      const cachedGks = await redis.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
+      const cachedGks = await cache.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
       let gk_owners
 
       const genesisKeyContract = typechain.GenesisKey__factory.connect(
@@ -277,7 +271,7 @@ const getMyGenesisKeys = async (
           })
         }
 
-        await redis.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
+        await cache.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
       } else {
         gk_owners = JSON.parse(cachedGks)
       }
@@ -296,7 +290,7 @@ const getMyGenesisKeys = async (
       return keyIds.map(async (keyId) => {
         const fullUrl = `https://nft-llc.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
 
-        const cachedGkData = await redis.get(fullUrl)
+        const cachedGkData = await cache.get(fullUrl)
         const metadata = cachedGkData ?? (await axios.get(fullUrl)).data
 
         return {

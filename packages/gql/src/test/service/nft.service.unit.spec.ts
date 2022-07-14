@@ -4,6 +4,11 @@ import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(30000)
 
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 let testServer
 describe('nft resolver', () => {
   describe('refresh nft endpoint', () => {

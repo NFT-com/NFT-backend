@@ -9,7 +9,11 @@ import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(30000)
 
-jest.mock('ioredis', () => jest.fn())
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
+
 jest.mock('@nftcom/gql/service', () => {
   return {
     core: {
