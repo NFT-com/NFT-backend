@@ -208,7 +208,12 @@ const getProfileByURLPassive = (
   })
   joi.validateSchema(schema, args)
 
-  return ctx.repositories.profile.findByURL(args.url)
+  return ctx.repositories.profile.findOne({
+    where: {
+      url: args.url,
+      chainId: args?.chainId || process.env.CHAIN_ID,
+    },
+  })
     .then(fp.rejectIfEmpty(appError.buildExists(
       profileError.buildProfileNotFoundMsg(args.url),
       profileError.ErrorType.ProfileNotFound,
@@ -308,7 +313,12 @@ const getProfileByURL = (
     provider.provider(Number(chain.id)),
   )
 
-  return ctx.repositories.profile.findByURL(args.url)
+  return ctx.repositories.profile.findOne({
+    where: {
+      url: args.url,
+      chainId: args?.chainId || process.env.CHAIN_ID,
+    },
+  })
     .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chain.id)))
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
