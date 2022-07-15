@@ -25,4 +25,7 @@ export class Event extends BaseEntity {
   @Column({ nullable: true })
   profileUrl: string
 
+  @Column({ nullable: true })
+  destinationAddress: string
+
 }

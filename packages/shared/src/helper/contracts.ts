@@ -8,6 +8,7 @@ import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/MarketplaceEvent
 import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
 import nftProfileABIJSON from '@nftcom/shared/helper/abis/NftProfile.json'
+import nftResolverABIJSON from '@nftcom/shared/helper/abis/NftResolver.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
 import validationLogicABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
@@ -114,6 +115,24 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 'mainnet':
   default:
     return utils.getAddress('0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D')
+  }
+}
+
+export function nftResolverAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case 4:
+  case '4':
+  case 'rinkeby':
+    return utils.getAddress('')
+  case 5:
+  case '5':
+  case 'goerli':
+    return '0x45d296a1042248f48f484c6f2be01006d26fcbf0'
+  case '1':
+  case 1:
+  case 'mainnet':
+  default:
+    return utils.getAddress('')
   }
 }
 
@@ -268,6 +287,10 @@ export function marketplaceEventABI(): any {
 
 export function NftProfileABI(): any {
   return nftProfileABIJSON
+}
+
+export function NftResolverABI(): any {
+  return nftResolverABIJSON
 }
 
 export function GenesisKeyABI(): any {

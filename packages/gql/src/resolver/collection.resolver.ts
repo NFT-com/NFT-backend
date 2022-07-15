@@ -260,7 +260,7 @@ const fillChainIds = async (
         if (!profiles[i].chainId)
           profiles[i].chainId = chainId
       }
-      await repositories.profile.saveMany(profiles, { chunk: MAX_SAVE_COUNTS })
+      await repositories.profile.saveMany(profiles, { chunk: 1 })
     } else if (entity === 'txActivity') {
       const txActivities = await repositories.txActivity.findAll()
       for (let i = 0; i < txActivities.length; i++) {

@@ -229,6 +229,29 @@ const getMyAddresses = (
   return repositories.wallet.findByUserId(parent.id)
 }
 
+const getMyPendingAssocations = async (
+  _: any,
+  args: unknown,
+  ctx: Context,
+): Promise<Array<gql.PendingAssociationOutput>> => {
+  const { user, repositories, wallet } = ctx
+  logger.debug('getMyPendingAssocations', { loggedInUserId: user.id })
+
+  const matches = await repositories.event.find({
+    where: {
+      eventName: 'AssociateEvmUser',
+      destinationAddress: helper.checkSum(wallet.address),
+    },
+  })
+
+  return matches.map(e => {
+    return {
+      url: e.profileUrl,
+      owner: e.ownerAddress,
+    }
+  })
+}
+
 const getMyGenesisKeys = async (
   _: any,
   args: unknown,
@@ -318,6 +341,7 @@ export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
     getMyGenesisKeys: combineResolvers(auth.isAuthenticated, getMyGenesisKeys),
+    getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssocations),
   },
   Mutation: {
     signUp,

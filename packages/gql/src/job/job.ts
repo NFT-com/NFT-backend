@@ -29,12 +29,12 @@ const GENERATE_COMPOSITE_IMAGE = 'GENERATE_COMPOSITE_IMAGE'
 
 const queues = new Map<string, Bull.Queue>()
 
-const networkList = process.env.SUPPORTED_NETWORKS.replace('ethereum:', '').split(':')
+const networkList = process.env.SUPPORTED_NETWORKS.split('::')
 const networks = new Map()
-networks.set(
-  networkList[0], // chain id
-  networkList[1], // human readable network name
-)
+networkList.map(network => networks.set(
+  network.replace('ethereum:', '').split(':')[0], // chain id
+  network.replace('ethereum:', '').split(':')[1], // human readable network name
+))
 
 let didPublish: boolean
 

@@ -38,6 +38,11 @@ type GkOutput {
   metadata: Metadata!
 }
 
+type PendingAssociationOutput {
+  owner: String!
+  url: String!
+}
+
 input UserPreferencesInput {
   bidActivityNotifications: Boolean
   priceChangeNotifications: Boolean
@@ -69,6 +74,8 @@ extend type Query {
   me: User!
   "AUTHENTICATED"
   getMyGenesisKeys: [GkOutput]!
+  "AUTHENTICATED"
+  getMyPendingAssociations: [PendingAssociationOutput]!
 }
 
 extend type Mutation {
