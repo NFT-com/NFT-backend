@@ -119,7 +119,11 @@ const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI(
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
-  const startBlock = chainId == 4 ? 10540040 : 14675454
+  const startBlock = chainId == 4 ? 10540040 :
+    chainId == 5 ? 7128515 :
+      chainId == 1 ? 14675454 :
+        14675454
+
   try {
     const cachedBlock = await cache.get(key)
 
@@ -226,7 +230,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     const address = helper.checkSum(contracts.profileAuctionAddress(chainId))
     const nftResolverAddress = helper.checkSum(contracts.nftResolverAddress(chainId))
 
-    logger.debug('getting Ethereum Events')
+    logger.debug(`👾 getting Ethereum Events chainId=${chainId}`)
 
     const bids = await repositories.bid.find({
       where: [{
@@ -243,7 +247,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       nftResolverAddress,
     )
 
-    logger.debug('nft resolver outgoing associate events', { log2: log2.logs.length })
+    logger.debug(`nft resolver outgoing associate events chainId=${chainId}`, { log2: log2.logs.length })
     log2.logs.map(async (unparsedEvent) => {
       const evt = nftResolverInterface.parseLog(unparsedEvent)
       logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${evt.args}`)
@@ -273,7 +277,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               destinationAddress: helper.checkSum(destinationAddress),
             },
           )
-          logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }`)
+          logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
         }
       }
     })
