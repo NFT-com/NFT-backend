@@ -258,7 +258,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
             txHash: unparsedEvent.transactionHash,
             ownerAddress: owner,
             profileUrl: profileUrl,
-            destinationAddress,
+            destinationAddress: helper.checkSum(destinationAddress),
           },
         })
         if (!event) {
@@ -270,7 +270,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               txHash: unparsedEvent.transactionHash,
               ownerAddress: owner,
               profileUrl: profileUrl,
-              destinationAddress,
+              destinationAddress: helper.checkSum(destinationAddress),
             },
           )
           logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }`)
