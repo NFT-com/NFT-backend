@@ -242,6 +242,7 @@ const getMyPendingAssocations = async (
     where: {
       eventName: 'AssociateEvmUser',
       destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
     },
   })
 
@@ -260,7 +261,7 @@ const getMyGenesisKeys = async (
 ): Promise<Array<gql.GkOutput>> => {
   const { user, repositories } = ctx
   logger.debug('getMyGenesisKeys', { loggedInUserId: user.id })
-  
+
   return repositories.wallet.findByUserId(user.id)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(

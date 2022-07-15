@@ -353,21 +353,21 @@ export const saveProfileScore = async (
   profile: entity.Profile,
 ): Promise<void> => {
   try {
-    const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
+    const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
     // get genesis key numbers
     const gkNFTs = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, contract: gkContractAddress },
+      where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
     })
     // get collections
     const nfts = await repositories.nft.find({
-      where: { userId: profile.ownerUserId },
+      where: { userId: profile.ownerUserId, chainId: profile.chainId },
     })
 
     const collections: Array<string> = []
     await Promise.allSettled(
       nfts.map(async (nft) => {
         const collection = await repositories.collection.findOne({
-          where: { contract: nft.contract },
+          where: { contract: nft.contract, chainId: profile.chainId },
         })
         if (collection) {
           const isExisting = collections.find((existingCollection) =>
@@ -390,7 +390,7 @@ export const saveProfileScore = async (
     const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
     const paddedCollections = collections.length.toString().padStart(5, '0')
     const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
-    await cache.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
+    await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
   } catch (err) {
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
   }

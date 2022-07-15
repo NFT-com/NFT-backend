@@ -672,8 +672,9 @@ const showAllNFTs = async (
   repositories: db.Repository,
   userId: string,
   profileId: string,
+  chainId: string,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { userId } })
+  const nfts = await repositories.nft.find({ where: { userId, chainId } })
   if (nfts.length) {
     await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
@@ -699,11 +700,15 @@ const showAllNFTs = async (
   }
 }
 
-const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> => {
+const showNFTs = async (
+  showNFTIds: string[],
+  profileId: string,
+  chainId: string,
+): Promise<void> => {
   const nfts = []
   await Promise.allSettled(
     showNFTIds.map(async (id) => {
-      const existingNFT = await repositories.nft.findOne({ where: { id } })
+      const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
       if (existingNFT) nfts.push(existingNFT)
     }),
   )
@@ -739,6 +744,7 @@ const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> 
  * @param hideAll
  * @param showNFTIds - set the NFTs' visibility as show, without regard to the previous value
  * @param hideNFTIds - set the NFTs' visibility as hide, without regard to the previous value
+ * @param chainId
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
@@ -748,22 +754,23 @@ export const changeNFTsVisibility = async (
   hideAll: boolean,
   showNFTIds: Array<string> | null,
   hideNFTIds: Array<string> | null,
+  chainId: string,
 ): Promise<void> => {
   try {
     if (showAll) {
-      await showAllNFTs(repositories, userId, profileId)
+      await showAllNFTs(repositories, userId, profileId, chainId)
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
       return
     } else {
       if (showNFTIds?.length) {
-        await showNFTs(showNFTIds, profileId)
+        await showNFTs(showNFTIds, profileId, chainId)
       }
       if (hideNFTIds) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
-            const existingNFT = await repositories.nft.findOne({ where: { id } })
+            const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
             if (existingNFT) {
               const edgeVals = {
                 thisEntityId: profileId,

@@ -6,14 +6,15 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
   const activityType = ActivityType[args.activityType]
-
-  return repositories.txActivity.findActivitiesByType(activityType)
+  const chainId = args.chainId || process.env.CHAIN_ID
+  return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
 const getActivitiesByUserId = (_: any, args: gql.QueryGetActivitiesByUserIdArgs, ctx: Context)
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
-  return repositories.txActivity.findActivitiesByUserId(args.userId)
+  const chainId = args.chainId || process.env.CHAIN_ID
+  return repositories.txActivity.findActivitiesByUserId(args.userId, chainId)
 }
 
 const getActivitiesByUserIdAndType = (
@@ -23,7 +24,12 @@ const getActivitiesByUserIdAndType = (
 ): Promise<TxActivity[]> => {
   const { repositories } = ctx
   const activityType = ActivityType[args.input.activityType]
-  return repositories.txActivity.findActivitiesByUserIdAndType(args.input.userId, activityType)
+  const chainId = args.input.chainId || process.env.CHAIN_ID
+  return repositories.txActivity.findActivitiesByUserIdAndType(
+    args.input.userId,
+    activityType,
+    chainId,
+  )
 }
 
 export default {
