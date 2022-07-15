@@ -1,3 +1,4 @@
+import delay from 'delay'
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 
@@ -257,10 +258,12 @@ const fillChainIds = async (
     } else if (entity === 'profile') {
       const profiles = await repositories.profile.findAll()
       for (let i = 0; i < profiles.length; i++) {
-        if (!profiles[i].chainId)
+        if (!profiles[i].chainId) {
           profiles[i].chainId = chainId
+          await repositories.profile.save(profiles[i])
+          await delay(100)
+        }
       }
-      await repositories.profile.saveMany(profiles, { chunk: 1 })
     } else if (entity === 'txActivity') {
       const txActivities = await repositories.txActivity.findAll()
       for (let i = 0; i < txActivities.length; i++) {
