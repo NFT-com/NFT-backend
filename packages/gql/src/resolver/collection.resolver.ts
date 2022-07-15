@@ -23,7 +23,8 @@ const getCollection = async (
 ): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
-    const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea}`
+    const chainId = args?.input?.chainId || process.env.CHAIN_ID
+    const key = `${args?.input?.contract?.toLowerCase()}-${chainId}-${args?.input?.withOpensea}`
     const cachedData = await cache.get(key)
 
     if (cachedData) {
@@ -39,10 +40,10 @@ const getCollection = async (
           data = cachedData
           stats = await retrieveCollectionStatsOpensea(
             cachedData?.collection?.slug,
-            args?.input?.chainId,
+            chainId,
           )
         } else {
-          data = await retrieveCollectionOpensea(args?.input?.contract, args?.input?.chainId)
+          data = await retrieveCollectionOpensea(args?.input?.contract, chainId)
 
           if (data) {
             if (data?.collection?.slug) {
@@ -58,7 +59,10 @@ const getCollection = async (
       }
 
       const returnObject = {
-        collection: await ctx.repositories.collection.findByContractAddress(args?.input?.contract),
+        collection: await ctx.repositories.collection.findByContractAddress(
+          args?.input?.contract,
+          chainId,
+        ),
         openseaInfo: data,
         openseaStats: stats,
       }
