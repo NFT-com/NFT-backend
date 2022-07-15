@@ -284,7 +284,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           }
         }
       } catch (err) {
-        console.log('error parsing resolver: ', err.response)
+        logger.error('error parsing resolver: ', err)
       }
     })
 
