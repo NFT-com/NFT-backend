@@ -300,14 +300,14 @@ const getProfileByURL = (
   })
   joi.validateSchema(schema, args)
 
-  const chainId = process.env.SUPPORTED_NETWORKS.replace('ethereum:', '').split(':')[0]
+  const chain = auth.verifyAndGetNetworkChain('ethereum', args?.chainId)
   const nftProfileContract = typechain.NftProfile__factory.connect(
-    contracts.nftProfileAddress(chainId),
-    provider.provider(Number(chainId)),
+    contracts.nftProfileAddress(chain.id),
+    provider.provider(Number(chain.id)),
   )
 
   return ctx.repositories.profile.findByURL(args.url)
-    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chainId)))
+    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chain.id)))
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
         profileError.buildProfileNotFoundMsg(args.url),
@@ -319,7 +319,7 @@ const getProfileByURL = (
       })
       .then(([tokenId, owner]: [BigNumber, string]) => {
         return core.createProfileFromEvent(
-          chainId,
+          chain.id,
           owner,
           tokenId,
           ctx.repositories,

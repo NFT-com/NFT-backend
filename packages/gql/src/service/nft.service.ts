@@ -5,6 +5,7 @@ import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { supportedNetworks } from '@nftcom/gql/config'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, provider, typechain } from '@nftcom/shared'
@@ -13,7 +14,7 @@ import * as Sentry from '@sentry/node'
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
-const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
+const network = supportedNetworks[0][1]
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
