@@ -28,6 +28,7 @@ type NFTMetadata {
 
 type NFT {
   id: ID!
+  chainId: String
   contract: Address
   tokenId: Uint256!
   isOwnedByMe: Boolean

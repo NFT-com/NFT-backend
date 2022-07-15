@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers'
 
-import { mockUpdateProfileInput,testMockProfiles, testMockUser, testMockWallet } from '../util/constants'
+import { mockUpdateProfileInput, testMockProfiles, testMockUser, testMockWallet } from '../util/constants'
 
 const sharedLibs = jest.requireActual('@nftcom/shared')
 const { core } = jest.requireActual('@nftcom/gql/service')
@@ -25,6 +25,7 @@ jest.mock('@nftcom/gql/service', () => {
           displayType: sharedLibs.defs.ProfileDisplayType.Collection,
           layoutType: sharedLibs.defs.ProfileLayoutType.Mosaic,
           url: 'test',
+          chainId: '1',
         }
       },
     },
@@ -53,7 +54,8 @@ describe('profile resolver', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         profile: {
-          findByURL: (url) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          findByURL: (url, chainId) => {
             if (url === testMockProfiles.url) {
               return Promise.resolve(testMockProfiles)
             }
@@ -70,22 +72,24 @@ describe('profile resolver', () => {
 
     it('should query profile by URL', async () => {
       const result = await testServer.executeOperation({
-        query: `query Profile($url: String!) { 
-          profile(url: $url) { 
+        query: `query Profile($url: String!, $chainId: String!) { 
+          profile(url: $url, chainId: $chainId) { 
             id 
             layoutType 
           } 
         }`,
-        variables: { url: 'test' },
+        variables: { url: 'test', chainId: '1' },
       })
+
+      console.log('result: ', result)
 
       expect(result.errors).toBeUndefined()
     })
 
     it('gets passive profile by url', async () => {
       const result = await testServer.executeOperation({
-        query: `query ProfilePassive($url: String!) {
-          profilePassive(url: $url) {
+        query: `query ProfilePassive($url: String!, $chainId: String!) {
+          profilePassive(url: $url, chainId: $chainId) {
             id
             bannerURL
             createdAt

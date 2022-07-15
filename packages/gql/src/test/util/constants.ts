@@ -1,9 +1,10 @@
 import { DeepPartial } from 'typeorm'
 
-import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, UpdateProfileInput,User, Wallet } from '@nftcom/gql/defs/gql'
+import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
 
 export const testMockUser: User = {
   id: 'test-user-id',
+  chainId: '4',
   email: 'rohan@immutableholdings.com',
   isEmailConfirmed: false,
   preferences: {
@@ -52,6 +53,7 @@ export const testMockProfiles: Profile = {
   isOwnedByMe: true,
   gkIconVisible: null,
   nftsDescriptionsVisible: true,
+  chainId: '1',
   owner: {
     id: 'test-user-id',
     address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',

@@ -249,25 +249,16 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
 
     logger.debug(`nft resolver outgoing associate events chainId=${chainId}`, { log2: log2.logs.length })
     log2.logs.map(async (unparsedEvent) => {
-      const evt = nftResolverInterface.parseLog(unparsedEvent)
-      logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${evt.args}`)
-      const [owner,profileUrl,destinationAddress] = evt.args
+      let evt
+      try {
+        evt = nftResolverInterface.parseLog(unparsedEvent)
+      
+        logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
+        const [owner,profileUrl,destinationAddress] = evt.args
 
-      if (evt.name === 'AssociateEvmUser') {
-        const event = await repositories.event.findOne({
-          where: {
-            chainId,
-            contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
-            eventName: evt.name,
-            txHash: unparsedEvent.transactionHash,
-            ownerAddress: owner,
-            profileUrl: profileUrl,
-            destinationAddress: helper.checkSum(destinationAddress),
-          },
-        })
-        if (!event) {
-          await repositories.event.save(
-            {
+        if (evt.name === 'AssociateEvmUser') {
+          const event = await repositories.event.findOne({
+            where: {
               chainId,
               contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
               eventName: evt.name,
@@ -276,9 +267,24 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               profileUrl: profileUrl,
               destinationAddress: helper.checkSum(destinationAddress),
             },
-          )
-          logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
+          })
+          if (!event) {
+            await repositories.event.save(
+              {
+                chainId,
+                contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+                eventName: evt.name,
+                txHash: unparsedEvent.transactionHash,
+                ownerAddress: owner,
+                profileUrl: profileUrl,
+                destinationAddress: helper.checkSum(destinationAddress),
+              },
+            )
+            logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
+          }
         }
+      } catch (err) {
+        console.log('error parsing resolver: ', err)
       }
     })
 

@@ -204,6 +204,7 @@ const getProfileByURLPassive = (
   logger.debug('getProfileByURLPassive', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
+    chainId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args)
 
@@ -297,6 +298,7 @@ const getProfileByURL = (
   logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
+    chainId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args)
 

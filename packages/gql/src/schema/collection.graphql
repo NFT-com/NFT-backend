@@ -64,6 +64,7 @@ type Collection {
   id: ID
   contract: Address
   name: String
+  chainId: String
 }
 
 type CollectionInfo {
