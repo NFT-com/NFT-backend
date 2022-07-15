@@ -37,7 +37,7 @@ export const getWallet = (
   const { network, chainId, address } = input
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
-  
+
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
     .then(fp.rejectIfEmpty(appError.buildExists(
@@ -752,6 +752,7 @@ export const createProfileFromEvent = async (
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
+        chainId,
       },
     })
     if (!user) {
@@ -786,6 +787,7 @@ export const createProfileFromEvent = async (
     tokenId: tokenId.toString(),
     ownerWalletId: wallet.id,
     ownerUserId: wallet.userId,
+    chainId: chainId || process.env.CHAIN_ID,
   }, noAvatar)
 }
 
