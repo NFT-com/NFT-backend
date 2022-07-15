@@ -115,7 +115,8 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
     Sentry.captureMessage(`Error in validateLiveBalances: ${err}`)
   }
 }
-const profileAuctioninterface = new utils.Interface(contracts.profileAuctionABI())
+const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI())
+const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   const startBlock = chainId == 4 ? 10540040 : 14675454
@@ -133,8 +134,46 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
   }
 }
 
-const chainIdToCacheKey = (chainId: number): string => {
+const chainIdToCacheKeyProfile = (chainId: number): string => {
   return `minted_profile_cached_block_${chainId}`
+}
+
+const chainIdToCacheKeyResolverAssociate = (chainId: number): string => {
+  return `resolver_associate_cached_block_${chainId}`
+}
+
+const getAssociatedEvmEvents = async (
+  topics: any[],
+  chainId: number,
+  provider: ethers.providers.BaseProvider,
+  address: string,
+): Promise<Log> => {
+  const latestBlock = await provider.getBlock('latest')
+  try {
+    const maxBlocks = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS
+    const key = chainIdToCacheKeyResolverAssociate(chainId)
+    const cachedBlock = await getCachedBlock(chainId, key)
+    const logs = await getPastLogs(
+      provider,
+      address,
+      topics,
+      cachedBlock,
+      latestBlock.number,
+      Number(maxBlocks),
+    )
+    return {
+      logs: logs,
+      latestBlockNumber: latestBlock.number,
+    }
+  } catch (e) {
+    logger.debug(e)
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in getAssociatedEvmEvents: ${e}`)
+    return {
+      logs: [],
+      latestBlockNumber: latestBlock.number,
+    }
+  }
 }
 
 const getMintedProfileEvents = async (
@@ -146,7 +185,7 @@ const getMintedProfileEvents = async (
   const latestBlock = await provider.getBlock('latest')
   try {
     const maxBlocks = process.env.MINTED_PROFILE_EVENTS_MAX_BLOCKS
-    const key = chainIdToCacheKey(chainId)
+    const key = chainIdToCacheKeyProfile(chainId)
     const cachedBlock = await getCachedBlock(chainId, key)
     const logs = await getPastLogs(
       provider,
@@ -179,8 +218,13 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       helper.id('MintedProfile(address,string,uint256,uint256,uint256)'),
     ]
 
+    const topics2 = [
+      helper.id('AssociateEvmUser(address,string,address)'),
+    ]
+
     const chainProvider = provider.provider(Number(chainId))
     const address = helper.checkSum(contracts.profileAuctionAddress(chainId))
+    const nftResolverAddress = helper.checkSum(contracts.nftResolverAddress(chainId))
 
     logger.debug('getting Ethereum Events')
 
@@ -192,13 +236,54 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     })
     const filteredBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
     const log = await getMintedProfileEvents(topics, Number(chainId), chainProvider, address)
+    const log2 = await getAssociatedEvmEvents(
+      topics2,
+      Number(chainId),
+      chainProvider,
+      nftResolverAddress,
+    )
+
+    logger.debug('nft resolver outgoing associate events', { log2: log2.logs.length })
+    log2.logs.map(async (unparsedEvent) => {
+      const evt = nftResolverInterface.parseLog(unparsedEvent)
+      logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${evt.args}`)
+      const [owner,profileUrl,destinationAddress] = evt.args
+
+      if (evt.name === 'AssociateEvmUser') {
+        const event = await repositories.event.findOne({
+          where: {
+            chainId,
+            contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+            eventName: evt.name,
+            txHash: unparsedEvent.transactionHash,
+            ownerAddress: owner,
+            profileUrl: profileUrl,
+            destinationAddress,
+          },
+        })
+        if (!event) {
+          await repositories.event.save(
+            {
+              chainId,
+              contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+              eventName: evt.name,
+              txHash: unparsedEvent.transactionHash,
+              ownerAddress: owner,
+              profileUrl: profileUrl,
+              destinationAddress,
+            },
+          )
+          logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }`)
+        }
+      }
+    })
 
     logger.debug('filterLiveBids', { filteredBids: filteredBids.map(i => i.id) })
     const validation = await validateLiveBalances(filteredBids, chainId)
     if (validation) {
       await Promise.allSettled(
         log.logs.map(async (unparsedEvent) => {
-          const evt = profileAuctioninterface.parseLog(unparsedEvent)
+          const evt = profileAuctionInterface.parseLog(unparsedEvent)
           logger.info(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
           const [owner,profileUrl,tokenId,,] = evt.args
 
@@ -263,7 +348,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           }
         }),
       )
-      await cache.set(chainIdToCacheKey(chainId), log.latestBlockNumber)
+      await cache.set(chainIdToCacheKeyProfile(chainId), log.latestBlockNumber)
       logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
     }
   } catch (err) {
