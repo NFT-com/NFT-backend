@@ -54,8 +54,8 @@ describe('profile resolver', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         profile: {
-          findByURL: (url) => {
-            if (url === testMockProfiles.url) {
+          findOne: (data) => {
+            if (data.where.url === testMockProfiles.url) {
               return Promise.resolve(testMockProfiles)
             }
             return Promise.resolve(null)
