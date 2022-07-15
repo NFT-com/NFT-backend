@@ -2,6 +2,7 @@ type User {
   id: ID!
   avatarURL: String
   email: String
+  chainId: String
   username: String
   isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]

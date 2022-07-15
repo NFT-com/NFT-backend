@@ -119,7 +119,11 @@ const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI(
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 
 const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
-  const startBlock = chainId == 4 ? 10540040 : 14675454
+  const startBlock = chainId == 4 ? 10540040 :
+    chainId == 5 ? 7128515 :
+      chainId == 1 ? 14675454 :
+        14675454
+
   try {
     const cachedBlock = await cache.get(key)
 
@@ -226,7 +230,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     const address = helper.checkSum(contracts.profileAuctionAddress(chainId))
     const nftResolverAddress = helper.checkSum(contracts.nftResolverAddress(chainId))
 
-    logger.debug('getting Ethereum Events')
+    logger.debug(`👾 getting Ethereum Events chainId=${chainId}`)
 
     const bids = await repositories.bid.find({
       where: [{
@@ -243,27 +247,18 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       nftResolverAddress,
     )
 
-    logger.debug('nft resolver outgoing associate events', { log2: log2.logs.length })
+    logger.debug(`nft resolver outgoing associate events chainId=${chainId}`, { log2: log2.logs.length })
     log2.logs.map(async (unparsedEvent) => {
-      const evt = nftResolverInterface.parseLog(unparsedEvent)
-      logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${evt.args}`)
-      const [owner,profileUrl,destinationAddress] = evt.args
+      let evt
+      try {
+        evt = nftResolverInterface.parseLog(unparsedEvent)
+      
+        logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
+        const [owner,profileUrl,destinationAddress] = evt.args
 
-      if (evt.name === 'AssociateEvmUser') {
-        const event = await repositories.event.findOne({
-          where: {
-            chainId,
-            contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
-            eventName: evt.name,
-            txHash: unparsedEvent.transactionHash,
-            ownerAddress: owner,
-            profileUrl: profileUrl,
-            destinationAddress: helper.checkSum(destinationAddress),
-          },
-        })
-        if (!event) {
-          await repositories.event.save(
-            {
+        if (evt.name === 'AssociateEvmUser') {
+          const event = await repositories.event.findOne({
+            where: {
               chainId,
               contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
               eventName: evt.name,
@@ -272,9 +267,24 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               profileUrl: profileUrl,
               destinationAddress: helper.checkSum(destinationAddress),
             },
-          )
-          logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }`)
+          })
+          if (!event) {
+            await repositories.event.save(
+              {
+                chainId,
+                contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+                eventName: evt.name,
+                txHash: unparsedEvent.transactionHash,
+                ownerAddress: owner,
+                profileUrl: profileUrl,
+                destinationAddress: helper.checkSum(destinationAddress),
+              },
+            )
+            logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
+          }
         }
+      } catch (err) {
+        logger.error('error parsing resolver: ', err)
       }
     })
 

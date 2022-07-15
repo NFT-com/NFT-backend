@@ -5,6 +5,7 @@ import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { getChain } from '@nftcom/gql/config'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, provider, typechain } from '@nftcom/shared'
@@ -13,7 +14,6 @@ import * as Sentry from '@sentry/node'
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
-const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
@@ -217,19 +217,21 @@ const getNFTMetaDataFromAlchemy = async (
 
 export const getCollectionNameFromContract = (
   contractAddress: string,
+  chainId: string,
   type:  defs.NFTType,
 ): Promise<string> => {
   try {
+    const network = getChain('ethereum', chainId)
     if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
-        provider.provider(network),
+        provider.provider(network.name),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else if (type === defs.NFTType.ERC1155 || type === defs.NFTType.UNKNOWN) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
-        provider.provider(network),
+        provider.provider(network.name),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
@@ -266,6 +268,7 @@ const updateCollection = async (
         if (!collection) {
           const collectionName = await getCollectionNameFromContract(
             nft.contract,
+            nft.chainId,
             nft.type,
           )
           logger.debug('new collection', { collectionName, contract: nft.contract })

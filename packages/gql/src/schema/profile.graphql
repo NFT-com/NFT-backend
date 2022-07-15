@@ -32,6 +32,7 @@ type Profile {
   id: ID!
   bannerURL: String
   createdAt: DateTime!
+  chainId: String
   description: String
   displayType: ProfileDisplayType
   layoutType: ProfileLayoutType
@@ -155,8 +156,8 @@ extend type Query {
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
   "AUTHENTICATED"
   myProfiles(input: ProfilesInput): ProfilesOutput!
-  profile(url: String!): Profile!
-  profilePassive(url: String!): Profile!
+  profile(url: String!, chainId: String!): Profile!
+  profilePassive(url: String!, chainId: String!): Profile!
   blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
   "AUTHENTICATED"
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!

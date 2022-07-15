@@ -132,6 +132,7 @@ const fetchAndSaveCollectionInfo = async (
     if (nfts.length) {
       const collectionName = await getCollectionNameFromContract(
         nfts[0].contract,
+        nfts[0].chainId,
         nfts[0].type,
       )
       const collection = await repositories.collection.save({
