@@ -66,6 +66,7 @@ const signUp = (
       return repositories.user.save({
         email,
         username,
+        chainId: chainId || process.env.CHAIN_ID,
         referredBy: referredUserId || null,
         avatarURL,
         confirmEmailToken,
