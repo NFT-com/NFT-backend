@@ -54,8 +54,7 @@ describe('profile resolver', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         profile: {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          findByURL: (url, chainId) => {
+          findByURL: (url) => {
             if (url === testMockProfiles.url) {
               return Promise.resolve(testMockProfiles)
             }
@@ -78,7 +77,7 @@ describe('profile resolver', () => {
             layoutType 
           } 
         }`,
-        variables: { url: 'test', chainId: '1' },
+        variables: { url: 'test', chainId: '4' },
       })
 
       console.log('result: ', result)
@@ -100,7 +99,7 @@ describe('profile resolver', () => {
             url
           }
         }`,
-        variables: { url: testMockProfiles.url },
+        variables: { url: testMockProfiles.url, chainId: '4' },
       })
       expect(result?.data?.profilePassive?.url).toBe(testMockProfiles.url)
     })
