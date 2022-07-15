@@ -163,6 +163,7 @@ describe('collection resolver', () => {
             pageInput: {
               first: 5,
             },
+            chainId: '4',
           },
         },
       })
