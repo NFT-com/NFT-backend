@@ -111,17 +111,18 @@ const getContractNFT = (
   const schema = Joi.object().keys({
     id: Joi.string().required(),
     contract: Joi.string().required(),
-    chainId: Joi.string().required(),
   })
   joi.validateSchema(schema, args)
-  return repositories.nft.findOne({ where: {
-    contract: args.contract,
-    tokenId: args.id,
-    chainId: args.chainId || process.env.CHAIN_ID,
-  } })
+  return repositories.nft.findOne({ where:
+    {
+      contract: utils.getAddress(args.contract),
+      tokenId: ethers.BigNumber.from(args.id).toHexString(),
+      chainId: args.chainId || process.env.CHAIN_ID,
+    },
+  })
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('collection ' + args.contract),
+        nftError.buildNFTNotFoundMsg(`getContractNFT ${args.contract} ${args.id}`),
         nftError.ErrorType.NFTNotFound,
       ),
     ))
