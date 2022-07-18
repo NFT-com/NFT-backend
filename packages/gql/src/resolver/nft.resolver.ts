@@ -114,7 +114,7 @@ const getContractNFT = (
   })
   joi.validateSchema(schema, args)
   return repositories.nft.findOne({ where: {
-    contract: args.contract,
+    contract: utils.getAddress(args.contract),
     tokenId: args.id,
   } })
     .then(fp.rejectIfEmpty(
