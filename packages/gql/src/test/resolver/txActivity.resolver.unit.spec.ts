@@ -85,8 +85,8 @@ describe('transaction activity resolver', () => {
 
   it('should query activity by type', async () => {
     const result = await testServer.executeOperation({
-      query: `query Query($activityType: String) { 
-        getActivitiesByType(activityType: $activityType) { 
+      query: `query Query($activityType: String, $chainId: String) { 
+        getActivitiesByType(activityType: $activityType, chainId: $chainId) { 
           id 
           activityType
           read
@@ -118,8 +118,8 @@ describe('transaction activity resolver', () => {
 
   it('should query activity by user id', async () => {
     const result = await testServer.executeOperation({
-      query: `query Query($userId: ID) { 
-        getActivitiesByUserId(userId: $userId) { 
+      query: `query Query($userId: ID, $chainId: String) { 
+        getActivitiesByUserId(userId: $userId, chainId: $chainId) { 
           id 
           activityType
           read
