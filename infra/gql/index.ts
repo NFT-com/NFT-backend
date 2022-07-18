@@ -1,4 +1,3 @@
-import * as archiver from 'archiver'
 import * as console from 'console'
 import * as envfile from 'envfile'
 import * as fs from 'fs'
@@ -7,61 +6,14 @@ import { omit } from 'lodash'
 import * as process from 'process'
 import * as upath from 'upath'
 
-import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
-import { SharedInfraOutput } from '../defs'
-import { deployInfra, getEnv, getResourceName, getSharedInfraOutput } from '../helper'
-import { createEBInstance } from './beanstalk'
+import { deployInfra, getEnv, getSharedInfraOutput } from '../helper'
 import { createEcsService } from './ecs'
-
-const createAndUploadEBDeployFile = async (
-  config: pulumi.Config,
-  infraOutput: SharedInfraOutput,
-): Promise<string> => {
-  await pulumi.log.info('Create Elasticbeanstalk archive file with Dockerrun.aws.json...')
-
-  const ecrImage = `${process.env.ECR_REGISTRY}/${infraOutput.gqlECRRepo}:latest`
-  const dockerFile = {
-    AWSEBDockerrunVersion: '1',
-    Image: {
-      Name: ecrImage,
-      Update: 'true',
-    },
-    Ports: [{
-      ContainerPort: '8080',
-      HostPort: '80',
-    }],
-  }
-  const fileName = `${getResourceName('qql')}-${new Date().toISOString()}.zip`
-  const file = upath.joinSafe(__dirname, fileName)
-  const output = fs.createWriteStream(file)
-  const archive = archiver.create('zip', {
-    zlib: { level: 9 },
-  })
-  archive.pipe(output)
-  archive.append(JSON.stringify(dockerFile), { name: 'Dockerrun.aws.json' })
-
-  // add nginx config file to eb application zip to upload > 1MB
-  const nginxFile = __dirname + '/proxy.conf'
-  archive.append(fs.createReadStream(nginxFile), { name: '.platform/nginx/conf.d/proxy.conf' })
-
-  await archive.finalize()
-
-  new aws.s3.BucketObject('default', {
-    bucket: infraOutput.deployAppBucket,
-    key: fileName,
-    source: new pulumi.asset.FileAsset(file),
-  })
-
-  return fileName
-}
 
 const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const config = new pulumi.Config()
   const sharedInfraOutput = getSharedInfraOutput()
-  const appFileName = await createAndUploadEBDeployFile(config, sharedInfraOutput)
-  createEBInstance(config, sharedInfraOutput, appFileName)
   createEcsService(config, sharedInfraOutput)
 }
 
