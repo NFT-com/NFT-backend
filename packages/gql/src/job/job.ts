@@ -8,6 +8,7 @@ import {
 //TYPESENSE_INDEX_SCHEMA_JOB,
 } from '@nftcom/gql/job/constants.job'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
+import { nftExternalOrderRefreshDuration, nftExternalOrders, nftExternalOrdersOnDemand } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 import { _logger } from '@nftcom/shared'
 // import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
@@ -26,6 +27,8 @@ const redis = {
 }
 const queuePrefix = 'queue'
 const GENERATE_COMPOSITE_IMAGE = 'GENERATE_COMPOSITE_IMAGE'
+const FETCH_EXTERNAL_ORDERS = 'FETCH_EXTERNAL_ORDERS'
+const FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND'
 
 const queues = new Map<string, Bull.Queue>()
 
@@ -52,6 +55,19 @@ const createQueues = (): Promise<void> => {
       prefix: queuePrefix,
       redis,
     }))
+
+    // external orders cron
+    queues.set(FETCH_EXTERNAL_ORDERS, new Bull(FETCH_EXTERNAL_ORDERS, {
+      prefix: queuePrefix,
+      redis,
+    }))
+
+    // external orders on demand
+    queues.set(FETCH_EXTERNAL_ORDERS_ON_DEMAND, new Bull(FETCH_EXTERNAL_ORDERS_ON_DEMAND, {
+      prefix: queuePrefix,
+      redis,
+    }))
+
     resolve()
   })
 }
@@ -111,6 +127,22 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
           repeat: { every: 2 * 60000 },
           jobId: 'generate_composite_image',
         })
+      case FETCH_EXTERNAL_ORDERS:
+        return queues.get(FETCH_EXTERNAL_ORDERS).add({ FETCH_EXTERNAL_ORDERS }, {
+          removeOnComplete: true,
+          removeOnFail: true,
+          repeat: { every: nftExternalOrderRefreshDuration * 60000 },
+          jobId: 'fetch_external_orders',
+        })
+      case FETCH_EXTERNAL_ORDERS_ON_DEMAND:
+        return queues.get(FETCH_EXTERNAL_ORDERS_ON_DEMAND)
+          .add({ FETCH_EXTERNAL_ORDERS_ON_DEMAND }, {
+            removeOnComplete: true,
+            removeOnFail: true,
+            // repeat every  2 minutes
+            repeat: { every: 2 * 60000 },
+            jobId: 'fetch_external_orders_on_demand',
+          })
       default:
         return queues.get(chainId).add({ chainId }, {
           removeOnComplete: true,
@@ -131,6 +163,12 @@ const listenToJobs = async (): Promise<void> => {
     switch (queue.name) {
     case GENERATE_COMPOSITE_IMAGE:
       queue.process(generateCompositeImages)
+      break
+    case FETCH_EXTERNAL_ORDERS:
+      queue.process(nftExternalOrders)
+      break
+    case FETCH_EXTERNAL_ORDERS_ON_DEMAND:
+      queue.process(nftExternalOrdersOnDemand)
       break
     default:
       queue.process(getEthereumEvents)

@@ -15,7 +15,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -626,6 +626,47 @@ export const refreshNft = async (
   }
 }
 
+export const refreshNFTOrder = async (  _: any,
+  args: gql.MutationRefreshNFTArgs,
+  ctx: Context): Promise<string> => {
+  const { repositories } = ctx
+  logger.debug('refreshNftOrders', { id: args?.id })
+  initiateWeb3()
+
+  try {
+    // check if nft id is already present
+    // executor set
+    const executedCacheMember: number = await cache.sismember(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${process.env.CHAIN_ID}`, args.id)
+
+    // recently executed set
+    // not a member of executor and recently excuted
+    if (executedCacheMember) {
+      return 'Already refreshed recently! Reset after sometime!'
+    }
+
+    const executorCacheMember: number = await cache.sismember(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${process.env.CHAIN_ID}`, args.id)
+    if (executorCacheMember) {
+      return 'Already in queue! Check back shortly'
+    }
+
+    // check nft exists
+    const nft = await repositories.nft.findById(args?.id)
+
+    if (nft) {
+      // add to cache list
+      await cache.sadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${process.env.CHAIN_ID}`, args?.id)
+      return 'Added to queue! Check back shortly!'
+    } else {
+      throw appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      )
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
+  }
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -641,6 +682,7 @@ export default {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
     refreshNft,
+    refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

@@ -120,6 +120,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['BULL_MAX_REPEAT_COUNT'] = process.env.BULL_MAX_REPEAT_COUNT || parsedFile['BULL_MAX_REPEAT_COUNT']
   parsedFile['OPENSEA_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_API_KEY']
   parsedFile['PROFILE_SCORE_EXPIRE_DURATION'] = process.env.PROFILE_SCORE_EXPIRE_DURATION || parsedFile['PROFILE_SCORE_EXPIRE_DURATION']
+  parsedFile['NFT_EXTERNAL_ORDER_REFRESH_DURATION'] = process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION || parsedFile['NFT_EXTERNAL_ORDER_REFRESH_DURATION']
   parsedFile['TEST_DB_HOST'] = process.env.TEST_DB_HOST || parsedFile['TEST_DB_HOST']
   parsedFile['TEST_DB_DATABASE'] = process.env.TEST_DB_DATABASE || parsedFile['TEST_DB_DATABASE']
   parsedFile['TEST_DB_USERNAME'] = process.env.TEST_DB_USERNAME || parsedFile['TEST_DB_USERNAME']
