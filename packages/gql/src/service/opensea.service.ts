@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
@@ -80,6 +80,31 @@ export interface OpenseaOrderResponse {
     seaport: Array<OpenseaResponse>
   }
   prices: any
+}
+
+export interface OpenseaMultipleOrderRequest {
+  contract: string
+  tokenId: string
+  chainId: string
+}
+
+export enum OpenseaQueryParamType {
+  TOKEN_IDS = 'token_ids',
+  ASSET_CONTRACT_ADDRESSES = 'asset_contract_addresses'
+}
+
+export enum OpenseaOrderType {
+  WYVERN = 'wyvern',
+  SEAPORT = 'seaport'
+}
+
+export enum OpenseaMultipleOrderResponseEnum {
+  TESTNET = 'rinkeby:4:ethereum',
+  MAINNET = 'mainnet:1:ethereum'
+}
+
+export type OpenseaMultipleOrderResponse = {
+  [x in OpenseaMultipleOrderResponseEnum]: any // need to work on the response schema
 }
 
 const cids = (): string => {
@@ -276,4 +301,109 @@ export const retrieveOffersOpensea = async (
       return undefined
     }
   }
+}
+
+// chunk = 50
+export const retrieveMultipleOrdersOpensea = async (
+  openseaMultiOrderRequest: Array<OpenseaMultipleOrderRequest>,
+  includeOffers: boolean,
+): Promise<OpenseaMultipleOrderResponse> => {
+  const responseAggregator = {
+    'rinkeby:4:ethereum': null,
+    'mainnet:1:ethereum': null,
+  }
+
+  if (openseaMultiOrderRequest?.length) {
+    const testTokenIds: Array<string> = []
+    const testContractAddresses: Array<string> = []
+
+    const tokenIds: Array<string> = []
+    const contractAddresses: Array<string> = []
+
+    for (const openseaReq of openseaMultiOrderRequest) {
+      if (openseaReq.chainId === '4') {
+        testTokenIds.push(`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`)
+        testContractAddresses.push(`${OpenseaQueryParamType.ASSET_CONTRACT_ADDRESSES}=${openseaReq.contract}`)
+      } else {
+        tokenIds.push(`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`)
+        contractAddresses.push(`${OpenseaQueryParamType.ASSET_CONTRACT_ADDRESSES}=${openseaReq.contract}`)
+      }
+    }
+
+    // testnet orders
+    if (testContractAddresses.length) {
+      const baseUrl = V1_OPENSEA_API_TESTNET_BASE_URL
+      // const baseUrlV2 = OPENSEA_API_TESTNET_BASE_URL
+      const config = {
+        headers: { Accept: 'application/json' },
+      }
+
+      // Listings
+      // Seaport: seaport_sell_orders
+      // Wyvern: sell_orders
+      let queryUrl = `${testContractAddresses.join('&')}`
+
+      if (testTokenIds.length) {
+        queryUrl += `&${testTokenIds.join('&')}`
+      }
+        
+      const finalUrl = `${baseUrl}/assets?${queryUrl}`
+      const response: AxiosResponse = await axios.get(finalUrl, config)
+      if (response?.data) {
+        response['rinkeby:4:ethereum'] = {
+          [OpenseaOrderType.WYVERN]: response.data?.sell_orders,
+          [OpenseaOrderType.SEAPORT]: response.data?.seaport_sell_orders,
+        }
+      }
+
+      // Offers
+      // Seaport
+      // API:v2/orders/rinkeby/seaport/offers
+      // Wyvern
+      // API: https://api.opensea.io/wyvern/v1/orders
+
+      if (includeOffers) {
+        // const offerBaseUrlWyvern: string = `https://testnets-api.opensea.io/wyvern/v1/orders`
+        // const offerBaseUrlSeaport: string =  `${OPENSEA_API_BASE_URL}/orders/rinkeby/seaport/offers`
+        // for (let contractAddress of testContractAddresses) {
+        // }
+      }
+    }
+
+    // mainnet orders
+    if (contractAddresses.length) {
+      const baseUrl = V1_OPENSEA_API_BASE_URL
+      const config = {
+        headers: { Accept: 'application/json' },
+        'X-API-KEY': OPENSEA_API_KEY,
+      }
+        
+      // Seaport: seaport_sell_orders
+      // Wyvern: sell_orders
+      let queryUrl = `${contractAddresses.join('&')}`
+
+      if (tokenIds.length) {
+        queryUrl += `&${tokenIds.join('&')}`
+      }
+        
+      const finalUrl = `${baseUrl}/assets?${queryUrl}`
+      const response: AxiosResponse = await axios.get(finalUrl, config)
+      if (response?.data) {
+        response['mainnet:1:ethereum'] = {
+          [OpenseaOrderType.WYVERN]: response.data?.sell_orders,
+          [OpenseaOrderType.SEAPORT]: response.data?.seaport_sell_orders,
+        }
+      }
+
+      if (includeOffers) {
+        // const offerBaseUrlWyvern: string = `https://api.opensea.io/wyvern/v1/orders`
+        // const offerBaseUrlSeaport: string =  `${OPENSEA_API_BASE_URL}/orders/ethereum/seaport/offers`
+    
+        // for (let contractAddress of contractAddresses) {
+            
+        // }
+      }
+    }
+  }
+  return responseAggregator
 }
