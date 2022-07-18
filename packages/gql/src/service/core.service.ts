@@ -784,7 +784,6 @@ export const createProfileFromEvent = async (
   return createProfile(ctx, {
     status: defs.ProfileStatus.Owned,
     url: profileUrl,
-    chainId: chainId || process.env.CHAIN_ID,
     tokenId: tokenId.toString(),
     ownerWalletId: wallet.id,
     ownerUserId: wallet.userId,
