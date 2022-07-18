@@ -158,7 +158,7 @@ const followProfile = (
   joi.validateSchema(schema, args)
 
   const { url } = args
-  return core.createProfile(ctx, { url })
+  return core.createProfile(ctx, { url, chainId: wallet.chainId })
     .then(fp.tapWait(createFollowEdge(ctx)))
 }
 
