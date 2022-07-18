@@ -116,12 +116,12 @@ const getContractNFT = (
   return repositories.nft.findOne({ where:
     {
       contract: utils.getAddress(args.contract),
-      tokenId: ethers.BigNumber.from(args.id),
+      tokenId: ethers.BigNumber.from(args.id).toHexString(),
     },
   })
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('getContractNFT ' + args.contract + args.id),
+        nftError.buildNFTNotFoundMsg(`getContractNFT ${args.contract} ${args.id}`),
         nftError.ErrorType.NFTNotFound,
       ),
     ))
