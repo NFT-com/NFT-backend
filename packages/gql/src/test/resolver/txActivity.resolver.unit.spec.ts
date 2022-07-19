@@ -7,7 +7,7 @@ import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
 
 import { getTestApolloServer } from '../util/testApolloServer'
 
-jest.setTimeout(120000)
+jest.setTimeout(300000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),

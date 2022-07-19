@@ -10,7 +10,7 @@ import { db, defs } from '@nftcom/shared'
 import { testMockUser, testMockWallet } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
-jest.setTimeout(120000)
+jest.setTimeout(300000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
