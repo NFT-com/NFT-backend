@@ -696,7 +696,7 @@ export const createProfile = (
   profile: Partial<entity.Profile>,
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
-  return ctx.repositories.profile.findByURL(profile.url)
+  return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
     .then(fp.thruIfEmpty(() => {
       return Promise.all([
         fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
@@ -755,6 +755,7 @@ export const createProfileFromEvent = async (
         chainId,
       },
     })
+
     if (!user) {
       user = await repositories.user.save({
         // defaults
