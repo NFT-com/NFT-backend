@@ -310,7 +310,8 @@ const getProfileByURL = (
   })
   joi.validateSchema(schema, args)
 
-  const chain = auth.verifyAndGetNetworkChain('ethereum', args?.chainId)
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
   const nftProfileContract = typechain.NftProfile__factory.connect(
     contracts.nftProfileAddress(chain.id),
     provider.provider(Number(chain.id)),
@@ -319,7 +320,7 @@ const getProfileByURL = (
   return ctx.repositories.profile.findOne({
     where: {
       url: args.url,
-      chainId: args?.chainId || process.env.CHAIN_ID,
+      chainId: chainId,
     },
   })
     .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chain.id)))

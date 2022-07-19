@@ -192,10 +192,10 @@ const getMyNFTs = (
   args: gql.QueryNFTsArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
-  const { user } = ctx
+  const { user, chain } = ctx
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
-  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   const { types, profileId } = helper.safeObject(args?.input)

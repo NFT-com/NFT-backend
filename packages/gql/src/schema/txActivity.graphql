@@ -85,7 +85,7 @@ type TxConsideration {
 input TxUserIdAndTypeInput {
   userId: ID!
   activityType: String!
-  chainId: String!
+  chainId: String
 }
 
 extend type Query {

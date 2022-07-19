@@ -44,7 +44,7 @@ input NFTsInput {
   pageInput: PageInput
   types: [NFTType!]
   profileId: ID
-  chainId: String!
+  chainId: String
 }
 
 input CurationInput {
@@ -55,7 +55,7 @@ input CurationInput {
 
 input CollectionNFTsInput {
   collectionAddress: Address!
-  chainId: String!
+  chainId: String
   pageInput: PageInput
 }
 
@@ -115,7 +115,7 @@ type RefreshMyNFTsOutput {
 
 input UpdateNFTsForProfileInput {
   profileId: ID!
-  chainId: String!
+  chainId: String
   pageInput: PageInput
 }
 
@@ -148,9 +148,9 @@ type ExternalListingsOutput {
 }
 
 extend type Query {
-  gkNFTs(tokenId: String!, chainId: String!): GetGkNFTSOutput!
-  nft(contract: Address!, id: String!, chainId: String!): NFT!
-  externalListings(contract: Address!, tokenId: String!, chainId: String!): ExternalListingsOutput
+  gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
+  nft(contract: Address!, id: String!, chainId: String): NFT!
+  externalListings(contract: Address!, tokenId: String!, chainId: String): ExternalListingsOutput
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
   "AUTHETICATED"
@@ -163,5 +163,5 @@ extend type Mutation {
   "AUTHETICATED"
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
-  refreshNft(id: ID!, chainId: String!): NFT!
+  refreshNft(id: ID!, chainId: String): NFT!
 }
