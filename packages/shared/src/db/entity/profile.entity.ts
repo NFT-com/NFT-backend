@@ -1,4 +1,4 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity, Index, Unique } from 'typeorm'
 
 import { ProfileDisplayType, ProfileLayoutType, ProfileStatus } from '@nftcom/shared/defs'
 
@@ -7,10 +7,13 @@ import { BaseEntity } from './base.entity'
 // TODO recheck indexes after some data is available
 @Entity()
 @Index(['ownerUserId', 'deletedAt', 'createdAt', 'status'])
+@Unique(['url', 'chainId'])
+@Unique(['tokenId', 'chainId'])
+@Unique(['url', 'tokenId'])
 export class Profile extends BaseEntity {
 
   @Index()
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: false })
   url: string
 
   @Column({ nullable: true })
@@ -19,7 +22,7 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   ownerWalletId: string
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   tokenId: string
 
   @Column({
