@@ -207,11 +207,16 @@ const getProfileByURLPassive = (
     chainId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args)
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+  if (chain.id !== args?.chainId) {
+    throw Error('chain id is not valid')
+  }
 
   return ctx.repositories.profile.findOne({
     where: {
       url: args.url,
-      chainId: args?.chainId || process.env.CHAIN_ID,
+      chainId,
     },
   })
     .then(fp.rejectIfEmpty(appError.buildExists(
@@ -709,10 +714,15 @@ const getLatestProfiles = (
 ): Promise<gql.ProfilesOutput> => {
   const { repositories } = ctx
   logger.debug('getLatestProfiles', { input: args?.input })
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+  if (chain.id !== args?.input.chainId) {
+    throw Error('chain id is not valid')
+  }
   const pageInput = args?.input.pageInput
   const inputFilters = {
     pageInput: args?.input?.pageInput,
-    chainId: args?.input.chainId || process.env.CHAIN_ID,
+    chainId: chainId,
   }
   const filters = [helper.inputT2SafeK(inputFilters)]
   return core.paginatedEntitiesBy(
@@ -786,6 +796,10 @@ const leaderboard = async (
 ): Promise<gql.LeaderboardOutput> => {
   const { repositories } = ctx
   const chainId = args?.input.chainId || process.env.CHAIN_ID
+  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+  if (chain.id !== args?.input.chainId) {
+    throw Error('chain id is not valid')
+  }
   const TOP = args?.input.count ? Number(args?.input.count) : 100
   const cachedData = await cache.get(`Leaderboard_response_${chainId}_top_${TOP}`)
   let leaderboard: Array<gql.LeaderboardProfile> = []
