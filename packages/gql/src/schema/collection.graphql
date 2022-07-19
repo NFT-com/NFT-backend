@@ -75,13 +75,13 @@ type CollectionInfo {
 
 input CollectionInput {
   contract: Address!
-  chainId: String!
+  chainId: String
   network: String!
   withOpensea: Boolean
 }
 
 input FillChainIdsInput {
-  chainId: String!
+  chainId: String
   entity: String!
 }
 

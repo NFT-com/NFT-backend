@@ -114,7 +114,7 @@ input CreateCompositeImageInput {
 
 input LatestProfilesInput {
   pageInput: PageInput
-  chainId: String!
+  chainId: String
 }
 
 input OrderUpdateInput {
@@ -128,7 +128,7 @@ input OrderingUpdatesInput {
 }
 
 input LeaderboardInput {
-  chainId: String!
+  chainId: String
   count: Int
   pageInput: PageInput
 }
@@ -154,8 +154,8 @@ extend type Query {
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
   "AUTHENTICATED"
   myProfiles(input: ProfilesInput): ProfilesOutput!
-  profile(url: String!, chainId: String!): Profile!
-  profilePassive(url: String!, chainId: String!): Profile!
+  profile(url: String!, chainId: String): Profile!
+  profilePassive(url: String!, chainId: String): Profile!
   blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
   "AUTHENTICATED"
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
