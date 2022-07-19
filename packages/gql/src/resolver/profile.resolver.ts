@@ -251,7 +251,6 @@ const maybeUpdateProfileOwnership = (
                 confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
                 confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
                 referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-                chainId,
               })
                 .then((user: entity.User) =>
                   ctx.repositories.wallet.save({
