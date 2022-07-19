@@ -207,11 +207,13 @@ const getProfileByURLPassive = (
     chainId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args)
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   return ctx.repositories.profile.findOne({
     where: {
       url: args.url,
-      chainId: args?.chainId || process.env.CHAIN_ID,
+      chainId,
     },
   })
     .then(fp.rejectIfEmpty(appError.buildExists(
@@ -249,6 +251,7 @@ const maybeUpdateProfileOwnership = (
                 confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
                 confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
                 referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+                chainId,
               })
                 .then((user: entity.User) =>
                   ctx.repositories.wallet.save({
@@ -407,6 +410,7 @@ const updateProfile = (
         args.input.hideAllNFTs,
         args.input.showNFTIds,
         args.input.hideNFTIds,
+        p.chainId,
       ).then(() => {
         return repositories.profile.save(p)
       })
@@ -707,8 +711,15 @@ const getLatestProfiles = (
 ): Promise<gql.ProfilesOutput> => {
   const { repositories } = ctx
   logger.debug('getLatestProfiles', { input: args?.input })
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
   const pageInput = args?.input.pageInput
-  const filters = [helper.inputT2SafeK<entity.Profile>(args?.input)]
+  const inputFilters = {
+    pageInput: args?.input?.pageInput,
+    chainId: chainId,
+  }
+  const filters = [helper.inputT2SafeK(inputFilters)]
   return core.paginatedEntitiesBy(
     repositories.profile,
     pageInput,
@@ -779,16 +790,18 @@ const leaderboard = async (
   ctx: Context,
 ): Promise<gql.LeaderboardOutput> => {
   const { repositories } = ctx
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   const TOP = args?.input.count ? Number(args?.input.count) : 100
-  const cachedData = await cache.get(`Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`)
+  const cachedData = await cache.get(`Leaderboard_response_${chainId}_top_${TOP}`)
   let leaderboard: Array<gql.LeaderboardProfile> = []
 
   // if cached data is not null and not an empty array
   if (cachedData?.length) {
     leaderboard = JSON.parse(cachedData)
   } else {
-    const profilesWithScore = await cache.zrevrangebyscore(`LEADERBOARD_${process.env.CHAIN_ID}`, '+inf', '-inf', 'WITHSCORES')
+    const profilesWithScore = await cache.zrevrangebyscore(`LEADERBOARD_${chainId}`, '+inf', '-inf', 'WITHSCORES')
 
     let index = 0
     // get leaderboard for TOP items...
@@ -809,7 +822,7 @@ const leaderboard = async (
       index++
     }
     await cache.set(
-      `Leaderboard_response_${process.env.CHAIN_ID}_top_${TOP}`,
+      `Leaderboard_response_${chainId}_top_${TOP}`,
       JSON.stringify(leaderboard),
       'EX',
       5 * 60, // 5 minutes

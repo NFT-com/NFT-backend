@@ -77,6 +77,7 @@ export const mockUpdateProfileInput: UpdateProfileInput =
 
 export const nftTestMockData: NFT = {
   id: 'test-nft-id',
+  chainId: '4',
   contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
   tokenId: '0x091f1d',
   type: NFTType.ERC721,

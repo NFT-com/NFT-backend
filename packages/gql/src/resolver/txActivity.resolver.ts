@@ -1,4 +1,5 @@
 import { Context, gql } from '@nftcom/gql/defs'
+import { auth } from '@nftcom/gql/helper'
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType } from '@nftcom/shared/defs'
 
@@ -6,14 +7,19 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
   const activityType = ActivityType[args.activityType]
+  const chainId = args.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByType(activityType)
+  return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
 const getActivitiesByUserId = (_: any, args: gql.QueryGetActivitiesByUserIdArgs, ctx: Context)
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
-  return repositories.txActivity.findActivitiesByUserId(args.userId)
+  const chainId = args.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+  return repositories.txActivity.findActivitiesByUserId(args.userId, chainId)
 }
 
 const getActivitiesByUserIdAndType = (
@@ -23,7 +29,14 @@ const getActivitiesByUserIdAndType = (
 ): Promise<TxActivity[]> => {
   const { repositories } = ctx
   const activityType = ActivityType[args.input.activityType]
-  return repositories.txActivity.findActivitiesByUserIdAndType(args.input.userId, activityType)
+  const chainId = args.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+  return repositories.txActivity.findActivitiesByUserIdAndType(
+    args.input.userId,
+    activityType,
+    chainId,
+  )
 }
 
 export default {

@@ -15,6 +15,8 @@ const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
+const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 
@@ -89,8 +91,10 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
-export const initiateWeb3 = (): void => {
-  web3 = createAlchemyWeb3(ALCHEMY_API_URL)
+export const initiateWeb3 = (chainId?: string): void => {
+  const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
+    (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
+  web3 = createAlchemyWeb3(alchemy_api_url)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -408,12 +412,14 @@ const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
+  chainId: string,
 ): Promise<entity.NFT| undefined> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: ethers.utils.getAddress(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+        chainId: chainId,
       },
     })
 
@@ -499,9 +505,14 @@ export const checkNFTContractAddresses = async (
   userId: string,
   walletId: string,
   walletAddress: string,
+  chainId: string,
 ): Promise<void[]> => {
   try {
-    const nfts = await repositories.nft.find({ where: { userId: userId, walletId: walletId } })
+    const nfts = await repositories.nft.find({ where: {
+      userId: userId,
+      walletId: walletId,
+      chainId: chainId,
+    } })
     if (!nfts.length) {
       return []
     }
@@ -525,17 +536,19 @@ export const checkNFTContractAddresses = async (
  * @param userId
  * @param walletId
  * @param walletAddress
+ * @param chainId
  */
 export const updateWalletNFTs = async (
   userId: string,
   walletId: string,
   walletAddress: string,
+  chainId: string,
 ): Promise<void> => {
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
   const savedNFTs: entity.NFT[] = []
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId)
+      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
       if (savedNFT) savedNFTs.push(savedNFT)
     }),
   )
@@ -549,7 +562,9 @@ export const refreshNFTMetadata = async (
     // hard refresh for now
     // until Alchemy SDK incorporates this
     // TODO: remove in future
-    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=${nft.type == defs.NFTType.ERC1155 ? 'erc1155' : 'erc721'}&refreshCache=true`)
+    const alchemy_api_url = nft.chainId === '1' ? process.env.ALCHEMY_API_URL :
+      (nft.chainId === '5' ? process.env.ALCHEMY_API_URL_GOERLI : process.env.ALCHEMY_API_URL_RINKEBY)
+    await axios.get(`${alchemy_api_url}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=${nft.type == defs.NFTType.ERC1155 ? 'erc1155' : 'erc721'}&refreshCache=true`)
 
     const metadata = await getNFTMetaData(
       nft.contract,
@@ -657,8 +672,9 @@ const showAllNFTs = async (
   repositories: db.Repository,
   userId: string,
   profileId: string,
+  chainId: string,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { userId } })
+  const nfts = await repositories.nft.find({ where: { userId, chainId } })
   if (nfts.length) {
     await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
@@ -684,11 +700,15 @@ const showAllNFTs = async (
   }
 }
 
-const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> => {
+const showNFTs = async (
+  showNFTIds: string[],
+  profileId: string,
+  chainId: string,
+): Promise<void> => {
   const nfts = []
   await Promise.allSettled(
     showNFTIds.map(async (id) => {
-      const existingNFT = await repositories.nft.findOne({ where: { id } })
+      const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
       if (existingNFT) nfts.push(existingNFT)
     }),
   )
@@ -724,6 +744,7 @@ const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> 
  * @param hideAll
  * @param showNFTIds - set the NFTs' visibility as show, without regard to the previous value
  * @param hideNFTIds - set the NFTs' visibility as hide, without regard to the previous value
+ * @param chainId
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
@@ -733,22 +754,23 @@ export const changeNFTsVisibility = async (
   hideAll: boolean,
   showNFTIds: Array<string> | null,
   hideNFTIds: Array<string> | null,
+  chainId: string,
 ): Promise<void> => {
   try {
     if (showAll) {
-      await showAllNFTs(repositories, userId, profileId)
+      await showAllNFTs(repositories, userId, profileId, chainId)
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
       return
     } else {
       if (showNFTIds?.length) {
-        await showNFTs(showNFTIds, profileId)
+        await showNFTs(showNFTIds, profileId, chainId)
       }
       if (hideNFTIds) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
-            const existingNFT = await repositories.nft.findOne({ where: { id } })
+            const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
             if (existingNFT) {
               const edgeVals = {
                 thisEntityId: profileId,

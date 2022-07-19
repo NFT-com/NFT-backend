@@ -104,7 +104,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 }
               } catch (err) {
                 logger.debug('gk balance: ', err)
-                
+
                 Sentry.captureMessage(`gk balance error in validateLiveBalances: ${err}`)
               }
             }),
@@ -252,7 +252,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       let evt
       try {
         evt = nftResolverInterface.parseLog(unparsedEvent)
-      
+
         logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
         const [owner,profileUrl,destinationAddress] = evt.args
 
@@ -310,6 +310,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 where: {
                   tokenId: tokenId.toString(),
                   url: profileUrl,
+                  chainId,
                 },
               })
               if (!profile) {

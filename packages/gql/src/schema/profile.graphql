@@ -114,10 +114,7 @@ input CreateCompositeImageInput {
 
 input LatestProfilesInput {
   pageInput: PageInput
-}
-
-input CreateAllCompositeImagesInput {
-  pageInput: PageInput
+  chainId: String!
 }
 
 input OrderUpdateInput {
@@ -131,6 +128,7 @@ input OrderingUpdatesInput {
 }
 
 input LeaderboardInput {
+  chainId: String!
   count: Int
   pageInput: PageInput
 }

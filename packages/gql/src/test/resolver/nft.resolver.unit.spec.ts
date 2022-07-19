@@ -13,6 +13,7 @@ describe('nft resolver', () => {
     const mockArgs ={
       contract: nftTestMockData.contract,
       tokenId: nftTestMockData.tokenId,
+      chainId: nftTestMockData.chainId,
     }
     testServer = getTestApolloServer({
       nft: {
@@ -29,6 +30,7 @@ describe('nft resolver', () => {
         findOne: ({ where: mockArgs }) => Promise.resolve({
           contract: mockArgs.contract,
           tokenId: mockArgs.tokenId,
+          chainId: mockArgs.chainId,
         }),
       },
     },
@@ -44,15 +46,17 @@ describe('nft resolver', () => {
     // get NFT
     it('should get NFT', async () => {
       const result = await testServer.executeOperation({
-        query: `query Nft($contract: Address!, $nftId: String!) {
-                nft(contract: $contract, id: $nftId) {
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
                   tokenId
                   contract
+                  chainId
                 }
               }`,
         variables: {
           contract: nftTestMockData.contract,
           nftId: nftTestMockData.tokenId,
+          chainId: nftTestMockData.chainId,
         },
       })
       expect(result?.data?.nft?.contract).toBe(nftTestMockData.contract)
@@ -62,15 +66,17 @@ describe('nft resolver', () => {
     // invalid address
     it('should throw contract INVALID ADDRESS', async () => {
       const result = await testServer.executeOperation({
-        query: `query Nft($contract: Address!, $nftId: String!) {
-                nft(contract: $contract, id: $nftId) {
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
                   tokenId
                   contract
+                  chainId
                 }
               }`,
         variables: {
           contract: nftTestErrorMockData.contract,
           nftId: nftTestMockData.tokenId,
+          chainId: nftTestMockData.chainId,
         },
       })
       expect(result?.errors).toHaveLength(1)
@@ -79,16 +85,18 @@ describe('nft resolver', () => {
     // correct address, incorrect token
     it('should throw an error', async () => {
       const result = await testServer.executeOperation({
-        query: `query Nft($contract: Address!, $nftId: String!) {
-                nft(contract: $contract, id: $nftId) {
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
                   tokenId
                   contract
                   id
+                  chainId
                 }
               }`,
         variables: {
           contract: nftTestMockData.contract,
           nftId: nftTestErrorMockData.tokenId,
+          chainId: nftTestMockData.chainId,
         },
       })
       expect(result?.errors).toHaveLength(1)

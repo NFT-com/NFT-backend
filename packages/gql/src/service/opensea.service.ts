@@ -106,6 +106,7 @@ export const retrieveOrdersOpensea = async (
   tokenId: string,
   chainId: string,
 ): Promise<OpenseaOrderResponse | undefined> => {
+  if (chainId !== '4' && chainId !== '1') return undefined
   let listingUrl, offerUrl
   const baseCoinGeckoUrl = 'https://api.coingecko.com/api/v3/simple/price'
   const baseUrlV1 = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
