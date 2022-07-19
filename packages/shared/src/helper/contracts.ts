@@ -109,7 +109,7 @@ export function nftProfileAddress(chainId: string | number = 'mainnet'): string 
   case 5:
   case '5':
   case 'goerli':
-    return utils.getAddress('0x073272c91A741E453aE47c10Be2F7ab5131B0706')
+    return utils.getAddress('0x9Ef7A34dcCc32065802B1358129a226B228daB4E')
   case '1':
   case 1:
   case 'mainnet':
