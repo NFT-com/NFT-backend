@@ -111,8 +111,13 @@ const getContractNFT = (
   const schema = Joi.object().keys({
     id: Joi.string().required(),
     contract: Joi.string().required(),
+    chainId: Joi.string(),
   })
   joi.validateSchema(schema, args)
+  const chain = auth.verifyAndGetNetworkChain('ethereum', args.chainId)
+  if (chain.id !== args.chainId) {
+    throw Error('chain id is not valid')
+  }
   return repositories.nft.findOne({ where:
     {
       contract: utils.getAddress(args.contract),
