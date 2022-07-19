@@ -24,10 +24,7 @@ const getCollection = async (
   try {
     logger.debug('getCollection', { input: args?.input })
     const chainId = args?.input?.chainId || process.env.CHAIN_ID
-    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    if (chain.id !== args?.input.chainId) {
-      throw Error('chain id is not valid')
-    }
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
     const key = `${args?.input?.contract?.toLowerCase()}-${chainId}-${args?.input?.withOpensea}`
     const cachedData = await cache.get(key)
 
@@ -242,10 +239,7 @@ const fillChainIds = async (
   logger.debug('fillChainIds', { input: args?.input })
   try {
     const chainId = args?.input.chainId || process.env.CHAIN_ID
-    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    if (chain.id !== args?.input.chainId) {
-      throw Error('chain id is not valid')
-    }
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
     const entity = args?.input.entity
     if (entity === 'bid') {
       const bids = await repositories.bid.findAll()

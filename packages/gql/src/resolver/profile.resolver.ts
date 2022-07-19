@@ -208,10 +208,7 @@ const getProfileByURLPassive = (
   })
   joi.validateSchema(schema, args)
   const chainId = args?.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-  if (chain.id !== args?.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   return ctx.repositories.profile.findOne({
     where: {
@@ -715,10 +712,8 @@ const getLatestProfiles = (
   const { repositories } = ctx
   logger.debug('getLatestProfiles', { input: args?.input })
   const chainId = args?.input.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-  if (chain.id !== args?.input.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
   const pageInput = args?.input.pageInput
   const inputFilters = {
     pageInput: args?.input?.pageInput,
@@ -796,10 +791,8 @@ const leaderboard = async (
 ): Promise<gql.LeaderboardOutput> => {
   const { repositories } = ctx
   const chainId = args?.input.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-  if (chain.id !== args?.input.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
   const TOP = args?.input.count ? Number(args?.input.count) : 100
   const cachedData = await cache.get(`Leaderboard_response_${chainId}_top_${TOP}`)
   let leaderboard: Array<gql.LeaderboardProfile> = []

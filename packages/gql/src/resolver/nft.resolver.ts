@@ -114,15 +114,13 @@ const getContractNFT = (
     chainId: Joi.string(),
   })
   joi.validateSchema(schema, args)
-  const chain = auth.verifyAndGetNetworkChain('ethereum', args.chainId)
-  if (chain.id !== args.chainId) {
-    throw Error('chain id is not valid')
-  }
+  const chainId = args.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
   return repositories.nft.findOne({ where:
     {
       contract: utils.getAddress(args.contract),
       tokenId: ethers.BigNumber.from(args.id).toHexString(),
-      chainId: args.chainId || process.env.CHAIN_ID,
+      chainId,
     },
   })
     .then(fp.rejectIfEmpty(
@@ -145,10 +143,7 @@ const getNFTs = (
   logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
   const { types, profileId } = helper.safeObject(args?.input)
   const chainId = args?.input.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-  if (chain.id !== args?.input.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
   })
@@ -162,7 +157,7 @@ const getNFTs = (
       // (e.g. before user-curated curations are available)
       // we'll return all the owner's NFTs (at this wallet)
       return repositories.profile.findOne({
-        where: { id: profileId, chainId: chainId || process.env.CHAIN_ID },
+        where: { id: profileId, chainId: chainId },
       })
         .then((profile: entity.Profile) =>
           repositories.nft.findByWalletId(profile.ownerWalletId, chainId)
@@ -201,10 +196,7 @@ const getMyNFTs = (
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
   const chainId = args?.input.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-  if (chain.id !== args?.input.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   const { types, profileId } = helper.safeObject(args?.input)
 
@@ -257,10 +249,7 @@ const getCollectionNFTs = (
   logger.debug('getCollectionNFTs', { input: args?.input })
   const { pageInput, collectionAddress } = helper.safeObject(args?.input)
   const chainId = args?.input.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', args?.input.chainId)
-  if (chain.id !== args?.input.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   return repositories.collection.findByContractAddress(
     utils.getAddress(collectionAddress),
@@ -289,7 +278,7 @@ const getCollectionNFTs = (
         resultEdges.items.map((edge: entity.Edge) => repositories.nft.findOne({
           where: {
             id: edge.thatEntityId,
-            chainId: chainId || process.env.CHAIN_ID,
+            chainId: chainId,
           },
         })),
       ),
@@ -339,10 +328,7 @@ const getGkNFTs = async (
   logger.debug('getGkNFTs', { loggedInUserId: user?.id  })
 
   const chainId = args?.chainId || process.env.CHAIN_ID
-  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-  if (chain.id !== args?.chainId) {
-    throw Error('chain id is not valid')
-  }
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   const cachedData = await cache.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`)
   if (cachedData) {
@@ -431,12 +417,10 @@ const updateNFTsForProfile = (
     const { repositories } = ctx
     logger.debug('updateNFTsForProfile', { input: args?.input })
     const chainId = args?.input.chainId || process.env.CHAIN_ID
-    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    if (chain.id !== args?.input.chainId) {
-      throw Error('chain id is not valid')
-    }
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+
     const pageInput = args?.input.pageInput
-    initiateWeb3(args?.input.chainId)
+    initiateWeb3(chainId)
     return repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
@@ -537,10 +521,7 @@ const getExternalListings = async (
   })
   try {
     const chainId = args?.chainId || process.env.CHAIN_ID
-    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    if (chain.id !== args?.chainId) {
-      throw Error('chain id is not valid')
-    }
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
     const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${chainId}`
     const cachedData = await cache.get(key)
 
@@ -668,10 +649,7 @@ export const refreshNft = async (
     const { repositories } = ctx
     logger.debug('refreshNft', { id: args?.id, chainId: args?.chainId })
     const chainId = args?.chainId || process.env.CHAIN_ID
-    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    if (chain.id !== args?.chainId) {
-      throw Error('chain id is not valid')
-    }
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
     initiateWeb3(chainId)
     const cachedData = await cache.get(`refreshNFT_${chainId}_${args?.id}`)
     if (cachedData) {
