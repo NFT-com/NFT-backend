@@ -297,7 +297,7 @@ const maybeUpdateProfileOwnership = (
   }
 }
 
-const getProfileByURL = (
+const getProfileByURL = async (
   _: any,
   args: gql.QueryProfileArgs,
   ctx: Context,
