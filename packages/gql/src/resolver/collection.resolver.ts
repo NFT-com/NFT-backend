@@ -313,14 +313,8 @@ const fillChainIds = async (
           txTransfers[i].chainId = chainId
       }
       await repositories.txTransfer.saveMany(txTransfers, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'user') {
-      const users = await repositories.user.findAll()
-      for (let i = 0; i < users.length; i++) {
-        if (!users[i].chainId)
-          users[i].chainId = chainId
-      }
-      await repositories.user.saveMany(users, { chunk: MAX_SAVE_COUNTS })
     }
+
     return {
       message: 'Filled chainId successfully.',
     }

@@ -752,14 +752,12 @@ export const createProfileFromEvent = async (
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
-        chainId,
       },
     })
 
     if (!user) {
       user = await repositories.user.save({
         // defaults
-        chainId: chainId || process.env.CHAIN_ID,
         username: 'ethereum-' + ethers.utils.getAddress(owner),
         referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
       })
