@@ -916,8 +916,7 @@ const clearGKIconVisible = async (
     const { repositories, chain } = ctx
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const gkContract = contracts.genesisKeyAddress(chainId)
-    const owners = await getOwnersOfGenesisKeys(gkContract, chainId)
+    const owners = await getOwnersOfGenesisKeys(chainId)
     const ownerWalletIds: string[] = []
     await Promise.allSettled(
       owners.map(async (owner) => {
@@ -941,7 +940,7 @@ const clearGKIconVisible = async (
     if (updatedProfiles.length) {
       await repositories.profile.saveMany(updatedProfiles, { chunk: MAX_SAVE_COUNTS })
       return {
-        message: 'Cleared GK icon visible for profiles',
+        message: `Cleared GK icon visible for ${updatedProfiles.length} profiles`,
       }
     } else {
       return {

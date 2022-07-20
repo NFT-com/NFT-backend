@@ -8,7 +8,7 @@ import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { getChain } from '@nftcom/gql/config'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
-import { _logger, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -600,9 +600,9 @@ export const refreshNFTMetadata = async (
 }
 
 export const getOwnersOfGenesisKeys = async (
-  contract: string,
   chainId: string,
 ): Promise<string[]> => {
+  const contract = contracts.genesisKeyAddress(chainId)
   if (chainId !== '1' && chainId !== '5') return []
   try {
     // until Alchemy SDK incorporates this
