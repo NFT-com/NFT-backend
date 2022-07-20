@@ -92,6 +92,7 @@ type NFTMetaData = {
 }
 
 export const initiateWeb3 = (chainId?: string): void => {
+  chainId = chainId || process.env.CHAIN_ID // attach default value
   const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
     (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
   web3 = createAlchemyWeb3(alchemy_api_url)
