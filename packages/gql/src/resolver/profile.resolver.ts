@@ -23,7 +23,11 @@ import {
   getAWSConfig,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
-import { changeNFTsVisibility, updateNFTsOrder } from '@nftcom/gql/service/nft.service'
+import {
+  changeNFTsVisibility,
+  getOwnersOfGenesisKeys,
+  updateNFTsOrder,
+} from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -32,6 +36,8 @@ import { blacklistBool } from '../service/core.service'
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
+
+const MAX_SAVE_COUNTS = 500
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
@@ -901,6 +907,51 @@ const saveScoreForProfiles = async (
   }
 }
 
+const clearGKIconVisible = async (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<gql.ClearGkIconVisibleOutput> => {
+  try {
+    const { repositories, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const owners = await getOwnersOfGenesisKeys(chainId)
+    const ownerWalletIds: string[] = []
+    await Promise.allSettled(
+      owners.map(async (owner) => {
+        const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
+          chainId,
+          ethers.utils.getAddress(owner),
+        )
+        ownerWalletIds.push(foundWallet.id)
+      }),
+    )
+    const profiles = await repositories.profile.find({ where: { chainId } })
+    const updatedProfiles = []
+    profiles.map((profile) => {
+      if (ownerWalletIds.findIndex((id) => id === profile.ownerWalletId) === -1) {
+        if (profile.gkIconVisible) {
+          profile.gkIconVisible = false
+          updatedProfiles.push(profile)
+        }
+      }
+    })
+    if (updatedProfiles.length) {
+      await repositories.profile.saveMany(updatedProfiles, { chunk: MAX_SAVE_COUNTS })
+      return {
+        message: `Cleared GK icon visible for ${updatedProfiles.length} profiles`,
+      }
+    } else {
+      return {
+        message: 'No need to clear GK icon visible for profiles',
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in clearGKIconVisible: ${err}`)
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -923,6 +974,7 @@ export default {
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
     orderingUpdates: combineResolvers(auth.isAuthenticated, orderingUpdates),
     saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
+    clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
   },
   Profile: {
     followersCount: getFollowersCount,
