@@ -37,8 +37,8 @@ class Commander {
   }
 
   private _retrieveData = async (name: string): Promise<any[]> => {
-    if (name === 'nfts') {
-      return this.repositories.nft.findAllWithRelations()
+    if (name === 'nfts' || name === 'profiles') {
+      return this.repositories[name.slice(0, -1)].findAllWithRelations()
     }
     return await this.repositories[name.slice(0, -1)].findAll()
   }

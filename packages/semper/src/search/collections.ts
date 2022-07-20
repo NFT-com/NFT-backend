@@ -3,11 +3,10 @@ import { BigNumber } from 'ethers'
 import {
   BaseEntity,
   Collection,
-  Profile,
   Wallet,
 } from '@nftcom/shared/db/entity'
 
-import { NFTDao } from './model'
+import { NFTDao, ProfileDao } from './model'
 
 export const collectionNames = ['collections', 'nfts', 'profiles', 'wallets']
 
@@ -59,10 +58,12 @@ export const mapCollectionData = (
     })
     break
   case 'profiles':
-    result = data.map((profile: Profile) => {
+    result = data.map((profile: ProfileDao) => {
       return {
         id: profile.id,
         url: profile.url,
+        ownerAddress: profile.wallet?.address,
+        photoURL: profile.photoURL,
       }
     })
     break
