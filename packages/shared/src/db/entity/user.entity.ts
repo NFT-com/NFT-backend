@@ -26,9 +26,6 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   avatarURL: string
 
-  @Column({ nullable: true })
-  chainId: string
-
   @Index()
   @Column({ nullable: false })
   referralId: string

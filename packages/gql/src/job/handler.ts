@@ -284,7 +284,9 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           }
         }
       } catch (err) {
-        logger.error('error parsing resolver: ', err)
+        if (err.code != 'BUFFER_OVERRUN') { // error parsing old event on goerli
+          logger.error('error parsing resolver: ', err)
+        }
       }
     })
 

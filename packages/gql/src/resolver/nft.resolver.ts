@@ -114,7 +114,7 @@ const getContractNFT = (
     chainId: Joi.string(),
   })
   joi.validateSchema(schema, args)
-  const chainId = args.chainId || process.env.CHAIN_ID
+  const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   return repositories.nft.findOne({ where:
     {
@@ -298,7 +298,9 @@ const refreshMyNFTs = (
   ctx: Context,
 ): Promise<gql.RefreshMyNFTsOutput> => {
   const { user, repositories } = ctx
-  initiateWeb3()
+  const chainId = ctx.chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  initiateWeb3(chainId)
   logger.debug('refreshNFTs', { loggedInUserId: user.id })
   return repositories.wallet.findByUserId(user.id)
     .then((wallets: entity.Wallet[]) => {

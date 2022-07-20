@@ -4,7 +4,7 @@ import { BaseEntity } from './base.entity'
 
 @Entity()
 @Index(['contract'])
-@Unique(['contract'])
+@Unique(['contract', 'chainId'])
 export class Collection extends BaseEntity {
 
   @Column({ nullable: false })

@@ -696,7 +696,7 @@ export const createProfile = (
   profile: Partial<entity.Profile>,
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
-  return ctx.repositories.profile.findByURL(profile.url)
+  return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
     .then(fp.thruIfEmpty(() => {
       return Promise.all([
         fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
@@ -752,13 +752,12 @@ export const createProfileFromEvent = async (
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
-        chainId,
       },
     })
+
     if (!user) {
       user = await repositories.user.save({
         // defaults
-        chainId: chainId || process.env.CHAIN_ID,
         username: 'ethereum-' + ethers.utils.getAddress(owner),
         referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
       })
