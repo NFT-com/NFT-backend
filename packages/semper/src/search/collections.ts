@@ -37,13 +37,9 @@ export const mapCollectionData = (
     break
   case 'nfts':
     result = data.map((nft: NFTDao) => {
-      const traits = nft.metadata.traits.reduce((traitObj, trait) => {
-        return {
-          ...traitObj,
-          [`traits.${trait.type}`]: trait.value.toString(),
-        }
-      }, {})
-      console.log('traits', traits)
+      const traits = nft.metadata.traits.map((trait) => {
+        return `${trait.type}:${trait.value}`
+      })
       return {
         id: nft.id,
         contractAddr: nft.contract,
@@ -63,7 +59,7 @@ export const mapCollectionData = (
         nftCreateDate: '',
         lastListPx: getRandomFloat(0.01, 300, 2),
         lastListDate: '',
-        ...traits,
+        traits,
       }
     })
     break

@@ -14,7 +14,7 @@
     {"name": "imageURL", "type": "string", "facet": false, "index": false, "optional": true }, 
     {"name": "listedPx", "type": "float", "facet": true, "index": true, "optional": false },
     {"name": "currency", "type": "string", "facet": true, "index": true, "optional": true },
-    {"name": "traits.*", "type": "string", "facet": true, "index": true, "optional": true }
+    {"name": "traits", "type": "string[]", "facet": true, "index": true, "optional": true }
   ],
   "default_sorting_field": "listedPx"
 }
