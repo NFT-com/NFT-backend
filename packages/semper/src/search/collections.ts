@@ -29,9 +29,9 @@ export const mapCollectionData = (
         id: collection.id,
         contractAddr: collection.contract,
         contractName: collection.name,
-        chain: '',
+        chain: collection.chainId,
         description: '',
-        floor: getRandomFloat(0, 200, 2),
+        floor: getRandomFloat(0, 5, 2),
       }
     })
     break
@@ -46,19 +46,14 @@ export const mapCollectionData = (
         tokenId: BigNumber.from(nft.tokenId).toString(),
         nftName: nft.metadata.name,
         nftType: nft.type,
-        nftDescription: nft.metadata.description,
         listingType: '',
         chain: nft.wallet.chainName,
-        ownerAddr: nft.walletId,
         status: '',
+        marketplace: 'OpenSea',
         contractName: nft.collection?.name || '',
         imageURL: nft.metadata.imageURL,
-        listedPx: getRandomFloat(0.3, 500, 2),
-        lastSoldPx: getRandomFloat(0.01, 400, 2),
-        currency: '',
-        nftCreateDate: '',
-        lastListPx: getRandomFloat(0.01, 300, 2),
-        lastListDate: '',
+        listedPx: getRandomFloat(0.3, 2, 2),
+        currency: 'ETH',
         traits,
       }
     })
