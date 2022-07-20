@@ -148,6 +148,10 @@ type SaveScoreForProfilesOutput {
   message: String
 }
 
+type ClearGKIconVisibleOutput {
+  message: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -181,4 +185,6 @@ extend type Mutation {
   orderingUpdates(input: OrderingUpdatesInput!): Profile!
   "AUTHENTICATED"
   saveScoreForProfiles(input: SaveScoreForProfilesInput!): SaveScoreForProfilesOutput!
+  "AUTHENTICATED"
+  clearGKIconVisible: ClearGKIconVisibleOutput!
 }
