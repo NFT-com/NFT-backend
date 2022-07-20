@@ -47,6 +47,7 @@ runs:
       env:
         STAGE: ${{ inputs.stage }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+        CHAIN_ID: ${{ fromJSON(inputs.secrets).CHAIN_ID }}
         AUTH_MESSAGE: ${{ fromJSON(inputs.secrets).AUTH_MESSAGE }}
         SG_API_KEY: ${{ fromJSON(inputs.secrets).SG_API_KEY }}
         ETH_GAS_STATION_API_KEY: ${{ fromJSON(inputs.secrets).ETH_GAS_STATION_API_KEY }}

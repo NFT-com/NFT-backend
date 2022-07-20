@@ -7,7 +7,7 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
   const activityType = ActivityType[args.activityType]
-  const chainId = args.chainId || process.env.CHAIN_ID
+  const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
@@ -16,7 +16,7 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
 const getActivitiesByUserId = (_: any, args: gql.QueryGetActivitiesByUserIdArgs, ctx: Context)
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
-  const chainId = args.chainId || process.env.CHAIN_ID
+  const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   return repositories.txActivity.findActivitiesByUserId(args.userId, chainId)
