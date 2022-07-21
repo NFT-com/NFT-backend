@@ -958,23 +958,25 @@ const updateProfileView = async (
   ctx: Context,
 ): Promise<gql.Profile> => {
   try {
-    const { repositories, user } = ctx
+    const { repositories, user, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('updateProfileView', { loggedInUserId: user.id, input: args?.input })
-    const { profileId, profileViewType } = helper.safeObject(args?.input)
-    const profile = await repositories.profile.findById(profileId)
+    const { url, profileViewType } = helper.safeObject(args?.input)
+    const profile = await repositories.profile.findOne({ where: { url, chainId } })
     if (!profile) {
       return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileNotFoundMsg(profileId),
+        profileError.buildProfileUrlNotFoundMsg(url, chainId),
         profileError.ErrorType.ProfileNotFound,
       ))
     } else {
       if (profile.ownerUserId !== user.id) {
         return Promise.reject(appError.buildForbidden(
-          profileError.buildProfileNotOwnedMsg(profileId),
+          profileError.buildProfileNotOwnedMsg(profile.id),
           profileError.ErrorType.ProfileNotOwned,
         ))
       } else {
-        return await repositories.profile.updateOneById(profileId,
+        return await repositories.profile.updateOneById(profile.id,
           { profileView: profileViewType },
         )
       }

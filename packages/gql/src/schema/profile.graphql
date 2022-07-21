@@ -159,7 +159,7 @@ type ClearGKIconVisibleOutput {
 }
 
 input UpdateProfileViewInput {
-  profileId: String!
+  url: String!
   profileViewType: ProfileViewType!
 }
 

@@ -56,9 +56,18 @@ const repositories = db.newRepositories()
 let connection : Connection
 let testServer
 let walletA, walletB
-let profileA, profileB, profileC
+let profileA, profileB
 
 describe('profile resolver', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.close()
+  })
+
   // profileByURL
   describe('get profile endpoint', () => {
     beforeEach(async () => {
@@ -199,7 +208,6 @@ describe('profile resolver', () => {
 
   describe('clearGKIconVisible', () => {
     beforeAll(async () => {
-      connection = await db.connectTestDB(testDBConfig)
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
@@ -258,9 +266,6 @@ describe('profile resolver', () => {
       await repositories.wallet.hardDeleteByIds(walletIds)
 
       await testServer.stop()
-
-      if (!connection) return
-      await connection.close()
     })
 
     it('should clear GK icon visible', async () => {
@@ -279,14 +284,12 @@ describe('profile resolver', () => {
 
   describe('updateProfileView', () => {
     beforeAll(async () => {
-      connection = await db.connectTestDB(testDBConfig)
-
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
       )
 
-      profileC = await repositories.profile.save({
+      await repositories.profile.save({
         url: 'testprofile',
         ownerUserId: 'test-user-id',
         ownerWalletId: 'test-wallet-id',
@@ -305,9 +308,6 @@ describe('profile resolver', () => {
       await repositories.profile.hardDeleteByIds(profileIds)
 
       await testServer.stop()
-
-      if (!connection) return
-      await connection.close()
     })
 
     it('should update profile view type', async () => {
@@ -315,7 +315,7 @@ describe('profile resolver', () => {
         query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
         variables: {
           input: {
-            profileId: profileC.id,
+            url: 'testprofile',
             profileViewType: defs.ProfileViewType.Collection,
           },
         },
@@ -330,7 +330,7 @@ describe('profile resolver', () => {
         query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
         variables: {
           input: {
-            profileId: 'test-profile-id',
+            url: 'testprofile1',
             profileViewType: defs.ProfileViewType.Collection,
           },
         },
