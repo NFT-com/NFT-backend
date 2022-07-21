@@ -4,19 +4,17 @@ import opentelemetry = require('@opentelemetry/api');
 
 import { Attributes } from '@opentelemetry/api/build/src/common/attributes'
 import { AlwaysOnSampler } from '@opentelemetry/core'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
-import { Resource } from '@opentelemetry/resources'
-import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
-import { SemanticAttributes, SemanticResourceAttributes as ResourceAttributesSC } from '@opentelemetry/semantic-conventions'
-
-const Exporter = OTLPTraceExporter
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express'
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis'
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
+import { Resource } from '@opentelemetry/resources'
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { SemanticAttributes, SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
 type FilterFunction = (spanName: string, spanKind: SpanKind, attributes: Attributes) => boolean;
 
@@ -34,16 +32,20 @@ function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
   }
 }
 
-function ignoreHealthCheck(_spanName: string, spanKind: SpanKind, attributes: Attributes): boolean {
-  return spanKind === opentelemetry.SpanKind.SERVER || attributes[SemanticAttributes.HTTP_TARGET] === '/.well-known/apollo/server-health'
+function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: Attributes): boolean {
+  return spanKind === opentelemetry.SpanKind.INTERNAL
+    || attributes[SemanticAttributes.HTTP_METHOD] === 'OPTIONS'
+    || attributes[SemanticAttributes.HTTP_TARGET] === '/.well-known/apollo/server-health'
+    || (attributes[SemanticAttributes.HTTP_URL]
+        && attributes[SemanticAttributes.HTTP_URL].toString().includes('sentry.io'))
 }
 
 export const setupTracing = (serviceName: string): opentelemetry.Tracer => {
   const provider = new NodeTracerProvider({
     resource: new Resource({
-      [ResourceAttributesSC.SERVICE_NAME]: serviceName,
+      [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
     }),
-    sampler: filterSampler(ignoreHealthCheck, new AlwaysOnSampler()),
+    sampler: filterSampler(ignoreSpan, new AlwaysOnSampler()),
   })
   registerInstrumentations({
     tracerProvider: provider,
@@ -51,15 +53,13 @@ export const setupTracing = (serviceName: string): opentelemetry.Tracer => {
       // Express instrumentation expects HTTP layer to be instrumented
       new HttpInstrumentation(),
       new ExpressInstrumentation(),
-      new GraphQLInstrumentation(),
+      new GraphQLInstrumentation({ depth: 1 }),
       new IORedisInstrumentation(),
       new PgInstrumentation(),
     ],
   })
 
-  const exporter = new Exporter({
-    url: '',
-  })
+  const exporter = new OTLPTraceExporter()
 
   provider.addSpanProcessor(new SimpleSpanProcessor(exporter))
 

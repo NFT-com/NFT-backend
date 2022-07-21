@@ -10,7 +10,7 @@ import * as server from './server'
 import HederaConsensusService from './service/hedera.service'
 import { setupTracing } from './tracer'
 
-setupTracing('example-express-server')
+setupTracing(`${process.env.NODE_ENV}-gql`)
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 

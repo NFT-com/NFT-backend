@@ -167,6 +167,7 @@ const createEcsTaskDefinition = (
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
+  const otelMemory = 20
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
@@ -184,16 +185,22 @@ const createEcsTaskDefinition = (
               'awslogs-stream-prefix': 'gql',
             },
           },
-          memoryReservation: config.requireNumber('ecsTaskMemory'),
+          memoryReservation: config.requireNumber('ecsTaskMemory') - otelMemory,
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
+          dependsOn: [
+            {
+              condition: 'START',
+              containerName: getResourceName('aws-otel-config'),
+            },
+          ],
         },
         {
-          name: 'aws-otel-collector',
+          name: getResourceName('aws-otel-config'),
           image: 'amazon/aws-otel-collector',
-          command:['{{command}}'],
+          command: ['--config /opt/otel/config.yaml'],
           essential: true,
           logConfiguration: {
             logDriver: 'awslogs',
@@ -204,6 +211,7 @@ const createEcsTaskDefinition = (
               'awslogs-create-group': 'True',
             },
           },
+          memory: otelMemory,
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
