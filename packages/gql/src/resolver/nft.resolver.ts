@@ -701,10 +701,10 @@ export const refreshNft = async (
         )
         return refreshedNFT
       } else {
-        throw appError.buildNotFound(
+        return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
           nftError.ErrorType.NFTNotFound,
-        )
+        ))
       }
     }
   } catch (err) {
