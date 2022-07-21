@@ -199,8 +199,7 @@ const createEcsTaskDefinition = (
         },
         {
           name: getResourceName('aws-otel-config'),
-          image: 'amazon/aws-otel-collector',
-          command: ['--config /opt/otel/config.yaml'],
+          image: '016437323894.dkr.ecr.us-east-1.amazonaws.com/aws-otel-collector',
           essential: true,
           logConfiguration: {
             logDriver: 'awslogs',
