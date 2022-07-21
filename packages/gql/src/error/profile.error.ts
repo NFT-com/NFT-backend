@@ -12,6 +12,8 @@ export enum ErrorType {
 
 export const buildProfileNotFoundMsg = (id: string): string => `Profile ${id} not found`
 
+export const buildProfileUrlNotFoundMsg = (url: string, chainId: string): string => `Profile URL  ${url} not found on chain ${chainId}`
+
 export const buildProfileFollowingMsg = (id: string): string =>
   `You are already following this profile ${id}`
 

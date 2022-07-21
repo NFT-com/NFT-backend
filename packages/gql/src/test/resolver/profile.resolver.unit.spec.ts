@@ -59,6 +59,15 @@ let walletA, walletB
 let profileA, profileB
 
 describe('profile resolver', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.close()
+  })
+
   // profileByURL
   describe('get profile endpoint', () => {
     beforeEach(async () => {
@@ -199,7 +208,6 @@ describe('profile resolver', () => {
 
   describe('clearGKIconVisible', () => {
     beforeAll(async () => {
-      connection = await db.connectTestDB(testDBConfig)
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
@@ -258,9 +266,6 @@ describe('profile resolver', () => {
       await repositories.wallet.hardDeleteByIds(walletIds)
 
       await testServer.stop()
-
-      if (!connection) return
-      await connection.close()
     })
 
     it('should clear GK icon visible', async () => {
@@ -274,6 +279,64 @@ describe('profile resolver', () => {
       expect(profileA.gkIconVisible).toEqual(true)
       profileB = await repositories.profile.findById(profileB.id)
       expect(profileB.gkIconVisible).toEqual(false)
+    })
+  })
+
+  describe('updateProfileView', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '4',
+        profileView: defs.ProfileViewType.Gallery,
+      })
+    })
+
+    afterAll(async () => {
+      const profiles = await repositories.profile.findAll()
+      const profileIds = profiles.map((profile) => profile.id)
+      await repositories.profile.hardDeleteByIds(profileIds)
+
+      await testServer.stop()
+    })
+
+    it('should update profile view type', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        variables: {
+          input: {
+            url: 'testprofile',
+            profileViewType: defs.ProfileViewType.Collection,
+          },
+        },
+      })
+
+      expect(result.data.updateProfileView.profileView).toEqual(defs.ProfileViewType.Collection)
+      expect(result.data.updateProfileView.profileView).toBeDefined()
+    })
+
+    it('should throw error if profile is not existing', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        variables: {
+          input: {
+            url: 'testprofile1',
+            profileViewType: defs.ProfileViewType.Collection,
+          },
+        },
+      })
+
+      expect(result.errors).toBeDefined()
     })
   })
 })
