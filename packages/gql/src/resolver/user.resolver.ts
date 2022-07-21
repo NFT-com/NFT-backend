@@ -235,7 +235,7 @@ const getMyPendingAssocations = async (
   ctx: Context,
 ): Promise<Array<gql.PendingAssociationOutput>> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('getMyPendingAssocations', { loggedInUserId: user.id })
+  logger.debug('getMyPendingAssocations', { loggedInUserId: user.id, wallet: wallet.address })
 
   const matches = await repositories.event.find({
     where: {
@@ -273,15 +273,15 @@ const getMyPendingAssocations = async (
   return matches
     .filter((o) => {
       const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
-      if (Number(cancellationsMap[key]) == 0 || !cancellationsMap[key] == undefined) {
+      if (Number(cancellationsMap[key]) == 0 || cancellationsMap[key] == undefined) {
         return true
       } else {
         cancellationsMap[key] = Number(cancellationsMap[key]) - 1
         return false
       }
     })
-    .filter(async (o) => {
-      const clearAlls = await repositories.event.find({
+    .filter((o) => {
+      repositories.event.find({
         where: {
           eventName: 'ClearAllAssociatedAddresses',
           ownerAddress: helper.checkSum(o.ownerAddress),
@@ -291,15 +291,15 @@ const getMyPendingAssocations = async (
         order: {
           blockNumber: 'ASC',
         },
+      }).then((clearAlls) => {
+        // if association is >= (later than) last all clear, then it is valid
+        if (!clearAlls) return true
+        if (o.blockNumber >= clearAlls[clearAlls.length - 1].blockNumber) {
+          return true
+        } else {
+          return false
+        }
       })
-
-      // if association is >= (later than) last all clear, then it is valid
-      if (!clearAlls) return true
-      if (o.blockNumber >= clearAlls[clearAlls.length - 1].blockNumber) {
-        return true
-      } else {
-        return false
-      }
     })
     .map(e => {
       return {
