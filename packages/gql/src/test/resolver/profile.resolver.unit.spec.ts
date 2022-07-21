@@ -56,7 +56,7 @@ const repositories = db.newRepositories()
 let connection : Connection
 let testServer
 let walletA, walletB
-let profileA, profileB
+let profileA, profileB, profileC
 
 describe('profile resolver', () => {
   // profileByURL
@@ -274,6 +274,69 @@ describe('profile resolver', () => {
       expect(profileA.gkIconVisible).toEqual(true)
       profileB = await repositories.profile.findById(profileB.id)
       expect(profileB.gkIconVisible).toEqual(false)
+    })
+  })
+
+  describe('updateProfileView', () => {
+    beforeAll(async () => {
+      connection = await db.connectTestDB(testDBConfig)
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      profileC = await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '4',
+        profileView: defs.ProfileViewType.Gallery,
+      })
+    })
+
+    afterAll(async () => {
+      const profiles = await repositories.profile.findAll()
+      const profileIds = profiles.map((profile) => profile.id)
+      await repositories.profile.hardDeleteByIds(profileIds)
+
+      await testServer.stop()
+
+      if (!connection) return
+      await connection.close()
+    })
+
+    it('should update profile view type', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        variables: {
+          input: {
+            profileId: profileC.id,
+            profileViewType: defs.ProfileViewType.Collection,
+          },
+        },
+      })
+
+      expect(result.data.updateProfileView.profileView).toEqual(defs.ProfileViewType.Collection)
+      expect(result.data.updateProfileView.profileView).toBeDefined()
+    })
+
+    it('should throw error if profile is not existing', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        variables: {
+          input: {
+            profileId: 'test-profile-id',
+            profileViewType: defs.ProfileViewType.Collection,
+          },
+        },
+      })
+
+      expect(result.errors).toBeDefined()
     })
   })
 })

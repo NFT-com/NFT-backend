@@ -952,6 +952,38 @@ const clearGKIconVisible = async (
   }
 }
 
+const updateProfileView = async (
+  _: any,
+  args: gql.MutationUpdateProfileViewArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  try {
+    const { repositories, user } = ctx
+    logger.debug('updateProfileView', { loggedInUserId: user.id, input: args?.input })
+    const { profileId, profileViewType } = helper.safeObject(args?.input)
+    const profile = await repositories.profile.findById(profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    } else {
+      if (profile.ownerUserId !== user.id) {
+        return Promise.reject(appError.buildForbidden(
+          profileError.buildProfileNotOwnedMsg(profileId),
+          profileError.ErrorType.ProfileNotOwned,
+        ))
+      } else {
+        return await repositories.profile.updateOneById(profileId,
+          { profileView: profileViewType },
+        )
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateProfileView: ${err}`)
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -975,6 +1007,7 @@ export default {
     orderingUpdates: combineResolvers(auth.isAuthenticated, orderingUpdates),
     saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
     clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
+    updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
   },
   Profile: {
     followersCount: getFollowersCount,
