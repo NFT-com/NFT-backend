@@ -293,11 +293,13 @@ const getMyPendingAssocations = async (
         },
       }).then((clearAlls) => {
         // if association is >= (later than) last all clear, then it is valid
-        if (!clearAlls) return true
-        if (o.blockNumber >= clearAlls[clearAlls.length - 1].blockNumber) {
-          return true
-        } else {
-          return false
+        if (!clearAlls || clearAlls.length == 0) return true
+        else {
+          if (o.blockNumber >= clearAlls[clearAlls.length - 1]?.blockNumber) {
+            return true
+          } else {
+            return false
+          }
         }
       })
     })
