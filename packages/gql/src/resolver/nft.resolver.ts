@@ -416,16 +416,7 @@ const updateGKIconVisibleStatus = async (
   profile: entity.Profile,
 ): Promise<void> => {
   try {
-    const key = `GenesisKeyOwners-${chainId}`
-    const cachedData = await cache.get(key)
-    let gkOwners: string[]
-    if (cachedData) {
-      gkOwners = JSON.parse(cachedData) as string[]
-    } else {
-      gkOwners = await getOwnersOfGenesisKeys(chainId)
-      await cache.set(key, JSON.stringify(gkOwners), 'EX', 60 * 10)
-    }
-
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
     const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
     if (index === -1) {
@@ -710,10 +701,10 @@ export const refreshNft = async (
         )
         return refreshedNFT
       } else {
-        throw appError.buildNotFound(
+        return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
           nftError.ErrorType.NFTNotFound,
-        )
+        ))
       }
     }
   } catch (err) {
