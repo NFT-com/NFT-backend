@@ -5,9 +5,14 @@ import { mockUpdateProfileInput, testMockProfiles, testMockUser, testMockWallet 
 const sharedLibs = jest.requireActual('@nftcom/shared')
 const { core } = jest.requireActual('@nftcom/gql/service')
 
+import { Connection } from 'typeorm'
+
+import { testDBConfig } from '@nftcom/gql/config'
+import { db, defs } from '@nftcom/shared/'
+
 import { getTestApolloServer } from '../util/testApolloServer'
 
-jest.setTimeout(30000)
+jest.setTimeout(300000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -47,8 +52,22 @@ jest.mock('@nftcom/shared', () => {
   }
 })
 
+const repositories = db.newRepositories()
+let connection : Connection
 let testServer
+let walletA, walletB
+let profileA, profileB
+
 describe('profile resolver', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.close()
+  })
+
   // profileByURL
   describe('get profile endpoint', () => {
     beforeEach(async () => {
@@ -184,6 +203,140 @@ describe('profile resolver', () => {
         variables: { input: mockUpdateProfileInput },
       })
       expect(result?.data?.updateProfile?.description).toBe(mockUpdateProfileInput.description)
+    })
+  })
+
+  describe('clearGKIconVisible', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      walletA = await repositories.wallet.save({
+        userId: 'vPVIuNzLVBdIuyAMTm2rZ',
+        chainId: '5',
+        chainName: 'goerli',
+        network: 'ethereum',
+        address: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+      })
+
+      walletB = await repositories.wallet.save({
+        userId: 'f6YMxVjHWqsn26o6Xt2Gt',
+        chainId: '5',
+        chainName: 'goerli',
+        network: 'ethereum',
+        address: '0xC345420194D9Bac1a4b8f6985070000000000000',
+      })
+
+      profileA = await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'vPVIuNzLVBdIuyAMTm2rZ',
+        ownerWalletId: walletA.id,
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      profileB = await repositories.profile.save({
+        url: 'testprofile2',
+        ownerUserId: 'f6YMxVjHWqsn26o6Xt2Gt',
+        ownerWalletId: walletB.id,
+        tokenId: '2',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      const profiles = await repositories.profile.findAll()
+      const profileIds = profiles.map((profile) => profile.id)
+      await repositories.profile.hardDeleteByIds(profileIds)
+      const wallets = await repositories.wallet.findAll()
+      const walletIds = wallets.map((wallet) => wallet.id)
+      await repositories.wallet.hardDeleteByIds(walletIds)
+
+      await testServer.stop()
+    })
+
+    it('should clear GK icon visible', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation ClearGKIconVisible { clearGKIconVisible { message } }',
+      })
+
+      expect(result.data.clearGKIconVisible.message).toBeDefined()
+      expect(result.data.clearGKIconVisible.message).toEqual('Cleared GK icon visible for 1 profiles')
+      profileA = await repositories.profile.findById(profileA.id)
+      expect(profileA.gkIconVisible).toEqual(true)
+      profileB = await repositories.profile.findById(profileB.id)
+      expect(profileB.gkIconVisible).toEqual(false)
+    })
+  })
+
+  describe('updateProfileView', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '4',
+        profileView: defs.ProfileViewType.Gallery,
+      })
+    })
+
+    afterAll(async () => {
+      const profiles = await repositories.profile.findAll()
+      const profileIds = profiles.map((profile) => profile.id)
+      await repositories.profile.hardDeleteByIds(profileIds)
+
+      await testServer.stop()
+    })
+
+    it('should update profile view type', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        variables: {
+          input: {
+            url: 'testprofile',
+            profileViewType: defs.ProfileViewType.Collection,
+          },
+        },
+      })
+
+      expect(result.data.updateProfileView.profileView).toEqual(defs.ProfileViewType.Collection)
+      expect(result.data.updateProfileView.profileView).toBeDefined()
+    })
+
+    it('should throw error if profile is not existing', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        variables: {
+          input: {
+            url: 'testprofile1',
+            profileViewType: defs.ProfileViewType.Collection,
+          },
+        },
+      })
+
+      expect(result.errors).toBeDefined()
     })
   })
 })

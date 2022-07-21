@@ -136,6 +136,11 @@ export enum ProfileLayoutType {
   Spotlight = 'Spotlight',
 }
 
+export enum ProfileViewType {
+  Collection = 'Collection',
+  Gallery = 'Gallery',
+}
+
 export type Signature = {
   v: number
   r: string

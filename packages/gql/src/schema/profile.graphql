@@ -28,6 +28,11 @@ enum ProfileLayoutType {
   Spotlight
 }
 
+enum ProfileViewType {
+  Collection
+  Gallery
+}
+
 type Profile {
   id: ID!
   bannerURL: String
@@ -47,6 +52,7 @@ type Profile {
   status: ProfileStatus
   url: String!
   winningBid: Bid
+  profileView: ProfileViewType
 }
 
 type LeaderboardProfile {
@@ -148,6 +154,15 @@ type SaveScoreForProfilesOutput {
   message: String
 }
 
+type ClearGKIconVisibleOutput {
+  message: String
+}
+
+input UpdateProfileViewInput {
+  url: String!
+  profileViewType: ProfileViewType!
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -181,4 +196,8 @@ extend type Mutation {
   orderingUpdates(input: OrderingUpdatesInput!): Profile!
   "AUTHENTICATED"
   saveScoreForProfiles(input: SaveScoreForProfilesInput!): SaveScoreForProfilesOutput!
+  "AUTHENTICATED"
+  clearGKIconVisible: ClearGKIconVisibleOutput!
+  "AUTHENTICATED"
+  updateProfileView(input: UpdateProfileViewInput): Profile!
 }

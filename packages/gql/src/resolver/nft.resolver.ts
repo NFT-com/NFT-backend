@@ -18,7 +18,7 @@ import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses,
+  checkNFTContractAddresses, getOwnersOfGenesisKeys,
   initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -410,6 +410,25 @@ export const saveProfileScore = async (
   }
 }
 
+const updateGKIconVisibleStatus = async (
+  repositories: db.Repository,
+  chainId: string,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
+    if (index === -1) {
+      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
+    } else {
+      return
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+  }
+}
+
 const updateNFTsForProfile = (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
@@ -474,6 +493,15 @@ const updateNFTsForProfile = (
                       return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
                         .then(() => {
                           return syncEdgesWithNFTs(profile.id)
+                            .then(() => {
+                              // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                              if (profile.gkIconVisible) {
+                                return updateGKIconVisibleStatus(repositories, chainId, profile)
+                                  .then(() => {
+                                    logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                  })
+                              }
+                            })
                         })
                     })
                   })
@@ -673,10 +701,10 @@ export const refreshNft = async (
         )
         return refreshedNFT
       } else {
-        throw appError.buildNotFound(
+        return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
           nftError.ErrorType.NFTNotFound,
-        )
+        ))
       }
     }
   } catch (err) {
