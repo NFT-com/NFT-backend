@@ -243,14 +243,69 @@ const getMyPendingAssocations = async (
       destinationAddress: helper.checkSum(wallet.address),
       chainId: wallet.chainId,
     },
+    order: {
+      blockNumber: 'ASC',
+    },
   })
 
-  return matches.map(e => {
-    return {
-      url: e.profileUrl,
-      owner: e.ownerAddress,
-    }
+  const cancellations = await repositories.event.find({
+    where: {
+      eventName: 'CancelledEvmAssociation',
+      destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
   })
+
+  const cancellationsMap = {}
+  for (let i = 0; i < cancellations.length; i++) {
+    const o = cancellations[i]
+    const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
+    if (cancellationsMap[key]) {
+      cancellationsMap[key] += 1
+    } else {
+      cancellationsMap[key] = 1
+    }
+  }
+
+  return matches
+    .filter((o) => {
+      const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
+      if (Number(cancellationsMap[key]) == 0 || !cancellationsMap[key] == undefined) {
+        return true
+      } else {
+        cancellationsMap[key] = Number(cancellationsMap[key]) - 1
+        return false
+      }
+    })
+    .filter(async (o) => {
+      const clearAlls = await repositories.event.find({
+        where: {
+          eventName: 'ClearAllAssociatedAddresses',
+          ownerAddress: helper.checkSum(o.ownerAddress),
+          profileUrl: o.profileUrl,
+          chainId: wallet.chainId,
+        },
+        order: {
+          blockNumber: 'ASC',
+        },
+      })
+
+      // if association is >= (later than) last all clear, then it is valid
+      if (o.blockNumber >= clearAlls[clearAlls.length - 1].blockNumber) {
+        return true
+      } else {
+        return false
+      }
+    })
+    .map(e => {
+      return {
+        url: e.profileUrl,
+        owner: e.ownerAddress,
+      }
+    })
 }
 
 const getMyGenesisKeys = async (
