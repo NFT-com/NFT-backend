@@ -7,8 +7,12 @@ import { BaseEntity, TxActivity } from '.'
 @Entity()
 export class TxBid extends BaseEntity {
 
-  @OneToOne(() => TxActivity, (activity) => activity.activityTypeId, { nullable: false })
-  @JoinColumn()
+  // @TODO: Need to re-configure cascade during data modelling
+  @OneToOne(() => TxActivity,
+    (activity) => activity.activityTypeId,{
+      nullable: false,
+      cascade: true,
+    })  @JoinColumn()
   activity: TxActivity
 
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
@@ -23,10 +27,11 @@ export class TxBid extends BaseEntity {
   @Column({ nullable: true })
   takerAddress: string
 
-  @Column('json', { nullable: false })
+  // null for Wyvern
+  @Column('json', { nullable: true })
   offer: any[]
-
-  @Column('json', { nullable: false })
+  // null for Wyvern
+  @Column('json', { nullable: true })
   consideration: any[]
 
   @Column({ nullable: true })

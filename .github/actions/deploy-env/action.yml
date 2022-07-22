@@ -75,6 +75,7 @@ runs:
         BULL_MAX_REPEAT_COUNT: ${{ fromJSON(inputs.secrets).BULL_MAX_REPEAT_COUNT }}
         OPENSEA_API_KEY: ${{ fromJSON(inputs.secrets).OPENSEA_API_KEY }}
         PROFILE_SCORE_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_SCORE_EXPIRE_DURATION }}
+        NFT_EXTERNAL_ORDER_REFRESH_DURATION: ${{ fromJSON(inputs.secrets).NFT_EXTERNAL_ORDER_REFRESH_DURATION }}
         TEST_DB_HOST: ${{ fromJSON(inputs.secrets).TEST_DB_HOST }}
         TEST_DB_DATABASE: ${{ fromJSON(inputs.secrets).TEST_DB_DATABASE }}
         TEST_DB_USERNAME: ${{ fromJSON(inputs.secrets).TEST_DB_USERNAME }}
