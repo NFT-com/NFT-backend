@@ -194,7 +194,7 @@ const createEcsTaskDefinition = (
           dependsOn: [
             {
               condition: 'START',
-              containerName: getResourceName('aws-otel-config'),
+              containerName: otelName,
             },
           ],
         },
