@@ -628,45 +628,35 @@ export const refreshNft = async (
   }
 }
 
+// @TODO: Force Refresh as a second iteration
 export const refreshNFTOrder = async (  _: any,
   args: gql.MutationRefreshNFTArgs,
   ctx: Context): Promise<string> => {
-  const { repositories } = ctx
+  const { repositories, chain } = ctx
   logger.debug('refreshNftOrders', { id: args?.id })
   initiateWeb3()
-
   try {
-    // check if nft id is already present
-    // executor set
-    const executedCacheMember: number = await cache.sismember(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${process.env.CHAIN_ID}`, args.id)
-
-    // recently executed set
-    // not a member of executor and recently excuted
-    if (executedCacheMember) {
-      return 'Already refreshed recently! Reset after sometime!'
-    }
-
-    const executorCacheMember: number = await cache.sismember(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${process.env.CHAIN_ID}`, args.id)
-    if (executorCacheMember) {
-      return 'Already in queue! Check back shortly'
-    }
-
-    // check nft exists
     const nft = await repositories.nft.findById(args?.id)
-
-    if (nft) {
-      // add to cache list
-      await cache.sadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${process.env.CHAIN_ID}`, args?.id)
-      return 'Added to queue! Check back shortly!'
-    } else {
+    if (!nft) {
       throw appError.buildNotFound(
         nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
         nftError.ErrorType.NFTNotFound,
       )
     }
+
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chain.id}`, `${nft.contract}:${nft.tokenId}`)
+    if (recentlyRefreshed) {
+      return 'Refreshed Recently! Try in sometime!'
+    }
+
+    // add to cache list
+    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, `${nft.contract}:${nft.tokenId}`)
+    return 'Added to queue! Check back shortly!'
   } catch (err) {
+    console.log('err', err)
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
   }
+  return ''
 }
 
 export default {

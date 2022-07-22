@@ -1,16 +1,22 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
+import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
+import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
 const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
 const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
+
 const LIMIT = 50
-const OPENSEA_LISTING_BATCH_SIZE = 200
+const OPENSEA_LISTING_BATCH_SIZE = 30
+const DELAY_AFTER_BATCH_RUN = 4
+const MAX_QUERY_LENGTH = 4014 // 4094 - 80
 
 interface OpenseaAsset {
   image_url: string
@@ -71,7 +77,7 @@ interface OpenseaResponse {
   }
 }
 
-export interface OpenseaOrderResponse {
+interface OpenseaOrderResponse {
   listings: {
     v1: Array<OpenseaResponseV1>
     seaport: Array<OpenseaResponse>
@@ -83,26 +89,99 @@ export interface OpenseaOrderResponse {
   prices: any
 }
 
-export interface OpenseaOrderRequest {
-  contract: string
-  tokenId: string
-  chainId: string
-}
-
-export enum OpenseaQueryParamType {
+enum OpenseaQueryParamType {
   TOKEN_IDS = 'token_ids',
   ASSET_CONTRACT_ADDRESSES = 'asset_contract_addresses',
   ASSET_CONTRACT_ADDRESS = 'asset_contract_address'
 }
 
-export interface OpenseaOrder {
-  wyvern: any
-  seaport: any
+interface OpenseaBaseOrder {
+  created_date: string
+  closing_date: string
+  closing_extendable: boolean
+  expiration_time: number
+  listing_time: number
+  order_hash: string
+  current_price: string
+  maker: any
+  taker: any
+  cancelled: boolean
+  finalized: boolean
+  marked_invalid: boolean
+  approved_on_chain?: boolean
 }
 
-export interface OpenseaExternalOrder {
-  listings: OpenseaOrder
-  offers: OpenseaOrder
+interface WyvernOrder extends OpenseaBaseOrder {
+  payment_token_contract: {
+    symbol: string
+    address: string
+    image_url: string
+    name: string
+    decimals: number
+    eth_price: string
+    usd_price: string
+  }
+  metadata: any
+  exchange: string
+  current_bounty: string
+  bounty_multiple: string
+  maker_relayer_fee: string
+  taker_relayer_fee: string
+  maker_protocol_fee: string
+  taker_protocol_fee: string
+  maker_referrer_fee: string
+  fee_recipient: any
+  fee_method: number
+  side: number
+  sale_kind: number
+  target: string
+  how_to_call: number
+  calldata: string
+  replacement_pattern: string
+  static_target: string
+  static_extradata: string
+  payment_token: string
+  base_price: string
+  extra: string
+  quantity: string
+  salt: string
+  v: number
+  r: string
+  s: string
+  prefixed_hash: string
+}
+
+interface SeaportOrder extends OpenseaBaseOrder {
+  protocol_data: {
+    parameters: {
+      offerer: string
+      offer: any
+      consideration: any
+      startTime: string
+      endTime: string
+      orderType: number
+      zone: string
+      zoneHash: string
+      salt: string
+      conduitKey: string
+      totalOriginalConsiderationItems: number
+      counter: number
+    }
+    signature: string
+  }
+  protocol_address: string
+  maker_fees: any
+  taker_fees: any
+  side: string
+  order_type: string
+  client_signature: string
+  relay_id: string
+  criteria_proof: any
+}
+
+interface OpenseaExternalOrder {
+  listings: TxList[]
+  offers: TxBid[]
 }
 
 const cids = (): string => {
@@ -115,6 +194,12 @@ const cids = (): string => {
   ]
 
   return ids.join('%2C')
+}
+
+export interface OpenseaOrderRequest {
+  contract: string
+  tokenId: string
+  chainId: string
 }
 
 /**
@@ -305,21 +390,100 @@ const getOpenseaInterceptor = (
   baseURL: string,
   chainId: string,
 ): AxiosInstance => {
-  return axios.create({
+  const openseaInstance = axios.create({
     baseURL,
     headers: {
       'Accept': 'application/json',
       'X-API-KEY': chainId === '4'? '': OPENSEA_API_KEY,
     },
   })
+
+  // retry logic with exponential backoff
+  const retryOptions: IAxiosRetryConfig= { retries: 3,
+    retryCondition: (err: AxiosError<any>) => {
+      return (
+        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
+        err.response.status === 429
+      )
+    },
+    retryDelay: (retryCount: number, err: AxiosError<any>) => {
+      if (err.response) {
+        const retry_after = err.response.headers['retry-after']
+        if (retry_after) {
+          return retry_after
+        }
+      }
+      return axiosRetry.exponentialDelay(retryCount)
+    },
+  }
+  axiosRetry(openseaInstance,  retryOptions)
+
+  return openseaInstance
 }
 
+/**
+ * TODO: move to Tx/Core Service while working on Data modeling ticket with other similar methods
+ * orderEntityBuilder 
+ * @param protocol
+ * @param orderType
+ * @param order
+ * @param chainId
+ */
+const orderEntityBuilder = (
+  protocol: ProtocolType,
+  orderType: ActivityType,
+  order: WyvernOrder & SeaportOrder,
+  chainId: string,
+):  Partial<TxBid | TxList> => {
+  // @TODO: Discuss during data modeling - this is for saving per current schema
+  const activity: TxActivity = {
+    activityType: orderType,
+    read: false,
+    timestamp: new Date(),
+    activityTypeId: 'test-activity-type',
+    userId: 'test-user',
+    chainId,
+  } as TxActivity
+
+  const baseOrder:  Partial<TxBid | TxList> = {
+    activity,
+    createdAt: new Date(order.listing_time),
+    exchange: ExchangeType.OpenSea,
+    orderHash: order.order_hash,
+    makerAddress: order.maker?.address,
+    takerAddress: order.taker?.address,
+    offer: null,
+    consideration: null,
+    chainId,
+  }
+
+  switch (protocol) {
+  case ProtocolType.Wyvern:
+    break
+  case ProtocolType.Seaport:
+    baseOrder.offer = order.protocol_data.parameters.offer
+    baseOrder.consideration = order.protocol_data.parameters.consideration
+    break
+  default:
+    break
+  }
+
+  return baseOrder
+}
+
+/**
+ * Retrieve listings in batches
+ * @param listingQueryParams
+ * @param chainId
+ * @param batchSize
+ */
 const retrieveListingsInBatches = async (
   listingQueryParams: string[],
   chainId: string,
   batchSize: number,
-): Promise<OpenseaOrder> => {
-  let batch, queryUrl, wyvernAggregator = [], seaportAggregator = []
+): Promise<any[]> => {
+  const listings: any[] = []
+  let batch, queryUrl
   const listingBaseUrl: string = chainId === '4' ?
     V1_OPENSEA_API_TESTNET_BASE_URL
     : V1_OPENSEA_API_BASE_URL
@@ -327,49 +491,83 @@ const retrieveListingsInBatches = async (
     listingBaseUrl,
     chainId,
   )
+
+  let delayCounter = 0
+  let size: number
   while(listingQueryParams.length) {
-    batch = listingQueryParams.slice(0, batchSize) // batches of 200
+    size = batchSize
+    batch = listingQueryParams.slice(0, size) // batches of 200
+
     queryUrl = `${batch.join('&')}`
+
+    // only executed if query length more than accepted limit by opensea
+    // runs once or twice at most
+    while(queryUrl.length > MAX_QUERY_LENGTH) {
+      size--
+      batch = listingQueryParams.slice(0, size)
+      queryUrl = `${batch.join('&')}`
+    }
+
     const response: AxiosResponse = await listingInterceptor(
-      `/assets?${queryUrl}
-                                                  &limit=${batchSize}
-                                                  &order_direction=desc
-                                                  &include_orders=true
-                                                  `,
+      `/assets?${queryUrl}&limit=${batchSize}&order_direction=asc&include_orders=true`,
     )
     if (response?.data?.assets?.length) {
       const assets = response?.data?.assets
-      const wyvernSellOrders = assets.map(asset => asset?.sell_orders)
-      const seaportSellOrders = assets.map(asset => asset?.seaport_sell_orders)
-
-      wyvernAggregator = [...wyvernAggregator, ...wyvernSellOrders]
-      seaportAggregator = [...seaportAggregator, ...seaportSellOrders]
+      if (assets?.length) {
+        for (const asset of assets) {
+          const wyvernOrders: WyvernOrder[] | null =  asset?.sell_orders
+          const seaportOrders: WyvernOrder[] | null =  asset?.seaport_sell_orders
+          // wvyern orders - always returns cheapest order
+          if (wyvernOrders && Object.keys(wyvernOrders?.[0]).length) {
+            listings.push(
+              orderEntityBuilder(
+                ProtocolType.Wyvern,
+                ActivityType.Listing,
+                asset?.sell_orders?.[0],
+                chainId,
+              ),
+            )
+          }
+  
+          // seaport orders - always returns cheapest order
+          if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
+            listings.push(
+              orderEntityBuilder(
+                ProtocolType.Seaport,
+                ActivityType.Listing,
+                asset?.seaport_sell_orders?.[0],
+                chainId,
+              ),
+            )
+          }
+        }
+      }
     }
-    listingQueryParams = [...listingQueryParams.slice(batchSize)]
-    await delay(1000)
+    listingQueryParams = [...listingQueryParams.slice(size)]
+    if (delayCounter === DELAY_AFTER_BATCH_RUN) {
+      await delay(1000)
+      delayCounter = 0
+    }
   }
         
-  return {
-    wyvern: wyvernAggregator,
-    seaport: seaportAggregator,
-  }
+  return listings
 }
 
-// chunk = 200
+/**
+ * Retrieve multiple sell or buy orders
+ * TODO: Offer implementation in the offer ticket
+ * @param openseaMultiOrderRequest
+ * @param chainId
+ * @param includeOffers
+ */
 export const retrieveMultipleOrdersOpensea = async (
   openseaMultiOrderRequest: Array<OpenseaOrderRequest>,
   chainId: string,
   includeOffers: boolean,
 ): Promise<OpenseaExternalOrder> => {
   const responseAggregator: OpenseaExternalOrder = {
-    listings: {
-      wyvern: null,
-      seaport: null,
-    },
-    offers: {
-      wyvern: null,
-      seaport: null,
-    },
+    listings: [],
+    offers: [],
   }
 
   try {
@@ -377,18 +575,22 @@ export const retrieveMultipleOrdersOpensea = async (
       const listingQueryParams: Array<string> = []
       let offerQueryParams: Map<string, Array<string>>
       for (const openseaReq of openseaMultiOrderRequest) {
+        // listing query builder
         listingQueryParams.push(
-          `${OpenseaQueryParamType.ASSET_CONTRACT_ADDRESSES}=${openseaReq.contract}
-            &${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`,
+          `${OpenseaQueryParamType.ASSET_CONTRACT_ADDRESSES}=${openseaReq.contract}&${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`,
         )
-        if (!offerQueryParams.has(openseaReq.contract)) {
-          offerQueryParams.set(openseaReq.contract,
-            [`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`],
+
+        if (includeOffers) {
+          // offer query builder
+          if (!offerQueryParams.has(openseaReq.contract)) {
+            offerQueryParams.set(openseaReq.contract,
+              [`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`],
+            )
+          }
+          offerQueryParams.get(openseaReq.contract)?.push(
+            `${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`,
           )
         }
-        offerQueryParams.get(openseaReq.contract)?.push(
-          `${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`,
-        )
       }
   
       if (listingQueryParams.length) {
@@ -397,22 +599,14 @@ export const retrieveMultipleOrdersOpensea = async (
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
         )
-  
-        // Listings
-        // Seaport: seaport_sell_orders
-        // Wyvern: sell_orders
         
-        // Offers
-        // Seaport
-        // API:v2/orders/rinkeby/seaport/offers
-        // Wyvern
-        // API: https://api.opensea.io/wyvern/v1/orders
-  
         if (includeOffers) {
-          // const offerBaseUrlWyvern: string = `https://testnets-api.opensea.io/wyvern/v1/orders`
-          // const offerBaseUrlSeaport: string =  `${OPENSEA_API_BASE_URL}/orders/rinkeby/seaport/offers`
-          // for (let contractAddress of testContractAddresses) {
-          // }
+          // Offers - Comments to be replaced in the offer ticket
+          // Seaport
+          // API:v2/orders/rinkeby/seaport/offers
+          // Wyvern
+          // API: https://api.opensea.io/wyvern/v1/orders
+  
         }
       }
     }

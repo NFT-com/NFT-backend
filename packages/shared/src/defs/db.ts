@@ -91,6 +91,12 @@ export enum ExchangeType {
   LooksRare = 'LooksRare',
 }
 
+export enum ProtocolType {
+  Wyvern = 'wyvern',
+  Seaport = 'seaport',
+  LooksRare = 'LooksRare',
+}
+
 export enum CurrencyType {
   ETH = 'ETH',
   WETH = 'WETH',
