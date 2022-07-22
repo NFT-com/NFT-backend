@@ -115,8 +115,8 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
         return queues.get(chainId).add({ chainId }, {
           removeOnComplete: true,
           removeOnFail: true,
-          // repeat every 10 minutes
-          repeat: { every: 10 * 60000 },
+          // repeat every 3 minutes
+          repeat: { every: 3 * 60000 },
           jobId: `chainid_${chainId}_job`,
         })
       }
