@@ -57,14 +57,6 @@ services:
     volumes:
       - postgres:/var/lib/postgresql-test/data/
     restart: unless-stopped
-  
-  otel:
-    image: 016437323894.dkr.ecr.us-east-1.amazonaws.com/aws-otel-collector
-    container_name: aws-otel-collector
-    networks:
-      - nftcom
-    ports:
-      - "4317:4317"
 
 volumes:
   postgres:
