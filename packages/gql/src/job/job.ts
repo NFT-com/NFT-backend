@@ -17,7 +17,7 @@ import { _logger } from '@nftcom/shared'
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
   process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION,
-) || 360 // by default six hours
+) || 720 // by default 12 hours
 
 const logger = _logger.Factory(_logger.Context.Bull)
 
