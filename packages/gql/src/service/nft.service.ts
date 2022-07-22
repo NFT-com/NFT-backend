@@ -672,10 +672,10 @@ const saveEdgesWithWeight = async (
   )
   // generate weights for nfts...
   let weight = await getLastWeight(repositories, profileId)
-  for (let i = 0; i < nftsToBeAdded.length; i++) {
+  for (let i = 0; i < nfts.length; i++) {
     const newWeight = generateWeight(weight)
     nftsWithWeight.push({
-      nft: nftsToBeAdded[i],
+      nft: nfts[i],
       weight: newWeight,
     })
     weight = newWeight
@@ -834,7 +834,6 @@ export const updateNFTsOrder = async (
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
           edgeType: defs.EdgeType.Displays,
-          hide: false,
         },
         order: {
           weight: 'ASC',
@@ -853,7 +852,6 @@ export const updateNFTsOrder = async (
             thisEntityId: profileId,
             thatEntityId: orders[i].nftId,
             edgeType: defs.EdgeType.Displays,
-            hide: false,
           },
         })
         if (existingEdge) {
