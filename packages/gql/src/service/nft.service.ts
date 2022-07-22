@@ -672,10 +672,10 @@ const saveEdgesWithWeight = async (
   )
   // generate weights for nfts...
   let weight = await getLastWeight(repositories, profileId)
-  for (let i = 0; i < nfts.length; i++) {
+  for (let i = 0; i < nftsToBeAdded.length; i++) {
     const newWeight = generateWeight(weight)
     nftsWithWeight.push({
-      nft: nfts[i],
+      nft: nftsToBeAdded[i],
       weight: newWeight,
     })
     weight = newWeight
