@@ -15,7 +15,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses, getOwnersOfGenesisKeys,
@@ -712,6 +712,36 @@ export const refreshNft = async (
   }
 }
 
+// @TODO: Force Refresh as a second iteration
+export const refreshNFTOrder = async (  _: any,
+  args: gql.MutationRefreshNFTArgs,
+  ctx: Context): Promise<string> => {
+  const { repositories, chain } = ctx
+  logger.debug('refreshNftOrders', { id: args?.id })
+  initiateWeb3()
+  try {
+    const nft = await repositories.nft.findById(args?.id)
+    if (!nft) {
+      throw appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      )
+    }
+
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chain.id}`, `${nft.contract}:${nft.tokenId}`)
+    if (recentlyRefreshed) {
+      return 'Refreshed Recently! Try in sometime!'
+    }
+
+    // add to cache list
+    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, `${nft.contract}:${nft.tokenId}`)
+    return 'Added to queue! Check back shortly!'
+  } catch (err) {
+    Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
+  }
+  return ''
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -727,6 +757,7 @@ export default {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
     refreshNft,
+    refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

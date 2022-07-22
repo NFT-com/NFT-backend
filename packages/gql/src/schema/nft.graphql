@@ -164,4 +164,6 @@ extend type Mutation {
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
   refreshNft(id: ID!, chainId: String): NFT!
+  "AUTHETICATED"
+  refreshNFTOrder(id: ID!): String!
 }
