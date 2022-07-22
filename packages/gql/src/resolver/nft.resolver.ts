@@ -737,7 +737,6 @@ export const refreshNFTOrder = async (  _: any,
     await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, `${nft.contract}:${nft.tokenId}`)
     return 'Added to queue! Check back shortly!'
   } catch (err) {
-    console.log('err', err)
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
   }
   return ''

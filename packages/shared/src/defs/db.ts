@@ -92,8 +92,8 @@ export enum ExchangeType {
 }
 
 export enum ProtocolType {
-  Wyvern = 'wyvern',
-  Seaport = 'seaport',
+  Wyvern = 'Wyvern',
+  Seaport = 'Seaport',
   LooksRare = 'LooksRare',
 }
 
