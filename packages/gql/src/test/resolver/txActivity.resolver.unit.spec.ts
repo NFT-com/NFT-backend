@@ -1,9 +1,13 @@
+import { Connection } from 'typeorm'
+
+import { testDBConfig } from '@nftcom/gql/config'
 import { db } from '@nftcom/shared'
 import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
 import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
 
-import { dbConfig } from '../../config'
 import { getTestApolloServer } from '../util/testApolloServer'
+
+jest.setTimeout(300000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -14,10 +18,11 @@ const repositories = db.newRepositories()
 
 let testServer
 let testData
+let connection: Connection
 
 describe('transaction activity resolver', () => {
   beforeAll(async () => {
-    await db.connect(dbConfig)
+    connection = await db.connectTestDB(testDBConfig)
     testServer = getTestApolloServer(repositories)
     const timestamp = new Date().getTime()
     testData = await Promise.all(['txBid', 'txBid', 'txList'].map(async (table, i) => {
@@ -25,6 +30,7 @@ describe('transaction activity resolver', () => {
       activity.activityType = table === 'txList' ? ActivityType.Listing : ActivityType[table.slice(2)]
       activity.timestamp = new Date(timestamp + (10000 * i))
       activity.userId = 'x29hruG3hC0rrkag7ChQb'
+      activity.chainId = '4'
 
       let activityType
       switch (table) {
@@ -37,6 +43,7 @@ describe('transaction activity resolver', () => {
         activityType.makerAddress = ''
         activityType.offer = []
         activityType.consideration = []
+        activityType.chainId = '4'
 
         activity.activityTypeId = activityType.id
         activity = await repositories.txActivity.save(activity)
@@ -52,6 +59,7 @@ describe('transaction activity resolver', () => {
         activityType.makerAddress = ''
         activityType.offer = []
         activityType.consideration = []
+        activityType.chainId = '4'
 
         activity.activityTypeId = activityType.id
         activity = await repositories.txActivity.save(activity)
@@ -71,13 +79,14 @@ describe('transaction activity resolver', () => {
       await repositories.txActivity.hardDeleteByIds([item.activity.id])
     }
     await testServer.stop()
-    await db.disconnect()
+    if (!connection) return
+    await connection.close()
   })
 
   it('should query activity by type', async () => {
     const result = await testServer.executeOperation({
-      query: `query Query($activityType: String) { 
-        getActivitiesByType(activityType: $activityType) { 
+      query: `query Query($activityType: String, $chainId: String) { 
+        getActivitiesByType(activityType: $activityType, chainId: $chainId) { 
           id 
           activityType
           read
@@ -94,7 +103,7 @@ describe('transaction activity resolver', () => {
           }
         } 
       }`,
-      variables: { activityType: 'Bid' },
+      variables: { activityType: 'Bid', chainId: '4' },
     })
     const bidData = testData.filter(data => data.table === 'txBid')
     const bidIds = bidData.map(bd => bd.activityType.id)
@@ -109,8 +118,8 @@ describe('transaction activity resolver', () => {
 
   it('should query activity by user id', async () => {
     const result = await testServer.executeOperation({
-      query: `query Query($userId: ID) { 
-        getActivitiesByUserId(userId: $userId) { 
+      query: `query Query($userId: ID, $chainId: String) { 
+        getActivitiesByUserId(userId: $userId, chainId: $chainId) { 
           id 
           activityType
           read
@@ -137,7 +146,7 @@ describe('transaction activity resolver', () => {
           }
         } 
       }`,
-      variables: { userId: testData[0].activity.userId },
+      variables: { userId: testData[0].activity.userId, chainId: '4' },
     })
 
     const testDataIds = testData.map(td => td.activity.id)
@@ -175,7 +184,7 @@ describe('transaction activity resolver', () => {
           }
         } 
       }`,
-      variables: { input: { userId: testData[0].activity.userId, activityType: 'Listing' } },
+      variables: { input: { userId: testData[0].activity.userId, activityType: 'Listing', chainId: '4' } },
     })
     const listData = testData.filter(data => data.table === 'txList')
     const listIds = listData.map(ld => ld.activityType.id)

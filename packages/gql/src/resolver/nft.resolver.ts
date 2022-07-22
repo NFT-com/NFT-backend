@@ -18,7 +18,7 @@ import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses,
+  checkNFTContractAddresses, getOwnersOfGenesisKeys,
   initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -111,12 +111,16 @@ const getContractNFT = (
   const schema = Joi.object().keys({
     id: Joi.string().required(),
     contract: Joi.string().required(),
+    chainId: Joi.string(),
   })
   joi.validateSchema(schema, args)
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
   return repositories.nft.findOne({ where:
     {
       contract: utils.getAddress(args.contract),
       tokenId: ethers.BigNumber.from(args.id).toHexString(),
+      chainId,
     },
   })
     .then(fp.rejectIfEmpty(
@@ -138,6 +142,8 @@ const getNFTs = (
   const { user, repositories } = ctx
   logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
   const { types, profileId } = helper.safeObject(args?.input)
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
   const filter: Partial<entity.NFT> = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
   })
@@ -150,9 +156,11 @@ const getNFTs = (
       // If no curations associated with this Profile,
       // (e.g. before user-curated curations are available)
       // we'll return all the owner's NFTs (at this wallet)
-      return repositories.profile.findById(profileId)
+      return repositories.profile.findOne({
+        where: { id: profileId, chainId: chainId },
+      })
         .then((profile: entity.Profile) =>
-          repositories.nft.findByWalletId(profile.ownerWalletId)
+          repositories.nft.findByWalletId(profile.ownerWalletId, chainId)
             .then((nfts: entity.NFT[]) =>
               Promise.all(nfts.map((nft: entity.NFT) => {
                 return {
@@ -184,15 +192,19 @@ const getMyNFTs = (
   args: gql.QueryNFTsArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
-  const { user } = ctx
+  const { user, chain } = ctx
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
   const { types, profileId } = helper.safeObject(args?.input)
 
   const filters: Partial<entity.NFT>[] = [helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
     userId: user.id,
     profileId,
+    chainId,
   })]
   return core.paginatedEntitiesBy(
     ctx.repositories.nft,
@@ -236,11 +248,16 @@ const getCollectionNFTs = (
   const { repositories } = ctx
   logger.debug('getCollectionNFTs', { input: args?.input })
   const { pageInput, collectionAddress } = helper.safeObject(args?.input)
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.collection.findByContractAddress(utils.getAddress(collectionAddress))
+  return repositories.collection.findByContractAddress(
+    utils.getAddress(collectionAddress),
+    chainId,
+  )
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('collection ' + collectionAddress),
+        nftError.buildNFTNotFoundMsg('collection ' + collectionAddress + ' on chain ' + chainId),
         nftError.ErrorType.NFTNotFound,
       ),
     ))
@@ -258,7 +275,12 @@ const getCollectionNFTs = (
     .then(pagination.toPageable(pageInput))
     .then((resultEdges: Pageable<entity.Edge>) => Promise.all([
       Promise.all(
-        resultEdges.items.map((edge: entity.Edge) => repositories.nft.findById(edge.thatEntityId)),
+        resultEdges.items.map((edge: entity.Edge) => repositories.nft.findOne({
+          where: {
+            id: edge.thatEntityId,
+            chainId: chainId,
+          },
+        })),
       ),
       Promise.resolve(resultEdges.pageInfo),
       Promise.resolve(resultEdges.totalItems),
@@ -276,15 +298,17 @@ const refreshMyNFTs = (
   ctx: Context,
 ): Promise<gql.RefreshMyNFTsOutput> => {
   const { user, repositories } = ctx
-  initiateWeb3()
+  const chainId = ctx.chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  initiateWeb3(chainId)
   logger.debug('refreshNFTs', { loggedInUserId: user.id })
   return repositories.wallet.findByUserId(user.id)
     .then((wallets: entity.Wallet[]) => {
       return Promise.all(
         wallets.map((wallet: entity.Wallet) => {
-          checkNFTContractAddresses(user.id, wallet.id, wallet.address)
+          checkNFTContractAddresses(user.id, wallet.id, wallet.address, wallet.chainId)
             .then(() => {
-              updateWalletNFTs(user.id, wallet.id, wallet.address)
+              updateWalletNFTs(user.id, wallet.id, wallet.address, wallet.chainId)
             })
         }),
       ).then(() => {
@@ -299,28 +323,32 @@ const refreshMyNFTs = (
 
 const getGkNFTs = async (
   _: any,
-  args: { tokenId: gql.Scalars['String'] },
+  args: gql.QueryGkNFTsArgs,
   ctx: Context,
 ): Promise<gql.GetGkNFTsOutput> => {
   const { user } = ctx
   logger.debug('getGkNFTs', { loggedInUserId: user?.id  })
 
-  const cachedData = await cache.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`)
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+  const cachedData = await cache.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`)
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
-    const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+    const ALCHEMY_API_URL = chainId === '1' ? process.env.ALCHEMY_API_URL :
+      (chainId === '5' ? process.env.ALCHEMY_API_URL_GOERLI : process.env.ALCHEMY_API_URL_RINKEBY)
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
     try {
       const response: any = await web3.alchemy.getNftMetadata({
-        contractAddress: contracts.genesisKeyAddress(process.env.CHAIN_ID),
+        contractAddress: contracts.genesisKeyAddress(chainId),
         tokenId: ethers.BigNumber.from(args?.tokenId).toString(),
         tokenType: 'erc721',
       })
 
       await cache.set(
-        `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(process.env.CHAIN_ID)}`,
+        `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`,
         JSON.stringify(response),
         'EX',
         60 * 60, // 60 minutes
@@ -339,21 +367,21 @@ export const saveProfileScore = async (
   profile: entity.Profile,
 ): Promise<void> => {
   try {
-    const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
+    const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
     // get genesis key numbers
     const gkNFTs = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, contract: gkContractAddress },
+      where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
     })
     // get collections
     const nfts = await repositories.nft.find({
-      where: { userId: profile.ownerUserId },
+      where: { userId: profile.ownerUserId, chainId: profile.chainId },
     })
 
     const collections: Array<string> = []
     await Promise.allSettled(
       nfts.map(async (nft) => {
         const collection = await repositories.collection.findOne({
-          where: { contract: nft.contract },
+          where: { contract: nft.contract, chainId: profile.chainId },
         })
         if (collection) {
           const isExisting = collections.find((existingCollection) =>
@@ -376,9 +404,28 @@ export const saveProfileScore = async (
     const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
     const paddedCollections = collections.length.toString().padStart(5, '0')
     const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
-    await cache.zadd(`LEADERBOARD_${process.env.CHAIN_ID}`, score, profile.id)
+    await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
   } catch (err) {
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
+  }
+}
+
+const updateGKIconVisibleStatus = async (
+  repositories: db.Repository,
+  chainId: string,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
+    if (index === -1) {
+      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
+    } else {
+      return
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
   }
 }
 
@@ -390,9 +437,17 @@ const updateNFTsForProfile = (
   try {
     const { repositories } = ctx
     logger.debug('updateNFTsForProfile', { input: args?.input })
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+
     const pageInput = args?.input.pageInput
-    initiateWeb3()
-    return repositories.profile.findOne({ where: { id: args?.input.profileId } })
+    initiateWeb3(chainId)
+    return repositories.profile.findOne({
+      where: {
+        id: args?.input.profileId,
+        chainId,
+      },
+    })
       .then((profile: entity.Profile | undefined) => {
         if (!profile) {
           return Promise.resolve({ items: [] })
@@ -415,18 +470,38 @@ const updateNFTsForProfile = (
           ) {
             repositories.profile.updateOneById(profile.id, {
               nftsLastUpdated: now,
-            }).then(() => repositories.wallet.findById(profile.ownerWalletId)
+            }).then(() => repositories.wallet.findOne({
+              where: {
+                id: profile.ownerWalletId,
+                chainId,
+              },
+            })
               .then((wallet: entity.Wallet) => {
-                return checkNFTContractAddresses(profile.ownerUserId, wallet.id, wallet.address)
+                return checkNFTContractAddresses(
+                  profile.ownerUserId,
+                  wallet.id,
+                  wallet.address,
+                  chainId,
+                )
                   .then(() => {
                     return updateWalletNFTs(
                       profile.ownerUserId,
                       wallet.id,
                       wallet.address,
+                      chainId,
                     ).then(() => {
                       return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
                         .then(() => {
                           return syncEdgesWithNFTs(profile.id)
+                            .then(() => {
+                              // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                              if (profile.gkIconVisible) {
+                                return updateGKIconVisibleStatus(repositories, chainId, profile)
+                                  .then(() => {
+                                    logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                  })
+                              }
+                            })
                         })
                     })
                   })
@@ -475,7 +550,9 @@ const getExternalListings = async (
     caller: ctx.user?.id,
   })
   try {
-    const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${args?.chainId}`
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${chainId}`
     const cachedData = await cache.get(key)
 
     if (cachedData) {
@@ -483,7 +560,7 @@ const getExternalListings = async (
     } else {
       // 1. Opensea
       // get selling & buying orders...
-      const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, args?.chainId)
+      const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, chainId)
       if (allOrder) logger.info('========== allOrder: ', JSON.stringify(allOrder, null, 2))
       let bestOffer = undefined
       if (allOrder?.offers?.seaport?.length) {
@@ -561,8 +638,8 @@ const getExternalListings = async (
         true,
         'VALID',
       )
-      const url = args?.chainId === '4' ? `https://rinkeby.looksrare.org/collections/${args?.contract}/${args?.tokenId}` :
-        `https://looksrare.org/collections/${args?.contract}/${args?.tokenId}`
+      const url = chainId === '4' ? `https://rinkeby.looksrare.org/collections/${args?.contract}/${args?.tokenId}` :
+        (chainId === '1' ? `https://looksrare.org/collections/${args?.contract}/${args?.tokenId}` : null)
       let looksrareCreatedDate, looksrareExpiration, looksrareBaseCoin
       if (looksrareSellOrders && looksrareSellOrders.length) {
         looksrareCreatedDate = new Date(looksrareSellOrders[0].startTime * 1000)
@@ -600,27 +677,34 @@ export const refreshNft = async (
 ): Promise<gql.NFT> => {
   try {
     const { repositories } = ctx
-    logger.debug('refreshNft', { id: args?.id })
-    initiateWeb3()
-    const cachedData = await cache.get(`refreshNFT_${process.env.CHAIN_ID}_${args?.id}`)
+    logger.debug('refreshNft', { id: args?.id, chainId: args?.chainId })
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    initiateWeb3(chainId)
+    const cachedData = await cache.get(`refreshNFT_${chainId}_${args?.id}`)
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
-      const nft = await repositories.nft.findById(args?.id)
+      const nft = await repositories.nft.findOne({
+        where: {
+          id: args?.id,
+          chainId,
+        },
+      })
       if (nft) {
         const refreshedNFT = await refreshNFTMetadata(nft)
         await cache.set(
-          `refreshNFT_${process.env.CHAIN_ID}_${args?.id}`,
+          `refreshNFT_${chainId}_${args?.id}`,
           JSON.stringify(refreshedNFT),
           'EX',
           5 * 60, // 5 minutes
         )
         return refreshedNFT
       } else {
-        throw appError.buildNotFound(
+        return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
           nftError.ErrorType.NFTNotFound,
-        )
+        ))
       }
     }
   } catch (err) {

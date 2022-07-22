@@ -18,18 +18,20 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   public findActivitiesByType = (
     activityType: ActivityType,
+    chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(
         `activity.${activityType.toLowerCase()}`, this.getEntityName(activityType),
         'activityType',  'activity.activityTypeId = activityType.id')
-      .where({ activityType })
+      .where({ activityType, chainId })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
   public findActivitiesByUserId = (
     userId: string,
+    chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne('activity.bid', 'TxBid', 'bid',
@@ -44,6 +46,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'activity.activityTypeId = transfer.id AND activity.id = transfer.activityId')
       .where({
         userId,
+        chainId,
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
@@ -52,6 +55,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   public findActivitiesByUserIdAndType = (
     userId: string,
     activityType: ActivityType,
+    chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(`activity.${activityType.toLowerCase()}`,
@@ -60,6 +64,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .where({
         activityType,
         userId,
+        chainId,
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()

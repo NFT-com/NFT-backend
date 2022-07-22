@@ -10,7 +10,7 @@ import { db, defs } from '@nftcom/shared'
 import { testMockUser, testMockWallet } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
-jest.setTimeout(120000)
+jest.setTimeout(300000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -28,6 +28,7 @@ let connection: Connection
 
 const userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
 const walletId = '9qE9dsueMEQuhtdzQ8J2p'
+const chainId = '4'
 let nftA, nftB, nftC
 
 const repositories = db.newRepositories()
@@ -53,6 +54,7 @@ describe('collection resolver', () => {
     nftA = await repositories.nft.save({
       userId,
       walletId,
+      chainId,
       contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
       tokenId: '0x086a79',
       type: defs.NFTType.ERC721,
@@ -64,6 +66,7 @@ describe('collection resolver', () => {
     nftB = await repositories.nft.save({
       userId,
       walletId,
+      chainId,
       contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
       tokenId: '0x086a76',
       type: defs.NFTType.ERC721,
@@ -75,6 +78,7 @@ describe('collection resolver', () => {
     nftC = await repositories.nft.save({
       userId,
       walletId,
+      chainId,
       contract:ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
       tokenId: '0x05',
       type: defs.NFTType.ERC721,
@@ -101,10 +105,12 @@ describe('collection resolver', () => {
       const collectionA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
+        chainId,
       })
       const collectionB = await repositories.collection.save({
         contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
         name: 'tinyMusktweetz',
+        chainId,
       })
 
       await repositories.edge.save({
@@ -157,6 +163,7 @@ describe('collection resolver', () => {
             pageInput: {
               first: 5,
             },
+            chainId: '4',
           },
         },
       })

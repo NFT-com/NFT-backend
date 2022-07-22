@@ -37,7 +37,7 @@ export const getWallet = (
   const { network, chainId, address } = input
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
-  
+
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
     .then(fp.rejectIfEmpty(appError.buildExists(
@@ -696,7 +696,7 @@ export const createProfile = (
   profile: Partial<entity.Profile>,
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
-  return ctx.repositories.profile.findByURL(profile.url)
+  return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
     .then(fp.thruIfEmpty(() => {
       return Promise.all([
         fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
@@ -754,10 +754,10 @@ export const createProfileFromEvent = async (
         username: 'ethereum-' + ethers.utils.getAddress(owner),
       },
     })
+
     if (!user) {
       user = await repositories.user.save({
         // defaults
-        chainId: chainId || process.env.CHAIN_ID,
         username: 'ethereum-' + ethers.utils.getAddress(owner),
         referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
       })
@@ -783,10 +783,10 @@ export const createProfileFromEvent = async (
   return createProfile(ctx, {
     status: defs.ProfileStatus.Owned,
     url: profileUrl,
-    chainId: chainId || process.env.CHAIN_ID,
     tokenId: tokenId.toString(),
     ownerWalletId: wallet.id,
     ownerUserId: wallet.userId,
+    chainId: chainId || process.env.CHAIN_ID,
   }, noAvatar)
 }
 

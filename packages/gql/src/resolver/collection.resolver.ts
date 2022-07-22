@@ -23,7 +23,9 @@ const getCollection = async (
 ): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
-    const key = `${args?.input?.contract?.toLowerCase()}-${args?.input?.chainId}-${args?.input?.withOpensea}`
+    const chainId = args?.input?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const key = `${args?.input?.contract?.toLowerCase()}-${chainId}-${args?.input?.withOpensea}`
     const cachedData = await cache.get(key)
 
     if (cachedData) {
@@ -39,10 +41,10 @@ const getCollection = async (
           data = cachedData
           stats = await retrieveCollectionStatsOpensea(
             cachedData?.collection?.slug,
-            args?.input?.chainId,
+            chainId,
           )
         } else {
-          data = await retrieveCollectionOpensea(args?.input?.contract, args?.input?.chainId)
+          data = await retrieveCollectionOpensea(args?.input?.contract, chainId)
 
           if (data) {
             if (data?.collection?.slug) {
@@ -58,7 +60,10 @@ const getCollection = async (
       }
 
       const returnObject = {
-        collection: await ctx.repositories.collection.findByContractAddress(args?.input?.contract),
+        collection: await ctx.repositories.collection.findByContractAddress(
+          args?.input?.contract,
+          chainId,
+        ),
         openseaInfo: data,
         openseaStats: stats,
       }
@@ -233,7 +238,8 @@ const fillChainIds = async (
   const { repositories } = ctx
   logger.debug('fillChainIds', { input: args?.input })
   try {
-    const chainId = args?.input.chainId
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
     const entity = args?.input.entity
     if (entity === 'bid') {
       const bids = await repositories.bid.findAll()
@@ -307,14 +313,8 @@ const fillChainIds = async (
           txTransfers[i].chainId = chainId
       }
       await repositories.txTransfer.saveMany(txTransfers, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'user') {
-      const users = await repositories.user.findAll()
-      for (let i = 0; i < users.length; i++) {
-        if (!users[i].chainId)
-          users[i].chainId = chainId
-      }
-      await repositories.user.saveMany(users, { chunk: MAX_SAVE_COUNTS })
     }
+
     return {
       message: 'Filled chainId successfully.',
     }

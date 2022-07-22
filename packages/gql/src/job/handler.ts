@@ -104,7 +104,7 @@ const validateLiveBalances = (bids: entity.Bid[], chainId: number): Promise<bool
                 }
               } catch (err) {
                 logger.debug('gk balance: ', err)
-                
+
                 Sentry.captureMessage(`gk balance error in validateLiveBalances: ${err}`)
               }
             }),
@@ -146,7 +146,7 @@ const chainIdToCacheKeyResolverAssociate = (chainId: number): string => {
   return `resolver_associate_cached_block_${chainId}`
 }
 
-const getAssociatedEvmEvents = async (
+const getResolverEvents = async (
   topics: any[],
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -172,7 +172,7 @@ const getAssociatedEvmEvents = async (
   } catch (e) {
     logger.debug(e)
     Sentry.captureException(e)
-    Sentry.captureMessage(`Error in getAssociatedEvmEvents: ${e}`)
+    Sentry.captureMessage(`Error in getResolverEvents: ${e}`)
     return {
       logs: [],
       latestBlockNumber: latestBlock.number,
@@ -223,7 +223,11 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     ]
 
     const topics2 = [
-      helper.id('AssociateEvmUser(address,string,address)'),
+      [
+        helper.id('AssociateEvmUser(address,string,address)'),
+        helper.id('CancelledEvmAssociation(address,string,address)'),
+        helper.id('ClearAllAssociatedAddresses(address,string)'),
+      ],
     ]
 
     const chainProvider = provider.provider(Number(chainId))
@@ -240,7 +244,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     })
     const filteredBids = bids.filter((bid: entity.Bid) => bid.nftType == defs.NFTType.GenesisKey)
     const log = await getMintedProfileEvents(topics, Number(chainId), chainProvider, address)
-    const log2 = await getAssociatedEvmEvents(
+    const log2 = await getResolverEvents(
       topics2,
       Number(chainId),
       chainProvider,
@@ -252,11 +256,10 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       let evt
       try {
         evt = nftResolverInterface.parseLog(unparsedEvent)
-      
-        logger.info(`Found event AssociateEvmUser with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
-        const [owner,profileUrl,destinationAddress] = evt.args
+        logger.info(`Found event ${evt.name} with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
 
         if (evt.name === 'AssociateEvmUser') {
+          const [owner,profileUrl,destinationAddress] = evt.args
           const event = await repositories.event.findOne({
             where: {
               chainId,
@@ -264,6 +267,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               eventName: evt.name,
               txHash: unparsedEvent.transactionHash,
               ownerAddress: owner,
+              blockNumber: Number(unparsedEvent.blockNumber),
               profileUrl: profileUrl,
               destinationAddress: helper.checkSum(destinationAddress),
             },
@@ -276,15 +280,74 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 eventName: evt.name,
                 txHash: unparsedEvent.transactionHash,
                 ownerAddress: owner,
+                blockNumber: Number(unparsedEvent.blockNumber),
                 profileUrl: profileUrl,
                 destinationAddress: helper.checkSum(destinationAddress),
               },
             )
             logger.debug(`New NFT Resolver AssociateEvmUser event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
           }
+        } else if (evt.name == 'CancelledEvmAssociation') {
+          const [owner,profileUrl,destinationAddress] = evt.args
+          const event = await repositories.event.findOne({
+            where: {
+              chainId,
+              contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+              eventName: evt.name,
+              txHash: unparsedEvent.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(unparsedEvent.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(destinationAddress),
+            },
+          })
+          if (!event) {
+            await repositories.event.save(
+              {
+                chainId,
+                contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+                eventName: evt.name,
+                txHash: unparsedEvent.transactionHash,
+                ownerAddress: owner,
+                blockNumber: Number(unparsedEvent.blockNumber),
+                profileUrl: profileUrl,
+                destinationAddress: helper.checkSum(destinationAddress),
+              },
+            )
+            logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) is cancelling ${ destinationAddress }. chainId=${chainId}`)
+          }
+        } else if (evt.name == 'ClearAllAssociatedAddresses') {
+          const [owner,profileUrl] = evt.args
+          const event = await repositories.event.findOne({
+            where: {
+              chainId,
+              contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+              eventName: evt.name,
+              txHash: unparsedEvent.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(unparsedEvent.blockNumber),
+              profileUrl: profileUrl,
+            },
+          })
+          if (!event) {
+            await repositories.event.save(
+              {
+                chainId,
+                contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+                eventName: evt.name,
+                txHash: unparsedEvent.transactionHash,
+                ownerAddress: owner,
+                blockNumber: Number(unparsedEvent.blockNumber),
+                profileUrl: profileUrl,
+              },
+            )
+            logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) cancelled all associations. chainId=${chainId}`)
+          }
         }
       } catch (err) {
-        logger.error('error parsing resolver: ', err)
+        if (err.code != 'BUFFER_OVERRUN') { // error parsing old event on goerli
+          logger.error('error parsing resolver: ', err)
+        }
       }
     })
 
@@ -310,6 +373,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 where: {
                   tokenId: tokenId.toString(),
                   url: profileUrl,
+                  chainId,
                 },
               })
               if (!profile) {
