@@ -168,7 +168,7 @@ const createEcsTaskDefinition = (
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
   const otelName = getResourceName('aws-otel-collector')
-  const otelMemory = 20
+  const otelMemory = 75
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
