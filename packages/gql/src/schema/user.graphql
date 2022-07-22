@@ -13,6 +13,19 @@ type User {
   referralId: String!
 }
 
+type Event {
+  id: ID!
+  chainId: String!
+  contract: String!
+  eventName: String!
+  txHash: String!
+  ownerAddress: String
+  profileUrl: String
+  destinationAddress: String
+  blockNumber: String
+  ignore: Boolean
+}
+
 type UserPreferences {
   bidActivityNotifications: Boolean
   priceChangeNotifications: Boolean
@@ -40,6 +53,7 @@ type GkOutput {
 }
 
 type PendingAssociationOutput {
+  id: String!
   owner: String!
   url: String!
 }
@@ -85,6 +99,8 @@ extend type Mutation {
   updateMe(input: UpdateUserInput!): User!
   updateEmail(input: UpdateEmailInput!): User!
   confirmEmail(token: String!): Boolean!
+  "AUTHENTICATED"
+  ignoreAssocations(eventIdArray: [String]!): [Event]!
   "AUTHENTICATED"
   resendEmailConfirm: User!
 }
