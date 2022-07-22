@@ -2,12 +2,11 @@ import { Sampler, SpanKind } from '@opentelemetry/api'
 
 import opentelemetry = require('@opentelemetry/api');
 
-import { Attributes } from '@opentelemetry/api'
+import { SpanAttributes } from '@opentelemetry/api'
 import { AlwaysOnSampler } from '@opentelemetry/core'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express'
-import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis'
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
@@ -16,7 +15,7 @@ import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { SemanticAttributes, SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
-type FilterFunction = (spanName: string, spanKind: SpanKind, attributes: Attributes) => boolean;
+type FilterFunction = (spanName: string, spanKind: SpanKind, attributes: SpanAttributes) => boolean;
 
 function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
   return {
@@ -32,7 +31,7 @@ function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
   }
 }
 
-function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: Attributes): boolean {
+function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: SpanAttributes): boolean {
   return spanKind === opentelemetry.SpanKind.INTERNAL
     || attributes[SemanticAttributes.HTTP_METHOD] === 'OPTIONS'
     || attributes[SemanticAttributes.HTTP_TARGET] === '/.well-known/apollo/server-health'
@@ -53,7 +52,6 @@ export const setupTracing = (serviceName: string): opentelemetry.Tracer => {
       // Express instrumentation expects HTTP layer to be instrumented
       new HttpInstrumentation(),
       new ExpressInstrumentation(),
-      new GraphQLInstrumentation({ depth: 1 }),
       new IORedisInstrumentation(),
       new PgInstrumentation(),
     ],
