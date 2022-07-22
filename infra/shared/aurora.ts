@@ -41,7 +41,7 @@ const createMain = (
   const engineType = EngineType.AuroraPostgresql
   const cluster = new aws.rds.Cluster('aurora_main_cluster', {
     engine: engineType,
-    engineVersion: '13.3',
+    engineVersion: '13.4',
     availabilityZones: zones,
     vpcSecurityGroupIds: [sg.id],
     dbSubnetGroupName: subnetGroup.name,

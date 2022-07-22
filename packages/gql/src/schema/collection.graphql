@@ -64,6 +64,7 @@ type Collection {
   id: ID
   contract: Address
   name: String
+  chainId: String
 }
 
 type CollectionInfo {
@@ -74,10 +75,40 @@ type CollectionInfo {
 
 input CollectionInput {
   contract: Address!
-  chainId: String!
+  chainId: String
   network: String!
+  withOpensea: Boolean
 }
+
+input FillChainIdsInput {
+  chainId: String
+  entity: String!
+}
+
+type RemoveDuplicatesOutput {
+  message: String
+}
+
+type saveCollectionForContractOutput {
+  message: String
+}
+
+type SyncCollectionsWithNFTsOutput {
+  message: String
+}
+
+type FillChainIdsOutput {
+  message: String
+}
+
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
+}
+
+extend type Mutation {
+  removeDuplicates(contracts: [Address!]!): RemoveDuplicatesOutput!
+  saveCollectionForContract(contract: Address!): saveCollectionForContractOutput!
+  syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
+  fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!
 }

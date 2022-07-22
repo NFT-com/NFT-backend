@@ -1,8 +1,13 @@
 import * as nftService from '@nftcom/gql/service/nft.service'
 
-import { getTestApolloServer } from './util/testApolloServer'
+import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(30000)
+
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: jest.fn(),
+  createCacheConnection: jest.fn(),
+}))
 
 let testServer
 describe('nft resolver', () => {
@@ -30,7 +35,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it.skip('calles updateWalletNFTs when given valid input', async () => {
+    it('calls updateWalletNFTs when given valid input', async () => {
       const spy = jest.spyOn(nftService, 'updateWalletNFTs')
 
       const result = await testServer.executeOperation({
@@ -43,7 +48,7 @@ describe('nft resolver', () => {
       // expect(spy).toBeCalledWith('test-user-id', 'test-wallet-id', 'test-address')
     })
 
-    it.skip('throws an error when given invalid input', async () => {
+    it('throws an error when given invalid input', async () => {
       const spy = jest.spyOn(nftService, 'updateWalletNFTs')
 
       const result = await testServer.executeOperation({

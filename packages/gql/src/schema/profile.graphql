@@ -28,10 +28,16 @@ enum ProfileLayoutType {
   Spotlight
 }
 
+enum ProfileViewType {
+  Collection
+  Gallery
+}
+
 type Profile {
   id: ID!
   bannerURL: String
   createdAt: DateTime!
+  chainId: String
   description: String
   displayType: ProfileDisplayType
   layoutType: ProfileLayoutType
@@ -46,6 +52,7 @@ type Profile {
   status: ProfileStatus
   url: String!
   winningBid: Bid
+  profileView: ProfileViewType
 }
 
 type LeaderboardProfile {
@@ -113,10 +120,7 @@ input CreateCompositeImageInput {
 
 input LatestProfilesInput {
   pageInput: PageInput
-}
-
-input CreateAllCompositeImagesInput {
-  pageInput: PageInput
+  chainId: String
 }
 
 input OrderUpdateInput {
@@ -130,6 +134,8 @@ input OrderingUpdatesInput {
 }
 
 input LeaderboardInput {
+  chainId: String
+  count: Int
   pageInput: PageInput
 }
 
@@ -139,25 +145,59 @@ type LeaderboardOutput {
   totalItems: Int
 }
 
+input SaveScoreForProfilesInput {
+  count: Int
+  nullOnly: Boolean
+}
+
+type SaveScoreForProfilesOutput {
+  message: String
+}
+
+type ClearGKIconVisibleOutput {
+  message: String
+}
+
+input UpdateProfileViewInput {
+  url: String!
+  profileViewType: ProfileViewType!
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
+  "AUTHENTICATED"
   profilesFollowedByMe(input: ProfilesInput): ProfilesOutput!
+  "AUTHENTICATED"
   myProfiles(input: ProfilesInput): ProfilesOutput!
-  profile(url: String!): Profile!
-  profilePassive(url: String!): Profile!
+  profile(url: String!, chainId: String): Profile!
+  profilePassive(url: String!, chainId: String): Profile!
   blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
+  "AUTHENTICATED"
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
   leaderboard(input: LeaderboardInput): LeaderboardOutput!
 }
 
 extend type Mutation {
+  "AUTHENTICATED"
   followProfile(url: String): Profile!
+  "AUTHENTICATED"
   unfollowProfile(id: ID!): Profile!
+  "AUTHENTICATED"
   updateProfile(input: UpdateProfileInput!): Profile!
+  "AUTHENTICATED"
   profileClaimed(input: ProfileClaimedInput!): Profile!
   mintGKProfile(input: MintGKProfileInput): String!
+  "AUTHENTICATED"
   uploadProfileImages(input: UploadProfileImagesInput): Profile!
+  "AUTHENTICATED"
   createCompositeImage(input: CreateCompositeImageInput): Profile!
+  "AUTHENTICATED"
   orderingUpdates(input: OrderingUpdatesInput!): Profile!
+  "AUTHENTICATED"
+  saveScoreForProfiles(input: SaveScoreForProfilesInput!): SaveScoreForProfilesOutput!
+  "AUTHENTICATED"
+  clearGKIconVisible: ClearGKIconVisibleOutput!
+  "AUTHENTICATED"
+  updateProfileView(input: UpdateProfileViewInput): Profile!
 }

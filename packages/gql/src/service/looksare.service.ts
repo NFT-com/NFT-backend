@@ -32,6 +32,7 @@ export const retrieveOrdersLooksrare = async (
   isOrderAsk: boolean,
   status: string,
 ): Promise<Array<LookrareResponse> | undefined> => {
+  if (chainId !== '4' && chainId !== '1') return undefined
   let url
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   const config = {
@@ -46,7 +47,6 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }

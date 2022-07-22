@@ -1,0 +1,95 @@
+type TxActivity {
+  id: ID!
+  chainId: String
+  activityType: String!
+  read: String!
+  timestamp: String!
+  userId: String!
+  bid: TxBid
+  cancel: TxCancel
+  listing: TxList
+  sale: TxSale
+  transfer: TxTransfer
+}
+
+type TxBid {
+  id: ID!
+  chainId: String
+  exchange: String!
+  orderHash: String!
+  makerAddress: String!
+  takerAddresss: String
+  offer: [TxOffer]
+  consideration: [TxConsideration]
+}
+
+type TxCancel {
+  id: ID!
+  exchange: String!
+  foreignType: String!
+  foreignKeyId: String!
+  transactionHash: String!
+}
+
+type TxList {
+  id: ID!
+  chainId: String
+  exchange: String!
+  orderHash: String!
+  makerAddress: String!
+  takerAddresss: String
+  offer: [TxOffer]
+  consideration: [TxConsideration]
+}
+
+type TxSale {
+  id: ID!
+  chainId: String
+  exchange: String!
+  price: String!
+  currency: String!
+  transactionHash: String!
+  blockNumber: String!
+  nftContractAddress: String!
+  nftContractTokenId: String!
+  sender: String!
+  receiver: String!
+}
+
+type TxTransfer {
+  id: ID!
+  chainId: String
+  transactionHash: String!
+  blockNumber: String!
+  nftContractAddress: String!
+  nftContractTokenId: String!
+  sender: String!
+  receiver: String!
+}
+
+type TxOffer {
+  chainId: String
+  token: String!
+  startAmount: String!
+  endAmount: String
+}
+
+type TxConsideration {
+  chainId: String
+  token: String!
+  startAmount: String!
+  endAmount: String
+  recipient: String
+}
+
+input TxUserIdAndTypeInput {
+  userId: ID!
+  activityType: String!
+  chainId: String
+}
+
+extend type Query {
+  getActivitiesByType(activityType: String, chainId: String): [TxActivity]
+  getActivitiesByUserId(userId: ID, chainId: String): [TxActivity]
+  getActivitiesByUserIdAndType(input: TxUserIdAndTypeInput): [TxActivity]
+}

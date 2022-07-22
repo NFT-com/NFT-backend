@@ -75,6 +75,35 @@ export enum AuctionType {
   Decreasing = 'Decreasing',
 }
 
+export enum ActivityType {
+  Listing = 'Listing',
+  Bid = 'Bid',
+  Cancel = 'Cancel',
+  Sale = 'Sale',
+  Transfer = 'Transfer',
+}
+
+export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
+export type CancelActivityType = typeof CancelActivities[number]
+
+export enum ExchangeType {
+  OpenSea = 'OpenSea',
+  LooksRare = 'LooksRare',
+}
+
+export enum ProtocolType {
+  Wyvern = 'Wyvern',
+  Seaport = 'Seaport',
+  LooksRare = 'LooksRare',
+}
+
+export enum CurrencyType {
+  ETH = 'ETH',
+  WETH = 'WETH',
+  USDC = 'USDC',
+  DAI = 'DAI'
+}
+
 export type Trait = {
   type: string
   value: string
@@ -111,6 +140,11 @@ export enum ProfileLayoutType {
   Mosaic = 'Mosaic',
   Featured = 'Featured',
   Spotlight = 'Spotlight',
+}
+
+export enum ProfileViewType {
+  Collection = 'Collection',
+  Gallery = 'Gallery',
 }
 
 export type Signature = {

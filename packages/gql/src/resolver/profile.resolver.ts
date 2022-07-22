@@ -5,26 +5,30 @@ import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
-import Redis from 'ioredis'
 import Joi from 'joi'
-import * as lodash from 'lodash'
 import stream from 'stream'
 import Typesense from 'typesense'
 
-import { assetBucket, redisConfig } from '@nftcom/gql/config'
+import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
+import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
+import { cache } from '@nftcom/gql/service/cache.service'
 import {
   DEFAULT_NFT_IMAGE,
   generateCompositeImage,
   getAWSConfig,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
-import { changeNFTsVisibility, updateNFTsOrder } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import {
+  changeNFTsVisibility,
+  getOwnersOfGenesisKeys,
+  updateNFTsOrder,
+} from '@nftcom/gql/service/nft.service'
+import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
@@ -33,15 +37,18 @@ const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
+const MAX_SAVE_COUNTS = 500
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
   promise: Promise<aws.S3.ManagedUpload.SendData>
 };
+
+type LeaderboardInfo = {
+  gkCount: number
+  collectionCount: number
+  edgeCount: number
+}
 
 const client = new Typesense.Client({
   'nodes': [{
@@ -53,11 +60,13 @@ const client = new Typesense.Client({
   'connectionTimeoutSeconds': 10,
 })
 
-const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => ({
-  items: profiles,
-  pageInfo: null,
-  totalItems: profiles.length,
-})
+const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => {
+  return {
+    items: profiles,
+    pageInfo: null,
+    totalItems: profiles.length,
+  }
+}
 
 // TODO implement pagination
 const getProfilesFollowedByMe = (
@@ -155,7 +164,7 @@ const followProfile = (
   joi.validateSchema(schema, args)
 
   const { url } = args
-  return core.createProfile(ctx, { url })
+  return core.createProfile(ctx, { url, chainId: wallet.chainId })
     .then(fp.tapWait(createFollowEdge(ctx)))
 }
 
@@ -201,10 +210,18 @@ const getProfileByURLPassive = (
   logger.debug('getProfileByURLPassive', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
+    chainId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args)
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return ctx.repositories.profile.findByURL(args.url)
+  return ctx.repositories.profile.findOne({
+    where: {
+      url: args.url,
+      chainId,
+    },
+  })
     .then(fp.rejectIfEmpty(appError.buildExists(
       profileError.buildProfileNotFoundMsg(args.url),
       profileError.ErrorType.ProfileNotFound,
@@ -264,6 +281,7 @@ const maybeUpdateProfileOwnership = (
               ownerWalletId: wallet.id,
               tokenId: profile.tokenId,
               status: profile.status,
+              chainId: wallet.chainId || process.env.CHAIN_ID,
               bannerURL: null,
               photoURL: null,
               description: null,
@@ -293,17 +311,24 @@ const getProfileByURL = (
   logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
     url: Joi.string().required(),
+    chainId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args)
 
-  const chainId = process.env.SUPPORTED_NETWORKS.replace('ethereum:', '').split(':')[0]
+  const chainId = args?.chainId || process.env.CHAIN_ID
+  const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
   const nftProfileContract = typechain.NftProfile__factory.connect(
-    contracts.nftProfileAddress(chainId),
-    provider.provider(Number(chainId)),
+    contracts.nftProfileAddress(chain.id),
+    provider.provider(Number(chain.id)),
   )
 
-  return ctx.repositories.profile.findByURL(args.url)
-    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chainId)))
+  return ctx.repositories.profile.findOne({
+    where: {
+      url: args.url,
+      chainId: chainId,
+    },
+  })
+    .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chain.id)))
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
         profileError.buildProfileNotFoundMsg(args.url),
@@ -315,7 +340,7 @@ const getProfileByURL = (
       })
       .then(([tokenId, owner]: [BigNumber, string]) => {
         return core.createProfileFromEvent(
-          chainId,
+          chain.id,
           owner,
           tokenId,
           ctx.repositories,
@@ -391,6 +416,7 @@ const updateProfile = (
         args.input.hideAllNFTs,
         args.input.showNFTIds,
         args.input.hideNFTIds,
+        p.chainId,
       ).then(() => {
         return repositories.profile.save(p)
       })
@@ -476,6 +502,7 @@ const profileClaimed = (
     ))
     .then((profile: entity.Profile) => {
       profile.status = defs.ProfileStatus.Owned
+      profile.chainId = ctx.chain.id || process.env.CHAIN_ID
 
       const saveProfile = repositories.profile.save(profile)
 
@@ -546,6 +573,14 @@ const uploadStreamToS3 = async (
   }
 }
 
+const extensionFromFilename = (filename: string): string | undefined => {
+  const strArray = filename.split('.')
+  // if filename has no extension
+  if (strArray.length < 2) return undefined
+  // else return extension
+  return strArray.pop()
+}
+
 const uploadProfileImages = async (
   _: any,
   args: gql.MutationUploadProfileImagesArgs,
@@ -612,7 +647,9 @@ const uploadProfileImages = async (
   const s3 = await getAWSConfig()
 
   if (bannerResponse && bannerStream) {
-    const bannerUrl = await uploadStreamToS3(bannerResponse.filename, s3, bannerStream)
+    const ext = extensionFromFilename(bannerResponse.filename as string)
+    const fileName = ext ? profile.url + '-banner' + '.' + ext : profile.url + '-banner'
+    const bannerUrl = await uploadStreamToS3(fileName, s3, bannerStream)
     if (bannerUrl) {
       await repositories.profile.updateOneById(profileId, {
         bannerURL: bannerUrl,
@@ -621,7 +658,9 @@ const uploadProfileImages = async (
   }
 
   if (avatarResponse && avatarStream) {
-    const avatarUrl = await uploadStreamToS3(avatarResponse.filename, s3, avatarStream)
+    const ext = extensionFromFilename(avatarResponse.filename as string)
+    const fileName = ext ? profile.url + '.' + ext : profile.url
+    const avatarUrl = await uploadStreamToS3(fileName, s3, avatarStream)
     if (avatarUrl) {
       // if user does not want to composite image with profile url, we just save image to photoURL
       if (!compositeProfileURL) {
@@ -678,8 +717,15 @@ const getLatestProfiles = (
 ): Promise<gql.ProfilesOutput> => {
   const { repositories } = ctx
   logger.debug('getLatestProfiles', { input: args?.input })
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
   const pageInput = args?.input.pageInput
-  const filters = [helper.inputT2SafeK<entity.Profile>(args?.input)]
+  const inputFilters = {
+    pageInput: args?.input?.pageInput,
+    chainId: chainId,
+  }
+  const filters = [helper.inputT2SafeK(inputFilters)]
   return core.paginatedEntitiesBy(
     repositories.profile,
     pageInput,
@@ -710,57 +756,38 @@ const orderingUpdates = (
     .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
 }
 
-const getLeaderboardProfiles = async (
-  repositories: db.Repository,
-): Promise<Array<gql.LeaderboardProfile>> => {
-  const profiles = await repositories.profile.findAll()
-  const gkContractAddress = contracts.genesisKeyAddress(process.env.CHAIN_ID)
-  const leaderboardProfiles: Array<gql.LeaderboardProfile> = []
-  await Promise.allSettled(
-    profiles.map(async (profile) => {
-      // get genesis key numbers
-      const gkNFTs = await repositories.nft.find({
-        where: { userId: profile.ownerUserId, contract: gkContractAddress },
-      })
-      // get collections
-      const nfts = await repositories.nft.find({
-        where: { userId: profile.ownerUserId },
-      })
-      const collections: Array<string> = []
-      await Promise.allSettled(
-        nfts.map(async (nft) => {
-          const collection = await repositories.collection.findOne({
-            where: { contract: nft.contract },
-          })
-          if (collection) {
-            const isExisting = collections.find((existingCollection) =>
-              existingCollection === collection.contract,
-            )
-            if (!isExisting) collections.push(collection.contract)
-          }
-        }),
-      )
-      // get visible items
-      const edges = await repositories.edge.find({
-        where: {
-          thisEntityId: profile.id,
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          edgeType: defs.EdgeType.Displays,
-          hide: false,
-        },
-      })
-      leaderboardProfiles.push({
-        id: profile.id,
-        url: profile.url,
-        photoURL: profile.photoURL,
-        numberOfGenesisKeys: gkNFTs.length,
-        numberOfCollections: collections.length,
-        itemsVisible: edges.length,
-      })
-    }),
-  )
-  return leaderboardProfiles
+const collectInfoFromScore = (score: string): LeaderboardInfo => {
+  /*
+    If score length is less than 5 or equal to 5, edge count and collection count will be zero
+    And gk count will be score
+   */
+  if (score.length <= 5) {
+    return {
+      gkCount: Number(score),
+      edgeCount: 0,
+      collectionCount: 0,
+    }
+  } else if (score.length <= 10) {
+    /*
+      If score length is greater than 5 and less than 10 or equal to 10, edge count will be 0
+      i.e. 1000025 -> gkCount = 25, edgeCount = 0, collectionCount = 10
+     */
+    return {
+      gkCount: Number(score.slice(score.length - 5, score.length)),
+      edgeCount: 0,
+      collectionCount: Number(score.slice(0, score.length - 5)),
+    }
+  } else {
+    /*
+      If score length is greater than 10
+      i.e. 60000000005 -> edgeCount = 6, collectionCount = 0, gK = 5
+     */
+    return {
+      gkCount: Number(score.slice(score.length - 5, score.length)),
+      edgeCount: Number(score.slice(0, score.length - 10)),
+      collectionCount: Number(score.slice(score.length - 10, score.length - 5)),
+    }
+  }
 }
 
 const leaderboard = async (
@@ -769,43 +796,45 @@ const leaderboard = async (
   ctx: Context,
 ): Promise<gql.LeaderboardOutput> => {
   const { repositories } = ctx
-  logger.debug('leaderboard', { input: args?.input })
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  const cachedData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}`)
-  // rollingData is used to fill time gap when cache expires, and new leaderboard is being generated
-  const rollingData = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_rolling`)
-  let leaderboard: Array<gql.LeaderboardProfile> = JSON.parse(rollingData) ?? []
-  if (cachedData) {
+  const TOP = args?.input.count ? Number(args?.input.count) : 100
+  const cachedData = await cache.get(`Leaderboard_response_${chainId}_top_${TOP}`)
+  let leaderboard: Array<gql.LeaderboardProfile> = []
+
+  // if cached data is not null and not an empty array
+  if (cachedData?.length) {
     leaderboard = JSON.parse(cachedData)
   } else {
-    // mutex prevents overlap
-    const cachedMutex = await redis.get(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`)
+    const profilesWithScore = await cache.zrevrangebyscore(`LEADERBOARD_${chainId}`, '+inf', '-inf', 'WITHSCORES')
 
-    if (!Number(cachedMutex)) {
-      await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, 1)
-
-      // generate leaderboard array with profiles ( by genesis key, items visible, collections )
-      getLeaderboardProfiles(repositories)
-        .then(async (leaderboardProfiles) => {
-          leaderboard = lodash.orderBy(leaderboardProfiles, ['numberOfGenesisKeys', 'itemsVisible', 'numberOfCollections', 'url'], ['desc', 'desc', 'desc', 'asc'])
-          await redis.set(`profile_leaderboard_${process.env.CHAIN_ID}_mutex`, 0)
-          await redis.set(
-            `profile_leaderboard_${process.env.CHAIN_ID}_rolling`,
-            JSON.stringify(leaderboard),
-          )
-          return redis.set(
-            `profile_leaderboard_${process.env.CHAIN_ID}`,
-            JSON.stringify(leaderboard),
-            'EX',
-            5 * 60, // 5 minutes
-          )
-        })
+    let index = 0
+    // get leaderboard for TOP items...
+    const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
+    for (let i = 0; i < length - 1; i+= 2) {
+      const profileId = profilesWithScore[i]
+      const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
+      const profile = await repositories.profile.findOne({ where: { id: profileId } })
+      leaderboard.push({
+        index: index,
+        id: profileId,
+        itemsVisible: collectionInfo.edgeCount,
+        numberOfGenesisKeys: collectionInfo.gkCount,
+        numberOfCollections: collectionInfo.collectionCount,
+        photoURL: profile.photoURL,
+        url: profile.url,
+      })
+      index++
     }
+    await cache.set(
+      `Leaderboard_response_${chainId}_top_${TOP}`,
+      JSON.stringify(leaderboard),
+      'EX',
+      5 * 60, // 5 minutes
+    )
   }
 
-  for (let i = 0; i< leaderboard.length; i++) {
-    leaderboard[i].index = i
-  }
   const { pageInput } = helper.safeObject(args?.input)
   let paginatedLeaderboard: Array<gql.LeaderboardProfile>
   let defaultCursor
@@ -813,7 +842,9 @@ const leaderboard = async (
     defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
       { afterCursor: leaderboard.length.toString() }
   }
+
   const safePageInput = safeInput(pageInput, defaultCursor)
+
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
     const cursor = pagination.hasAfter(safePageInput) ?
@@ -838,6 +869,123 @@ const leaderboard = async (
   )([paginatedLeaderboard, totalItems])
 }
 
+const saveScoreForProfiles = async (
+  _: any,
+  args: gql.MutationSaveScoreForProfilesArgs,
+  ctx: Context,
+): Promise<gql.SaveScoreForProfilesOutput> => {
+  const { repositories } = ctx
+  logger.debug('saveScoreForProfiles', { input: args?.input })
+  try {
+    const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
+    const profiles = await repositories.profile.find(args?.input.nullOnly ? {
+      where: {
+        lastScored: null,
+      },
+    } : {
+      order: {
+        lastScored: 'ASC',
+      },
+    })
+    const slicedProfiles = profiles.slice(0, count)
+    await Promise.allSettled(
+      slicedProfiles.map(async (profile) => {
+        await saveProfileScore(repositories, profile)
+        const now = helper.toUTCDate()
+        await repositories.profile.updateOneById(profile.id, {
+          lastScored: now,
+        })
+        logger.debug(`Score is cached for Profile ${ profile.id }`)
+      }),
+    )
+    logger.debug('Profile scores are cached', { counts: slicedProfiles.length })
+    return {
+      message: 'Saved score for profiles',
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveScoreForProfiles Job: ${err}`)
+  }
+}
+
+const clearGKIconVisible = async (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<gql.ClearGkIconVisibleOutput> => {
+  try {
+    const { repositories, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const owners = await getOwnersOfGenesisKeys(chainId)
+    const ownerWalletIds: string[] = []
+    await Promise.allSettled(
+      owners.map(async (owner) => {
+        const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
+          chainId,
+          ethers.utils.getAddress(owner),
+        )
+        ownerWalletIds.push(foundWallet.id)
+      }),
+    )
+    const profiles = await repositories.profile.find({ where: { chainId } })
+    const updatedProfiles = []
+    profiles.map((profile) => {
+      if (ownerWalletIds.findIndex((id) => id === profile.ownerWalletId) === -1) {
+        if (profile.gkIconVisible) {
+          profile.gkIconVisible = false
+          updatedProfiles.push(profile)
+        }
+      }
+    })
+    if (updatedProfiles.length) {
+      await repositories.profile.saveMany(updatedProfiles, { chunk: MAX_SAVE_COUNTS })
+      return {
+        message: `Cleared GK icon visible for ${updatedProfiles.length} profiles`,
+      }
+    } else {
+      return {
+        message: 'No need to clear GK icon visible for profiles',
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in clearGKIconVisible: ${err}`)
+  }
+}
+
+const updateProfileView = async (
+  _: any,
+  args: gql.MutationUpdateProfileViewArgs,
+  ctx: Context,
+): Promise<gql.Profile> => {
+  try {
+    const { repositories, user, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('updateProfileView', { loggedInUserId: user.id, input: args?.input })
+    const { url, profileViewType } = helper.safeObject(args?.input)
+    const profile = await repositories.profile.findOne({ where: { url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    } else {
+      if (profile.ownerUserId !== user.id) {
+        return Promise.reject(appError.buildForbidden(
+          profileError.buildProfileNotOwnedMsg(profile.id),
+          profileError.ErrorType.ProfileNotOwned,
+        ))
+      } else {
+        return await repositories.profile.updateOneById(profile.id,
+          { profileView: profileViewType },
+        )
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateProfileView: ${err}`)
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -859,6 +1007,9 @@ export default {
     uploadProfileImages: combineResolvers(auth.isAuthenticated, uploadProfileImages),
     createCompositeImage: combineResolvers(auth.isAuthenticated, createCompositeImage),
     orderingUpdates: combineResolvers(auth.isAuthenticated, orderingUpdates),
+    saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
+    clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
+    updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
   },
   Profile: {
     followersCount: getFollowersCount,

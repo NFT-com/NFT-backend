@@ -12,6 +12,22 @@ jobs:
       matrix:
         node-version: [16.x]
 
+    services:
+      postgres:
+        image: postgres:13.6-alpine
+        env:
+          POSTGRES_DB: app
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -26,6 +42,8 @@ jobs:
       uses: SpicyPizza/create-envfile@v1.3
       with:
         envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        envkey_DB_HOST: 'localhost'
+        envkey_DB_PORT: '5432'
         envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
         envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
         envkey_CONFIRM_EMAIL_URL: "tbd"
@@ -40,8 +58,11 @@ jobs:
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
         envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
         envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+        envkey_CHAIN_ID: ${{ secrets.CHAIN_ID }}
         envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
+        envkey_ALCHEMY_API_URL_RINKEBY: ${{ secrets.ALCHEMY_API_URL_RINKEBY }}
+        envkey_ALCHEMY_API_URL_GOERLI: ${{ secrets.ALCHEMY_API_URL_GOERLI }}
         envkey_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         envkey_PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
         envkey_SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
@@ -53,6 +74,14 @@ jobs:
         envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
         envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
         envkey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
+        envkey_PROFILE_SCORE_EXPIRE_DURATION: ${{ secrets.PROFILE_SCORE_EXPIRE_DURATION }}
+        envkey_NFT_EXTERNAL_ORDER_REFRESH_DURATION: ${{ secrets.NFT_EXTERNAL_ORDER_REFRESH_DURATION }}
+        envkey_TEST_DB_HOST: ${{ secrets.TEST_DB_HOST }}
+        envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
+        envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
+        envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
+        envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
@@ -79,7 +108,7 @@ jobs:
     - run: cd packages/shared && npm i
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
-    - run: cd packages/gql && npm run test -- --coverage --forceExit
+    - run: cd packages/gql && npm run test -- --coverage --runInBand --forceExit
     - name: ✅ Upload coverage to Codecov
       uses: codecov/codecov-action@v3.1.0
       with:

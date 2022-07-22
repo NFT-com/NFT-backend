@@ -1,7 +1,5 @@
 import { Job } from 'bull'
-import Redis from 'ioredis'
 
-import { redisConfig } from '@nftcom/gql/config'
 import {
   DEFAULT_NFT_IMAGE,
   generateCompositeImage,
@@ -9,13 +7,8 @@ import {
 import { _logger, contracts, db, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
-
-const repositories = db.newRepositories()
+// exported for tests
+export const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
 export const syncProfileNFTs = async (job: Job): Promise<any> => {
@@ -44,6 +37,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
           logger.debug('saved existing profile user wallet')
           repositories.profile.save({
             ...profile,
+            chainId: foundWallet.chainId || process.env.CHAIN_ID,
             ownerUserId: foundWallet.userId,
             ownerWalletId: foundWallet.id,
           })
@@ -51,6 +45,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
           logger.debug('non user wallet for profile')
           repositories.profile.save({
             ...profile,
+            chainId: foundWallet.chainId || process.env.CHAIN_ID,
             ownerUserId: null,
             ownerWalletId: null,
           })
@@ -59,7 +54,7 @@ export const syncProfileNFTs = async (job: Job): Promise<any> => {
     }))
   } catch (err) {
     logger.error(err)
-    Sentry.captureException(err)
+    
     Sentry.captureMessage(`Error in syncProfileNFTs Job: ${err}`)
   }
 }
@@ -86,7 +81,6 @@ export const generateCompositeImages = async (job: Job): Promise<any> => {
     )
     logger.debug('generated composite images for profiles', { counts: MAX_PROFILE_COUNTS })
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in generateCompositeImages Job: ${err}`)
   }
 }

@@ -18,6 +18,7 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
   const redisHost = outMap.redisHost.value
   const publicSubnets = outMap.publicSubnetIds.value
   const vpcId = outMap.vpcId.value
+  const typesenseSGId = outMap.typesenseSGId.value
   const webSGId = outMap.webSGId.value
   const webEcsSGId = outMap.webEcsSGId.value
   const sharedOutput: SharedInfraOutput = {
@@ -29,6 +30,7 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
     redisHost,
     publicSubnets,
     vpcId,
+    typesenseSGId,
     webSGId,
     webEcsSGId,
   }

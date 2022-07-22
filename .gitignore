@@ -13,7 +13,7 @@ packages/*/.env
 .eslintcache
 infra/package-lock.json
 docs/*
-gql/coverage/*
+packages/gql/coverage/*
 
 # logs
 log-debug

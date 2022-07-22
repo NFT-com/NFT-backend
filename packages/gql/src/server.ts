@@ -1,26 +1,23 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
-import { exec } from 'child_process'
 import cors from 'cors'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
-import Redis from 'ioredis'
 import Keyv from 'keyv'
-import * as util from 'util'
 
 import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
-import { redisConfig } from '@nftcom/gql/config'
 import { appError, profileError } from '@nftcom/gql/error'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authMessage, isProduction, serverPort } from './config'
+import { authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -38,11 +35,6 @@ type GQLError = {
   message: string
   path: Array<string | number>
 }
-
-const redis = new Redis({
-  host: redisConfig.host,
-  port: redisConfig.port,
-})
 
 const getAddressFromSignature = (signature: string): string =>
   utils.verifyMessage(authMessage, signature)
@@ -99,38 +91,12 @@ export const formatError = (error: GraphQLError): GQLError => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler = (err, req, res, next): void => {
+const errorHandler = (err: Error, req, res, next): void => {
   const { stack, message } = err
   const path = req.path || req.originalUrl
   const responseData = { path, statusCode: '500', message: 'An error has occured' }
-  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack.join('\n') }))
-  res.status(500)
-  if (req.xhr) {
-    res.send(responseData)
-  } else {
-    res.render('error', responseData)
-  }
-}
-
-const execShellCommand = (
-  command: string,
-  swallowError = false,
-  description: string,
-): Promise<void> => {
-  const promisifiedExec = util.promisify(exec)
-  return promisifiedExec(command)
-    .then(({ stdout, stderr }) => {
-      const err = stderr.replace('\n', '').trim()
-      if (helper.isNotEmpty(err) && helper.isFalse(swallowError)) {
-        return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
-      }
-      if (helper.isNotEmpty(err) && swallowError) {
-        logger.error('SWALLOWING ERROR', err)
-        return Promise.resolve()
-      }
-      logger.info(description, stdout.replace('\n', '').trim())
-      return Promise.resolve()
-    })
+  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack }))
+  res.status(500).send(responseData)
 }
 
 let server: ApolloServer
@@ -165,10 +131,10 @@ export const start = async (): Promise<void> => {
   app.get('/uri/:username', async function (req, res) {
     const { username } = req.params
 
-    const cachedData = await redis.get(username)
+    const cachedData = await cache.get(username)
 
     if (cachedData) {
-      return JSON.parse(cachedData)
+      return res.send(JSON.parse(cachedData as string))
     } else {
       return repositories.profile.findByURL(username.toLowerCase())
         .then(async (profile: entity.Profile) => {
@@ -186,7 +152,7 @@ export const start = async (): Promise<void> => {
               header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
               description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
             }
-            await redis.set(username, JSON.stringify(data), 'EX', 60)
+            await cache.set(username, JSON.stringify(data), 'EX', 60 * 10)
             return res.send(data)
           }
         })
@@ -231,7 +197,7 @@ export const start = async (): Promise<void> => {
   server = new ApolloServer({
     //gql schema only visibly locally
     schema,
-    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(redis) }), {
+    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(cache) }), {
       disableBatchReads: true,
     }),
     introspection: process.env.NODE_ENV === 'local',
@@ -253,9 +219,6 @@ export const start = async (): Promise<void> => {
   await server.start()
   server.applyMiddleware({ app })
   await new Promise<void>(resolve => httpServer.listen({ port: serverPort }, resolve))
-  if (process.env.NODE_ENV === 'local') {
-    await execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:')
-  }
   logger.info(`🚀 Server ready at http://localhost:${serverPort}${server.graphqlPath}`)
 }
 

@@ -1,19 +1,22 @@
 import axios from 'axios'
-import { BigNumber, ethers, providers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
 
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { getChain } from '@nftcom/gql/config'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
-import { _logger, db, defs, entity, fp, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
-const network = process.env.SUPPORTED_NETWORKS.split(':')[2]
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
+const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
+const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 
@@ -88,8 +91,11 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
-export const initiateWeb3 = (): void => {
-  web3 = createAlchemyWeb3(ALCHEMY_API_URL)
+export const initiateWeb3 = (chainId?: string): void => {
+  chainId = chainId || process.env.CHAIN_ID // attach default value
+  const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
+    (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
+  web3 = createAlchemyWeb3(alchemy_api_url)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -152,7 +158,6 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     return []
   }
@@ -193,7 +198,6 @@ const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     return []
   }
@@ -211,28 +215,28 @@ const getNFTMetaDataFromAlchemy = async (
 
     return response as NFTMetaDataResponse
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getNFTMetaDataFromAlchemy: ${err}`)
     return undefined
   }
 }
 
-const getCollectionNameFromContract = (
+export const getCollectionNameFromContract = (
   contractAddress: string,
+  chainId: string,
   type:  defs.NFTType,
-  network: providers.Networkish,
 ): Promise<string> => {
   try {
+    const network = getChain('ethereum', chainId)
     if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
-        provider.provider(network),
+        provider.provider(network.name),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else if (type === defs.NFTType.ERC1155 || type === defs.NFTType.UNKNOWN) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
-        provider.provider(network),
+        provider.provider(network.name),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
@@ -248,70 +252,98 @@ const getCollectionNameFromContract = (
 }
 
 const updateCollection = async (
-  nft: entity.NFT,
+  nfts: Array<entity.NFT>,
 ): Promise<void> => {
-  return repositories.collection.findOne({
-    where: { contract: ethers.utils.getAddress(nft.contract) },
-  })
-    .then(fp.thruIfEmpty(() => {
-      // find & save collection name
-      return getCollectionNameFromContract(nft.contract, nft.type, network)
-        .then(async (collectionName: string) => {
+  try {
+    const seen = {}
+    const nonDuplicates: Array<entity.NFT> = []
+    nfts.map((nft: entity.NFT) => {
+      const key = ethers.utils.getAddress(nft.contract)
+      if (!seen[key]) {
+        nonDuplicates.push(nft)
+        seen[key] = true
+      }
+    })
+    // save collections...
+    await Promise.allSettled(
+      nonDuplicates.map(async (nft: entity.NFT) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: ethers.utils.getAddress(nft.contract) },
+        })
+        if (!collection) {
+          const collectionName = await getCollectionNameFromContract(
+            nft.contract,
+            nft.chainId,
+            nft.type,
+          )
           logger.debug('new collection', { collectionName, contract: nft.contract })
 
-          return repositories.collection.save({
+          await repositories.collection.save({
             contract: ethers.utils.getAddress(nft.contract),
+            chainId: nft?.chainId || process.env.CHAIN_ID,
             name: collectionName,
           })
+        }
+
+        // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
+        // save collection in typesense search  if new
+        // if (newCollection) {
+        //   const indexCollection = []
+        //   indexCollection.push({
+        //     id: collection.id,
+        //     contract: collection.contract,
+        //     name: collection.name,
+        //     createdAt: collection.createdAt,
+        //   })
+        //   client.collections('collections').documents().import(indexCollection, { action: 'create' })
+        //     .then(() => logger.debug('collection added to typesense index'))
+        //     .catch(() => logger.info('error: could not save collection in typesense: '))
+        // }
+
+        // add new nft to search (Typesense)
+        // if(newNFT && !existingNFT) {
+        //   const indexNft = []
+        //   indexNft.push({
+        //     id: newNFT.id,
+        //     contract: nftInfo.contract.address,
+        //     tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
+        //     imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
+        //     contractName: collection.name ? collection.name : '',
+        //     type: type,
+        //     name: nftInfo.title,
+        //     description: newNFT.metadata.description,
+        //     createdAt: newNFT.createdAt,
+        //   })
+
+        //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
+        //     .then(() => logger.debug('nft added to typesense index'))
+        //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
+        // }
+      }),
+    )
+
+    // save edges for collection and nfts...
+    await Promise.allSettled(
+      nfts.map(async (nft) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: ethers.utils.getAddress(nft.contract) },
         })
-    }))
-    .then(async (collection: entity.Collection) => {
-      // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
-      // save collection in typesense search  if new
-      // if (newCollection) {
-      //   const indexCollection = []
-      //   indexCollection.push({
-      //     id: collection.id,
-      //     contract: collection.contract,
-      //     name: collection.name,
-      //     createdAt: collection.createdAt,
-      //   })
-      //   client.collections('collections').documents().import(indexCollection, { action: 'create' })
-      //     .then(() => logger.debug('collection added to typesense index'))
-      //     .catch(() => logger.info('error: could not save collection in typesense: '))
-      // }
-
-      // add new nft to search (Typesense)
-      // if(newNFT && !existingNFT) {
-      //   const indexNft = []
-      //   indexNft.push({
-      //     id: newNFT.id,
-      //     contract: nftInfo.contract.address,
-      //     tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-      //     imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
-      //     contractName: collection.name ? collection.name : '',
-      //     type: type,
-      //     name: nftInfo.title,
-      //     description: newNFT.metadata.description,
-      //     createdAt: newNFT.createdAt,
-      //   })
-
-      //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
-      //     .then(() => logger.debug('nft added to typesense index'))
-      //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
-      // }
-
-      // update edgeVals
-      const edgeVals = {
-        thisEntityType: defs.EntityType.Collection,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: collection.id,
-        thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Includes,
-      }
-      repositories.edge.findOne({ where: edgeVals })
-        .then(fp.tapIfEmpty(() => repositories.edge.save(edgeVals)))
-    })
+        if (collection) {
+          const edgeVals = {
+            thisEntityType: defs.EntityType.Collection,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: collection.id,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Includes,
+          }
+          const edge = await repositories.edge.findOne({ where: edgeVals })
+          if (!edge) await repositories.edge.save(edgeVals)
+        }
+      }),
+    )
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateCollection: ${err}`)
+  }
 }
 
 const getNFTMetaData = async (
@@ -373,7 +405,6 @@ const getNFTMetaData = async (
       traits,
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
   }
 }
@@ -382,19 +413,31 @@ const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
-): Promise<void> => {
+  chainId: string,
+): Promise<entity.NFT| undefined> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: ethers.utils.getAddress(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+        chainId: chainId,
       },
     })
+
+    let walletChainId: string = await cache.get(`chainId_${walletId}`)
+
+    if (!walletChainId) {
+      const wallet = await repositories.wallet.findById(walletId)
+      await cache.set(`chainId_${walletId}`, wallet.chainId)
+      walletChainId = wallet.chainId
+    }
+
     const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      await repositories.nft.save({
+      return await repositories.nft.save({
+        chainId: walletChainId || process.env.CHAIN_ID,
         userId,
         walletId,
         contract: ethers.utils.getAddress(nft.contract.address),
@@ -406,11 +449,11 @@ const updateNFTOwnershipAndMetadata = async (
           imageURL: image,
           traits: traits,
         },
-      }).then(fp.tap(updateCollection))
+      })
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
-        await repositories.nft.updateOneById(existingNFT.id, {
+        return await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
           type,
@@ -433,7 +476,7 @@ const updateNFTOwnershipAndMetadata = async (
           existingNFT.metadata.imageURL !== image ||
           !isTraitSame
         ) {
-          await repositories.nft.updateOneById(existingNFT.id, {
+          return await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId,
             type,
@@ -444,11 +487,13 @@ const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
+        } else {
+          logger.debug('No need to update owner and metadata', existingNFT.contract)
+          return undefined
         }
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
   }
 }
@@ -461,9 +506,14 @@ export const checkNFTContractAddresses = async (
   userId: string,
   walletId: string,
   walletAddress: string,
+  chainId: string,
 ): Promise<void[]> => {
   try {
-    const nfts = await repositories.nft.find({ where: { userId: userId, walletId: walletId } })
+    const nfts = await repositories.nft.find({ where: {
+      userId: userId,
+      walletId: walletId,
+      chainId: chainId,
+    } })
     if (!nfts.length) {
       return []
     }
@@ -477,7 +527,6 @@ export const checkNFTContractAddresses = async (
       }),
     )
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
     return []
   }
@@ -488,18 +537,23 @@ export const checkNFTContractAddresses = async (
  * @param userId
  * @param walletId
  * @param walletAddress
+ * @param chainId
  */
 export const updateWalletNFTs = async (
   userId: string,
   walletId: string,
   walletAddress: string,
+  chainId: string,
 ): Promise<void> => {
   const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
+  const savedNFTs: entity.NFT[] = []
   await Promise.allSettled(
     ownedNFTs.map(async (nft: OwnedNFT) => {
-      await updateNFTOwnershipAndMetadata(nft, userId, walletId)
+      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
+      if (savedNFT) savedNFTs.push(savedNFT)
     }),
   )
+  await updateCollection(savedNFTs)
 }
 
 export const refreshNFTMetadata = async (
@@ -509,7 +563,9 @@ export const refreshNFTMetadata = async (
     // hard refresh for now
     // until Alchemy SDK incorporates this
     // TODO: remove in future
-    await axios.get(`${ALCHEMY_API_URL}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=${nft.type == defs.NFTType.ERC1155 ? 'erc1155' : 'erc721'}&refreshCache=true`)
+    const alchemy_api_url = nft.chainId === '1' ? process.env.ALCHEMY_API_URL :
+      (nft.chainId === '5' ? process.env.ALCHEMY_API_URL_GOERLI : process.env.ALCHEMY_API_URL_RINKEBY)
+    await axios.get(`${alchemy_api_url}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=${nft.type == defs.NFTType.ERC1155 ? 'erc1155' : 'erc721'}&refreshCache=true`)
 
     const metadata = await getNFTMetaData(
       nft.contract,
@@ -539,8 +595,34 @@ export const refreshNFTMetadata = async (
     }
     return nft
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
+  }
+}
+
+export const getOwnersOfGenesisKeys = async (
+  chainId: string,
+): Promise<string[]> => {
+  const contract = contracts.genesisKeyAddress(chainId)
+  if (chainId !== '1' && chainId !== '5') return []
+  try {
+    const key = `GenesisKeyOwners-${chainId}`
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return JSON.parse(cachedData) as string[]
+    }
+    // until Alchemy SDK incorporates this
+    // TODO: remove in future
+    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
+    if (res && res.data && res.data.ownerAddresses) {
+      const gkOwners = res.data.ownerAddresses as string[]
+      await cache.set(key, JSON.stringify(gkOwners), 'EX', 60)
+      return gkOwners
+    } else {
+      return []
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
   }
 }
 
@@ -618,8 +700,9 @@ const showAllNFTs = async (
   repositories: db.Repository,
   userId: string,
   profileId: string,
+  chainId: string,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { userId } })
+  const nfts = await repositories.nft.find({ where: { userId, chainId } })
   if (nfts.length) {
     await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
@@ -645,11 +728,15 @@ const showAllNFTs = async (
   }
 }
 
-const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> => {
+const showNFTs = async (
+  showNFTIds: string[],
+  profileId: string,
+  chainId: string,
+): Promise<void> => {
   const nfts = []
   await Promise.allSettled(
     showNFTIds.map(async (id) => {
-      const existingNFT = await repositories.nft.findOne({ where: { id } })
+      const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
       if (existingNFT) nfts.push(existingNFT)
     }),
   )
@@ -685,6 +772,7 @@ const showNFTs = async (showNFTIds: string[], profileId: string): Promise<void> 
  * @param hideAll
  * @param showNFTIds - set the NFTs' visibility as show, without regard to the previous value
  * @param hideNFTIds - set the NFTs' visibility as hide, without regard to the previous value
+ * @param chainId
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
@@ -694,22 +782,23 @@ export const changeNFTsVisibility = async (
   hideAll: boolean,
   showNFTIds: Array<string> | null,
   hideNFTIds: Array<string> | null,
+  chainId: string,
 ): Promise<void> => {
   try {
     if (showAll) {
-      await showAllNFTs(repositories, userId, profileId)
+      await showAllNFTs(repositories, userId, profileId, chainId)
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
       return
     } else {
       if (showNFTIds?.length) {
-        await showNFTs(showNFTIds, profileId)
+        await showNFTs(showNFTIds, profileId, chainId)
       }
       if (hideNFTIds) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
-            const existingNFT = await repositories.nft.findOne({ where: { id } })
+            const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
             if (existingNFT) {
               const edgeVals = {
                 thisEntityId: profileId,
@@ -729,7 +818,6 @@ export const changeNFTsVisibility = async (
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
   }
 }
@@ -801,7 +889,6 @@ export const updateNFTsOrder = async (
       }
     }
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
   }
 }
@@ -840,7 +927,6 @@ export const updateEdgesWeightForProfile = async (
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
   }
 }
@@ -885,7 +971,6 @@ export const syncEdgesWithNFTs = async (
     )
     await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
-    Sentry.captureException(err)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
   }
 }
