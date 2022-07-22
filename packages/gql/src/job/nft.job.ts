@@ -30,7 +30,7 @@ const subQueueBaseOptions: Bull.JobOptions = {
 const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
   try {
     const { offset, limit } = job.data
-    const chainId: string =  job.data?.chainId || '4'
+    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
     const nfts: NFT[] = await repositories.nft.find({
       where: { chainId, deletedAt: null },
       select: ['contract', 'tokenId', 'chainId'],
@@ -59,7 +59,7 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
     if (!nftCronSubqueue) {
       await job.moveToFailed({ message: 'nft-cron-queue is not defined!' })
     }
-    const chainId: string =  job.data?.chainId || '4'
+    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
 
     const nftCount: number = await repositories.nft.count({ chainId, deletedAt: null })
     const limit: number = MAX_PROCESS_BATCH_SIZE
@@ -94,7 +94,7 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
 export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
   logger.debug('external orders on demand', job.data)
   try {
-    const chainId: string =  job.data?.chainId || '4'
+    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
     await removeExpiredTimestampedZsetMembers(
       `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
       Date.now(),

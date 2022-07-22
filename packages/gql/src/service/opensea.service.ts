@@ -17,6 +17,7 @@ const LIMIT = 50
 const OPENSEA_LISTING_BATCH_SIZE = 30
 const DELAY_AFTER_BATCH_RUN = 4
 const MAX_QUERY_LENGTH = 4014 // 4094 - 80
+const TESTNET_CHAIN_IDS = ['4', '5']
 
 interface OpenseaAsset {
   image_url: string
@@ -395,7 +396,7 @@ const getOpenseaInterceptor = (
     baseURL,
     headers: {
       'Accept': 'application/json',
-      'X-API-KEY': chainId === '4'? '': OPENSEA_API_KEY,
+      'X-API-KEY': chainId === '1'? OPENSEA_API_KEY : '',
     },
   })
 
@@ -485,7 +486,7 @@ const retrieveListingsInBatches = async (
 ): Promise<any[]> => {
   const listings: any[] = []
   let batch, queryUrl
-  const listingBaseUrl: string = chainId === '4' ?
+  const listingBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
     V1_OPENSEA_API_TESTNET_BASE_URL
     : V1_OPENSEA_API_BASE_URL
   const listingInterceptor = getOpenseaInterceptor(
