@@ -167,6 +167,7 @@ const createEcsTaskDefinition = (
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
+  const otelName = getResourceName('aws-otel-collector')
   const otelMemory = 20
 
   return new aws.ecs.TaskDefinition(
@@ -198,15 +199,15 @@ const createEcsTaskDefinition = (
           ],
         },
         {
-          name: getResourceName('aws-otel-config'),
+          name: otelName,
           image: '016437323894.dkr.ecr.us-east-1.amazonaws.com/aws-otel-collector',
           essential: true,
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-group': '/ecs/ecs-aws-otel-sidecar-collector',
-              'awslogs-region': '{{region}}',
-              'awslogs-stream-prefix': 'ecs',
+              'awslogs-group': `/ecs/${otelName}`,
+              'awslogs-region': 'us-east-1',
+              'awslogs-stream-prefix': 'otel',
               'awslogs-create-group': 'True',
             },
           },
