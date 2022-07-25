@@ -363,12 +363,23 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           if (evt.name === 'MintedProfile') {
             const existsBool = await repositories.event.exists({
               chainId,
+              contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
               eventName: evt.name,
+              txHash: unparsedEvent.transactionHash,
               ownerAddress: owner,
               profileUrl: profileUrl,
-              txHash: unparsedEvent.transactionHash,
             })
             if (!existsBool) {
+              await repositories.event.save(
+                {
+                  chainId,
+                  contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
+                  eventName: evt.name,
+                  txHash: unparsedEvent.transactionHash,
+                  ownerAddress: owner,
+                  profileUrl: profileUrl,
+                },
+              )
               // find and mark profile status as minted
               const profile = await repositories.profile.findOne({
                 where: {
@@ -386,32 +397,11 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                   profileUrl,
                   true,
                 )
-                const event = await repositories.event.findOne({
-                  where: {
-                    chainId,
-                    contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
-                    eventName: evt.name,
-                    txHash: unparsedEvent.transactionHash,
-                    ownerAddress: owner,
-                    profileUrl: profileUrl,
-                  },
-                })
-                if (!event) {
-                  await repositories.event.save(
-                    {
-                      chainId,
-                      contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
-                      eventName: evt.name,
-                      txHash: unparsedEvent.transactionHash,
-                      ownerAddress: owner,
-                      profileUrl: profileUrl,
-                    },
-                  )
-                  logger.debug(`Profile ${ profileUrl } was minted by address ${ owner }`)
-                  await HederaConsensusService.submitMessage(
-                    `Profile ${ profileUrl } was minted by address ${ owner }`,
-                  )
-                }
+
+                logger.debug(`Profile ${ profileUrl } was minted by address ${ owner }`)
+                await HederaConsensusService.submitMessage(
+                  `Profile ${ profileUrl } was minted by address ${ owner }`,
+                )
               } else {
                 if (profile.status !== defs.ProfileStatus.Owned) {
                   await repositories.profile.updateOneById(profile.id, {
