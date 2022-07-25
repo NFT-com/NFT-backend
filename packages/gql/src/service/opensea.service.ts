@@ -555,6 +555,44 @@ const retrieveListingsInBatches = async (
   return listings
 }
 
+const retrieveOffersInBatches = (
+  offerQueryParams: Map<string, string[]>,
+  chainId: string,
+  batchSize: number,
+): Promise<any[]> => {
+  const offers: any[] = []
+
+  const offerSeaportBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId) ?
+    `${OPENSEA_API_TESTNET_BASE_URL}/orders/rinkeby/seaport/offers`
+    :`${OPENSEA_API_BASE_URL}/orders/ethereum/seaport/offers`
+
+  const seaportOfferInterceptor = getOpenseaInterceptor(
+    offerSeaportBaseUrl,
+    chainId,
+  )
+    
+  const offerWyvernBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId) ?
+    'https://testnets-api.opensea.io/wyvern/v1/orders'
+    :'https://api.opensea.io/wyvern/v1/orders'
+
+  const wyvernOfferInterceptor = getOpenseaInterceptor(
+    offerWyvernBaseUrl,
+    chainId,
+  )
+
+  let wyvernOffers, seaportOffers
+
+  for (const key of offerQueryParams.keys()) {
+    const tokens = offerQueryParams.values()
+    console.log(tokens, key)
+  }
+
+  console.log(batchSize, seaportOfferInterceptor,
+    wyvernOfferInterceptor, wyvernOffers, seaportOffers)
+
+  return Promise.resolve(offers)
+}
+
 /**
  * Retrieve multiple sell or buy orders
  * TODO: Offer implementation in the offer ticket
@@ -602,13 +640,12 @@ export const retrieveMultipleOrdersOpensea = async (
           OPENSEA_LISTING_BATCH_SIZE,
         )
         
-        if (includeOffers) {
-          // Offers - Comments to be replaced in the offer ticket
-          // Seaport
-          // API:v2/orders/rinkeby/seaport/offers
-          // Wyvern
-          // API: https://api.opensea.io/wyvern/v1/orders
-  
+        if (includeOffers && offerQueryParams.keys.length) {
+          responseAggregator.offers = await retrieveOffersInBatches(
+            offerQueryParams,
+            chainId,
+            OPENSEA_LISTING_BATCH_SIZE,
+          )
         }
       }
     }
