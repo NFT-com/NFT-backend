@@ -26,10 +26,16 @@ import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
+import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses, getOwnersOfGenesisKeys,
-  initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
+  checkNFTContractAddresses,
+  getOwnersOfGenesisKeys,
+  initiateWeb3,
+  refreshNFTMetadata,
+  syncEdgesWithNFTs,
+  updateEdgesWeightForProfile,
+  updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
@@ -548,7 +554,7 @@ const updateNFTsForProfile = (
   }
 }
 
-const updateAssociatedAddresses = (
+const updateAssociatedAddresses = async (
   _: any,
   args: gql.MutationUpdateAssociatedAddressesArgs,
   ctx: Context,
@@ -561,30 +567,41 @@ const updateAssociatedAddresses = (
 
     // const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
-    return repositories.profile.findOne({
+    const profile = await repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
         chainId,
       },
     })
-      .then((profile: entity.Profile | undefined) => {
-        if (!profile) {
-          return Promise.resolve({ items: [] })
-        } else {
-          const nftResolverContract = typechain.NftResolver__factory.connect(
-            contracts.nftResolverAddress(chainId),
-            provider.provider(Number(chainId)),
-          )
-
-          return nftResolverContract.associatedAddresses(profile.url)
-            .then((associatedAddresses) => {
-              logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
-              return null
-            })
-        }
-      })
+    if (!profile) {
+      return Promise.resolve({ items: [] })
+    }
+    const nftResolverContract = typechain.NftResolver__factory.connect(
+      contracts.nftResolverAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+    logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
+    const addresses = associatedAddresses.map((item) => item.chainAddr)
+    if (!addresses.length) {
+      return Promise.resolve({ items: [] })
+    }
+    await repositories.profile.save({ associatedAddresses: addresses })
+    // save User, Wallet for associated addresses...
+    const wallets: entity.Wallet[] = []
+    await Promise.allSettled(
+      addresses.map(async (address) => {
+        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+      }),
+    )
+    // save NFTs for associated addresses...
+    await Promise.allSettled(
+      wallets.map(async (wallet) => {
+        await updateNFTsForAssociatedWallet(wallet)
+      }),
+    )
   } catch (err) {
-    Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
+    Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
   }
 }
 
@@ -772,10 +789,10 @@ export const refreshNFTOrder = async (  _: any,
   try {
     const nft = await repositories.nft.findById(args?.id)
     if (!nft) {
-      throw appError.buildNotFound(
+      return Promise.reject(appError.buildNotFound(
         nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
         nftError.ErrorType.NFTNotFound,
-      )
+      ))
     }
 
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chain.id}`, `${nft.contract}:${nft.tokenId}`)

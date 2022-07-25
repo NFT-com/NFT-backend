@@ -790,6 +790,40 @@ export const createProfileFromEvent = async (
   }, noAvatar)
 }
 
+export const saveUsersForAssociatedAddress = async (
+  chainId: string,
+  address: string,
+  repositories: db.Repository,
+): Promise<entity.Wallet> => {
+  const wallet = await repositories.wallet.findByChainAddress(
+    chainId,
+    ethers.utils.getAddress(address),
+  )
+  if (!wallet) {
+    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+    let user = await repositories.user.findOne({
+      where: {
+        username: 'ethereum-' + ethers.utils.getAddress(address),
+      },
+    })
+
+    if (!user) {
+      user = await repositories.user.save({
+        // defaults
+        username: 'ethereum-' + ethers.utils.getAddress(address),
+        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+      })
+    }
+    return await repositories.wallet.save({
+      address: ethers.utils.getAddress(address),
+      network: 'ethereum',
+      chainId: chainId,
+      chainName: chain.name,
+      userId: user.id,
+    })
+  } else return wallet
+}
+
 export const createEdge = (
   ctx: Context,
   edge: Partial<entity.Edge>,

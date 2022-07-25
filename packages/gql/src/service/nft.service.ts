@@ -972,3 +972,31 @@ export const syncEdgesWithNFTs = async (
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
   }
 }
+
+export const updateNFTsForAssociatedWallet = async (
+  wallet: entity.Wallet,
+): Promise<void> => {
+  const cachedData = await cache.get(`nfts_${wallet.chainId}_${wallet.id}_${wallet.userId}`)
+  if (!cachedData) {
+    await checkNFTContractAddresses(
+      wallet.userId,
+      wallet.id,
+      wallet.address,
+      wallet.chainId,
+    )
+    await updateWalletNFTs(
+      wallet.userId,
+      wallet.id,
+      wallet.address,
+      wallet.chainId,
+    )
+    const nfts = await repositories.nft.find({
+      where: {
+        userId: wallet.userId,
+        walletId: wallet.id,
+        chainId: wallet.chainId,
+      },
+    })
+    await cache.set(`nfts_${wallet.chainId}_${wallet.id}_${wallet.userId}`, nfts.length.toString(), 'EX', 60 * 10)
+  } else return
+}
