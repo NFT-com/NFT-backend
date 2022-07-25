@@ -1,16 +1,16 @@
 
 import Bull, { Job } from 'bull'
 
+import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
+import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db } from '@nftcom/shared'
+import { helper } from '@nftcom/shared'
+import { NFT } from '@nftcom/shared/db/entity'
+import * as Sentry from '@sentry/node'
 
 // exported for tests
 export const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
-import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
-import { NFT } from '@nftcom/shared/db/entity'
-import { bigNumber } from '@nftcom/shared/helper/misc'
-import * as Sentry from '@sentry/node'
 
 import { nftCronSubqueue } from './job'
 
@@ -41,7 +41,7 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
     if (nfts.length) {
       const nftRequest: Array<OpenseaOrderRequest> = nfts.map((nft: any) => ({
         contract: nft.contract,
-        tokenId: bigNumber(nft.tokenId).toString(),
+        tokenId: helper.bigNumber(nft.tokenId).toString(),
         chainId: nft.chainId,
       }))
       
@@ -116,7 +116,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       const nftRequest: Array<OpenseaOrderRequest> = nfts.map((nft: string) => {
         const nftSplit: Array<string> = nft.split(':')
         const contract: string = nftSplit?.[0]
-        const tokenId: string = bigNumber(nftSplit?.[1]).toString()
+        const tokenId: string = helper.bigNumber(nftSplit?.[1]).toString()
         return {
           contract,
           tokenId,
