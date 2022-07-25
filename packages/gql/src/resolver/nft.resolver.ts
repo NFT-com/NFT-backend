@@ -528,7 +528,7 @@ const updateNFTsForProfile = (
             repositories.nft,
             { ...filter, hide: false },
             pageInput,
-            'createdAt',
+            'weight',
             'ASC',
           )
         }
