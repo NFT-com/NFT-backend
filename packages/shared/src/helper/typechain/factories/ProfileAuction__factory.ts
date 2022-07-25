@@ -76,7 +76,7 @@ const _abi = [
         type: "bool",
       },
     ],
-    name: "ExtendRent",
+    name: "ExtendLicense",
     type: "event",
   },
   {
@@ -93,6 +93,12 @@ const _abi = [
         internalType: "string",
         name: "_val",
         type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
       },
       {
         indexed: false,
@@ -114,6 +120,57 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
+        indexed: false,
+        internalType: "uint256",
+        name: "_length",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_premium",
+        type: "uint256",
+      },
+    ],
+    name: "NewLengthPremium",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_fee",
+        type: "uint256",
+      },
+    ],
+    name: "NewYearlyFee",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "string",
+        name: "_profileUrl",
+        type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_stake",
+        type: "uint256",
+      },
+    ],
+    name: "UpdatedProfileStake",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: true,
         internalType: "address",
         name: "implementation",
@@ -122,6 +179,38 @@ const _abi = [
     ],
     name: "Upgraded",
     type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_years",
+        type: "uint256",
+      },
+    ],
+    name: "YearsToOwn",
+    type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    name: "cancelledOrFinalized",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [
@@ -151,7 +240,7 @@ const _abi = [
         type: "bytes32",
       },
     ],
-    name: "extendRent",
+    name: "extendLicense",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -204,6 +293,16 @@ const _abi = [
         internalType: "address",
         name: "recipient",
         type: "address",
+      },
+      {
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
       },
     ],
     name: "genesisKeyClaimProfile",
@@ -278,7 +377,7 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
-        name: "_nftToken",
+        name: "_nftErc20Contract",
         type: "address",
       },
       {
@@ -351,6 +450,19 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "nftErc20Contract",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "nftProfile",
     outputs: [
       {
@@ -376,13 +488,32 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "nftToken",
+    inputs: [
+      {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+    ],
+    name: "ownProfile",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "",
+        type: "string",
+      },
+    ],
+    name: "ownedProfileStake",
     outputs: [
       {
-        internalType: "address",
+        internalType: "uint256",
         name: "",
-        type: "address",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -396,19 +527,6 @@ const _abi = [
         internalType: "address",
         name: "",
         type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "publicFee",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -440,6 +558,16 @@ const _abi = [
         internalType: "bytes32",
         name: "s",
         type: "bytes32",
+      },
+      {
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
       },
     ],
     name: "publicMint",
@@ -496,12 +624,38 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+    ],
+    name: "redeemProfile",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bool",
         name: "_genKeyWhitelistOnly",
         type: "bool",
       },
     ],
     name: "setGenKeyWhitelistOnly",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_new",
+        type: "address",
+      },
+    ],
+    name: "setGovernor",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -540,19 +694,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_fee",
-        type: "uint256",
-      },
-    ],
-    name: "setPublicFee",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "bool",
         name: "_val",
         type: "bool",
@@ -561,6 +702,58 @@ const _abi = [
     name: "setPublicMint",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_signer",
+        type: "address",
+      },
+    ],
+    name: "setSigner",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint96",
+        name: "_fee",
+        type: "uint96",
+      },
+    ],
+    name: "setYearlyFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint96",
+        name: "_years",
+        type: "uint96",
+      },
+    ],
+    name: "setYearsToOwn",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "signerAddress",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -592,6 +785,56 @@ const _abi = [
     name: "upgradeToAndCall",
     outputs: [],
     stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
+      },
+    ],
+    name: "verifySignature",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "yearlyFee",
+    outputs: [
+      {
+        internalType: "uint96",
+        name: "",
+        type: "uint96",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "yearsToOwn",
+    outputs: [
+      {
+        internalType: "uint96",
+        name: "",
+        type: "uint96",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
 ];

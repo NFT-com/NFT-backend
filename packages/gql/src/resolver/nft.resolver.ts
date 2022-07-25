@@ -8,7 +8,17 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, curationError, nftError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts, db,defs, entity, fp,helper } from '@nftcom/shared'
+import {
+  _logger,
+  contracts,
+  db,
+  defs,
+  entity,
+  fp,
+  helper,
+  provider,
+  typechain,
+} from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -538,6 +548,46 @@ const updateNFTsForProfile = (
   }
 }
 
+const updateAssociatedAddresses = (
+  _: any,
+  args: gql.MutationUpdateAssociatedAddressesArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  try {
+    const { repositories } = ctx
+    logger.debug('updateAssociatedAddresses', { input: args?.input })
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+    // const pageInput = args?.input.pageInput
+    initiateWeb3(chainId)
+    return repositories.profile.findOne({
+      where: {
+        id: args?.input.profileId,
+        chainId,
+      },
+    })
+      .then((profile: entity.Profile | undefined) => {
+        if (!profile) {
+          return Promise.resolve({ items: [] })
+        } else {
+          const nftResolverContract = typechain.NftResolver__factory.connect(
+            contracts.nftResolverAddress(chainId),
+            provider.provider(Number(chainId)),
+          )
+
+          return nftResolverContract.associatedAddresses(profile.url)
+            .then((associatedAddresses) => {
+              logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
+              return null
+            })
+        }
+      })
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
+  }
+}
+
 const getExternalListings = async (
   _: any,
   args: gql.QueryExternalListingsArgs,
@@ -756,6 +806,7 @@ export default {
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
+    updateAssociatedAddresses: updateAssociatedAddresses,
     refreshNft,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
   },

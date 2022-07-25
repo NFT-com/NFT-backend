@@ -147,6 +147,12 @@ type ExternalListingsOutput {
   listings: [ExternalListing]
 }
 
+input UpdateAssociatedAddressesInput {
+  profileId: ID!
+  chainId: String
+  pageInput: PageInput
+}
+
 extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
@@ -163,6 +169,7 @@ extend type Mutation {
   "AUTHETICATED"
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
+  updateAssociatedAddresses(input: UpdateAssociatedAddressesInput): NFTsOutput!
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!): String!
