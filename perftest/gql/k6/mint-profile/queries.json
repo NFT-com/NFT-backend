@@ -1,0 +1,34 @@
+[
+  {
+    "query": "query Me {\n  me {\n    id\n    avatarURL\n    email\n    username\n    isEmailConfirmed\n    referralId\n  }\n}",
+    "operation": "Query"
+  },
+  {
+    "query": "query MyPhoto {\n  me {\n    avatarURL\n  }\n}",
+    "operation": "Query"
+  },
+  {
+    "query": "query ProfileBlocklist($url: String!, $blockReserved: Boolean!) {\n  blockedProfileURI(url: $url, blockReserved: $blockReserved)\n}",
+    "variables": {
+      "url": "notjordan", 
+      "blockReserved": true
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query InsiderReservedProfiles($input: InsiderReservedProfilesInput!) {\n  insiderReservedProfiles(input: $input)\n}",
+    "variables": {
+      "input": {
+        "address": "0x387A188cfCc50e5969007A597C9C76B0efC97587"
+      }
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "mutation SignHashProfile($profileUrl: String!) {\n  signHashProfile(profileUrl: $profileUrl) {\n    signature\n    hash\n  }\n}",
+    "variables": {
+      "profileUrl": "notjordan"
+    },
+    "operation": "Mutation"
+  }
+]

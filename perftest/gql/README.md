@@ -25,8 +25,8 @@ containing the query parameters.
 {
   "collection": {
     "input": {
-      "contract": "0xbAE022721cfa57024781c3362724D5fBCE7443Da",
-      "network": "rinkeby"
+      "contract": "0x9Ef7A34dcCc32065802B1358129a226B228daB4E",
+      "network": "goerli"
     }
   }
 }
