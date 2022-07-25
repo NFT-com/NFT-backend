@@ -4,7 +4,7 @@
   "description": "",
   "main": "k6/index",
   "scripts": {
-    "start": "k6 run -e GQL_HOSTNAME=${GQL_HOSTNAME:-localhost} -e QUERY_DIR=${QUERY_DIR:-home} ./k6/index.js",
-    "start:ci": "./k6 run -e GQL_HOSTNAME=${GQL_HOSTNAME:-dev-api.nft.com} -e QUERY_DIR=${QUERY_DIR:-home} ./k6/index.js"
+    "start": "k6 run -e GQL_HOSTNAME=${GQL_HOSTNAME:-localhost} -e QUERY_DIR=${QUERY_DIR:-home} ./test/index.js",
+    "start:ci": "./k6 run -e GQL_HOSTNAME=${GQL_HOSTNAME:-dev-api.nft.com} -e QUERY_DIR=${QUERY_DIR:-home} ./test/index.js"
   }
 }
