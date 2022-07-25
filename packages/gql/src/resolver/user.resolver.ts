@@ -278,7 +278,7 @@ const getMyPendingAssocations = async (
     },
   })
 
-  console.log('matches: ', matches)
+  logger.debug('matches: ', matches)
 
   const clearAlls = await repositories.event.find({
     where: {
@@ -290,7 +290,7 @@ const getMyPendingAssocations = async (
     },
   })
 
-  console.log('clearAlls: ', clearAlls)
+  logger.debug('clearAlls: ', clearAlls)
 
   const clearAllLatestMap = {}
   for (let i = 0; i < clearAlls.length; i++) {
@@ -303,7 +303,7 @@ const getMyPendingAssocations = async (
     }
   }
 
-  console.log('clearAllLatestMap: ', clearAllLatestMap)
+  logger.debug('clearAllLatestMap: ', clearAllLatestMap)
 
   const cancellations = await repositories.event.find({
     where: {
@@ -325,20 +325,20 @@ const getMyPendingAssocations = async (
     const latestClearBlock = clearAllLatestMap[clearAllKey]
 
     if (latestClearBlock && latestClearBlock > o.blockNumber) {
-      console.log('skip cancellation since outdated')
+      logger.debug('skip cancellation since outdated')
       // don't add if the latest cancel block is greater than the current individual cancellation
     } else {
       if (cancellationsMap[key]) {
-        console.log(`additional cancellation: ${key} ${Number(cancellationsMap[key]) + 1}`)
+        logger.debug(`additional cancellation: ${key} ${Number(cancellationsMap[key]) + 1}`)
         cancellationsMap[key] = Number(cancellationsMap[key]) + 1
       } else {
-        console.log(`first cancellation: ${key}`)
+        logger.debug(`first cancellation: ${key}`)
         cancellationsMap[key] = 1
       }
     }
   }
 
-  console.log('cancellationsMap: ', cancellationsMap)
+  logger.debug('cancellationsMap: ', cancellationsMap)
 
   return matches
     .filter((o) => {
