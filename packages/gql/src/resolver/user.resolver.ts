@@ -292,47 +292,54 @@ const getMyPendingAssocations = async (
   const cancellationsMap = {}
   for (let i = 0; i < cancellations.length; i++) {
     const o = cancellations[i]
-    const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
+    const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
     if (cancellationsMap[key]) {
-      cancellationsMap[key] += 1
+      cancellationsMap[key] = Number(cancellationsMap[key]) + 1
     } else {
       cancellationsMap[key] = 1
     }
   }
 
+  const clearAlls = await repositories.event.find({
+    where: {
+      eventName: 'ClearAllAssociatedAddresses',
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const clearAllLatestMap = {}
+  for (let i = 0; i < clearAlls.length; i++) {
+    const o = clearAlls[i]
+    const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+    if (clearAllLatestMap[key]) {
+      clearAllLatestMap[key] = Math.max(clearAllLatestMap[key], o.blockNumber)
+    } else {
+      clearAllLatestMap[key] = o.blockNumber
+    }
+  }
+
   return matches
     .filter((o) => {
-      const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
+      const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+      const latestBlock = clearAllLatestMap[key]
+      
+      if (!latestBlock) {
+        return true
+      } else {
+        return o.blockNumber >= latestBlock
+      }
+    })
+    .filter((o) => {
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
       if (Number(cancellationsMap[key]) == 0 || cancellationsMap[key] == undefined) {
         return true
       } else {
         cancellationsMap[key] = Number(cancellationsMap[key]) - 1
         return false
       }
-    })
-    .filter((o) => {
-      return repositories.event.find({
-        where: {
-          eventName: 'ClearAllAssociatedAddresses',
-          ownerAddress: helper.checkSum(o.ownerAddress),
-          profileUrl: o.profileUrl,
-          chainId: wallet.chainId,
-        },
-        order: {
-          blockNumber: 'ASC',
-        },
-      }).then((clearAlls) => {
-        // if association is >= (later than) last all clear, then it is valid
-        if (!clearAlls || clearAlls.length == 0) {
-          return true
-        } else {
-          if (o.blockNumber >= clearAlls[clearAlls.length - 1]?.blockNumber) {
-            return true
-          } else {
-            return false
-          }
-        }
-      })
     })
     .map(e => {
       return {
