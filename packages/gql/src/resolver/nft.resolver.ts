@@ -445,6 +445,50 @@ const updateGKIconVisibleStatus = async (
   }
 }
 
+const updateNFTsForAssociatedAddresses = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+): Promise<string> => {
+  const cacheKey = `associated_addresses_${chainId}_${profile.url}`
+  const cachedData = await cache.get(cacheKey)
+  let addresses: string[]
+  if (cachedData) {
+    addresses = JSON.parse(cachedData)
+  } else {
+    const nftResolverContract = typechain.NftResolver__factory.connect(
+      contracts.nftResolverAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+    logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
+    addresses = associatedAddresses.map((item) => item.chainAddr)
+    if (!addresses.length) {
+      return `No associated addresses of ${profile.url}`
+    }
+    await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
+    // remove NFT edges for non-associated addresses
+    await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
+    // update associated addresses with the latest updates
+    await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
+  }
+  // save User, Wallet for associated addresses...
+  const wallets: entity.Wallet[] = []
+  await Promise.allSettled(
+    addresses.map(async (address) => {
+      wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+    }),
+  )
+  // refresh NFTs for associated addresses...
+  await Promise.allSettled(
+    wallets.map(async (wallet) => {
+      await updateNFTsForAssociatedWallet(profile.id, wallet)
+    }),
+  )
+  await syncEdgesWithNFTs(profile.id)
+  return `refreshed NFTs for associated addresses of ${profile.url}`
+}
+
 const updateNFTsForProfile = (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
@@ -517,6 +561,15 @@ const updateNFTsForProfile = (
                                     logger.debug(`gkIconVisible updated for profile ${profile.id}`)
                                   })
                               }
+                              // refresh NFTs for associated addresses
+                              return updateNFTsForAssociatedAddresses(
+                                repositories,
+                                profile,
+                                chainId,
+                              ).then((msg) => {
+                                logger.debug(msg)
+                                return
+                              } )
                             })
                         })
                     })
@@ -575,43 +628,8 @@ const updateAssociatedAddresses = async (
     if (!profile) {
       return { message: `No profile with url ${args?.input.profileUrl}` }
     }
-    const cacheKey = `associated_addresses_${chainId}_${profile.url}`
-    const cachedData = await cache.get(cacheKey)
-    let addresses: string[]
-    if (cachedData) {
-      addresses = JSON.parse(cachedData)
-    } else {
-      const nftResolverContract = typechain.NftResolver__factory.connect(
-        contracts.nftResolverAddress(chainId),
-        provider.provider(Number(chainId)),
-      )
-      const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
-      logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
-      addresses = associatedAddresses.map((item) => item.chainAddr)
-      if (!addresses.length) {
-        return { message: `No associated addresses of ${args?.input.profileUrl}` }
-      }
-      await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
-      // remove NFT edges for non-associated addresses
-      await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
-      // update associated addresses with the latest updates
-      await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
-    }
-    // save User, Wallet for associated addresses...
-    const wallets: entity.Wallet[] = []
-    await Promise.allSettled(
-      addresses.map(async (address) => {
-        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
-      }),
-    )
-    // refresh NFTs for associated addresses...
-    await Promise.allSettled(
-      wallets.map(async (wallet) => {
-        await updateNFTsForAssociatedWallet(profile.id, wallet)
-      }),
-    )
-    await syncEdgesWithNFTs(profile.id)
-    return { message: `refreshed NFTs for associated addresses of ${args?.input.profileUrl}` }
+    const message = await updateNFTsForAssociatedAddresses(repositories, profile, chainId)
+    return { message }
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
   }
