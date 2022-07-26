@@ -552,7 +552,6 @@ const createUploadStream = (
       Bucket: bucket,
       Key: key,
       Body: pass,
-      ContentType: 'image/svg+xml',
     },
   })
   s3Upload.done()
