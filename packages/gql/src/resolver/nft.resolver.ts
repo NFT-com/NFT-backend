@@ -576,17 +576,25 @@ const updateAssociatedAddresses = async (
     if (!profile) {
       return Promise.resolve({ items: [] })
     }
-    const nftResolverContract = typechain.NftResolver__factory.connect(
-      contracts.nftResolverAddress(chainId),
-      provider.provider(Number(chainId)),
-    )
-    const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
-    logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
-    const addresses = associatedAddresses.map((item) => item.chainAddr)
-    if (!addresses.length) {
-      return Promise.resolve({ items: [] })
+    const cacheKey = `associated_addresses_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let addresses: string[]
+    if (cachedData) {
+      addresses = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+      logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
+      addresses = associatedAddresses.map((item) => item.chainAddr)
+      if (!addresses.length) {
+        return Promise.resolve({ items: [] })
+      }
+      await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
+      await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
     }
-    await repositories.profile.save({ associatedAddresses: addresses })
     // save User, Wallet for associated addresses...
     const wallets: entity.Wallet[] = []
     await Promise.allSettled(
@@ -594,12 +602,10 @@ const updateAssociatedAddresses = async (
         wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
       }),
     )
-    // save NFTs for associated addresses...
+    // refresh NFTs for associated addresses...
     await Promise.allSettled(
       wallets.map(async (wallet) => {
-        await updateNFTsForAssociatedWallet(wallet)
-        // save NFT edges for profile...
-        await updateEdgesWeightForProfile(profile.id, wallet.userId)
+        await updateNFTsForAssociatedWallet(profile.id, wallet)
       }),
     )
     await syncEdgesWithNFTs(profile.id)

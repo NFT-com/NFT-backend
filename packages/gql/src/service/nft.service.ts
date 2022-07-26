@@ -974,6 +974,7 @@ export const syncEdgesWithNFTs = async (
 }
 
 export const updateNFTsForAssociatedWallet = async (
+  profileId: string,
   wallet: entity.Wallet,
 ): Promise<void> => {
   const cachedData = await cache.get(`nfts_${wallet.chainId}_${wallet.id}_${wallet.userId}`)
@@ -990,6 +991,8 @@ export const updateNFTsForAssociatedWallet = async (
       wallet.address,
       wallet.chainId,
     )
+    // save NFT edges for profile...
+    await updateEdgesWeightForProfile(profileId, wallet.userId)
     const nfts = await repositories.nft.find({
       where: {
         userId: wallet.userId,
