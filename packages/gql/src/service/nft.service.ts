@@ -1036,6 +1036,7 @@ export const removeEdgesForNonassociatedAddresses = async (
                   thisEntityId: profileId,
                   thatEntityType: defs.EntityType.NFT,
                   thatEntityId: nft.id,
+                  edgeType: defs.EdgeType.Displays,
                 },
               })
               if (edge) {
