@@ -463,12 +463,12 @@ const updateNFTsForAssociatedAddresses = async (
     const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
     logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
     addresses = associatedAddresses.map((item) => item.chainAddr)
+    // remove NFT edges for non-associated addresses
+    await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
     if (!addresses.length) {
       return `No associated addresses of ${profile.url}`
     }
     await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
-    // remove NFT edges for non-associated addresses
-    await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
     // update associated addresses with the latest updates
     await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
   }

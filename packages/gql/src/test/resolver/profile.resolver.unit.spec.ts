@@ -10,6 +10,7 @@ import { Connection } from 'typeorm'
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared/'
 
+import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(300000)
@@ -261,12 +262,7 @@ describe('profile resolver', () => {
     })
 
     afterAll(async () => {
-      const profiles = await repositories.profile.findAll()
-      const profileIds = profiles.map((profile) => profile.id)
-      await repositories.profile.hardDeleteByIds(profileIds)
-      const wallets = await repositories.wallet.findAll()
-      const walletIds = wallets.map((wallet) => wallet.id)
-      await repositories.wallet.hardDeleteByIds(walletIds)
+      await clearDB(repositories)
 
       await testServer.stop()
     })
@@ -306,10 +302,7 @@ describe('profile resolver', () => {
     })
 
     afterAll(async () => {
-      const profiles = await repositories.profile.findAll()
-      const profileIds = profiles.map((profile) => profile.id)
-      await repositories.profile.hardDeleteByIds(profileIds)
-
+      await clearDB(repositories)
       await testServer.stop()
     })
 
@@ -324,8 +317,8 @@ describe('profile resolver', () => {
         },
       })
 
-      expect(result.data.updateProfileView.profileView).toEqual(defs.ProfileViewType.Collection)
       expect(result.data.updateProfileView.profileView).toBeDefined()
+      expect(result.data.updateProfileView.profileView).toEqual(defs.ProfileViewType.Collection)
     })
 
     it('should throw error if profile is not existing', async () => {
