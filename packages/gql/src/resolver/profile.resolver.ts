@@ -8,8 +8,7 @@ import Joi from 'joi'
 import stream from 'stream'
 import Typesense from 'typesense'
 
-import { S3Client } from '@aws-sdk/client-s3'
-import { Upload } from '@aws-sdk/lib-storage'
+import { PutObjectCommand, PutObjectCommandOutput,S3Client } from '@aws-sdk/client-s3'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
@@ -42,7 +41,7 @@ const MAX_SAVE_COUNTS = 500
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
-  upload: Upload
+  upload: Promise<PutObjectCommandOutput>
 };
 
 type LeaderboardInfo = {
@@ -582,7 +581,15 @@ const createUploadStream = (
     break
   }
   const pass = new stream.PassThrough()
-  const s3Upload = new Upload({
+  const params = {
+    Bucket: bucket,
+    Key: key,
+    Body: pass,
+    ContentType: contentType,
+  }
+  const uploadData = s3.send(new PutObjectCommand(params))
+
+  /*const s3Upload = new Upload({
     client: s3,
     params: {
       Bucket: bucket,
@@ -591,10 +598,10 @@ const createUploadStream = (
       ContentType: contentType,
     },
   })
-  s3Upload.done()
+  s3Upload.done()*/
   return {
     writeStream: pass,
-    upload: s3Upload,
+    upload: uploadData,
   }
 }
 
