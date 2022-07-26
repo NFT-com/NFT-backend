@@ -214,13 +214,12 @@ const retrieveLooksRareOrdersInBatches = async (
 
 /**
  * Retrieve multiple sell or buy orders
- * TODO: Offer implementation in the offer ticket
- * @param openseaMultiOrderRequest
+ * @param looksrareMultiOrderRequest
  * @param chainId
  * @param includeOffers
  */
 export const retrieveMultipleOrdersLooksrare = async (
-  openseaMultiOrderRequest: Array<LooksRareOrderRequest>,
+  looksrareMultiOrderRequest: Array<LooksRareOrderRequest>,
   chainId: string,
   includeOffers: boolean,
 ): Promise<LooksrareExternalOrder> => {
@@ -230,12 +229,12 @@ export const retrieveMultipleOrdersLooksrare = async (
   }
 
   try {
-    if (openseaMultiOrderRequest?.length) {
+    if (looksrareMultiOrderRequest?.length) {
       const orderQueries: Array<string> = []
-      for (const openseaReq of openseaMultiOrderRequest) {
-        orderQueries.push(`isOrderAsk=true&collection=${openseaReq.contract}&tokenId=${openseaReq.tokenId}&status[]=VALID&sort=PRICE_ASC`)
+      for (const looksrareReq of looksrareMultiOrderRequest) {
+        orderQueries.push(`isOrderAsk=true&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_ASC`)
         if (includeOffers) {
-          orderQueries.push(`isOrderAsk=false&collection=${openseaReq.contract}&tokenId=${openseaReq.tokenId}&status[]=VALID&sort=PRICE_DESC`)
+          orderQueries.push(`isOrderAsk=false&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_DESC`)
         }
       }
       if (orderQueries.length) {
@@ -247,7 +246,7 @@ export const retrieveMultipleOrdersLooksrare = async (
       }
     }
   } catch (err) {
-    Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
+    Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
   return responseAggregator
 }
