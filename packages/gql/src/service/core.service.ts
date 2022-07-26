@@ -687,7 +687,7 @@ export const generateCompositeImage = async (
     })
     upload.done()
 
-    return s3ToCdn(assetBucket.name) //will bucket work?
+    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
   } catch (e) {
     logger.debug('generateCompositeImage', e)
     Sentry.captureException(e)

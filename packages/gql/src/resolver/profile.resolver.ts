@@ -571,8 +571,8 @@ const uploadStreamToS3 = async (
     const bannerKey = 'profiles/' + Date.now().toString() + '-' + filename
     const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
     stream.pipe(bannerUploadStream.writeStream)
-    const result = bannerUploadStream.upload
-    return s3ToCdn(result.uploadEvent)
+    bannerUploadStream.upload
+    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${bannerKey}`)
   } catch (e) {
     Sentry.captureException(e)
     Sentry.captureMessage(`Error in uploadStreamToS3: ${e}`)
