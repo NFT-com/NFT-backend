@@ -598,8 +598,11 @@ const updateAssociatedAddresses = async (
     await Promise.allSettled(
       wallets.map(async (wallet) => {
         await updateNFTsForAssociatedWallet(wallet)
+        // save NFT edges for profile...
+        await updateEdgesWeightForProfile(profile.id, wallet.userId)
       }),
     )
+    await syncEdgesWithNFTs(profile.id)
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
   }
