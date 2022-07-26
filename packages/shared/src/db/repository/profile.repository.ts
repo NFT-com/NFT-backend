@@ -1,4 +1,4 @@
-import { Profile } from '@nftcom/shared/db/entity'
+import { Profile, Wallet } from '@nftcom/shared/db/entity'
 
 import { BaseRepository } from './base.repository'
 
@@ -14,6 +14,15 @@ export class ProfileRepository extends BaseRepository<Profile> {
 
   public findByURL = (url: string): Promise<Profile | undefined> => {
     return this.findOne({ where: { url } })
+  }
+
+  findAllWithRelations(): Promise<Profile[]> {
+    return this.getRepository()
+      .createQueryBuilder('profile')
+      .leftJoinAndMapOne('profile.wallet',
+        Wallet, 'wallet',
+        'profile.ownerWalletId = wallet.id')
+      .getMany()
   }
 
 }
