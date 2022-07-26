@@ -32,7 +32,7 @@ import {
   checkNFTContractAddresses,
   getOwnersOfGenesisKeys,
   initiateWeb3,
-  refreshNFTMetadata,
+  refreshNFTMetadata, removeEdgesForNonassociatedAddresses,
   syncEdgesWithNFTs,
   updateEdgesWeightForProfile,
   updateNFTsForAssociatedWallet,
@@ -593,6 +593,9 @@ const updateAssociatedAddresses = async (
         return Promise.resolve({ items: [] })
       }
       await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
+      // remove NFT edges for non-associated addresses
+      await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
+      // update associated addresses with the latest updates
       await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
     }
     // save User, Wallet for associated addresses...

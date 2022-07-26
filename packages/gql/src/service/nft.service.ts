@@ -1003,3 +1003,50 @@ export const updateNFTsForAssociatedWallet = async (
     await cache.set(`nfts_${wallet.chainId}_${wallet.id}_${wallet.userId}`, nfts.length.toString(), 'EX', 60 * 10)
   } else return
 }
+
+export const removeEdgesForNonassociatedAddresses = async (
+  profileId: string,
+  prevAddresses: string[],
+  newAddresses: string[],
+): Promise<void> => {
+  const toRemove: string[] = []
+  // find previous associated addresses to be filtered
+  prevAddresses.map((address) => {
+    if (newAddresses.indexOf(address) === -1) {
+      toRemove.push(address)
+    }
+  })
+  if (!toRemove.length) return
+  await Promise.allSettled(
+    toRemove.map(async (address) => {
+      const user = await repositories.user.findOne({
+        where: {
+          username: 'ethereum-' + ethers.utils.getAddress(address),
+        },
+      })
+      if (user) {
+        const nfts = await repositories.nft.find({ where: { userId: user.id } })
+        if (nfts.length) {
+          const toRemoveEdges = []
+          await Promise.allSettled(
+            nfts.map(async (nft) => {
+              const edge = await repositories.edge.findOne({
+                where: {
+                  thisEntityType: defs.EntityType.Profile,
+                  thisEntityId: profileId,
+                  thatEntityType: defs.EntityType.NFT,
+                  thatEntityId: nft.id,
+                },
+              })
+              if (edge) {
+                toRemoveEdges.push(edge.id)
+              }
+            }),
+          )
+          if (toRemoveEdges.length)
+            await repositories.edge.hardDeleteByIds(toRemoveEdges)
+        }
+      }
+    }),
+  )
+}
