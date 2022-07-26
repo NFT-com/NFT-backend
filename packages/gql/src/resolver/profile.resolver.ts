@@ -589,16 +589,6 @@ const createUploadStream = (
   }
   const uploadData = s3.send(new PutObjectCommand(params))
 
-  /*const s3Upload = new Upload({
-    client: s3,
-    params: {
-      Bucket: bucket,
-      Key: key,
-      Body: pass,
-      ContentType: contentType,
-    },
-  })
-  s3Upload.done()*/
   return {
     writeStream: pass,
     upload: uploadData,
