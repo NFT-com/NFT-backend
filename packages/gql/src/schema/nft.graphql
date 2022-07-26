@@ -148,9 +148,12 @@ type ExternalListingsOutput {
 }
 
 input UpdateAssociatedAddressesInput {
-  profileId: ID!
+  profileUrl: String!
   chainId: String
-  pageInput: PageInput
+}
+
+type UpdateAssociatedAddressesOuput {
+  message: String
 }
 
 extend type Query {
@@ -169,7 +172,7 @@ extend type Mutation {
   "AUTHETICATED"
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
-  updateAssociatedAddresses(input: UpdateAssociatedAddressesInput): NFTsOutput!
+  updateAssociatedAddresses(input: UpdateAssociatedAddressesInput): UpdateAssociatedAddressesOuput!
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!): String!

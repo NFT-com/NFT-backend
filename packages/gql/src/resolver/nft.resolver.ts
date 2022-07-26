@@ -558,23 +558,22 @@ const updateAssociatedAddresses = async (
   _: any,
   args: gql.MutationUpdateAssociatedAddressesArgs,
   ctx: Context,
-): Promise<gql.NFTsOutput> => {
+): Promise<gql.UpdateAssociatedAddressesOuput> => {
   try {
     const { repositories } = ctx
     logger.debug('updateAssociatedAddresses', { input: args?.input })
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-    // const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
     const profile = await repositories.profile.findOne({
       where: {
-        id: args?.input.profileId,
+        url: args?.input.profileUrl,
         chainId,
       },
     })
     if (!profile) {
-      return Promise.resolve({ items: [] })
+      return { message: `No profile with url ${args?.input.profileUrl}` }
     }
     const cacheKey = `associated_addresses_${chainId}_${profile.url}`
     const cachedData = await cache.get(cacheKey)
@@ -590,7 +589,7 @@ const updateAssociatedAddresses = async (
       logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
       addresses = associatedAddresses.map((item) => item.chainAddr)
       if (!addresses.length) {
-        return Promise.resolve({ items: [] })
+        return { message: `No associated addresses of ${args?.input.profileUrl}` }
       }
       await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
       // remove NFT edges for non-associated addresses
@@ -612,6 +611,7 @@ const updateAssociatedAddresses = async (
       }),
     )
     await syncEdgesWithNFTs(profile.id)
+    return { message: `refreshed NFTs for associated addresses of ${args?.input.profileUrl}` }
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
   }
