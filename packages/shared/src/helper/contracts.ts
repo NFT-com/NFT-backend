@@ -127,7 +127,7 @@ export function nftResolverAddress(chainId: string | number = 'mainnet'): string
   case 5:
   case '5':
   case 'goerli':
-    return '0x45d296a1042248f48f484c6f2be01006d26fcbf0'
+    return '0x3a3539B6727E74fa1c5D4d39B433F0fAB5BC4F4a'
   case '1':
   case 1:
   case 'mainnet':

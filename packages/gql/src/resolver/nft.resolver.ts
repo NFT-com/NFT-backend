@@ -15,10 +15,10 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses,
+  checkNFTContractAddresses, getOwnersOfGenesisKeys,
   initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -410,6 +410,25 @@ export const saveProfileScore = async (
   }
 }
 
+const updateGKIconVisibleStatus = async (
+  repositories: db.Repository,
+  chainId: string,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
+    if (index === -1) {
+      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
+    } else {
+      return
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+  }
+}
+
 const updateNFTsForProfile = (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
@@ -474,6 +493,15 @@ const updateNFTsForProfile = (
                       return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
                         .then(() => {
                           return syncEdgesWithNFTs(profile.id)
+                            .then(() => {
+                              // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                              if (profile.gkIconVisible) {
+                                return updateGKIconVisibleStatus(repositories, chainId, profile)
+                                  .then(() => {
+                                    logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                  })
+                              }
+                            })
                         })
                     })
                   })
@@ -500,7 +528,7 @@ const updateNFTsForProfile = (
             repositories.nft,
             { ...filter, hide: false },
             pageInput,
-            'createdAt',
+            'weight',
             'ASC',
           )
         }
@@ -673,15 +701,45 @@ export const refreshNft = async (
         )
         return refreshedNFT
       } else {
-        throw appError.buildNotFound(
+        return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
           nftError.ErrorType.NFTNotFound,
-        )
+        ))
       }
     }
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNft: ${err}`)
   }
+}
+
+// @TODO: Force Refresh as a second iteration
+export const refreshNFTOrder = async (  _: any,
+  args: gql.MutationRefreshNFTArgs,
+  ctx: Context): Promise<string> => {
+  const { repositories, chain } = ctx
+  logger.debug('refreshNftOrders', { id: args?.id })
+  initiateWeb3()
+  try {
+    const nft = await repositories.nft.findById(args?.id)
+    if (!nft) {
+      throw appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      )
+    }
+
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chain.id}`, `${nft.contract}:${nft.tokenId}`)
+    if (recentlyRefreshed) {
+      return 'Refreshed Recently! Try in sometime!'
+    }
+
+    // add to cache list
+    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, `${nft.contract}:${nft.tokenId}`)
+    return 'Added to queue! Check back shortly!'
+  } catch (err) {
+    Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
+  }
+  return ''
 }
 
 export default {
@@ -699,6 +757,7 @@ export default {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
     refreshNft,
+    refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

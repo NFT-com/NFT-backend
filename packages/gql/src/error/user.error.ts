@@ -32,4 +32,4 @@ export const buildEmailTokenRequiredMsg = (): string => 'Email confirm token is 
 export const buildInvalidEmailTokenMsg = (token: string): string =>
   `Email confirm token ${token} is invalid`
 
-export const buildForbiddenActionMsg = (): string => 'You  may not perform this action.'
+export const buildForbiddenActionMsg = (id = ''): string => 'You may not perform this action.' + id

@@ -8,7 +8,7 @@ import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { getChain } from '@nftcom/gql/config'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
-import { _logger, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -599,6 +599,33 @@ export const refreshNFTMetadata = async (
   }
 }
 
+export const getOwnersOfGenesisKeys = async (
+  chainId: string,
+): Promise<string[]> => {
+  const contract = contracts.genesisKeyAddress(chainId)
+  if (chainId !== '1' && chainId !== '5') return []
+  try {
+    const key = `GenesisKeyOwners-${chainId}`
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return JSON.parse(cachedData) as string[]
+    }
+    // until Alchemy SDK incorporates this
+    // TODO: remove in future
+    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
+    if (res && res.data && res.data.ownerAddresses) {
+      const gkOwners = res.data.ownerAddresses as string[]
+      await cache.set(key, JSON.stringify(gkOwners), 'EX', 60)
+      return gkOwners
+    } else {
+      return []
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
+  }
+}
+
 const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
@@ -807,7 +834,6 @@ export const updateNFTsOrder = async (
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
           edgeType: defs.EdgeType.Displays,
-          hide: false,
         },
         order: {
           weight: 'ASC',
@@ -826,7 +852,6 @@ export const updateNFTsOrder = async (
             thisEntityId: profileId,
             thatEntityId: orders[i].nftId,
             edgeType: defs.EdgeType.Displays,
-            hide: false,
           },
         })
         if (existingEdge) {
