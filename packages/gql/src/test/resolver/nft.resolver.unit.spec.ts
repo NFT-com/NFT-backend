@@ -230,12 +230,14 @@ describe('nft resolver', () => {
           thisEntityType: defs.EntityType.Profile,
           thisEntityId: profile.id,
           thatEntityType: defs.EntityType.NFT,
+          edgeType: defs.EdgeType.Displays,
         },
       })
       expect(nftEdges.length).toBeGreaterThan(0)
       const collectionEdges = await repositories.edge.find({
         where: {
           thisEntityType: defs.EntityType.Collection,
+          edgeType: defs.EdgeType.Includes,
         },
       })
       expect(collectionEdges.length).toBeGreaterThan(0)
