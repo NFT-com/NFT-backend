@@ -6,7 +6,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError,userError, walletError } from '@nftcom/gql/error'
+import { appError, mintError, userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { cache } from '@nftcom/gql/service/cache.service'
@@ -229,28 +229,125 @@ const getMyAddresses = (
   return repositories.wallet.findByUserId(parent.id)
 }
 
+const ignoreAssocations = (
+  _: any,
+  args: gql.MutationIgnoreAssocationsArgs,
+  ctx: Context,
+): Array<Promise<entity.Event>> => {
+  const { user, repositories, chain, wallet } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('ignoreAssocations', { loggedInUserId: user.id, wallet: wallet.address, args: args?.eventIdArray })
+  
+  return args?.eventIdArray.map(e =>
+    repositories.event.findOne({ where:
+      {
+        id: e,
+        destinationAddress: helper.checkSum(wallet.address),
+      },
+    }).then(e => {
+      if (e) {
+        return repositories.event.save({ ...e, ignore: true })
+      } else {
+        return Promise.reject(appError.buildForbidden(
+          userError.buildForbiddenActionMsg(' event id doesn\'t exist under your user'),
+          userError.ErrorType.ForbiddenAction,
+        ))
+      }
+    }),
+  )
+}
+
 const getMyPendingAssocations = async (
   _: any,
   args: unknown,
   ctx: Context,
 ): Promise<Array<gql.PendingAssociationOutput>> => {
   const { user, repositories, wallet } = ctx
-  logger.debug('getMyPendingAssocations', { loggedInUserId: user.id })
+  logger.debug('getMyPendingAssocations', { loggedInUserId: user.id, wallet: wallet.address })
 
   const matches = await repositories.event.find({
     where: {
       eventName: 'AssociateEvmUser',
       destinationAddress: helper.checkSum(wallet.address),
       chainId: wallet.chainId,
+      ignore: false,
+    },
+    order: {
+      blockNumber: 'ASC',
     },
   })
 
-  return matches.map(e => {
-    return {
-      url: e.profileUrl,
-      owner: e.ownerAddress,
-    }
+  const cancellations = await repositories.event.find({
+    where: {
+      eventName: 'CancelledEvmAssociation',
+      destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
   })
+
+  const cancellationsMap = {}
+  for (let i = 0; i < cancellations.length; i++) {
+    const o = cancellations[i]
+    const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+    if (cancellationsMap[key]) {
+      cancellationsMap[key] = Number(cancellationsMap[key]) + 1
+    } else {
+      cancellationsMap[key] = 1
+    }
+  }
+
+  const clearAlls = await repositories.event.find({
+    where: {
+      eventName: 'ClearAllAssociatedAddresses',
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const clearAllLatestMap = {}
+  for (let i = 0; i < clearAlls.length; i++) {
+    const o = clearAlls[i]
+    const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+    if (clearAllLatestMap[key]) {
+      clearAllLatestMap[key] = Math.max(clearAllLatestMap[key], o.blockNumber)
+    } else {
+      clearAllLatestMap[key] = o.blockNumber
+    }
+  }
+
+  return matches
+    .filter((o) => {
+      const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+      const latestBlock = clearAllLatestMap[key]
+      
+      if (!latestBlock) {
+        return true
+      } else {
+        return o.blockNumber >= latestBlock
+      }
+    })
+    .filter((o) => {
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+      if (Number(cancellationsMap[key]) == 0 || cancellationsMap[key] == undefined) {
+        return true
+      } else {
+        cancellationsMap[key] = Number(cancellationsMap[key]) - 1
+        return false
+      }
+    })
+    .map(e => {
+      return {
+        id: e.id,
+        url: e.profileUrl,
+        owner: e.ownerAddress,
+      }
+    })
 }
 
 const getMyGenesisKeys = async (
@@ -349,6 +446,7 @@ export default {
     confirmEmail,
     updateEmail,
     updateMe: combineResolvers(auth.isAuthenticated, updateMe),
+    ignoreAssocations: combineResolvers(auth.isAuthenticated, ignoreAssocations),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
   },
   User: {

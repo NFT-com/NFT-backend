@@ -7,6 +7,8 @@ import { Profile, User } from '@nftcom/shared/db/entity'
 import { testMockProfiles, testMockWallet,testMockWatchlistUser } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
+jest.setTimeout(300000)
+
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
@@ -27,7 +29,7 @@ describe('watchlist resolver', () => {
       testMockWallet,
     )
   })
-    
+
   afterAll(async () => {
     jest.clearAllMocks()
     await testServer.stop()
@@ -53,7 +55,7 @@ describe('watchlist resolver', () => {
         repositories.profile.hardDeleteByIds([testMockProfiles.id]),
       ])
     })
-    
+
     it('should add to watchlist', async () => {
       const result = await testServer.executeOperation({
         query: `mutation Mutation($input: WatchlistInput!) {
@@ -75,7 +77,7 @@ describe('watchlist resolver', () => {
         thatEntityId: testMockProfiles.id,
         thatEntityType: defs.EntityType.Profile,
       } })
-      
+
       expect(edge?.id).not.toBeNull()
       expect(edge?.thisEntityId).toBe(testMockWatchlistUser.id)
       expect(edge?.thatEntityId).toBe(testMockProfiles.id)
@@ -101,4 +103,3 @@ describe('watchlist resolver', () => {
     })
   })
 })
-  
