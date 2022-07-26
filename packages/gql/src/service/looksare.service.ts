@@ -9,7 +9,7 @@ import * as Sentry from '@sentry/node'
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
 const LOOKSRARE_LISTING_BATCH_SIZE = 4
-const LOOKS_RARE_API_KEY = 'itLiz5I9ASoRGZuib8w4TSng'
+const LOOKSRARE_API_KEY = process.env.LOOKSRARE_API_KEY
 
 export interface LooksRareOrderRequest {
   contract: string
@@ -97,7 +97,7 @@ const getLooksRareInterceptor = (
     baseURL,
     headers: {
       'Accept': 'application/json',
-      'X-Looks-Api-Key':LOOKS_RARE_API_KEY,
+      'X-Looks-Api-Key':LOOKSRARE_API_KEY,
     },
   })
   // retry logic with exponential backoff

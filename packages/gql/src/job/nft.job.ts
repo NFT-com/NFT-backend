@@ -96,8 +96,7 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
     if (!nftCronSubqueue) {
       await job.moveToFailed({ message: 'nft-cron-queue is not defined!' })
     }
-    // const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
-    const chainId = '1'
+    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
 
     const nftCount: number = await repositories.nft.count({ chainId, deletedAt: null })
     const limit: number = MAX_PROCESS_BATCH_SIZE
