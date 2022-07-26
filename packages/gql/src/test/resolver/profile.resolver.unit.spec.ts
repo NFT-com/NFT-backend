@@ -10,7 +10,6 @@ import { Connection } from 'typeorm'
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared/'
 
-import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(300000)
@@ -239,7 +238,7 @@ describe('profile resolver', () => {
       })
 
       profileA = await repositories.profile.save({
-        url: 'testprofile',
+        url: 'testprofile1',
         ownerUserId: 'vPVIuNzLVBdIuyAMTm2rZ',
         ownerWalletId: walletA.id,
         tokenId: '0',
@@ -262,8 +261,12 @@ describe('profile resolver', () => {
     })
 
     afterAll(async () => {
-      await clearDB(repositories)
-
+      const profiles = await repositories.profile.findAll()
+      const profileIds = profiles.map((profile) => profile.id)
+      const wallets = await repositories.wallet.findAll()
+      const walletIds = wallets.map((wallet) => wallet.id)
+      await repositories.profile.hardDeleteByIds(profileIds)
+      await repositories.wallet.hardDeleteByIds(walletIds)
       await testServer.stop()
     })
 
@@ -302,7 +305,9 @@ describe('profile resolver', () => {
     })
 
     afterAll(async () => {
-      await clearDB(repositories)
+      const profiles = await repositories.profile.findAll()
+      const profileIds = profiles.map((profile) => profile.id)
+      await repositories.profile.hardDeleteByIds(profileIds)
       await testServer.stop()
     })
 
