@@ -540,11 +540,47 @@ const checkFileSize = async (
     createReadStream().on('error', rejects)
   })
 
+const extensionFromFilename = (filename: string): string | undefined => {
+  const strArray = filename.split('.')
+  // if filename has no extension
+  if (strArray.length < 2) return undefined
+  // else return extension
+  return strArray.pop()
+}
+
 const createUploadStream = (
   s3: S3Client,
   key: string,
   bucket: string,
 ): S3UploadStream => {
+  const ext = extensionFromFilename(key as string)
+  let contentType
+  switch(ext.toLowerCase()) {
+  case 'jpg' || 'jpeg' || 'pjpeg' || 'jfif':
+    contentType = 'image/jpeg'
+    break
+  case 'png':
+    contentType = 'image/png'
+    break
+  case 'svg':
+    contentType = 'image/svg+xml'
+    break
+  case 'gif':
+    contentType = 'image/gif'
+    break
+  case 'webp':
+    contentType = 'image/webp'
+    break
+  case 'avif':
+    contentType = 'image/avif'
+    break
+  case 'bmp':
+    contentType = 'image/bmp'
+    break
+  case 'tiff':
+    contentType = 'image/tiff'
+    break
+  }
   const pass = new stream.PassThrough()
   const s3Upload = new Upload({
     client: s3,
@@ -552,6 +588,7 @@ const createUploadStream = (
       Bucket: bucket,
       Key: key,
       Body: pass,
+      ContentType: contentType,
     },
   })
   s3Upload.done()
@@ -577,14 +614,6 @@ const uploadStreamToS3 = async (
     Sentry.captureMessage(`Error in uploadStreamToS3: ${e}`)
     throw e
   }
-}
-
-const extensionFromFilename = (filename: string): string | undefined => {
-  const strArray = filename.split('.')
-  // if filename has no extension
-  if (strArray.length < 2) return undefined
-  // else return extension
-  return strArray.pop()
 }
 
 const uploadProfileImages = async (
