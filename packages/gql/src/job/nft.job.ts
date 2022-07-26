@@ -30,6 +30,7 @@ const subQueueBaseOptions: Bull.JobOptions = {
 
 //batch processor
 const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
+  logger.debug(`initiated external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
   try {
     const { offset, limit, exchange } = job.data
     const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
@@ -66,8 +67,8 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
         }
         break
       case ExchangeType.LooksRare:
-        looksrareResponse = await retrieveMultipleOrdersLooksrare(nftRequest, chainId, false)
-
+        looksrareResponse = await retrieveMultipleOrdersLooksrare(nftRequest, chainId, true)
+  
         // listings
         if (looksrareResponse.listings.length) {
           persistActivity.push(repositories.txList.saveMany(looksrareResponse.listings))
@@ -82,6 +83,7 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
 
       // settlements should not depend on each other
       await Promise.allSettled(persistActivity)
+      logger.debug(`completed external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
     }
   } catch (err) {
     Sentry.captureMessage(`Error in nftExternalOrders Job: ${err}`)
@@ -94,7 +96,8 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
     if (!nftCronSubqueue) {
       await job.moveToFailed({ message: 'nft-cron-queue is not defined!' })
     }
-    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
+    // const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
+    const chainId = '1'
 
     const nftCount: number = await repositories.nft.count({ chainId, deletedAt: null })
     const limit: number = MAX_PROCESS_BATCH_SIZE
