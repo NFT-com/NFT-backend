@@ -363,6 +363,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           if (evt.name === 'MintedProfile') {
             const existsBool = await repositories.event.exists({
               chainId,
+              eventName: evt.name,
               ownerAddress: owner,
               profileUrl: profileUrl,
               txHash: unparsedEvent.transactionHash,
