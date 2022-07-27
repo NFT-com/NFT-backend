@@ -14,6 +14,7 @@ import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(300000)
+jest.retryTimes(2)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
