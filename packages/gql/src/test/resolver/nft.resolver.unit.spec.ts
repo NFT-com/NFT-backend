@@ -20,6 +20,10 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
     get: jest.fn(),
     set: jest.fn(),
   },
+  CacheKeys: {
+    ASSOCIATED_ADDRESSES: 'associated_addresses',
+    UPDATE_NFT_FOR_ASSOCIATED_WALLET: 'update_nft_for_associated_wallet',
+  },
   createCacheConnection: jest.fn(),
 }))
 
