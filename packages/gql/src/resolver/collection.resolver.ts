@@ -4,6 +4,7 @@ import { combineResolvers } from 'graphql-resolvers'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
+import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import {
@@ -12,6 +13,7 @@ import {
 } from '@nftcom/gql/service/opensea.service'
 import { _logger, db,defs } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 
 const MAX_SAVE_COUNTS = 500
@@ -59,11 +61,22 @@ const getCollection = async (
         }
       }
 
+      const collection = await ctx.repositories.collection.findByContractAddress(
+        args?.input?.contract,
+        chainId,
+      )
+
+      if (collection && collection.deployer == null) {
+        const collectionDeployer = await getCollectionDeployer(args?.input?.contract, chainId)
+        await ctx.repositories.collection.save({
+          ...collection,
+          deployer: collectionDeployer,
+        })
+        collection.deployer = collectionDeployer
+      }
+
       const returnObject = {
-        collection: await ctx.repositories.collection.findByContractAddress(
-          args?.input?.contract,
-          chainId,
-        ),
+        collection,
         openseaInfo: data,
         openseaStats: stats,
       }
