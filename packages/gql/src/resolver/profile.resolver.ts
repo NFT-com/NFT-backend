@@ -1,4 +1,3 @@
-import aws from 'aws-sdk'
 import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { BigNumber, ethers, utils } from 'ethers'
@@ -9,6 +8,8 @@ import Joi from 'joi'
 import stream from 'stream'
 import Typesense from 'typesense'
 
+import { S3Client } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
@@ -41,7 +42,7 @@ const MAX_SAVE_COUNTS = 500
 
 type S3UploadStream = {
   writeStream: stream.PassThrough
-  promise: Promise<aws.S3.ManagedUpload.SendData>
+  upload: Upload
 };
 
 type LeaderboardInfo = {
@@ -539,46 +540,84 @@ const checkFileSize = async (
     createReadStream().on('error', rejects)
   })
 
-const createUploadStream = (
-  s3: aws.S3,
-  key: string,
-  bucket: string,
-): S3UploadStream => {
-  const pass = new stream.PassThrough()
-  return {
-    writeStream: pass,
-    promise: s3.upload({
-      Bucket: bucket,
-      Key: key,
-      Body: pass,
-    }).promise(),
-  }
-}
-
-const uploadStreamToS3 = async (
-  filename: string,
-  s3: aws.S3,
-  stream: FileUpload['createReadStream'],
-): Promise<string> => {
-  try {
-    const bannerKey = 'profiles/' + Date.now().toString() + '-' + filename
-    const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
-    stream.pipe(bannerUploadStream.writeStream)
-    const result = await bannerUploadStream.promise
-    return s3ToCdn(result.Location)
-  } catch (e) {
-    Sentry.captureException(e)
-    Sentry.captureMessage(`Error in uploadStreamToS3: ${e}`)
-    throw e
-  }
-}
-
 const extensionFromFilename = (filename: string): string | undefined => {
   const strArray = filename.split('.')
   // if filename has no extension
   if (strArray.length < 2) return undefined
   // else return extension
   return strArray.pop()
+}
+
+const createUploadStream = (
+  s3: S3Client,
+  key: string,
+  bucket: string,
+): S3UploadStream => {
+  const ext = extensionFromFilename(key as string)
+  let contentType
+  switch(ext.toLowerCase()) {
+  case 'jpg':
+    contentType = 'image/jpeg'
+    break
+  case 'jpeg':
+    contentType = 'image/jpeg'
+    break
+  case 'png':
+    contentType = 'image/png'
+    break
+  case 'svg':
+    contentType = 'image/svg+xml'
+    break
+  case 'gif':
+    contentType = 'image/gif'
+    break
+  case 'webp':
+    contentType = 'image/webp'
+    break
+  case 'avif':
+    contentType = 'image/avif'
+    break
+  case 'bmp':
+    contentType = 'image/bmp'
+    break
+  case 'tiff':
+    contentType = 'image/tiff'
+    break
+  }
+  const pass = new stream.PassThrough()
+
+  const s3Upload = new Upload({
+    client: s3,
+    params: {
+      Bucket: bucket,
+      Key: key,
+      Body: pass,
+      ContentType: contentType,
+    },
+  })
+  s3Upload.done()
+  return {
+    writeStream: pass,
+    upload: s3Upload,
+  }
+}
+
+const uploadStreamToS3 = async (
+  filename: string,
+  s3: S3Client,
+  stream: FileUpload['createReadStream'],
+): Promise<string> => {
+  try {
+    const bannerKey = 'profiles/' + Date.now().toString() + '-' + filename
+    const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
+    stream.pipe(bannerUploadStream.writeStream)
+    bannerUploadStream.upload
+    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${bannerKey}`)
+  } catch (e) {
+    Sentry.captureException(e)
+    Sentry.captureMessage(`Error in uploadStreamToS3: ${e}`)
+    throw e
+  }
 }
 
 const uploadProfileImages = async (
@@ -644,12 +683,12 @@ const uploadProfileImages = async (
   }
 
   // 3. upload streams to AWS S3
-  const s3 = await getAWSConfig()
+  const s3config = await getAWSConfig()
 
   if (bannerResponse && bannerStream) {
     const ext = extensionFromFilename(bannerResponse.filename as string)
     const fileName = ext ? profile.url + '-banner' + '.' + ext : profile.url + '-banner'
-    const bannerUrl = await uploadStreamToS3(fileName, s3, bannerStream)
+    const bannerUrl = await uploadStreamToS3(fileName, s3config, bannerStream)
     if (bannerUrl) {
       await repositories.profile.updateOneById(profileId, {
         bannerURL: bannerUrl,
@@ -660,7 +699,7 @@ const uploadProfileImages = async (
   if (avatarResponse && avatarStream) {
     const ext = extensionFromFilename(avatarResponse.filename as string)
     const fileName = ext ? profile.url + '.' + ext : profile.url
-    const avatarUrl = await uploadStreamToS3(fileName, s3, avatarStream)
+    const avatarUrl = await uploadStreamToS3(fileName, s3config, avatarStream)
     if (avatarUrl) {
       // if user does not want to composite image with profile url, we just save image to photoURL
       if (!compositeProfileURL) {

@@ -98,7 +98,7 @@ export const nftTestErrorMockData: NFT = {
   createdAt: 'test-timestamp',
 }
 
-export const whitelistedAddress = '0xDF3c501ef5aBeFff2d7Ce1eB75B205F60C66778A'
+export const whitelistedAddress = '0x00518e394761e3b165d3e1809833e3f9b7adb895'
 
 export const nonWhitelistedAddress = '0xDEA2c39552A5bc259c520F64320e2D1008010d44'
 
