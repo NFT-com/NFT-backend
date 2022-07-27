@@ -348,7 +348,8 @@ const getGkNFTs = async (
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  const cachedData = await cache.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`)
+  const cacheKey = `${CacheKeys.GET_GK}_${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`
+  const cachedData = await cache.get(cacheKey)
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
@@ -364,7 +365,7 @@ const getGkNFTs = async (
       })
 
       await cache.set(
-        `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`,
+        cacheKey,
         JSON.stringify(response),
         'EX',
         60 * 60, // 60 minutes
@@ -450,7 +451,7 @@ const updateNFTsForAssociatedAddresses = async (
   profile: entity.Profile,
   chainId: string,
 ): Promise<string> => {
-  const cacheKey = `associated_addresses_${chainId}_${profile.url}`
+  const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
   const cachedData = await cache.get(cacheKey)
   let addresses: string[]
   if (cachedData) {
@@ -778,7 +779,8 @@ export const refreshNft = async (
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     initiateWeb3(chainId)
-    const cachedData = await cache.get(`refreshNFT_${chainId}_${args?.id}`)
+    const cacheKey = `${CacheKeys.REFRESH_NFT}_${chainId}_${args?.id}`
+    const cachedData = await cache.get(cacheKey)
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
@@ -791,7 +793,7 @@ export const refreshNft = async (
       if (nft) {
         const refreshedNFT = await refreshNFTMetadata(nft)
         await cache.set(
-          `refreshNFT_${chainId}_${args?.id}`,
+          cacheKey,
           JSON.stringify(refreshedNFT),
           'EX',
           5 * 60, // 5 minutes

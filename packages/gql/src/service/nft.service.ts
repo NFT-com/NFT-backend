@@ -6,7 +6,7 @@ import * as typeorm from 'typeorm'
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { getChain } from '@nftcom/gql/config'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -605,7 +605,7 @@ export const getOwnersOfGenesisKeys = async (
   const contract = contracts.genesisKeyAddress(chainId)
   if (chainId !== '1' && chainId !== '5') return []
   try {
-    const key = `GenesisKeyOwners-${chainId}`
+    const key = `${CacheKeys.GENESIS_KEY_OWNERS}_${chainId}`
     const cachedData = await cache.get(key)
     if (cachedData) {
       return JSON.parse(cachedData) as string[]
@@ -977,7 +977,7 @@ export const updateNFTsForAssociatedWallet = async (
   profileId: string,
   wallet: entity.Wallet,
 ): Promise<void> => {
-  const cacheKey = `updateNFTsForAssociatedWallet_${wallet.chainId}_${wallet.id}_${wallet.userId}`
+  const cacheKey = `${CacheKeys.UPDATE_NFT_FOR_ASSOCIATED_WALLET}_${wallet.chainId}_${wallet.id}_${wallet.userId}`
   const cachedData = await cache.get(cacheKey)
   if (!cachedData) {
     await checkNFTContractAddresses(
@@ -1012,9 +1012,12 @@ export const removeEdgesForNonassociatedAddresses = async (
 ): Promise<void> => {
   const toRemove: string[] = []
   // find previous associated addresses to be filtered
+  const seen = {}
+  newAddresses.map((address) => {
+    seen[address] = true
+  })
   prevAddresses.map((address) => {
-    const addr = newAddresses.find((newAddress) => newAddress === address)
-    if (!addr) toRemove.push(address)
+    if (!seen[address]) toRemove.push(address)
   })
   if (!toRemove.length) return
   await Promise.allSettled(

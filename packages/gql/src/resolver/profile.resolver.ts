@@ -17,7 +17,7 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   DEFAULT_NFT_IMAGE,
   generateCompositeImage,
@@ -839,7 +839,8 @@ const leaderboard = async (
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   const TOP = args?.input.count ? Number(args?.input.count) : 100
-  const cachedData = await cache.get(`Leaderboard_response_${chainId}_top_${TOP}`)
+  const cacheKey = `${CacheKeys.LEADERBOARD_RESPONSE}_${chainId}_top_${TOP}`
+  const cachedData = await cache.get(cacheKey)
   let leaderboard: Array<gql.LeaderboardProfile> = []
 
   // if cached data is not null and not an empty array
@@ -867,7 +868,7 @@ const leaderboard = async (
       index++
     }
     await cache.set(
-      `Leaderboard_response_${chainId}_top_${TOP}`,
+      cacheKey,
       JSON.stringify(leaderboard),
       'EX',
       5 * 60, // 5 minutes

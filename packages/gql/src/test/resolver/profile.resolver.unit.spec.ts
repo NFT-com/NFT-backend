@@ -267,6 +267,7 @@ describe('profile resolver', () => {
       const walletIds = wallets.map((wallet) => wallet.id)
       await repositories.profile.hardDeleteByIds(profileIds)
       await repositories.wallet.hardDeleteByIds(walletIds)
+
       await testServer.stop()
     })
 

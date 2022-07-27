@@ -7,7 +7,14 @@ const DEFAULT_TTL_HOURS = 2
 
 export enum CacheKeys {
   REFRESH_NFT_ORDERS_EXT = 'refresh_nft_orders_ext',
-  REFRESHED_NFT_ORDERS_EXT = 'refreshed_nft_orders_ext'
+  REFRESHED_NFT_ORDERS_EXT = 'refreshed_nft_orders_ext',
+  UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
+  GENESIS_KEY_OWNERS = 'genesis_key_owners',
+  ASSOCIATED_ADDRESSES = 'associated_addresses',
+  REFRESH_NFT = 'refresh_nft',
+  LEADERBOARD_RESPONSE = 'Leaderboard_response',
+  CACHED_GKS = 'cached_gks',
+  GET_GK = 'get_gk'
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
