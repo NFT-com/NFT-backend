@@ -74,6 +74,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['PROFILE_NFTS_EXPIRE_DURATION'] = process.env.PROFILE_NFTS_EXPIRE_DURATION || parsedFile['PROFILE_NFTS_EXPIRE_DURATION']
   parsedFile['BULL_MAX_REPEAT_COUNT'] = process.env.BULL_MAX_REPEAT_COUNT || parsedFile['BULL_MAX_REPEAT_COUNT']
   parsedFile['OPENSEA_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_API_KEY']
+  parsedFile['LOOKSRARE_API_KEY'] = process.env.LOOKSRARE_API_KEY || parsedFile['LOOKSRARE_API_KEY']
   parsedFile['PROFILE_SCORE_EXPIRE_DURATION'] = process.env.PROFILE_SCORE_EXPIRE_DURATION || parsedFile['PROFILE_SCORE_EXPIRE_DURATION']
   parsedFile['NFT_EXTERNAL_ORDER_REFRESH_DURATION'] = process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION || parsedFile['NFT_EXTERNAL_ORDER_REFRESH_DURATION']
   parsedFile['TEST_DB_HOST'] = process.env.TEST_DB_HOST || parsedFile['TEST_DB_HOST']

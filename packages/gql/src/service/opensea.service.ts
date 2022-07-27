@@ -180,7 +180,7 @@ interface SeaportOrder extends OpenseaBaseOrder {
   criteria_proof: any
 }
 
-interface OpenseaExternalOrder {
+export interface OpenseaExternalOrder {
   listings: TxList[]
   offers: TxBid[]
 }
