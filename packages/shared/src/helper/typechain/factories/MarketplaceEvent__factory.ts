@@ -148,13 +148,13 @@ const _abi = [
         type: "bytes32",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "makerAddress",
         type: "address",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "takerAddress",
         type: "address",
@@ -246,13 +246,13 @@ const _abi = [
         type: "bytes32",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "makerAddress",
         type: "address",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "takerAddress",
         type: "address",

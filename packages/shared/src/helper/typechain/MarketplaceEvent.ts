@@ -532,8 +532,8 @@ export interface MarketplaceEvent extends BaseContract {
 
     "Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)"(
       makerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
+      makerAddress?: string | null,
+      takerAddress?: string | null,
       start?: null,
       end?: null,
       nonce?: null,
@@ -541,8 +541,8 @@ export interface MarketplaceEvent extends BaseContract {
     ): Match2AEventFilter;
     Match2A(
       makerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
+      makerAddress?: string | null,
+      takerAddress?: string | null,
       start?: null,
       end?: null,
       nonce?: null,
@@ -570,8 +570,8 @@ export interface MarketplaceEvent extends BaseContract {
 
     "Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)"(
       takerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
+      makerAddress?: string | null,
+      takerAddress?: string | null,
       start?: null,
       end?: null,
       nonce?: null,
@@ -579,8 +579,8 @@ export interface MarketplaceEvent extends BaseContract {
     ): Match3AEventFilter;
     Match3A(
       takerStructHash?: BytesLike | null,
-      makerAddress?: null,
-      takerAddress?: null,
+      makerAddress?: string | null,
+      takerAddress?: string | null,
       start?: null,
       end?: null,
       nonce?: null,
