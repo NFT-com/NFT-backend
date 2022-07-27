@@ -17,7 +17,7 @@ import { _logger } from '@nftcom/shared'
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
   process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION,
-)
+) || 720 // by default 12 hours
 
 const logger = _logger.Factory(_logger.Context.Bull)
 
@@ -38,6 +38,7 @@ const queues = new Map<string, Bull.Queue>()
 // nft cron subqueue
 const subqueuePrefix = 'nft-cron'
 const subqueueName = 'nft-batch-processor'
+
 export let nftCronSubqueue: Bull.Queue = null
 
 const networkList = process.env.SUPPORTED_NETWORKS.split('|')
