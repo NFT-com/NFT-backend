@@ -4,7 +4,7 @@ const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 
-const getLatestBlockNumber = (url: string): Promise<string> => {
+export const getLatestBlockNumber = (url: string): Promise<string> => {
   const payload = {
     'jsonrpc': '2.0',
     'method': 'eth_blockNumber',
@@ -19,7 +19,7 @@ const getLatestBlockNumber = (url: string): Promise<string> => {
   return axios.post(url, payload, { headers }).then(res => res.data.result)
 }
 
-const getCode = async (
+export const getCode = async (
   url: string,
   contractAddress: string,
   blockNumber: string,

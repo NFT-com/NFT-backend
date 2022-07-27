@@ -4,7 +4,7 @@ import { combineResolvers } from 'graphql-resolvers'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
-import { getCollectionDeployer } from '@nftcom/gql/helper/alchemy'
+import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import {
