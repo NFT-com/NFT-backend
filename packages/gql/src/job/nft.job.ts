@@ -177,7 +177,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       const listings: TxList[] = []
       const bids: TxBid[] = []
       const persistActivity: any[] = []
-
+    
       if (opensea.status === 'fulfilled') {
         // opensea listings
         if (opensea.value.listings.length) {

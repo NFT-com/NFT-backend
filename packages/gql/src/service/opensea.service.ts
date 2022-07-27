@@ -515,7 +515,7 @@ const retrieveListingsInBatches = async (
     }
 
     const response: AxiosResponse = await listingInterceptor(
-      `/assets?${queryUrl}&limit=${batchSize}&order_direction=asc&include_orders=true`,
+      `/assets?${queryUrl}&limit=${batchSize}&include_orders=true`,
     )
     if (response?.data?.assets?.length) {
       const assets = response?.data?.assets
@@ -619,10 +619,10 @@ const retrieveOffersInBatches = async (
           const openseaSupportedChainId:string = TESTNET_CHAIN_IDS.includes(chainId)? '4':chainId
           const chain:Chain =  getChain('ethereum',openseaSupportedChainId)
           const response: AxiosResponse = await offerInterceptor(
-            `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc`,
+            `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
           const responseWyverin: AxiosResponse = await offerInterceptorWyverin(
-            `/orders?${queryUrl}&order_by=created_date&order_direction=desc&side=0`,
+            `/orders?${queryUrl}&order_by=created_date&order_direction=desc&side=0&order_by=eth_price`,
           )
 
           if (response?.data?.orders?.length) {
@@ -659,9 +659,6 @@ const retrieveOffersInBatches = async (
       }
     }
   }
-
-  console.log(offers,'88888888888888888888888888888888888888888888888888888888888888888')
-
   return offers
 }
 
@@ -685,7 +682,7 @@ export const retrieveMultipleOrdersOpensea = async (
   try {
     if (openseaMultiOrderRequest?.length) {
       const listingQueryParams: Array<string> = []
-      let offerQueryParams: Map<string, Array<string>>
+      const offerQueryParams: Map<string, Array<string>> = new Map()
       for (const openseaReq of openseaMultiOrderRequest) {
         // listing query builder
         listingQueryParams.push(
@@ -696,7 +693,7 @@ export const retrieveMultipleOrdersOpensea = async (
           // offer query builder
           if (!offerQueryParams.has(openseaReq.contract)) {
             offerQueryParams.set(openseaReq.contract,
-              [`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`],
+              [],
             )
           }
           offerQueryParams.get(openseaReq.contract)?.push(
@@ -704,21 +701,23 @@ export const retrieveMultipleOrdersOpensea = async (
           )
         }
       }
-  
+
+      // listings 
       if (listingQueryParams.length) {
         responseAggregator.listings = await retrieveListingsInBatches(
           listingQueryParams,
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
         )
-        
-        if (includeOffers && offerQueryParams.keys.length) {
-          responseAggregator.offers = await retrieveOffersInBatches(
-            offerQueryParams,
-            chainId,
-            OPENSEA_LISTING_BATCH_SIZE,
-          )
-        }
+      }
+
+      // offers
+      if (includeOffers && offerQueryParams.size) {
+        responseAggregator.offers = await retrieveOffersInBatches(
+          offerQueryParams,
+          chainId,
+          OPENSEA_LISTING_BATCH_SIZE,
+        )
       }
     }
   } catch (err) {
