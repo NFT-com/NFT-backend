@@ -11,7 +11,7 @@ COPY packages/gql/package.json ./packages/gql/package.json
 # add tools for native dependencies (node-gpy)
 RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm set progress=false \
-    && npm install --production \
+    && npm install --omit=dev \
     && cp -R node_modules prod_node_modules \
     && npm install \
     && apk del .gyp
