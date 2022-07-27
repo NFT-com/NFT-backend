@@ -1,6 +1,6 @@
-import STS from 'aws-sdk/clients/sts'
 import { combineResolvers } from 'graphql-resolvers'
 
+import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
@@ -11,12 +11,12 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 let cachedSTS: STS = null
 const getSTS = (): STS => {
   if (helper.isEmpty(cachedSTS)) {
-    cachedSTS = new STS()
+    cachedSTS = new STS({ region: process.env.AWS_REGION })
   }
   return cachedSTS
 }
 
-const getFileUploadSession = (
+const getFileUploadSession = async (
   _: unknown,
   args: unknown,
   ctx: Context,
@@ -25,18 +25,18 @@ const getFileUploadSession = (
   logger.debug('getFileUploadSession', { loggedInUserId: user.id })
 
   const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
-  const params: STS.AssumeRoleRequest = {
+  const params: AssumeRoleRequest = {
     RoleArn: assetBucket.role,
     RoleSessionName: sessionName,
   }
-
-  return getSTS().assumeRole(params).promise()
-    .then((response) => ({
-      accessKey: response.Credentials.AccessKeyId,
-      bucket: assetBucket.name,
-      secretKey: response.Credentials.SecretAccessKey,
-      sessionToken: response.Credentials.SessionToken,
-    }))
+  
+  const response = await getSTS().assumeRole(params)
+  return ({
+    accessKey: response.Credentials.AccessKeyId,
+    bucket: assetBucket.name,
+    secretKey: response.Credentials.SecretAccessKey,
+    sessionToken: response.Credentials.SessionToken,
+  })
 }
 
 // const getContracts = (
