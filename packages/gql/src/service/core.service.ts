@@ -2,8 +2,9 @@ import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 
-import { PutObjectCommand,S3Client } from '@aws-sdk/client-s3'
+import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
+import { Upload } from '@aws-sdk/lib-storage'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
@@ -675,13 +676,16 @@ export const generateCompositeImage = async (
   const s3config = await getAWSConfig()
   const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
   try {
-    const params = {
-      Bucket: assetBucket.name,
-      Key: imageKey,
-      Body: buffer,
-      ContentType: 'image/svg+xml',
-    }
-    s3config.send(new PutObjectCommand(params))
+    const upload = new Upload({
+      client: s3config,
+      params: {
+        Bucket: assetBucket.name,
+        Key: imageKey,
+        Body: buffer,
+        ContentType: 'image/svg+xml',
+      },
+    })
+    upload.done()
 
     return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
   } catch (e) {
