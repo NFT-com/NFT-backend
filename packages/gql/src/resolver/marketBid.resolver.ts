@@ -77,7 +77,7 @@ const validOrderMatch = async (
     }
   } catch (err) {
     logger.error('order validation error: ', err)
-    
+
     Sentry.captureMessage(`Order validation error: ${err}`)
     return false
   }
@@ -137,6 +137,8 @@ const validOrderMatch = async (
         nonce: marketBidArgs?.input.nonce,
         auctionType: utils.auctionTypeToInt(marketBidArgs?.input.auctionType),
       },
+      marketAsk.makerAddress,
+      false,
     )
 
     if (!result) {
@@ -144,7 +146,7 @@ const validOrderMatch = async (
     }
   } catch (err) {
     logger.error('order matching validation error: ', err)
-    
+
     Sentry.captureMessage(`Order matching validation error: ${err}`)
     return false
   }

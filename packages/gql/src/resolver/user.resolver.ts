@@ -9,7 +9,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
@@ -238,7 +238,7 @@ const ignoreAssocations = (
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('ignoreAssocations', { loggedInUserId: user.id, wallet: wallet.address, args: args?.eventIdArray })
-  
+
   return args?.eventIdArray.map(e =>
     repositories.event.findOne({ where:
       {
@@ -333,7 +333,7 @@ const getMyPendingAssocations = async (
     .filter((o) => {
       const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
       const latestBlock = clearAllLatestMap[key]
-      
+
       if (!latestBlock) {
         return true
       } else {
@@ -374,7 +374,8 @@ const getMyGenesisKeys = async (
       ),
     )).then(async (wallet) => {
       const address = wallet[0]?.address
-      const cachedGks = await cache.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
+      const cacheKey = `${CacheKeys.CACHED_GKS}_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`
+      const cachedGks = await cache.get(cacheKey)
       let gk_owners
 
       const genesisKeyContract = typechain.GenesisKey__factory.connect(
@@ -400,7 +401,7 @@ const getMyGenesisKeys = async (
           })
         }
 
-        await cache.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
+        await cache.set(cacheKey, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
       } else {
         gk_owners = JSON.parse(cachedGks)
       }
