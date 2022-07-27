@@ -556,7 +556,10 @@ const createUploadStream = (
   const ext = extensionFromFilename(key as string)
   let contentType
   switch(ext.toLowerCase()) {
-  case 'jpg' || 'jpeg' || 'pjpeg' || 'jfif':
+  case 'jpg':
+    contentType = 'image/jpeg'
+    break
+  case 'jpeg':
     contentType = 'image/jpeg'
     break
   case 'png':
