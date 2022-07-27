@@ -6,6 +6,7 @@ import * as typeorm from 'typeorm'
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { getChain } from '@nftcom/gql/config'
+import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
@@ -276,12 +277,14 @@ const updateCollection = async (
             nft.chainId,
             nft.type,
           )
-          logger.debug('new collection', { collectionName, contract: nft.contract })
+          const collectionDeployer = await getCollectionDeployer(nft.contract, nft.chainId)
+          logger.debug('new collection', { collectionName, contract: nft.contract, collectionDeployer })
 
           await repositories.collection.save({
             contract: ethers.utils.getAddress(nft.contract),
             chainId: nft?.chainId || process.env.CHAIN_ID,
             name: collectionName,
+            deployer: collectionDeployer,
           })
         }
 
