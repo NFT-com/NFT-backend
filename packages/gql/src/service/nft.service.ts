@@ -977,7 +977,8 @@ export const updateNFTsForAssociatedWallet = async (
   profileId: string,
   wallet: entity.Wallet,
 ): Promise<void> => {
-  const cachedData = await cache.get(`nfts_${wallet.chainId}_${wallet.id}_${wallet.userId}`)
+  const cacheKey = `updateNFTsForAssociatedWallet_${wallet.chainId}_${wallet.id}_${wallet.userId}`
+  const cachedData = await cache.get(cacheKey)
   if (!cachedData) {
     await checkNFTContractAddresses(
       wallet.userId,
@@ -1000,7 +1001,7 @@ export const updateNFTsForAssociatedWallet = async (
         chainId: wallet.chainId,
       },
     })
-    await cache.set(`nfts_${wallet.chainId}_${wallet.id}_${wallet.userId}`, nfts.length.toString(), 'EX', 60 * 10)
+    await cache.set(cacheKey, nfts.length.toString(), 'EX', 60 * 10)
   } else return
 }
 

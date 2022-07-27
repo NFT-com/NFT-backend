@@ -468,7 +468,7 @@ const updateNFTsForAssociatedAddresses = async (
     if (!addresses.length) {
       return `No associated addresses of ${profile.url}`
     }
-    await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 30)
+    await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
     // update associated addresses with the latest updates
     await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
   }
