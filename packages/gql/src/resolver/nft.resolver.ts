@@ -424,6 +424,7 @@ export const saveProfileScore = async (
     await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
   } catch (err) {
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
+    return err
   }
 }
 
@@ -443,6 +444,7 @@ const updateGKIconVisibleStatus = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+    return err
   }
 }
 
@@ -605,6 +607,7 @@ const updateNFTsForProfile = (
       })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
+    return err
   }
 }
 
@@ -633,6 +636,7 @@ const updateAssociatedAddresses = async (
     return { message }
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
+    return err
   }
 }
 
@@ -765,6 +769,7 @@ const getExternalListings = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getExternalListings: ${err}`)
+    return err
   }
 }
 
@@ -778,7 +783,9 @@ export const refreshNft = async (
     logger.debug('refreshNft', { id: args?.id, chainId: args?.chainId })
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
+
     initiateWeb3(chainId)
+
     const cacheKey = `${CacheKeys.REFRESH_NFT}_${chainId}_${args?.id}`
     const cachedData = await cache.get(cacheKey)
     if (cachedData) {
@@ -790,8 +797,10 @@ export const refreshNft = async (
           chainId,
         },
       })
+
       if (nft) {
         const refreshedNFT = await refreshNFTMetadata(nft)
+
         await cache.set(
           cacheKey,
           JSON.stringify(refreshedNFT),
@@ -808,6 +817,7 @@ export const refreshNft = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNft: ${err}`)
+    return err
   }
 }
 
@@ -837,6 +847,7 @@ export const refreshNFTOrder = async (  _: any,
     return 'Added to queue! Check back shortly!'
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
+    return err
   }
   return ''
 }
