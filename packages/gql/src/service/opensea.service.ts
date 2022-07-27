@@ -586,7 +586,7 @@ const retrieveOffersInBatches = async (
     offerBaseUrl,
     chainId,
   )
-  const offerInterceptorWyverin = getOpenseaInterceptor(
+  const offerInterceptorWyvern = getOpenseaInterceptor(
     offerBaseUrlWyverin,
     chainId,
   )
@@ -621,7 +621,7 @@ const retrieveOffersInBatches = async (
           const response: AxiosResponse = await offerInterceptor(
             `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
-          const responseWyverin: AxiosResponse = await offerInterceptorWyverin(
+          const responseWyvern: AxiosResponse = await offerInterceptorWyvern(
             `/orders?${queryUrl}&order_by=created_date&order_direction=desc&side=0&order_by=eth_price`,
           )
 
@@ -636,8 +636,8 @@ const retrieveOffersInBatches = async (
               ),
             )
           }
-          if (responseWyverin?.data?.orders?.length) {
-            wyvernOffers = responseWyverin?.data?.orders
+          if (responseWyvern?.data?.orders?.length) {
+            wyvernOffers = responseWyvern?.data?.orders
             offers.push(
               orderEntityBuilder(
                 ProtocolType.Wyvern,
