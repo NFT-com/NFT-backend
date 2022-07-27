@@ -1,13 +1,12 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
+import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
 import { ActivityType, Chain, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
-
-import { getChain } from '../config'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
