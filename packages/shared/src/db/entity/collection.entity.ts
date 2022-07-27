@@ -16,4 +16,7 @@ export class Collection extends BaseEntity {
   @Column({ nullable: true })
   chainId: string
 
+  @Column({ nullable: true })
+  deployer: string
+
 }
