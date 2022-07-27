@@ -3,6 +3,7 @@ old-code
 gql-naming-fn.js
 packages/*/dist
 packages/gql/src/defs/gql.ts
+perftest/**/*.js
 *.config.js
 *.config.ts
 *.test.js

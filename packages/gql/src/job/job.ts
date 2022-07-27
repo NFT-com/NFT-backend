@@ -8,11 +8,6 @@ import {
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 import { _logger } from '@nftcom/shared'
-// import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
-// import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
-// DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
-// import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
-// import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
