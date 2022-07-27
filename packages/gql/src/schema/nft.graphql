@@ -38,6 +38,7 @@ type NFT {
 #  user: User
   wallet: Wallet
   createdAt: DateTime!
+  memo: String
 }
 
 input NFTsInput {
@@ -176,4 +177,6 @@ extend type Mutation {
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!): String!
+  "AUTHENTICATED"
+  updateNFTMemo(id: ID!, memo: String!): NFT!
 }
