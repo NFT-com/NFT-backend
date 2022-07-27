@@ -1,17 +1,20 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
+import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityType, Chain, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
 const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
 const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
+const OPENSEA_TESTNET_WYVERIN_API_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
+const OPENSEA_WYVERIN_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
 
 const LIMIT = 50
 const OPENSEA_LISTING_BATCH_SIZE = 30
@@ -485,7 +488,7 @@ const retrieveListingsInBatches = async (
   batchSize: number,
 ): Promise<any[]> => {
   const listings: any[] = []
-  let batch, queryUrl
+  let batch: string[], queryUrl: string
   const listingBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
     V1_OPENSEA_API_TESTNET_BASE_URL
     : V1_OPENSEA_API_BASE_URL
@@ -511,21 +514,21 @@ const retrieveListingsInBatches = async (
     }
 
     const response: AxiosResponse = await listingInterceptor(
-      `/assets?${queryUrl}&limit=${batchSize}&order_direction=asc&include_orders=true`,
+      `/assets?${queryUrl}&limit=${batchSize}&include_orders=true`,
     )
     if (response?.data?.assets?.length) {
       const assets = response?.data?.assets
       if (assets?.length) {
         for (const asset of assets) {
           const wyvernOrders: WyvernOrder[] | null =  asset?.sell_orders
-          const seaportOrders: WyvernOrder[] | null =  asset?.seaport_sell_orders
+          const seaportOrders: SeaportOrder[] | null =  asset?.seaport_sell_orders
           // wvyern orders - always returns cheapest order
           if (wyvernOrders && Object.keys(wyvernOrders?.[0]).length) {
             listings.push(
               orderEntityBuilder(
                 ProtocolType.Wyvern,
                 ActivityType.Listing,
-                asset?.sell_orders?.[0],
+                wyvernOrders?.[0] as any,
                 chainId,
               ),
             )
@@ -537,7 +540,7 @@ const retrieveListingsInBatches = async (
               orderEntityBuilder(
                 ProtocolType.Seaport,
                 ActivityType.Listing,
-                asset?.seaport_sell_orders?.[0],
+                seaportOrders?.[0] as any,
                 chainId,
               ),
             )
@@ -546,6 +549,7 @@ const retrieveListingsInBatches = async (
       }
     }
     listingQueryParams = [...listingQueryParams.slice(size)]
+    delayCounter++
     if (delayCounter === DELAY_AFTER_BATCH_RUN) {
       await delay(1000)
       delayCounter = 0
@@ -553,6 +557,108 @@ const retrieveListingsInBatches = async (
   }
         
   return listings
+}
+
+/**
+ * Retrieve offers in batches
+ * @param offerQueryParams
+ * @param chainId
+ * @param batchSize
+ */
+const retrieveOffersInBatches = async (
+  offerQueryParams: Map<string, string[]>,
+  chainId: string,
+  batchSize: number,
+): Promise<any[]> => {
+  let batch: string[], queryUrl: string
+  const offers: any[] = []
+
+  const offerBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
+    OPENSEA_API_TESTNET_BASE_URL
+    : OPENSEA_API_BASE_URL
+  
+  const offerBaseUrlWyverin: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
+    OPENSEA_TESTNET_WYVERIN_API_BASE_URL
+    : OPENSEA_WYVERIN_API_BASE_URL
+
+  const offerInterceptor = getOpenseaInterceptor(
+    offerBaseUrl,
+    chainId,
+  )
+  const offerInterceptorWyvern = getOpenseaInterceptor(
+    offerBaseUrlWyverin,
+    chainId,
+  )
+
+  let delayCounter = 0
+  let size: number
+  let wyvernOffers: WyvernOrder[], seaportOffers: SeaportOrder[]
+
+  // contracts exist
+  if (offerQueryParams.size) {
+    // iterate  on contract
+    for (const contract of offerQueryParams.keys()) {
+      // contract has tokens
+      if (offerQueryParams.get(contract).length) {
+        // batches of batchSize tokens
+        let tokens: string[] = offerQueryParams.get(contract)
+        while (tokens.length) {
+          size = batchSize
+          batch = tokens.slice(0, size)
+          queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
+
+          // only executed if query length more than accepted limit by opensea
+          // runs once or twice at most
+          while(queryUrl.length > MAX_QUERY_LENGTH) {
+            size--
+            batch = tokens.slice(0, size)
+            queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
+          }
+
+          const openseaSupportedChainId:string = TESTNET_CHAIN_IDS.includes(chainId)? '4':chainId
+          const chain:Chain =  getChain('ethereum',openseaSupportedChainId)
+          const response: AxiosResponse = await offerInterceptor(
+            `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
+          )
+          const responseWyvern: AxiosResponse = await offerInterceptorWyvern(
+            `/orders?${queryUrl}&order_by=created_date&order_direction=desc&side=0&order_by=eth_price`,
+          )
+
+          if (response?.data?.orders?.length) {
+            seaportOffers = response?.data?.orders
+            offers.push(
+              orderEntityBuilder(
+                ProtocolType.Seaport,
+                ActivityType.Bid,
+                seaportOffers?.[0] as any,
+                chainId,
+              ),
+            )
+          }
+          if (responseWyvern?.data?.orders?.length) {
+            wyvernOffers = responseWyvern?.data?.orders
+            offers.push(
+              orderEntityBuilder(
+                ProtocolType.Wyvern,
+                ActivityType.Bid,
+                wyvernOffers?.[0] as any,
+                chainId,
+              ),
+            )
+          }
+
+          tokens = [...tokens.slice(size)]
+          delayCounter++
+          // add delay -> two calls
+          if (delayCounter === DELAY_AFTER_BATCH_RUN/2) {
+            await delay(1000)
+            delayCounter = 0
+          }
+        }
+      }
+    }
+  }
+  return offers
 }
 
 /**
@@ -575,7 +681,7 @@ export const retrieveMultipleOrdersOpensea = async (
   try {
     if (openseaMultiOrderRequest?.length) {
       const listingQueryParams: Array<string> = []
-      let offerQueryParams: Map<string, Array<string>>
+      const offerQueryParams: Map<string, Array<string>> = new Map()
       for (const openseaReq of openseaMultiOrderRequest) {
         // listing query builder
         listingQueryParams.push(
@@ -586,7 +692,7 @@ export const retrieveMultipleOrdersOpensea = async (
           // offer query builder
           if (!offerQueryParams.has(openseaReq.contract)) {
             offerQueryParams.set(openseaReq.contract,
-              [`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`],
+              [],
             )
           }
           offerQueryParams.get(openseaReq.contract)?.push(
@@ -594,22 +700,23 @@ export const retrieveMultipleOrdersOpensea = async (
           )
         }
       }
-  
+
+      // listings 
       if (listingQueryParams.length) {
         responseAggregator.listings = await retrieveListingsInBatches(
           listingQueryParams,
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
         )
-        
-        if (includeOffers) {
-          // Offers - Comments to be replaced in the offer ticket
-          // Seaport
-          // API:v2/orders/rinkeby/seaport/offers
-          // Wyvern
-          // API: https://api.opensea.io/wyvern/v1/orders
-  
-        }
+      }
+
+      // offers
+      if (includeOffers && offerQueryParams.size) {
+        responseAggregator.offers = await retrieveOffersInBatches(
+          offerQueryParams,
+          chainId,
+          OPENSEA_LISTING_BATCH_SIZE,
+        )
       }
     }
   } catch (err) {
