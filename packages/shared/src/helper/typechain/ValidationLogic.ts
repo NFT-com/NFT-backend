@@ -84,7 +84,7 @@ export interface ValidationLogicInterface extends utils.Interface {
     "upgradeTo(address)": FunctionFragment;
     "upgradeToAndCall(address,bytes)": FunctionFragment;
     "validateBuyNow((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),address)": FunctionFragment;
-    "validateMatch_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
+    "validateMatch_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),address,bool)": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -115,7 +115,12 @@ export interface ValidationLogicInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "validateMatch_",
-    values: [LibSignature.OrderStruct, LibSignature.OrderStruct]
+    values: [
+      LibSignature.OrderStruct,
+      LibSignature.OrderStruct,
+      string,
+      boolean
+    ]
   ): string;
 
   decodeFunctionResult(
@@ -250,6 +255,8 @@ export interface ValidationLogic extends BaseContract {
     validateMatch_(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
+      sender: string,
+      viewOnly: boolean,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
   };
@@ -294,6 +301,8 @@ export interface ValidationLogic extends BaseContract {
   validateMatch_(
     sellOrder: LibSignature.OrderStruct,
     buyOrder: LibSignature.OrderStruct,
+    sender: string,
+    viewOnly: boolean,
     overrides?: CallOverrides
   ): Promise<boolean>;
 
@@ -334,6 +343,8 @@ export interface ValidationLogic extends BaseContract {
     validateMatch_(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
+      sender: string,
+      viewOnly: boolean,
       overrides?: CallOverrides
     ): Promise<boolean>;
   };
@@ -407,6 +418,8 @@ export interface ValidationLogic extends BaseContract {
     validateMatch_(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
+      sender: string,
+      viewOnly: boolean,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
@@ -452,6 +465,8 @@ export interface ValidationLogic extends BaseContract {
     validateMatch_(
       sellOrder: LibSignature.OrderStruct,
       buyOrder: LibSignature.OrderStruct,
+      sender: string,
+      viewOnly: boolean,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };

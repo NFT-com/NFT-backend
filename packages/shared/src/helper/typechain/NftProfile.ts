@@ -24,10 +24,11 @@ export interface NftProfileInterface extends utils.Interface {
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "createProfile(address,string,uint256)": FunctionFragment;
-    "extendRent(string,uint256)": FunctionFragment;
+    "extendLicense(string,uint256,address)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
+    "getExpiryTimeline(string)": FunctionFragment;
     "getTokenId(string)": FunctionFragment;
-    "initialize(string,string,address)": FunctionFragment;
+    "initialize(string,string,address,string)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
     "multiOwnerOf(uint256,uint256)": FunctionFragment;
     "name()": FunctionFragment;
@@ -42,9 +43,9 @@ export interface NftProfileInterface extends utils.Interface {
     "setApprovalForAll(address,bool)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
     "setProfileAuction(address)": FunctionFragment;
+    "setProtocolFee(uint96)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
-    "tokenIdsOwned(address)": FunctionFragment;
     "tokenURI(uint256)": FunctionFragment;
     "tokenUsed(string)": FunctionFragment;
     "totalSupply()": FunctionFragment;
@@ -64,17 +65,21 @@ export interface NftProfileInterface extends utils.Interface {
     values: [string, string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "extendRent",
-    values: [string, BigNumberish]
+    functionFragment: "extendLicense",
+    values: [string, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "getApproved",
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "getExpiryTimeline",
+    values: [string]
+  ): string;
   encodeFunctionData(functionFragment: "getTokenId", values: [string]): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string, string]
+    values: [string, string, string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "isApprovedForAll",
@@ -124,14 +129,14 @@ export interface NftProfileInterface extends utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
+    functionFragment: "setProtocolFee",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "tokenIdsOwned",
-    values: [string]
-  ): string;
   encodeFunctionData(
     functionFragment: "tokenURI",
     values: [BigNumberish]
@@ -161,9 +166,16 @@ export interface NftProfileInterface extends utils.Interface {
     functionFragment: "createProfile",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "extendRent", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "extendLicense",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getExpiryTimeline",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getTokenId", data: BytesLike): Result;
@@ -213,14 +225,14 @@ export interface NftProfileInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "setProtocolFee",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "tokenIdsOwned",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokenUsed", data: BytesLike): Result;
   decodeFunctionResult(
@@ -246,6 +258,8 @@ export interface NftProfileInterface extends utils.Interface {
     "Approval(address,address,uint256)": EventFragment;
     "ApprovalForAll(address,address,bool)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
+    "ExtendExpiry(string,uint256)": EventFragment;
+    "NewFee(uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
     "Upgraded(address)": EventFragment;
   };
@@ -254,6 +268,8 @@ export interface NftProfileInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ApprovalForAll"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ExtendExpiry"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewFee"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
 }
@@ -282,6 +298,17 @@ export type ApprovalForAllEventFilter = TypedEventFilter<ApprovalForAllEvent>;
 export type BeaconUpgradedEvent = TypedEvent<[string], { beacon: string }>;
 
 export type BeaconUpgradedEventFilter = TypedEventFilter<BeaconUpgradedEvent>;
+
+export type ExtendExpiryEvent = TypedEvent<
+  [string, BigNumber],
+  { _profileURI: string; _extendedExpiry: BigNumber }
+>;
+
+export type ExtendExpiryEventFilter = TypedEventFilter<ExtendExpiryEvent>;
+
+export type NewFeeEvent = TypedEvent<[BigNumber], { _fee: BigNumber }>;
+
+export type NewFeeEventFilter = TypedEventFilter<NewFeeEvent>;
 
 export type TransferEvent = TypedEvent<
   [string, string, BigNumber],
@@ -333,13 +360,14 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
-      _expiry: BigNumberish,
+      _duration: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    extendRent(
+    extendLicense(
       _profileURI: string,
       _duration: BigNumberish,
+      _licensee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -347,6 +375,11 @@ export interface NftProfile extends BaseContract {
       tokenId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[string]>;
+
+    getExpiryTimeline(
+      _string: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     getTokenId(
       _string: string,
@@ -357,6 +390,7 @@ export interface NftProfile extends BaseContract {
       name: string,
       symbol: string,
       _nftErc20Contract: string,
+      baseURI: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -427,17 +461,17 @@ export interface NftProfile extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    setProtocolFee(
+      _fee: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
     symbol(overrides?: CallOverrides): Promise<[string]>;
-
-    tokenIdsOwned(
-      user: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean[]]>;
 
     tokenURI(
       tokenId: BigNumberish,
@@ -484,13 +518,14 @@ export interface NftProfile extends BaseContract {
   createProfile(
     _receiver: string,
     _profileURI: string,
-    _expiry: BigNumberish,
+    _duration: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  extendRent(
+  extendLicense(
     _profileURI: string,
     _duration: BigNumberish,
+    _licensee: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -499,12 +534,18 @@ export interface NftProfile extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
+  getExpiryTimeline(
+    _string: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
   getTokenId(_string: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   initialize(
     name: string,
     symbol: string,
     _nftErc20Contract: string,
+    baseURI: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -572,14 +613,17 @@ export interface NftProfile extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  setProtocolFee(
+    _fee: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   supportsInterface(
     interfaceId: BytesLike,
     overrides?: CallOverrides
   ): Promise<boolean>;
 
   symbol(overrides?: CallOverrides): Promise<string>;
-
-  tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<boolean[]>;
 
   tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -623,13 +667,14 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
-      _expiry: BigNumberish,
+      _duration: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    extendRent(
+    extendLicense(
       _profileURI: string,
       _duration: BigNumberish,
+      _licensee: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -638,12 +683,18 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
+    getExpiryTimeline(
+      _string: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getTokenId(_string: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
       name: string,
       symbol: string,
       _nftErc20Contract: string,
+      baseURI: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -708,14 +759,17 @@ export interface NftProfile extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    setProtocolFee(
+      _fee: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
     symbol(overrides?: CallOverrides): Promise<string>;
-
-    tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<boolean[]>;
 
     tokenURI(tokenId: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -785,6 +839,18 @@ export interface NftProfile extends BaseContract {
     ): BeaconUpgradedEventFilter;
     BeaconUpgraded(beacon?: string | null): BeaconUpgradedEventFilter;
 
+    "ExtendExpiry(string,uint256)"(
+      _profileURI?: null,
+      _extendedExpiry?: null
+    ): ExtendExpiryEventFilter;
+    ExtendExpiry(
+      _profileURI?: null,
+      _extendedExpiry?: null
+    ): ExtendExpiryEventFilter;
+
+    "NewFee(uint256)"(_fee?: null): NewFeeEventFilter;
+    NewFee(_fee?: null): NewFeeEventFilter;
+
     "Transfer(address,address,uint256)"(
       from?: string | null,
       to?: string | null,
@@ -812,18 +878,24 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
-      _expiry: BigNumberish,
+      _duration: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    extendRent(
+    extendLicense(
       _profileURI: string,
       _duration: BigNumberish,
+      _licensee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     getApproved(
       tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getExpiryTimeline(
+      _string: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -833,6 +905,7 @@ export interface NftProfile extends BaseContract {
       name: string,
       symbol: string,
       _nftErc20Contract: string,
+      baseURI: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -906,14 +979,17 @@ export interface NftProfile extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    setProtocolFee(
+      _fee: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     symbol(overrides?: CallOverrides): Promise<BigNumber>;
-
-    tokenIdsOwned(user: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     tokenURI(
       tokenId: BigNumberish,
@@ -964,18 +1040,24 @@ export interface NftProfile extends BaseContract {
     createProfile(
       _receiver: string,
       _profileURI: string,
-      _expiry: BigNumberish,
+      _duration: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    extendRent(
+    extendLicense(
       _profileURI: string,
       _duration: BigNumberish,
+      _licensee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     getApproved(
       tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getExpiryTimeline(
+      _string: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -988,6 +1070,7 @@ export interface NftProfile extends BaseContract {
       name: string,
       symbol: string,
       _nftErc20Contract: string,
+      baseURI: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1063,17 +1146,17 @@ export interface NftProfile extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    setProtocolFee(
+      _fee: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    tokenIdsOwned(
-      user: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
 
     tokenURI(
       tokenId: BigNumberish,

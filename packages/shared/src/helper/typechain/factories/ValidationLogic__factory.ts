@@ -580,6 +580,16 @@ const _abi = [
         name: "buyOrder",
         type: "tuple",
       },
+      {
+        internalType: "address",
+        name: "sender",
+        type: "address",
+      },
+      {
+        internalType: "bool",
+        name: "viewOnly",
+        type: "bool",
+      },
     ],
     name: "validateMatch_",
     outputs: [
@@ -589,7 +599,7 @@ const _abi = [
         type: "bool",
       },
     ],
-    stateMutability: "view",
+    stateMutability: "pure",
     type: "function",
   },
 ];

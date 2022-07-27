@@ -86,4 +86,7 @@ export class Profile extends BaseEntity {
   })
   profileView: ProfileViewType
 
+  @Column('json', { nullable: true, default: [] })
+  associatedAddresses: string[]
+
 }

@@ -21,10 +21,11 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface ProfileAuctionInterface extends utils.Interface {
   contractName: "ProfileAuction";
   functions: {
-    "extendRent(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
+    "cancelledOrFinalized(bytes32)": FunctionFragment;
+    "extendLicense(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "genKeyWhitelistOnly()": FunctionFragment;
     "genesisKeyClaimNumber(uint256)": FunctionFragment;
-    "genesisKeyClaimProfile(string,uint256,address)": FunctionFragment;
+    "genesisKeyClaimProfile(string,uint256,address,bytes32,bytes)": FunctionFragment;
     "genesisKeyContract()": FunctionFragment;
     "genesisStakingContract()": FunctionFragment;
     "getFee(string,uint256)": FunctionFragment;
@@ -32,25 +33,38 @@ export interface ProfileAuctionInterface extends utils.Interface {
     "initialize(address,address,address,address,address,address,address)": FunctionFragment;
     "lengthPremium(uint256)": FunctionFragment;
     "nftBuyer()": FunctionFragment;
+    "nftErc20Contract()": FunctionFragment;
     "nftProfile()": FunctionFragment;
     "nftProfileHelperAddress()": FunctionFragment;
-    "nftToken()": FunctionFragment;
+    "ownProfile(string)": FunctionFragment;
+    "ownedProfileStake(string)": FunctionFragment;
     "owner()": FunctionFragment;
-    "publicFee()": FunctionFragment;
-    "publicMint(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
+    "publicMint(string,uint256,uint8,bytes32,bytes32,bytes32,bytes)": FunctionFragment;
     "publicMintBool()": FunctionFragment;
     "purchaseExpiredProfile(string,uint256,uint8,bytes32,bytes32)": FunctionFragment;
+    "redeemProfile(string)": FunctionFragment;
     "setGenKeyWhitelistOnly(bool)": FunctionFragment;
+    "setGovernor(address)": FunctionFragment;
     "setLengthPremium(uint256,uint256)": FunctionFragment;
     "setOwner(address)": FunctionFragment;
-    "setPublicFee(uint256)": FunctionFragment;
     "setPublicMint(bool)": FunctionFragment;
+    "setSigner(address)": FunctionFragment;
+    "setYearlyFee(uint96)": FunctionFragment;
+    "setYearsToOwn(uint96)": FunctionFragment;
+    "signerAddress()": FunctionFragment;
     "upgradeTo(address)": FunctionFragment;
     "upgradeToAndCall(address,bytes)": FunctionFragment;
+    "verifySignature(bytes32,bytes)": FunctionFragment;
+    "yearlyFee()": FunctionFragment;
+    "yearsToOwn()": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "extendRent",
+    functionFragment: "cancelledOrFinalized",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "extendLicense",
     values: [string, BigNumberish, BigNumberish, BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
@@ -63,7 +77,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "genesisKeyClaimProfile",
-    values: [string, BigNumberish, string]
+    values: [string, BigNumberish, string, BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "genesisKeyContract",
@@ -88,6 +102,10 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "nftBuyer", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "nftErc20Contract",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "nftProfile",
     values?: undefined
   ): string;
@@ -95,12 +113,23 @@ export interface ProfileAuctionInterface extends utils.Interface {
     functionFragment: "nftProfileHelperAddress",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "nftToken", values?: undefined): string;
+  encodeFunctionData(functionFragment: "ownProfile", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "ownedProfileStake",
+    values: [string]
+  ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(functionFragment: "publicFee", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "publicMint",
-    values: [string, BigNumberish, BigNumberish, BytesLike, BytesLike]
+    values: [
+      string,
+      BigNumberish,
+      BigNumberish,
+      BytesLike,
+      BytesLike,
+      BytesLike,
+      BytesLike
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "publicMintBool",
@@ -111,29 +140,59 @@ export interface ProfileAuctionInterface extends utils.Interface {
     values: [string, BigNumberish, BigNumberish, BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "redeemProfile",
+    values: [string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setGenKeyWhitelistOnly",
     values: [boolean]
   ): string;
+  encodeFunctionData(functionFragment: "setGovernor", values: [string]): string;
   encodeFunctionData(
     functionFragment: "setLengthPremium",
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "setOwner", values: [string]): string;
   encodeFunctionData(
-    functionFragment: "setPublicFee",
+    functionFragment: "setPublicMint",
+    values: [boolean]
+  ): string;
+  encodeFunctionData(functionFragment: "setSigner", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "setYearlyFee",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "setPublicMint",
-    values: [boolean]
+    functionFragment: "setYearsToOwn",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "signerAddress",
+    values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "upgradeTo", values: [string]): string;
   encodeFunctionData(
     functionFragment: "upgradeToAndCall",
     values: [string, BytesLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "verifySignature",
+    values: [BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "yearlyFee", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "yearsToOwn",
+    values?: undefined
+  ): string;
 
-  decodeFunctionResult(functionFragment: "extendRent", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "cancelledOrFinalized",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "extendLicense",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "genKeyWhitelistOnly",
     data: BytesLike
@@ -162,14 +221,21 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "nftBuyer", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "nftErc20Contract",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "nftProfile", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "nftProfileHelperAddress",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "nftToken", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "ownProfile", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "ownedProfileStake",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "publicFee", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "publicMint", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "publicMintBool",
@@ -180,7 +246,15 @@ export interface ProfileAuctionInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "redeemProfile",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setGenKeyWhitelistOnly",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setGovernor",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -189,11 +263,20 @@ export interface ProfileAuctionInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "setPublicFee",
+    functionFragment: "setPublicMint",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "setSigner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "setYearlyFee",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setPublicMint",
+    functionFragment: "setYearsToOwn",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "signerAddress",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "upgradeTo", data: BytesLike): Result;
@@ -201,20 +284,34 @@ export interface ProfileAuctionInterface extends utils.Interface {
     functionFragment: "upgradeToAndCall",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "verifySignature",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "yearlyFee", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "yearsToOwn", data: BytesLike): Result;
 
   events: {
     "AdminChanged(address,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
-    "ExtendRent(address,string,uint256,uint256,bool)": EventFragment;
-    "MintedProfile(address,string,uint256,uint256)": EventFragment;
+    "ExtendLicense(address,string,uint256,uint256,bool)": EventFragment;
+    "MintedProfile(address,string,uint256,uint256,uint256)": EventFragment;
+    "NewLengthPremium(uint256,uint256)": EventFragment;
+    "NewYearlyFee(uint256)": EventFragment;
+    "UpdatedProfileStake(string,uint256)": EventFragment;
     "Upgraded(address)": EventFragment;
+    "YearsToOwn(uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "ExtendRent"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ExtendLicense"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MintedProfile"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewLengthPremium"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewYearlyFee"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "UpdatedProfileStake"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "YearsToOwn"): EventFragment;
 }
 
 export type AdminChangedEvent = TypedEvent<
@@ -228,7 +325,7 @@ export type BeaconUpgradedEvent = TypedEvent<[string], { beacon: string }>;
 
 export type BeaconUpgradedEventFilter = TypedEventFilter<BeaconUpgradedEvent>;
 
-export type ExtendRentEvent = TypedEvent<
+export type ExtendLicenseEvent = TypedEvent<
   [string, string, BigNumber, BigNumber, boolean],
   {
     _receiver: string;
@@ -239,18 +336,48 @@ export type ExtendRentEvent = TypedEvent<
   }
 >;
 
-export type ExtendRentEventFilter = TypedEventFilter<ExtendRentEvent>;
+export type ExtendLicenseEventFilter = TypedEventFilter<ExtendLicenseEvent>;
 
 export type MintedProfileEvent = TypedEvent<
-  [string, string, BigNumber, BigNumber],
-  { _user: string; _val: string; _duration: BigNumber; _fee: BigNumber }
+  [string, string, BigNumber, BigNumber, BigNumber],
+  {
+    _user: string;
+    _val: string;
+    tokenId: BigNumber;
+    _duration: BigNumber;
+    _fee: BigNumber;
+  }
 >;
 
 export type MintedProfileEventFilter = TypedEventFilter<MintedProfileEvent>;
 
+export type NewLengthPremiumEvent = TypedEvent<
+  [BigNumber, BigNumber],
+  { _length: BigNumber; _premium: BigNumber }
+>;
+
+export type NewLengthPremiumEventFilter =
+  TypedEventFilter<NewLengthPremiumEvent>;
+
+export type NewYearlyFeeEvent = TypedEvent<[BigNumber], { _fee: BigNumber }>;
+
+export type NewYearlyFeeEventFilter = TypedEventFilter<NewYearlyFeeEvent>;
+
+export type UpdatedProfileStakeEvent = TypedEvent<
+  [string, BigNumber],
+  { _profileUrl: string; _stake: BigNumber }
+>;
+
+export type UpdatedProfileStakeEventFilter =
+  TypedEventFilter<UpdatedProfileStakeEvent>;
+
 export type UpgradedEvent = TypedEvent<[string], { implementation: string }>;
 
 export type UpgradedEventFilter = TypedEventFilter<UpgradedEvent>;
+
+export type YearsToOwnEvent = TypedEvent<[BigNumber], { _years: BigNumber }>;
+
+export type YearsToOwnEventFilter = TypedEventFilter<YearsToOwnEvent>;
 
 export interface ProfileAuction extends BaseContract {
   contractName: "ProfileAuction";
@@ -280,7 +407,12 @@ export interface ProfileAuction extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    extendRent(
+    cancelledOrFinalized(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    extendLicense(
       profileUrl: string,
       duration: BigNumberish,
       v: BigNumberish,
@@ -300,6 +432,8 @@ export interface ProfileAuction extends BaseContract {
       profileUrl: string,
       tokenId: BigNumberish,
       recipient: string,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -316,7 +450,7 @@ export interface ProfileAuction extends BaseContract {
     governor(overrides?: CallOverrides): Promise<[string]>;
 
     initialize(
-      _nftToken: string,
+      _nftErc20Contract: string,
       _nftProfile: string,
       _governor: string,
       _nftProfileHelperAddress: string,
@@ -333,15 +467,23 @@ export interface ProfileAuction extends BaseContract {
 
     nftBuyer(overrides?: CallOverrides): Promise<[string]>;
 
+    nftErc20Contract(overrides?: CallOverrides): Promise<[string]>;
+
     nftProfile(overrides?: CallOverrides): Promise<[string]>;
 
     nftProfileHelperAddress(overrides?: CallOverrides): Promise<[string]>;
 
-    nftToken(overrides?: CallOverrides): Promise<[string]>;
+    ownProfile(
+      profileUrl: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    ownedProfileStake(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
-
-    publicFee(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     publicMint(
       profileUrl: string,
@@ -349,6 +491,8 @@ export interface ProfileAuction extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -363,8 +507,18 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    redeemProfile(
+      profileUrl: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setGovernor(
+      _new: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -379,15 +533,27 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    setPublicFee(
-      _fee: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     setPublicMint(
       _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    setSigner(
+      _signer: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setYearlyFee(
+      _fee: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setYearsToOwn(
+      _years: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    signerAddress(overrides?: CallOverrides): Promise<[string]>;
 
     upgradeTo(
       newImplementation: string,
@@ -399,9 +565,24 @@ export interface ProfileAuction extends BaseContract {
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    verifySignature(
+      hash: BytesLike,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    yearlyFee(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    yearsToOwn(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
-  extendRent(
+  cancelledOrFinalized(
+    arg0: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  extendLicense(
     profileUrl: string,
     duration: BigNumberish,
     v: BigNumberish,
@@ -421,6 +602,8 @@ export interface ProfileAuction extends BaseContract {
     profileUrl: string,
     tokenId: BigNumberish,
     recipient: string,
+    hash: BytesLike,
+    signature: BytesLike,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -437,7 +620,7 @@ export interface ProfileAuction extends BaseContract {
   governor(overrides?: CallOverrides): Promise<string>;
 
   initialize(
-    _nftToken: string,
+    _nftErc20Contract: string,
     _nftProfile: string,
     _governor: string,
     _nftProfileHelperAddress: string,
@@ -454,15 +637,23 @@ export interface ProfileAuction extends BaseContract {
 
   nftBuyer(overrides?: CallOverrides): Promise<string>;
 
+  nftErc20Contract(overrides?: CallOverrides): Promise<string>;
+
   nftProfile(overrides?: CallOverrides): Promise<string>;
 
   nftProfileHelperAddress(overrides?: CallOverrides): Promise<string>;
 
-  nftToken(overrides?: CallOverrides): Promise<string>;
+  ownProfile(
+    profileUrl: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  ownedProfileStake(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   owner(overrides?: CallOverrides): Promise<string>;
-
-  publicFee(overrides?: CallOverrides): Promise<BigNumber>;
 
   publicMint(
     profileUrl: string,
@@ -470,6 +661,8 @@ export interface ProfileAuction extends BaseContract {
     v: BigNumberish,
     r: BytesLike,
     s: BytesLike,
+    hash: BytesLike,
+    signature: BytesLike,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -484,8 +677,18 @@ export interface ProfileAuction extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  redeemProfile(
+    profileUrl: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setGenKeyWhitelistOnly(
     _genKeyWhitelistOnly: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setGovernor(
+    _new: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -500,15 +703,27 @@ export interface ProfileAuction extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  setPublicFee(
-    _fee: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   setPublicMint(
     _val: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  setSigner(
+    _signer: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setYearlyFee(
+    _fee: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setYearsToOwn(
+    _years: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  signerAddress(overrides?: CallOverrides): Promise<string>;
 
   upgradeTo(
     newImplementation: string,
@@ -521,8 +736,23 @@ export interface ProfileAuction extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  verifySignature(
+    hash: BytesLike,
+    signature: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  yearlyFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+  yearsToOwn(overrides?: CallOverrides): Promise<BigNumber>;
+
   callStatic: {
-    extendRent(
+    cancelledOrFinalized(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    extendLicense(
       profileUrl: string,
       duration: BigNumberish,
       v: BigNumberish,
@@ -542,6 +772,8 @@ export interface ProfileAuction extends BaseContract {
       profileUrl: string,
       tokenId: BigNumberish,
       recipient: string,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -558,7 +790,7 @@ export interface ProfileAuction extends BaseContract {
     governor(overrides?: CallOverrides): Promise<string>;
 
     initialize(
-      _nftToken: string,
+      _nftErc20Contract: string,
       _nftProfile: string,
       _governor: string,
       _nftProfileHelperAddress: string,
@@ -575,15 +807,20 @@ export interface ProfileAuction extends BaseContract {
 
     nftBuyer(overrides?: CallOverrides): Promise<string>;
 
+    nftErc20Contract(overrides?: CallOverrides): Promise<string>;
+
     nftProfile(overrides?: CallOverrides): Promise<string>;
 
     nftProfileHelperAddress(overrides?: CallOverrides): Promise<string>;
 
-    nftToken(overrides?: CallOverrides): Promise<string>;
+    ownProfile(profileUrl: string, overrides?: CallOverrides): Promise<void>;
+
+    ownedProfileStake(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<string>;
-
-    publicFee(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicMint(
       profileUrl: string,
@@ -591,6 +828,8 @@ export interface ProfileAuction extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -605,10 +844,14 @@ export interface ProfileAuction extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    redeemProfile(profileUrl: string, overrides?: CallOverrides): Promise<void>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    setGovernor(_new: string, overrides?: CallOverrides): Promise<void>;
 
     setLengthPremium(
       _length: BigNumberish,
@@ -618,9 +861,18 @@ export interface ProfileAuction extends BaseContract {
 
     setOwner(_new: string, overrides?: CallOverrides): Promise<void>;
 
-    setPublicFee(_fee: BigNumberish, overrides?: CallOverrides): Promise<void>;
-
     setPublicMint(_val: boolean, overrides?: CallOverrides): Promise<void>;
+
+    setSigner(_signer: string, overrides?: CallOverrides): Promise<void>;
+
+    setYearlyFee(_fee: BigNumberish, overrides?: CallOverrides): Promise<void>;
+
+    setYearsToOwn(
+      _years: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    signerAddress(overrides?: CallOverrides): Promise<string>;
 
     upgradeTo(
       newImplementation: string,
@@ -632,6 +884,16 @@ export interface ProfileAuction extends BaseContract {
       data: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    verifySignature(
+      hash: BytesLike,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    yearlyFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+    yearsToOwn(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {
@@ -649,40 +911,71 @@ export interface ProfileAuction extends BaseContract {
     ): BeaconUpgradedEventFilter;
     BeaconUpgraded(beacon?: string | null): BeaconUpgradedEventFilter;
 
-    "ExtendRent(address,string,uint256,uint256,bool)"(
+    "ExtendLicense(address,string,uint256,uint256,bool)"(
       _receiver?: null,
       _profileUrl?: null,
       _duration?: null,
       _fee?: null,
       _expired?: null
-    ): ExtendRentEventFilter;
-    ExtendRent(
+    ): ExtendLicenseEventFilter;
+    ExtendLicense(
       _receiver?: null,
       _profileUrl?: null,
       _duration?: null,
       _fee?: null,
       _expired?: null
-    ): ExtendRentEventFilter;
+    ): ExtendLicenseEventFilter;
 
-    "MintedProfile(address,string,uint256,uint256)"(
+    "MintedProfile(address,string,uint256,uint256,uint256)"(
       _user?: null,
       _val?: null,
+      tokenId?: null,
       _duration?: null,
       _fee?: null
     ): MintedProfileEventFilter;
     MintedProfile(
       _user?: null,
       _val?: null,
+      tokenId?: null,
       _duration?: null,
       _fee?: null
     ): MintedProfileEventFilter;
 
+    "NewLengthPremium(uint256,uint256)"(
+      _length?: null,
+      _premium?: null
+    ): NewLengthPremiumEventFilter;
+    NewLengthPremium(
+      _length?: null,
+      _premium?: null
+    ): NewLengthPremiumEventFilter;
+
+    "NewYearlyFee(uint256)"(_fee?: null): NewYearlyFeeEventFilter;
+    NewYearlyFee(_fee?: null): NewYearlyFeeEventFilter;
+
+    "UpdatedProfileStake(string,uint256)"(
+      _profileUrl?: null,
+      _stake?: null
+    ): UpdatedProfileStakeEventFilter;
+    UpdatedProfileStake(
+      _profileUrl?: null,
+      _stake?: null
+    ): UpdatedProfileStakeEventFilter;
+
     "Upgraded(address)"(implementation?: string | null): UpgradedEventFilter;
     Upgraded(implementation?: string | null): UpgradedEventFilter;
+
+    "YearsToOwn(uint256)"(_years?: null): YearsToOwnEventFilter;
+    YearsToOwn(_years?: null): YearsToOwnEventFilter;
   };
 
   estimateGas: {
-    extendRent(
+    cancelledOrFinalized(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    extendLicense(
       profileUrl: string,
       duration: BigNumberish,
       v: BigNumberish,
@@ -702,6 +995,8 @@ export interface ProfileAuction extends BaseContract {
       profileUrl: string,
       tokenId: BigNumberish,
       recipient: string,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -718,7 +1013,7 @@ export interface ProfileAuction extends BaseContract {
     governor(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
-      _nftToken: string,
+      _nftErc20Contract: string,
       _nftProfile: string,
       _governor: string,
       _nftProfileHelperAddress: string,
@@ -735,15 +1030,23 @@ export interface ProfileAuction extends BaseContract {
 
     nftBuyer(overrides?: CallOverrides): Promise<BigNumber>;
 
+    nftErc20Contract(overrides?: CallOverrides): Promise<BigNumber>;
+
     nftProfile(overrides?: CallOverrides): Promise<BigNumber>;
 
     nftProfileHelperAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
-    nftToken(overrides?: CallOverrides): Promise<BigNumber>;
+    ownProfile(
+      profileUrl: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    ownedProfileStake(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    publicFee(overrides?: CallOverrides): Promise<BigNumber>;
 
     publicMint(
       profileUrl: string,
@@ -751,6 +1054,8 @@ export interface ProfileAuction extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -765,8 +1070,18 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    redeemProfile(
+      profileUrl: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setGovernor(
+      _new: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -781,15 +1096,27 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    setPublicFee(
-      _fee: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     setPublicMint(
       _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    setSigner(
+      _signer: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setYearlyFee(
+      _fee: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setYearsToOwn(
+      _years: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    signerAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
     upgradeTo(
       newImplementation: string,
@@ -801,10 +1128,25 @@ export interface ProfileAuction extends BaseContract {
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    verifySignature(
+      hash: BytesLike,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    yearlyFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+    yearsToOwn(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    extendRent(
+    cancelledOrFinalized(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    extendLicense(
       profileUrl: string,
       duration: BigNumberish,
       v: BigNumberish,
@@ -826,6 +1168,8 @@ export interface ProfileAuction extends BaseContract {
       profileUrl: string,
       tokenId: BigNumberish,
       recipient: string,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -846,7 +1190,7 @@ export interface ProfileAuction extends BaseContract {
     governor(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     initialize(
-      _nftToken: string,
+      _nftErc20Contract: string,
       _nftProfile: string,
       _governor: string,
       _nftProfileHelperAddress: string,
@@ -863,17 +1207,25 @@ export interface ProfileAuction extends BaseContract {
 
     nftBuyer(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    nftErc20Contract(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     nftProfile(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     nftProfileHelperAddress(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    nftToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    ownProfile(
+      profileUrl: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    ownedProfileStake(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    publicFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     publicMint(
       profileUrl: string,
@@ -881,6 +1233,8 @@ export interface ProfileAuction extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      hash: BytesLike,
+      signature: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -895,8 +1249,18 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    redeemProfile(
+      profileUrl: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setGenKeyWhitelistOnly(
       _genKeyWhitelistOnly: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setGovernor(
+      _new: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -911,15 +1275,27 @@ export interface ProfileAuction extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    setPublicFee(
-      _fee: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     setPublicMint(
       _val: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    setSigner(
+      _signer: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setYearlyFee(
+      _fee: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setYearsToOwn(
+      _years: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    signerAddress(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     upgradeTo(
       newImplementation: string,
@@ -931,5 +1307,15 @@ export interface ProfileAuction extends BaseContract {
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    verifySignature(
+      hash: BytesLike,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    yearlyFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    yearsToOwn(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

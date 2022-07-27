@@ -8,7 +8,7 @@ import {
   BytesLike,
   CallOverrides,
   ContractTransaction,
-  Overrides,
+  PayableOverrides,
   PopulatedTransaction,
   Signer,
   utils,
@@ -21,16 +21,17 @@ export interface GenesisKeyDistributorInterface extends utils.Interface {
   contractName: "GenesisKeyDistributor";
   functions: {
     "claim(uint256,address,uint256,bytes32[])": FunctionFragment;
+    "ethAmount()": FunctionFragment;
     "genesisKey()": FunctionFragment;
     "isClaimed(uint256)": FunctionFragment;
     "merkleRoot()": FunctionFragment;
-    "wethAmount()": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "claim",
     values: [BigNumberish, string, BigNumberish, BytesLike[]]
   ): string;
+  encodeFunctionData(functionFragment: "ethAmount", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "genesisKey",
     values?: undefined
@@ -43,16 +44,12 @@ export interface GenesisKeyDistributorInterface extends utils.Interface {
     functionFragment: "merkleRoot",
     values?: undefined
   ): string;
-  encodeFunctionData(
-    functionFragment: "wethAmount",
-    values?: undefined
-  ): string;
 
   decodeFunctionResult(functionFragment: "claim", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "ethAmount", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "genesisKey", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isClaimed", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "merkleRoot", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "wethAmount", data: BytesLike): Result;
 
   events: {
     "Claimed(uint256,address,uint256)": EventFragment;
@@ -101,8 +98,10 @@ export interface GenesisKeyDistributor extends BaseContract {
       account: string,
       tokenId: BigNumberish,
       merkleProof: BytesLike[],
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    ethAmount(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     genesisKey(overrides?: CallOverrides): Promise<[string]>;
 
@@ -112,8 +111,6 @@ export interface GenesisKeyDistributor extends BaseContract {
     ): Promise<[boolean]>;
 
     merkleRoot(overrides?: CallOverrides): Promise<[string]>;
-
-    wethAmount(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
   claim(
@@ -121,16 +118,16 @@ export interface GenesisKeyDistributor extends BaseContract {
     account: string,
     tokenId: BigNumberish,
     merkleProof: BytesLike[],
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  ethAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
   genesisKey(overrides?: CallOverrides): Promise<string>;
 
   isClaimed(index: BigNumberish, overrides?: CallOverrides): Promise<boolean>;
 
   merkleRoot(overrides?: CallOverrides): Promise<string>;
-
-  wethAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
     claim(
@@ -141,13 +138,13 @@ export interface GenesisKeyDistributor extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    ethAmount(overrides?: CallOverrides): Promise<BigNumber>;
+
     genesisKey(overrides?: CallOverrides): Promise<string>;
 
     isClaimed(index: BigNumberish, overrides?: CallOverrides): Promise<boolean>;
 
     merkleRoot(overrides?: CallOverrides): Promise<string>;
-
-    wethAmount(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {
@@ -165,8 +162,10 @@ export interface GenesisKeyDistributor extends BaseContract {
       account: string,
       tokenId: BigNumberish,
       merkleProof: BytesLike[],
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    ethAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
     genesisKey(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -176,8 +175,6 @@ export interface GenesisKeyDistributor extends BaseContract {
     ): Promise<BigNumber>;
 
     merkleRoot(overrides?: CallOverrides): Promise<BigNumber>;
-
-    wethAmount(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -186,8 +183,10 @@ export interface GenesisKeyDistributor extends BaseContract {
       account: string,
       tokenId: BigNumberish,
       merkleProof: BytesLike[],
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    ethAmount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     genesisKey(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -197,7 +196,5 @@ export interface GenesisKeyDistributor extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     merkleRoot(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    wethAmount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }
