@@ -1013,9 +1013,8 @@ export const removeEdgesForNonassociatedAddresses = async (
   const toRemove: string[] = []
   // find previous associated addresses to be filtered
   prevAddresses.map((address) => {
-    if (newAddresses.indexOf(address) === -1) {
-      toRemove.push(address)
-    }
+    const addr = newAddresses.find((newAddress) => newAddress === address)
+    if (!addr) toRemove.push(address)
   })
   if (!toRemove.length) return
   await Promise.allSettled(
