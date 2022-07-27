@@ -5,13 +5,17 @@ import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityType, Chain, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+
+import { getChain } from '../config'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
 const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
 const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
+const OPENSEA_TESTNET_WYVERIN_API_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
+const OPENSEA_WYVERIN_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
 
 const LIMIT = 50
 const OPENSEA_LISTING_BATCH_SIZE = 30
@@ -485,7 +489,7 @@ const retrieveListingsInBatches = async (
   batchSize: number,
 ): Promise<any[]> => {
   const listings: any[] = []
-  let batch, queryUrl
+  let batch: string[], queryUrl: string
   const listingBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
     V1_OPENSEA_API_TESTNET_BASE_URL
     : V1_OPENSEA_API_BASE_URL
@@ -518,14 +522,14 @@ const retrieveListingsInBatches = async (
       if (assets?.length) {
         for (const asset of assets) {
           const wyvernOrders: WyvernOrder[] | null =  asset?.sell_orders
-          const seaportOrders: WyvernOrder[] | null =  asset?.seaport_sell_orders
+          const seaportOrders: SeaportOrder[] | null =  asset?.seaport_sell_orders
           // wvyern orders - always returns cheapest order
           if (wyvernOrders && Object.keys(wyvernOrders?.[0]).length) {
             listings.push(
               orderEntityBuilder(
                 ProtocolType.Wyvern,
                 ActivityType.Listing,
-                asset?.sell_orders?.[0],
+                wyvernOrders?.[0] as any,
                 chainId,
               ),
             )
@@ -537,7 +541,7 @@ const retrieveListingsInBatches = async (
               orderEntityBuilder(
                 ProtocolType.Seaport,
                 ActivityType.Listing,
-                asset?.seaport_sell_orders?.[0],
+                seaportOrders?.[0] as any,
                 chainId,
               ),
             )
@@ -546,6 +550,7 @@ const retrieveListingsInBatches = async (
       }
     }
     listingQueryParams = [...listingQueryParams.slice(size)]
+    delayCounter++
     if (delayCounter === DELAY_AFTER_BATCH_RUN) {
       await delay(1000)
       delayCounter = 0
@@ -555,42 +560,109 @@ const retrieveListingsInBatches = async (
   return listings
 }
 
-const retrieveOffersInBatches = (
+/**
+ * Retrieve offers in batches
+ * @param offerQueryParams
+ * @param chainId
+ * @param batchSize
+ */
+const retrieveOffersInBatches = async (
   offerQueryParams: Map<string, string[]>,
   chainId: string,
   batchSize: number,
 ): Promise<any[]> => {
+  let batch: string[], queryUrl: string
   const offers: any[] = []
 
-  const offerSeaportBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId) ?
-    `${OPENSEA_API_TESTNET_BASE_URL}/orders/rinkeby/seaport/offers`
-    :`${OPENSEA_API_BASE_URL}/orders/ethereum/seaport/offers`
+  const offerBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
+    OPENSEA_API_TESTNET_BASE_URL
+    : OPENSEA_API_BASE_URL
+  
+  const offerBaseUrlWyverin: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
+    OPENSEA_TESTNET_WYVERIN_API_BASE_URL
+    : OPENSEA_WYVERIN_API_BASE_URL
 
-  const seaportOfferInterceptor = getOpenseaInterceptor(
-    offerSeaportBaseUrl,
+  const offerInterceptor = getOpenseaInterceptor(
+    offerBaseUrl,
     chainId,
   )
-    
-  const offerWyvernBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId) ?
-    'https://testnets-api.opensea.io/wyvern/v1/orders'
-    :'https://api.opensea.io/wyvern/v1/orders'
-
-  const wyvernOfferInterceptor = getOpenseaInterceptor(
-    offerWyvernBaseUrl,
+  const offerInterceptorWyverin = getOpenseaInterceptor(
+    offerBaseUrlWyverin,
     chainId,
   )
 
-  let wyvernOffers, seaportOffers
+  let delayCounter = 0
+  let size: number
+  let wyvernOffers: WyvernOrder[], seaportOffers: SeaportOrder[]
 
-  for (const key of offerQueryParams.keys()) {
-    const tokens = offerQueryParams.values()
-    console.log(tokens, key)
+  // contracts exist
+  if (offerQueryParams.size) {
+    // iterate  on contract
+    for (const contract of offerQueryParams.keys()) {
+      // contract has tokens
+      if (offerQueryParams.get(contract).length) {
+        // batches of batchSize tokens
+        let tokens: string[] = offerQueryParams.get(contract)
+        while (tokens.length) {
+          size = batchSize
+          batch = tokens.slice(0, size)
+          queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
+
+          // only executed if query length more than accepted limit by opensea
+          // runs once or twice at most
+          while(queryUrl.length > MAX_QUERY_LENGTH) {
+            size--
+            batch = tokens.slice(0, size)
+            queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
+          }
+
+          const openseaSupportedChainId:string = TESTNET_CHAIN_IDS.includes(chainId)? '4':chainId
+          const chain:Chain =  getChain('ethereum',openseaSupportedChainId)
+          const response: AxiosResponse = await offerInterceptor(
+            `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc`,
+          )
+          const responseWyverin: AxiosResponse = await offerInterceptorWyverin(
+            `/orders?${queryUrl}&order_by=created_date&order_direction=desc&side=0`,
+          )
+
+          if (response?.data?.orders?.length) {
+            seaportOffers = response?.data?.orders
+            offers.push(
+              orderEntityBuilder(
+                ProtocolType.Seaport,
+                ActivityType.Bid,
+                seaportOffers?.[0] as any,
+                chainId,
+              ),
+            )
+          }
+          if (responseWyverin?.data?.orders?.length) {
+            wyvernOffers = responseWyverin?.data?.orders
+            offers.push(
+              orderEntityBuilder(
+                ProtocolType.Wyvern,
+                ActivityType.Bid,
+                wyvernOffers?.[0] as any,
+                chainId,
+              ),
+            )
+          }
+
+          tokens = [...tokens.slice(size)]
+          delayCounter++
+          // add delay -> two calls
+          if (delayCounter === DELAY_AFTER_BATCH_RUN/2) {
+            await delay(1000)
+            delayCounter = 0
+          }
+        }
+      }
+    }
   }
 
-  console.log(batchSize, seaportOfferInterceptor,
-    wyvernOfferInterceptor, wyvernOffers, seaportOffers)
+  console.log(offers,'88888888888888888888888888888888888888888888888888888888888888888')
 
-  return Promise.resolve(offers)
+  return offers
 }
 
 /**
