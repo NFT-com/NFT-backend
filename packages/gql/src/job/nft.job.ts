@@ -2,17 +2,19 @@
 import Bull, { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
-import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
+import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
-import { NFT } from '@nftcom/shared/db/entity'
+import { NFT, TxBid, TxList } from '@nftcom/shared/db/entity'
+import { ExchangeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
+
+import { LooksrareExternalOrder, retrieveMultipleOrdersLooksrare } from '../service/looksare.service'
+import { nftCronSubqueue } from './job'
 
 // exported for tests
 export const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-
-import { nftCronSubqueue } from './job'
 
 const MAX_PROCESS_BATCH_SIZE = 1500
 
@@ -28,8 +30,9 @@ const subQueueBaseOptions: Bull.JobOptions = {
 
 //batch processor
 const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
+  logger.debug(`initiated external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
   try {
-    const { offset, limit } = job.data
+    const { offset, limit, exchange } = job.data
     const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
     const nfts: NFT[] = await repositories.nft.find({
       where: { chainId, deletedAt: null },
@@ -38,15 +41,49 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
       take: limit,
     })
 
-    if (nfts.length) {
+    if (nfts.length && exchange) {
       const nftRequest: Array<OpenseaOrderRequest> = nfts.map((nft: any) => ({
         contract: nft.contract,
         tokenId: helper.bigNumber(nft.tokenId).toString(),
         chainId: nft.chainId,
       }))
-      
-      const { listings }= await retrieveMultipleOrdersOpensea(nftRequest, chainId, false)
-      await repositories.txList.saveMany(listings)
+
+      const persistActivity = []
+      let openseaResponse: OpenseaExternalOrder
+      let looksrareResponse: LooksrareExternalOrder
+
+      switch (exchange) {
+      case ExchangeType.OpenSea:
+        openseaResponse = await retrieveMultipleOrdersOpensea(nftRequest, chainId, false)
+
+        // listings
+        if (openseaResponse.listings.length) {
+          persistActivity.push(repositories.txList.saveMany(openseaResponse.listings))
+        }
+         
+        // offers
+        if (openseaResponse.offers.length) {
+          persistActivity.push(repositories.txBid.saveMany(openseaResponse.offers))
+        }
+        break
+      case ExchangeType.LooksRare:
+        looksrareResponse = await retrieveMultipleOrdersLooksrare(nftRequest, chainId, true)
+  
+        // listings
+        if (looksrareResponse.listings.length) {
+          persistActivity.push(repositories.txList.saveMany(looksrareResponse.listings))
+        }
+
+        // offers
+        if (looksrareResponse.offers.length) {
+          persistActivity.push(repositories.txBid.saveMany(looksrareResponse.offers))
+        }
+        break
+      }
+
+      // settlements should not depend on each other
+      await Promise.allSettled(persistActivity)
+      logger.debug(`completed external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
     }
   } catch (err) {
     Sentry.captureMessage(`Error in nftExternalOrders Job: ${err}`)
@@ -69,9 +106,16 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
     //sub-queue job additions
     for (let i=0; i < nftCount; i+=MAX_PROCESS_BATCH_SIZE) {
       offset = i
-      nftCronSubqueue.add({ offset, limit, chainId }, {
+      // opensea
+      nftCronSubqueue.add({ offset, limit, chainId, exchange: ExchangeType.OpenSea }, {
         ...subQueueBaseOptions,
-        jobId: `nft-batch-processor|offset:${offset}|limit:${limit}-chainId:${chainId}`,
+        jobId: `nft-batch-processor-opensea|offset:${offset}|limit:${limit}-chainId:${chainId}`,
+      })
+
+      // looksrare
+      nftCronSubqueue.add({ offset, limit, chainId, exchange: ExchangeType.LooksRare  }, {
+        ...subQueueBaseOptions,
+        jobId: `nft-batch-processor-looksrare|offset:${offset}|limit:${limit}-chainId:${chainId}`,
       })
     }
 
@@ -124,11 +168,51 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         }
       })
       
-      const openseaServiceResponse = await retrieveMultipleOrdersOpensea(nftRequest, chainId, false)
+      // settlements should not depend on each other
+      const [opensea, looksrare] = await Promise.allSettled([
+        retrieveMultipleOrdersOpensea(nftRequest, chainId, false),
+        retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
+      ])
 
-      const { listings } = openseaServiceResponse
+      const listings: TxList[] = []
+      const bids: TxBid[] = []
+      const persistActivity: any[] = []
 
-      await repositories.txList.saveMany(listings)
+      if (opensea.status === 'fulfilled') {
+        // opensea listings
+        if (opensea.value.listings.length) {
+          listings.push(...opensea.value.listings)
+        }
+
+        // opensea offers
+        if (opensea.value.offers.length) {
+          bids.push(...opensea.value.offers)
+        }
+      }
+
+      if (looksrare.status === 'fulfilled') {
+        // looksrare listings
+        if (looksrare.value.listings.length) {
+          listings.push(...looksrare.value.listings)
+        }
+
+        // looksrare offers
+        if (looksrare.value.offers.length) {
+          bids.push(...looksrare.value.offers)
+        }
+      }
+
+      // save listings
+      if (listings.length) {
+        persistActivity.push(repositories.txList.saveMany(listings))
+      }
+
+      // save bids
+      if (bids.length) {
+        persistActivity.push(repositories.txBid.saveMany(bids))
+      }
+
+      await Promise.all(persistActivity)
 
       // set ttl for timestamp members
       const TTL: number = ttlForTimestampedZsetMembers()

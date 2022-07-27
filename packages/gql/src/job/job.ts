@@ -33,6 +33,7 @@ const queues = new Map<string, Bull.Queue>()
 // nft cron subqueue
 const subqueuePrefix = 'nft-cron'
 const subqueueName = 'nft-batch-processor'
+
 export let nftCronSubqueue: Bull.Queue = null
 
 const networkList = process.env.SUPPORTED_NETWORKS.split('|')
