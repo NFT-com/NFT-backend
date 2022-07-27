@@ -278,28 +278,6 @@ const getMyPendingAssocations = async (
     },
   })
 
-  const cancellations = await repositories.event.find({
-    where: {
-      eventName: 'CancelledEvmAssociation',
-      destinationAddress: helper.checkSum(wallet.address),
-      chainId: wallet.chainId,
-    },
-    order: {
-      blockNumber: 'ASC',
-    },
-  })
-
-  const cancellationsMap = {}
-  for (let i = 0; i < cancellations.length; i++) {
-    const o = cancellations[i]
-    const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
-    if (cancellationsMap[key]) {
-      cancellationsMap[key] = Number(cancellationsMap[key]) + 1
-    } else {
-      cancellationsMap[key] = 1
-    }
-  }
-
   const clearAlls = await repositories.event.find({
     where: {
       eventName: 'ClearAllAssociatedAddresses',
@@ -321,9 +299,39 @@ const getMyPendingAssocations = async (
     }
   }
 
+  const cancellations = await repositories.event.find({
+    where: {
+      eventName: 'CancelledEvmAssociation',
+      destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const cancellationsMap = {}
+  for (let i = 0; i < cancellations.length; i++) {
+    const o = cancellations[i]
+    const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+
+    const clearAllKey = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
+    const latestClearBlock = clearAllLatestMap[clearAllKey]
+
+    if (latestClearBlock && latestClearBlock > o.blockNumber) {
+      // don't add if the latest cancel block is greater than the current individual cancellation
+    } else {
+      if (cancellationsMap[key]) {
+        cancellationsMap[key] = Number(cancellationsMap[key]) + 1
+      } else {
+        cancellationsMap[key] = 1
+      }
+    }
+  }
+
   return matches
     .filter((o) => {
-      const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
       const latestBlock = clearAllLatestMap[key]
       
       if (!latestBlock) {
@@ -334,11 +342,11 @@ const getMyPendingAssocations = async (
     })
     .filter((o) => {
       const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
-      if (Number(cancellationsMap[key]) == 0 || cancellationsMap[key] == undefined) {
-        return true
-      } else {
+      if (Number(cancellationsMap[key]) > 0) {
         cancellationsMap[key] = Number(cancellationsMap[key]) - 1
         return false
+      } else {
+        return true
       }
     })
     .map(e => {

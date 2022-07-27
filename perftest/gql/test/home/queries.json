@@ -1,0 +1,107 @@
+[
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "chunks",
+      "chainId": "5"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Nft($contract: Address!, $id: String!) { nft(contract: $contract, id: $id) { id isOwnedByMe price contract tokenId type wallet { address chainId } metadata { name imageURL description traits { type value } } } }",
+    "variables": {
+      "contract": "0x9Ef7A34dcCc32065802B1358129a226B228daB4E",
+      "id": "0x02"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Nft($contract: Address!, $id: String!) { nft(contract: $contract, id: $id) { id isOwnedByMe price contract tokenId type wallet { address chainId } metadata { name imageURL description traits { type value } } } }",
+    "variables": {
+      "contract": "0x9Ef7A34dcCc32065802B1358129a226B228daB4E",
+      "id": "0x03"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Nft($contract: Address!, $id: String!) { nft(contract: $contract, id: $id) { id isOwnedByMe price contract tokenId type wallet { address chainId } metadata { name imageURL description traits { type value } } } }",
+    "variables": {
+      "contract": "0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55",
+      "id": "0x1359"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "lucasgoerli",
+      "chainId": "5"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "gk",
+      "chainId": "5"
+    }
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "jbk",
+      "chainId": "5"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "1",
+      "chainId": "5"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "lucasgoerli2",
+      "chainId": "5"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "reptar",
+      "chainId": "4"
+    }
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "hbar",
+      "chainId": "4"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Profile($url: String!, $chainId: String!) { profile(url: $url, chainId: $chainId) { id url status bannerURL photoURL description gkIconVisible nftsDescriptionsVisible displayType layoutType owner { address chainId network } } }",
+    "variables": {
+      "url": "kfc",
+      "chainId": "4"
+    },
+    "operation": "Query"
+  },
+  {
+    "query": "query Leaderboard($input: LeaderboardInput) { leaderboard(input: $input) { pageInfo { firstCursor lastCursor } totalItems items { index id url photoURL numberOfGenesisKeys numberOfCollections itemsVisible } } }",
+    "variables": {
+      "input": {
+        "pageInput": {
+          "first": 10
+        }
+      }
+    },
+    "operation": "Query"
+  }
+]
