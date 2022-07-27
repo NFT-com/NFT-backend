@@ -1,4 +1,4 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity, Index, Unique } from 'typeorm'
 
 import { UserPreferences } from '@nftcom/shared/defs'
 
@@ -6,6 +6,7 @@ import { BaseEntity } from './base.entity'
 
 @Entity()
 @Index(['confirmEmailToken', 'confirmEmailTokenExpiresAt'])
+@Unique(['username'])
 export class User extends BaseEntity {
 
   @Column({ nullable: true, unique: true })
