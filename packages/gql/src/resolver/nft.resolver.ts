@@ -464,6 +464,9 @@ const updateNFTsForProfile = (
             duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
           }
 
+          // todo: remove this after testing
+          duration = PROFILE_NFTS_EXPIRE_DURATION + 1
+
           // if there is no profile NFT or NFTs are expired and need to be updated...
           if (!profile.nftsLastUpdated  ||
             (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
