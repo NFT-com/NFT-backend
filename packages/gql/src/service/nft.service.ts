@@ -248,7 +248,9 @@ export const getContractMetaDataFromAlchemy = async (
       const baseUrl = `https://eth-mainnet.g.alchemy.com/nft/v2/${alchemyApiKey}/getContractMetadata/?contractAddress=${contractAddress}`
       const response = await axios.get(baseUrl)
 
-      await cache.set(key, JSON.stringify(response.data), 'EX', 60 * 60) // 1 hour
+      if (response.data) {
+        await cache.set(key, JSON.stringify(response.data), 'EX', 60 * 60) // 1 hour
+      }
       return response.data
     }
   } catch (err) {
