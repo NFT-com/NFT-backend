@@ -91,6 +91,12 @@ export enum ExchangeType {
   LooksRare = 'LooksRare',
 }
 
+export enum ProtocolType {
+  Wyvern = 'Wyvern',
+  Seaport = 'Seaport',
+  LooksRare = 'LooksRare',
+}
+
 export enum CurrencyType {
   ETH = 'ETH',
   WETH = 'WETH',
@@ -134,6 +140,11 @@ export enum ProfileLayoutType {
   Mosaic = 'Mosaic',
   Featured = 'Featured',
   Spotlight = 'Spotlight',
+}
+
+export enum ProfileViewType {
+  Collection = 'Collection',
+  Gallery = 'Gallery',
 }
 
 export type Signature = {

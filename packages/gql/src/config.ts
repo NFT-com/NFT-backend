@@ -85,7 +85,7 @@ const toNetwork = (str: string): defs.Network => {
   }, {})
 }
 
-const supportedNetworks = toNetwork(lookupEnvKeyOrThrow('SUPPORTED_NETWORKS'))
+export const supportedNetworks = toNetwork(lookupEnvKeyOrThrow('SUPPORTED_NETWORKS'))
 
 export const blockchainConfig = {
   networksURI: new Map<string, string>(),

@@ -2,6 +2,7 @@ type User {
   id: ID!
   avatarURL: String
   email: String
+  chainId: String
   username: String
   isEmailConfirmed: Boolean!
   myAddresses: [Wallet!]
@@ -10,6 +11,19 @@ type User {
   preferences: UserPreferences!
   referredBy: String
   referralId: String!
+}
+
+type Event {
+  id: ID!
+  chainId: String!
+  contract: String!
+  eventName: String!
+  txHash: String!
+  ownerAddress: String
+  profileUrl: String
+  destinationAddress: String
+  blockNumber: String
+  ignore: Boolean
 }
 
 type UserPreferences {
@@ -36,6 +50,12 @@ type Metadata {
 type GkOutput {
   tokenId: String!
   metadata: Metadata!
+}
+
+type PendingAssociationOutput {
+  id: String!
+  owner: String!
+  url: String!
 }
 
 input UserPreferencesInput {
@@ -69,6 +89,8 @@ extend type Query {
   me: User!
   "AUTHENTICATED"
   getMyGenesisKeys: [GkOutput]!
+  "AUTHENTICATED"
+  getMyPendingAssociations: [PendingAssociationOutput]!
 }
 
 extend type Mutation {
@@ -77,6 +99,8 @@ extend type Mutation {
   updateMe(input: UpdateUserInput!): User!
   updateEmail(input: UpdateEmailInput!): User!
   confirmEmail(token: String!): Boolean!
+  "AUTHENTICATED"
+  ignoreAssocations(eventIdArray: [String]!): [Event]!
   "AUTHENTICATED"
   resendEmailConfirm: User!
 }

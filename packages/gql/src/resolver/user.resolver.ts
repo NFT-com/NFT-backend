@@ -3,20 +3,14 @@ import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
-import Redis from 'ioredis'
 import Joi from 'joi'
 
-import { redisConfig } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError,userError, walletError } from '@nftcom/gql/error'
+import { appError, mintError, userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-
-const redis = new Redis({
-  port: redisConfig.port,
-  host: redisConfig.host,
-})
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
@@ -235,6 +229,135 @@ const getMyAddresses = (
   return repositories.wallet.findByUserId(parent.id)
 }
 
+const ignoreAssocations = (
+  _: any,
+  args: gql.MutationIgnoreAssocationsArgs,
+  ctx: Context,
+): Array<Promise<entity.Event>> => {
+  const { user, repositories, chain, wallet } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('ignoreAssocations', { loggedInUserId: user.id, wallet: wallet.address, args: args?.eventIdArray })
+  
+  return args?.eventIdArray.map(e =>
+    repositories.event.findOne({ where:
+      {
+        id: e,
+        destinationAddress: helper.checkSum(wallet.address),
+      },
+    }).then(e => {
+      if (e) {
+        return repositories.event.save({ ...e, ignore: true })
+      } else {
+        return Promise.reject(appError.buildForbidden(
+          userError.buildForbiddenActionMsg(' event id doesn\'t exist under your user'),
+          userError.ErrorType.ForbiddenAction,
+        ))
+      }
+    }),
+  )
+}
+
+const getMyPendingAssocations = async (
+  _: any,
+  args: unknown,
+  ctx: Context,
+): Promise<Array<gql.PendingAssociationOutput>> => {
+  const { user, repositories, wallet } = ctx
+  logger.debug('getMyPendingAssocations', { loggedInUserId: user.id, wallet: wallet.address })
+
+  const matches = await repositories.event.find({
+    where: {
+      eventName: 'AssociateEvmUser',
+      destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+      ignore: false,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const clearAlls = await repositories.event.find({
+    where: {
+      eventName: 'ClearAllAssociatedAddresses',
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const clearAllLatestMap = {}
+  for (let i = 0; i < clearAlls.length; i++) {
+    const o = clearAlls[i]
+    const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+    if (clearAllLatestMap[key]) {
+      clearAllLatestMap[key] = Math.max(clearAllLatestMap[key], o.blockNumber)
+    } else {
+      clearAllLatestMap[key] = o.blockNumber
+    }
+  }
+
+  const cancellations = await repositories.event.find({
+    where: {
+      eventName: 'CancelledEvmAssociation',
+      destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const cancellationsMap = {}
+  for (let i = 0; i < cancellations.length; i++) {
+    const o = cancellations[i]
+    const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+
+    const clearAllKey = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
+    const latestClearBlock = clearAllLatestMap[clearAllKey]
+
+    if (latestClearBlock && latestClearBlock > o.blockNumber) {
+      // don't add if the latest cancel block is greater than the current individual cancellation
+    } else {
+      if (cancellationsMap[key]) {
+        cancellationsMap[key] = Number(cancellationsMap[key]) + 1
+      } else {
+        cancellationsMap[key] = 1
+      }
+    }
+  }
+
+  return matches
+    .filter((o) => {
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
+      const latestBlock = clearAllLatestMap[key]
+      
+      if (!latestBlock) {
+        return true
+      } else {
+        return o.blockNumber >= latestBlock
+      }
+    })
+    .filter((o) => {
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+      if (Number(cancellationsMap[key]) > 0) {
+        cancellationsMap[key] = Number(cancellationsMap[key]) - 1
+        return false
+      } else {
+        return true
+      }
+    })
+    .map(e => {
+      return {
+        id: e.id,
+        url: e.profileUrl,
+        owner: e.ownerAddress,
+      }
+    })
+}
+
 const getMyGenesisKeys = async (
   _: any,
   args: unknown,
@@ -242,7 +365,7 @@ const getMyGenesisKeys = async (
 ): Promise<Array<gql.GkOutput>> => {
   const { user, repositories } = ctx
   logger.debug('getMyGenesisKeys', { loggedInUserId: user.id })
-  
+
   return repositories.wallet.findByUserId(user.id)
     .then(fp.rejectIfEmpty(
       appError.buildNotFound(
@@ -251,7 +374,7 @@ const getMyGenesisKeys = async (
       ),
     )).then(async (wallet) => {
       const address = wallet[0]?.address
-      const cachedGks = await redis.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
+      const cachedGks = await cache.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
       let gk_owners
 
       const genesisKeyContract = typechain.GenesisKey__factory.connect(
@@ -277,7 +400,7 @@ const getMyGenesisKeys = async (
           })
         }
 
-        await redis.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
+        await cache.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
       } else {
         gk_owners = JSON.parse(cachedGks)
       }
@@ -296,7 +419,7 @@ const getMyGenesisKeys = async (
       return keyIds.map(async (keyId) => {
         const fullUrl = `https://nft-llc.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
 
-        const cachedGkData = await redis.get(fullUrl)
+        const cachedGkData = await cache.get(fullUrl)
         const metadata = cachedGkData ?? (await axios.get(fullUrl)).data
 
         return {
@@ -324,12 +447,14 @@ export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
     getMyGenesisKeys: combineResolvers(auth.isAuthenticated, getMyGenesisKeys),
+    getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssocations),
   },
   Mutation: {
     signUp,
     confirmEmail,
     updateEmail,
     updateMe: combineResolvers(auth.isAuthenticated, updateMe),
+    ignoreAssocations: combineResolvers(auth.isAuthenticated, ignoreAssocations),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
   },
   User: {

@@ -8,13 +8,11 @@ import * as pulumi from '@pulumi/pulumi'
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer, updateGQLEnvFile } from './gql'
 import { createSharedInfra } from './shared'
-import { createTypesenseCluster } from './typesense'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
   const assetBucket = outMap.assetBucket.value
   const assetBucketRole = outMap.assetBucketRole.value
   const dbHost = outMap.dbHost.value
-  const deployAppBucket = outMap.deployAppBucket.value
   const gqlECRRepo = outMap.gqlECRRepo.value
   const redisHost = outMap.redisHost.value
   const publicSubnets = outMap.publicSubnetIds.value
@@ -26,7 +24,6 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
     assetBucket,
     assetBucketRole,
     dbHost,
-    deployAppBucket,
     gqlECRRepo,
     redisHost,
     publicSubnets,
@@ -44,7 +41,6 @@ const main = async (): Promise<any> => {
   const deployShared = args?.[0] === 'deploy:shared' || false
   const deployGQL = args?.[0] === 'deploy:gql' || false
   const buildGQLEnv = args?.[0] === 'gql:env' || false
-  const deployTypesense = args?.[0] == 'deploy:typesense' || false
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 
@@ -60,10 +56,6 @@ const main = async (): Promise<any> => {
 
   if (deployGQL) {
     return createGQLServer()
-  }
-
-  if (deployTypesense) {
-    return createTypesenseCluster()
   }
 }
 

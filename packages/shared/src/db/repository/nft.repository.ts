@@ -8,8 +8,8 @@ export class NFTRepository extends BaseRepository<NFT> {
     super(NFT)
   }
 
-  findByWalletId(walletId: string): Promise<NFT[]> {
-    return this.find({ where: { walletId } })
+  findByWalletId(walletId: string, chainId: string): Promise<NFT[]> {
+    return this.find({ where: { walletId, chainId } })
   }
 
   findAllWithRelations(): Promise<NFT[]> {
@@ -22,6 +22,14 @@ export class NFTRepository extends BaseRepository<NFT> {
         Wallet, 'wallet',
         'nft.walletId = wallet.id')
       .getMany()
+  }
+
+  findDistinctContracts(): Promise<any[]> {
+    return this.getRepository()
+      .createQueryBuilder('nft')
+      .select('nft.contract')
+      .distinct(true)
+      .getRawMany()
   }
 
 }

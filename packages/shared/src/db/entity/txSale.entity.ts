@@ -10,10 +10,10 @@ export class TxSale extends BaseEntity {
   @OneToOne(() => TxActivity, (activity) => activity.activityTypeId, { nullable: false })
   @JoinColumn()
   activity: TxActivity
-  
+
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
   exchange: ExchangeType
-  
+
   @Column({ nullable: false })
   price: string
 
@@ -37,5 +37,8 @@ export class TxSale extends BaseEntity {
 
   @Column({ nullable: false })
   receiver: string
+
+  @Column({ nullable: true })
+  chainId: string
 
 }

@@ -1,10 +1,11 @@
-import aws from 'aws-sdk'
-import STS from 'aws-sdk/clients/sts'
 import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 
-import { assetBucket, getChain } from '@nftcom/gql/config'
+import { S3Client } from '@aws-sdk/client-s3'
+import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
+import { Upload } from '@aws-sdk/lib-storage'
+import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
@@ -38,12 +39,11 @@ export const getWallet = (
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
-  const chain = getChain(network, chainId)
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
     .then(fp.rejectIfEmpty(appError.buildExists(
-      walletError.buildAddressExistsMsg(network, chain, address),
-      walletError.ErrorType.AddressAlreadyExists,
+      walletError.buildAddressNotFoundMsg(),
+      walletError.ErrorType.AddressNotFound,
     )))
 }
 
@@ -596,7 +596,7 @@ export const blacklistBool = (inputUrl: string, blockReserved: boolean): boolean
 let cachedSTS: STS = null
 const getSTS = (): STS => {
   if (helper.isEmpty(cachedSTS)) {
-    cachedSTS = new STS()
+    cachedSTS = new STS({ region: process.env.AWS_REGION })
   }
   return cachedSTS
 }
@@ -627,19 +627,18 @@ export const convertEnsToEthAddress = async (
   }
 }
 
-export const getAWSConfig = async (): Promise<aws.S3> => {
+export const getAWSConfig = async (): Promise<S3Client> => {
   const sessionName = `upload-file-to-asset-bucket-${helper.toTimestamp()}`
-  const params: STS.AssumeRoleRequest = {
+  const params: AssumeRoleRequest = {
     RoleArn: assetBucket.role,
     RoleSessionName: sessionName,
   }
-  const response = await getSTS().assumeRole(params).promise()
-  aws.config.update({
-    accessKeyId: response.Credentials.AccessKeyId,
-    secretAccessKey: response.Credentials.SecretAccessKey,
-    sessionToken: response.Credentials.SessionToken,
-  })
-  return new aws.S3()
+  const response = await getSTS().assumeRole(params)
+  const accessKeyId = response.Credentials.AccessKeyId
+  const secretAccessKey = response.Credentials.SecretAccessKey
+  const sessionToken = response.Credentials.SessionToken
+
+  return new S3Client({ credentials: { accessKeyId,secretAccessKey,sessionToken } })
 }
 
 export const s3ToCdn = (s3URL: string): string => {
@@ -674,16 +673,21 @@ export const generateCompositeImage = async (
     }
   }
   // 2. upload buffer to s3...
-  const s3 = await getAWSConfig()
+  const s3config = await getAWSConfig()
   const imageKey = 'profiles/' + Date.now().toString() + '-' + profileURL + '.svg'
   try {
-    const res = await s3.upload({
-      Bucket: assetBucket.name,
-      Key: imageKey,
-      Body: buffer,
-      ContentType: 'image/svg+xml',
-    }).promise()
-    return s3ToCdn(res.Location)
+    const upload = new Upload({
+      client: s3config,
+      params: {
+        Bucket: assetBucket.name,
+        Key: imageKey,
+        Body: buffer,
+        ContentType: 'image/svg+xml',
+      },
+    })
+    upload.done()
+
+    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
   } catch (e) {
     logger.debug('generateCompositeImage', e)
     Sentry.captureException(e)
@@ -697,7 +701,7 @@ export const createProfile = (
   profile: Partial<entity.Profile>,
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
-  return ctx.repositories.profile.findByURL(profile.url)
+  return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
     .then(fp.thruIfEmpty(() => {
       return Promise.all([
         fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
@@ -755,6 +759,7 @@ export const createProfileFromEvent = async (
         username: 'ethereum-' + ethers.utils.getAddress(owner),
       },
     })
+
     if (!user) {
       user = await repositories.user.save({
         // defaults
@@ -786,6 +791,7 @@ export const createProfileFromEvent = async (
     tokenId: tokenId.toString(),
     ownerWalletId: wallet.id,
     ownerUserId: wallet.userId,
+    chainId: chainId || process.env.CHAIN_ID,
   }, noAvatar)
 }
 
