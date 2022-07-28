@@ -849,7 +849,36 @@ export const refreshNFTOrder = async (  _: any,
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
     return err
   }
-  return ''
+}
+
+export const updateNFTMemo = async (
+  _: any,
+  args: gql.MutationUpdateNFTMemoArgs,
+  ctx: Context,
+): Promise<gql.NFT> => {
+  const { repositories, chain } = ctx
+  logger.debug('updateNFTMemo', { id: args?.nftId })
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const nft = await repositories.nft.findById(args?.nftId)
+    if (!nft) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.nftId),
+        nftError.ErrorType.NFTNotFound,
+      ))
+    }
+
+    if (args?.memo && args?.memo.length > 2000) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildMemoTooLong(),
+        nftError.ErrorType.MemoTooLong,
+      ))
+    }
+    return await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
+  }
 }
 
 export default {
@@ -869,6 +898,7 @@ export default {
     updateAssociatedAddresses: updateAssociatedAddresses,
     refreshNft,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
+    updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
