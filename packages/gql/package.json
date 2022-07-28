@@ -21,7 +21,7 @@
     "gqldoc-old": "graphdoc -e http://localhost:10010/graphql -o ./../../docs/documentation -f"
   },
   "dependencies": {
-    "@alch/alchemy-web3": "^1.2.5",
+    "@alch/alchemy-web3": "^1.4.6",
     "@apollo/utils.keyvadapter": "^1.1.0",
     "@aws-sdk/client-s3": "^3.135.0",
     "@aws-sdk/client-sts": "^3.131.0",
