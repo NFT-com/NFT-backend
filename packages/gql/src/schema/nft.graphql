@@ -38,6 +38,7 @@ type NFT {
 #  user: User
   wallet: Wallet
   createdAt: DateTime!
+  memo: String
 }
 
 input NFTsInput {
@@ -147,6 +148,15 @@ type ExternalListingsOutput {
   listings: [ExternalListing]
 }
 
+input UpdateAssociatedAddressesInput {
+  profileUrl: String!
+  chainId: String
+}
+
+type UpdateAssociatedAddressesOuput {
+  message: String
+}
+
 extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
@@ -163,7 +173,10 @@ extend type Mutation {
   "AUTHETICATED"
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
+  updateAssociatedAddresses(input: UpdateAssociatedAddressesInput): UpdateAssociatedAddressesOuput!
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!): String!
+  "AUTHENTICATED"
+  updateNFTMemo(nftId: ID!, memo: String!): NFT!
 }

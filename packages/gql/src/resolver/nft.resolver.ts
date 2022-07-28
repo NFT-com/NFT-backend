@@ -8,7 +8,17 @@ import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { appError, curationError, nftError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { _logger, contracts, db,defs, entity, fp,helper } from '@nftcom/shared'
+import {
+  _logger,
+  contracts,
+  db,
+  defs,
+  entity,
+  fp,
+  helper,
+  provider,
+  typechain,
+} from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -16,10 +26,16 @@ import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
+import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses, getOwnersOfGenesisKeys,
-  initiateWeb3, refreshNFTMetadata, syncEdgesWithNFTs, updateEdgesWeightForProfile,
+  checkNFTContractAddresses,
+  getOwnersOfGenesisKeys,
+  initiateWeb3,
+  refreshNFTMetadata, removeEdgesForNonassociatedAddresses,
+  syncEdgesWithNFTs,
+  updateEdgesWeightForProfile,
+  updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
@@ -332,7 +348,8 @@ const getGkNFTs = async (
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  const cachedData = await cache.get(`getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`)
+  const cacheKey = `${CacheKeys.GET_GK}_${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`
+  const cachedData = await cache.get(cacheKey)
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
@@ -348,7 +365,7 @@ const getGkNFTs = async (
       })
 
       await cache.set(
-        `getGK${ethers.BigNumber.from(args?.tokenId).toString()}_${contracts.genesisKeyAddress(chainId)}`,
+        cacheKey,
         JSON.stringify(response),
         'EX',
         60 * 60, // 60 minutes
@@ -407,6 +424,7 @@ export const saveProfileScore = async (
     await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
   } catch (err) {
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
+    return err
   }
 }
 
@@ -426,7 +444,52 @@ const updateGKIconVisibleStatus = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+    return err
   }
+}
+
+const updateNFTsForAssociatedAddresses = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+): Promise<string> => {
+  const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
+  const cachedData = await cache.get(cacheKey)
+  let addresses: string[]
+  if (cachedData) {
+    addresses = JSON.parse(cachedData)
+  } else {
+    const nftResolverContract = typechain.NftResolver__factory.connect(
+      contracts.nftResolverAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+    logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
+    addresses = associatedAddresses.map((item) => item.chainAddr)
+    // remove NFT edges for non-associated addresses
+    await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
+    if (!addresses.length) {
+      return `No associated addresses of ${profile.url}`
+    }
+    await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
+    // update associated addresses with the latest updates
+    await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
+  }
+  // save User, Wallet for associated addresses...
+  const wallets: entity.Wallet[] = []
+  await Promise.allSettled(
+    addresses.map(async (address) => {
+      wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+    }),
+  )
+  // refresh NFTs for associated addresses...
+  await Promise.allSettled(
+    wallets.map(async (wallet) => {
+      await updateNFTsForAssociatedWallet(profile.id, wallet)
+    }),
+  )
+  await syncEdgesWithNFTs(profile.id)
+  return `refreshed NFTs for associated addresses of ${profile.url}`
 }
 
 const updateNFTsForProfile = (
@@ -501,6 +564,15 @@ const updateNFTsForProfile = (
                                     logger.debug(`gkIconVisible updated for profile ${profile.id}`)
                                   })
                               }
+                              // refresh NFTs for associated addresses
+                              return updateNFTsForAssociatedAddresses(
+                                repositories,
+                                profile,
+                                chainId,
+                              ).then((msg) => {
+                                logger.debug(msg)
+                                return
+                              } )
                             })
                         })
                     })
@@ -535,6 +607,36 @@ const updateNFTsForProfile = (
       })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
+    return err
+  }
+}
+
+const updateAssociatedAddresses = async (
+  _: any,
+  args: gql.MutationUpdateAssociatedAddressesArgs,
+  ctx: Context,
+): Promise<gql.UpdateAssociatedAddressesOuput> => {
+  try {
+    const { repositories } = ctx
+    logger.debug('updateAssociatedAddresses', { input: args?.input })
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+    initiateWeb3(chainId)
+    const profile = await repositories.profile.findOne({
+      where: {
+        url: args?.input.profileUrl,
+        chainId,
+      },
+    })
+    if (!profile) {
+      return { message: `No profile with url ${args?.input.profileUrl}` }
+    }
+    const message = await updateNFTsForAssociatedAddresses(repositories, profile, chainId)
+    return { message }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
+    return err
   }
 }
 
@@ -667,6 +769,7 @@ const getExternalListings = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getExternalListings: ${err}`)
+    return err
   }
 }
 
@@ -680,8 +783,11 @@ export const refreshNft = async (
     logger.debug('refreshNft', { id: args?.id, chainId: args?.chainId })
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
+
     initiateWeb3(chainId)
-    const cachedData = await cache.get(`refreshNFT_${chainId}_${args?.id}`)
+
+    const cacheKey = `${CacheKeys.REFRESH_NFT}_${chainId}_${args?.id}`
+    const cachedData = await cache.get(cacheKey)
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
@@ -691,10 +797,12 @@ export const refreshNft = async (
           chainId,
         },
       })
+
       if (nft) {
         const refreshedNFT = await refreshNFTMetadata(nft)
+
         await cache.set(
-          `refreshNFT_${chainId}_${args?.id}`,
+          cacheKey,
           JSON.stringify(refreshedNFT),
           'EX',
           5 * 60, // 5 minutes
@@ -709,6 +817,7 @@ export const refreshNft = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNft: ${err}`)
+    return err
   }
 }
 
@@ -722,10 +831,10 @@ export const refreshNFTOrder = async (  _: any,
   try {
     const nft = await repositories.nft.findById(args?.id)
     if (!nft) {
-      throw appError.buildNotFound(
+      return Promise.reject(appError.buildNotFound(
         nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
         nftError.ErrorType.NFTNotFound,
-      )
+      ))
     }
 
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chain.id}`, `${nft.contract}:${nft.tokenId}`)
@@ -738,8 +847,38 @@ export const refreshNFTOrder = async (  _: any,
     return 'Added to queue! Check back shortly!'
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
+    return err
   }
-  return ''
+}
+
+export const updateNFTMemo = async (
+  _: any,
+  args: gql.MutationUpdateNFTMemoArgs,
+  ctx: Context,
+): Promise<gql.NFT> => {
+  const { repositories, chain } = ctx
+  logger.debug('updateNFTMemo', { id: args?.nftId })
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const nft = await repositories.nft.findById(args?.nftId)
+    if (!nft) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.nftId),
+        nftError.ErrorType.NFTNotFound,
+      ))
+    }
+
+    if (args?.memo && args?.memo.length > 2000) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildMemoTooLong(),
+        nftError.ErrorType.MemoTooLong,
+      ))
+    }
+    return await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
+  }
 }
 
 export default {
@@ -756,8 +895,10 @@ export default {
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
+    updateAssociatedAddresses: updateAssociatedAddresses,
     refreshNft,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
+    updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(

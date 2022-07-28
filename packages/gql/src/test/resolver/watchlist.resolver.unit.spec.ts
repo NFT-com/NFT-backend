@@ -5,9 +5,11 @@ import { db, defs } from '@nftcom/shared'
 import { Profile, User } from '@nftcom/shared/db/entity'
 
 import { testMockProfiles, testMockWallet,testMockWatchlistUser } from '../util/constants'
+import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(300000)
+jest.retryTimes(2)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -47,13 +49,8 @@ describe('watchlist resolver', () => {
     })
 
     afterAll(async () => {
-      const edges = await repositories.edge.find({ where: { edgeType: defs.EdgeType.Watches } })
-      const edgeIds = edges.map(edge => edge.id)
-      await Promise.all([
-        repositories.edge.hardDeleteByIds(edgeIds),
-        repositories.user.hardDeleteByIds([testMockWatchlistUser.id]),
-        repositories.profile.hardDeleteByIds([testMockProfiles.id]),
-      ])
+      await clearDB(repositories)
+      await testServer.stop()
     })
 
     it('should add to watchlist', async () => {

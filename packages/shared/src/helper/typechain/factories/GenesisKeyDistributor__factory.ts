@@ -24,7 +24,7 @@ const _abi = [
       },
       {
         internalType: "uint256",
-        name: "wethAmount_",
+        name: "ethAmount_",
         type: "uint256",
       },
     ],
@@ -81,7 +81,20 @@ const _abi = [
     ],
     name: "claim",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "ethAmount",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -124,19 +137,6 @@ const _abi = [
         internalType: "bytes32",
         name: "",
         type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "wethAmount",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",

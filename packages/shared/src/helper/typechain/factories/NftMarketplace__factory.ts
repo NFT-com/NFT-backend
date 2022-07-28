@@ -154,13 +154,13 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "token",
         type: "address",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "owner",
         type: "address",
@@ -209,13 +209,13 @@ const _abi = [
         type: "tuple",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "from",
         type: "address",
       },
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "to",
         type: "address",
@@ -241,7 +241,7 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
-        indexed: false,
+        indexed: true,
         internalType: "address",
         name: "token",
         type: "address",
@@ -255,6 +255,32 @@ const _abi = [
     ],
     name: "WhitelistChange",
     type: "event",
+  },
+  {
+    inputs: [],
+    name: "MAX_PROTOCOL_FEE",
+    outputs: [
+      {
+        internalType: "uint48",
+        name: "",
+        type: "uint48",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "MAX_ROYALTY",
+    outputs: [
+      {
+        internalType: "uint48",
+        name: "",
+        type: "uint48",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [
