@@ -178,5 +178,5 @@ extend type Mutation {
   "AUTHETICATED"
   refreshNFTOrder(id: ID!): String!
   "AUTHENTICATED"
-  updateNFTMemo(id: ID!, memo: String!): NFT!
+  updateNFTMemo(nftId: ID!, memo: String!): NFT!
 }

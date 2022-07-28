@@ -849,7 +849,6 @@ export const refreshNFTOrder = async (  _: any,
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)
     return err
   }
-  return ''
 }
 
 export const updateNFTMemo = async (
@@ -858,14 +857,14 @@ export const updateNFTMemo = async (
   ctx: Context,
 ): Promise<gql.NFT> => {
   const { repositories, chain } = ctx
-  logger.debug('updateNFTMemo', { id: args?.id })
+  logger.debug('updateNFTMemo', { id: args?.nftId })
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   try {
-    const nft = await repositories.nft.findById(args?.id)
+    const nft = await repositories.nft.findById(args?.nftId)
     if (!nft) {
       return Promise.reject(appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.nftId),
         nftError.ErrorType.NFTNotFound,
       ))
     }

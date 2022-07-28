@@ -32,6 +32,7 @@ let testServer
 const repositories = db.newRepositories()
 let connection: Connection
 let profile
+let nft
 
 const mockTestServer = (): any => {
   const mockArgs ={
@@ -248,6 +249,52 @@ describe('nft resolver', () => {
       expect(collectionEdges.length).toBeGreaterThan(0)
       const nfts = await repositories.nft.findAll()
       expect(nfts.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('updateNFTMemo', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      nft = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update memo', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTMemo($nftId: ID!, $memo: String!) { updateNFTMemo(nftId: $nftId, memo: $memo) { memo } }',
+        variables: {
+          nftId: nft.id,
+          memo: 'This is test memo',
+        },
+      })
+
+      expect(result.data.updateNFTMemo.memo).toBeDefined()
+      expect(result.data.updateNFTMemo.memo).toEqual('This is test memo')
     })
   })
 })
