@@ -1,6 +1,8 @@
 import { nonWhitelistedAddress, whitelistedAddress } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
+jest.retryTimes(2)
+
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
@@ -13,7 +15,7 @@ describe('wallet resolver', () => {
       testServer = getTestApolloServer({
       })
     })
-      
+
     afterAll(async () => {
       jest.clearAllMocks()
       await testServer.stop()
@@ -27,7 +29,7 @@ describe('wallet resolver', () => {
               }`,
         variables: { input: { address: whitelistedAddress } },
       })
-      
+
       expect(result?.data?.isAddressWhitelisted).toBe(true)
       expect(result?.errors).toBeUndefined()
     })
@@ -39,10 +41,9 @@ describe('wallet resolver', () => {
               }`,
         variables: { input: { address: nonWhitelistedAddress } },
       })
-      
+
       expect(result?.data?.isAddressWhitelisted).toBe(false)
       expect(result?.errors).toBeUndefined()
     })
   })
 })
-  

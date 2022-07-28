@@ -54,7 +54,7 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
 
       switch (exchange) {
       case ExchangeType.OpenSea:
-        openseaResponse = await retrieveMultipleOrdersOpensea(nftRequest, chainId, false)
+        openseaResponse = await retrieveMultipleOrdersOpensea(nftRequest, chainId, true)
 
         // listings
         if (openseaResponse.listings.length) {
@@ -170,14 +170,14 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       
       // settlements should not depend on each other
       const [opensea, looksrare] = await Promise.allSettled([
-        retrieveMultipleOrdersOpensea(nftRequest, chainId, false),
+        retrieveMultipleOrdersOpensea(nftRequest, chainId, true),
         retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
       ])
 
       const listings: TxList[] = []
       const bids: TxBid[] = []
       const persistActivity: any[] = []
-
+    
       if (opensea.status === 'fulfilled') {
         // opensea listings
         if (opensea.value.listings.length) {

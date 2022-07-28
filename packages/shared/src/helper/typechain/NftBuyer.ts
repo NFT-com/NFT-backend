@@ -12,16 +12,14 @@ import {
   Signer,
   utils,
 } from "ethers";
-import { FunctionFragment, Result, EventFragment } from "@ethersproject/abi";
+import { FunctionFragment, Result } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export interface NftBuyerInterface extends utils.Interface {
   contractName: "NftBuyer";
   functions: {
-    "DAO()": FunctionFragment;
     "MAX_PERCENT()": FunctionFragment;
-    "changeDAO(address)": FunctionFragment;
     "convert(address)": FunctionFragment;
     "convertETH()": FunctionFragment;
     "factory()": FunctionFragment;
@@ -30,12 +28,10 @@ export interface NftBuyerInterface extends utils.Interface {
     "weth()": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "DAO", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "MAX_PERCENT",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "changeDAO", values: [string]): string;
   encodeFunctionData(functionFragment: "convert", values: [string]): string;
   encodeFunctionData(
     functionFragment: "convertETH",
@@ -49,12 +45,10 @@ export interface NftBuyerInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "nft", values?: undefined): string;
   encodeFunctionData(functionFragment: "weth", values?: undefined): string;
 
-  decodeFunctionResult(functionFragment: "DAO", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "MAX_PERCENT",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "changeDAO", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "convert", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "convertETH", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
@@ -65,16 +59,8 @@ export interface NftBuyerInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "nft", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "weth", data: BytesLike): Result;
 
-  events: {
-    "NewDAO(address)": EventFragment;
-  };
-
-  getEvent(nameOrSignatureOrTopic: "NewDAO"): EventFragment;
+  events: {};
 }
-
-export type NewDAOEvent = TypedEvent<[string], { dao: string }>;
-
-export type NewDAOEventFilter = TypedEventFilter<NewDAOEvent>;
 
 export interface NftBuyer extends BaseContract {
   contractName: "NftBuyer";
@@ -104,14 +90,7 @@ export interface NftBuyer extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    DAO(overrides?: CallOverrides): Promise<[string]>;
-
     MAX_PERCENT(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    changeDAO(
-      newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
 
     convert(
       erc20: string,
@@ -131,14 +110,7 @@ export interface NftBuyer extends BaseContract {
     weth(overrides?: CallOverrides): Promise<[string]>;
   };
 
-  DAO(overrides?: CallOverrides): Promise<string>;
-
   MAX_PERCENT(overrides?: CallOverrides): Promise<BigNumber>;
-
-  changeDAO(
-    newDAO: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   convert(
     erc20: string,
@@ -158,11 +130,7 @@ export interface NftBuyer extends BaseContract {
   weth(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
-    DAO(overrides?: CallOverrides): Promise<string>;
-
     MAX_PERCENT(overrides?: CallOverrides): Promise<BigNumber>;
-
-    changeDAO(newDAO: string, overrides?: CallOverrides): Promise<void>;
 
     convert(erc20: string, overrides?: CallOverrides): Promise<void>;
 
@@ -177,20 +145,10 @@ export interface NftBuyer extends BaseContract {
     weth(overrides?: CallOverrides): Promise<string>;
   };
 
-  filters: {
-    "NewDAO(address)"(dao?: string | null): NewDAOEventFilter;
-    NewDAO(dao?: string | null): NewDAOEventFilter;
-  };
+  filters: {};
 
   estimateGas: {
-    DAO(overrides?: CallOverrides): Promise<BigNumber>;
-
     MAX_PERCENT(overrides?: CallOverrides): Promise<BigNumber>;
-
-    changeDAO(
-      newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
 
     convert(
       erc20: string,
@@ -211,14 +169,7 @@ export interface NftBuyer extends BaseContract {
   };
 
   populateTransaction: {
-    DAO(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     MAX_PERCENT(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    changeDAO(
-      newDAO: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
 
     convert(
       erc20: string,

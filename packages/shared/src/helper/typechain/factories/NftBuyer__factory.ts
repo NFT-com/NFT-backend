@@ -34,32 +34,6 @@ const _abi = [
     type: "constructor",
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "dao",
-        type: "address",
-      },
-    ],
-    name: "NewDAO",
-    type: "event",
-  },
-  {
-    inputs: [],
-    name: "DAO",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "MAX_PERCENT",
     outputs: [
@@ -70,19 +44,6 @@ const _abi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "newDAO",
-        type: "address",
-      },
-    ],
-    name: "changeDAO",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {

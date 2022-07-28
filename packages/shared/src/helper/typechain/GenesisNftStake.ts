@@ -166,10 +166,12 @@ export interface GenesisNftStakeInterface extends utils.Interface {
 
   events: {
     "Approval(address,address,uint256)": EventFragment;
+    "NewStakedKey(uint256,address,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewStakedKey"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
 
@@ -179,6 +181,13 @@ export type ApprovalEvent = TypedEvent<
 >;
 
 export type ApprovalEventFilter = TypedEventFilter<ApprovalEvent>;
+
+export type NewStakedKeyEvent = TypedEvent<
+  [BigNumber, string, BigNumber],
+  { tokenId: BigNumber; staker: string; totalStakedKeys: BigNumber }
+>;
+
+export type NewStakedKeyEventFilter = TypedEventFilter<NewStakedKeyEvent>;
 
 export type TransferEvent = TypedEvent<
   [string, string, BigNumber],
@@ -508,6 +517,17 @@ export interface GenesisNftStake extends BaseContract {
       spender?: string | null,
       value?: null
     ): ApprovalEventFilter;
+
+    "NewStakedKey(uint256,address,uint256)"(
+      tokenId?: BigNumberish | null,
+      staker?: string | null,
+      totalStakedKeys?: null
+    ): NewStakedKeyEventFilter;
+    NewStakedKey(
+      tokenId?: BigNumberish | null,
+      staker?: string | null,
+      totalStakedKeys?: null
+    ): NewStakedKeyEventFilter;
 
     "Transfer(address,address,uint256)"(
       from?: string | null,

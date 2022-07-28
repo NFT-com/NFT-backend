@@ -34,6 +34,16 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "LockUpUnavailable",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "MaxSupply",
+    type: "error",
+  },
+  {
+    inputs: [],
     name: "MintToZeroAddress",
     type: "error",
   },
@@ -164,19 +174,6 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "bytes32",
-        name: "hash",
-        type: "bytes32",
-      },
-    ],
-    name: "BidCancelled",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
         internalType: "address",
         name: "_user",
         type: "address",
@@ -201,31 +198,6 @@ const _abi = [
       },
     ],
     name: "ClaimedGenesisKey",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "_user",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "_blockNum",
-        type: "uint256",
-      },
-    ],
-    name: "NewClaimableGenKey",
     type: "event",
   },
   {
@@ -267,6 +239,19 @@ const _abi = [
     type: "event",
   },
   {
+    inputs: [],
+    name: "MAX_SUPPLY",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "address",
@@ -301,39 +286,6 @@ const _abi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_wethTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
-        internalType: "uint8",
-        name: "v",
-        type: "uint8",
-      },
-      {
-        internalType: "bytes32",
-        name: "r",
-        type: "bytes32",
-      },
-      {
-        internalType: "bytes32",
-        name: "s",
-        type: "bytes32",
-      },
-    ],
-    name: "cancelBid",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -395,16 +347,26 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
       },
     ],
-    name: "claimableBlock",
+    name: "currentXP",
     outputs: [
       {
+        internalType: "bool",
+        name: "locked",
+        type: "bool",
+      },
+      {
         internalType: "uint256",
-        name: "",
+        name: "current",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "total",
         type: "uint256",
       },
     ],
@@ -413,12 +375,12 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "finalWethPrice",
+    name: "finalEthPrice",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     stateMutability: "view",
@@ -470,30 +432,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_wethTokens",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-    ],
-    name: "getStructHash",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "gkTeamClaimContract",
     outputs: [
@@ -508,12 +446,12 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "initialWethPrice",
+    name: "initialEthPrice",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     stateMutability: "view",
@@ -533,11 +471,6 @@ const _abi = [
       },
       {
         internalType: "address",
-        name: "_wethAddress",
-        type: "address",
-      },
-      {
-        internalType: "address",
         name: "_multiSig",
         type: "address",
       },
@@ -551,6 +484,11 @@ const _abi = [
         name: "_randomClaimBool",
         type: "bool",
       },
+      {
+        internalType: "string",
+        name: "baseURI",
+        type: "string",
+      },
     ],
     name: "initialize",
     outputs: [],
@@ -560,14 +498,14 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_initialWethPrice",
-        type: "uint256",
+        internalType: "uint96",
+        name: "_initialEthPrice",
+        type: "uint96",
       },
       {
-        internalType: "uint256",
-        name: "_finalWethPrice",
-        type: "uint256",
+        internalType: "uint96",
+        name: "_finalEthPrice",
+        type: "uint96",
       },
     ],
     name: "initializePublicSale",
@@ -601,12 +539,12 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "lastClaimTime",
+    name: "lockupBoolean",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "bool",
         name: "",
-        type: "uint256",
+        type: "bool",
       },
     ],
     stateMutability: "view",
@@ -708,7 +646,18 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
+      },
+    ],
     name: "publicExecuteBid",
     outputs: [],
     stateMutability: "payable",
@@ -719,9 +668,9 @@ const _abi = [
     name: "publicSaleDurationSeconds",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     stateMutability: "view",
@@ -732,9 +681,9 @@ const _abi = [
     name: "publicSaleStartSecond",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     stateMutability: "view",
@@ -758,19 +707,12 @@ const _abi = [
     name: "remainingTeamAdvisorGrant",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint64",
         name: "",
-        type: "uint256",
+        type: "uint64",
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "resetPublicSale",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -897,12 +839,25 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "_seconds",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "setPublicSaleDuration",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_signer",
+        type: "address",
+      },
+    ],
+    name: "setSigner",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -923,6 +878,19 @@ const _abi = [
     name: "setWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "signerAddress",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -973,20 +941,21 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "user",
-        type: "address",
+        internalType: "uint256[]",
+        name: "tokenIds",
+        type: "uint256[]",
       },
     ],
-    name: "tokenIdsOwned",
-    outputs: [
-      {
-        internalType: "bool[]",
-        name: "",
-        type: "bool[]",
-      },
-    ],
-    stateMutability: "view",
+    name: "toggleLockup",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "toggleLockupBoolean",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -1085,57 +1054,22 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_wethTokens",
-        type: "uint256",
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
       },
       {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
-        components: [
-          {
-            internalType: "uint8",
-            name: "v",
-            type: "uint8",
-          },
-          {
-            internalType: "bytes32",
-            name: "r",
-            type: "bytes32",
-          },
-          {
-            internalType: "bytes32",
-            name: "s",
-            type: "bytes32",
-          },
-        ],
-        internalType: "struct GenesisKey.Sig",
-        name: "sig",
-        type: "tuple",
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
       },
     ],
-    name: "validateBid",
+    name: "verifySignature",
     outputs: [
       {
         internalType: "bool",
         name: "",
         type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "wethAddress",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
       },
     ],
     stateMutability: "view",
