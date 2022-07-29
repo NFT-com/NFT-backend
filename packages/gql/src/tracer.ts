@@ -7,6 +7,7 @@ import { AlwaysOnSampler } from '@opentelemetry/core'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express'
+import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis'
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
@@ -32,8 +33,7 @@ function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
 }
 
 function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: SpanAttributes): boolean {
-  return spanKind === opentelemetry.SpanKind.INTERNAL
-    || attributes[SemanticAttributes.HTTP_METHOD] === 'OPTIONS'
+  return attributes[SemanticAttributes.HTTP_METHOD] === 'OPTIONS'
     || attributes[SemanticAttributes.HTTP_TARGET] === '/.well-known/apollo/server-health'
     || (attributes[SemanticAttributes.HTTP_URL]
         && attributes[SemanticAttributes.HTTP_URL].toString().includes('sentry.io'))
@@ -52,7 +52,10 @@ export const setupTracing = (serviceName: string): opentelemetry.Tracer => {
       // Express instrumentation expects HTTP layer to be instrumented
       new HttpInstrumentation(),
       new ExpressInstrumentation(),
-      new IORedisInstrumentation(),
+      new GraphQLInstrumentation(),
+      new IORedisInstrumentation({
+        requireParentSpan: false,
+      }),
       new PgInstrumentation(),
     ],
   })
