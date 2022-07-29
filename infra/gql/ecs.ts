@@ -203,10 +203,6 @@ service:
       receivers: [otlp]
       processors: [batch/traces]
       exporters: [otlp]
-    metrics:
-      receivers: [otlp]
-      processors: [batch/metrics]
-      exporters: [otlp]
 
   extensions: [health_check]`,
   })
@@ -253,13 +249,12 @@ service:
             },
           },
           memory: otelMemory,
-          secrets: pulumi.all([otelConfig.arn])
-            .apply(([otelConfigArn]) => [
-              {
-                name: 'AOT_CONFIG_CONTENT',
-                valueFrom: otelConfigArn,
-              },
-            ]).get(),
+          secrets: [
+            {
+              name: 'AOT_CONFIG_CONTENT',
+              valueFrom: 'otel-collector-config',
+            },
+          ],
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
@@ -275,7 +270,7 @@ service:
       tags: getTags(tags),
     },
     {
-      dependsOn: [pulumi.output(role), pulumi.output(otelConfig)],
+      dependsOn: [pulumi.output(role), otelConfig],
     },
   )
 }
