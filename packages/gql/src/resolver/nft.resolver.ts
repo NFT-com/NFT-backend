@@ -878,6 +878,7 @@ export const updateNFTMemo = async (
     return await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
+    return err
   }
 }
 
@@ -936,6 +937,7 @@ export const getNFTsForCollections = async (
     return result
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
+    return err
   }
 }
 
