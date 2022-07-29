@@ -241,7 +241,7 @@ export const getContractMetaDataFromAlchemy = async (
   try {
     const key = `getContractMetaDataFromAlchemy${alchemyApiKey}_${ethers.utils.getAddress(contractAddress)}`
     const cachedContractMetadata: string = await cache.get(key)
-    
+
     if (cachedContractMetadata) {
       return JSON.parse(cachedContractMetadata)
     } else {
@@ -384,6 +384,7 @@ const updateCollection = async (
     )
   } catch (err) {
     Sentry.captureMessage(`Error in updateCollection: ${err}`)
+    return err
   }
 }
 
@@ -450,6 +451,7 @@ const getNFTMetaData = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
+    return err
   }
 }
 
@@ -458,7 +460,7 @@ const updateNFTOwnershipAndMetadata = async (
   userId: string,
   walletId: string,
   chainId: string,
-): Promise<entity.NFT| undefined> => {
+): Promise<entity.NFT | undefined> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -539,6 +541,7 @@ const updateNFTOwnershipAndMetadata = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
+    return undefined
   }
 }
 
@@ -640,6 +643,7 @@ export const refreshNFTMetadata = async (
     return nft
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
+    return err
   }
 }
 
@@ -667,6 +671,7 @@ export const getOwnersOfGenesisKeys = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
+    return []
   }
 }
 
@@ -863,6 +868,7 @@ export const changeNFTsVisibility = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
+    return err
   }
 }
 
@@ -932,6 +938,7 @@ export const updateNFTsOrder = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
+    return err
   }
 }
 
@@ -970,6 +977,7 @@ export const updateEdgesWeightForProfile = async (
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
+    return err
   }
 }
 
@@ -1014,6 +1022,7 @@ export const syncEdgesWithNFTs = async (
     await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
+    return err
   }
 }
 
