@@ -256,7 +256,7 @@ service:
           secrets: [
             {
               name: 'AOT_CONFIG_CONTENT',
-              valueFrom: otelConfig.name,
+              valueFrom: otelConfig.arn,
             },
           ],
         },
@@ -274,7 +274,7 @@ service:
       tags: getTags(tags),
     },
     {
-      dependsOn: [pulumi.output(role)],
+      dependsOn: [pulumi.output(role), pulumi.output(otelConfig)],
     },
   )
 }
