@@ -256,7 +256,7 @@ service:
           secrets: [
             {
               name: 'AOT_CONFIG_CONTENT',
-              valueFrom: otelConfig.arn,
+              valueFrom: otelConfig.name,
             },
           ],
         },
