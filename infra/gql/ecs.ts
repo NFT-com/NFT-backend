@@ -259,7 +259,7 @@ service:
                 name: 'AOT_CONFIG_CONTENT',
                 valueFrom: otelConfigArn,
               },
-            ]),
+            ]).get(),
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
