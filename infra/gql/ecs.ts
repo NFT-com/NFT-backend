@@ -170,6 +170,47 @@ const createEcsTaskDefinition = (
   const otelName = getResourceName('aws-otel-collector')
   const otelMemory = 80
 
+  const otelConfig = new aws.ssm.Parameter('otel-collector-config', {
+    name: 'otel-collector-config',
+    type: 'String',
+    dataType: 'Text',
+    value:
+`extensions:
+  health_check:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch/traces:
+    timeout: 10s
+    send_batch_size: 50
+  batch/metrics:
+    timeout: 60s
+
+exporters:
+  logging: 
+    loglevel: info
+  otlp:
+    endpoint: tempo.leonardo.nft.prv
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch/traces]
+      exporters: [datadog]
+    metrics:
+      receivers: [otlp]
+      processors: [batch/metrics]
+      exporters: [datadog]
+
+  extensions: [health_check]`,
+  })
+
   return new aws.ecs.TaskDefinition(
     'gql-td',
     {
@@ -200,7 +241,7 @@ const createEcsTaskDefinition = (
         },
         {
           name: otelName,
-          image: '016437323894.dkr.ecr.us-east-1.amazonaws.com/aws-otel-collector',
+          image: 'amazon/aws-otel-collector',
           essential: true,
           logConfiguration: {
             logDriver: 'awslogs',
@@ -212,6 +253,12 @@ const createEcsTaskDefinition = (
             },
           },
           memory: otelMemory,
+          secrets: [
+            {
+              name: 'AOT_CONFIG_CONTENT',
+              valueFrom: otelConfig.arn,
+            },
+          ],
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
