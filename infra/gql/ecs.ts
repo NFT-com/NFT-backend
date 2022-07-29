@@ -173,7 +173,7 @@ const createEcsTaskDefinition = (
   const otelConfig = new aws.ssm.Parameter('otel-collector-config', {
     name: 'otel-collector-config',
     type: 'String',
-    dataType: 'Text',
+    dataType: 'text',
     value:
 `extensions:
   health_check:
