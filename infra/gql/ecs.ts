@@ -256,7 +256,7 @@ service:
           secrets: [
             {
               name: 'AOT_CONFIG_CONTENT',
-              valueFrom: pulumi.interpolate`${otelConfig.arn}`,
+              valueFrom: 'otel-collector-config',
             },
           ],
         },
