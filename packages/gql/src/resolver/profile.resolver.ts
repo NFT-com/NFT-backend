@@ -944,6 +944,7 @@ const saveScoreForProfiles = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in saveScoreForProfiles Job: ${err}`)
+    return err
   }
 }
 
@@ -989,6 +990,7 @@ const clearGKIconVisible = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in clearGKIconVisible: ${err}`)
+    return err
   }
 }
 
@@ -1023,6 +1025,7 @@ const updateProfileView = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateProfileView: ${err}`)
+    return err
   }
 }
 
