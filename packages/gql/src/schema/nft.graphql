@@ -34,6 +34,8 @@ type NFT {
   isOwnedByMe: Boolean
   metadata: NFTMetadata!
   price: Uint256
+  profileId: String
+  profileUrl: String
   type: NFTType!
 #  user: User
   wallet: Wallet
@@ -191,4 +193,6 @@ extend type Mutation {
   refreshNFTOrder(id: ID!): String!
   "AUTHENTICATED"
   updateNFTMemo(nftId: ID!, memo: String!): NFT!
+  "AUTHENTICATED"
+  updateNFTProfileId(nftId: String!, profileId: String!): NFT!
 }

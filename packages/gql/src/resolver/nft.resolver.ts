@@ -5,7 +5,7 @@ import Joi from 'joi'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
-import { appError, curationError, nftError } from '@nftcom/gql/error'
+import { appError, curationError, nftError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import {
@@ -946,6 +946,39 @@ export const getNFTsForCollections = async (
   }
 }
 
+export const updateProfileId =
+  async (_: any, args: gql.MutationUpdateNFTProfileIdArgs, ctx: Context):
+  Promise<gql.NFT> => {
+    const schema = Joi.object().keys({
+      nftId: Joi.string().required(),
+      profileId: Joi.string().required(),
+    })
+    joi.validateSchema(schema, args)
+
+    const { repositories } = ctx
+    const { nftId, profileId } = args
+    const [nft, profile] = await Promise.all([
+      repositories.nft.findById(nftId),
+      repositories.profile.findById(profileId),
+    ])
+    if (nft) {
+      if (profile) {
+        nft.profileId = profileId
+        const updatedNft: gql.NFT = await repositories.nft.save(nft)
+        updatedNft.profileUrl = profile.url
+        return updatedNft
+      }
+      throw appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(profileId),
+        profileError.ErrorType.ProfileNotFound,
+      )
+    }
+    throw appError.buildNotFound(
+      nftError.buildNFTNotFoundMsg(nftId),
+      nftError.ErrorType.NFTNotFound,
+    )
+  }
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -965,6 +998,7 @@ export default {
     refreshNft,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
+    updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateProfileId),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
