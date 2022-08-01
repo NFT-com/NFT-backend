@@ -87,6 +87,7 @@ const getCollection = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
+    return err
   }
 }
 
@@ -145,6 +146,7 @@ const removeCollectionDuplicates = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in removeCollectionDuplicates: ${err}`)
+    return err
   }
 }
 
@@ -185,6 +187,7 @@ const fetchAndSaveCollectionInfo = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in fetchAndSaveCollectionInfo: ${err}`)
+    return err
   }
 }
 
@@ -213,6 +216,7 @@ const saveCollectionForContract = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in saveCollectionForContract: ${err}`)
+    return err
   }
 }
 
@@ -249,6 +253,7 @@ const syncCollectionsWithNFTs = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in syncCollectionsWithNFTs: ${err}`)
+    return err
   }
 }
 
@@ -343,6 +348,7 @@ const fillChainIds = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in fillChainIds: ${err}`)
+    return err
   }
 }
 
