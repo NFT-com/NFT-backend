@@ -6,7 +6,8 @@ import * as typeorm from 'typeorm'
 //import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { getChain } from '@nftcom/gql/config'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -19,6 +20,7 @@ const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
+let alchemyApiKey: string
 
 // TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
 // const TYPESENSE_HOST = process.env.TYPESENSE_HOST
@@ -42,6 +44,17 @@ interface OwnedNFT {
     tokenId: string
   }
 }
+
+interface ContractMetaDataResponse {
+  address: string
+  contractMetadata: {
+    name: string
+    symbol: string
+    totalSupply: string
+    tokenType: string
+  }
+}
+
 interface NFTMetaDataResponse {
   contract: {
     address: string
@@ -96,6 +109,8 @@ export const initiateWeb3 = (chainId?: string): void => {
   const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
     (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
   web3 = createAlchemyWeb3(alchemy_api_url)
+  alchemyApiKey = Number(chainId) == 1 ? (process.env.ALCHEMY_API_URL).replace('https://eth-mainnet.alchemyapi.io/v2/', '') :
+    Number(chainId) == 5 ? (process.env.ALCHEMY_API_URL_GOERLI).replace('https://eth-goerli.g.alchemy.com/v2/', '') : (process.env.ALCHEMY_API_URL_RINKEBY).replace('https://eth-rinkeby.alchemyapi.io/v2/', '')
 }
 
 export const getNFTsFromAlchemy = async (
@@ -220,6 +235,30 @@ const getNFTMetaDataFromAlchemy = async (
   }
 }
 
+export const getContractMetaDataFromAlchemy = async (
+  contractAddress: string,
+): Promise<ContractMetaDataResponse | undefined> => {
+  try {
+    const key = `getContractMetaDataFromAlchemy${alchemyApiKey}_${ethers.utils.getAddress(contractAddress)}`
+    const cachedContractMetadata: string = await cache.get(key)
+
+    if (cachedContractMetadata) {
+      return JSON.parse(cachedContractMetadata)
+    } else {
+      const baseUrl = `https://eth-mainnet.g.alchemy.com/nft/v2/${alchemyApiKey}/getContractMetadata/?contractAddress=${contractAddress}`
+      const response = await axios.get(baseUrl)
+
+      if (response.data) {
+        await cache.set(key, JSON.stringify(response.data), 'EX', 60 * 60) // 1 hour
+      }
+      return response.data
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getContractMetaDataFromAlchemy: ${err}`)
+    return undefined
+  }
+}
+
 export const getCollectionNameFromContract = (
   contractAddress: string,
   chainId: string,
@@ -276,12 +315,14 @@ const updateCollection = async (
             nft.chainId,
             nft.type,
           )
-          logger.debug('new collection', { collectionName, contract: nft.contract })
+          const collectionDeployer = await getCollectionDeployer(nft.contract, nft.chainId)
+          logger.debug('new collection', { collectionName, contract: nft.contract, collectionDeployer })
 
           await repositories.collection.save({
             contract: ethers.utils.getAddress(nft.contract),
             chainId: nft?.chainId || process.env.CHAIN_ID,
             name: collectionName,
+            deployer: collectionDeployer,
           })
         }
 
@@ -343,6 +384,7 @@ const updateCollection = async (
     )
   } catch (err) {
     Sentry.captureMessage(`Error in updateCollection: ${err}`)
+    return err
   }
 }
 
@@ -359,7 +401,10 @@ const getNFTMetaData = async (
       tokenId,
     )
 
-    const name = nftMetadata?.title
+    const contractMetadata: ContractMetaDataResponse =
+      await getContractMetaDataFromAlchemy(contract)
+
+    const name = nftMetadata?.title || `${contractMetadata.contractMetadata.name} #${Number(tokenId).toString()}`
     const description = nftMetadata?.description
     const image = nftMetadata?.metadata?.image
     if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
@@ -406,6 +451,7 @@ const getNFTMetaData = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
+    return err
   }
 }
 
@@ -414,7 +460,7 @@ const updateNFTOwnershipAndMetadata = async (
   userId: string,
   walletId: string,
   chainId: string,
-): Promise<entity.NFT| undefined> => {
+): Promise<entity.NFT | undefined> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -495,6 +541,7 @@ const updateNFTOwnershipAndMetadata = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
+    return undefined
   }
 }
 
@@ -596,6 +643,7 @@ export const refreshNFTMetadata = async (
     return nft
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
+    return err
   }
 }
 
@@ -605,7 +653,7 @@ export const getOwnersOfGenesisKeys = async (
   const contract = contracts.genesisKeyAddress(chainId)
   if (chainId !== '1' && chainId !== '5') return []
   try {
-    const key = `GenesisKeyOwners-${chainId}`
+    const key = `${CacheKeys.GENESIS_KEY_OWNERS}_${chainId}`
     const cachedData = await cache.get(key)
     if (cachedData) {
       return JSON.parse(cachedData) as string[]
@@ -623,6 +671,7 @@ export const getOwnersOfGenesisKeys = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
+    return []
   }
 }
 
@@ -819,6 +868,7 @@ export const changeNFTsVisibility = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
+    return err
   }
 }
 
@@ -888,6 +938,7 @@ export const updateNFTsOrder = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
+    return err
   }
 }
 
@@ -926,6 +977,7 @@ export const updateEdgesWeightForProfile = async (
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
+    return err
   }
 }
 
@@ -970,5 +1022,88 @@ export const syncEdgesWithNFTs = async (
     await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
+    return err
   }
+}
+
+export const updateNFTsForAssociatedWallet = async (
+  profileId: string,
+  wallet: entity.Wallet,
+): Promise<void> => {
+  const cacheKey = `${CacheKeys.UPDATE_NFT_FOR_ASSOCIATED_WALLET}_${wallet.chainId}_${wallet.id}_${wallet.userId}`
+  const cachedData = await cache.get(cacheKey)
+  if (!cachedData) {
+    await checkNFTContractAddresses(
+      wallet.userId,
+      wallet.id,
+      wallet.address,
+      wallet.chainId,
+    )
+    await updateWalletNFTs(
+      wallet.userId,
+      wallet.id,
+      wallet.address,
+      wallet.chainId,
+    )
+    // save NFT edges for profile...
+    await updateEdgesWeightForProfile(profileId, wallet.userId)
+    const nfts = await repositories.nft.find({
+      where: {
+        userId: wallet.userId,
+        walletId: wallet.id,
+        chainId: wallet.chainId,
+      },
+    })
+    await cache.set(cacheKey, nfts.length.toString(), 'EX', 60 * 10)
+  } else return
+}
+
+export const removeEdgesForNonassociatedAddresses = async (
+  profileId: string,
+  prevAddresses: string[],
+  newAddresses: string[],
+): Promise<void> => {
+  const toRemove: string[] = []
+  // find previous associated addresses to be filtered
+  const seen = {}
+  newAddresses.map((address) => {
+    seen[address] = true
+  })
+  prevAddresses.map((address) => {
+    if (!seen[address]) toRemove.push(address)
+  })
+  if (!toRemove.length) return
+  await Promise.allSettled(
+    toRemove.map(async (address) => {
+      const user = await repositories.user.findOne({
+        where: {
+          username: 'ethereum-' + ethers.utils.getAddress(address),
+        },
+      })
+      if (user) {
+        const nfts = await repositories.nft.find({ where: { userId: user.id } })
+        if (nfts.length) {
+          const toRemoveEdges = []
+          await Promise.allSettled(
+            nfts.map(async (nft) => {
+              const edge = await repositories.edge.findOne({
+                where: {
+                  thisEntityType: defs.EntityType.Profile,
+                  thisEntityId: profileId,
+                  thatEntityType: defs.EntityType.NFT,
+                  thatEntityId: nft.id,
+                  edgeType: defs.EdgeType.Displays,
+                },
+              })
+              if (edge) {
+                toRemoveEdges.push(edge.id)
+              }
+            }),
+          )
+          if (toRemoveEdges.length)
+            await repositories.edge.hardDeleteByIds(toRemoveEdges)
+        }
+      }
+    }),
+  )
 }

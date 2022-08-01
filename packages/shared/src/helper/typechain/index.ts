@@ -14,10 +14,12 @@ export type { MerkleDistributor } from "./MerkleDistributor";
 export type { NftBuyer } from "./NftBuyer";
 export type { NftMarketplace } from "./NftMarketplace";
 export type { NftProfile } from "./NftProfile";
+export type { NftResolver } from "./NftResolver";
 export type { NftTransferProxy } from "./NftTransferProxy";
 export type { ProfileAuction } from "./ProfileAuction";
 export type { ValidationLogic } from "./ValidationLogic";
 export type { Weth } from "./Weth";
+export type { Whitelist } from "./Whitelist";
 
 export { CryptoKittyTransferProxy__factory } from "./factories/CryptoKittyTransferProxy__factory";
 export { ERC1155__factory } from "./factories/ERC1155__factory";
@@ -32,7 +34,9 @@ export { MerkleDistributor__factory } from "./factories/MerkleDistributor__facto
 export { NftBuyer__factory } from "./factories/NftBuyer__factory";
 export { NftMarketplace__factory } from "./factories/NftMarketplace__factory";
 export { NftProfile__factory } from "./factories/NftProfile__factory";
+export { NftResolver__factory } from "./factories/NftResolver__factory";
 export { NftTransferProxy__factory } from "./factories/NftTransferProxy__factory";
 export { ProfileAuction__factory } from "./factories/ProfileAuction__factory";
 export { ValidationLogic__factory } from "./factories/ValidationLogic__factory";
 export { Weth__factory } from "./factories/Weth__factory";
+export { Whitelist__factory } from "./factories/Whitelist__factory";

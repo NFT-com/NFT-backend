@@ -76,6 +76,8 @@ export declare namespace LibSignature {
 export interface NftMarketplaceInterface extends utils.Interface {
   contractName: "NftMarketplace";
   functions: {
+    "MAX_PROTOCOL_FEE()": FunctionFragment;
+    "MAX_ROYALTY()": FunctionFragment;
     "approveOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "buyNow((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),uint8,bytes32,bytes32)": FunctionFragment;
     "cancel((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
@@ -105,6 +107,14 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "whitelistERC20(address)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "MAX_PROTOCOL_FEE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "MAX_ROYALTY",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "approveOrder_",
     values: [LibSignature.OrderStruct]
@@ -202,6 +212,14 @@ export interface NftMarketplaceInterface extends utils.Interface {
     values: [string]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "MAX_PROTOCOL_FEE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MAX_ROYALTY",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "approveOrder_",
     data: BytesLike
@@ -423,6 +441,10 @@ export interface NftMarketplace extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
+    MAX_PROTOCOL_FEE(overrides?: CallOverrides): Promise<[number]>;
+
+    MAX_ROYALTY(overrides?: CallOverrides): Promise<[number]>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -551,6 +573,10 @@ export interface NftMarketplace extends BaseContract {
     whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
   };
 
+  MAX_PROTOCOL_FEE(overrides?: CallOverrides): Promise<number>;
+
+  MAX_ROYALTY(overrides?: CallOverrides): Promise<number>;
+
   approveOrder_(
     order: LibSignature.OrderStruct,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -676,6 +702,10 @@ export interface NftMarketplace extends BaseContract {
   whitelistERC20(arg0: string, overrides?: CallOverrides): Promise<boolean>;
 
   callStatic: {
+    MAX_PROTOCOL_FEE(overrides?: CallOverrides): Promise<number>;
+
+    MAX_ROYALTY(overrides?: CallOverrides): Promise<number>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: CallOverrides
@@ -855,34 +885,45 @@ export interface NftMarketplace extends BaseContract {
     ): ProxyChangeEventFilter;
 
     "RoyaltyInfoChange(address,address,uint256)"(
-      token?: null,
-      owner?: null,
+      token?: string | null,
+      owner?: string | null,
       percent?: null
     ): RoyaltyInfoChangeEventFilter;
     RoyaltyInfoChange(
-      token?: null,
-      owner?: null,
+      token?: string | null,
+      owner?: string | null,
       percent?: null
     ): RoyaltyInfoChangeEventFilter;
 
     "Transfer(tuple,address,address)"(
       asset?: null,
-      from?: null,
-      to?: null
+      from?: string | null,
+      to?: string | null
     ): TransferEventFilter;
-    Transfer(asset?: null, from?: null, to?: null): TransferEventFilter;
+    Transfer(
+      asset?: null,
+      from?: string | null,
+      to?: string | null
+    ): TransferEventFilter;
 
     "Upgraded(address)"(implementation?: string | null): UpgradedEventFilter;
     Upgraded(implementation?: string | null): UpgradedEventFilter;
 
     "WhitelistChange(address,bool)"(
-      token?: null,
+      token?: string | null,
       value?: null
     ): WhitelistChangeEventFilter;
-    WhitelistChange(token?: null, value?: null): WhitelistChangeEventFilter;
+    WhitelistChange(
+      token?: string | null,
+      value?: null
+    ): WhitelistChangeEventFilter;
   };
 
   estimateGas: {
+    MAX_PROTOCOL_FEE(overrides?: CallOverrides): Promise<BigNumber>;
+
+    MAX_ROYALTY(overrides?: CallOverrides): Promise<BigNumber>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1009,6 +1050,10 @@ export interface NftMarketplace extends BaseContract {
   };
 
   populateTransaction: {
+    MAX_PROTOCOL_FEE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    MAX_ROYALTY(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: Overrides & { from?: string | Promise<string> }

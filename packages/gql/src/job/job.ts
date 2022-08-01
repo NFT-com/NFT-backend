@@ -8,16 +8,11 @@ import {
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 import { _logger } from '@nftcom/shared'
-// import { getUsersNFTs } from '@nftcom/gql/job/nft.job'
-// import { syncProfileNFTs } from '@nftcom/gql/job/profile.job'
-// DISABLE MARKETPLACE/TYPESENSE JOBS UNTIL READY
-// import { syncMarketplace } from '@nftcom/gql/job/marketplace.job'
-// import { typesenseCollectionSchemas } from '@nftcom/gql/job/typesense.job'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
   process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION,
-)
+) || 720 // by default 12 hours
 
 const logger = _logger.Factory(_logger.Context.Bull)
 
@@ -38,6 +33,7 @@ const queues = new Map<string, Bull.Queue>()
 // nft cron subqueue
 const subqueuePrefix = 'nft-cron'
 const subqueueName = 'nft-batch-processor'
+
 export let nftCronSubqueue: Bull.Queue = null
 
 const networkList = process.env.SUPPORTED_NETWORKS.split('|')

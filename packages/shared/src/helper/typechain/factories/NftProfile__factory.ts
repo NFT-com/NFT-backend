@@ -153,6 +153,38 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
+        indexed: false,
+        internalType: "string",
+        name: "_profileURI",
+        type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_extendedExpiry",
+        type: "uint256",
+      },
+    ],
+    name: "ExtendExpiry",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_fee",
+        type: "uint256",
+      },
+    ],
+    name: "NewFee",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: true,
         internalType: "address",
         name: "from",
@@ -238,7 +270,7 @@ const _abi = [
       },
       {
         internalType: "uint256",
-        name: "_expiry",
+        name: "_duration",
         type: "uint256",
       },
     ],
@@ -259,8 +291,13 @@ const _abi = [
         name: "_duration",
         type: "uint256",
       },
+      {
+        internalType: "address",
+        name: "_licensee",
+        type: "address",
+      },
     ],
-    name: "extendRent",
+    name: "extendLicense",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -279,6 +316,25 @@ const _abi = [
         internalType: "address",
         name: "",
         type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "_string",
+        type: "string",
+      },
+    ],
+    name: "getExpiryTimeline",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -319,6 +375,11 @@ const _abi = [
         internalType: "address",
         name: "_nftErc20Contract",
         type: "address",
+      },
+      {
+        internalType: "string",
+        name: "baseURI",
+        type: "string",
       },
     ],
     name: "initialize",
@@ -469,9 +530,9 @@ const _abi = [
     name: "protocolFee",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     stateMutability: "view",
@@ -598,6 +659,19 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "uint96",
+        name: "_fee",
+        type: "uint96",
+      },
+    ],
+    name: "setProtocolFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bytes4",
         name: "interfaceId",
         type: "bytes4",
@@ -622,25 +696,6 @@ const _abi = [
         internalType: "string",
         name: "",
         type: "string",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "user",
-        type: "address",
-      },
-    ],
-    name: "tokenIdsOwned",
-    outputs: [
-      {
-        internalType: "bool[]",
-        name: "",
-        type: "bool[]",
       },
     ],
     stateMutability: "view",

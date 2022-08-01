@@ -9,7 +9,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
@@ -238,7 +238,7 @@ const ignoreAssocations = (
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('ignoreAssocations', { loggedInUserId: user.id, wallet: wallet.address, args: args?.eventIdArray })
-  
+
   return args?.eventIdArray.map(e =>
     repositories.event.findOne({ where:
       {
@@ -278,6 +278,27 @@ const getMyPendingAssocations = async (
     },
   })
 
+  const clearAlls = await repositories.event.find({
+    where: {
+      eventName: 'ClearAllAssociatedAddresses',
+      chainId: wallet.chainId,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  const clearAllLatestMap = {}
+  for (let i = 0; i < clearAlls.length; i++) {
+    const o = clearAlls[i]
+    const key = `${o.chainId}_${o.ownerAddress}_${o.profileUrl}`
+    if (clearAllLatestMap[key]) {
+      clearAllLatestMap[key] = Math.max(clearAllLatestMap[key], o.blockNumber)
+    } else {
+      clearAllLatestMap[key] = o.blockNumber
+    }
+  }
+
   const cancellations = await repositories.event.find({
     where: {
       eventName: 'CancelledEvmAssociation',
@@ -292,47 +313,41 @@ const getMyPendingAssocations = async (
   const cancellationsMap = {}
   for (let i = 0; i < cancellations.length; i++) {
     const o = cancellations[i]
-    const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
-    if (cancellationsMap[key]) {
-      cancellationsMap[key] += 1
+    const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+
+    const clearAllKey = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
+    const latestClearBlock = clearAllLatestMap[clearAllKey]
+
+    if (latestClearBlock && latestClearBlock > o.blockNumber) {
+      // don't add if the latest cancel block is greater than the current individual cancellation
     } else {
-      cancellationsMap[key] = 1
+      if (cancellationsMap[key]) {
+        cancellationsMap[key] = Number(cancellationsMap[key]) + 1
+      } else {
+        cancellationsMap[key] = 1
+      }
     }
   }
 
   return matches
     .filter((o) => {
-      const key = `${o.chainId}_${o.ownerAddress}_${o.destinationAddress}`
-      if (Number(cancellationsMap[key]) == 0 || cancellationsMap[key] == undefined) {
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
+      const latestBlock = clearAllLatestMap[key]
+
+      if (!latestBlock) {
         return true
       } else {
-        cancellationsMap[key] = Number(cancellationsMap[key]) - 1
-        return false
+        return o.blockNumber >= latestBlock
       }
     })
     .filter((o) => {
-      return repositories.event.find({
-        where: {
-          eventName: 'ClearAllAssociatedAddresses',
-          ownerAddress: helper.checkSum(o.ownerAddress),
-          profileUrl: o.profileUrl,
-          chainId: wallet.chainId,
-        },
-        order: {
-          blockNumber: 'ASC',
-        },
-      }).then((clearAlls) => {
-        // if association is >= (later than) last all clear, then it is valid
-        if (!clearAlls || clearAlls.length == 0) {
-          return true
-        } else {
-          if (o.blockNumber >= clearAlls[clearAlls.length - 1]?.blockNumber) {
-            return true
-          } else {
-            return false
-          }
-        }
-      })
+      const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
+      if (Number(cancellationsMap[key]) > 0) {
+        cancellationsMap[key] = Number(cancellationsMap[key]) - 1
+        return false
+      } else {
+        return true
+      }
     })
     .map(e => {
       return {
@@ -359,7 +374,8 @@ const getMyGenesisKeys = async (
       ),
     )).then(async (wallet) => {
       const address = wallet[0]?.address
-      const cachedGks = await cache.get(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`)
+      const cacheKey = `${CacheKeys.CACHED_GKS}_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`
+      const cachedGks = await cache.get(cacheKey)
       let gk_owners
 
       const genesisKeyContract = typechain.GenesisKey__factory.connect(
@@ -385,7 +401,7 @@ const getMyGenesisKeys = async (
           })
         }
 
-        await cache.set(`cached_gks_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
+        await cache.set(cacheKey, JSON.stringify(gk_owners), 'EX', 60 * 2) // 2 minutest
       } else {
         gk_owners = JSON.parse(cachedGks)
       }
