@@ -91,6 +91,15 @@ const getCollection = async (
   }
 }
 
+const getCollectionsByDeployer = async (
+  _: any,
+  args: gql.QueryCollectionsByDeployerArgs,
+  ctx: Context,
+): Promise<gql.Collection[]> => {
+  logger.debug('getCollection', { input: args?.deployer })
+  return ctx.repositories.collection.find({ where: { deployer: args?.deployer } })
+}
+
 const removeCollectionDuplicates = async (
   _: any,
   args: gql.MutationRemoveDuplicatesArgs,
@@ -346,6 +355,7 @@ const fillChainIds = async (
 export default {
   Query: {
     collection: getCollection,
+    collectionsByDeployer: getCollectionsByDeployer,
   },
   Mutation: {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
