@@ -195,7 +195,7 @@ exporters:
   logging: 
     loglevel: info
   otlp:
-    endpoint: tempo.leonardo.nft.prv
+    endpoint: tempo.leonardo.nft.prv:80
 
 service:
   pipelines:
