@@ -72,7 +72,11 @@ const getCollection = async (
           ...collection,
           deployer: collectionDeployer,
         })
-        collection.deployer = collectionDeployer
+        try {
+          collection.deployer = ethers.utils.getAddress(collectionDeployer)
+        } catch {
+          collection.deployer = null
+        }
       }
 
       const returnObject = {
@@ -97,7 +101,17 @@ const getCollectionsByDeployer = async (
   ctx: Context,
 ): Promise<gql.Collection[]> => {
   logger.debug('getCollection', { input: args?.deployer })
-  return ctx.repositories.collection.find({ where: { deployer: args?.deployer } })
+  try {
+    if (args?.deployer == null) {
+      return []
+    }
+    return ctx.repositories.collection.find({
+      where: { deployer: ethers.utils.getAddress(args?.deployer) },
+    })
+  } catch {
+    Sentry.captureMessage('Error in getCollectionsByDeployer: invalid address')
+    return []
+  }
 }
 
 const removeCollectionDuplicates = async (
