@@ -110,7 +110,8 @@ export const initiateWeb3 = (chainId?: string): void => {
     (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
   web3 = createAlchemyWeb3(alchemy_api_url)
   alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL :
-    Number(chainId) == 5 ? process.env.ALCHEMY_API_URL_GOERLI : process.env.ALCHEMY_API_URL_RINKEBY, ''
+    Number(chainId) == 5 ? process.env.ALCHEMY_API_URL_GOERLI :
+      Number(chainId) == 4 ? process.env.ALCHEMY_API_URL_RINKEBY : ''
 }
 
 export const getNFTsFromAlchemy = async (
