@@ -187,14 +187,14 @@ receivers:
 processors:
   batch/traces:
     timeout: 10s
-    send_batch_size: 50
+    send_batch_size: 512
   batch/metrics:
     timeout: 60s
 
 exporters:
   logging: 
     loglevel: info
-  otlp:
+  otlphttp:
     endpoint: tempo.leonardo.nft.prv:80
 
 service:
@@ -202,7 +202,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch/traces]
-      exporters: [otlp]
+      exporters: [otlphttp]
 
   extensions: [health_check]`,
   })
