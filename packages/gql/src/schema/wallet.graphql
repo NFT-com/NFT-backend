@@ -28,6 +28,6 @@ extend type Mutation {
   "AUTHENTICATED"
   addAddress(input: WalletInput!): Wallet!
   "AUTHENTICATED"
-  updateWalletProfileId(profileId: String!): Wallet!
+  updateWalletProfileId(profileId: ID!): Wallet!
 }
 

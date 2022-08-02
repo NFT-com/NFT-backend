@@ -179,10 +179,8 @@ const getNFTs = (
           repositories.nft.findByWalletId(profile.ownerWalletId, chainId)
             .then((nfts: entity.NFT[]) =>
               Promise.all(nfts.map((nft: entity.NFT) => {
-                const gqlNFT: gql.NFT = { ...nft }
-                gqlNFT.profileUrl = profile.url
                 return {
-                  nft: gqlNFT,
+                  nft,
                   size: defs.NFTSize.Medium, // default
                 }
               }))))
@@ -981,14 +979,15 @@ export const updateNFTProfileId =
         profileError.ErrorType.ProfileNotFound,
       )
     } else if (profile.ownerWalletId !== wallet.id) {
-      throw appError.buildInvalid(
+      throw appError.buildForbidden(
         profileError.buildProfileNotOwnedMsg(profile.id),
         profileError.ErrorType.ProfileNotOwned,
       )
     }
 
-    nft.profileId = profileId
-    return await repositories.nft.save(nft)
+    return await repositories.nft.updateOneById(nft.id, {
+      profileId: profile.id,
+    })
   }
 
 export default {

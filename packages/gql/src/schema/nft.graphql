@@ -194,5 +194,5 @@ extend type Mutation {
   "AUTHENTICATED"
   updateNFTMemo(nftId: ID!, memo: String!): NFT!
   "AUTHENTICATED"
-  updateNFTProfileId(nftId: String!, profileId: String!): NFT!
+  updateNFTProfileId(nftId: ID!, profileId: ID!): NFT!
 }

@@ -85,6 +85,7 @@ export const nftTestMockData: NFT = {
     traits: [],
   },
   createdAt: 'test-timestamp',
+  profileId: testMockProfiles.id,
 }
 
 export const nftTestErrorMockData: NFT = {

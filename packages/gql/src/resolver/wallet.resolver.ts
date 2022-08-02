@@ -84,14 +84,15 @@ export const updateWalletProfileId =
         profileError.ErrorType.ProfileNotFound,
       )
     } else if (profile.ownerWalletId !== wallet.id) {
-      throw appError.buildInvalid(
+      throw appError.buildForbidden(
         profileError.buildProfileNotOwnedMsg(profile.id),
         profileError.ErrorType.ProfileNotOwned,
       )
     }
     
-    wallet.profileId = profileId
-    return await repositories.wallet.save(wallet)
+    return await repositories.wallet.updateOneById(wallet.id, {
+      profileId: profile.id,
+    })
   }
 
 export default {
