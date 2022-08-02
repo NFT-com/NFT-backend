@@ -46,6 +46,7 @@ type Profile {
   isOwnedByMe: Boolean
   gkIconVisible: Boolean
   nftsDescriptionsVisible: Boolean
+  deployedContractsVisible: Boolean
   owner: Wallet
   tokenId: String
   photoURL: String
@@ -87,6 +88,7 @@ input UpdateProfileInput {
   hideAllNFTs: Boolean
   gkIconVisible: Boolean
   nftsDescriptionsVisible: Boolean
+  deployedContractsVisible: Boolean
   displayType: ProfileDisplayType
   layoutType: ProfileLayoutType
 }
