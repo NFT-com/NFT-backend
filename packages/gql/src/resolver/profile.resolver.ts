@@ -796,31 +796,6 @@ const getLatestProfiles = async (
       profileError.ErrorType.ProfileSortByType,
     ))
   }
-  // const profiles = await repositories.profile.findAll()
-  // const visibleProfiles = []
-  // await Promise.allSettled(
-  //   profiles.map(async (profile) => {
-  //     const edges = await repositories.edge.find({
-  //       where: {
-  //         thisEntityId: profile.id,
-  //         thisEntityType: defs.EntityType.Profile,
-  //         thatEntityType: defs.EntityType.NFT,
-  //         edgeType: defs.EdgeType.Displays,
-  //         hide: false,
-  //       },
-  //     })
-  //     if (edges.length) {
-  //       visibleProfiles.push(profile)
-  //     }
-  //   })
-  // )
-  //
-  // return pagination.toPageable(
-  //   pageInput,
-  //   paginatedLeaderboard[0],
-  //   paginatedLeaderboard[paginatedLeaderboard.length - 1],
-  //   'index',
-  // )([paginatedLeaderboard, totalItems])
 }
 
 const orderingUpdates = (
@@ -1076,6 +1051,44 @@ const updateProfileView = async (
   }
 }
 
+const saveNFTVisibility = async (
+  _: any,
+  args: gql.MutationSaveNFTVisibilityForProfilesArgs,
+  ctx: Context,
+): Promise<gql.SaveNFTVisibilityForProfilesOutput> => {
+  const { repositories } = ctx
+  logger.debug('saveNFTVisibility', { count: args?.count })
+  try {
+    const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
+    const profiles = await repositories.profile.findAll()
+    const slicedProfiles = profiles.slice(0, count)
+    await Promise.allSettled(
+      slicedProfiles.map(async (profile) => {
+        const edges = await repositories.edge.find({
+          where: {
+            thisEntityId: profile.id,
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            edgeType: defs.EdgeType.Displays,
+            hide: false,
+          },
+        })
+        if (edges.length) {
+          await cache.zadd(`Visible_NFT_AMOUNT_${profile.chainId}`, edges.length, profile.id)
+          logger.debug(`Amount of visible NFTs is cached for Profile ${ profile.id }`)
+        }
+      }),
+    )
+    logger.debug('Amount of visible NFTs for profiles are cached', { counts: slicedProfiles.length })
+    return {
+      message: 'Saved amount of visible NFTs for profiles',
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveNFTVisibility: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1100,6 +1113,7 @@ export default {
     saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
     clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
     updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
+    saveNFTVisibilityForProfiles: combineResolvers(auth.isAuthenticated, saveNFTVisibility),
   },
   Profile: {
     followersCount: getFollowersCount,

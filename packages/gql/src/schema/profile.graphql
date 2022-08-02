@@ -170,6 +170,10 @@ input UpdateProfileViewInput {
   profileViewType: ProfileViewType!
 }
 
+type SaveNFTVisibilityForProfilesOutput {
+  message: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -207,4 +211,6 @@ extend type Mutation {
   clearGKIconVisible: ClearGKIconVisibleOutput!
   "AUTHENTICATED"
   updateProfileView(input: UpdateProfileViewInput): Profile!
+  "AUTHENTICATED"
+  saveNFTVisibilityForProfiles(count: Int!): SaveNFTVisibilityForProfilesOutput!
 }
