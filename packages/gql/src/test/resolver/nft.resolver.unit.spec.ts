@@ -508,4 +508,66 @@ describe('nft resolver', () => {
       expect(result.errors[0].message).toBe('Profile not-a-profile-id not found')
     })
   })
+
+  describe('updateNFTsForProfile', () => {
+    let profileA
+    let nftA
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '4', name: 'rinkeby' },
+      )
+    })
+
+    beforeEach(async () => {
+      testMockUser.chainId = '4'
+      testMockWallet.chainId = '4'
+      testMockWallet.chainName = 'rinkeby'
+
+      profileA = await repositories.profile.save({
+        url: 'test-profile',
+        ownerWalletId: testMockWallet.id,
+      })
+
+      nftA = await repositories.nft.save({
+        contract: nftTestMockData.contract,
+        tokenId: nftTestMockData.tokenId,
+        chainId: nftTestMockData.chainId,
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await testServer.stop()
+    })
+
+    afterEach(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should reset profile ID if NFT not owned by the user', async () => {
+      await repositories.nft.updateOneById(nftA.id, {
+        walletId: 'something-else',
+      })
+
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTsForProfile($input: UpdateNFTsForProfileInput) { updateNFTsForProfile(input: $input) { items { profileId } } }',
+        variables: {
+          input: {
+            profileId: profileA.id,
+          },
+        },
+      })
+
+      expect(result.data.updateNFTsForProfile.items).toHaveLength(0)
+    })
+  })
 })
