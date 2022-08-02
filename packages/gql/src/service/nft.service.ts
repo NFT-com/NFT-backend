@@ -500,6 +500,13 @@ const updateNFTOwnershipAndMetadata = async (
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+        const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
+        // if this NFT was previous owner's preferred profile
+        if (existingNFT.id === previousWallet.profileId) {
+          await repositories.wallet.updateOneById(previousWallet.id, {
+            profileId: null,
+          })
+        }
         return await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
