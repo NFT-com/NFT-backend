@@ -7,6 +7,7 @@ export enum ErrorType {
   ProfileInvalid = 'PROFILE_INVALID',
   ProfileBannerFileSize = 'PROFILE_BANNER_FILE_SIZE',
   ProfileAvatarFileSize = 'PROFILE_AVATAR_FILE_SIZE',
+  ProfileSortByType = 'PROFILE_SORT_BY_TYPE',
   KeyInvalid = 'KEY_INVALID',
 }
 
@@ -35,3 +36,5 @@ export const buildProfileInvalidReserveMsg = (id: string): string => `Profile ${
 
 export const buildProfileBannerFileSize = (): string => 'Banner image file size should not exceed 5MB.'
 export const buildProfileAvatarFileSize = (): string => 'Avatar image file size should not exceed 2MB.'
+
+export const buildProfileSortByType = (): string => 'Profile sortBy type is not valid.'

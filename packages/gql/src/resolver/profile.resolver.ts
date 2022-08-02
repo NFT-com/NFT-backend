@@ -749,7 +749,7 @@ const createCompositeImage = async (
   return profile
 }
 
-const getLatestProfiles = (
+const getLatestProfiles = async (
   _: any,
   args: gql.QueryLatestProfilesArgs,
   ctx: Context,
@@ -765,15 +765,62 @@ const getLatestProfiles = (
     chainId: chainId,
   }
   const filters = [helper.inputT2SafeK(inputFilters)]
-  return core.paginatedEntitiesBy(
-    repositories.profile,
-    pageInput,
-    filters,
-    [],
-    'updatedAt',
-    'DESC',
-  )
-    .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  if (args?.input.sortBy === gql.ProfileSortType.RecentUpdated) {
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  } else if (args?.input.sortBy === gql.ProfileSortType.RecentMinted) {
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'createdAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+  } else if (args?.input.sortBy === gql.ProfileSortType.RecentUpdatedCustomized) {
+    return Promise.reject(appError.buildNotFound(
+      profileError.buildProfileSortByType(),
+      profileError.ErrorType.ProfileSortByType,
+    ))
+  } else {
+    return Promise.reject(appError.buildNotFound(
+      profileError.buildProfileSortByType(),
+      profileError.ErrorType.ProfileSortByType,
+    ))
+  }
+  // const profiles = await repositories.profile.findAll()
+  // const visibleProfiles = []
+  // await Promise.allSettled(
+  //   profiles.map(async (profile) => {
+  //     const edges = await repositories.edge.find({
+  //       where: {
+  //         thisEntityId: profile.id,
+  //         thisEntityType: defs.EntityType.Profile,
+  //         thatEntityType: defs.EntityType.NFT,
+  //         edgeType: defs.EdgeType.Displays,
+  //         hide: false,
+  //       },
+  //     })
+  //     if (edges.length) {
+  //       visibleProfiles.push(profile)
+  //     }
+  //   })
+  // )
+  //
+  // return pagination.toPageable(
+  //   pageInput,
+  //   paginatedLeaderboard[0],
+  //   paginatedLeaderboard[paginatedLeaderboard.length - 1],
+  //   'index',
+  // )([paginatedLeaderboard, totalItems])
 }
 
 const orderingUpdates = (

@@ -33,6 +33,12 @@ enum ProfileViewType {
   Gallery
 }
 
+enum ProfileSortType {
+  RecentMinted
+  RecentUpdated
+  RecentUpdatedCustomized
+}
+
 type Profile {
   id: ID!
   bannerURL: String
@@ -121,6 +127,7 @@ input CreateCompositeImageInput {
 input LatestProfilesInput {
   pageInput: PageInput
   chainId: String
+  sortBy: ProfileSortType!
 }
 
 input OrderUpdateInput {
