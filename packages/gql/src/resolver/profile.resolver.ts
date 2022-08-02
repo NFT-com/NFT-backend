@@ -1029,6 +1029,30 @@ const updateProfileView = async (
   }
 }
 
+const getHiddenEvents = async (
+  _: any,
+  args: gql.QueryHiddenEventsArgs,
+  ctx: Context,
+): Promise<entity.Event[]> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getHiddenEvents', { input: args?.input })
+    const { profileUrl, walletAddress } = helper.safeObject(args?.input)
+    return await repositories.event.find({
+      where: {
+        profileUrl,
+        ownerAddress: ethers.utils.getAddress(walletAddress),
+        ignore: true,
+      },
+    })
+  } catch (err) {
+    Sentry.captureMessage(`Error in getHiddenEvents: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1041,6 +1065,7 @@ export default {
     insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
+    hiddenEvents: getHiddenEvents,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
