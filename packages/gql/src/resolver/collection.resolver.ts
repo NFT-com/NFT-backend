@@ -72,11 +72,7 @@ const getCollection = async (
           ...collection,
           deployer: collectionDeployer,
         })
-        try {
-          collection.deployer = ethers.utils.getAddress(collectionDeployer)
-        } catch {
-          collection.deployer = null
-        }
+        collection.deployer = collectionDeployer
       }
 
       const returnObject = {

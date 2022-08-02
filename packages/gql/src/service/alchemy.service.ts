@@ -1,4 +1,7 @@
 import axios from 'axios'
+import { ethers } from 'ethers'
+
+import * as Sentry from '@sentry/node'
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
@@ -83,7 +86,7 @@ const getTxReceipts = async (
 export const getCollectionDeployer = async (
   contractAddress: string,
   chainId: string,
-): Promise<string> => {
+): Promise<string | null> => {
   chainId = chainId ?? process.env.CHAIN_ID
   const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL :
     (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
@@ -97,7 +100,14 @@ export const getCollectionDeployer = async (
   )
   
   const receipts = await getTxReceipts(REQUEST_URL, deployedBlockNumber)
-  return receipts?.find(
+  const collectionDeployer = receipts?.find(
     receipt => receipt?.contractAddress === contractAddress.toLowerCase(),
   )?.from
+  try {
+    const checksummed = ethers.utils.getAddress(collectionDeployer)
+    return checksummed
+  } catch {
+    Sentry.captureMessage('Error in getCollectionDeployer: invalid checksum', collectionDeployer)
+    return null
+  }
 }
