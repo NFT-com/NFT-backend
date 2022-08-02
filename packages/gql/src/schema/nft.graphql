@@ -35,7 +35,7 @@ type NFT {
   metadata: NFTMetadata!
   price: Uint256
   profileId: String
-  profileUrl: String
+  preferredProfile: Profile
   type: NFTType!
 #  user: User
   wallet: Wallet

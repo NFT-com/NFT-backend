@@ -66,7 +66,7 @@ const isAddressWhitelisted = async (
   }
 }
 
-export const updateProfileId =
+export const updateWalletProfileId =
   async (_: any, args: gql.MutationUpdateWalletProfileIdArgs, ctx: Context):
   Promise<gql.Wallet> => {
     const schema = Joi.object().keys({
@@ -77,16 +77,21 @@ export const updateProfileId =
     const { repositories, wallet } = ctx
     const { profileId } = args
     const profile = await repositories.profile.findById(profileId)
-    if (profile) {
-      wallet.profileId = profileId
-      const updatedWallet: gql.Wallet = await repositories.wallet.save(wallet)
-      updatedWallet.profileUrl = profile.url
-      return updatedWallet
+
+    if (!profile) {
+      throw appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(profileId),
+        profileError.ErrorType.ProfileNotFound,
+      )
+    } else if (profile.ownerWalletId !== wallet.id) {
+      throw appError.buildInvalid(
+        profileError.buildProfileNotOwnedMsg(profile.id),
+        profileError.ErrorType.ProfileNotOwned,
+      )
     }
-    throw appError.buildNotFound(
-      profileError.buildProfileNotFoundMsg(profileId),
-      profileError.ErrorType.ProfileNotFound,
-    )
+    
+    wallet.profileId = profileId
+    return await repositories.wallet.save(wallet)
   }
 
 export default {
@@ -95,13 +100,18 @@ export default {
   },
   Mutation: {
     addAddress: combineResolvers(auth.isAuthenticated, addAddress),
-    updateWalletProfileId: combineResolvers(auth.isAuthenticated, updateProfileId),
+    updateWalletProfileId: combineResolvers(auth.isAuthenticated, updateWalletProfileId),
   },
   Wallet: {
     user: core.resolveEntityById<gql.Wallet, entity.User>(
       'userId',
       defs.EntityType.Wallet,
       defs.EntityType.User,
+    ),
+    preferredProfile: core.resolveEntityById<gql.Wallet, entity.Profile>(
+      'profileId',
+      defs.EntityType.Wallet,
+      defs.EntityType.Profile,
     ),
   },
 }

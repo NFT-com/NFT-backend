@@ -5,7 +5,7 @@ type Wallet {
   chainName: String!
   network: String!
   profileId: String
-  profileUrl: String
+  preferredProfile: Profile
   user: User
   createdAt: DateTime!
 }

@@ -504,6 +504,7 @@ const updateNFTOwnershipAndMetadata = async (
           userId,
           walletId,
           type,
+          profileId: null,
           metadata: {
             name,
             description,
