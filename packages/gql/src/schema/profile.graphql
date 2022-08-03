@@ -46,6 +46,7 @@ type Profile {
   isOwnedByMe: Boolean
   gkIconVisible: Boolean
   nftsDescriptionsVisible: Boolean
+  deployedContractsVisible: Boolean
   owner: Wallet
   tokenId: String
   photoURL: String
@@ -87,6 +88,7 @@ input UpdateProfileInput {
   hideAllNFTs: Boolean
   gkIconVisible: Boolean
   nftsDescriptionsVisible: Boolean
+  deployedContractsVisible: Boolean
   displayType: ProfileDisplayType
   layoutType: ProfileLayoutType
 }
@@ -163,6 +165,12 @@ input UpdateProfileViewInput {
   profileViewType: ProfileViewType!
 }
 
+input HiddenEventsInput {
+  profileUrl: String!
+  walletAddress: Address!
+  chainId: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -176,6 +184,7 @@ extend type Query {
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
   leaderboard(input: LeaderboardInput): LeaderboardOutput!
+  hiddenEvents(input: HiddenEventsInput!): [Event!]!
 }
 
 extend type Mutation {
