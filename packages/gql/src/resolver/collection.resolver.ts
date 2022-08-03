@@ -66,17 +66,16 @@ const getCollection = async (
         chainId,
       )
 
-      if (collection && collection.deployer == null) {
+      if (collection && (
+        collection.deployer == null ||
+        ethers.utils.getAddress(collection.deployer) !== collection.deployer
+      )) {
         const collectionDeployer = await getCollectionDeployer(args?.input?.contract, chainId)
         await ctx.repositories.collection.save({
           ...collection,
           deployer: collectionDeployer,
         })
-        try {
-          collection.deployer = ethers.utils.getAddress(collectionDeployer)
-        } catch {
-          collection.deployer = null
-        }
+        collection.deployer = collectionDeployer
       }
 
       const returnObject = {
