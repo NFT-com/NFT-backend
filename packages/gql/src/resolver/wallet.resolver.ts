@@ -1,8 +1,9 @@
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import Joi from 'joi'
 
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError } from '@nftcom/gql/error'
+import { appError, profileError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, helper } from '@nftcom/shared'
@@ -65,18 +66,53 @@ const isAddressWhitelisted = async (
   }
 }
 
+export const updateWalletProfileId =
+  async (_: any, args: gql.MutationUpdateWalletProfileIdArgs, ctx: Context):
+  Promise<gql.Wallet> => {
+    const schema = Joi.object().keys({
+      profileId: Joi.string().required(),
+    })
+    joi.validateSchema(schema, args)
+
+    const { repositories, wallet } = ctx
+    const { profileId } = args
+    const profile = await repositories.profile.findById(profileId)
+
+    if (!profile) {
+      throw appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(profileId),
+        profileError.ErrorType.ProfileNotFound,
+      )
+    } else if (profile.ownerWalletId !== wallet.id) {
+      throw appError.buildForbidden(
+        profileError.buildProfileNotOwnedMsg(profile.id),
+        profileError.ErrorType.ProfileNotOwned,
+      )
+    }
+    
+    return await repositories.wallet.updateOneById(wallet.id, {
+      profileId: profile.id,
+    })
+  }
+
 export default {
   Query: {
     isAddressWhitelisted: isAddressWhitelisted,
   },
   Mutation: {
     addAddress: combineResolvers(auth.isAuthenticated, addAddress),
+    updateWalletProfileId: combineResolvers(auth.isAuthenticated, updateWalletProfileId),
   },
   Wallet: {
     user: core.resolveEntityById<gql.Wallet, entity.User>(
       'userId',
       defs.EntityType.Wallet,
       defs.EntityType.User,
+    ),
+    preferredProfile: core.resolveEntityById<gql.Wallet, entity.Profile>(
+      'profileId',
+      defs.EntityType.Wallet,
+      defs.EntityType.Profile,
     ),
   },
 }
