@@ -100,8 +100,6 @@ type Collection {
 
 type CollectionInfo {
   collection: Collection
-  openseaInfo: OpenseaContract
-  openseaStats: OpenseaStats
   ubiquityResults: UbiquityResults
 }
 
@@ -109,7 +107,6 @@ input CollectionInput {
   contract: Address!
   chainId: String
   network: String!
-  withOpensea: Boolean
 }
 
 input FillChainIdsInput {
