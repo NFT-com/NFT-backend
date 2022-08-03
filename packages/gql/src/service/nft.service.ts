@@ -1103,7 +1103,6 @@ export const removeEdgesForNonassociatedAddresses = async (
           const toRemoveEdges = []
           await Promise.allSettled(
             nfts.map(async (nft) => {
-              // TODO: Remove nft.profileId here
               const edge = await repositories.edge.findOne({
                 where: {
                   thisEntityType: defs.EntityType.Profile,
@@ -1115,6 +1114,7 @@ export const removeEdgesForNonassociatedAddresses = async (
               })
               if (edge) {
                 toRemoveEdges.push(edge.id)
+                await repositories.nft.updateOneById(nft.id, { profileId: null })
               }
             }),
           )

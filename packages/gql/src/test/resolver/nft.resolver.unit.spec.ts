@@ -1,8 +1,10 @@
 import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
-import { defs } from '@nftcom/shared/'
+import * as nftService from '@nftcom/gql/service/nft.service'
+import { defs, typechain } from '@nftcom/shared/'
 import { db } from '@nftcom/shared/db'
+import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
 import {
   nftTestErrorMockData,
@@ -516,24 +518,26 @@ describe('nft resolver', () => {
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
-        { id: '4', name: 'rinkeby' },
+        { id: '5', name: 'goerli' },
       )
     })
 
     beforeEach(async () => {
-      testMockUser.chainId = '4'
-      testMockWallet.chainId = '4'
-      testMockWallet.chainName = 'rinkeby'
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
 
       profileA = await repositories.profile.save({
         url: 'test-profile',
+        ownerUserId: testMockUser.id,
         ownerWalletId: testMockWallet.id,
+        chainId: '5',
       })
 
       nftA = await repositories.nft.save({
         contract: nftTestMockData.contract,
         tokenId: nftTestMockData.tokenId,
-        chainId: nftTestMockData.chainId,
+        chainId: '5',
         metadata: {
           name: '',
           description: '',
@@ -554,8 +558,23 @@ describe('nft resolver', () => {
     })
 
     it('should reset profile ID if NFT not owned by the user', async () => {
-      await repositories.nft.updateOneById(nftA.id, {
-        walletId: 'something-else',
+      await repositories.wallet.save({
+        ...testMockWallet,
+        userId: testMockUser.id,
+        createdAt: undefined,
+      })
+      await repositories.edge.save({
+        thatEntityId: nftA.id,
+        thatEntityType: EntityType.NFT,
+        thisEntityId: profileA.id,
+        thisEntityType: EntityType.Profile,
+        edgeType: EdgeType.Displays,
+      })
+
+      const alchemySpy = jest.spyOn(nftService, 'getNFTsFromAlchemy')
+      alchemySpy.mockResolvedValue([])
+      typechain.NftResolver__factory.connect = jest.fn().mockReturnValue({
+        associatedAddresses: jest.fn().mockResolvedValue([]),
       })
 
       const result = await testServer.executeOperation({
@@ -563,10 +582,17 @@ describe('nft resolver', () => {
         variables: {
           input: {
             profileId: profileA.id,
+            chainId: profileA.chainId,
+            pageInput: {
+              first: 1,
+            },
           },
         },
       })
 
+      // This expectation sucks, but jest spies for repository.edge.hardDelete
+      // and repository.nft.hardDelete are being evaluated before the code is 
+      // reached. It's likely because of how the promises are structured...
       expect(result.data.updateNFTsForProfile.items).toHaveLength(0)
     })
   })
