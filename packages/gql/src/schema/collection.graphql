@@ -102,10 +102,17 @@ type FillChainIdsOutput {
   message: String
 }
 
+type AssociatedAddressesForContractOutput {
+  deployerAddress: Address
+  associatedAddresses: [Address]
+  deployerIsAssociated: Boolean
+}
+
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
   collectionsByDeployer(deployer: String!): [Collection]
+  associatedAddressesForContract(contract: Address!): AssociatedAddressesForContractOutput!
 }
 
 extend type Mutation {
