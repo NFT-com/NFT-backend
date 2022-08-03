@@ -105,6 +105,7 @@ type FillChainIdsOutput {
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
+  collectionsByDeployer(deployer: String!): [Collection]
 }
 
 extend type Mutation {

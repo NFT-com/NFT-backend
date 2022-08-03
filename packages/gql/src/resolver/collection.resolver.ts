@@ -71,7 +71,11 @@ const getCollection = async (
           ...collection,
           deployer: collectionDeployer,
         })
-        collection.deployer = collectionDeployer
+        try {
+          collection.deployer = ethers.utils.getAddress(collectionDeployer)
+        } catch {
+          collection.deployer = null
+        }
       }
 
       const returnObject = {
@@ -87,6 +91,25 @@ const getCollection = async (
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
     return err
+  }
+}
+
+const getCollectionsByDeployer = async (
+  _: any,
+  args: gql.QueryCollectionsByDeployerArgs,
+  ctx: Context,
+): Promise<gql.Collection[]> => {
+  logger.debug('getCollection', { input: args?.deployer })
+  try {
+    if (args?.deployer == null) {
+      return []
+    }
+    return ctx.repositories.collection.find({
+      where: { deployer: ethers.utils.getAddress(args?.deployer) },
+    })
+  } catch {
+    Sentry.captureMessage('Error in getCollectionsByDeployer: invalid address')
+    return []
   }
 }
 
@@ -250,6 +273,7 @@ const syncCollectionsWithNFTs = async (
 export default {
   Query: {
     collection: getCollection,
+    collectionsByDeployer: getCollectionsByDeployer,
   },
   Mutation: {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
