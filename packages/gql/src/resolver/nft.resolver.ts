@@ -5,7 +5,7 @@ import Joi from 'joi'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
-import { appError, curationError, nftError } from '@nftcom/gql/error'
+import { appError, curationError, nftError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import {
@@ -946,6 +946,50 @@ export const getNFTsForCollections = async (
   }
 }
 
+export const updateNFTProfileId =
+  async (_: any, args: gql.MutationUpdateNFTProfileIdArgs, ctx: Context):
+  Promise<gql.NFT> => {
+    const schema = Joi.object().keys({
+      nftId: Joi.string().required(),
+      profileId: Joi.string().required(),
+    })
+    joi.validateSchema(schema, args)
+
+    const { repositories, wallet } = ctx
+    const { nftId, profileId } = args
+    const [nft, profile] = await Promise.all([
+      repositories.nft.findById(nftId),
+      repositories.profile.findById(profileId),
+    ])
+
+    if (!nft) {
+      throw appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg(nftId),
+        nftError.ErrorType.NFTNotFound,
+      )
+    } else if (nft.walletId !== wallet.id) {
+      throw appError.buildForbidden(
+        nftError.buildNFTNotOwnedMsg(),
+        nftError.ErrorType.NFTNotOwned,
+      )
+    }
+    if (!profile) {
+      throw appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(profileId),
+        profileError.ErrorType.ProfileNotFound,
+      )
+    } else if (profile.ownerWalletId !== wallet.id) {
+      throw appError.buildForbidden(
+        profileError.buildProfileNotOwnedMsg(profile.id),
+        profileError.ErrorType.ProfileNotOwned,
+      )
+    }
+
+    return await repositories.nft.updateOneById(nft.id, {
+      profileId: profile.id,
+    })
+  }
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -965,6 +1009,7 @@ export default {
     refreshNft,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
+    updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
@@ -976,6 +1021,11 @@ export default {
       'userId',
       'user',
       defs.EntityType.NFT,
+    ),
+    preferredProfile: core.resolveEntityById<gql.NFT, entity.Profile>(
+      'profileId',
+      defs.EntityType.NFT,
+      defs.EntityType.Profile,
     ),
   },
 }
