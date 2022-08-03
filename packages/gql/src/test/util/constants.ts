@@ -53,6 +53,7 @@ export const testMockProfiles: Profile = {
   isOwnedByMe: true,
   gkIconVisible: null,
   nftsDescriptionsVisible: true,
+  deployedContractsVisible: true,
   chainId: '1',
   owner: {
     id: 'test-user-id',

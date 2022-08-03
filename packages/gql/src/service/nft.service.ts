@@ -20,7 +20,7 @@ const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
-let alchemyApiKey: string
+let alchemyUrl: string
 
 // TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
 // const TYPESENSE_HOST = process.env.TYPESENSE_HOST
@@ -109,8 +109,9 @@ export const initiateWeb3 = (chainId?: string): void => {
   const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
     (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
   web3 = createAlchemyWeb3(alchemy_api_url)
-  alchemyApiKey = Number(chainId) == 1 ? (process.env.ALCHEMY_API_URL).replace('https://eth-mainnet.alchemyapi.io/v2/', '') :
-    Number(chainId) == 5 ? (process.env.ALCHEMY_API_URL_GOERLI).replace('https://eth-goerli.g.alchemy.com/v2/', '') : (process.env.ALCHEMY_API_URL_RINKEBY).replace('https://eth-rinkeby.alchemyapi.io/v2/', '')
+  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL :
+    Number(chainId) == 5 ? process.env.ALCHEMY_API_URL_GOERLI :
+      Number(chainId) == 4 ? process.env.ALCHEMY_API_URL_RINKEBY : ''
 }
 
 export const getNFTsFromAlchemy = async (
@@ -239,13 +240,13 @@ export const getContractMetaDataFromAlchemy = async (
   contractAddress: string,
 ): Promise<ContractMetaDataResponse | undefined> => {
   try {
-    const key = `getContractMetaDataFromAlchemy${alchemyApiKey}_${ethers.utils.getAddress(contractAddress)}`
+    const key = `getContractMetaDataFromAlchemy${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
     const cachedContractMetadata: string = await cache.get(key)
-    
+
     if (cachedContractMetadata) {
       return JSON.parse(cachedContractMetadata)
     } else {
-      const baseUrl = `https://eth-mainnet.g.alchemy.com/nft/v2/${alchemyApiKey}/getContractMetadata/?contractAddress=${contractAddress}`
+      const baseUrl = `${alchemyUrl}/getContractMetadata/?contractAddress=${contractAddress}`
       const response = await axios.get(baseUrl)
 
       if (response.data) {
@@ -384,6 +385,7 @@ const updateCollection = async (
     )
   } catch (err) {
     Sentry.captureMessage(`Error in updateCollection: ${err}`)
+    return err
   }
 }
 
@@ -450,6 +452,7 @@ const getNFTMetaData = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
+    return err
   }
 }
 
@@ -458,7 +461,7 @@ const updateNFTOwnershipAndMetadata = async (
   userId: string,
   walletId: string,
   chainId: string,
-): Promise<entity.NFT| undefined> => {
+): Promise<entity.NFT | undefined> => {
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
@@ -539,6 +542,7 @@ const updateNFTOwnershipAndMetadata = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
+    return undefined
   }
 }
 
@@ -640,6 +644,7 @@ export const refreshNFTMetadata = async (
     return nft
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
+    return err
   }
 }
 
@@ -667,6 +672,7 @@ export const getOwnersOfGenesisKeys = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
+    return []
   }
 }
 
@@ -863,6 +869,7 @@ export const changeNFTsVisibility = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
+    return err
   }
 }
 
@@ -932,6 +939,7 @@ export const updateNFTsOrder = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
+    return err
   }
 }
 
@@ -970,6 +978,7 @@ export const updateEdgesWeightForProfile = async (
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
+    return err
   }
 }
 
@@ -1014,6 +1023,7 @@ export const syncEdgesWithNFTs = async (
     await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
+    return err
   }
 }
 

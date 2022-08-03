@@ -297,4 +297,69 @@ describe('nft resolver', () => {
       expect(result.data.updateNFTMemo.memo).toEqual('This is test memo')
     })
   })
+
+  describe('nftsForCollections', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      const collection = await repositories.collection.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+
+      const nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+
+      await repositories.edge.save({
+        thisEntityId: collection.id,
+        thisEntityType: defs.EntityType.Collection,
+        thatEntityId: nftA.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Includes,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return nfts for collections', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress nfts { id contract } } }',
+        variables: {
+          input: {
+            collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
+            count: 10,
+            chainId: '5',
+          },
+        },
+      })
+
+      expect(result.data.nftsForCollections).toBeDefined()
+      expect(result.data.nftsForCollections.length).toBeGreaterThan(0)
+      expect(result.data.nftsForCollections[0].collectionAddress).toEqual('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55')
+      expect(result.data.nftsForCollections[0].nfts.length).toBeGreaterThan(0)
+    })
+  })
 })

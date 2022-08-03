@@ -55,7 +55,7 @@ describe('collection resolver', () => {
       userId,
       walletId,
       chainId,
-      contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+      contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
       tokenId: '0x086a79',
       type: defs.NFTType.ERC721,
       metadata: {
@@ -67,7 +67,7 @@ describe('collection resolver', () => {
       userId,
       walletId,
       chainId,
-      contract:ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+      contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
       tokenId: '0x086a76',
       type: defs.NFTType.ERC721,
       metadata: {
@@ -79,7 +79,7 @@ describe('collection resolver', () => {
       userId,
       walletId,
       chainId,
-      contract:ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+      contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
       tokenId: '0x05',
       type: defs.NFTType.ERC721,
       metadata: {
@@ -106,11 +106,13 @@ describe('collection resolver', () => {
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
         chainId,
+        deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
       })
       const collectionB = await repositories.collection.save({
         contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
         name: 'tinyMusktweetz',
         chainId,
+        deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
       })
 
       await repositories.edge.save({
@@ -170,6 +172,26 @@ describe('collection resolver', () => {
 
       expect(result.data.collectionNFTs.items.length).toBeDefined()
       expect(result.data.collectionNFTs.items.length).toEqual(2)
+    })
+  })
+
+  describe('collectionsByDeployer', () => {
+    it('should return collections by deployer', async () => {
+      const result = await testServer.executeOperation({
+        query: `
+        query DeployedCollections($deployer: String!) {
+          collectionsByDeployer(deployer: $deployer) {
+            contract
+            name
+          }
+        }
+        `,
+        variables: {
+          deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+        },
+      })
+  
+      expect(result.data.collectionsByDeployer.length).toBeDefined()
     })
   })
 

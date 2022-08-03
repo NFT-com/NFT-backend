@@ -453,43 +453,48 @@ const updateNFTsForAssociatedAddresses = async (
   profile: entity.Profile,
   chainId: string,
 ): Promise<string> => {
-  const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
-  const cachedData = await cache.get(cacheKey)
-  let addresses: string[]
-  if (cachedData) {
-    addresses = JSON.parse(cachedData)
-  } else {
-    const nftResolverContract = typechain.NftResolver__factory.connect(
-      contracts.nftResolverAddress(chainId),
-      provider.provider(Number(chainId)),
-    )
-    const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
-    logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
-    addresses = associatedAddresses.map((item) => item.chainAddr)
-    // remove NFT edges for non-associated addresses
-    await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
-    if (!addresses.length) {
-      return `No associated addresses of ${profile.url}`
+  try {
+    const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let addresses: string[]
+    if (cachedData) {
+      addresses = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+      logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
+      addresses = associatedAddresses.map((item) => item.chainAddr)
+      // remove NFT edges for non-associated addresses
+      await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
+      if (!addresses.length) {
+        return `No associated addresses of ${profile.url}`
+      }
+      await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
+      // update associated addresses with the latest updates
+      await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
     }
-    await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
-    // update associated addresses with the latest updates
-    await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
+    // save User, Wallet for associated addresses...
+    const wallets: entity.Wallet[] = []
+    await Promise.allSettled(
+      addresses.map(async (address) => {
+        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+      }),
+    )
+    // refresh NFTs for associated addresses...
+    await Promise.allSettled(
+      wallets.map(async (wallet) => {
+        await updateNFTsForAssociatedWallet(profile.id, wallet)
+      }),
+    )
+    await syncEdgesWithNFTs(profile.id)
+    return `refreshed NFTs for associated addresses of ${profile.url}`
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+    return `error while refreshing NFTs for associated addresses of ${profile.url}`
   }
-  // save User, Wallet for associated addresses...
-  const wallets: entity.Wallet[] = []
-  await Promise.allSettled(
-    addresses.map(async (address) => {
-      wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
-    }),
-  )
-  // refresh NFTs for associated addresses...
-  await Promise.allSettled(
-    wallets.map(async (wallet) => {
-      await updateNFTsForAssociatedWallet(profile.id, wallet)
-    }),
-  )
-  await syncEdgesWithNFTs(profile.id)
-  return `refreshed NFTs for associated addresses of ${profile.url}`
 }
 
 const updateNFTsForProfile = (
@@ -878,6 +883,66 @@ export const updateNFTMemo = async (
     return await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
+    return err
+  }
+}
+
+export const getNFTsForCollections = async (
+  _: any,
+  args: gql.QueryNFTsForCollectionsArgs,
+  ctx: Context,
+): Promise<gql.CollectionNFT[]> => {
+  const { repositories } = ctx
+  logger.debug('getNFTsForCollections', { input: args?.input })
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const { collectionAddresses, count } = helper.safeObject(args?.input)
+    const result: gql.CollectionNFT[] = []
+    await Promise.allSettled(
+      collectionAddresses.map(async (address) => {
+        const collection = await repositories.collection.findByContractAddress(
+          ethers.utils.getAddress(address),
+          chainId,
+        )
+        if (collection) {
+          const edges = await repositories.edge.find({ where: {
+            thisEntityType: defs.EntityType.Collection,
+            thisEntityId: collection.id,
+            thatEntityType: defs.EntityType.NFT,
+            edgeType: defs.EdgeType.Includes,
+          } })
+          if (edges.length) {
+            const nfts: entity.NFT[] = []
+            await Promise.allSettled(
+              edges.map(async (edge) => {
+                const nft = await repositories.nft.findById(edge.thatEntityId)
+                if (nft) nfts.push(nft)
+              }),
+            )
+            const length = nfts.length > count ? count: nfts.length
+            result.push({
+              collectionAddress: address,
+              nfts: nfts.slice(0, length),
+            })
+          } else {
+            result.push({
+              collectionAddress: address,
+              nfts: [],
+            })
+          }
+        } else {
+          result.push({
+            collectionAddress: address,
+            nfts: [],
+          })
+        }
+      }),
+    )
+    return result
+  } catch (err) {
+    Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
+    return err
   }
 }
 
@@ -891,6 +956,7 @@ export default {
     curationNFTs: getCurationNFTs,
     collectionNFTs: getCollectionNFTs,
     externalListings: getExternalListings,
+    nftsForCollections: getNFTsForCollections,
   },
   Mutation: {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
