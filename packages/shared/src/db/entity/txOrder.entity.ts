@@ -1,11 +1,11 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { ExchangeType } from '@nftcom/shared/defs'
+import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseEntity, TxActivity } from '.'
 
 @Entity()
-export class TxList extends BaseEntity {
+export class TxOrder extends BaseEntity {
 
   // @TODO: Need to re-configure cascade during data modelling
   @OneToOne(() => TxActivity,
@@ -19,7 +19,7 @@ export class TxList extends BaseEntity {
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
   exchange: ExchangeType
 
-  @Column({ nullable: false })
+  @Column({ unique: true, nullable: false }) // on-chain data will store tx hash
   orderHash: string
 
   @Column({ nullable: false })
@@ -27,12 +27,18 @@ export class TxList extends BaseEntity {
 
   @Column({ nullable: true })
   takerAddress: string
-  // null for Wyvern
-  @Column('json', { nullable: true })
-  offer: any[]
-  // null for Wyvern
-  @Column('json', { nullable: true })
-  consideration: any[]
+  
+  @Column({ type: 'enum', enum: ActivityType, nullable: false })
+  orderType: ActivityType
+
+  @Column({ nullable: false })
+  nftId: string
+
+  @Column({ type: 'enum', enum: ProtocolType, nullable: false })
+  protocol: ProtocolType
+
+  @Column({ type: 'json' })
+  protocolData: any
 
   @Column({ nullable: true })
   chainId: string

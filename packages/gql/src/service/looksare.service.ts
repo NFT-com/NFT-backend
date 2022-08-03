@@ -2,8 +2,8 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
-import { TxActivity,TxBid, TxList } from '@nftcom/shared/db/entity'
-import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
+import { TxActivity,TxOrder } from '@nftcom/shared/db/entity'
+import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
@@ -39,8 +39,8 @@ interface LooksRareOrder {
 }
 
 export interface LooksrareExternalOrder {
-  listings: TxList[]
-  offers: TxBid[]
+  listings: TxOrder[]
+  offers: TxOrder[]
 }
 
 export interface LookrareResponse {
@@ -126,25 +126,26 @@ const orderEntityBuilder = (
   orderType: ActivityType,
   order: LooksRareOrder,
   chainId: string,
-):  Partial<TxBid | TxList> => {
+):  Partial<TxOrder> => {
   // @TODO: Discuss during data modeling - this is for saving per current schema
   const activity: TxActivity = {
     activityType: orderType,
     read: false,
     timestamp: new Date(),
     activityTypeId: 'test-activity-type',
-    userId: 'test-user',
+    walletId: 'test-wallet',
     chainId,
   } as TxActivity
-  const baseOrder:  Partial<TxBid | TxList> = {
+  const baseOrder:  Partial<TxOrder> = {
     activity,
     createdAt: new Date(order.startTime), // need to check if createdAt is something internal during data modeling
     exchange: ExchangeType.LooksRare,
+    orderType,
     orderHash: order.hash,
     makerAddress: order.signer,
     takerAddress: order.strategy,
-    offer: null,
-    consideration: null,
+    protocol: ProtocolType.LooksRare,
+    protocolData: {},
     chainId,
   }
   return baseOrder

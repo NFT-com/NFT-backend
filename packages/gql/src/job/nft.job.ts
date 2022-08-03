@@ -5,7 +5,7 @@ import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampe
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
-import { NFT, TxBid, TxList } from '@nftcom/shared/db/entity'
+import { NFT, TxOrder } from '@nftcom/shared/db/entity'
 import { ExchangeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
@@ -58,12 +58,12 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
 
         // listings
         if (openseaResponse.listings.length) {
-          persistActivity.push(repositories.txList.saveMany(openseaResponse.listings))
+          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.listings))
         }
          
         // offers
         if (openseaResponse.offers.length) {
-          persistActivity.push(repositories.txBid.saveMany(openseaResponse.offers))
+          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.offers))
         }
         break
       case ExchangeType.LooksRare:
@@ -71,12 +71,12 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
   
         // listings
         if (looksrareResponse.listings.length) {
-          persistActivity.push(repositories.txList.saveMany(looksrareResponse.listings))
+          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.listings))
         }
 
         // offers
         if (looksrareResponse.offers.length) {
-          persistActivity.push(repositories.txBid.saveMany(looksrareResponse.offers))
+          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.offers))
         }
         break
       }
@@ -174,8 +174,8 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
       ])
 
-      const listings: TxList[] = []
-      const bids: TxBid[] = []
+      const listings: TxOrder[] = []
+      const bids: TxOrder[] = []
       const persistActivity: any[] = []
     
       if (opensea.status === 'fulfilled') {
@@ -204,12 +204,12 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       // save listings
       if (listings.length) {
-        persistActivity.push(repositories.txList.saveMany(listings))
+        persistActivity.push(repositories.txOrder.saveMany(listings))
       }
 
       // save bids
       if (bids.length) {
-        persistActivity.push(repositories.txBid.saveMany(bids))
+        persistActivity.push(repositories.txOrder.saveMany(bids))
       }
 
       await Promise.all(persistActivity)

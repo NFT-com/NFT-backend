@@ -5,7 +5,7 @@ import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
-import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
+import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 import { ActivityType, Chain, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
@@ -184,8 +184,8 @@ interface SeaportOrder extends OpenseaBaseOrder {
 }
 
 export interface OpenseaExternalOrder {
-  listings: TxList[]
-  offers: TxBid[]
+  listings: TxOrder[]
+  offers: TxOrder[]
 }
 
 const cids = (): string => {
@@ -439,35 +439,37 @@ const orderEntityBuilder = (
   orderType: ActivityType,
   order: WyvernOrder & SeaportOrder,
   chainId: string,
-):  Partial<TxBid | TxList> => {
+):  Partial<TxOrder> => {
   // @TODO: Discuss during data modeling - this is for saving per current schema
   const activity: TxActivity = {
     activityType: orderType,
     read: false,
     timestamp: new Date(),
     activityTypeId: 'test-activity-type',
-    userId: 'test-user',
+    walletId: 'test-wallet',
     chainId,
   } as TxActivity
 
-  const baseOrder:  Partial<TxBid | TxList> = {
+  const baseOrder:  Partial<TxOrder> = {
     activity,
     createdAt: new Date(order.listing_time),
     exchange: ExchangeType.OpenSea,
+    orderType,
     orderHash: order.order_hash,
     makerAddress: order.maker?.address,
     takerAddress: order.taker?.address,
-    offer: null,
-    consideration: null,
+    protocol,
     chainId,
   }
 
   switch (protocol) {
   case ProtocolType.Wyvern:
+    baseOrder.protocolData = {}
     break
   case ProtocolType.Seaport:
-    baseOrder.offer = order.protocol_data.parameters.offer
-    baseOrder.consideration = order.protocol_data.parameters.consideration
+    baseOrder.protocolData = {
+      ...order.protocol_data,
+    }
     break
   default:
     break
