@@ -53,7 +53,7 @@ export const testMockProfiles: Profile = {
   isOwnedByMe: true,
   gkIconVisible: null,
   nftsDescriptionsVisible: true,
-  deployedContractsVisible: true,
+  deployedContractsVisible: false,
   chainId: '1',
   owner: {
     id: 'test-user-id',
@@ -74,6 +74,7 @@ export const mockUpdateProfileInput: UpdateProfileInput =
 {
   description: 'test description',
   id: 'TQ2tZbp3y3DyXD9iSHUL8',
+  deployedContractsVisible: true,
 }
 
 export const nftTestMockData: NFT = {

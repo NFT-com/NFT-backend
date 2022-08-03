@@ -213,6 +213,22 @@ describe('profile resolver', () => {
       })
       expect(result?.data?.updateProfile?.description).toBe(mockUpdateProfileInput.description)
     })
+
+    it('should update visibility of deployed collections', async () => {
+      const result = await testServer.executeOperation({
+        query: `mutation UpdateProfile($input: UpdateProfileInput!) {
+          updateProfile(input: $input) {
+            id
+            bannerURL
+            description
+            deployedContractsVisible
+          }
+        }`,
+        variables: { input: mockUpdateProfileInput },
+      })
+      expect(result?.data?.updateProfile?.deployedContractsVisible)
+        .toBe(mockUpdateProfileInput.deployedContractsVisible)
+    })
   })
 
   describe('clearGKIconVisible', () => {
