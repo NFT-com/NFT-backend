@@ -11,6 +11,7 @@ import {
   retrieveCollectionOpensea,
   retrieveCollectionStatsOpensea,
 } from '@nftcom/gql/service/opensea.service'
+import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, db,defs } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -30,7 +31,8 @@ const getCollection = async (
     const key = `${args?.input?.contract?.toLowerCase()}-${chainId}-${args?.input?.withOpensea}`
     const cachedData = await cache.get(key)
 
-    if (cachedData) {
+    // eslint-disable-next-line no-constant-condition
+    if (false) {
       return JSON.parse(cachedData)
     } else {
       let stats, data
@@ -78,10 +80,13 @@ const getCollection = async (
         collection.deployer = collectionDeployer
       }
 
+      const ubiquityResults = await getUbiquity(args?.input?.contract, chainId)
+
       const returnObject = {
         collection,
         openseaInfo: data,
         openseaStats: stats,
+        ubiquityResults,
       }
 
       await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
