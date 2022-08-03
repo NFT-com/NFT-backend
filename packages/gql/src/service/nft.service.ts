@@ -286,7 +286,7 @@ export const getCollectionNameFromContract = (
   }
 }
 
-const updateCollection = async (
+const updateCollectionForNFTs = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
   try {
@@ -383,7 +383,7 @@ const updateCollection = async (
     )
     await repositories.edge.saveMany(edges, { chunk: MAX_SAVE_COUNTS })
   } catch (err) {
-    Sentry.captureMessage(`Error in updateCollection: ${err}`)
+    Sentry.captureMessage(`Error in updateCollectionForNFTs: ${err}`)
     return err
   }
 }
@@ -600,7 +600,7 @@ export const updateWalletNFTs = async (
       if (savedNFT) savedNFTs.push(savedNFT)
     }),
   )
-  await updateCollection(savedNFTs)
+  await updateCollectionForNFTs(savedNFTs)
 }
 
 export const refreshNFTMetadata = async (
