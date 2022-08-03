@@ -36,8 +36,9 @@ export const getUbiquity = async (
     if (await cache.get(key)) {
       return JSON.parse(await cache.get(key))
     } else {
-      const network = chainId === '1' ? 'mainnet' :
-        (chainId === '5' ? 'goerli' : 'mainnet')
+      const network = chainId == '1' ? 'mainnet' :
+        chainId == '5' ? 'goerli' :
+          chainId == '4' ? 'rinkeby' : 'mainnet'
       const baseNftUrl = 'https://ubiquity.api.blockdaemon.com/v1/nft'
       const url = `${baseNftUrl}/ethereum/${network}/collection?contract_address=${ethers.utils.getAddress(contractAddress)}`
       const config = {
