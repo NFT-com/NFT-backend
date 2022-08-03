@@ -80,11 +80,6 @@ interface NFTMetaDataResponse {
   timeLastUpdated: string
 }
 
-type NFTWithWeight = {
-  nft: entity.NFT
-  weight: string
-}
-
 type EdgeWithWeight = {
   id: string
   weight?: string
@@ -305,6 +300,7 @@ const updateCollection = async (
       }
     })
     // save collections...
+    const collections = []
     await Promise.allSettled(
       nonDuplicates.map(async (nft: entity.NFT) => {
         const collection = await repositories.collection.findOne({
@@ -319,7 +315,7 @@ const updateCollection = async (
           const collectionDeployer = await getCollectionDeployer(nft.contract, nft.chainId)
           logger.debug('new collection', { collectionName, contract: nft.contract, collectionDeployer })
 
-          await repositories.collection.save({
+          collections.push({
             contract: ethers.utils.getAddress(nft.contract),
             chainId: nft?.chainId || process.env.CHAIN_ID,
             name: collectionName,
@@ -363,8 +359,10 @@ const updateCollection = async (
         // }
       }),
     )
+    await repositories.collection.saveMany(collections, { chunk: MAX_SAVE_COUNTS })
 
     // save edges for collection and nfts...
+    const edges = []
     await Promise.allSettled(
       nfts.map(async (nft) => {
         const collection = await repositories.collection.findOne({
@@ -379,10 +377,11 @@ const updateCollection = async (
             edgeType: defs.EdgeType.Includes,
           }
           const edge = await repositories.edge.findOne({ where: edgeVals })
-          if (!edge) await repositories.edge.save(edgeVals)
+          if (!edge) edges.push(edge)
         }
       }),
     )
+    await repositories.edge.saveMany(edges, { chunk: MAX_SAVE_COUNTS })
   } catch (err) {
     Sentry.captureMessage(`Error in updateCollection: ${err}`)
     return err
@@ -704,7 +703,7 @@ const saveEdgesWithWeight = async (
   hide: boolean,
 ): Promise<void> => {
   const nftsToBeAdded = []
-  const nftsWithWeight = []
+  const edgesWithWeight = []
   // filter nfts are not added to edge yet...
   await Promise.allSettled(
     nfts.map(async (nft: entity.NFT) => {
@@ -724,26 +723,19 @@ const saveEdgesWithWeight = async (
   let weight = await getLastWeight(repositories, profileId)
   for (let i = 0; i < nftsToBeAdded.length; i++) {
     const newWeight = generateWeight(weight)
-    nftsWithWeight.push({
-      nft: nftsToBeAdded[i],
+    edgesWithWeight.push({
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      thisEntityId: profileId,
+      thatEntityId: nftsToBeAdded[i].id,
+      edgeType: defs.EdgeType.Displays,
       weight: newWeight,
+      hide: hide,
     })
     weight = newWeight
   }
   // save nfts to edge...
-  await Promise.allSettled(
-    nftsWithWeight.map(async (nftWithWeight: NFTWithWeight) => {
-      await repositories.edge.save({
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        thatEntityId: nftWithWeight.nft.id,
-        edgeType: defs.EdgeType.Displays,
-        weight: nftWithWeight.weight,
-        hide: hide,
-      })
-    }),
-  )
+  await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
 }
 
 const showAllNFTs = async (
