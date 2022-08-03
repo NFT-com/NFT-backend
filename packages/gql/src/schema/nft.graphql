@@ -94,7 +94,7 @@ type GetGkNFTSOutput {
 }
 
 type NFTsOutput {
-  items: [NFT]
+  items: [NFT!]!
   pageInfo: PageInfo
   totalItems: Int
 }
