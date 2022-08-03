@@ -465,8 +465,8 @@ const updateNFTsForAssociatedAddresses = async (
         provider.provider(Number(chainId)),
       )
       const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
-      logger.debug(`${associatedAddresses.length} associated addresses for profile ${profile.url}`)
       addresses = associatedAddresses.map((item) => item.chainAddr)
+      logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
       // remove NFT edges for non-associated addresses
       await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
       if (!addresses.length) {
