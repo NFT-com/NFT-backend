@@ -54,7 +54,7 @@ const getCollection = async (
         ubiquityResults,
       }
 
-      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
+      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
 
       return returnObject
     }
