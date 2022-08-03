@@ -180,6 +180,7 @@ describe('profile resolver', () => {
               isOwnedByMe
               gkIconVisible
               nftsDescriptionsVisible
+              deployedContractsVisible
               owner {
                 id
               }
