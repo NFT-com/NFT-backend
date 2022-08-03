@@ -377,7 +377,7 @@ const updateCollection = async (
             edgeType: defs.EdgeType.Includes,
           }
           const edge = await repositories.edge.findOne({ where: edgeVals })
-          if (!edge) edges.push(edge)
+          if (!edge) edges.push(edgeVals)
         }
       }),
     )
