@@ -87,7 +87,7 @@ input UpdateEmailInput {
 
 input UpdateHideIgnoredInput {
   eventIdArray: [String!]
-  showOrHide: Boolean!
+  hideIgnored: Boolean!
 }
 
 type UpdateHideIgnoredOutput {

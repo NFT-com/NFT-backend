@@ -114,7 +114,7 @@ describe('user resolver', () => {
         variables: {
           input: {
             eventIdArray: [event.id],
-            showOrHide: false,
+            hideIgnored: true,
           },
         },
       })
