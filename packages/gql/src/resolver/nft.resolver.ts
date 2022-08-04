@@ -536,6 +536,7 @@ const updateNFTsForProfile = (
           if (!profile.nftsLastUpdated  ||
             (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
           ) {
+            const updateBegin = Date.now()
             repositories.profile.updateOneById(profile.id, {
               nftsLastUpdated: now,
             }).then(() => repositories.wallet.findOne({
@@ -562,17 +563,10 @@ const updateNFTsForProfile = (
                       logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
                       return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
                         .then(() => {
-                          logger.debug('updated edges with weight in updateNFTsForProfile')
+                          logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
                           return syncEdgesWithNFTs(profile.id)
                             .then(() => {
-                              logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
-                              // if gkIconVisible is true, we check if this profile owner still owns genesis key,
-                              if (profile.gkIconVisible) {
-                                return updateGKIconVisibleStatus(repositories, chainId, profile)
-                                  .then(() => {
-                                    logger.debug(`gkIconVisible updated for profile ${profile.id}`)
-                                  })
-                              }
+                              logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
                               // refresh NFTs for associated addresses
                               return updateNFTsForAssociatedAddresses(
                                 repositories,
@@ -580,8 +574,19 @@ const updateNFTsForProfile = (
                                 chainId,
                               ).then((msg) => {
                                 logger.debug(msg)
-                                return
-                              } )
+                                // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                                if (profile.gkIconVisible) {
+                                  return updateGKIconVisibleStatus(repositories, chainId, profile)
+                                    .then(() => {
+                                      logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                      const updateEnd = Date.now()
+                                      logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+                                    })
+                                } else {
+                                  const updateEnd = Date.now()
+                                  logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+                                }
+                              })
                             })
                         })
                     })
