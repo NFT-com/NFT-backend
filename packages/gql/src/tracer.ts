@@ -2,9 +2,9 @@ import { Sampler, SpanKind } from '@opentelemetry/api'
 
 import opentelemetry = require('@opentelemetry/api');
 
-import { SpanAttributes } from '@opentelemetry/api'
+import { Attributes } from '@opentelemetry/api'
 import { AlwaysOnSampler } from '@opentelemetry/core'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express'
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql'
@@ -16,7 +16,7 @@ import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { SemanticAttributes, SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
-type FilterFunction = (spanName: string, spanKind: SpanKind, attributes: SpanAttributes) => boolean;
+type FilterFunction = (spanName: string, spanKind: SpanKind, attributes: Attributes) => boolean;
 
 function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
   return {
@@ -32,7 +32,7 @@ function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
   }
 }
 
-function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: SpanAttributes): boolean {
+function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: Attributes): boolean {
   return attributes[SemanticAttributes.HTTP_METHOD] === 'OPTIONS'
     || attributes[SemanticAttributes.HTTP_TARGET] === '/.well-known/apollo/server-health'
     || (attributes[SemanticAttributes.HTTP_URL]
