@@ -455,24 +455,32 @@ export const updateHideIgnored = async (
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('updateHideIgnored', { input: args?.input })
-    await Promise.allSettled(
-      args?.input.eventIdArray.map(async (id) => {
-        const event = await repositories.event.findOne({
-          where: {
-            id,
-            destinationAddress: helper.checkSum(wallet.address),
-            ignore: true,
-          },
-        })
-        if (event) {
-          if (args?.input.hideIgnored) {
-            await repositories.event.updateOneById(event.id, { hideIgnored: true })
-          } else {
-            await repositories.event.updateOneById(event.id, { hideIgnored: false, ignore: false })
-          }
+    
+    for (let i = 0; i < args?.input?.eventIdArray.length; i++) {
+      const id = args?.input?.eventIdArray[i]
+
+      const event = await repositories.event.findOne({
+        where: {
+          id,
+          ownerAddress: helper.checkSum(wallet.address),
+          ignore: true,
+        },
+      })
+
+      if (event) {
+        if (args?.input.hideIgnored) {
+          await repositories.event.updateOneById(event.id, { hideIgnored: true })
+        } else {
+          await repositories.event.updateOneById(event.id, { hideIgnored: false, ignore: false })
         }
-      }),
-    )
+      } else {
+        return Promise.reject(appError.buildExists(
+          userError.buildEventNotFoundMsg(`event id ${id} not found with ownerAddress ${helper.checkSum(wallet.address)} and ignore = true`),
+          userError.ErrorType.EventAction,
+        ))
+      }
+    }
+    
     return {
       message: args?.input.hideIgnored ? 'Updated hidden events to be invisible' : 'Updated hidden events to be visible',
     }
