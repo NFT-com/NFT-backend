@@ -552,16 +552,20 @@ const updateNFTsForProfile = (
                   chainId,
                 )
                   .then(() => {
+                    logger.debug('checked NFT contract addresses in updateNFTsForProfile', profile.id)
                     return updateWalletNFTs(
                       profile.ownerUserId,
                       wallet.id,
                       wallet.address,
                       chainId,
                     ).then(() => {
+                      logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
                       return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
                         .then(() => {
+                          logger.debug('updated edges with weight in updateNFTsForProfile')
                           return syncEdgesWithNFTs(profile.id)
                             .then(() => {
+                              logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
                               // if gkIconVisible is true, we check if this profile owner still owns genesis key,
                               if (profile.gkIconVisible) {
                                 return updateGKIconVisibleStatus(repositories, chainId, profile)
