@@ -465,12 +465,16 @@ export const updateHideIgnored = async (
           },
         })
         if (event) {
-          await repositories.event.updateOneById(event.id, { hideIgnored: !args?.input.showOrHide })
+          if (args?.input.hideIgnored) {
+            await repositories.event.updateOneById(event.id, { hideIgnored: true })
+          } else {
+            await repositories.event.updateOneById(event.id, { hideIgnored: false, ignore: false })
+          }
         }
       }),
     )
     return {
-      message: args?.input.showOrHide ? 'Updated hidden events to be visible' : 'Updated hidden events to be invisible',
+      message: args?.input.hideIgnored ? 'Updated hidden events to be invisible' : 'Updated hidden events to be visible',
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateHideIgnored: ${err}`)
