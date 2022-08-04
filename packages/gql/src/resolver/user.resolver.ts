@@ -11,6 +11,7 @@ import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
@@ -444,6 +445,39 @@ const getMyApprovals = (
   return repositories.approval.findByUserId(user.id)
 }
 
+export const updateHideIgnored = async (
+  _: any,
+  args: gql.MutationUpdateHideIgnoredArgs,
+  ctx: Context,
+): Promise<gql.UpdateHideIgnoredOutput> => {
+  try {
+    const { wallet, repositories, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('updateHideIgnored', { input: args?.input })
+    await Promise.allSettled(
+      args?.input.eventIdArray.map(async (id) => {
+        const event = await repositories.event.findOne({
+          where: {
+            id,
+            destinationAddress: helper.checkSum(wallet.address),
+            ignore: true,
+          },
+        })
+        if (event) {
+          await repositories.event.updateOneById(event.id, { hideIgnored: !args?.input.showOrHide })
+        }
+      }),
+    )
+    return {
+      message: args?.input.showOrHide ? 'Updated hidden events to be visible' : 'Updated hidden events to be invisible',
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateHideIgnored: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
@@ -456,6 +490,7 @@ export default {
     updateEmail,
     updateMe: combineResolvers(auth.isAuthenticated, updateMe),
     ignoreAssocations: combineResolvers(auth.isAuthenticated, ignoreAssocations),
+    updateHideIgnored: combineResolvers(auth.isAuthenticated, updateHideIgnored),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
   },
   User: {

@@ -499,10 +499,26 @@ const updateNFTOwnershipAndMetadata = async (
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+        // if this NFT is a profile NFT...
+        if (existingNFT.contract === contracts.nftProfileAddress(chainId)) {
+          const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
+          const profile = await repositories.profile.findOne({ where: {
+            tokenId: BigNumber.from(existingNFT.tokenId).toString(),
+            walletId: previousWallet.id,
+            userId: previousWallet.userId,
+          } })
+          // if this NFT was previous owner's preferred profile...
+          if (profile.id === previousWallet.profileId) {
+            await repositories.wallet.updateOneById(previousWallet.id, {
+              profileId: null,
+            })
+          }
+        }
         return await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
           type,
+          profileId: null,
           metadata: {
             name,
             description,
@@ -1090,6 +1106,7 @@ export const removeEdgesForNonassociatedAddresses = async (
               })
               if (edge) {
                 toRemoveEdges.push(edge.id)
+                await repositories.nft.updateOneById(nft.id, { profileId: null })
               }
             }),
           )
