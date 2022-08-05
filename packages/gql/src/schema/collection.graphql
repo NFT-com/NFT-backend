@@ -60,6 +60,36 @@ type OpenseaStats {
   stats: OpenseaStatsV1
 }
 
+type UbiquityContract {
+  address: String
+  name: String
+  symbol: String
+  description: String
+  image_url: String
+  type: String
+}
+
+type UbiquityMeta {
+  discord_url: String
+  external_url: String
+  twitter_username: String
+}
+
+type UbiquityCollection {
+  id: String
+  name: String
+  description: String
+  logo: String
+  banner: String
+  verified: Boolean
+  contracts: [UbiquityContract]
+  meta: UbiquityMeta
+}
+
+type UbiquityResults {
+  collection: UbiquityCollection
+}
+
 type Collection {
   id: ID
   contract: Address
@@ -70,15 +100,13 @@ type Collection {
 
 type CollectionInfo {
   collection: Collection
-  openseaInfo: OpenseaContract
-  openseaStats: OpenseaStats
+  ubiquityResults: UbiquityResults
 }
 
 input CollectionInput {
   contract: Address!
   chainId: String
   network: String!
-  withOpensea: Boolean
 }
 
 input FillChainIdsInput {
