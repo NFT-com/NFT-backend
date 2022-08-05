@@ -92,4 +92,7 @@ export class Profile extends BaseEntity {
   @Column('json', { nullable: true, default: [] })
   associatedAddresses: string[]
 
+  @Column({ nullable: true })
+  associatedContract: string
+
 }
