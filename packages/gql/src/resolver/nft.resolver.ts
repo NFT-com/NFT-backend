@@ -489,6 +489,7 @@ const updateNFTsForAssociatedAddresses = async (
       }),
     )
     // refresh NFTs for associated addresses...
+    logger.debug(`${wallets.length} wallets should be updated for associated addresses`)
     await Promise.allSettled(
       wallets.map(async (wallet) => {
         await updateNFTsForAssociatedWallet(profile.id, wallet)
