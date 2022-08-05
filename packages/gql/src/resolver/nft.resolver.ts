@@ -216,19 +216,24 @@ const getMyNFTs = (
 
   const { types, profileId } = helper.safeObject(args?.input)
 
-  const filters: Partial<entity.NFT>[] = [helper.removeEmpty({
+  const filter: Partial<entity.Edge> = helper.removeEmpty({
+    thisEntityType: defs.EntityType.Profile,
+    thisEntityId: profileId,
+    thatEntityType: defs.EntityType.NFT,
+    edgeType: defs.EdgeType.Displays,
+  })
+  const nftFilter = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
-    userId: user.id,
-    profileId,
-    chainId,
-  })]
-  return core.paginatedEntitiesBy(
+  })
+  return core.paginatedThatEntitiesOfEdgesBy(
+    ctx,
     ctx.repositories.nft,
+    filter,
     pageInput,
-    filters,
-    [], // relations
+    'weight',
+    'ASC',
+    nftFilter,
   )
-    .then(pagination.toPageable(pageInput))
 }
 
 const getCurationNFTs = (
@@ -468,7 +473,12 @@ const updateNFTsForAssociatedAddresses = async (
       addresses = associatedAddresses.map((item) => item.chainAddr)
       logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
       // remove NFT edges for non-associated addresses
-      await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
+      await removeEdgesForNonassociatedAddresses(
+        profile.id,
+        profile.associatedAddresses,
+        addresses,
+        chainId,
+      )
       if (!addresses.length) {
         return `No associated addresses of ${profile.url}`
       }
@@ -561,7 +571,7 @@ const updateNFTsForProfile = (
                       chainId,
                     ).then(() => {
                       logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
-                      return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+                      return updateEdgesWeightForProfile(profile.id, profile.ownerWalletId)
                         .then(() => {
                           logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
                           return syncEdgesWithNFTs(profile.id)

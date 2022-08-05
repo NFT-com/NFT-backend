@@ -376,7 +376,9 @@ export const associatedAddressesForContract = async (
       deployerAddress: collectionDeployer,
       associatedAddresses: addresses,
       deployerIsAssociated: collectionDeployer ?
-        addresses.indexOf(ethers.utils.getAddress(collectionDeployer)) !== -1 : false,
+        (addresses.indexOf(ethers.utils.getAddress(collectionDeployer)) !== -1 ||
+          ethers.utils.getAddress(collectionDeployer) === wallet.address
+        ) : false,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in associatedAddressesForContract: ${err}`)

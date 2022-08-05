@@ -365,7 +365,7 @@ const updateProfile = (
   args: gql.MutationUpdateProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
@@ -413,7 +413,7 @@ const updateProfile = (
       p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
       return changeNFTsVisibility(
         repositories,
-        user.id,
+        wallet.id,
         p.id, // profileId
         args.input.showAllNFTs,
         args.input.hideAllNFTs,
