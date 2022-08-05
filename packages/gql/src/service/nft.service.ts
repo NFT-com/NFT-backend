@@ -735,6 +735,7 @@ const saveEdgesWithWeight = async (
       if (!displayEdge) nftsToBeAdded.push(nft)
     }),
   )
+  logger.debug(`${nftsToBeAdded.length} edges to be added in saveEdgesWithWeight`)
   // generate weights for nfts...
   let weight = await getLastWeight(repositories, profileId)
   for (let i = 0; i < nftsToBeAdded.length; i++) {
@@ -757,11 +758,11 @@ const saveEdgesWithWeight = async (
 
 const showAllNFTs = async (
   repositories: db.Repository,
-  userId: string,
+  walletId: string,
   profileId: string,
   chainId: string,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { userId, chainId } })
+  const nfts = await repositories.nft.find({ where: { walletId, chainId } })
   if (nfts.length) {
     await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
@@ -825,7 +826,7 @@ const showNFTs = async (
  * hideNFTIds takes priority over showNFTIds (like if the same ID is in both arrays)
  * showAll, hideAll, and -Ids arrays are mutually exclusive (only one of those 3 will be respected, with priority to showAll)
  * @param repositories
- * @param userId
+ * @param walletId
  * @param profileId
  * @param showAll
  * @param hideAll
@@ -835,7 +836,7 @@ const showNFTs = async (
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
-  userId: string,
+  walletId: string,
   profileId: string,
   showAll: boolean,
   hideAll: boolean,
@@ -845,7 +846,7 @@ export const changeNFTsVisibility = async (
 ): Promise<void> => {
   try {
     if (showAll) {
-      await showAllNFTs(repositories, userId, profileId, chainId)
+      await showAllNFTs(repositories, walletId, profileId, chainId)
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
@@ -958,6 +959,7 @@ export const updateEdgesWeightForProfile = async (
 ): Promise<void> => {
   try {
     const nfts = await repositories.nft.find({ where: { walletId } })
+    logger.debug(`${nfts.length} NFTs to be updated in updateEdgesWeightForProfile`)
     if (!nfts.length) return
     const nullEdges = await repositories.edge.find({
       where: {
