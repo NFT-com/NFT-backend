@@ -735,7 +735,6 @@ const saveEdgesWithWeight = async (
       if (!displayEdge) nftsToBeAdded.push(nft)
     }),
   )
-  logger.debug(`${nftsToBeAdded.length} edges to be added in saveEdgesWithWeight`)
   // generate weights for nfts...
   let weight = await getLastWeight(repositories, profileId)
   for (let i = 0; i < nftsToBeAdded.length; i++) {
@@ -751,7 +750,7 @@ const saveEdgesWithWeight = async (
     })
     weight = newWeight
   }
-  logger.debug(`${edgesWithWeight.length} edges to be added in saveEdgesWithWeight`)
+  logger.debug(`${edgesWithWeight.length} edges to be added in saveEdgesWithWeight`, { edge: edgesWithWeight[0] })
   // save nfts to edge...
   await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
 }
@@ -959,7 +958,6 @@ export const updateEdgesWeightForProfile = async (
 ): Promise<void> => {
   try {
     const nfts = await repositories.nft.find({ where: { walletId } })
-    logger.debug(`${nfts.length} NFTs to be updated in updateEdgesWeightForProfile`)
     if (!nfts.length) return
     const nullEdges = await repositories.edge.find({
       where: {
@@ -1006,6 +1004,8 @@ export const syncEdgesWithNFTs = async (
         edgeType: defs.EdgeType.Displays,
       },
     })
+
+    logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
     const duplicatedIds: Array<string> = []
     await Promise.allSettled(
