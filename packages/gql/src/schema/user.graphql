@@ -24,6 +24,7 @@ type Event {
   destinationAddress: String
   blockNumber: String
   ignore: Boolean
+  hideIgnored: Boolean
 }
 
 type UserPreferences {
@@ -84,6 +85,15 @@ input UpdateEmailInput {
   email: String!
 }
 
+input UpdateHideIgnoredInput {
+  eventIdArray: [String!]
+  hideIgnored: Boolean!
+}
+
+type UpdateHideIgnoredOutput {
+  message: String
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -101,6 +111,8 @@ extend type Mutation {
   confirmEmail(token: String!): Boolean!
   "AUTHENTICATED"
   ignoreAssocations(eventIdArray: [String]!): [Event]!
+  "AUTHENTICATED"
+  updateHideIgnored(input: UpdateHideIgnoredInput!): UpdateHideIgnoredOutput!
   "AUTHENTICATED"
   resendEmailConfirm: User!
 }
