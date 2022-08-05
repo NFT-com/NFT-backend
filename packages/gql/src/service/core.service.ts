@@ -850,7 +850,7 @@ const replaceAt = (index: number, str: string, replacement): string => {
 
 export const generateWeight = (prevWeight: string | undefined): string => {
   if (!prevWeight) return 'aaaa'
-  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
+  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 4) : prevWeight
   let order = weight
   let update = String.fromCharCode(weight.charCodeAt(3) + 1)
   if (update <= 'z') {
