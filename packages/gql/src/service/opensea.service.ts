@@ -13,8 +13,8 @@ const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
 const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
 const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
-const OPENSEA_TESTNET_WYVERIN_API_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
-const OPENSEA_WYVERIN_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
+// const OPENSEA_TESTNET_WYVERIN_API_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
+// const OPENSEA_WYVERIN_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
 
 const LIMIT = 50
 const OPENSEA_LISTING_BATCH_SIZE = 30
@@ -440,13 +440,12 @@ const orderEntityBuilder = (
   order: WyvernOrder & SeaportOrder,
   chainId: string,
 ):  Partial<TxOrder> => {
-  // @TODO: Discuss during data modeling - this is for saving per current schema
   const activity: TxActivity = {
     activityType: orderType,
     read: false,
     timestamp: new Date(),
-    activityTypeId: 'test-activity-type',
-    walletId: 'test-wallet',
+    // activityTypeId: 'test-activity-type',
+    walletId: order?.protocol_data?.parameters?.offerer,
     chainId,
   } as TxActivity
 
@@ -459,20 +458,10 @@ const orderEntityBuilder = (
     makerAddress: order.maker?.address,
     takerAddress: order.taker?.address,
     protocol,
-    chainId,
-  }
-
-  switch (protocol) {
-  case ProtocolType.Wyvern:
-    baseOrder.protocolData = {}
-    break
-  case ProtocolType.Seaport:
-    baseOrder.protocolData = {
+    protocolData: {
       ...order.protocol_data,
-    }
-    break
-  default:
-    break
+    },
+    chainId,
   }
 
   return baseOrder
@@ -522,20 +511,7 @@ const retrieveListingsInBatches = async (
       const assets = response?.data?.assets
       if (assets?.length) {
         for (const asset of assets) {
-          const wyvernOrders: WyvernOrder[] | null =  asset?.sell_orders
           const seaportOrders: SeaportOrder[] | null =  asset?.seaport_sell_orders
-          // wvyern orders - always returns cheapest order
-          if (wyvernOrders && Object.keys(wyvernOrders?.[0]).length) {
-            listings.push(
-              orderEntityBuilder(
-                ProtocolType.Wyvern,
-                ActivityType.Listing,
-                wyvernOrders?.[0] as any,
-                chainId,
-              ),
-            )
-          }
-  
           // seaport orders - always returns cheapest order
           if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
             listings.push(
@@ -578,23 +554,15 @@ const retrieveOffersInBatches = async (
   const offerBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
     OPENSEA_API_TESTNET_BASE_URL
     : OPENSEA_API_BASE_URL
-  
-  const offerBaseUrlWyverin: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
-    OPENSEA_TESTNET_WYVERIN_API_BASE_URL
-    : OPENSEA_WYVERIN_API_BASE_URL
 
   const offerInterceptor = getOpenseaInterceptor(
     offerBaseUrl,
     chainId,
   )
-  const offerInterceptorWyvern = getOpenseaInterceptor(
-    offerBaseUrlWyverin,
-    chainId,
-  )
 
   let delayCounter = 0
   let size: number
-  let wyvernOffers: WyvernOrder[], seaportOffers: SeaportOrder[]
+  let seaportOffers: SeaportOrder[]
 
   // contracts exist
   if (offerQueryParams.size) {
@@ -622,10 +590,7 @@ const retrieveOffersInBatches = async (
           const response: AxiosResponse = await offerInterceptor(
             `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
-          const responseWyvern: AxiosResponse = await offerInterceptorWyvern(
-            `/orders?${queryUrl}&order_by=created_date&order_direction=desc&side=0&order_by=eth_price`,
-          )
-
+      
           if (response?.data?.orders?.length) {
             seaportOffers = response?.data?.orders
             offers.push(
@@ -637,22 +602,11 @@ const retrieveOffersInBatches = async (
               ),
             )
           }
-          if (responseWyvern?.data?.orders?.length) {
-            wyvernOffers = responseWyvern?.data?.orders
-            offers.push(
-              orderEntityBuilder(
-                ProtocolType.Wyvern,
-                ActivityType.Bid,
-                wyvernOffers?.[0] as any,
-                chainId,
-              ),
-            )
-          }
-
+        
           tokens = [...tokens.slice(size)]
           delayCounter++
-          // add delay -> two calls
-          if (delayCounter === DELAY_AFTER_BATCH_RUN/2) {
+          // add delay
+          if (delayCounter === DELAY_AFTER_BATCH_RUN) {
             await delay(1000)
             delayCounter = 0
           }

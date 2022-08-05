@@ -13,18 +13,18 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
-const getActivitiesByUserId = (_: any, args: gql.QueryGetActivitiesByUserIdArgs, ctx: Context)
+const getActivitiesByWalletId = (_: any, args: gql.QueryGetActivitiesByWalletIdArgs, ctx: Context)
 : Promise<TxActivity[]> => {
   const { repositories } = ctx
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByUserId(args.userId, chainId)
+  return repositories.txActivity.findActivitiesByWalletId(args.walletId, chainId)
 }
 
-const getActivitiesByUserIdAndType = (
+const getActivitiesByWalletIdAndType = (
   _: any,
-  args: gql.QueryGetActivitiesByUserIdAndTypeArgs,
+  args: gql.QueryGetActivitiesByWalletIdAndTypeArgs,
   ctx: Context,
 ): Promise<TxActivity[]> => {
   const { repositories } = ctx
@@ -32,8 +32,8 @@ const getActivitiesByUserIdAndType = (
   const chainId = args.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByUserIdAndType(
-    args.input.userId,
+  return repositories.txActivity.findActivitiesByWalletIdAndType(
+    args.input.walletId,
     activityType,
     chainId,
   )
@@ -42,7 +42,7 @@ const getActivitiesByUserIdAndType = (
 export default {
   Query: {
     getActivitiesByType,
-    getActivitiesByUserId,
-    getActivitiesByUserIdAndType,
+    getActivitiesByWalletId,
+    getActivitiesByWalletIdAndType,
   },
 }

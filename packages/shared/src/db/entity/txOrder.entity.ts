@@ -7,11 +7,10 @@ import { BaseEntity, TxActivity } from '.'
 @Entity()
 export class TxOrder extends BaseEntity {
 
-  // @TODO: Need to re-configure cascade during data modelling
   @OneToOne(() => TxActivity,
     (activity) => activity.activityTypeId,{
       nullable: false,
-      cascade: true,
+      cascade: ['insert', 'update'],
     })
   @JoinColumn()
   activity: TxActivity
@@ -30,9 +29,6 @@ export class TxOrder extends BaseEntity {
   
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   orderType: ActivityType
-
-  @Column({ nullable: false })
-  nftId: string
 
   @Column({ type: 'enum', enum: ProtocolType, nullable: false })
   protocol: ProtocolType

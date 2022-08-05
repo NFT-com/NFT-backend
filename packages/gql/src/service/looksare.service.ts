@@ -27,6 +27,7 @@ interface LooksRareOrder {
   currencyAddress: string
   amount: number
   price:number
+  nonce: string
   startTime:number
   endTime:number
   minPercentageToAsk:number
@@ -132,8 +133,8 @@ const orderEntityBuilder = (
     activityType: orderType,
     read: false,
     timestamp: new Date(),
-    activityTypeId: 'test-activity-type',
-    walletId: 'test-wallet',
+    // activityTypeId: 'test-activity-type',
+    walletId: order.signer,
     chainId,
   } as TxActivity
   const baseOrder:  Partial<TxOrder> = {
@@ -145,7 +146,24 @@ const orderEntityBuilder = (
     makerAddress: order.signer,
     takerAddress: order.strategy,
     protocol: ProtocolType.LooksRare,
-    protocolData: {},
+    protocolData: {
+      isOrderAsk: order.isOrderAsk,
+      signer: order.signer,
+      collectionAddress: order.collectionAddress,
+      price: order.price,
+      tokenId: order.tokenId,
+      amount: order.amount,
+      strategy: order.strategy,
+      currencyAddress: order.currencyAddress,
+      nonce: order.nonce,
+      startTime: order.startTime,
+      endTime: order.endTime,
+      minPercentageToAsk: order.minPercentageToAsk,
+      params: order.params || '0x',
+      v: order.v,
+      r: order.r,
+      s: order.s,
+    },
     chainId,
   }
   return baseOrder

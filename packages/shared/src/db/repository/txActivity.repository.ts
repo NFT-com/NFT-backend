@@ -10,8 +10,12 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   }
 
   private getEntityName = (activityType: ActivityType): string => {
-    if (activityType === ActivityType.Listing) {
-      return 'TxList'
+    if (activityType === ActivityType.Listing || activityType === ActivityType.Bid) {
+      return 'TxOrder'
+    }
+
+    if (activityType === ActivityType.Sale || activityType === ActivityType.Transfer) {
+      return 'TxTransaction'
     }
     return `Tx${activityType}`
   }
@@ -29,31 +33,27 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .getMany()
   }
 
-  public findActivitiesByUserId = (
-    userId: string,
+  public findActivitiesByWalletId = (
+    walletId: string,
     chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
-      .leftJoinAndMapOne('activity.bid', 'TxBid', 'bid',
-        'activity.activityTypeId = bid.id AND activity.id = bid.activityId')
+      .leftJoinAndMapOne('activity.order', 'TxOrder', 'order',
+        'activity.id = order.activityId')
       .leftJoinAndMapOne('activity.cancel', 'TxCancel', 'cancel',
-        'activity.activityTypeId = cancel.id AND activity.id = cancel.activityId')
-      .leftJoinAndMapOne('activity.listing', 'TxList', 'list',
-        'activity.activityTypeId = list.id AND activity.id = list.activityId')
-      .leftJoinAndMapOne('activity.sale', 'TxSale', 'sale',
-        'activity.activityTypeId = sale.id AND activity.id = sale.activityId')
-      .leftJoinAndMapOne('activity.transfer', 'TxTransfer', 'transfer',
-        'activity.activityTypeId = transfer.id AND activity.id = transfer.activityId')
+        'activity.id = cancel.activityId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction', 'transaction',
+        'activity.id = transfer.activityId')
       .where({
-        userId,
+        walletId,
         chainId,
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
-  public findActivitiesByUserIdAndType = (
-    userId: string,
+  public findActivitiesByWalletIdAndType = (
+    walletId: string,
     activityType: ActivityType,
     chainId: string,
   ): Promise<TxActivity[]> => {
@@ -63,7 +63,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'activity.activityTypeId = activityType.id')
       .where({
         activityType,
-        userId,
+        walletId,
         chainId,
       })
       .orderBy({ timestamp: 'DESC' })

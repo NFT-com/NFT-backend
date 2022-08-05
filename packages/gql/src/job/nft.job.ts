@@ -202,6 +202,11 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         }
       }
 
+      //let upsertOpts =  {
+      // skipUpdateIfNoValuesChanged: true,
+      //conflictPaths: ['orderHash'],
+      //}
+
       // save listings
       if (listings.length) {
         persistActivity.push(repositories.txOrder.saveMany(listings))
@@ -231,6 +236,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
      
     logger.debug('updated external orders for nfts - on demand')
   } catch (err) {
+    console.log('err', err)
     Sentry.captureMessage(`Error in nftExternalOrdersOnDemand Job: ${err}`)
   }
 }

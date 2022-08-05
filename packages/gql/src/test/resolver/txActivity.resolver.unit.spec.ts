@@ -2,7 +2,7 @@ import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db } from '@nftcom/shared'
-import { TxActivity, TxBid, TxList } from '@nftcom/shared/db/entity'
+import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
 
 import { getTestApolloServer } from '../util/testApolloServer'
@@ -30,13 +30,13 @@ describe('transaction activity resolver', () => {
       let activity = new TxActivity()
       activity.activityType = table === 'txList' ? ActivityType.Listing : ActivityType[table.slice(2)]
       activity.timestamp = new Date(timestamp + (10000 * i))
-      activity.userId = 'x29hruG3hC0rrkag7ChQb'
+      activity.walletId = 'x29hruG3hC0rrkag7ChQb'
       activity.chainId = '4'
 
       let activityType
       switch (table) {
-      case 'txBid':
-        activityType = new TxBid()
+      case 'txOrder':
+        activityType = new TxOrder()
         activityType.addId()
         activityType.activity = activity
         activityType.exchange = ExchangeType.OpenSea
@@ -46,26 +46,9 @@ describe('transaction activity resolver', () => {
         activityType.consideration = []
         activityType.chainId = '4'
 
-        activity.activityTypeId = activityType.id
         activity = await repositories.txActivity.save(activity)
         activityType.activity = activity
-        activityType = await repositories.txBid.save(activityType)
-        break
-      case 'txList':
-        activityType = new TxList()
-        activityType.addId()
-        activityType.activity = activity
-        activityType.exchange = ExchangeType.LooksRare
-        activityType.orderHash = ''
-        activityType.makerAddress = ''
-        activityType.offer = []
-        activityType.consideration = []
-        activityType.chainId = '4'
-
-        activity.activityTypeId = activityType.id
-        activity = await repositories.txActivity.save(activity)
-        activityType.activity = activity
-        activityType = await repositories.txList.save(activityType)
+        activityType = await repositories.txOrder.save(activityType)
         break
       default:
         return
@@ -106,7 +89,7 @@ describe('transaction activity resolver', () => {
       }`,
       variables: { activityType: 'Bid', chainId: '4' },
     })
-    const bidData = testData.filter(data => data.table === 'txBid')
+    const bidData = testData.filter(data => data.table === 'txOrder')
     const bidIds = bidData.map(bd => bd.activityType.id)
     const activities = result.data?.getActivitiesByType.filter(
       activity => activity.bid && bidIds.includes(activity.bid.id))
@@ -117,10 +100,10 @@ describe('transaction activity resolver', () => {
     expect(activities.length).toBe(bidData.length)
   })
 
-  it('should query activity by user id', async () => {
+  it('should query activity by wallet id', async () => {
     const result = await testServer.executeOperation({
-      query: `query Query($userId: ID, $chainId: String) { 
-        getActivitiesByUserId(userId: $userId, chainId: $chainId) { 
+      query: `query Query($walletId: ID, $chainId: String) { 
+        getActivitiesByWalletId(walletId: $walletId, chainId: $chainId) { 
           id 
           activityType
           read
@@ -147,11 +130,11 @@ describe('transaction activity resolver', () => {
           }
         } 
       }`,
-      variables: { userId: testData[0].activity.userId, chainId: '4' },
+      variables: { walletId: testData[0].activity.walletId, chainId: '4' },
     })
 
     const testDataIds = testData.map(td => td.activity.id)
-    const activities = result.data?.getActivitiesByUserId.filter(
+    const activities = result.data?.getActivitiesByWalletId.filter(
       activity => testDataIds.includes(activity.id))
     for (const activity of activities) {
       if (activity.activityType === ActivityType.Bid) {
@@ -165,10 +148,10 @@ describe('transaction activity resolver', () => {
     expect(activities.length).toBe(testData.length)
   })
 
-  it('should query activity by user id and type', async () => {
+  it('should query activity by wallet id and type', async () => {
     const result = await testServer.executeOperation({
-      query: `query Query($input: TxUserIdAndTypeInput) { 
-        getActivitiesByUserIdAndType(input: $input) { 
+      query: `query Query($input: TxWalletIdAndTypeInput) { 
+        getActivitiesByWalletIdAndType(input: $input) { 
           id 
           activityType
           read
@@ -185,11 +168,11 @@ describe('transaction activity resolver', () => {
           }
         } 
       }`,
-      variables: { input: { userId: testData[0].activity.userId, activityType: 'Listing', chainId: '4' } },
+      variables: { input: { walletId: testData[0].activity.walletId, activityType: 'Listing', chainId: '4' } },
     })
     const listData = testData.filter(data => data.table === 'txList')
     const listIds = listData.map(ld => ld.activityType.id)
-    const activities = result.data?.getActivitiesByUserIdAndType.filter(
+    const activities = result.data?.getActivitiesByWalletIdAndType.filter(
       activity => activity.listing && listIds.includes(activity.listing.id))
     for (const activity of activities) {
       expect(activity.activityType).toBe(ActivityType.Listing)
