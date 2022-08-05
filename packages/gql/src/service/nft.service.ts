@@ -751,11 +751,9 @@ const saveEdgesWithWeight = async (
       })
       weight = newWeight
     }
-    logger.debug(`${edgesWithWeight.length} edges to be added in saveEdgesWithWeight`, { edge: edgesWithWeight[0] })
     // save nfts to edge...
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
   } catch (err) {
-    logger.debug(err)
     Sentry.captureMessage(`Error in saveEdgesWithWeight: ${err}`)
     return err
   }
