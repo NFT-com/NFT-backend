@@ -216,19 +216,24 @@ const getMyNFTs = (
 
   const { types, profileId } = helper.safeObject(args?.input)
 
-  const filters: Partial<entity.NFT>[] = [helper.removeEmpty({
+  const filter: Partial<entity.Edge> = helper.removeEmpty({
+    thisEntityType: defs.EntityType.Profile,
+    thisEntityId: profileId,
+    thatEntityType: defs.EntityType.NFT,
+    edgeType: defs.EdgeType.Displays,
+  })
+  const nftFilter = helper.removeEmpty({
     type: helper.safeInForOmitBy(types),
-    userId: user.id,
-    profileId,
-    chainId,
-  })]
-  return core.paginatedEntitiesBy(
+  })
+  return core.paginatedThatEntitiesOfEdgesBy(
+    ctx,
     ctx.repositories.nft,
+    filter,
     pageInput,
-    filters,
-    [], // relations
+    'weight',
+    'ASC',
+    nftFilter,
   )
-    .then(pagination.toPageable(pageInput))
 }
 
 const getCurationNFTs = (
