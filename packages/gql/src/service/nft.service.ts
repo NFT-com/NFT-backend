@@ -953,10 +953,10 @@ export const updateNFTsOrder = async (
 
 export const updateEdgesWeightForProfile = async (
   profileId: string,
-  userId: string,
+  walletId: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: { userId } })
+    const nfts = await repositories.nft.find({ where: { walletId } })
     if (!nfts.length) return
     const nullEdges = await repositories.edge.find({
       where: {
@@ -1055,7 +1055,7 @@ export const updateNFTsForAssociatedWallet = async (
       wallet.chainId,
     )
     // save NFT edges for profile...
-    await updateEdgesWeightForProfile(profileId, wallet.userId)
+    await updateEdgesWeightForProfile(profileId, wallet.id)
     const nfts = await repositories.nft.find({
       where: {
         userId: wallet.userId,
@@ -1071,6 +1071,7 @@ export const removeEdgesForNonassociatedAddresses = async (
   profileId: string,
   prevAddresses: string[],
   newAddresses: string[],
+  chainId: string,
 ): Promise<void> => {
   const toRemove: string[] = []
   // find previous associated addresses to be filtered
@@ -1084,13 +1085,12 @@ export const removeEdgesForNonassociatedAddresses = async (
   if (!toRemove.length) return
   await Promise.allSettled(
     toRemove.map(async (address) => {
-      const user = await repositories.user.findOne({
-        where: {
-          username: 'ethereum-' + ethers.utils.getAddress(address),
-        },
-      })
-      if (user) {
-        const nfts = await repositories.nft.find({ where: { userId: user.id } })
+      const wallet = await repositories.wallet.findByChainAddress(
+        chainId,
+        ethers.utils.getAddress(address),
+      )
+      if (wallet) {
+        const nfts = await repositories.nft.find({ where: { walletId: wallet.id } })
         if (nfts.length) {
           const toRemoveEdges = []
           await Promise.allSettled(

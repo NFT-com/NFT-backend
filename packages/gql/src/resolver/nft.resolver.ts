@@ -468,7 +468,12 @@ const updateNFTsForAssociatedAddresses = async (
       addresses = associatedAddresses.map((item) => item.chainAddr)
       logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
       // remove NFT edges for non-associated addresses
-      await removeEdgesForNonassociatedAddresses(profile.id, profile.associatedAddresses, addresses)
+      await removeEdgesForNonassociatedAddresses(
+        profile.id,
+        profile.associatedAddresses,
+        addresses,
+        chainId,
+      )
       if (!addresses.length) {
         return `No associated addresses of ${profile.url}`
       }
@@ -561,7 +566,7 @@ const updateNFTsForProfile = (
                       chainId,
                     ).then(() => {
                       logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
-                      return updateEdgesWeightForProfile(profile.id, profile.ownerUserId)
+                      return updateEdgesWeightForProfile(profile.id, profile.ownerWalletId)
                         .then(() => {
                           logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
                           return syncEdgesWithNFTs(profile.id)
