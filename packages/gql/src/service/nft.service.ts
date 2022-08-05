@@ -750,6 +750,7 @@ const saveEdgesWithWeight = async (
     })
     weight = newWeight
   }
+  logger.debug(`${edgesWithWeight.length} edges to be added in saveEdgesWithWeight`)
   // save nfts to edge...
   await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
 }
