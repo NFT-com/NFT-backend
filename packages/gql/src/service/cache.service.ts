@@ -11,6 +11,7 @@ export enum CacheKeys {
   UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
   GENESIS_KEY_OWNERS = 'genesis_key_owners',
   ASSOCIATED_ADDRESSES = 'associated_addresses',
+  ASSOCIATED_CONTRACT = 'associated_contract',
   REFRESH_NFT = 'refresh_nft',
   LEADERBOARD_RESPONSE = 'Leaderboard_response',
   CACHED_GKS = 'cached_gks',

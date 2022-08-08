@@ -25,11 +25,12 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { BaseCoin } from '@nftcom/gql/defs/gql'
+import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
 import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses,
+  checkNFTContractAddresses, getCollectionNameFromContract,
   getOwnersOfGenesisKeys,
   initiateWeb3,
   refreshNFTMetadata, removeEdgesForNonassociatedAddresses,
@@ -507,6 +508,84 @@ const updateNFTsForAssociatedAddresses = async (
   }
 }
 
+const updateCollectionForAssociatedContract = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+  walletAddress: string,
+): Promise<string> => {
+  try {
+    const cacheKey = `${CacheKeys.ASSOCIATED_CONTRACT}_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let contract
+    if (cachedData) {
+      contract = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedContract = await nftResolverContract.associatedContract(profile.url)
+      if (!associatedContract) {
+        return `No associated contract of ${profile.url}`
+      }
+      contract = associatedContract.chainAddr
+      await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
+      // update associated contract with the latest updates
+      await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
+    }
+    // get collection info
+    let collectionName = await getCollectionNameFromContract(
+      contract,
+      chainId,
+      defs.NFTType.ERC721,
+    )
+    if (collectionName === 'Unknown Name') {
+      collectionName = await getCollectionNameFromContract(
+        contract,
+        chainId,
+        defs.NFTType.ERC1155,
+      )
+    }
+    // check if deployer of associated contract is in associated addresses
+    const deployer = await getCollectionDeployer(contract, chainId)
+    if (!deployer) {
+      if (profile.profileView === defs.ProfileViewType.Collection) {
+        await repositories.profile.updateOneById(profile.id,
+          {
+            profileView: defs.ProfileViewType.Gallery,
+          },
+        )
+      }
+      return `Updated associated contract for ${profile.url}`
+    } else {
+      const collection = await repositories.collection.findByContractAddress(contract, chainId)
+      if (!collection) {
+        await repositories.collection.save({
+          contract,
+          name: collectionName,
+          chainId,
+          deployer,
+        })
+      }
+      const isAssociated = profile.associatedAddresses.indexOf(
+        ethers.utils.getAddress(deployer)) !== -1 ||
+        ethers.utils.getAddress(deployer) === walletAddress
+      if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
+        await repositories.profile.updateOneById(profile.id,
+          {
+            profileView: defs.ProfileViewType.Gallery,
+          },
+        )
+      }
+      return `Updated associated contract for ${profile.url}`
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateCollectionForAssociatedContract: ${err}`)
+    return `error while updating associated contract of ${profile.url}`
+  }
+}
+
 const updateNFTsForProfile = (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
@@ -639,7 +718,7 @@ const updateAssociatedAddresses = async (
   _: any,
   args: gql.MutationUpdateAssociatedAddressesArgs,
   ctx: Context,
-): Promise<gql.UpdateAssociatedAddressesOuput> => {
+): Promise<gql.UpdateAssociatedAddressesOutput> => {
   try {
     const { repositories } = ctx
     logger.debug('updateAssociatedAddresses', { input: args?.input })
@@ -660,6 +739,41 @@ const updateAssociatedAddresses = async (
     return { message }
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
+    return err
+  }
+}
+
+const updateAssociatedContract = async (
+  _: any,
+  args: gql.MutationUpdateAssociatedContractArgs,
+  ctx: Context,
+): Promise<gql.UpdateAssociatedContractOutput> => {
+  try {
+    const { repositories } = ctx
+    logger.debug('updateAssociatedContract', { input: args?.input })
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+    initiateWeb3(chainId)
+    const profile = await repositories.profile.findOne({
+      where: {
+        url: args?.input.profileUrl,
+        chainId,
+      },
+    })
+    if (!profile) {
+      return { message: `No profile with url ${args?.input.profileUrl}` }
+    }
+    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+    const message = await updateCollectionForAssociatedContract(
+      repositories,
+      profile,
+      chainId,
+      wallet.address,
+    )
+    return { message }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateAssociatedContract: ${err}`)
     return err
   }
 }
@@ -1025,6 +1139,7 @@ export default {
     refreshMyNFTs: combineResolvers(auth.isAuthenticated, refreshMyNFTs),
     updateNFTsForProfile: updateNFTsForProfile,
     updateAssociatedAddresses: updateAssociatedAddresses,
+    updateAssociatedContract: updateAssociatedContract,
     refreshNft,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
