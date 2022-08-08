@@ -1072,8 +1072,20 @@ const getAssociatedCollectionForProfile = async (
         profileError.ErrorType.ProfileNotFound,
       ))
     }
-    if (profile.associatedContract) {
-      return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+    if (profile.profileView === defs.ProfileViewType.Collection) {
+      if (profile.associatedContract) {
+        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+      } else {
+        return Promise.reject(appError.buildNotFound(
+          profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
+        ))
+      }
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileViewTypeWrong(),
+        profileError.ErrorType.ProfileViewTypeWrong,
+      ))
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)

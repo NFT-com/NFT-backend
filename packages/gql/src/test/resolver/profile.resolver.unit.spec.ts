@@ -379,6 +379,7 @@ describe('profile resolver', () => {
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
         associatedContract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        profileView: defs.ProfileViewType.Collection,
       })
     })
 
