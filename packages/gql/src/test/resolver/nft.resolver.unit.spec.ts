@@ -321,6 +321,8 @@ describe('nft resolver', () => {
 
       expect(result.data.updateAssociatedContract.message).toBeDefined()
       expect(result.data.updateAssociatedContract.message).toEqual('Updated associated contract for 1')
+      const collections = await repositories.collection.findAll()
+      expect(collections.length).toBeGreaterThan(0)
     })
   })
 

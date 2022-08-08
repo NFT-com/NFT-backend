@@ -663,18 +663,27 @@ const updateNFTsForProfile = (
                                 chainId,
                               ).then((msg) => {
                                 logger.debug(msg)
-                                // if gkIconVisible is true, we check if this profile owner still owns genesis key,
-                                if (profile.gkIconVisible) {
-                                  return updateGKIconVisibleStatus(repositories, chainId, profile)
-                                    .then(() => {
-                                      logger.debug(`gkIconVisible updated for profile ${profile.id}`)
-                                      const updateEnd = Date.now()
-                                      logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                    })
-                                } else {
-                                  const updateEnd = Date.now()
-                                  logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                }
+                                // update associated contract
+                                return updateCollectionForAssociatedContract(
+                                  repositories,
+                                  profile,
+                                  chainId,
+                                  wallet.address,
+                                ).then((msg) => {
+                                  logger.debug(msg)
+                                  // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                                  if (profile.gkIconVisible) {
+                                    return updateGKIconVisibleStatus(repositories, chainId, profile)
+                                      .then(() => {
+                                        logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                        const updateEnd = Date.now()
+                                        logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+                                      })
+                                  } else {
+                                    const updateEnd = Date.now()
+                                    logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+                                  }
+                                })
                               })
                             })
                         })
