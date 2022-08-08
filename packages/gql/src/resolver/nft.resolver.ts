@@ -529,6 +529,9 @@ const updateCollectionForAssociatedContract = async (
       if (!associatedContract) {
         return `No associated contract of ${profile.url}`
       }
+      if (!associatedContract.chainAddr) {
+        return `No associated contract of ${profile.url}`
+      }
       contract = associatedContract.chainAddr
       await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
       // update associated contract with the latest updates
@@ -568,9 +571,9 @@ const updateCollectionForAssociatedContract = async (
           deployer,
         })
       }
-      const isAssociated = profile.associatedAddresses.indexOf(
-        ethers.utils.getAddress(deployer)) !== -1 ||
-        ethers.utils.getAddress(deployer) === walletAddress
+      const checkedDeployer =  ethers.utils.getAddress(deployer)
+      const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
+        checkedDeployer === walletAddress
       if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
         await repositories.profile.updateOneById(profile.id,
           {
