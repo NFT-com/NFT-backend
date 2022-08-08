@@ -251,6 +251,7 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
   pageInput: gql.PageInput,
   orderKey= 'createdAt',
   orderDirection = 'DESC',
+  entityFilter?: Partial<any>,
 ): Promise<any> => {
   const { repositories } = ctx
   return paginatedEntitiesBy(
@@ -264,12 +265,14 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
     const edges = result[0] as entity.Edge[]
     return Promise.all(
       edges.map((edge: entity.Edge) => {
-        return repo.findOne({ where: { id: edge.thatEntityId } })
-          .then(fp.thruIfNotEmpty((entry: T) => entry,
-          ))
+        return entityFilter ? repo.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
+          repo.findOne({ where: { id: edge.thatEntityId } })
+            .then(fp.thruIfNotEmpty((entry: T) => entry,
+            ))
       }),
     ).then((entries: T[]) => {
-      return [entries, result[1]]
+      const filteredEntries = entries.filter((entry) => entry !== undefined)
+      return [filteredEntries, filteredEntries.length]
     }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
   })
 }
@@ -850,7 +853,7 @@ const replaceAt = (index: number, str: string, replacement): string => {
 
 export const generateWeight = (prevWeight: string | undefined): string => {
   if (!prevWeight) return 'aaaa'
-  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
+  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 4) : prevWeight
   let order = weight
   let update = String.fromCharCode(weight.charCodeAt(3) + 1)
   if (update <= 'z') {

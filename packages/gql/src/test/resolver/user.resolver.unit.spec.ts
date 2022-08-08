@@ -95,9 +95,9 @@ describe('user resolver', () => {
         contract: '0x45d296A1042248F48f484c6f2be01006D26fCBF0',
         eventName: 'AssociateEvmUser',
         txHash: '0x62fe7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
-        ownerAddress: '0xd1D9F52d63e3736908c6e7D868f785d30Af5e3AC',
+        ownerAddress: testMockWallet.address,
         profileUrl: 'test-profile-url',
-        destinationAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        destinationAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2c',
         ignore: true,
         hideIgnored: false,
       })
