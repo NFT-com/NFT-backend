@@ -9,6 +9,7 @@ import { getChain } from '@nftcom/gql/config'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
+import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -1123,4 +1124,49 @@ export const removeEdgesForNonassociatedAddresses = async (
       }
     }),
   )
+}
+
+export const getCollectionInfo = async (
+  contract: string,
+  chainId: string,
+  repositories: db.Repository,
+): Promise<any> => {
+  try {
+    const key = `${contract.toLowerCase()}-${chainId}`
+    const cachedData = await cache.get(key)
+
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    } else {
+      const collection = await repositories.collection.findByContractAddress(
+        contract,
+        chainId,
+      )
+
+      if (collection && (
+        collection.deployer == null ||
+        ethers.utils.getAddress(collection.deployer) !== collection.deployer
+      )) {
+        const collectionDeployer = await getCollectionDeployer(contract, chainId)
+        await repositories.collection.save({
+          ...collection,
+          deployer: collectionDeployer,
+        })
+        collection.deployer = collectionDeployer
+      }
+
+      const ubiquityResults = await getUbiquity(contract, chainId)
+
+      const returnObject = {
+        collection,
+        ubiquityResults,
+      }
+
+      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
+      return returnObject
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getCollectionInfo: ${err}`)
+    return err
+  }
 }

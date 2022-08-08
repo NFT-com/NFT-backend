@@ -6,8 +6,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
-import { getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
-import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
+import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, db, defs, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -24,40 +23,7 @@ const getCollection = async (
     logger.debug('getCollection', { input: args?.input })
     const chainId = args?.input?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const key = `${args?.input?.contract?.toLowerCase()}-${chainId}`
-    const cachedData = await cache.get(key)
-
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    } else {
-      const collection = await ctx.repositories.collection.findByContractAddress(
-        args?.input?.contract,
-        chainId,
-      )
-
-      if (collection && (
-        collection.deployer == null ||
-        ethers.utils.getAddress(collection.deployer) !== collection.deployer
-      )) {
-        const collectionDeployer = await getCollectionDeployer(args?.input?.contract, chainId)
-        await ctx.repositories.collection.save({
-          ...collection,
-          deployer: collectionDeployer,
-        })
-        collection.deployer = collectionDeployer
-      }
-
-      const ubiquityResults = await getUbiquity(args?.input?.contract, chainId)
-
-      const returnObject = {
-        collection,
-        ubiquityResults,
-      }
-
-      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
-
-      return returnObject
-    }
+    return await getCollectionInfo(args?.input?.contract, chainId, ctx.repositories)
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
     return err

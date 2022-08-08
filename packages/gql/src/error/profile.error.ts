@@ -8,11 +8,17 @@ export enum ErrorType {
   ProfileBannerFileSize = 'PROFILE_BANNER_FILE_SIZE',
   ProfileAvatarFileSize = 'PROFILE_AVATAR_FILE_SIZE',
   KeyInvalid = 'KEY_INVALID',
+  ProfileAssociatedContractNotFoundMsg = 'PROFILE_ASSOCIATED_CONTRACT_NOT_FOUND',
+  ProfileViewTypeWrong = 'PROFILE_VIEW_TYPE_WRONG',
 }
 
 export const buildProfileNotFoundMsg = (id: string): string => `Profile ${id} not found`
 
 export const buildProfileUrlNotFoundMsg = (url: string, chainId: string): string => `Profile URL  ${url} not found on chain ${chainId}`
+
+export const buildAssociatedContractNotFoundMsg = (url: string, chainId: string): string => `Profile URL  ${url} does not have associated contract on chain ${chainId}`
+
+export const buildProfileViewTypeWrong = (): string => 'User did not toggle collection view on Profile'
 
 export const buildProfileFollowingMsg = (id: string): string =>
   `You are already following this profile ${id}`
