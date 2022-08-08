@@ -25,7 +25,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility,
+  changeNFTsVisibility, getCollectionInfo,
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -1055,6 +1055,32 @@ const getHiddenEvents = async (
   }
 }
 
+const getAssociatedCollectionForProfile = async (
+  _: any,
+  args: gql.QueryAssociatedCollectionForProfileArgs,
+  ctx: Context,
+): Promise<gql.CollectionInfo> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getAssociatedCollectionForProfile', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.associatedContract) {
+      return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1068,6 +1094,7 @@ export default {
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
     hiddenEvents: getHiddenEvents,
+    associatedCollectionForProfile: getAssociatedCollectionForProfile,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
