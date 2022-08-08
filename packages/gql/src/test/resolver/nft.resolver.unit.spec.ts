@@ -271,6 +271,59 @@ describe('nft resolver', () => {
     })
   })
 
+  describe('updateAssociatedContract', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      const wallet = await repositories.wallet.save({
+        userId: 'test-user-id',
+        chainId: '5',
+        chainName: 'goerli',
+        network: 'ethereum',
+        address: '0x1958Af77c06faB96D63351cACf10ABd3f598873B',
+      })
+
+      profile = await repositories.profile.save({
+        url: '1',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: wallet.id,
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: false,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update associated contract', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateAssociatedContract($input: UpdateAssociatedContractInput) { updateAssociatedContract(input: $input) { message } }',
+        variables: {
+          input: {
+            profileUrl: '1',
+            chainId: '5',
+          },
+        },
+      })
+
+      expect(result.data.updateAssociatedContract.message).toBeDefined()
+      expect(result.data.updateAssociatedContract.message).toEqual('Updated associated contract for 1')
+    })
+  })
+
   describe('updateNFTMemo', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
