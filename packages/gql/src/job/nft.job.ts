@@ -60,12 +60,14 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
 
         // listings
         if (openseaResponse.listings.length) {
-          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.listings))
+          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.listings,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
          
         // offers
         if (openseaResponse.offers.length) {
-          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.offers))
+          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.offers,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
         break
       case ExchangeType.LooksRare:
