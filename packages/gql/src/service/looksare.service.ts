@@ -4,7 +4,6 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { delay } from '@nftcom/gql/service/core.service'
 import { TxOrder } from '@nftcom/shared/db/entity'
 import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
-import * as Sentry from '@sentry/node'
 
 import { orderEntityBuilder } from './txActivity.service'
 
@@ -88,7 +87,7 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
-    Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
+    //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }
 }
@@ -224,7 +223,8 @@ export const retrieveMultipleOrdersLooksrare = async (
       }
     }
   } catch (err) {
-    Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
+    //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
+    return undefined
   }
   return responseAggregator
 }
