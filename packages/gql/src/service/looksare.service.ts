@@ -2,10 +2,9 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
+import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { TxOrder } from '@nftcom/shared/db/entity'
 import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
-
-import { orderEntityBuilder } from './txActivity.service'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
