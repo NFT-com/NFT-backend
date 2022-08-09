@@ -1093,6 +1093,39 @@ const getAssociatedCollectionForProfile = async (
   }
 }
 
+const isProfileCustomized = async (
+  _: any,
+  args: gql.QueryIsProfileCustomizedArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('isProfileCustomized', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hidden: false,
+      },
+    })
+    return !!edges.length
+  } catch (err) {
+    Sentry.captureMessage(`Error in isProfileCustomized: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1107,6 +1140,7 @@ export default {
     leaderboard: leaderboard,
     hiddenEvents: getHiddenEvents,
     associatedCollectionForProfile: getAssociatedCollectionForProfile,
+    isProfileCustomized: isProfileCustomized,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
