@@ -5,8 +5,9 @@ import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
-import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
-import { ActivityType, Chain, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
+import { TxOrder } from '@nftcom/shared/db/entity'
+import { ActivityType, Chain, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
@@ -115,7 +116,7 @@ interface OpenseaBaseOrder {
   approved_on_chain?: boolean
 }
 
-interface WyvernOrder extends OpenseaBaseOrder {
+export interface WyvernOrder extends OpenseaBaseOrder {
   payment_token_contract: {
     symbol: string
     address: string
@@ -155,7 +156,7 @@ interface WyvernOrder extends OpenseaBaseOrder {
   prefixed_hash: string
 }
 
-interface SeaportOrder extends OpenseaBaseOrder {
+export interface SeaportOrder extends OpenseaBaseOrder {
   protocol_data: {
     parameters: {
       offerer: string
@@ -427,47 +428,6 @@ const getOpenseaInterceptor = (
 }
 
 /**
- * TODO: move to Tx/Core Service while working on Data modeling ticket with other similar methods
- * orderEntityBuilder 
- * @param protocol
- * @param orderType
- * @param order
- * @param chainId
- */
-const orderEntityBuilder = (
-  protocol: ProtocolType,
-  orderType: ActivityType,
-  order: WyvernOrder & SeaportOrder,
-  chainId: string,
-):  Partial<TxOrder> => {
-  const activity: TxActivity = {
-    activityType: orderType,
-    read: false,
-    timestamp: new Date(),
-    // activityTypeId: 'test-activity-type',
-    walletId: order?.protocol_data?.parameters?.offerer,
-    chainId,
-  } as TxActivity
-
-  const baseOrder:  Partial<TxOrder> = {
-    activity,
-    createdAt: new Date(order.listing_time),
-    exchange: ExchangeType.OpenSea,
-    orderType,
-    orderHash: order.order_hash,
-    makerAddress: order.maker?.address,
-    takerAddress: order.taker?.address,
-    protocol,
-    protocolData: {
-      ...order.protocol_data,
-    },
-    chainId,
-  }
-
-  return baseOrder
-}
-
-/**
  * Retrieve listings in batches
  * @param listingQueryParams
  * @param chainId
@@ -534,7 +494,7 @@ const retrieveListingsInBatches = async (
     }
   }
         
-  return listings
+  return await Promise.all(listings)
 }
 
 /**
@@ -614,7 +574,7 @@ const retrieveOffersInBatches = async (
       }
     }
   }
-  return offers
+  return await Promise.all(offers)
 }
 
 /**

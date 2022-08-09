@@ -8,18 +8,23 @@ import { BaseEntity, TxActivity } from '.'
 export class TxOrder extends BaseEntity {
 
   @OneToOne(() => TxActivity,
-    (activity) => activity.activityTypeId,{
+    (activity) =>  activity.activityTypeId,
+    {
       nullable: false,
       cascade: ['insert', 'update'],
-    })
-  @JoinColumn()
+    },
+  )
+  @JoinColumn({
+    name: 'activityId',
+    referencedColumnName: 'id',
+  })
   activity: TxActivity
-
-  @Column({ type: 'enum', enum: ExchangeType, nullable: false })
-  exchange: ExchangeType
 
   @Column({ unique: true, nullable: false }) // on-chain data will store tx hash
   orderHash: string
+
+  @Column({ type: 'enum', enum: ExchangeType, nullable: false })
+  exchange: ExchangeType
 
   @Column({ nullable: false })
   makerAddress: string

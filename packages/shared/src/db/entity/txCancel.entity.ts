@@ -9,8 +9,10 @@ import { BaseEntity, TxActivity } from '.'
 export class TxCancel extends BaseEntity {
 
   @OneToOne(() => TxActivity,
-    (activity) => activity.activityTypeId,
-    { nullable: false, cascade: true },
+    {
+      nullable: false,
+      cascade: ['insert', 'soft-remove', 'remove'],
+    },
   )
   @JoinColumn()
   activity: TxActivity

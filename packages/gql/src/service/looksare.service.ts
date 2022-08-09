@@ -2,9 +2,11 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
-import { TxActivity,TxOrder } from '@nftcom/shared/db/entity'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { TxOrder } from '@nftcom/shared/db/entity'
+import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
+
+import { orderEntityBuilder } from './txActivity.service'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
@@ -17,7 +19,7 @@ export interface LooksRareOrderRequest {
   chainId: string
 }
 
-interface LooksRareOrder {
+export interface LooksRareOrder {
   hash: string
   collectionAddress: string
   tokenId: string
@@ -123,52 +125,6 @@ const getLooksRareInterceptor = (
   return looksrareInstance
 }
 
-const orderEntityBuilder = (
-  orderType: ActivityType,
-  order: LooksRareOrder,
-  chainId: string,
-):  Partial<TxOrder> => {
-  // @TODO: Discuss during data modeling - this is for saving per current schema
-  const activity: TxActivity = {
-    activityType: orderType,
-    read: false,
-    timestamp: new Date(),
-    // activityTypeId: 'test-activity-type',
-    walletId: order.signer,
-    chainId,
-  } as TxActivity
-  const baseOrder:  Partial<TxOrder> = {
-    activity,
-    createdAt: new Date(order.startTime), // need to check if createdAt is something internal during data modeling
-    exchange: ExchangeType.LooksRare,
-    orderType,
-    orderHash: order.hash,
-    makerAddress: order.signer,
-    takerAddress: order.strategy,
-    protocol: ProtocolType.LooksRare,
-    protocolData: {
-      isOrderAsk: order.isOrderAsk,
-      signer: order.signer,
-      collectionAddress: order.collectionAddress,
-      price: order.price,
-      tokenId: order.tokenId,
-      amount: order.amount,
-      strategy: order.strategy,
-      currencyAddress: order.currencyAddress,
-      nonce: order.nonce,
-      startTime: order.startTime,
-      endTime: order.endTime,
-      minPercentageToAsk: order.minPercentageToAsk,
-      params: order.params || '0x',
-      v: order.v,
-      r: order.r,
-      s: order.s,
-    },
-    chainId,
-  }
-  return baseOrder
-}
-
 /**
  * Retrieve listings in batches
  * @param listingQueryParams
@@ -203,6 +159,7 @@ const retrieveLooksRareOrdersInBatches = async (
       if( queryUrl.includes('isOrderAsk=true')){
         listings.push(
           orderEntityBuilder(
+            ProtocolType.LooksRare,
             ActivityType.Listing,
             assets[0],
             chainId,
@@ -212,6 +169,7 @@ const retrieveLooksRareOrdersInBatches = async (
       else  {
         offers.push(
           orderEntityBuilder(
+            ProtocolType.LooksRare,
             ActivityType.Bid,
             assets[0],
             chainId,
@@ -225,9 +183,10 @@ const retrieveLooksRareOrdersInBatches = async (
       delayCounter = 0
     }
   }
+
   return {
-    listings:listings,
-    offers: offers,
+    listings: await Promise.all(listings),
+    offers: await Promise.all(offers),
   }
 }
 

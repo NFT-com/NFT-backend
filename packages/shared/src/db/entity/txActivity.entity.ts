@@ -4,14 +4,14 @@ import { ActivityType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from '.'
 
-@Index(['walletId', 'timestamp'])
+@Index(['walletId', 'timestamp']) // discuss about unique fields and indices during data modelling
 @Entity()
 export class TxActivity extends BaseEntity {
 
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   activityType: ActivityType
 
-  @Column({ nullable: true })
+  @Column({ nullable: false, unique: true })
   activityTypeId: string
 
   @Column({ nullable: false, default: false })

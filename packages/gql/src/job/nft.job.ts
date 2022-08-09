@@ -16,6 +16,8 @@ import { nftCronSubqueue } from './job'
 export const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
+const MAX_CHUNK_SIZE = 500
+
 const MAX_PROCESS_BATCH_SIZE = 1500
 
 const subQueueBaseOptions: Bull.JobOptions = {
@@ -71,12 +73,14 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
   
         // listings
         if (looksrareResponse.listings.length) {
-          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.listings))
+          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.listings,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
 
         // offers
         if (looksrareResponse.offers.length) {
-          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.offers))
+          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.offers,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
         break
       }
@@ -202,19 +206,14 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         }
       }
 
-      //let upsertOpts =  {
-      // skipUpdateIfNoValuesChanged: true,
-      //conflictPaths: ['orderHash'],
-      //}
-
       // save listings
       if (listings.length) {
-        persistActivity.push(repositories.txOrder.saveMany(listings))
+        persistActivity.push(repositories.txOrder.saveMany(listings, { chunk: MAX_CHUNK_SIZE }))
       }
 
       // save bids
       if (bids.length) {
-        persistActivity.push(repositories.txOrder.saveMany(bids))
+        persistActivity.push(repositories.txOrder.saveMany(bids, { chunk: MAX_CHUNK_SIZE }))
       }
 
       await Promise.all(persistActivity)

@@ -8,8 +8,10 @@ import { BaseEntity,TxActivity } from '.'
 export class TxTransaction extends BaseEntity {
 
   @OneToOne(() => TxActivity,
-    (activity) => activity.activityTypeId,
-    { nullable: false, cascade: true },
+    {
+      nullable: false,
+      cascade: ['insert', 'update'],
+    },
   )
   @JoinColumn()
   activity: TxActivity

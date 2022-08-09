@@ -1,3 +1,5 @@
+import { DeepPartial, SaveOptions } from 'typeorm'
+
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType } from '@nftcom/shared/defs'
 
@@ -27,7 +29,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(
         `activity.${activityType.toLowerCase()}`, this.getEntityName(activityType),
-        'activityType',  'activity.activityTypeId = activityType.id')
+        'activityType',  'activity.id = activityType.activityId')
       .where({ activityType, chainId })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
@@ -60,7 +62,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(`activity.${activityType.toLowerCase()}`,
         this.getEntityName(activityType), 'activityType',
-        'activity.activityTypeId = activityType.id')
+        'activity.id = activityType.activityId')
       .where({
         activityType,
         walletId,
@@ -68,6 +70,11 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
+  }
+
+  public save = (entity: DeepPartial<TxActivity>, opts?: SaveOptions): Promise<TxActivity> => {
+    console.log('IN ACTIVITY SAVE')
+    return this.getRepository().save(this.getRepository().create(entity), opts)
   }
 
 }

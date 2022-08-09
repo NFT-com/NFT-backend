@@ -131,6 +131,7 @@ export class BaseRepository<T> {
     return this.getRepository().update(opts, entity)
   }
 
+  /* Insert/update (Cascades not supported) */
   public upsert = (
     entity: typeorm.DeepPartial<T>,
     opts: UpsertOptions,
@@ -138,11 +139,12 @@ export class BaseRepository<T> {
     return this.getRepository().upsert(this.getRepository().create(entity), opts)
   }
 
+  /* Bulk insert/update (Cascades not supported) */
   public upsertMany = (
     entities: typeorm.DeepPartial<T>[],
     opts: UpsertOptions,
   ): Promise<typeorm.InsertResult> => {
-    return this.getRepository().upsert(this.getRepository().create(entities), opts)
+    return this.getRepository().upsert(entities, opts)
   }
 
   public exists = (opts: Partial<T>): Promise<boolean> => {
