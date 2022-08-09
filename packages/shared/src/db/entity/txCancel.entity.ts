@@ -11,7 +11,7 @@ export class TxCancel extends BaseEntity {
   @OneToOne(() => TxActivity,
     {
       nullable: false,
-      cascade: ['insert', 'soft-remove', 'remove'],
+      cascade: ['insert', 'update'],
     },
   )
   @JoinColumn()
