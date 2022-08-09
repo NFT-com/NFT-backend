@@ -1,9 +1,9 @@
 {
   "name": "@nftcom/shared",
-  "main": "dist/index",
-  "types": "dist/index.d.ts",
+  "main": "src/index",
+  "types": "src/index",
   "scripts": {
-    "prebuild": "npx json -I -f package.json -e \"this.main='dist/index'\" -e \"this.types='dist/index.d.ts'\"",
+    "prebuild": "npx json -I -f package.json -e \"this.main='src/index'\" -e \"this.types='src/index'\"",
     "build": "npm run clean && npm run compile && npm run copy:cert",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/db/rds-combined-ca-bundle.cer",

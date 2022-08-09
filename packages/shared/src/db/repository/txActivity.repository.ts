@@ -1,35 +1,38 @@
-import { DeepPartial, SaveOptions } from 'typeorm'
-
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
+interface EntityNameAndType {
+  name: string
+  type: string
+}
 export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   constructor() {
     super(TxActivity)
   }
 
-  private getEntityName = (activityType: ActivityType): string => {
+  private getEntityNameAndType = (activityType: ActivityType): EntityNameAndType => {
     if (activityType === ActivityType.Listing || activityType === ActivityType.Bid) {
-      return 'TxOrder'
+      return { name: 'TxOrder', type: 'order' }
     }
 
     if (activityType === ActivityType.Sale || activityType === ActivityType.Transfer) {
-      return 'TxTransaction'
+      return { name: 'TxTransaction', type: 'transaction' }
     }
-    return `Tx${activityType}`
+    return { name: `Tx${activityType}`, type: `${activityType.toLowerCase()}` }
   }
 
-  public findActivitiesByType = (
+  public findActivitiesByType = async (
     activityType: ActivityType,
     chainId: string,
   ): Promise<TxActivity[]> => {
+    const { name, type } = this.getEntityNameAndType(activityType)
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(
-        `activity.${activityType.toLowerCase()}`, this.getEntityName(activityType),
-        'activityType',  'activity.id = activityType.activityId')
+        `activity.${type}`, name,
+        'activityType',  'activity.id = activityType.activityId and activityType.id = activity.activityTypeId')
       .where({ activityType, chainId })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
@@ -40,12 +43,12 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
-      .leftJoinAndMapOne('activity.order', 'TxOrder', 'order',
-        'activity.id = order.activityId')
-      .leftJoinAndMapOne('activity.cancel', 'TxCancel', 'cancel',
-        'activity.id = cancel.activityId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction', 'transaction',
-        'activity.id = transfer.activityId')
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
       .where({
         walletId,
         chainId,
@@ -59,9 +62,10 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     activityType: ActivityType,
     chainId: string,
   ): Promise<TxActivity[]> => {
+    const { name, type } = this.getEntityNameAndType(activityType)
     return this.getRepository().createQueryBuilder('activity')
-      .leftJoinAndMapOne(`activity.${activityType.toLowerCase()}`,
-        this.getEntityName(activityType), 'activityType',
+      .leftJoinAndMapOne(`activity.${type}`,
+        name, 'activityType',
         'activity.id = activityType.activityId')
       .where({
         activityType,
@@ -70,11 +74,6 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
-  }
-
-  public save = (entity: DeepPartial<TxActivity>, opts?: SaveOptions): Promise<TxActivity> => {
-    console.log('IN ACTIVITY SAVE')
-    return this.getRepository().save(this.getRepository().create(entity), opts)
   }
 
 }

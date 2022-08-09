@@ -4,7 +4,7 @@ import { ActivityType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from '.'
 
-@Index(['walletId', 'timestamp']) // discuss about unique fields and indices during data modelling
+@Index(['walletId', 'timestamp'])
 @Entity()
 export class TxActivity extends BaseEntity {
 
@@ -20,6 +20,7 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false })
   timestamp: Date
 
+  // @TODO: should this be walletAddress since we could also fetch external orders?
   @Column({ nullable: false })
   walletId: string
 

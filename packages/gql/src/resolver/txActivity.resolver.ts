@@ -9,7 +9,6 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
   const activityType = ActivityType[args.activityType]
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
-
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
