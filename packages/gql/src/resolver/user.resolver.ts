@@ -11,6 +11,7 @@ import { auth, joi } from '@nftcom/gql/helper'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
@@ -444,6 +445,51 @@ const getMyApprovals = (
   return repositories.approval.findByUserId(user.id)
 }
 
+export const updateHideIgnored = async (
+  _: any,
+  args: gql.MutationUpdateHideIgnoredArgs,
+  ctx: Context,
+): Promise<gql.UpdateHideIgnoredOutput> => {
+  try {
+    const { wallet, repositories, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('updateHideIgnored', { input: args?.input })
+    
+    for (let i = 0; i < args?.input?.eventIdArray.length; i++) {
+      const id = args?.input?.eventIdArray[i]
+
+      const event = await repositories.event.findOne({
+        where: {
+          id,
+          ownerAddress: helper.checkSum(wallet.address),
+          ignore: true,
+        },
+      })
+
+      if (event) {
+        if (args?.input.hideIgnored) {
+          await repositories.event.updateOneById(event.id, { hideIgnored: true })
+        } else {
+          await repositories.event.updateOneById(event.id, { hideIgnored: false, ignore: false })
+        }
+      } else {
+        return Promise.reject(appError.buildExists(
+          userError.buildEventNotFoundMsg(`event id ${id} not found with ownerAddress ${helper.checkSum(wallet.address)} and ignore = true`),
+          userError.ErrorType.EventAction,
+        ))
+      }
+    }
+    
+    return {
+      message: args?.input.hideIgnored ? 'Updated hidden events to be invisible' : 'Updated hidden events to be visible',
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateHideIgnored: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
@@ -456,6 +502,7 @@ export default {
     updateEmail,
     updateMe: combineResolvers(auth.isAuthenticated, updateMe),
     ignoreAssocations: combineResolvers(auth.isAuthenticated, ignoreAssocations),
+    updateHideIgnored: combineResolvers(auth.isAuthenticated, updateHideIgnored),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
   },
   User: {

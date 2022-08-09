@@ -4,6 +4,8 @@ type Wallet {
   chainId: String!
   chainName: String!
   network: String!
+  profileId: String
+  preferredProfile: Profile
   user: User
   createdAt: DateTime!
 }
@@ -25,5 +27,7 @@ extend type Query {
 extend type Mutation {
   "AUTHENTICATED"
   addAddress(input: WalletInput!): Wallet!
+  "AUTHENTICATED"
+  updateWalletProfileId(profileId: ID!): Wallet!
 }
 

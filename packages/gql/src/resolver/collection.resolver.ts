@@ -5,12 +5,8 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
-import { getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
-import {
-  retrieveCollectionOpensea,
-  retrieveCollectionStatsOpensea,
-} from '@nftcom/gql/service/opensea.service'
-import { _logger, db,defs } from '@nftcom/shared'
+import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
+import { _logger, contracts, db, defs, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
@@ -26,68 +22,7 @@ const getCollection = async (
     logger.debug('getCollection', { input: args?.input })
     const chainId = args?.input?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const key = `${args?.input?.contract?.toLowerCase()}-${chainId}-${args?.input?.withOpensea}`
-    const cachedData = await cache.get(key)
-
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    } else {
-      let stats, data
-
-      if (args?.input?.withOpensea) {
-        const slugKey = `${key}-slug`
-        const cachedData = JSON.parse(await cache.get(slugKey))
-
-        if (cachedData?.collection?.slug) {
-          data = cachedData
-          stats = await retrieveCollectionStatsOpensea(
-            cachedData?.collection?.slug,
-            chainId,
-          )
-        } else {
-          data = await retrieveCollectionOpensea(args?.input?.contract, chainId)
-
-          if (data) {
-            if (data?.collection?.slug) {
-              stats = await retrieveCollectionStatsOpensea(
-                data?.collection?.slug,
-                args?.input?.chainId,
-              )
-            }
-          }
-
-          await cache.set(slugKey, JSON.stringify(data), 'EX', 60 * 5) // set cache
-        }
-      }
-
-      const collection = await ctx.repositories.collection.findByContractAddress(
-        args?.input?.contract,
-        chainId,
-      )
-
-      if (collection && collection.deployer == null) {
-        const collectionDeployer = await getCollectionDeployer(args?.input?.contract, chainId)
-        await ctx.repositories.collection.save({
-          ...collection,
-          deployer: collectionDeployer,
-        })
-        try {
-          collection.deployer = ethers.utils.getAddress(collectionDeployer)
-        } catch {
-          collection.deployer = null
-        }
-      }
-
-      const returnObject = {
-        collection,
-        openseaInfo: data,
-        openseaStats: stats,
-      }
-
-      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (args?.input?.withOpensea ? 30 : 5))
-
-      return returnObject
-    }
+    return await getCollectionInfo(args?.input?.contract, chainId, ctx.repositories)
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
     return err
@@ -270,10 +205,63 @@ const syncCollectionsWithNFTs = async (
   }
 }
 
+export const associatedAddressesForContract = async (
+  _: any,
+  args: gql.QueryAssociatedAddressesForContractArgs,
+  ctx: Context,
+): Promise<gql.AssociatedAddressesForContractOutput> => {
+  try {
+    const { repositories, chain, wallet } = ctx
+    logger.debug('associatedAddressesForContract', { contract: args?.contract })
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const collectionDeployer = await getCollectionDeployer(args?.contract, chainId)
+    const profiles = await repositories.profile.find({
+      where: {
+        ownerWalletId: wallet.id,
+        chainId,
+      },
+    })
+    const addresses: string[] = []
+    await Promise.allSettled(
+      profiles.map(async (profile) => {
+        const key = `associated_addresses_${profile.url}_${chainId}`
+        const cachedData = await cache.get(key)
+        let addrs
+        if (cachedData) {
+          addrs = JSON.parse(cachedData) as string[]
+        } else {
+          const nftResolverContract = typechain.NftResolver__factory.connect(
+            contracts.nftResolverAddress(chainId),
+            provider.provider(Number(chainId)),
+          )
+          const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+          addrs = associatedAddresses.map((item) => item.chainAddr)
+          await cache.set(key, JSON.stringify(addrs), 'EX', 60 * 10)
+        }
+        addresses.push(...addrs)
+      }),
+    )
+    return {
+      deployerAddress: collectionDeployer,
+      associatedAddresses: addresses,
+      deployerIsAssociated: collectionDeployer ?
+        (addresses.indexOf(ethers.utils.getAddress(collectionDeployer)) !== -1 ||
+          ethers.utils.getAddress(collectionDeployer) === wallet.address
+        ) : false,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in associatedAddressesForContract: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
     collectionsByDeployer: getCollectionsByDeployer,
+    associatedAddressesForContract:
+      combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
   },
   Mutation: {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),

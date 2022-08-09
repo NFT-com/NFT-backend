@@ -25,7 +25,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility,
+  changeNFTsVisibility, getCollectionInfo,
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -365,7 +365,7 @@ const updateProfile = (
   args: gql.MutationUpdateProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
@@ -379,6 +379,7 @@ const updateProfile = (
     hideAllNFTs: Joi.boolean().allow(null),
     gkIconVisible: Joi.boolean().allow(null),
     nftsDescriptionsVisible: Joi.boolean().allow(null),
+    deployedContractsVisible: Joi.boolean().allow(null),
     displayType: Joi.string()
       .valid(defs.ProfileDisplayType.NFT, defs.ProfileDisplayType.Collection)
       .allow(null),
@@ -409,9 +410,10 @@ const updateProfile = (
       p.layoutType = args.input.layoutType ?? p.layoutType
       p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
       p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible
+      p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
       return changeNFTsVisibility(
         repositories,
-        user.id,
+        wallet.id,
         p.id, // profileId
         args.input.showAllNFTs,
         args.input.hideAllNFTs,
@@ -1053,6 +1055,44 @@ const getHiddenEvents = async (
   }
 }
 
+const getAssociatedCollectionForProfile = async (
+  _: any,
+  args: gql.QueryAssociatedCollectionForProfileArgs,
+  ctx: Context,
+): Promise<gql.CollectionInfo> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getAssociatedCollectionForProfile', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.profileView === defs.ProfileViewType.Collection) {
+      if (profile.associatedContract) {
+        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+      } else {
+        return Promise.reject(appError.buildNotFound(
+          profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
+        ))
+      }
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileViewTypeWrong(),
+        profileError.ErrorType.ProfileViewTypeWrong,
+      ))
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1066,6 +1106,7 @@ export default {
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
     hiddenEvents: getHiddenEvents,
+    associatedCollectionForProfile: getAssociatedCollectionForProfile,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

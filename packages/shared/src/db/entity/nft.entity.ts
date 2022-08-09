@@ -40,4 +40,7 @@ export class NFT extends BaseEntity {
   @Column({ type: 'varchar', nullable: true, length: 2000 })
   memo: string
 
+  @Column({ nullable: true })
+  profileId: string
+
 }

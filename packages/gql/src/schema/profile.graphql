@@ -185,6 +185,7 @@ extend type Query {
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
   leaderboard(input: LeaderboardInput): LeaderboardOutput!
   hiddenEvents(input: HiddenEventsInput!): [Event!]!
+  associatedCollectionForProfile(url: String!, chainId: String): CollectionInfo!
 }
 
 extend type Mutation {
