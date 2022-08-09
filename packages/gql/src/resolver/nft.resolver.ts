@@ -147,7 +147,7 @@ const getContractNFT = (
       ),
     ))
     .then(fp.tap((nft) => {
-      logger.info(nft) // todo: refresh metadata?
+      logger.debug(nft) // todo: refresh metadata?
     }))
 }
 
