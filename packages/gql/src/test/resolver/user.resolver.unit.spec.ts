@@ -124,4 +124,44 @@ describe('user resolver', () => {
       expect(updatedEvent.hideIgnored).toEqual(true)
     })
   })
+
+  describe('getApprovedAssociations', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.event.save({
+        chainId: 5,
+        contract: '0x3a3539B6727E74fa1c5D4d39B433F0fAB5BC4F4a',
+        eventName: 'AssociateSelfWithUser',
+        txHash: '0x63ce7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
+        ownerAddress: testMockWallet.address,
+        profileUrl: 'test-profile-url',
+        destinationAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2c',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return receivers approved association request', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query GetApprovedAssociations($profileUrl: String!) { getApprovedAssociations(profileUrl: $profileUrl) { id receiver } }',
+        variables: {
+          profileUrl: 'test-profile-url',
+        },
+      })
+      expect(result.data.getApprovedAssociations.length).toBeGreaterThan(0)
+      expect(result.data.getApprovedAssociations[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2c')
+    })
+  })
 })
