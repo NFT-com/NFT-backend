@@ -6,7 +6,7 @@ import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { TxOrder } from '@nftcom/shared/db/entity'
+import { entity } from '@nftcom/shared'
 import { ActivityType, Chain, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
@@ -185,8 +185,8 @@ export interface SeaportOrder extends OpenseaBaseOrder {
 }
 
 export interface OpenseaExternalOrder {
-  listings: TxOrder[]
-  offers: TxOrder[]
+  listings: entity.TxOrder[]
+  offers: entity.TxOrder[]
 }
 
 const cids = (): string => {

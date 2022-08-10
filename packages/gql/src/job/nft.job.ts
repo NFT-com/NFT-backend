@@ -3,9 +3,8 @@ import Bull, { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
-import { _logger, db } from '@nftcom/shared'
+import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
-import { NFT, TxOrder } from '@nftcom/shared/db/entity'
 import { ExchangeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
@@ -32,11 +31,11 @@ const subQueueBaseOptions: Bull.JobOptions = {
 
 //batch processor
 const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
-  logger.debug(`initiated external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
+  logger.debug(`initiated external orders batch processor for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
   try {
     const { offset, limit, exchange } = job.data
     const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
-    const nfts: NFT[] = await repositories.nft.find({
+    const nfts: entity.NFT[] = await repositories.nft.find({
       where: { chainId, deletedAt: null },
       select: ['contract', 'tokenId', 'chainId'],
       skip: offset,
@@ -180,8 +179,8 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
       ])
 
-      const listings: TxOrder[] = []
-      const bids: TxOrder[] = []
+      const listings: entity.TxOrder[] = []
+      const bids: entity.TxOrder[] = []
       const persistActivity: any[] = []
     
       if (opensea.status === 'fulfilled') {

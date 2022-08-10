@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { TxOrder } from '@nftcom/shared/db/entity'
+import { entity } from '@nftcom/shared'
 import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
@@ -40,8 +40,8 @@ export interface LooksRareOrder {
 }
 
 export interface LooksrareExternalOrder {
-  listings: TxOrder[]
-  offers: TxOrder[]
+  listings: entity.TxOrder[]
+  offers: entity.TxOrder[]
 }
 
 export interface LookrareResponse {
