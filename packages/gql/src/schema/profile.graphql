@@ -165,7 +165,7 @@ input UpdateProfileViewInput {
   profileViewType: ProfileViewType!
 }
 
-input HiddenEventsInput {
+input IgnoredEventsInput {
   profileUrl: String!
   walletAddress: Address!
   chainId: String
@@ -184,7 +184,7 @@ extend type Query {
   insiderReservedProfiles(input: InsiderReservedProfilesInput!): [String!]!
   latestProfiles(input: LatestProfilesInput): ProfilesOutput!
   leaderboard(input: LeaderboardInput): LeaderboardOutput!
-  hiddenEvents(input: HiddenEventsInput!): [Event!]!
+  ignoredEvents(input: IgnoredEventsInput!): [Event!]!
   associatedCollectionForProfile(url: String!, chainId: String): CollectionInfo!
   isProfileCustomized(url: String!, chainId: String): Boolean!
 }

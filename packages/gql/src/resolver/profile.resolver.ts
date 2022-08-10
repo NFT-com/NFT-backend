@@ -1031,16 +1031,16 @@ const updateProfileView = async (
   }
 }
 
-const getHiddenEvents = async (
+const getIgnoredEvents = async (
   _: any,
-  args: gql.QueryHiddenEventsArgs,
+  args: gql.QueryIgnoredEventsArgs,
   ctx: Context,
 ): Promise<entity.Event[]> => {
   try {
     const { repositories } = ctx
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    logger.debug('getHiddenEvents', { input: args?.input })
+    logger.debug('getIgnoredEvents', { input: args?.input })
     const { profileUrl, walletAddress } = helper.safeObject(args?.input)
     return await repositories.event.find({
       where: {
@@ -1050,7 +1050,7 @@ const getHiddenEvents = async (
       },
     })
   } catch (err) {
-    Sentry.captureMessage(`Error in getHiddenEvents: ${err}`)
+    Sentry.captureMessage(`Error in getIgnoredEvents: ${err}`)
     return err
   }
 }
@@ -1138,7 +1138,7 @@ export default {
     insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
-    hiddenEvents: getHiddenEvents,
+    ignoredEvents: getIgnoredEvents,
     associatedCollectionForProfile: getAssociatedCollectionForProfile,
     isProfileCustomized: isProfileCustomized,
   },

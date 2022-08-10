@@ -37,4 +37,7 @@ export class Event extends BaseEntity {
   @Column({ default: false })
   hideIgnored: boolean
 
+  @Column({ default: false })
+  hidden: boolean
+
 }
