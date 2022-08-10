@@ -25,7 +25,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility,
+  changeNFTsVisibility, getCollectionInfo,
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -1055,6 +1055,77 @@ const getHiddenEvents = async (
   }
 }
 
+const getAssociatedCollectionForProfile = async (
+  _: any,
+  args: gql.QueryAssociatedCollectionForProfileArgs,
+  ctx: Context,
+): Promise<gql.CollectionInfo> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getAssociatedCollectionForProfile', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.profileView === defs.ProfileViewType.Collection) {
+      if (profile.associatedContract) {
+        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+      } else {
+        return Promise.reject(appError.buildNotFound(
+          profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
+        ))
+      }
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileViewTypeWrong(),
+        profileError.ErrorType.ProfileViewTypeWrong,
+      ))
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)
+    return err
+  }
+}
+
+const isProfileCustomized = async (
+  _: any,
+  args: gql.QueryIsProfileCustomizedArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('isProfileCustomized', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hidden: false,
+      },
+    })
+    return !!edges.length
+  } catch (err) {
+    Sentry.captureMessage(`Error in isProfileCustomized: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1068,6 +1139,8 @@ export default {
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
     hiddenEvents: getHiddenEvents,
+    associatedCollectionForProfile: getAssociatedCollectionForProfile,
+    isProfileCustomized: isProfileCustomized,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

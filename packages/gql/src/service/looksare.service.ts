@@ -4,7 +4,6 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { delay } from '@nftcom/gql/service/core.service'
 import { TxActivity,TxBid, TxList } from '@nftcom/shared/db/entity'
 import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
-import * as Sentry from '@sentry/node'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
@@ -85,7 +84,7 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
-    Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
+    // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }
 }
@@ -246,7 +245,7 @@ export const retrieveMultipleOrdersLooksrare = async (
       }
     }
   } catch (err) {
-    Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
+    // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
   return responseAggregator
 }
