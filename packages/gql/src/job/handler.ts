@@ -269,7 +269,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 destinationAddress: helper.checkSum(receiver),
               },
             )
-            logger.debug(`New NFT Resolver ${evt.name} event found. ${profileUrl} (receiver = ${receiver}) approved ${[profileOwner]}. chainId=${chainId}`)
+            logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (receiver = ${receiver}) profileOwner = ${[profileOwner]}. chainId=${chainId}`)
           }
         }
       } catch (err) {
