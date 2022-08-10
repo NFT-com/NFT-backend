@@ -1,4 +1,4 @@
-import { Collection } from '@nftcom/shared/db/entity'
+import { Collection, NFT } from '@nftcom/shared/db/entity'
 
 import { BaseRepository } from './base.repository'
 
@@ -12,6 +12,14 @@ export class CollectionRepository extends BaseRepository<Collection> {
     return this.findOne({
       where: { contract: address, deletedAt: null, chainId },
     })
+  }
+
+  findAllWithAnNft(): Promise<Collection[]> {
+    return this.getRepository()
+      .createQueryBuilder('collection')
+      .leftJoinAndMapOne('collection.nft', NFT,
+        'nft', 'collection.contract = nft.contract')
+      .getMany()
   }
 
 }
