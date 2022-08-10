@@ -25,6 +25,7 @@ type Event {
   blockNumber: String
   ignore: Boolean
   hideIgnored: Boolean
+  hidden: Boolean
 }
 
 type UserPreferences {
