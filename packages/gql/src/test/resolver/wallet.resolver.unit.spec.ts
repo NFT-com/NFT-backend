@@ -8,6 +8,7 @@ import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.retryTimes(2)
+jest.setTimeout(300000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -66,7 +67,7 @@ describe('wallet resolver', () => {
         { id: '5', name: 'goerli' },
       )
     })
-  
+
     afterAll(async () => {
       await testServer.stop()
       if (!connection) return
