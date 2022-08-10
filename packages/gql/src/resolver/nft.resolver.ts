@@ -28,7 +28,7 @@ import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
-import { retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
+import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses, getCollectionNameFromContract,
   getOwnersOfGenesisKeys,
@@ -39,7 +39,7 @@ import {
   updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
-import { retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
+import { createSeaportListing, retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
 
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
@@ -1135,6 +1135,32 @@ export const updateNFTProfileId =
     })
   }
 
+export const listNFTSeaport = async (
+  _: any,
+  args: gql.MutationListNFTSeaportArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const chainId = args?.input?.chainId || process.env.CHAIN_ID
+  const seaportSignature = args?.input?.seaportSignature
+  const seaportParams = args?.input?.seaportParams
+  logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
+
+  return await createSeaportListing(seaportSignature, seaportParams, chainId)
+}
+
+export const listNFTLooksrare = async (
+  _: any,
+  args: gql.MutationListNFTLooksrareArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const chainId = args?.input?.chainId || process.env.CHAIN_ID
+  const looksrareOrder = args?.input?.looksrareOrder
+
+  logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
+
+  return await createLooksrareListing(looksrareOrder, chainId)
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1156,6 +1182,8 @@ export default {
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
+    listNFTSeaport,
+    listNFTLooksrare,
   },
   NFT: {
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
