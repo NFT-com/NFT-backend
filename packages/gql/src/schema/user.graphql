@@ -59,6 +59,11 @@ type PendingAssociationOutput {
   url: String!
 }
 
+type ApprovedAssociationOutput {
+  id: String!
+  receiver: String!
+}
+
 input UserPreferencesInput {
   bidActivityNotifications: Boolean
   priceChangeNotifications: Boolean
@@ -101,6 +106,8 @@ extend type Query {
   getMyGenesisKeys: [GkOutput]!
   "AUTHENTICATED"
   getMyPendingAssociations: [PendingAssociationOutput]!
+  "AUTHENTICATED"
+  getApprovedAssociations(profileUrl: String!): [ApprovedAssociationOutput]!
 }
 
 extend type Mutation {
@@ -110,7 +117,7 @@ extend type Mutation {
   updateEmail(input: UpdateEmailInput!): User!
   confirmEmail(token: String!): Boolean!
   "AUTHENTICATED"
-  ignoreAssocations(eventIdArray: [String]!): [Event]!
+  ignoreAssociations(eventIdArray: [String]!): [Event]!
   "AUTHENTICATED"
   updateHideIgnored(input: UpdateHideIgnoredInput!): UpdateHideIgnoredOutput!
   "AUTHENTICATED"

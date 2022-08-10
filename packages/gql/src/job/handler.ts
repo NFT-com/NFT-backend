@@ -131,6 +131,8 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
         helper.id('AssociateEvmUser(address,string,address)'),
         helper.id('CancelledEvmAssociation(address,string,address)'),
         helper.id('ClearAllAssociatedAddresses(address,string)'),
+        helper.id('AssociateSelfWithUser(address,string,address)'),
+        helper.id('RemovedAssociateProfile(address,string,address)'),
       ],
     ]
 
@@ -239,6 +241,35 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               },
             )
             logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) cancelled all associations. chainId=${chainId}`)
+          }
+        } else if (evt.name === 'AssociateSelfWithUser') {
+          const [receiver,profileUrl,profileOwner] = evt.args
+          const event = await repositories.event.findOne({
+            where: {
+              chainId,
+              contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+              eventName: evt.name,
+              txHash: unparsedEvent.transactionHash,
+              ownerAddress: profileOwner,
+              blockNumber: Number(unparsedEvent.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(receiver),
+            },
+          })
+          if (!event) {
+            await repositories.event.save(
+              {
+                chainId,
+                contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+                eventName: evt.name,
+                txHash: unparsedEvent.transactionHash,
+                ownerAddress: profileOwner,
+                blockNumber: Number(unparsedEvent.blockNumber),
+                profileUrl: profileUrl,
+                destinationAddress: helper.checkSum(receiver),
+              },
+            )
+            logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (receiver = ${receiver}) approved ${ [profileOwner] }. chainId=${chainId}`)
           }
         }
       } catch (err) {

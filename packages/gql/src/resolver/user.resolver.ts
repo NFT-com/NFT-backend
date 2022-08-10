@@ -230,9 +230,9 @@ const getMyAddresses = (
   return repositories.wallet.findByUserId(parent.id)
 }
 
-const ignoreAssocations = (
+const ignoreAssociations = (
   _: any,
-  args: gql.MutationIgnoreAssocationsArgs,
+  args: gql.MutationIgnoreAssociationsArgs,
   ctx: Context,
 ): Array<Promise<entity.Event>> => {
   const { user, repositories, chain, wallet } = ctx
@@ -259,12 +259,14 @@ const ignoreAssocations = (
   )
 }
 
-const getMyPendingAssocations = async (
+const getMyPendingAssociations = async (
   _: any,
   args: unknown,
   ctx: Context,
 ): Promise<Array<gql.PendingAssociationOutput>> => {
-  const { user, repositories, wallet } = ctx
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('getMyPendingAssocations', { loggedInUserId: user.id, wallet: wallet.address })
 
   const matches = await repositories.event.find({
@@ -355,6 +357,38 @@ const getMyPendingAssocations = async (
         id: e.id,
         url: e.profileUrl,
         owner: e.ownerAddress,
+      }
+    })
+}
+
+const getApprovedAssociations = async (
+  _: any,
+  args: gql.QueryGetApprovedAssociationsArgs,
+  ctx: Context,
+): Promise<Array<gql.ApprovedAssociationOutput>> => {
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('getApprovedAssociations', { loggedInUserId: user.id, wallet: wallet.address })
+
+  const approvals = await repositories.event.find({
+    where: {
+      eventName: 'AssociateSelfWithUser',
+      ownerAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+      profileUrl: args?.profileUrl,
+      ignore: false,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  return approvals
+    .map(e => {
+      return {
+        id: e.id,
+        receiver: e.destinationAddress,
       }
     })
 }
@@ -455,7 +489,7 @@ export const updateHideIgnored = async (
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('updateHideIgnored', { input: args?.input })
-    
+
     for (let i = 0; i < args?.input?.eventIdArray.length; i++) {
       const id = args?.input?.eventIdArray[i]
 
@@ -480,7 +514,7 @@ export const updateHideIgnored = async (
         ))
       }
     }
-    
+
     return {
       message: args?.input.hideIgnored ? 'Updated hidden events to be invisible' : 'Updated hidden events to be visible',
     }
@@ -494,14 +528,15 @@ export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
     getMyGenesisKeys: combineResolvers(auth.isAuthenticated, getMyGenesisKeys),
-    getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssocations),
+    getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssociations),
+    getApprovedAssociations: combineResolvers(auth.isAuthenticated, getApprovedAssociations),
   },
   Mutation: {
     signUp,
     confirmEmail,
     updateEmail,
     updateMe: combineResolvers(auth.isAuthenticated, updateMe),
-    ignoreAssocations: combineResolvers(auth.isAuthenticated, ignoreAssocations),
+    ignoreAssociations: combineResolvers(auth.isAuthenticated, ignoreAssociations),
     updateHideIgnored: combineResolvers(auth.isAuthenticated, updateHideIgnored),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
   },
