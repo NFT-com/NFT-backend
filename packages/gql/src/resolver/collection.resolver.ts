@@ -1,4 +1,3 @@
-import delay from 'delay'
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 
@@ -206,101 +205,6 @@ const syncCollectionsWithNFTs = async (
   }
 }
 
-const fillChainIds = async (
-  _: any,
-  args: gql.MutationFillChainIdsArgs,
-  ctx: Context,
-): Promise<gql.FillChainIdsOutput> => {
-  const { repositories } = ctx
-  logger.debug('fillChainIds', { input: args?.input })
-  try {
-    const chainId = args?.input.chainId || process.env.CHAIN_ID
-    auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const entity = args?.input.entity
-    if (entity === 'bid') {
-      const bids = await repositories.bid.findAll()
-      for (let i = 0; i < bids.length; i++) {
-        if (!bids[i].chainId)
-          bids[i].chainId = chainId
-      }
-      await repositories.bid.saveMany(bids, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'collection') {
-      const collections = await repositories.collection.findAll()
-      for (let i = 0; i < collections.length; i++) {
-        if (!collections[i].chainId)
-          collections[i].chainId = chainId
-      }
-      await repositories.collection.saveMany(collections, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'nft') {
-      const nfts = await repositories.nft.findAll()
-      for (let i = 0; i < nfts.length; i++) {
-        if (!nfts[i].chainId)
-          nfts[i].chainId = chainId
-      }
-      await repositories.nft.saveMany(nfts, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'profile') {
-      const profiles = await repositories.profile.findAll()
-      for (let i = 0; i < profiles.length; i++) {
-        if (!profiles[i].chainId) {
-          profiles[i].chainId = chainId
-          await repositories.profile.save(profiles[i])
-          await delay(100)
-        }
-      }
-    } else if (entity === 'txActivity') {
-      const txActivities = await repositories.txActivity.findAll()
-      for (let i = 0; i < txActivities.length; i++) {
-        if (!txActivities[i].chainId)
-          txActivities[i].chainId = chainId
-      }
-      await repositories.txActivity.saveMany(txActivities, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'txBid') {
-      const txBids = await repositories.txBid.findAll()
-      for (let i = 0; i < txBids.length; i++) {
-        if (!txBids[i].chainId)
-          txBids[i].chainId = chainId
-      }
-      await repositories.txBid.saveMany(txBids, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'txCancel') {
-      const txCancels = await repositories.txCancel.findAll()
-      for (let i = 0; i < txCancels.length; i++) {
-        if (!txCancels[i].chainId)
-          txCancels[i].chainId = chainId
-      }
-      await repositories.txCancel.saveMany(txCancels, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'txList') {
-      const txLists = await repositories.txList.findAll()
-      for (let i = 0; i < txLists.length; i++) {
-        if (!txLists[i].chainId)
-          txLists[i].chainId = chainId
-      }
-      await repositories.txList.saveMany(txLists, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'txSale') {
-      const txSales = await repositories.txSale.findAll()
-      for (let i = 0; i < txSales.length; i++) {
-        if (!txSales[i].chainId)
-          txSales[i].chainId = chainId
-      }
-      await repositories.txSale.saveMany(txSales, { chunk: MAX_SAVE_COUNTS })
-    } else if (entity === 'txTransfer') {
-      const txTransfers = await repositories.txTransfer.findAll()
-      for (let i = 0; i < txTransfers.length; i++) {
-        if (!txTransfers[i].chainId)
-          txTransfers[i].chainId = chainId
-      }
-      await repositories.txTransfer.saveMany(txTransfers, { chunk: MAX_SAVE_COUNTS })
-    }
-
-    return {
-      message: 'Filled chainId successfully.',
-    }
-  } catch (err) {
-    Sentry.captureException(err)
-    Sentry.captureMessage(`Error in fillChainIds: ${err}`)
-    return err
-  }
-}
-
 export const associatedAddressesForContract = async (
   _: any,
   args: gql.QueryAssociatedAddressesForContractArgs,
@@ -363,6 +267,5 @@ export default {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
     syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
-    fillChainIds: combineResolvers(auth.isAuthenticated, fillChainIds),
   },
 }

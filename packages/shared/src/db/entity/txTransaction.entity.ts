@@ -1,18 +1,26 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { CurrencyType, ExchangeType } from '@nftcom/shared/defs'
+import { ActivityType, CurrencyType, ExchangeType } from '@nftcom/shared/defs'
 
 import { BaseEntity,TxActivity } from '.'
 
 @Entity()
-export class TxSale extends BaseEntity {
+export class TxTransaction extends BaseEntity {
 
-  @OneToOne(() => TxActivity, (activity) => activity.activityTypeId, { nullable: false })
+  @OneToOne(() => TxActivity,
+    {
+      nullable: false,
+      cascade: ['insert', 'update'],
+    },
+  )
   @JoinColumn()
   activity: TxActivity
 
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
   exchange: ExchangeType
+
+  @Column({ type: 'enum', enum: ActivityType, nullable: false })
+  transactionType: ActivityType
 
   @Column({ nullable: false })
   price: string
