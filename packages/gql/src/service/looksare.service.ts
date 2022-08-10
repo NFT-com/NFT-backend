@@ -274,7 +274,6 @@ export const createLooksrareListing = async (
           'X-Looks-Api-Key': LOOKSRARE_API_KEY,
         },
       })
-    console.log(res)
     if (res.status === 200) {
       return true
     }

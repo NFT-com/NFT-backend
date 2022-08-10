@@ -761,7 +761,6 @@ export const createSeaportListing = async (
         parameters: JSON.parse(parameters),
       },
       config)
-    console.log(res)
     if (res.status === 200) {
       return true
     }
