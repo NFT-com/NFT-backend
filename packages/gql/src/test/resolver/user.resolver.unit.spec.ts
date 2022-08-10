@@ -251,4 +251,83 @@ describe('user resolver', () => {
       expect(result.data.getRejectedAssociations[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2c')
     })
   })
+
+  describe('getRemovedAssociationsAsReceiver', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.event.save({
+        chainId: 5,
+        contract: '0x3a3539B6727E74fa1c5D4d39B433F0fAB5BC4F4a',
+        eventName: 'CancelledEvmAssociation',
+        txHash: '0x63ce7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
+        ownerAddress: testMockWallet.address,
+        profileUrl: 'test-profile-url',
+        destinationAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        ignore: false,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return removed associations from sender', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query GetRemovedAssociationsAsReceiver { getRemovedAssociationsAsReceiver { id url owner } }',
+      })
+      expect(result.data.getRemovedAssociationsAsReceiver.length).toBeGreaterThan(0)
+      expect(result.data.getRemovedAssociationsAsReceiver[0].url).toEqual('test-profile-url')
+    })
+  })
+
+  describe('getRemovedAssociationsAsSender', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.event.save({
+        chainId: 5,
+        contract: '0x3a3539B6727E74fa1c5D4d39B433F0fAB5BC4F4a',
+        eventName: 'RemovedAssociateProfile',
+        txHash: '0x63ce7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
+        ownerAddress: testMockWallet.address,
+        profileUrl: 'test-profile-url',
+        destinationAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        ignore: false,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return removed associations from receiver', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query GetRemovedAssociationsAsSender($profileUrl: String!) { getRemovedAssociationsAsSender(profileUrl: $profileUrl) { id receiver } }',
+        variables: {
+          profileUrl: 'test-profile-url',
+        },
+      })
+      expect(result.data.getRemovedAssociationsAsSender.length).toBeGreaterThan(0)
+      expect(result.data.getRemovedAssociationsAsSender[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+    })
+  })
 })

@@ -116,6 +116,19 @@ type UpdateHiddenOutput {
   message: String
 }
 
+type RemovedAssociationsAsReceiverOutput {
+  id: String!
+  url: String!
+  owner: String!
+  hidden: Boolean!
+}
+
+type RemovedAssociationsAsSenderOutput {
+  id: String!
+  receiver: String!
+  hidden: Boolean!
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -127,6 +140,10 @@ extend type Query {
   getApprovedAssociations(profileUrl: String!): [ApprovedAssociationOutput]!
   "AUTHENTICATED"
   getRejectedAssociations(profileUrl: String!): [RejectedAssociationOutput]!
+  "AUTHENTICATED"
+  getRemovedAssociationsAsReceiver: [RemovedAssociationsAsReceiverOutput]!
+  "AUTHENTICATED"
+  getRemovedAssociationsAsSender(profileUrl: String!): [RemovedAssociationsAsSenderOutput]!
 }
 
 extend type Mutation {

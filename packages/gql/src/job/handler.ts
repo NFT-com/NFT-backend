@@ -242,8 +242,8 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
             )
             logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) cancelled all associations. chainId=${chainId}`)
           }
-        } else if (evt.name === 'AssociateSelfWithUser') {
-          const [receiver,profileUrl,profileOwner] = evt.args
+        } else if (evt.name === 'AssociateSelfWithUser' || evt.name === 'RemovedAssociateProfile') {
+          const [receiver, profileUrl, profileOwner] = evt.args
           const event = await repositories.event.findOne({
             where: {
               chainId,
@@ -269,7 +269,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 destinationAddress: helper.checkSum(receiver),
               },
             )
-            logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (receiver = ${receiver}) approved ${ [profileOwner] }. chainId=${chainId}`)
+            logger.debug(`New NFT Resolver ${evt.name} event found. ${profileUrl} (receiver = ${receiver}) approved ${[profileOwner]}. chainId=${chainId}`)
           }
         }
       } catch (err) {
