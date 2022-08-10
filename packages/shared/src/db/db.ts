@@ -29,11 +29,9 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.Profile,
     entity.User,
     entity.TxActivity,
-    entity.TxBid,
     entity.TxCancel,
-    entity.TxList,
-    entity.TxSale,
-    entity.TxTransfer,
+    entity.TxOrder,
+    entity.TxTransaction,
     entity.Wallet,
   ]
 
@@ -109,11 +107,9 @@ export type Repository = {
   profile: repo.ProfileRepository
   user: repo.UserRepository
   txActivity: repo.TxActivityRepository
-  txBid: repo.TxBidRepository
   txCancel: repo.TxCancelRepository
-  txList: repo.TxListRepository
-  txSale: repo.TxSaleRepository
-  txTransfer: repo.TxTransferRepository
+  txOrder: repo.TxOrderRepository
+  txTransaction: repo.TxTransactionRepository
   wallet: repo.WalletRepository
 }
 
@@ -131,10 +127,8 @@ export const newRepositories = (): Repository => ({
   profile: new repo.ProfileRepository(),
   user: new repo.UserRepository(),
   txActivity: new repo.TxActivityRepository(),
-  txBid: new repo.TxBidRepository(),
   txCancel: new repo.TxCancelRepository(),
-  txList: new repo.TxListRepository(),
-  txSale: new repo.TxSaleRepository(),
-  txTransfer: new repo.TxTransferRepository(),
+  txOrder: new repo.TxOrderRepository(),
+  txTransaction: new repo.TxTransactionRepository(),
   wallet: new repo.WalletRepository(),
 })

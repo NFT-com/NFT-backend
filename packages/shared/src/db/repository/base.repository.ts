@@ -3,6 +3,14 @@ import * as typeorm from 'typeorm'
 import { PageableQuery, PageableResult } from '@nftcom/shared/defs'
 import { helper } from '@nftcom/shared/helper'
 
+/**
+ * Special options passed to Repository#upsert
+ */
+interface UpsertOptions {
+  conflictPaths: string[]
+  skipUpdateIfNoValuesChanged?: boolean
+}
+
 export class BaseRepository<T> {
 
   private readonly entity: typeorm.EntityTarget<T>
@@ -121,6 +129,22 @@ export class BaseRepository<T> {
     entity: typeorm.DeepPartial<T>,
   ): Promise<typeorm.UpdateResult> => {
     return this.getRepository().update(opts, entity)
+  }
+
+  /* Insert/update (Cascades not supported) */
+  public upsert = (
+    entity: typeorm.DeepPartial<T>,
+    opts: UpsertOptions,
+  ): Promise<typeorm.InsertResult> => {
+    return this.getRepository().upsert(this.getRepository().create(entity), opts)
+  }
+
+  /* Bulk insert/update (Cascades not supported) */
+  public upsertMany = (
+    entities: typeorm.DeepPartial<T>[],
+    opts: UpsertOptions,
+  ): Promise<typeorm.InsertResult> => {
+    return this.getRepository().upsert(entities, opts)
   }
 
   public exists = (opts: Partial<T>): Promise<boolean> => {
