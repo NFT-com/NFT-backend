@@ -283,10 +283,10 @@ describe('user resolver', () => {
 
     it('should return removed associations from sender', async () => {
       const result = await testServer.executeOperation({
-        query: 'query GetRemovedAssociationsAsReceiver { getRemovedAssociationsAsReceiver { id url owner } }',
+        query: 'query GetRemovedAssociationsForReceiver { getRemovedAssociationsForReceiver { id url owner } }',
       })
-      expect(result.data.getRemovedAssociationsAsReceiver.length).toBeGreaterThan(0)
-      expect(result.data.getRemovedAssociationsAsReceiver[0].url).toEqual('test-profile-url')
+      expect(result.data.getRemovedAssociationsForReceiver.length).toBeGreaterThan(0)
+      expect(result.data.getRemovedAssociationsForReceiver[0].url).toEqual('test-profile-url')
     })
   })
 
@@ -321,13 +321,13 @@ describe('user resolver', () => {
 
     it('should return removed associations from receiver', async () => {
       const result = await testServer.executeOperation({
-        query: 'query GetRemovedAssociationsAsSender($profileUrl: String!) { getRemovedAssociationsAsSender(profileUrl: $profileUrl) { id receiver } }',
+        query: 'query GetRemovedAssociationsForSender($profileUrl: String!) { getRemovedAssociationsForSender(profileUrl: $profileUrl) { id receiver } }',
         variables: {
           profileUrl: 'test-profile-url',
         },
       })
-      expect(result.data.getRemovedAssociationsAsSender.length).toBeGreaterThan(0)
-      expect(result.data.getRemovedAssociationsAsSender[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+      expect(result.data.getRemovedAssociationsForSender.length).toBeGreaterThan(0)
+      expect(result.data.getRemovedAssociationsForSender[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
     })
   })
 })

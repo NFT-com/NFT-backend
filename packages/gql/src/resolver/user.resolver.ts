@@ -428,11 +428,11 @@ const getRejectedAssociations = async (
     })
 }
 
-const getRemovedAssociationsAsReceiver = async (
+const getRemovedAssociationsForReceiver = async (
   _: any,
   args: any,
   ctx: Context,
-): Promise<Array<gql.RemovedAssociationsAsReceiverOutput>> => {
+): Promise<Array<gql.RemovedAssociationsForReceiverOutput>> => {
   const { user, repositories, wallet, chain } = ctx
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -462,11 +462,11 @@ const getRemovedAssociationsAsReceiver = async (
     })
 }
 
-const getRemovedAssociationsAsSender = async (
+const getRemovedAssociationsForSender = async (
   _: any,
-  args: gql.QueryGetRemovedAssociationsAsSenderArgs,
+  args: gql.QueryGetRemovedAssociationsForSenderArgs,
   ctx: Context,
-): Promise<Array<gql.RemovedAssociationsAsSenderOutput>> => {
+): Promise<Array<gql.RemovedAssociationsForSenderOutput>> => {
   const { user, repositories, wallet, chain } = ctx
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -667,10 +667,10 @@ export default {
     getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssociations),
     getApprovedAssociations: combineResolvers(auth.isAuthenticated, getApprovedAssociations),
     getRejectedAssociations: combineResolvers(auth.isAuthenticated, getRejectedAssociations),
-    getRemovedAssociationsAsReceiver:
-      combineResolvers(auth.isAuthenticated, getRemovedAssociationsAsReceiver),
-    getRemovedAssociationsAsSender:
-      combineResolvers(auth.isAuthenticated, getRemovedAssociationsAsSender),
+    getRemovedAssociationsForReceiver:
+      combineResolvers(auth.isAuthenticated, getRemovedAssociationsForReceiver),
+    getRemovedAssociationsForSender:
+      combineResolvers(auth.isAuthenticated, getRemovedAssociationsForSender),
   },
   Mutation: {
     signUp,
