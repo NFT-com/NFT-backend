@@ -1,7 +1,6 @@
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
-import { db } from '@nftcom/shared'
-import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
+import { db, entity } from '@nftcom/shared'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 const repositories = db.newRepositories()
@@ -11,8 +10,8 @@ const orderActivityBuilder = async (
   orderHash: string,
   walletId: string,
   chainId: string,
-): Promise<TxActivity> => {
-  let activity: TxActivity
+): Promise<entity.TxActivity> => {
+  let activity: entity.TxActivity
   if (orderHash) {
     activity = await repositories.txActivity.findOne({ where: { activityTypeId: orderHash } })
     if (activity) {
@@ -21,7 +20,7 @@ const orderActivityBuilder = async (
   }
 
   // new activity
-  activity = new TxActivity()
+  activity = new entity.TxActivity()
   activity.activityType = orderType
   activity.activityTypeId = orderHash
   activity.read = false
@@ -34,7 +33,7 @@ const orderActivityBuilder = async (
 
 const seaportOrderBuilder = (
   order: SeaportOrder,
-): Partial<TxOrder> => {
+): Partial<entity.TxOrder> => {
   return {
     exchange: ExchangeType.OpenSea,
     makerAddress: order.maker?.address,
@@ -47,7 +46,7 @@ const seaportOrderBuilder = (
 
 const looksrareOrderBuilder = (
   order: LooksRareOrder,
-): Partial<TxOrder> => {
+): Partial<entity.TxOrder> => {
   return {
     exchange: ExchangeType.LooksRare,
     makerAddress: order.signer,
@@ -86,8 +85,8 @@ export const orderEntityBuilder = async (
   orderType: ActivityType,
   order: SeaportOrder & LooksRareOrder,
   chainId: string,
-):  Promise<Partial<TxOrder>> => {
-  let orderHash: string, walletId: string, orderEntity: Partial<TxOrder>
+):  Promise<Partial<entity.TxOrder>> => {
+  let orderHash: string, walletId: string, orderEntity: Partial<entity.TxOrder>
 
   switch (protocol) {
   case ProtocolType.Seaport:
@@ -104,7 +103,7 @@ export const orderEntityBuilder = async (
     break
   }
 
-  const activity: TxActivity = await orderActivityBuilder(
+  const activity: entity.TxActivity = await orderActivityBuilder(
     orderType,
     orderHash,
     walletId,
