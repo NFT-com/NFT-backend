@@ -428,6 +428,74 @@ const getRejectedAssociations = async (
     })
 }
 
+const getRemovedAssociationsForReceiver = async (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<Array<gql.RemovedAssociationsForReceiverOutput>> => {
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('getRemovedAssociationsAsReceiver', { loggedInUserId: user.id, wallet: wallet.address })
+
+  const removals = await repositories.event.find({
+    where: {
+      eventName: 'CancelledEvmAssociation',
+      destinationAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+      ignore: false,
+      hidden: false,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  return removals
+    .map(e => {
+      return {
+        id: e.id,
+        url: e.profileUrl,
+        owner: e.ownerAddress,
+        hidden: e.hidden,
+      }
+    })
+}
+
+const getRemovedAssociationsForSender = async (
+  _: any,
+  args: gql.QueryGetRemovedAssociationsForSenderArgs,
+  ctx: Context,
+): Promise<Array<gql.RemovedAssociationsForSenderOutput>> => {
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('getRemovedAssociationsAsSender', { loggedInUserId: user.id, wallet: wallet.address })
+
+  const removals = await repositories.event.find({
+    where: {
+      eventName: 'RemovedAssociateProfile',
+      profileUrl: args?.profileUrl,
+      ownerAddress: helper.checkSum(wallet.address),
+      chainId: wallet.chainId,
+      ignore: false,
+      hidden: false,
+    },
+    order: {
+      blockNumber: 'ASC',
+    },
+  })
+
+  return removals
+    .map(e => {
+      return {
+        id: e.id,
+        receiver: e.destinationAddress,
+        hidden: e.hidden,
+      }
+    })
+}
+
 const getMyGenesisKeys = async (
   _: any,
   args: unknown,
@@ -599,6 +667,10 @@ export default {
     getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssociations),
     getApprovedAssociations: combineResolvers(auth.isAuthenticated, getApprovedAssociations),
     getRejectedAssociations: combineResolvers(auth.isAuthenticated, getRejectedAssociations),
+    getRemovedAssociationsForReceiver:
+      combineResolvers(auth.isAuthenticated, getRemovedAssociationsForReceiver),
+    getRemovedAssociationsForSender:
+      combineResolvers(auth.isAuthenticated, getRemovedAssociationsForSender),
   },
   Mutation: {
     signUp,
