@@ -478,7 +478,7 @@ const retrieveListingsInBatches = async (
               orderEntityBuilder(
                 ProtocolType.Seaport,
                 ActivityType.Listing,
-                seaportOrders?.[0] as any,
+                seaportOrders?.[0],
                 chainId,
               ),
             )
@@ -557,7 +557,7 @@ const retrieveOffersInBatches = async (
               orderEntityBuilder(
                 ProtocolType.Seaport,
                 ActivityType.Bid,
-                seaportOffers?.[0] as any,
+                seaportOffers?.[0],
                 chainId,
               ),
             )

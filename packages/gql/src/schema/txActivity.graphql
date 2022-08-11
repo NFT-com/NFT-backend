@@ -2,9 +2,10 @@ type TxActivity {
   id: ID!
   chainId: String
   activityType: String!
-  read: String!
+  activityTypeId: String!
+  read: Boolean!
   timestamp: String!
-  userId: String!
+  walletId: String!
   order: TxOrder
   cancel: TxCancel
   transaction: TxTransaction
