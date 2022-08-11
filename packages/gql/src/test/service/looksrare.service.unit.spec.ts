@@ -20,7 +20,6 @@ describe('looksrare', () => {
       const contract = '0x8fB5a7894AB461a59ACdfab8918335768e411414'
       const tokenId = '1776'
       const sellOrders = await retrieveOrdersLooksrare(contract, tokenId, '1', true, 'EXECUTED')
-      console.log('sell orders', sellOrders)
       expect(sellOrders.length).toBeGreaterThan(0)
     })
 
