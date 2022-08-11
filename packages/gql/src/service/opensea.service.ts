@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
+import { Maybe } from 'graphql/jsutils/Maybe'
 
 import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
@@ -639,4 +640,49 @@ export const retrieveMultipleOrdersOpensea = async (
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
   }
   return responseAggregator
+}
+
+/**
+ * Returns true if the listing succeeded, false otherwise.
+ * @param signature  signature of the order for these parameters
+ * @param parameters stringified JSON matching the 'parameters' field in the protocol data schema
+ * @param chainId 
+ */
+export const createSeaportListing = async (
+  signature: Maybe<string>,
+  parameters: Maybe<string>,
+  chainId: string,
+): Promise<boolean> => {
+  const baseUrlV2 = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
+  if (
+    signature == null || signature.length === 0 ||
+    parameters == null || parameters.length === 0
+  ) {
+    return false
+  }
+  try {
+    const config = chainId === '4' ? {
+      headers: { Accept: 'application/json' },
+    } :  {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-API-KEY': OPENSEA_API_KEY,
+      },
+    }
+    const res = await axios.post(
+      baseUrlV2 + `/orders/${chainId === '4' ? 'rinkeby' : 'ethereum'}/seaport/listings`,
+      {
+        signature,
+        parameters: JSON.parse(parameters),
+      },
+      config)
+    if (res.status === 200) {
+      return true
+    }
+    return false
+  } catch (err) {
+    // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
+    return false
+  }
 }
