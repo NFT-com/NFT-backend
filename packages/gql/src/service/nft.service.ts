@@ -431,8 +431,6 @@ const getNFTMetaData = async (
             value: nftMetadata?.metadata?.attributes?.[keys],
           }))
         })
-      } else {
-        throw Error(`nftMetadata?.metadata doesn't conform ${JSON.stringify(nftMetadata?.metadata, null, 2)}`)
       }
     }
 
