@@ -5,22 +5,9 @@ type TxActivity {
   read: String!
   timestamp: String!
   userId: String!
-  bid: TxBid
+  order: TxOrder
   cancel: TxCancel
-  listing: TxList
-  sale: TxSale
-  transfer: TxTransfer
-}
-
-type TxBid {
-  id: ID!
-  chainId: String
-  exchange: String!
-  orderHash: String!
-  makerAddress: String!
-  takerAddresss: String
-  offer: [TxOffer]
-  consideration: [TxConsideration]
+  transaction: TxTransaction
 }
 
 type TxCancel {
@@ -31,32 +18,19 @@ type TxCancel {
   transactionHash: String!
 }
 
-type TxList {
+type TxOrder {
   id: ID!
   chainId: String
   exchange: String!
   orderHash: String!
+  orderType: String!
   makerAddress: String!
-  takerAddresss: String
-  offer: [TxOffer]
-  consideration: [TxConsideration]
+  takerAddress: String
+  protocol: String!
+  protocolData: [String]
 }
 
-type TxSale {
-  id: ID!
-  chainId: String
-  exchange: String!
-  price: String!
-  currency: String!
-  transactionHash: String!
-  blockNumber: String!
-  nftContractAddress: String!
-  nftContractTokenId: String!
-  sender: String!
-  receiver: String!
-}
-
-type TxTransfer {
+type TxTransaction {
   id: ID!
   chainId: String
   transactionHash: String!
@@ -82,14 +56,14 @@ type TxConsideration {
   recipient: String
 }
 
-input TxUserIdAndTypeInput {
-  userId: ID!
+input TxWalletIdAndTypeInput {
+  walletId: ID!
   activityType: String!
   chainId: String
 }
 
 extend type Query {
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
-  getActivitiesByUserId(userId: ID, chainId: String): [TxActivity]
-  getActivitiesByUserIdAndType(input: TxUserIdAndTypeInput): [TxActivity]
+  getActivitiesByWalletId(walletId: ID, chainId: String): [TxActivity]
+  getActivitiesByWalletIdAndType(input: TxWalletIdAndTypeInput): [TxActivity]
 }

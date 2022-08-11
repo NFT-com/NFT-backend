@@ -5,7 +5,7 @@ import {
 } from '@nftcom/gql/service/alchemy.service'
 import { nftProfileAddress } from '@nftcom/shared/helper/contracts'
 
-jest.setTimeout(30000)
+jest.setTimeout(50000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),

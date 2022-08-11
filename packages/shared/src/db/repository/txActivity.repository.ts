@@ -3,67 +3,73 @@ import { ActivityType } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
+interface EntityNameAndType {
+  name: string
+  type: string
+}
 export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   constructor() {
     super(TxActivity)
   }
 
-  private getEntityName = (activityType: ActivityType): string => {
-    if (activityType === ActivityType.Listing) {
-      return 'TxList'
+  private getEntityNameAndType = (activityType: ActivityType): EntityNameAndType => {
+    if (activityType === ActivityType.Listing || activityType === ActivityType.Bid) {
+      return { name: 'TxOrder', type: 'order' }
     }
-    return `Tx${activityType}`
+
+    if (activityType === ActivityType.Sale || activityType === ActivityType.Transfer) {
+      return { name: 'TxTransaction', type: 'transaction' }
+    }
+    return { name: `Tx${activityType}`, type: `${activityType.toLowerCase()}` }
   }
 
-  public findActivitiesByType = (
+  public findActivitiesByType = async (
     activityType: ActivityType,
     chainId: string,
   ): Promise<TxActivity[]> => {
+    const { name, type } = this.getEntityNameAndType(activityType)
     return this.getRepository().createQueryBuilder('activity')
       .leftJoinAndMapOne(
-        `activity.${activityType.toLowerCase()}`, this.getEntityName(activityType),
-        'activityType',  'activity.activityTypeId = activityType.id')
+        `activity.${type}`, name,
+        'activityType',  'activity.id = activityType.activityId and activityType.id = activity.activityTypeId')
       .where({ activityType, chainId })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
-  public findActivitiesByUserId = (
-    userId: string,
+  public findActivitiesByWalletId = (
+    walletId: string,
     chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
-      .leftJoinAndMapOne('activity.bid', 'TxBid', 'bid',
-        'activity.activityTypeId = bid.id AND activity.id = bid.activityId')
-      .leftJoinAndMapOne('activity.cancel', 'TxCancel', 'cancel',
-        'activity.activityTypeId = cancel.id AND activity.id = cancel.activityId')
-      .leftJoinAndMapOne('activity.listing', 'TxList', 'list',
-        'activity.activityTypeId = list.id AND activity.id = list.activityId')
-      .leftJoinAndMapOne('activity.sale', 'TxSale', 'sale',
-        'activity.activityTypeId = sale.id AND activity.id = sale.activityId')
-      .leftJoinAndMapOne('activity.transfer', 'TxTransfer', 'transfer',
-        'activity.activityTypeId = transfer.id AND activity.id = transfer.activityId')
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
       .where({
-        userId,
+        walletId,
         chainId,
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
-  public findActivitiesByUserIdAndType = (
-    userId: string,
+  public findActivitiesByWalletIdAndType = (
+    walletId: string,
     activityType: ActivityType,
     chainId: string,
   ): Promise<TxActivity[]> => {
+    const { name, type } = this.getEntityNameAndType(activityType)
     return this.getRepository().createQueryBuilder('activity')
-      .leftJoinAndMapOne(`activity.${activityType.toLowerCase()}`,
-        this.getEntityName(activityType), 'activityType',
-        'activity.activityTypeId = activityType.id')
+      .leftJoinAndMapOne(`activity.${type}`,
+        name, 'activityType',
+        'activity.id = activityType.activityId')
       .where({
         activityType,
-        userId,
+        walletId,
         chainId,
       })
       .orderBy({ timestamp: 'DESC' })
