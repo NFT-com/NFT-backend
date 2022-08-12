@@ -431,19 +431,6 @@ const getNFTMetaData = async (
             value: nftMetadata?.metadata?.attributes?.[keys],
           }))
         })
-      } else if (nftMetadata?.metadata) {
-        if (!Lodash.isString(nftMetadata.metadata)) {
-          Object.keys(nftMetadata?.metadata).map(keys => {
-            traits.push(({
-              type: keys,
-              value: nftMetadata?.metadata?.[keys],
-            }))
-          })
-        } else {
-          logger.debug(`nftMetadata.metadata is a string: ${nftMetadata.metadata.slice(0, 80)}...`)
-        }
-      } else {
-        throw Error(`nftMetadata?.metadata doesn't conform ${JSON.stringify(nftMetadata?.metadata, null, 2)}`)
       }
     }
 
