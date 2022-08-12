@@ -5,7 +5,7 @@ export const customizedProfiles = async (
   chainId: string,
   repositories: db.Repository,
 ): Promise<any> => {
-  const profilesWithScore = await cache.zrevrangebyscore(`Visible_NFT_AMOUNT_${chainId}`, '+inf', '-inf', 'WITHSCORES')
+  const profilesWithScore = await cache.zrevrangebyscore(`Visible_NFTS_${chainId}`, '+inf', '-inf', 'WITHSCORES')
 
   const leaderboard = []
   let index = 0

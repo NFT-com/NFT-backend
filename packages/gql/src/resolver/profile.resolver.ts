@@ -1076,7 +1076,7 @@ const saveNFTVisibility = async (
           },
         })
         if (edges.length) {
-          await cache.zadd(`Visible_NFT_AMOUNT_${profile.chainId}`, edges.length, profile.id)
+          await cache.zadd(`Visible_NFTS_${profile.chainId}`, edges.length, profile.id)
           logger.debug(`Amount of visible NFTs is cached for Profile ${ profile.id }`)
         }
       }),
