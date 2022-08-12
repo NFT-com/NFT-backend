@@ -130,13 +130,15 @@ export const start = async (): Promise<void> => {
 
   app.get('/uri/:username', async function (req, res) {
     const { username } = req.params
+    const chainId = process.env.CHAIN_ID
 
-    const cachedData = await cache.get(username)
+    const key = `${username}_${chainId}`
+    const cachedData = await cache.get(key)
 
     if (cachedData) {
       return res.send(JSON.parse(cachedData as string))
     } else {
-      return repositories.profile.findByURL(username.toLowerCase())
+      return repositories.profile.findByURL(username.toLowerCase(), chainId)
         .then(async (profile: entity.Profile) => {
           if (!profile) {
             return res.send({
@@ -164,7 +166,7 @@ export const start = async (): Promise<void> => {
                 },
               ],
             }
-            await cache.set(username, JSON.stringify(data), 'EX', 60 * 10)
+            await cache.set(key, JSON.stringify(data), 'EX', 60 * 10)
             return res.send(data)
           }
         })
