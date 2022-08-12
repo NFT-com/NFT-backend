@@ -1116,7 +1116,7 @@ const isProfileCustomized = async (
         thisEntityType: defs.EntityType.Profile,
         thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Displays,
-        hidden: false,
+        hide: false,
       },
     })
     return !!edges.length
