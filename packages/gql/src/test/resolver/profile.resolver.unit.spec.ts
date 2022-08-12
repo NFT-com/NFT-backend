@@ -180,6 +180,7 @@ describe('profile resolver', () => {
               isOwnedByMe
               gkIconVisible
               nftsDescriptionsVisible
+              deployedContractsVisible
               owner {
                 id
               }
@@ -211,6 +212,22 @@ describe('profile resolver', () => {
         variables: { input: mockUpdateProfileInput },
       })
       expect(result?.data?.updateProfile?.description).toBe(mockUpdateProfileInput.description)
+    })
+
+    it('should update visibility of deployed collections', async () => {
+      const result = await testServer.executeOperation({
+        query: `mutation UpdateProfile($input: UpdateProfileInput!) {
+          updateProfile(input: $input) {
+            id
+            bannerURL
+            description
+            deployedContractsVisible
+          }
+        }`,
+        variables: { input: mockUpdateProfileInput },
+      })
+      expect(result?.data?.updateProfile?.deployedContractsVisible)
+        .toBe(mockUpdateProfileInput.deployedContractsVisible)
     })
   })
 
@@ -336,6 +353,51 @@ describe('profile resolver', () => {
       })
 
       expect(result.errors).toBeDefined()
+    })
+  })
+
+  describe('associatedCollectionForProfile', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      await repositories.collection.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        name: 'CollectionA',
+        chainId: '5',
+      })
+
+      await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+        associatedContract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        profileView: defs.ProfileViewType.Collection,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update profile view type', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query AssociatedCollectionForProfile($url: String!, $chainId: String) { associatedCollectionForProfile(url:$url, chainId: $chainId) { collection { id contract } } }',
+        variables: {
+          url: 'testprofile',
+          chainId: '5',
+        },
+      })
+
+      expect(result.data.associatedCollectionForProfile.collection).toBeDefined()
     })
   })
 })

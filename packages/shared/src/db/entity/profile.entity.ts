@@ -53,6 +53,9 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true, default: true })
   nftsDescriptionsVisible: boolean
 
+  @Column({ nullable: true, default: false })
+  deployedContractsVisible: boolean
+
   @Column({ nullable: true, type: 'timestamp with time zone' })
   nftsLastUpdated: Date
 
@@ -88,5 +91,8 @@ export class Profile extends BaseEntity {
 
   @Column('json', { nullable: true, default: [] })
   associatedAddresses: string[]
+
+  @Column({ nullable: true })
+  associatedContract: string
 
 }

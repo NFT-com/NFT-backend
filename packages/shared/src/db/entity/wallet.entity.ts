@@ -23,4 +23,7 @@ export class Wallet extends BaseEntity {
   @Column({ nullable: false })
   address: string
 
+  @Column({ nullable: true })
+  profileId: string
+
 }

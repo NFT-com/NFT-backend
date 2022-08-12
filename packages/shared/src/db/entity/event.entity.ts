@@ -15,7 +15,7 @@ export class Event extends BaseEntity {
 
   @Column({ nullable: false })
   eventName: string
-  
+
   @Column({ nullable: false })
   txHash: string
 
@@ -33,5 +33,11 @@ export class Event extends BaseEntity {
 
   @Column({ default: false })
   ignore: boolean
+
+  @Column({ default: false })
+  hideIgnored: boolean
+
+  @Column({ default: false })
+  hidden: boolean
 
 }

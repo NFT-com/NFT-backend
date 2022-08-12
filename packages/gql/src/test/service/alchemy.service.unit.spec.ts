@@ -5,7 +5,8 @@ import {
 } from '@nftcom/gql/service/alchemy.service'
 import { nftProfileAddress } from '@nftcom/shared/helper/contracts'
 
-jest.setTimeout(30000)
+jest.setTimeout(50000)
+jest.retryTimes(2)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -31,6 +32,6 @@ describe('alchemy service functions', () => {
 
   it('should get the correct mainnet deployer', async () => {
     const deployer = await getCollectionDeployer(nftProfileAddress(), '1')
-    expect(deployer).toBe('0x487f09bd7554e66f131e24edc1efee0e0dfa7fd1')
+    expect(deployer).toBe('0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1')
   })
 })

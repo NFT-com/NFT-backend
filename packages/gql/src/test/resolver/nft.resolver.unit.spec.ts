@@ -1,12 +1,15 @@
 import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
-import { defs } from '@nftcom/shared/'
+import * as nftService from '@nftcom/gql/service/nft.service'
+import { defs, typechain } from '@nftcom/shared/'
 import { db } from '@nftcom/shared/db'
+import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
 import {
   nftTestErrorMockData,
   nftTestMockData,
+  testMockProfiles,
   testMockUser,
   testMockWallet,
 } from '../util/constants'
@@ -48,6 +51,7 @@ const mockTestServer = (): any => {
             id,
             contract: mockArgs.contract,
             tokenId: mockArgs.tokenId,
+            profileId: testMockProfiles.id,
           })
         }
         return null
@@ -57,6 +61,17 @@ const mockTestServer = (): any => {
         tokenId: mockArgs.tokenId,
         chainId: mockArgs.chainId,
       }),
+    },
+    profile: {
+      findById: (id) => {
+        if (id === testMockProfiles.id) {
+          return Promise.resolve({
+            id,
+            url: testMockProfiles.url,
+          })
+        }
+        return null
+      },
     },
   },
   )
@@ -156,6 +171,9 @@ describe('nft resolver', () => {
         query: `query NftById($nftByIdId: ID!) {
           nftById(id: $nftByIdId) {
             id
+            preferredProfile {
+              url
+            }
           }
         }`,
         variables: {
@@ -163,6 +181,7 @@ describe('nft resolver', () => {
         },
       })
       expect(result?.data?.nftById?.id).toBe(nftTestMockData.id)
+      expect(result.data.nftById.preferredProfile.url).toBe(testMockProfiles.url)
     })
 
     // error
@@ -252,6 +271,60 @@ describe('nft resolver', () => {
     })
   })
 
+  describe('updateAssociatedContract', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      const wallet = await repositories.wallet.save({
+        userId: 'test-user-id',
+        chainId: '5',
+        chainName: 'goerli',
+        network: 'ethereum',
+        address: '0x1958Af77c06faB96D63351cACf10ABd3f598873B',
+      })
+
+      profile = await repositories.profile.save({
+        url: '1',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: wallet.id,
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: false,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update associated contract', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateAssociatedContract($input: UpdateAssociatedContractInput) { updateAssociatedContract(input: $input) { message } }',
+        variables: {
+          input: {
+            profileUrl: '1',
+            chainId: '5',
+          },
+        },
+      })
+
+      expect(result.data.updateAssociatedContract.message).toEqual('Updated associated contract for 1')
+      const collections = await repositories.collection.findAll()
+      expect(collections.length).toBeGreaterThan(0)
+    })
+  })
+
   describe('updateNFTMemo', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
@@ -298,7 +371,99 @@ describe('nft resolver', () => {
     })
   })
 
+  describe('myNFTs', () => {
+    let profileA
+    let nftA, nftB
+
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      profileA = await repositories.profile.save({
+        url: 'test-profile-url',
+      })
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+      nftB = await repositories.nft.save({
+        contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+        tokenId: '0x01',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+      await repositories.edge.save({
+        thisEntityId: profileA.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftA.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaaa',
+        hide: false,
+      })
+      await repositories.edge.save({
+        thisEntityId: profileA.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftB.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaab',
+        hide: true,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return NFTs of profile', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            profileId: profileA.id,
+            pageInput: {
+              first: 100,
+            },
+            types: [
+              'ERC721',
+            ],
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toEqual(2)
+    })
+  })
+
   describe('nftsForCollections', () => {
+    let profileA
+
     beforeAll(async () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
@@ -316,6 +481,10 @@ describe('nft resolver', () => {
         chainId: '5',
       })
 
+      profileA = await repositories.profile.save({
+        url: 'test-profile',
+      })
+
       const nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
         tokenId: '0x09c5',
@@ -328,6 +497,7 @@ describe('nft resolver', () => {
         userId: 'test-user-id',
         walletId: 'test-wallet-id',
         chainId: '5',
+        profileId: profileA.id,
       })
 
       await repositories.edge.save({
@@ -346,7 +516,7 @@ describe('nft resolver', () => {
 
     it('should return nfts for collections', async () => {
       const result = await testServer.executeOperation({
-        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress nfts { id contract } } }',
+        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress nfts { id contract profileId preferredProfile { url } } } }',
         variables: {
           input: {
             collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
@@ -360,6 +530,214 @@ describe('nft resolver', () => {
       expect(result.data.nftsForCollections.length).toBeGreaterThan(0)
       expect(result.data.nftsForCollections[0].collectionAddress).toEqual('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55')
       expect(result.data.nftsForCollections[0].nfts.length).toBeGreaterThan(0)
+      expect(result.data.nftsForCollections[0].nfts[0].profileId).toBe(profileA.id)
+      expect(result.data.nftsForCollections[0].nfts[0].preferredProfile.url).toBe('test-profile')
+    })
+  })
+
+  describe('updateNFTProfileId', () => {
+    let profileA
+    let nftA
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+    })
+
+    beforeEach(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      profileA = await repositories.profile.save({
+        url: 'test-profile',
+        ownerWalletId: testMockWallet.id,
+      })
+
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await testServer.stop()
+    })
+
+    afterEach(async () => {
+      await clearDB(repositories)
+    })
+    it('should insert the profile ID of a profile owned by the user', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        variables: {
+          nftId: nftA.id,
+          profileId: profileA.id,
+        },
+      })
+
+      expect(result.data.updateNFTProfileId.profileId).toBe(profileA.id)
+    })
+
+    it('should not update profile ID if NFT not owned by the user', async () => {
+      await repositories.nft.updateOneById(nftA.id, {
+        walletId: 'something-else',
+      })
+
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        variables: {
+          nftId: nftA.id,
+          profileId: profileA.id,
+        },
+      })
+
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].statusCode).toBe('403')
+      expect(result.errors[0].message).toBe('NFT not owned by user')
+    })
+
+    it('should not update profile ID if profile not owned by the user', async () => {
+      await repositories.profile.updateOneById(profileA.id, {
+        ownerWalletId: 'something-different',
+      })
+
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        variables: {
+          nftId: nftA.id,
+          profileId: profileA.id,
+        },
+      })
+
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].statusCode).toBe('403')
+      expect(result.errors[0].message).toBe(`You cannot update profile ${profileA.id} because you do not own it`)
+    })
+
+    it('should return an error if NFT is not found', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        variables: {
+          nftId: 'not-an-nft-id',
+          profileId: profileA.id,
+        },
+      })
+
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].statusCode).toBe('404')
+      expect(result.errors[0].message).toBe('NFT not-an-nft-id not found')
+    })
+
+    it('should return an error if profile is not found', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        variables: {
+          nftId: nftA.id,
+          profileId: 'not-a-profile-id',
+        },
+      })
+
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].statusCode).toBe('404')
+      expect(result.errors[0].message).toBe('Profile not-a-profile-id not found')
+    })
+  })
+
+  describe('updateNFTsForProfile', () => {
+    let profileA
+    let nftA
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+    })
+
+    beforeEach(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      profileA = await repositories.profile.save({
+        url: 'test-profile',
+        ownerUserId: testMockUser.id,
+        ownerWalletId: testMockWallet.id,
+        chainId: '5',
+      })
+
+      nftA = await repositories.nft.save({
+        contract: nftTestMockData.contract,
+        tokenId: nftTestMockData.tokenId,
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await testServer.stop()
+    })
+
+    afterEach(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should reset profile ID if NFT not owned by the user', async () => {
+      await repositories.wallet.save({
+        ...testMockWallet,
+        userId: testMockUser.id,
+        createdAt: undefined,
+      })
+      await repositories.edge.save({
+        thatEntityId: nftA.id,
+        thatEntityType: EntityType.NFT,
+        thisEntityId: profileA.id,
+        thisEntityType: EntityType.Profile,
+        edgeType: EdgeType.Displays,
+      })
+
+      const alchemySpy = jest.spyOn(nftService, 'getNFTsFromAlchemy')
+      alchemySpy.mockResolvedValue([])
+      typechain.NftResolver__factory.connect = jest.fn().mockReturnValue({
+        associatedAddresses: jest.fn().mockResolvedValue([]),
+      })
+
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateNFTsForProfile($input: UpdateNFTsForProfileInput) { updateNFTsForProfile(input: $input) { items { profileId } } }',
+        variables: {
+          input: {
+            profileId: profileA.id,
+            chainId: profileA.chainId,
+            pageInput: {
+              first: 1,
+            },
+          },
+        },
+      })
+
+      // This expectation sucks, but jest spies for repository.edge.hardDelete
+      // and repository.nft.hardDelete are being evaluated before the code is
+      // reached. It's likely because of how the promises are structured...
+      expect(result.data.updateNFTsForProfile.items).toHaveLength(0)
     })
   })
 })
