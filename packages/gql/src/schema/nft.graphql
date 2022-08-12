@@ -39,6 +39,7 @@ type NFT {
   type: NFTType!
 #  user: User
   wallet: Wallet
+  collection: Collection
   createdAt: DateTime!
   memo: String
 }

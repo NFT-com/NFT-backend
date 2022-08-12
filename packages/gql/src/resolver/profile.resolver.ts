@@ -6,7 +6,6 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
 import stream from 'stream'
-import Typesense from 'typesense'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -35,8 +34,6 @@ import * as Sentry from '@sentry/node'
 import { blacklistBool } from '../service/core.service'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 const MAX_SAVE_COUNTS = 500
 
@@ -50,16 +47,6 @@ type LeaderboardInfo = {
   collectionCount: number
   edgeCount: number
 }
-
-const client = new Typesense.Client({
-  'nodes': [{
-    'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
-  }],
-  'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 10,
-})
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => {
   return {
@@ -507,20 +494,7 @@ const profileClaimed = (
       profile.status = defs.ProfileStatus.Owned
       profile.chainId = ctx.chain.id || process.env.CHAIN_ID
 
-      const saveProfile = repositories.profile.save(profile)
-
-      // push newly minted profile to the search engine (typesense)
-      const indexProfile = []
-      indexProfile.push({
-        id: profile.id,
-        profile: profile.url,
-      })
-
-      client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
-        .then(() => logger.debug('profile added to typesense index'))
-        .catch((err) => logger.error('error: could not save profile in typesense: ' + err))
-
-      return saveProfile
+      return repositories.profile.save(profile)
     })
 }
 
