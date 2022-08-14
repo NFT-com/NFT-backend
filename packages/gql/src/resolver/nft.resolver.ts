@@ -215,6 +215,11 @@ const getMyNFTs = (
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
+  const schema = Joi.object().keys({
+    profileId: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args)
+
   const { types, profileId } = helper.safeObject(args?.input)
 
   const filter: Partial<entity.Edge> = helper.removeEmpty({
