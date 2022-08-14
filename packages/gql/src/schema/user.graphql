@@ -25,6 +25,7 @@ type Event {
   blockNumber: String
   ignore: Boolean
   hideIgnored: Boolean
+  hidden: Boolean
 }
 
 type UserPreferences {
@@ -57,6 +58,18 @@ type PendingAssociationOutput {
   id: String!
   owner: String!
   url: String!
+}
+
+type ApprovedAssociationOutput {
+  id: String!
+  receiver: String!
+  hidden: Boolean!
+}
+
+type RejectedAssociationOutput {
+  id: String!
+  receiver: String!
+  hidden: Boolean!
 }
 
 input UserPreferencesInput {
@@ -94,6 +107,28 @@ type UpdateHideIgnoredOutput {
   message: String
 }
 
+input UpdateHiddenInput {
+  eventIdArray: [String!]
+  hidden: Boolean!
+}
+
+type UpdateHiddenOutput {
+  message: String
+}
+
+type RemovedAssociationsForReceiverOutput {
+  id: String!
+  url: String!
+  owner: String!
+  hidden: Boolean!
+}
+
+type RemovedAssociationsForSenderOutput {
+  id: String!
+  receiver: String!
+  hidden: Boolean!
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -101,6 +136,14 @@ extend type Query {
   getMyGenesisKeys: [GkOutput]!
   "AUTHENTICATED"
   getMyPendingAssociations: [PendingAssociationOutput]!
+  "AUTHENTICATED"
+  getApprovedAssociations(profileUrl: String!): [ApprovedAssociationOutput]!
+  "AUTHENTICATED"
+  getRejectedAssociations(profileUrl: String!): [RejectedAssociationOutput]!
+  "AUTHENTICATED"
+  getRemovedAssociationsForReceiver: [RemovedAssociationsForReceiverOutput]!
+  "AUTHENTICATED"
+  getRemovedAssociationsForSender(profileUrl: String!): [RemovedAssociationsForSenderOutput]!
 }
 
 extend type Mutation {
@@ -110,9 +153,11 @@ extend type Mutation {
   updateEmail(input: UpdateEmailInput!): User!
   confirmEmail(token: String!): Boolean!
   "AUTHENTICATED"
-  ignoreAssocations(eventIdArray: [String]!): [Event]!
+  ignoreAssociations(eventIdArray: [String]!): [Event]!
   "AUTHENTICATED"
   updateHideIgnored(input: UpdateHideIgnoredInput!): UpdateHideIgnoredOutput!
+  "AUTHENTICATED"
+  updateHidden(input: UpdateHiddenInput!): UpdateHiddenOutput!
   "AUTHENTICATED"
   resendEmailConfirm: User!
 }

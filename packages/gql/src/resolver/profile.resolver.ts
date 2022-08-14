@@ -25,7 +25,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility,
+  changeNFTsVisibility, getCollectionInfo,
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -365,7 +365,7 @@ const updateProfile = (
   args: gql.MutationUpdateProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
@@ -413,7 +413,7 @@ const updateProfile = (
       p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
       return changeNFTsVisibility(
         repositories,
-        user.id,
+        wallet.id,
         p.id, // profileId
         args.input.showAllNFTs,
         args.input.hideAllNFTs,
@@ -1031,16 +1031,16 @@ const updateProfileView = async (
   }
 }
 
-const getHiddenEvents = async (
+const getIgnoredEvents = async (
   _: any,
-  args: gql.QueryHiddenEventsArgs,
+  args: gql.QueryIgnoredEventsArgs,
   ctx: Context,
 ): Promise<entity.Event[]> => {
   try {
     const { repositories } = ctx
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    logger.debug('getHiddenEvents', { input: args?.input })
+    logger.debug('getIgnoredEvents', { input: args?.input })
     const { profileUrl, walletAddress } = helper.safeObject(args?.input)
     return await repositories.event.find({
       where: {
@@ -1050,7 +1050,78 @@ const getHiddenEvents = async (
       },
     })
   } catch (err) {
-    Sentry.captureMessage(`Error in getHiddenEvents: ${err}`)
+    Sentry.captureMessage(`Error in getIgnoredEvents: ${err}`)
+    return err
+  }
+}
+
+const getAssociatedCollectionForProfile = async (
+  _: any,
+  args: gql.QueryAssociatedCollectionForProfileArgs,
+  ctx: Context,
+): Promise<gql.CollectionInfo> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getAssociatedCollectionForProfile', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.profileView === defs.ProfileViewType.Collection) {
+      if (profile.associatedContract) {
+        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+      } else {
+        return Promise.reject(appError.buildNotFound(
+          profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
+        ))
+      }
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileViewTypeWrong(),
+        profileError.ErrorType.ProfileViewTypeWrong,
+      ))
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)
+    return err
+  }
+}
+
+const isProfileCustomized = async (
+  _: any,
+  args: gql.QueryIsProfileCustomizedArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('isProfileCustomized', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    return !!edges.length
+  } catch (err) {
+    Sentry.captureMessage(`Error in isProfileCustomized: ${err}`)
     return err
   }
 }
@@ -1067,7 +1138,9 @@ export default {
     insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
-    hiddenEvents: getHiddenEvents,
+    ignoredEvents: getIgnoredEvents,
+    associatedCollectionForProfile: getAssociatedCollectionForProfile,
+    isProfileCustomized: isProfileCustomized,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

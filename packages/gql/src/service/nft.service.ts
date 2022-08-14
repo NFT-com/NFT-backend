@@ -9,6 +9,7 @@ import { getChain } from '@nftcom/gql/config'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
+import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -430,15 +431,6 @@ const getNFTMetaData = async (
             value: nftMetadata?.metadata?.attributes?.[keys],
           }))
         })
-      } else if (nftMetadata?.metadata) {
-        Object.keys(nftMetadata?.metadata).map(keys => {
-          traits.push(({
-            type: keys,
-            value: nftMetadata?.metadata?.[keys],
-          }))
-        })
-      } else {
-        throw Error(`nftMetadata?.metadata doesn't conform ${JSON.stringify(nftMetadata?.metadata, null, 2)}`)
       }
     }
 
@@ -718,49 +710,54 @@ const saveEdgesWithWeight = async (
   profileId: string,
   hide: boolean,
 ): Promise<void> => {
-  const nftsToBeAdded = []
-  const edgesWithWeight = []
-  // filter nfts are not added to edge yet...
-  await Promise.allSettled(
-    nfts.map(async (nft: entity.NFT) => {
-      const displayEdge = await repositories.edge.findOne({
-        where: {
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: profileId,
-          thatEntityId: nft.id,
-          edgeType: defs.EdgeType.Displays,
-        },
+  try {
+    const nftsToBeAdded = []
+    const edgesWithWeight = []
+    // filter nfts are not added to edge yet...
+    await Promise.allSettled(
+      nfts.map(async (nft: entity.NFT) => {
+        const displayEdge = await repositories.edge.findOne({
+          where: {
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: profileId,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Displays,
+          },
+        })
+        if (!displayEdge) nftsToBeAdded.push(nft)
+      }),
+    )
+    // generate weights for nfts...
+    let weight = await getLastWeight(repositories, profileId)
+    for (let i = 0; i < nftsToBeAdded.length; i++) {
+      const newWeight = generateWeight(weight)
+      edgesWithWeight.push({
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        thatEntityId: nftsToBeAdded[i].id,
+        edgeType: defs.EdgeType.Displays,
+        weight: newWeight,
+        hide: hide,
       })
-      if (!displayEdge) nftsToBeAdded.push(nft)
-    }),
-  )
-  // generate weights for nfts...
-  let weight = await getLastWeight(repositories, profileId)
-  for (let i = 0; i < nftsToBeAdded.length; i++) {
-    const newWeight = generateWeight(weight)
-    edgesWithWeight.push({
-      thisEntityType: defs.EntityType.Profile,
-      thatEntityType: defs.EntityType.NFT,
-      thisEntityId: profileId,
-      thatEntityId: nftsToBeAdded[i].id,
-      edgeType: defs.EdgeType.Displays,
-      weight: newWeight,
-      hide: hide,
-    })
-    weight = newWeight
+      weight = newWeight
+    }
+    // save nfts to edge...
+    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveEdgesWithWeight: ${err}`)
+    return err
   }
-  // save nfts to edge...
-  await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
 }
 
 const showAllNFTs = async (
   repositories: db.Repository,
-  userId: string,
+  walletId: string,
   profileId: string,
   chainId: string,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { userId, chainId } })
+  const nfts = await repositories.nft.find({ where: { walletId, chainId } })
   if (nfts.length) {
     await saveEdgesWithWeight(nfts, profileId, false)
     // change hide column to false which ones are true...
@@ -824,7 +821,7 @@ const showNFTs = async (
  * hideNFTIds takes priority over showNFTIds (like if the same ID is in both arrays)
  * showAll, hideAll, and -Ids arrays are mutually exclusive (only one of those 3 will be respected, with priority to showAll)
  * @param repositories
- * @param userId
+ * @param walletId
  * @param profileId
  * @param showAll
  * @param hideAll
@@ -834,7 +831,7 @@ const showNFTs = async (
  */
 export const changeNFTsVisibility = async (
   repositories: db.Repository,
-  userId: string,
+  walletId: string,
   profileId: string,
   showAll: boolean,
   hideAll: boolean,
@@ -844,7 +841,7 @@ export const changeNFTsVisibility = async (
 ): Promise<void> => {
   try {
     if (showAll) {
-      await showAllNFTs(repositories, userId, profileId, chainId)
+      await showAllNFTs(repositories, walletId, profileId, chainId)
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
@@ -953,10 +950,10 @@ export const updateNFTsOrder = async (
 
 export const updateEdgesWeightForProfile = async (
   profileId: string,
-  userId: string,
+  walletId: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: { userId } })
+    const nfts = await repositories.nft.find({ where: { walletId } })
     if (!nfts.length) return
     const nullEdges = await repositories.edge.find({
       where: {
@@ -1003,6 +1000,8 @@ export const syncEdgesWithNFTs = async (
         edgeType: defs.EdgeType.Displays,
       },
     })
+
+    logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
     const duplicatedIds: Array<string> = []
     await Promise.allSettled(
@@ -1055,7 +1054,7 @@ export const updateNFTsForAssociatedWallet = async (
       wallet.chainId,
     )
     // save NFT edges for profile...
-    await updateEdgesWeightForProfile(profileId, wallet.userId)
+    await updateEdgesWeightForProfile(profileId, wallet.id)
     const nfts = await repositories.nft.find({
       where: {
         userId: wallet.userId,
@@ -1071,6 +1070,7 @@ export const removeEdgesForNonassociatedAddresses = async (
   profileId: string,
   prevAddresses: string[],
   newAddresses: string[],
+  chainId: string,
 ): Promise<void> => {
   const toRemove: string[] = []
   // find previous associated addresses to be filtered
@@ -1084,13 +1084,12 @@ export const removeEdgesForNonassociatedAddresses = async (
   if (!toRemove.length) return
   await Promise.allSettled(
     toRemove.map(async (address) => {
-      const user = await repositories.user.findOne({
-        where: {
-          username: 'ethereum-' + ethers.utils.getAddress(address),
-        },
-      })
-      if (user) {
-        const nfts = await repositories.nft.find({ where: { userId: user.id } })
+      const wallet = await repositories.wallet.findByChainAddress(
+        chainId,
+        ethers.utils.getAddress(address),
+      )
+      if (wallet) {
+        const nfts = await repositories.nft.find({ where: { walletId: wallet.id } })
         if (nfts.length) {
           const toRemoveEdges = []
           await Promise.allSettled(
@@ -1116,4 +1115,49 @@ export const removeEdgesForNonassociatedAddresses = async (
       }
     }),
   )
+}
+
+export const getCollectionInfo = async (
+  contract: string,
+  chainId: string,
+  repositories: db.Repository,
+): Promise<any> => {
+  try {
+    const key = `${contract.toLowerCase()}-${chainId}`
+    const cachedData = await cache.get(key)
+
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    } else {
+      const collection = await repositories.collection.findByContractAddress(
+        contract,
+        chainId,
+      )
+
+      if (collection && (
+        collection.deployer == null ||
+        ethers.utils.getAddress(collection.deployer) !== collection.deployer
+      )) {
+        const collectionDeployer = await getCollectionDeployer(contract, chainId)
+        await repositories.collection.save({
+          ...collection,
+          deployer: collectionDeployer,
+        })
+        collection.deployer = collectionDeployer
+      }
+
+      const ubiquityResults = await getUbiquity(contract, chainId)
+
+      const returnObject = {
+        collection,
+        ubiquityResults,
+      }
+
+      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
+      return returnObject
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getCollectionInfo: ${err}`)
+    return err
+  }
 }

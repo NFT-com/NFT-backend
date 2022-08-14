@@ -130,13 +130,15 @@ export const start = async (): Promise<void> => {
 
   app.get('/uri/:username', async function (req, res) {
     const { username } = req.params
+    const chainId = process.env.CHAIN_ID
 
-    const cachedData = await cache.get(username)
+    const key = `${username}_${chainId}`
+    const cachedData = await cache.get(key)
 
     if (cachedData) {
       return res.send(JSON.parse(cachedData as string))
     } else {
-      return repositories.profile.findByURL(username.toLowerCase())
+      return repositories.profile.findByURL(username.toLowerCase(), chainId)
         .then(async (profile: entity.Profile) => {
           if (!profile) {
             return res.send({
@@ -144,6 +146,12 @@ export const start = async (): Promise<void> => {
               image: 'https://cdn.nft.com/nullPhoto.png',
               header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
               description: `NFT.com profile for ${username.toLowerCase()}`,
+              attributes: [
+                {
+                  trait_type: 'name',
+                  trait_value: username.toLowerCase(),
+                },
+              ],
             })
           } else {
             const data = {
@@ -151,8 +159,14 @@ export const start = async (): Promise<void> => {
               image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
               header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
               description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
+              attributes: [
+                {
+                  trait_type: 'name',
+                  trait_value: username.toLowerCase(),
+                },
+              ],
             }
-            await cache.set(username, JSON.stringify(data), 'EX', 60 * 10)
+            await cache.set(key, JSON.stringify(data), 'EX', 60 * 10)
             return res.send(data)
           }
         })

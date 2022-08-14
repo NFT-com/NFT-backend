@@ -3,9 +3,8 @@ import Bull, { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
-import { _logger, db } from '@nftcom/shared'
+import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
-import { NFT, TxBid, TxList } from '@nftcom/shared/db/entity'
 import { ExchangeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
@@ -15,6 +14,8 @@ import { nftCronSubqueue } from './job'
 // exported for tests
 export const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+
+const MAX_CHUNK_SIZE = 500
 
 const MAX_PROCESS_BATCH_SIZE = 1500
 
@@ -30,11 +31,11 @@ const subQueueBaseOptions: Bull.JobOptions = {
 
 //batch processor
 const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
-  logger.debug(`initiated external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
+  logger.debug(`initiated external orders batch processor for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
   try {
     const { offset, limit, exchange } = job.data
     const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
-    const nfts: NFT[] = await repositories.nft.find({
+    const nfts: entity.NFT[] = await repositories.nft.find({
       where: { chainId, deletedAt: null },
       select: ['contract', 'tokenId', 'chainId'],
       skip: offset,
@@ -58,12 +59,14 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
 
         // listings
         if (openseaResponse.listings.length) {
-          persistActivity.push(repositories.txList.saveMany(openseaResponse.listings))
+          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.listings,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
          
         // offers
         if (openseaResponse.offers.length) {
-          persistActivity.push(repositories.txBid.saveMany(openseaResponse.offers))
+          persistActivity.push(repositories.txOrder.saveMany(openseaResponse.offers,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
         break
       case ExchangeType.LooksRare:
@@ -71,12 +74,14 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
   
         // listings
         if (looksrareResponse.listings.length) {
-          persistActivity.push(repositories.txList.saveMany(looksrareResponse.listings))
+          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.listings,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
 
         // offers
         if (looksrareResponse.offers.length) {
-          persistActivity.push(repositories.txBid.saveMany(looksrareResponse.offers))
+          persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.offers,
+            { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
         break
       }
@@ -174,8 +179,8 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
       ])
 
-      const listings: TxList[] = []
-      const bids: TxBid[] = []
+      const listings: entity.TxOrder[] = []
+      const bids: entity.TxOrder[] = []
       const persistActivity: any[] = []
     
       if (opensea.status === 'fulfilled') {
@@ -204,12 +209,12 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       // save listings
       if (listings.length) {
-        persistActivity.push(repositories.txList.saveMany(listings))
+        persistActivity.push(repositories.txOrder.saveMany(listings, { chunk: MAX_CHUNK_SIZE }))
       }
 
       // save bids
       if (bids.length) {
-        persistActivity.push(repositories.txBid.saveMany(bids))
+        persistActivity.push(repositories.txOrder.saveMany(bids, { chunk: MAX_CHUNK_SIZE }))
       }
 
       await Promise.all(persistActivity)
