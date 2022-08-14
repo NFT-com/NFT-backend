@@ -204,7 +204,7 @@ const getNFTs = (
   })
 }
 
-const getMyNFTs = (
+const getMyNFTs = async (
   _: unknown,
   args: gql.QueryNFTsArgs,
   ctx: Context,
@@ -219,8 +219,17 @@ const getMyNFTs = (
     profileId: Joi.string().required(),
   })
   joi.validateSchema(schema, args)
-
+  
   const { types, profileId } = helper.safeObject(args?.input)
+
+  // ensure profileId is owned by user.id
+  const profile = await ctx.repositories.profile.findById(profileId)
+  if (profile.ownerUserId != user.id) {
+    return Promise.reject(appError.buildNotFound(
+      nftError.buildProfileNotOwnedMsg(profile?.url || profileId, user.id),
+      nftError.ErrorType.NFTNotOwned,
+    ))
+  }
 
   const filter: Partial<entity.Edge> = helper.removeEmpty({
     thisEntityType: defs.EntityType.Profile,
