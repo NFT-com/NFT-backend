@@ -226,3 +226,37 @@ export const retrieveMultipleOrdersLooksrare = async (
   }
   return responseAggregator
 }
+
+/**
+ * Returns true if the listing succeeded, false otherwise.
+ * @param order  stringified JSON matching the LooksRareOrder type
+ * @param chainId 
+ */
+export const createLooksrareListing = async (
+  order: string,
+  chainId: string,
+): Promise<boolean> => {
+  const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
+  if (order == null || order.length === 0   ) {
+    return false
+  }
+  try {
+    const res = await axios.post(
+      baseUrl + '/orders',
+      JSON.parse(order),
+      {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Looks-Api-Key': LOOKSRARE_API_KEY,
+        },
+      })
+    if (res.status === 200) {
+      return true
+    }
+    return false
+  } catch (err) {
+    // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
+    return false
+  }
+}

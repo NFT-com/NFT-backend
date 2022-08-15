@@ -3,8 +3,17 @@ import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { db, entity } from '@nftcom/shared'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
+type Order = SeaportOrder | LooksRareOrder
+
 const repositories = db.newRepositories()
 
+/**
+ * orderActivityBuilder 
+ * @param orderType
+ * @param orderHash
+ * @param walletId
+ * @param chainId
+ */
 const orderActivityBuilder = async (
   orderType: ActivityType,
   orderHash: string,
@@ -31,6 +40,10 @@ const orderActivityBuilder = async (
   return activity
 }
 
+/**
+ * seaportOrderBuilder 
+ * @param order
+ */
 const seaportOrderBuilder = (
   order: SeaportOrder,
 ): Partial<entity.TxOrder> => {
@@ -43,6 +56,11 @@ const seaportOrderBuilder = (
     },
   }
 }
+
+/**
+ * looksrareOrderBuilder 
+ * @param order
+ */
 
 const looksrareOrderBuilder = (
   order: LooksRareOrder,
@@ -83,21 +101,24 @@ const looksrareOrderBuilder = (
 export const orderEntityBuilder = async (
   protocol: ProtocolType,
   orderType: ActivityType,
-  order: SeaportOrder & LooksRareOrder,
+  order: Order,
   chainId: string,
 ):  Promise<Partial<entity.TxOrder>> => {
   let orderHash: string, walletId: string, orderEntity: Partial<entity.TxOrder>
-
+  let seaportOrder: SeaportOrder
+  let looksrareOrder: LooksRareOrder
   switch (protocol) {
   case ProtocolType.Seaport:
-    orderHash = order.order_hash
-    walletId = order?.protocol_data?.parameters?.offerer
-    orderEntity = seaportOrderBuilder(order)
+    seaportOrder = order as SeaportOrder
+    orderHash = seaportOrder.order_hash
+    walletId = seaportOrder?.protocol_data?.parameters?.offerer
+    orderEntity = seaportOrderBuilder(seaportOrder)
     break
   case ProtocolType.LooksRare:
-    orderHash = order.hash
-    walletId = order.signer
-    orderEntity = looksrareOrderBuilder(order)
+    looksrareOrder = order as LooksRareOrder
+    orderHash = looksrareOrder.hash
+    walletId = looksrareOrder.signer
+    orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
   default:
     break
