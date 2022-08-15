@@ -1150,19 +1150,21 @@ const downloadAndUploadImageToS3 = async (
     const imageKey = `collections/${chainId}/${contract}/` + fullName
     const contentType = contentTypeFromExt(ext)
     const buffer = await downloadImageFromUbiquity(url)
-    const s3config = await getAWSConfig()
-    const upload = new Upload({
-      client: s3config,
-      params: {
-        Bucket: assetBucket.name,
-        Key: imageKey,
-        Body: buffer,
-        ContentType: contentType,
-      },
-    })
-    await upload.done()
+    if (buffer) {
+      const s3config = await getAWSConfig()
+      const upload = new Upload({
+        client: s3config,
+        params: {
+          Bucket: assetBucket.name,
+          Key: imageKey,
+          Body: buffer,
+          ContentType: contentType,
+        },
+      })
+      await upload.done()
 
-    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+      return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    } else return undefined
   } catch (err) {
     Sentry.captureMessage(`Error in downloadAndUploadImageToS3: ${err}`)
     return undefined
