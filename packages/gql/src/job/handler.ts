@@ -1,7 +1,7 @@
 import { Job } from 'bull'
 import { ethers, utils } from 'ethers'
 
-import { provider, websocketProvider } from '@nftcom/gql/helper'
+import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
@@ -129,8 +129,6 @@ const getMintedProfileEvents = async (
 export const getEthereumEvents = async (job: Job): Promise<any> => {
   try {
     const { chainId } = job.data
-
-    websocketProvider.start(Number(chainId))
 
     const topics = [
       helper.id('MintedProfile(address,string,uint256,uint256,uint256)'),
