@@ -1200,19 +1200,19 @@ export const getCollectionInfo = async (
         collection.deployer = collectionDeployer
       }
 
-      let ubiquityResults
+      let returnObject
       let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
       let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
       let description = 'placeholder collection description text'
       if (chainId === '1') {
         // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
-          ubiquityResults = await getUbiquity(contract, chainId)
+          const ubiquityResults = await getUbiquity(contract, chainId)
           if (ubiquityResults) {
             bannerUrl = await downloadAndUploadImageToS3(
               ethers.utils.getAddress(contract),
               chainId,
-              ubiquityResults.banner,
+              ubiquityResults.collection.banner,
               'banner',
             )
             if (bannerUrl) {
@@ -1223,7 +1223,7 @@ export const getCollectionInfo = async (
             logoUrl = await downloadAndUploadImageToS3(
               ethers.utils.getAddress(contract),
               chainId,
-              ubiquityResults.logo,
+              ubiquityResults.collection.logo,
               'logo',
             )
             if (logoUrl) {
@@ -1237,6 +1237,20 @@ export const getCollectionInfo = async (
                 description,
               })
             }
+            returnObject = {
+              collection,
+              ubiquityResults,
+            }
+          } else {
+            returnObject = {
+              collection,
+              undefined,
+            }
+          }
+        } else {
+          returnObject = {
+            collection,
+            undefined,
           }
         }
       } else {
@@ -1245,11 +1259,10 @@ export const getCollectionInfo = async (
           logoUrl,
           description,
         })
-      }
-
-      const returnObject = {
-        collection,
-        ubiquityResults,
+        returnObject = {
+          collection,
+          undefined,
+        }
       }
 
       await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
