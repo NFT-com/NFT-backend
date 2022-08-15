@@ -30,7 +30,7 @@ interface UbiquityNftCollection {
 export const getUbiquity = async (
   contractAddress: string,
   chainId: string,
-): Promise<UbiquityNftCollection> => {
+): Promise<UbiquityNftCollection | undefined> => {
   try {
     const key = `getUbiquity-${ethers.utils.getAddress(contractAddress)}-${chainId}`
     if (await cache.get(key)) {
@@ -46,12 +46,15 @@ export const getUbiquity = async (
       }
 
       const result = await axios.get(url, config)
-
-      await cache.set(key, JSON.stringify(result.data))
-
-      return result.data
+      if (result.data) {
+        await cache.set(key, JSON.stringify(result.data))
+        return result.data
+      } else {
+        return undefined
+      }
     }
   } catch (err) {
     console.log('error getting ubiquity: ', err)
+    return undefined
   }
 }

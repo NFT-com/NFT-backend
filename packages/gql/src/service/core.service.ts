@@ -958,3 +958,34 @@ export const getLastWeight = async (
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
+
+export const extensionFromFilename = (filename: string): string | undefined => {
+  const strArray = filename.split('.')
+  // if filename has no extension
+  if (strArray.length < 2) return undefined
+  // else return extension
+  return strArray.pop()
+}
+
+export const contentTypeFromExt = (ext: string): string => {
+  switch(ext.toLowerCase()) {
+  case 'jpg':
+    return 'image/jpeg'
+  case 'jpeg':
+    return 'image/jpeg'
+  case 'png':
+    return 'image/png'
+  case 'svg':
+    return 'image/svg+xml'
+  case 'gif':
+    return 'image/gif'
+  case 'webp':
+    return 'image/webp'
+  case 'avif':
+    return 'image/avif'
+  case 'bmp':
+    return 'image/bmp'
+  case 'tiff':
+    return 'image/tiff'
+  }
+}
