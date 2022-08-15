@@ -17,7 +17,7 @@ const typesenseClient: Client = new Client({
   'connectionTimeoutSeconds': 10,
 })
 
-export type NullClient = unknown // Null object passed in for testing
+export type NullClient = Record<string, unknown> // Null object passed in for testing
 export class SearchEngineClient {
 
   private _client: any

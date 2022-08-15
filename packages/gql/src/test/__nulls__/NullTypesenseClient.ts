@@ -8,6 +8,8 @@ export class NullTypesenseClient implements NullClient {
     this._importResponse = importResponse
   }
 
+  [x: string]: unknown // make the compiler happy
+
   collections = (_: string): any => {
     return {
       documents: () => {
