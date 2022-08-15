@@ -17,28 +17,7 @@ const typesenseClient: Client = new Client({
   'connectionTimeoutSeconds': 10,
 })
 
-class NullClient {
-
-  private _importResponse: any[]
-
-  constructor(importResponse: any[]) {
-    this._importResponse = importResponse
-  }
-
-  collections = (_: string): any => {
-    return {
-      documents: () => {
-        return {
-          import: (_: any[]) => {
-            return this._importResponse
-          },
-        }
-      },
-    }
-  }
-
-}
-
+export type NullClient = unknown // Null object passed in for testing
 export class SearchEngineClient {
 
   private _client: any
@@ -47,8 +26,8 @@ export class SearchEngineClient {
     return new SearchEngineClient(typesenseClient)
   }
 
-  static createNull(importResponse: any[]): SearchEngineClient {
-    return new SearchEngineClient(new NullClient(importResponse))
+  static createNull(client: NullClient): SearchEngineClient {
+    return new SearchEngineClient(client)
   }
 
   constructor(client: Client | NullClient) {

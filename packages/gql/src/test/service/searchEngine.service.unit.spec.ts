@@ -2,6 +2,8 @@ import { SearchEngineClient } from '@nftcom/gql/adapter/searchEngineClient'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
 
+import { NullTypesenseClient } from '../__nulls__/NullTypesenseClient'
+
 describe('search engine service', () => {
   describe('indexNFT', () => {
     let nft, repos
@@ -45,7 +47,7 @@ describe('search engine service', () => {
 
     it('sends an NFT to the search engine', async () => {
       const seService = new SearchEngineService(
-        SearchEngineClient.createNull([{ success: true }]), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])), repos)
 
       const result = await seService.indexNFT(nft)
 
@@ -54,7 +56,7 @@ describe('search engine service', () => {
 
     it('notifies of an unsuccessful import', async () => {
       const seService = new SearchEngineService(
-        SearchEngineClient.createNull([{ success: false }]), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])), repos)
 
       const result = await seService.indexNFT(nft)
 
@@ -80,7 +82,8 @@ describe('search engine service', () => {
 
     it('sends collections to the search engine', async () => {
       const seService = new SearchEngineService(
-        SearchEngineClient.createNull([{ success: true }, { success: true }]), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient(
+          [{ success: true }, { success: true }])), repos)
 
       const collections = [
         { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as Collection,
@@ -93,7 +96,8 @@ describe('search engine service', () => {
 
     it('notifies of failed import', async () => {
       const seService = new SearchEngineService(
-        SearchEngineClient.createNull([{ success: false }, { success: true }]), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient(
+          [{ success: false }, { success: true }])), repos)
 
       const collections = [
         { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as Collection,
