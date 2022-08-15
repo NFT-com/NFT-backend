@@ -217,6 +217,8 @@ const getMyNFTs = async (
 
   const schema = Joi.object().keys({
     profileId: Joi.string().required(),
+    pageInput: Joi.any(),
+    types: Joi.array().items(Joi.string()).required(),
   })
   const { input } = args
   
