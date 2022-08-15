@@ -1,7 +1,20 @@
+import { In, UpdateResult } from 'typeorm'
+
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType } from '@nftcom/shared/defs'
+
+const updateReadByIds = (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)
+: Promise<UpdateResult> => {
+  const { repositories, chain } = ctx
+  return repositories.txActivity.update({
+    id: In([]), read: false, chainId: chain.id,
+  }
+  , {
+    read: true,
+  })
+}
 
 const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx: Context)
 : Promise<TxActivity[]> => {
@@ -43,5 +56,8 @@ export default {
     getActivitiesByType,
     getActivitiesByWalletId,
     getActivitiesByWalletIdAndType,
+  },
+  Mutation: {
+    updateReadByIds,
   },
 }
