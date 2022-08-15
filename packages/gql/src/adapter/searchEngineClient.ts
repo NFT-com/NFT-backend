@@ -35,6 +35,7 @@ export class SearchEngineClient {
   }
 
   private isFullySuccessful = (response: ImportResponse[]): boolean | PromiseLike<boolean> => {
+    if (!Array.isArray(response)) return false
     const unsuccessful = response.filter(r => !r.success)
     if (unsuccessful.length) {
       logger.error('Typesense import failed', unsuccessful)
@@ -43,7 +44,12 @@ export class SearchEngineClient {
   }
 
   insertDocuments = async (collection: string,  documents: any[]): Promise<boolean> => {
-    const response = await this._client.collections(collection).documents().import(documents)
+    let response
+    try {
+      response = await this._client.collections(collection).documents().import(documents, { action: 'upsert' })
+    } catch (e) {
+      logger.error('Error importing to Typesense:', e)
+    }
     return this.isFullySuccessful(response)
   }
 
