@@ -1,17 +1,12 @@
 import { BigNumber, utils } from 'ethers'
 
 import { SearchEngineClient } from '@nftcom/gql/adapter/searchEngineClient'
+import { getRandomFloat } from '@nftcom/gql/helper/utils'
 import { core } from '@nftcom/gql/service'
 import { db, defs } from '@nftcom/shared'
 import { Collection as CollectionEntity, NFT as NFTEntity, Wallet as WalletEntity } from '@nftcom/shared/db/entity'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-
-const getRandomFloat = (min, max, decimals): number => {
-  const str = (Math.random() * (max - min) + min).toFixed(decimals)
-
-  return parseFloat(str)
-}
 
 export class SearchEngineService {
 
