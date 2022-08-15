@@ -218,7 +218,9 @@ const getMyNFTs = async (
   const schema = Joi.object().keys({
     profileId: Joi.string().required(),
   })
-  joi.validateSchema(schema, args)
+  const { input } = args
+  
+  joi.validateSchema(schema, input)
   
   const { types, profileId } = helper.safeObject(args?.input)
 
