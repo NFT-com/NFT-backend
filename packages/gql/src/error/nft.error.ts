@@ -8,4 +8,6 @@ export const buildNFTNotFoundMsg = (id: string): string => `NFT ${id} not found`
 
 export const buildNFTNotOwnedMsg = (): string => 'NFT not owned by user'
 
+export const buildProfileNotOwnedMsg = (url: string, userId: string): string => `NFT.com profile ${url} not owned by user ${userId}`
+
 export const buildMemoTooLong = (): string => 'Length of memo can not exceed 2000'
