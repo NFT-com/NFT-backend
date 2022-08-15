@@ -457,7 +457,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('test', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
