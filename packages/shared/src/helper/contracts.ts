@@ -123,7 +123,7 @@ export function nftResolverAddress(chainId: string | number = 'mainnet'): string
   case 4:
   case '4':
   case 'rinkeby':
-    return utils.getAddress('')
+    return utils.getAddress('0x0000000000000000000000000000000000000000')
   case 5:
   case '5':
   case 'goerli':
@@ -132,7 +132,7 @@ export function nftResolverAddress(chainId: string | number = 'mainnet'): string
   case 1:
   case 'mainnet':
   default:
-    return utils.getAddress('')
+    return utils.getAddress('0x0000000000000000000000000000000000000000')
   }
 }
 
