@@ -209,7 +209,7 @@ const keepAlive = ({
 export const start = (
   chainId: providers.Networkish = 1, //mainnet default
 ): Promise<void> => {
-  logger.debug('---------> 🎬 starting websocket')
+  logger.debug(`---------> 🎬 starting websocket on chainId: ${Number(chainId)}`)
 
   const provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
     chainId,
