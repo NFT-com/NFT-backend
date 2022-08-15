@@ -388,6 +388,7 @@ describe('nft resolver', () => {
 
       profileA = await repositories.profile.save({
         url: 'test-profile-url',
+        ownerUserId: 'test-user-id',
       })
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
