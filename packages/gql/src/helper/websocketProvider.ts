@@ -1,18 +1,30 @@
-import { ethers, providers } from 'ethers'
+import { ethers, providers, utils } from 'ethers'
 
-import { _logger } from '@nftcom/shared'
+import { _logger, contracts, db, helper } from '@nftcom/shared'
 
+const repositories = db.newRepositories()
+const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 const logger = _logger.Factory(_logger.Context.WebsocketProvider, _logger.Context.GraphQL)
 
 type KeepAliveParams = {
   provider: ethers.providers.WebSocketProvider
+  chainId: providers.Networkish
   onDisconnect: (err: any) => void
   expectedPongBack?: number
   checkInterval?: number
-};
+}
+
+enum EventName {
+  AssociateEvmUser = 'AssociateEvmUser',
+  CancelledEvmAssociation = 'CancelledEvmAssociation',
+  ClearAllAssociatedAddresses = 'ClearAllAssociatedAddresses',
+  AssociateSelfWithUser = 'AssociateSelfWithUser',
+  RemovedAssociateProfile = 'RemovedAssociateProfile',
+}
 
 const keepAlive = ({
   provider,
+  chainId,
   onDisconnect,
   expectedPongBack = 15000,
   checkInterval = 7500,
@@ -33,7 +45,151 @@ const keepAlive = ({
       }, expectedPongBack)
     }, checkInterval)
 
-    // TODO: add logic for listening via WSS
+    // logic for listening and parsing via WSS
+    const topicFilter = [
+      [
+        helper.id('AssociateEvmUser(address,string,address)'),
+        helper.id('CancelledEvmAssociation(address,string,address)'),
+        helper.id('ClearAllAssociatedAddresses(address,string)'),
+        helper.id('AssociateSelfWithUser(address,string,address)'),
+        helper.id('RemovedAssociateProfile(address,string,address)'),
+      ],
+    ]
+
+    const nftResolverAddress = helper.checkSum(
+      contracts.nftResolverAddress(Number(chainId).toString()),
+    )
+    logger.debug(`nftResolverAddress: ${nftResolverAddress}, chainId: ${chainId}`)
+
+    const filter = {
+      address: utils.getAddress(nftResolverAddress),
+      topics: topicFilter,
+    }
+
+    provider.on(filter, async (e) => {
+      const evt = nftResolverInterface.parseLog(e)
+      logger.debug('******** wss parsed event: ', evt)
+
+      if (evt.name === EventName.AssociateEvmUser) {
+        const [owner,profileUrl,destinationAddress] = evt.args
+        const event = await repositories.event.findOne({
+          where: {
+            chainId: Number(chainId),
+            contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+            eventName: evt.name,
+            txHash: e.transactionHash,
+            ownerAddress: owner,
+            blockNumber: Number(e.blockNumber),
+            profileUrl: profileUrl,
+            destinationAddress: helper.checkSum(destinationAddress),
+          },
+        })
+        if (!event) {
+          await repositories.event.save(
+            {
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(destinationAddress),
+            },
+          )
+          logger.debug(`New WSS NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
+        }
+      } else if (evt.name == EventName.CancelledEvmAssociation) {
+        const [owner,profileUrl,destinationAddress] = evt.args
+        const event = await repositories.event.findOne({
+          where: {
+            chainId,
+            contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+            eventName: evt.name,
+            txHash: e.transactionHash,
+            ownerAddress: owner,
+            blockNumber: Number(e.blockNumber),
+            profileUrl: profileUrl,
+            destinationAddress: helper.checkSum(destinationAddress),
+          },
+        })
+        if (!event) {
+          await repositories.event.save(
+            {
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(destinationAddress),
+            },
+          )
+          logger.debug(`New WSS NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) is cancelling ${ destinationAddress }. chainId=${chainId}`)
+        }
+      } else if (evt.name == EventName.ClearAllAssociatedAddresses) {
+        const [owner,profileUrl] = evt.args
+        const event = await repositories.event.findOne({
+          where: {
+            chainId: Number(chainId),
+            contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+            eventName: evt.name,
+            txHash: e.transactionHash,
+            ownerAddress: owner,
+            blockNumber: Number(e.blockNumber),
+            profileUrl: profileUrl,
+          },
+        })
+        if (!event) {
+          await repositories.event.save(
+            {
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+            },
+          )
+          logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) cancelled all associations. chainId=${chainId}`)
+        }
+      } else if (evt.name === EventName.AssociateSelfWithUser ||
+        evt.name === EventName.RemovedAssociateProfile) {
+        const [receiver, profileUrl, profileOwner]  = evt.args
+        const event = await repositories.event.findOne({
+          where: {
+            chainId: Number(chainId),
+            contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+            eventName: evt.name,
+            txHash: e.transactionHash,
+            ownerAddress: profileOwner,
+            blockNumber: Number(e.blockNumber),
+            profileUrl: profileUrl,
+            destinationAddress: helper.checkSum(receiver),
+          },
+        })
+        if (!event) {
+          await repositories.event.save(
+            {
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: profileOwner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(receiver),
+            },
+          )
+          logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (receiver = ${receiver}) profileOwner = ${[profileOwner]}. chainId=${chainId}`)
+        }
+      } else {
+        // not relevant in our search space
+        logger.error('topic hash not covered: ', e.transactionHash)
+      }
+    })
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,6 +218,7 @@ export const start = (
 
   keepAlive({
     provider,
+    chainId,
     onDisconnect: (err) => {
       start(chainId)
       logger.error('The ws connection was closed', JSON.stringify(err, null, 2))
