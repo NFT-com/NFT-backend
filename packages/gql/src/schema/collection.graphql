@@ -96,6 +96,10 @@ type Collection {
   name: String
   chainId: String
   deployer: String
+  bannerUrl: String
+  logoUrl: String
+  description: String
+  isCurated: Boolean
 }
 
 type CollectionInfo {
