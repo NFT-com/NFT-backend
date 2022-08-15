@@ -12,8 +12,8 @@ export class ProfileRepository extends BaseRepository<Profile> {
     return this.find({ where: { ownerUserId: userId } })
   }
 
-  public findByURL = (url: string): Promise<Profile | undefined> => {
-    return this.findOne({ where: { url } })
+  public findByURL = (url: string, chainId: string): Promise<Profile | undefined> => {
+    return this.findOne({ where: { url, chainId } })
   }
 
   findAllWithRelations(): Promise<Profile[]> {
