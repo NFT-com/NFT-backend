@@ -1204,6 +1204,11 @@ export default {
     listNFTLooksrare,
   },
   NFT: {
+    collection: core.resolveEntityById<gql.NFT, entity.Collection>(
+      'contract',
+      defs.EntityType.NFT,
+      defs.EntityType.Collection,
+    ),
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
       'walletId',
       defs.EntityType.NFT,
