@@ -1131,7 +1131,7 @@ export const downloadImageFromUbiquity = async (
 ): Promise<Buffer | undefined> => {
   try {
     const res = await fetch(url + `?apiKey=${process.env.UBIQUITY_API_KEY}`)
-    await res.buffer()
+    return await res.buffer()
   } catch (err) {
     Sentry.captureMessage(`Error in downloadImageFromUbiquity: ${err}`)
     return undefined
