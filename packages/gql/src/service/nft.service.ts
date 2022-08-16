@@ -1147,7 +1147,7 @@ const downloadAndUploadImageToS3 = async (
   try {
     const ext = extensionFromFilename(url)
     const fullName = ext ? fileName + '.' + ext : fileName
-    const imageKey = `collections/${chainId}/${contract}/` + fullName
+    const imageKey = `collections/${chainId}/${contract}/` + Date.now() + '-' + fullName
     const contentType = contentTypeFromExt(ext)
     const buffer = await downloadImageFromUbiquity(url)
     if (buffer) {
