@@ -6,7 +6,6 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
 import stream from 'stream'
-import Typesense from 'typesense'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -25,7 +24,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility,
+  changeNFTsVisibility, getCollectionInfo,
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -35,8 +34,6 @@ import * as Sentry from '@sentry/node'
 import { blacklistBool } from '../service/core.service'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 const MAX_SAVE_COUNTS = 500
 
@@ -50,16 +47,6 @@ type LeaderboardInfo = {
   collectionCount: number
   edgeCount: number
 }
-
-const client = new Typesense.Client({
-  'nodes': [{
-    'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
-  }],
-  'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 10,
-})
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => {
   return {
@@ -365,7 +352,7 @@ const updateProfile = (
   args: gql.MutationUpdateProfileArgs,
   ctx: Context,
 ): Promise<gql.Profile> => {
-  const { user, repositories } = ctx
+  const { user, repositories, wallet } = ctx
   logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
@@ -413,7 +400,7 @@ const updateProfile = (
       p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
       return changeNFTsVisibility(
         repositories,
-        user.id,
+        wallet.id,
         p.id, // profileId
         args.input.showAllNFTs,
         args.input.hideAllNFTs,
@@ -507,20 +494,7 @@ const profileClaimed = (
       profile.status = defs.ProfileStatus.Owned
       profile.chainId = ctx.chain.id || process.env.CHAIN_ID
 
-      const saveProfile = repositories.profile.save(profile)
-
-      // push newly minted profile to the search engine (typesense)
-      const indexProfile = []
-      indexProfile.push({
-        id: profile.id,
-        profile: profile.url,
-      })
-
-      client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
-        .then(() => logger.debug('profile added to typesense index'))
-        .catch((err) => logger.error('error: could not save profile in typesense: ' + err))
-
-      return saveProfile
+      return repositories.profile.save(profile)
     })
 }
 
@@ -1031,16 +1005,16 @@ const updateProfileView = async (
   }
 }
 
-const getHiddenEvents = async (
+const getIgnoredEvents = async (
   _: any,
-  args: gql.QueryHiddenEventsArgs,
+  args: gql.QueryIgnoredEventsArgs,
   ctx: Context,
 ): Promise<entity.Event[]> => {
   try {
     const { repositories } = ctx
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    logger.debug('getHiddenEvents', { input: args?.input })
+    logger.debug('getIgnoredEvents', { input: args?.input })
     const { profileUrl, walletAddress } = helper.safeObject(args?.input)
     return await repositories.event.find({
       where: {
@@ -1050,7 +1024,78 @@ const getHiddenEvents = async (
       },
     })
   } catch (err) {
-    Sentry.captureMessage(`Error in getHiddenEvents: ${err}`)
+    Sentry.captureMessage(`Error in getIgnoredEvents: ${err}`)
+    return err
+  }
+}
+
+const getAssociatedCollectionForProfile = async (
+  _: any,
+  args: gql.QueryAssociatedCollectionForProfileArgs,
+  ctx: Context,
+): Promise<gql.CollectionInfo> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getAssociatedCollectionForProfile', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.profileView === defs.ProfileViewType.Collection) {
+      if (profile.associatedContract) {
+        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+      } else {
+        return Promise.reject(appError.buildNotFound(
+          profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
+        ))
+      }
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileViewTypeWrong(),
+        profileError.ErrorType.ProfileViewTypeWrong,
+      ))
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)
+    return err
+  }
+}
+
+const isProfileCustomized = async (
+  _: any,
+  args: gql.QueryIsProfileCustomizedArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('isProfileCustomized', { profileUrl: args?.url })
+    const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    return !!edges.length
+  } catch (err) {
+    Sentry.captureMessage(`Error in isProfileCustomized: ${err}`)
     return err
   }
 }
@@ -1067,7 +1112,9 @@ export default {
     insiderReservedProfiles: combineResolvers(auth.isAuthenticated, getInsiderReservedProfileURIs),
     latestProfiles: getLatestProfiles,
     leaderboard: leaderboard,
-    hiddenEvents: getHiddenEvents,
+    ignoredEvents: getIgnoredEvents,
+    associatedCollectionForProfile: getAssociatedCollectionForProfile,
+    isProfileCustomized: isProfileCustomized,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

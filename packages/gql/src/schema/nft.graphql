@@ -39,6 +39,7 @@ type NFT {
   type: NFTType!
 #  user: User
   wallet: Wallet
+  collection: Collection
   createdAt: DateTime!
   memo: String
 }
@@ -155,7 +156,7 @@ input UpdateAssociatedAddressesInput {
   chainId: String
 }
 
-type UpdateAssociatedAddressesOuput {
+type UpdateAssociatedAddressesOutput {
   message: String
 }
 
@@ -168,6 +169,26 @@ input NftsForCollectionsInput {
 type CollectionNFT {
   collectionAddress: Address!
   nfts: [NFT!]!
+}
+
+input UpdateAssociatedContractInput {
+  profileUrl: String!
+  chainId: String
+}
+
+input ListNFTSeaportInput {
+  seaportParams: String
+  seaportSignature: String
+  chainId: String
+}
+
+input ListNFTLooksrareInput {
+  looksrareOrder: String
+  chainId: String
+}
+
+type UpdateAssociatedContractOutput {
+  message: String
 }
 
 extend type Query {
@@ -187,7 +208,10 @@ extend type Mutation {
   "AUTHETICATED"
   refreshMyNFTs: RefreshMyNFTsOutput!
   updateNFTsForProfile(input: UpdateNFTsForProfileInput): NFTsOutput!
-  updateAssociatedAddresses(input: UpdateAssociatedAddressesInput): UpdateAssociatedAddressesOuput!
+  updateAssociatedAddresses(input: UpdateAssociatedAddressesInput): UpdateAssociatedAddressesOutput!
+  updateAssociatedContract(input: UpdateAssociatedContractInput): UpdateAssociatedContractOutput!
+  listNFTSeaport(input: ListNFTSeaportInput!): Boolean!
+  listNFTLooksrare(input: ListNFTLooksrareInput!): Boolean!
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!): String!

@@ -1,6 +1,9 @@
 import { DeepPartial } from 'typeorm'
 
-import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
+import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
+import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 export const testMockUser: User = {
   id: 'test-user-id',
@@ -127,3 +130,109 @@ export const mockProfilesData: Array<DeepPartial<Profile>> = [
     photoURL: null,
   },
 ]
+
+export const testSeaportOrder : SeaportOrder = {
+  created_date: 'test-created-date',
+  closing_date: 'test-closing-date',
+  closing_extendable: false,
+  expiration_time: 12345,
+  listing_time: 12345,
+  order_hash: 'test-order-hash',
+  current_price: 'test-current-price',
+  maker: {
+    address: 'test-maker',
+  },
+  taker: {
+    address: 'test-taker',
+  },
+  cancelled: false,
+  finalized: false,
+  marked_invalid: false,
+  approved_on_chain: false,
+  protocol_data: {
+    parameters: {
+      offerer: 'test-maker',
+      offer: [],
+      consideration: [],
+      startTime: '12345',
+      endTime: '12345',
+      orderType: 0,
+      zone: 'test-zone',
+      zoneHash: 'test-zone-hash',
+      salt: 'test-salt',
+      conduitKey: 'test-conduit-key',
+      totalOriginalConsiderationItems: 1,
+      counter: 1,
+    },
+    signature: 'test-signature',
+  },
+  protocol_address: 'test-protocol-address',
+  maker_fees: {},
+  taker_fees: {},
+  side: 'ask',
+  order_type: 'basic',
+  client_signature: 'test-s,ignature',
+  relay_id: 'test-relay-id',
+  criteria_proof: 'test-criteria-proof',
+}
+
+export const testLooksrareOrder: LooksRareOrder = {
+  hash: 'test-order-hash',
+  collectionAddress: 'test-collection-address',
+  tokenId: 'test-token-id',
+  isOrderAsk: false,
+  signer: 'test-signer',
+  strategy: 'test-strategy',
+  currencyAddress: 'test-currency-address',
+  amount: 10,
+  price: 10,
+  nonce: 'test-nonce',
+  startTime: 12345,
+  endTime: 12345,
+  minPercentageToAsk: 1,
+  params: '',
+  status: '',
+  signature: 'test-signature',
+  v: 1,
+  r: 'test-r',
+  s: 'test-s',
+}
+
+export const testLooksrareExistingOrder: LooksRareOrder = {
+  hash: 'test-existing-order-hash',
+  collectionAddress: 'test-collection-address',
+  tokenId: 'test-token-id',
+  isOrderAsk: true,
+  signer: 'test-signer',
+  strategy: 'test-strategy',
+  currencyAddress: 'test-currency-address',
+  amount: 10,
+  price: 10,
+  nonce: 'test-nonce',
+  startTime: 12345,
+  endTime: 12345,
+  minPercentageToAsk: 1,
+  params: '',
+  status: '',
+  signature: 'test-signature',
+  v: 1,
+  r: 'test-r',
+  s: 'test-s',
+}
+
+export const testExistingActivity: TxActivity = {
+  id: 'test-activity-id',
+  walletId: 'test-wallet-id',
+  activityType: ActivityType.Listing,
+  activityTypeId: 'test-existing-order-hash',
+  read: false,
+  timestamp: 'test-timestamp',
+  order: {
+    id: 'test-existing-order-hash',
+    exchange: ExchangeType.LooksRare,
+    makerAddress: 'test-maker-address',
+    orderHash: 'test-existing-order-hash',
+    orderType: ActivityType.Listing,
+    protocol: ProtocolType.LooksRare,
+  },
+}

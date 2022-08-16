@@ -251,6 +251,7 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
   pageInput: gql.PageInput,
   orderKey= 'createdAt',
   orderDirection = 'DESC',
+  entityFilter?: Partial<any>,
 ): Promise<any> => {
   const { repositories } = ctx
   return paginatedEntitiesBy(
@@ -264,12 +265,14 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
     const edges = result[0] as entity.Edge[]
     return Promise.all(
       edges.map((edge: entity.Edge) => {
-        return repo.findOne({ where: { id: edge.thatEntityId } })
-          .then(fp.thruIfNotEmpty((entry: T) => entry,
-          ))
+        return entityFilter ? repo.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
+          repo.findOne({ where: { id: edge.thatEntityId } })
+            .then(fp.thruIfNotEmpty((entry: T) => entry,
+            ))
       }),
     ).then((entries: T[]) => {
-      return [entries, result[1]]
+      const filteredEntries = entries.filter((entry) => entry !== undefined)
+      return [filteredEntries, filteredEntries.length]
     }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
   })
 }
@@ -549,6 +552,9 @@ export const reservedProfiles = {
   '0xD1ac1e553E029f5dE5732C041DfC9f8CEd937A20': ['venice', 'venicemusic'],
   '0x1598535C9e05E2130F9F239B2F23215166Bb41a7': ['scottdonnell', 'heromaker'],
   '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
+
+  // reserved partners (TODO: mint later for DON)
+  '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1': ['anonymice', 'anonymice'],
 }
 
 export const OFAC = {
@@ -850,7 +856,7 @@ const replaceAt = (index: number, str: string, replacement): string => {
 
 export const generateWeight = (prevWeight: string | undefined): string => {
   if (!prevWeight) return 'aaaa'
-  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 3) : prevWeight
+  const weight = prevWeight.length > 4 ? prevWeight.slice(0, 4) : prevWeight
   let order = weight
   let update = String.fromCharCode(weight.charCodeAt(3) + 1)
   if (update <= 'z') {

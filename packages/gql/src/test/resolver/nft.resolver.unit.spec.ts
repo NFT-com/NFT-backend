@@ -271,6 +271,60 @@ describe('nft resolver', () => {
     })
   })
 
+  describe('updateAssociatedContract', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      const wallet = await repositories.wallet.save({
+        userId: 'test-user-id',
+        chainId: '5',
+        chainName: 'goerli',
+        network: 'ethereum',
+        address: '0x1958Af77c06faB96D63351cACf10ABd3f598873B',
+      })
+
+      profile = await repositories.profile.save({
+        url: '1',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: wallet.id,
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: false,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update associated contract', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateAssociatedContract($input: UpdateAssociatedContractInput) { updateAssociatedContract(input: $input) { message } }',
+        variables: {
+          input: {
+            profileUrl: '1',
+            chainId: '5',
+          },
+        },
+      })
+
+      expect(result.data.updateAssociatedContract.message).toEqual('Updated associated contract for 1')
+      const collections = await repositories.collection.findAll()
+      expect(collections.length).toBeGreaterThan(0)
+    })
+  })
+
   describe('updateNFTMemo', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
@@ -314,6 +368,97 @@ describe('nft resolver', () => {
 
       expect(result.data.updateNFTMemo.memo).toBeDefined()
       expect(result.data.updateNFTMemo.memo).toEqual('This is test memo')
+    })
+  })
+
+  describe('myNFTs', () => {
+    let profileA
+    let nftA, nftB
+
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      profileA = await repositories.profile.save({
+        url: 'test-profile-url',
+        ownerUserId: 'test-user-id',
+      })
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+      nftB = await repositories.nft.save({
+        contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+        tokenId: '0x01',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+      await repositories.edge.save({
+        thisEntityId: profileA.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftA.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaaa',
+        hide: false,
+      })
+      await repositories.edge.save({
+        thisEntityId: profileA.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftB.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaab',
+        hide: true,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return NFTs of profile', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            profileId: profileA.id,
+            pageInput: {
+              first: 100,
+            },
+            types: [
+              'ERC721',
+            ],
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toEqual(2)
     })
   })
 
@@ -591,7 +736,7 @@ describe('nft resolver', () => {
       })
 
       // This expectation sucks, but jest spies for repository.edge.hardDelete
-      // and repository.nft.hardDelete are being evaluated before the code is 
+      // and repository.nft.hardDelete are being evaluated before the code is
       // reached. It's likely because of how the promises are structured...
       expect(result.data.updateNFTsForProfile.items).toHaveLength(0)
     })
