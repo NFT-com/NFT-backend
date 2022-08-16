@@ -177,20 +177,28 @@ export interface NftResolverInterface extends utils.Interface {
   events: {
     "AdminChanged(address,address)": EventFragment;
     "AssociateEvmUser(address,string,address)": EventFragment;
+    "AssociateSelfWithUser(address,string,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
     "CancelledEvmAssociation(address,string,address)": EventFragment;
     "ClearAllAssociatedAddresses(address,string)": EventFragment;
+    "ClearAssociatedContract(address,string)": EventFragment;
+    "RemovedAssociateProfile(address,string,address)": EventFragment;
+    "SetAssociatedContract(address,string,string)": EventFragment;
     "UpdatedRegex(uint8,address)": EventFragment;
     "Upgraded(address)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "AssociateEvmUser"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "AssociateSelfWithUser"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "CancelledEvmAssociation"): EventFragment;
   getEvent(
     nameOrSignatureOrTopic: "ClearAllAssociatedAddresses"
   ): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ClearAssociatedContract"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "RemovedAssociateProfile"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "SetAssociatedContract"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "UpdatedRegex"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
 }
@@ -209,6 +217,14 @@ export type AssociateEvmUserEvent = TypedEvent<
 
 export type AssociateEvmUserEventFilter =
   TypedEventFilter<AssociateEvmUserEvent>;
+
+export type AssociateSelfWithUserEvent = TypedEvent<
+  [string, string, string],
+  { receiver: string; profileUrl: string; profileOwner: string }
+>;
+
+export type AssociateSelfWithUserEventFilter =
+  TypedEventFilter<AssociateSelfWithUserEvent>;
 
 export type BeaconUpgradedEvent = TypedEvent<[string], { beacon: string }>;
 
@@ -229,6 +245,30 @@ export type ClearAllAssociatedAddressesEvent = TypedEvent<
 
 export type ClearAllAssociatedAddressesEventFilter =
   TypedEventFilter<ClearAllAssociatedAddressesEvent>;
+
+export type ClearAssociatedContractEvent = TypedEvent<
+  [string, string],
+  { owner: string; profileUrl: string }
+>;
+
+export type ClearAssociatedContractEventFilter =
+  TypedEventFilter<ClearAssociatedContractEvent>;
+
+export type RemovedAssociateProfileEvent = TypedEvent<
+  [string, string, string],
+  { receiver: string; profileUrl: string; profileOwner: string }
+>;
+
+export type RemovedAssociateProfileEventFilter =
+  TypedEventFilter<RemovedAssociateProfileEvent>;
+
+export type SetAssociatedContractEvent = TypedEvent<
+  [string, string, string],
+  { owner: string; profileUrl: string; associatedContract: string }
+>;
+
+export type SetAssociatedContractEventFilter =
+  TypedEventFilter<SetAssociatedContractEvent>;
 
 export type UpdatedRegexEvent = TypedEvent<
   [number, string],
@@ -563,6 +603,17 @@ export interface NftResolver extends BaseContract {
       associatedAddress?: string | null
     ): AssociateEvmUserEventFilter;
 
+    "AssociateSelfWithUser(address,string,address)"(
+      receiver?: string | null,
+      profileUrl?: null,
+      profileOwner?: string | null
+    ): AssociateSelfWithUserEventFilter;
+    AssociateSelfWithUser(
+      receiver?: string | null,
+      profileUrl?: null,
+      profileOwner?: string | null
+    ): AssociateSelfWithUserEventFilter;
+
     "BeaconUpgraded(address)"(
       beacon?: string | null
     ): BeaconUpgradedEventFilter;
@@ -587,6 +638,37 @@ export interface NftResolver extends BaseContract {
       owner?: string | null,
       profileUrl?: null
     ): ClearAllAssociatedAddressesEventFilter;
+
+    "ClearAssociatedContract(address,string)"(
+      owner?: string | null,
+      profileUrl?: null
+    ): ClearAssociatedContractEventFilter;
+    ClearAssociatedContract(
+      owner?: string | null,
+      profileUrl?: null
+    ): ClearAssociatedContractEventFilter;
+
+    "RemovedAssociateProfile(address,string,address)"(
+      receiver?: string | null,
+      profileUrl?: null,
+      profileOwner?: string | null
+    ): RemovedAssociateProfileEventFilter;
+    RemovedAssociateProfile(
+      receiver?: string | null,
+      profileUrl?: null,
+      profileOwner?: string | null
+    ): RemovedAssociateProfileEventFilter;
+
+    "SetAssociatedContract(address,string,string)"(
+      owner?: string | null,
+      profileUrl?: null,
+      associatedContract?: null
+    ): SetAssociatedContractEventFilter;
+    SetAssociatedContract(
+      owner?: string | null,
+      profileUrl?: null,
+      associatedContract?: null
+    ): SetAssociatedContractEventFilter;
 
     "UpdatedRegex(uint8,address)"(
       _cid?: null,
