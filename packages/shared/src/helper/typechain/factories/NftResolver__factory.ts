@@ -92,6 +92,31 @@ const _abi = [
       {
         indexed: true,
         internalType: "address",
+        name: "receiver",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "profileOwner",
+        type: "address",
+      },
+    ],
+    name: "AssociateSelfWithUser",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
         name: "beacon",
         type: "address",
       },
@@ -141,6 +166,75 @@ const _abi = [
       },
     ],
     name: "ClearAllAssociatedAddresses",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+    ],
+    name: "ClearAssociatedContract",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "receiver",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "profileOwner",
+        type: "address",
+      },
+    ],
+    name: "RemovedAssociateProfile",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "profileUrl",
+        type: "string",
+      },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "associatedContract",
+        type: "string",
+      },
+    ],
+    name: "SetAssociatedContract",
     type: "event",
   },
   {
