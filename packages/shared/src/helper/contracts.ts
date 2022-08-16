@@ -132,7 +132,7 @@ export function nftResolverAddress(chainId: string | number = 'mainnet'): string
   case 1:
   case 'mainnet':
   default:
-    return utils.getAddress('0xe9F5CBeE4a58B1EB47b303c14765Ab102E4ABC37')
+    return utils.getAddress('0xA657C988e8aC39D3268D390eB7c522a535B10453')
   }
 }
 
