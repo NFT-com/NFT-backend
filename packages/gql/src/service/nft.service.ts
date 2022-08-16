@@ -429,8 +429,7 @@ const updateNFTOwnershipAndMetadata = async (
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      await seService.indexNFT(existingNFT)
-      return await repositories.nft.save({
+      const savedNFT = await repositories.nft.save({
         chainId: walletChainId || process.env.CHAIN_ID,
         userId,
         walletId,
@@ -444,6 +443,8 @@ const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
+      await seService.indexNFT(savedNFT)
+      return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
