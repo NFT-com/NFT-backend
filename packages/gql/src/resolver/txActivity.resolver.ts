@@ -1,19 +1,69 @@
+import { combineResolvers } from 'graphql-resolvers'
 import { In, UpdateResult } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
+import { appError, txActivityError } from '@nftcom/gql/error'
 import { auth } from '@nftcom/gql/helper'
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType } from '@nftcom/shared/defs'
 
-const updateReadByIds = (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)
-: Promise<UpdateResult> => {
-  const { repositories, chain } = ctx
-  return repositories.txActivity.update({
-    id: In([]), read: false, chainId: chain.id,
+interface UpdatedIds {
+  id: string
+}
+
+const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)
+: Promise<gql.UpdateReadOutput> => {
+  const activities: gql.UpdateReadOutput = {
+    updatedIdsSuccess: [],
+    idsNotFoundOrFailed: [],
   }
-  , {
-    read: true,
-  })
+  const { repositories, chain, wallet } = ctx
+  const { ids } = args
+  if (!ids.length) {
+    return Promise.reject(
+      appError.buildInvalid(
+        txActivityError.buildNoActivityId(),
+        txActivityError.ErrorType.ActivityNotSet,
+      ),
+    )
+  }
+
+  let ownedActivities: TxActivity[] = []
+
+  if (wallet.address) {
+    // check ids are owned by wallet
+    ownedActivities = await repositories.txActivity.find({
+      where: {
+        id: In(ids),
+        chainId: chain.id,
+        read: false,
+        walletId: wallet.address,
+      },
+    })
+  }
+
+  if (!ownedActivities.length) {
+    return Promise.reject(
+      appError.buildInvalid(
+        txActivityError.buildNoActivitiesToUpdate(),
+        txActivityError.ErrorType.NoActivityToUpdate,
+      ),
+    )
+  }
+
+  const ownedIds: string[] = ownedActivities.map((ownedActivity: TxActivity) => ownedActivity.id)
+  
+  const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
+    ownedIds,
+    wallet.address,
+    chain.id)
+  activities.updatedIdsSuccess = updatedIds?.raw?.map(
+    (item: UpdatedIds) => item.id,
+  )
+  activities.idsNotFoundOrFailed = ids.filter(
+    (id: string) => !activities.updatedIdsSuccess.includes(id),
+  )
+  return activities
 }
 
 const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx: Context)
@@ -54,10 +104,19 @@ const getActivitiesByWalletIdAndType = (
 export default {
   Query: {
     getActivitiesByType,
-    getActivitiesByWalletId,
-    getActivitiesByWalletIdAndType,
+    getActivitiesByWalletId: combineResolvers(
+      auth.isAuthenticated,
+      getActivitiesByWalletId,
+    ),
+    getActivitiesByWalletIdAndType: combineResolvers(
+      auth.isAuthenticated,
+      getActivitiesByWalletIdAndType,
+    ),
   },
   Mutation: {
-    updateReadByIds,
+    updateReadByIds: combineResolvers(
+      auth.isAuthenticated,
+      updateReadByIds,
+    ),
   },
 }
