@@ -19,4 +19,16 @@ export class Collection extends BaseEntity {
   @Column({ nullable: true })
   deployer: string
 
+  @Column( { nullable: true })
+  bannerUrl: string
+
+  @Column( { nullable: true })
+  logoUrl: string
+
+  @Column( { nullable: true })
+  description: string
+
+  @Column( { nullable: true, default: false })
+  isCurated: boolean
+
 }
