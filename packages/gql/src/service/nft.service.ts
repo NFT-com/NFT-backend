@@ -1,20 +1,31 @@
 import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
+import fetch from 'node-fetch'
 import * as typeorm from 'typeorm'
 
-//import Typesense from 'typesense'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { getChain } from '@nftcom/gql/config'
+import { Upload } from '@aws-sdk/lib-storage'
+import { assetBucket, getChain } from '@nftcom/gql/config'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
+import {
+  contentTypeFromExt,
+  extensionFromFilename,
+  generateWeight,
+  getAWSConfig,
+  getLastWeight,
+  midWeight, s3ToCdn,
+} from '@nftcom/gql/service/core.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
+import { SearchEngineService } from '../service/searchEngine.service'
+
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+const seService = new SearchEngineService()
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
@@ -22,20 +33,6 @@ const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 let alchemyUrl: string
-
-// TYPESENSE CONFIG - UNCOMMENT WHEN READY TO DEPLOY
-// const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-// const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
-
-// const client = new Typesense.Client({
-//   'nodes': [{
-//     'host': TYPESENSE_HOST,
-//     'port': 443,
-//     'protocol': 'https',
-//   }],
-//   'apiKey': TYPESENSE_API_KEY,
-//   'connectionTimeoutSeconds': 10,
-// })
 
 interface OwnedNFT {
   contract: {
@@ -301,7 +298,8 @@ const updateCollectionForNFTs = async (
       }
     })
     // save collections...
-    const collections = []
+    let collections = []
+
     await Promise.allSettled(
       nonDuplicates.map(async (nft: entity.NFT) => {
         const collection = await repositories.collection.findOne({
@@ -323,44 +321,10 @@ const updateCollectionForNFTs = async (
             deployer: collectionDeployer,
           })
         }
-
-        // TYPESENSE CODE COMMENTED OUT UNTIL ROLLOUT SEARCH FUNCIONALITY
-        // save collection in typesense search  if new
-        // if (newCollection) {
-        //   const indexCollection = []
-        //   indexCollection.push({
-        //     id: collection.id,
-        //     contract: collection.contract,
-        //     name: collection.name,
-        //     createdAt: collection.createdAt,
-        //   })
-        //   client.collections('collections').documents().import(indexCollection, { action: 'create' })
-        //     .then(() => logger.debug('collection added to typesense index'))
-        //     .catch(() => logger.info('error: could not save collection in typesense: '))
-        // }
-
-        // add new nft to search (Typesense)
-        // if(newNFT && !existingNFT) {
-        //   const indexNft = []
-        //   indexNft.push({
-        //     id: newNFT.id,
-        //     contract: nftInfo.contract.address,
-        //     tokenId: BigNumber.from(nftInfo.id.tokenId).toString(),
-        //     imageURL: newNFT.metadata.imageURL ? newNFT.metadata.imageURL : '',
-        //     contractName: collection.name ? collection.name : '',
-        //     type: type,
-        //     name: nftInfo.title,
-        //     description: newNFT.metadata.description,
-        //     createdAt: newNFT.createdAt,
-        //   })
-
-        //   client.collections('nfts').documents().import(indexNft, { action: 'create' })
-        //     .then(() => logger.debug('nft added to typesense index'))
-        //     .catch((err) => logger.info('error: could not save nft in typesense: ' + err))
-        // }
       }),
     )
-    await repositories.collection.saveMany(collections, { chunk: MAX_SAVE_COUNTS })
+    collections = await repositories.collection.saveMany(collections, { chunk: MAX_SAVE_COUNTS })
+    await seService.indexCollections(collections)
 
     // save edges for collection and nfts...
     const edges = []
@@ -474,7 +438,7 @@ const updateNFTOwnershipAndMetadata = async (
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      return await repositories.nft.save({
+      const savedNFT = await repositories.nft.save({
         chainId: walletChainId || process.env.CHAIN_ID,
         userId,
         walletId,
@@ -488,6 +452,8 @@ const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
+      await seService.indexNFT(savedNFT)
+      return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
@@ -1117,6 +1083,50 @@ export const removeEdgesForNonassociatedAddresses = async (
   )
 }
 
+export const downloadImageFromUbiquity = async (
+  url: string,
+): Promise<Buffer | undefined> => {
+  try {
+    const res = await fetch(url + `?apiKey=${process.env.UBIQUITY_API_KEY}`)
+    return await res.buffer()
+  } catch (err) {
+    Sentry.captureMessage(`Error in downloadImageFromUbiquity: ${err}`)
+    return undefined
+  }
+}
+
+const downloadAndUploadImageToS3 = async (
+  chainId: string,
+  url: string,
+  fileName: string,
+): Promise<string | undefined> => {
+  try {
+    const ext = extensionFromFilename(url)
+    const fullName = ext ? fileName + '.' + ext : fileName
+    const imageKey = `collections/${chainId}/` + Date.now() + '-' + fullName
+    const contentType = contentTypeFromExt(ext)
+    const buffer = await downloadImageFromUbiquity(url)
+    if (buffer) {
+      const s3config = await getAWSConfig()
+      const upload = new Upload({
+        client: s3config,
+        params: {
+          Bucket: assetBucket.name,
+          Key: imageKey,
+          Body: buffer,
+          ContentType: contentType,
+        },
+      })
+      await upload.done()
+
+      return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    } else return undefined
+  } catch (err) {
+    Sentry.captureMessage(`Error in downloadAndUploadImageToS3: ${err}`)
+    return undefined
+  }
+}
+
 export const getCollectionInfo = async (
   contract: string,
   chainId: string,
@@ -1146,11 +1156,67 @@ export const getCollectionInfo = async (
         collection.deployer = collectionDeployer
       }
 
-      const ubiquityResults = await getUbiquity(contract, chainId)
-
-      const returnObject = {
-        collection,
-        ubiquityResults,
+      let returnObject
+      let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
+      let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
+      let description = 'placeholder collection description text'
+      if (chainId === '1') {
+        // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
+        if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
+          const ubiquityResults = await getUbiquity(contract, chainId)
+          if (ubiquityResults) {
+            bannerUrl = await downloadAndUploadImageToS3(
+              chainId,
+              ubiquityResults.collection.banner,
+              'banner',
+            )
+            if (bannerUrl) {
+              await repositories.collection.updateOneById(collection.id, {
+                bannerUrl,
+              })
+            }
+            logoUrl = await downloadAndUploadImageToS3(
+              chainId,
+              ubiquityResults.collection.logo,
+              'logo',
+            )
+            if (logoUrl) {
+              await repositories.collection.updateOneById(collection.id, {
+                logoUrl,
+              })
+            }
+            description = ubiquityResults.collection.description
+            if (description) {
+              await repositories.collection.updateOneById(collection.id, {
+                description,
+              })
+            }
+            returnObject = {
+              collection,
+              ubiquityResults,
+            }
+          } else {
+            returnObject = {
+              collection,
+              undefined,
+            }
+          }
+        } else {
+          returnObject = {
+            collection,
+            undefined,
+          }
+        }
+      } else {
+        await repositories.collection.updateOneById(collection.id, {
+          bannerUrl,
+          logoUrl,
+          description,
+        })
+        returnObject = {
+          collection,
+          undefined,
+        }
       }
 
       await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))

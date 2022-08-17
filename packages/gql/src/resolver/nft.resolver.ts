@@ -204,7 +204,7 @@ const getNFTs = (
   })
 }
 
-const getMyNFTs = (
+const getMyNFTs = async (
   _: unknown,
   args: gql.QueryNFTsArgs,
   ctx: Context,
@@ -215,7 +215,24 @@ const getMyNFTs = (
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
+  const schema = Joi.object().keys({
+    profileId: Joi.string().required(),
+    pageInput: Joi.any(),
+  })
+  const { input } = args
+  
+  joi.validateSchema(schema, input)
+  
   const { types, profileId } = helper.safeObject(args?.input)
+
+  // ensure profileId is owned by user.id
+  const profile = await ctx.repositories.profile.findById(profileId)
+  if (profile.ownerUserId != user.id) {
+    return Promise.reject(appError.buildNotFound(
+      nftError.buildProfileNotOwnedMsg(profile?.url || profileId, user.id),
+      nftError.ErrorType.NFTNotOwned,
+    ))
+  }
 
   const filter: Partial<entity.Edge> = helper.removeEmpty({
     thisEntityType: defs.EntityType.Profile,
@@ -1186,6 +1203,11 @@ export default {
     listNFTLooksrare,
   },
   NFT: {
+    collection: core.resolveEntityById<gql.NFT, entity.Collection>(
+      'contract',
+      defs.EntityType.NFT,
+      defs.EntityType.Collection,
+    ),
     wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
       'walletId',
       defs.EntityType.NFT,

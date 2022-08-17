@@ -6,7 +6,6 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
 import stream from 'stream'
-import Typesense from 'typesense'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -19,7 +18,8 @@ import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
-  DEFAULT_NFT_IMAGE,
+  contentTypeFromExt,
+  DEFAULT_NFT_IMAGE, extensionFromFilename,
   generateCompositeImage,
   getAWSConfig,
   s3ToCdn,
@@ -35,8 +35,6 @@ import * as Sentry from '@sentry/node'
 import { blacklistBool } from '../service/core.service'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
-const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-const TYPESENSE_API_KEY = process.env.TYPESENSE_API_KEY
 
 const MAX_SAVE_COUNTS = 500
 
@@ -50,16 +48,6 @@ type LeaderboardInfo = {
   collectionCount: number
   edgeCount: number
 }
-
-const client = new Typesense.Client({
-  'nodes': [{
-    'host': TYPESENSE_HOST,
-    'port': 443,
-    'protocol': 'https',
-  }],
-  'apiKey': TYPESENSE_API_KEY,
-  'connectionTimeoutSeconds': 10,
-})
 
 const toProfilesOutput = (profiles: entity.Profile[]): gql.ProfilesOutput => {
   return {
@@ -507,20 +495,7 @@ const profileClaimed = (
       profile.status = defs.ProfileStatus.Owned
       profile.chainId = ctx.chain.id || process.env.CHAIN_ID
 
-      const saveProfile = repositories.profile.save(profile)
-
-      // push newly minted profile to the search engine (typesense)
-      const indexProfile = []
-      indexProfile.push({
-        id: profile.id,
-        profile: profile.url,
-      })
-
-      client.collections('profiles').documents().import(indexProfile,{ action : 'create' })
-        .then(() => logger.debug('profile added to typesense index'))
-        .catch((err) => logger.error('error: could not save profile in typesense: ' + err))
-
-      return saveProfile
+      return repositories.profile.save(profile)
     })
 }
 
@@ -542,50 +517,13 @@ const checkFileSize = async (
     createReadStream().on('error', rejects)
   })
 
-const extensionFromFilename = (filename: string): string | undefined => {
-  const strArray = filename.split('.')
-  // if filename has no extension
-  if (strArray.length < 2) return undefined
-  // else return extension
-  return strArray.pop()
-}
-
 const createUploadStream = (
   s3: S3Client,
   key: string,
   bucket: string,
 ): S3UploadStream => {
   const ext = extensionFromFilename(key as string)
-  let contentType
-  switch(ext.toLowerCase()) {
-  case 'jpg':
-    contentType = 'image/jpeg'
-    break
-  case 'jpeg':
-    contentType = 'image/jpeg'
-    break
-  case 'png':
-    contentType = 'image/png'
-    break
-  case 'svg':
-    contentType = 'image/svg+xml'
-    break
-  case 'gif':
-    contentType = 'image/gif'
-    break
-  case 'webp':
-    contentType = 'image/webp'
-    break
-  case 'avif':
-    contentType = 'image/avif'
-    break
-  case 'bmp':
-    contentType = 'image/bmp'
-    break
-  case 'tiff':
-    contentType = 'image/tiff'
-    break
-  }
+  const contentType = contentTypeFromExt(ext)
   const pass = new stream.PassThrough()
 
   const s3Upload = new Upload({
