@@ -310,6 +310,15 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
             )
             logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (owner = ${owner}) associatedContract = ${associatedContract}. chainId=${chainId}`)
           }
+          const profile = await repositories.profile.findOne({
+            where: {
+              url: profileUrl,
+              chainId,
+            },
+          })
+          if (profile) {
+            await repositories.profile.updateOneById(profile.id, { associatedContract })
+          }
         }
       } catch (err) {
         if (err.code != 'BUFFER_OVERRUN' && err.code != 'INVALID_ARGUMENT') { // error parsing old event on goerli, and chainId mismatch
