@@ -20,6 +20,7 @@ enum EventName {
   ClearAllAssociatedAddresses = 'ClearAllAssociatedAddresses',
   AssociateSelfWithUser = 'AssociateSelfWithUser',
   RemovedAssociateProfile = 'RemovedAssociateProfile',
+  SetAssociatedContract = 'SetAssociatedContract',
 }
 
 type Log = {
@@ -279,6 +280,35 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
               },
             )
             logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (receiver = ${receiver}) profileOwner = ${[profileOwner]}. chainId=${chainId}`)
+          }
+        } else if (evt.name === EventName.SetAssociatedContract) {
+          const [owner, profileUrl, associatedContract] = evt.args
+          const event = await repositories.event.findOne({
+            where: {
+              chainId,
+              contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+              eventName: evt.name,
+              txHash: unparsedEvent.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(unparsedEvent.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(associatedContract),
+            },
+          })
+          if (!event) {
+            await repositories.event.save(
+              {
+                chainId,
+                contract: helper.checkSum(contracts.nftResolverAddress(chainId)),
+                eventName: evt.name,
+                txHash: unparsedEvent.transactionHash,
+                ownerAddress: owner,
+                blockNumber: Number(unparsedEvent.blockNumber),
+                profileUrl: profileUrl,
+                destinationAddress: helper.checkSum(associatedContract),
+              },
+            )
+            logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (owner = ${owner}) associatedContract = ${associatedContract}. chainId=${chainId}`)
           }
         }
       } catch (err) {
