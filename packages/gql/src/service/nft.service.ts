@@ -356,7 +356,7 @@ const updateCollectionForNFTs = async (
 const getNFTMetaData = async (
   contract: string,
   tokenId: string,
-): Promise<NFTMetaData> => {
+): Promise<NFTMetaData | undefined> => {
   try {
     let type: defs.NFTType
     const traits: Array<defs.Trait> = []
@@ -365,6 +365,8 @@ const getNFTMetaData = async (
       contract,
       tokenId,
     )
+
+    if (!nftMetadata) return
 
     const contractMetadata: ContractMetaDataResponse =
       await getContractMetaDataFromAlchemy(contract)
@@ -435,6 +437,8 @@ const updateNFTOwnershipAndMetadata = async (
     }
 
     const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+    if (!metadata) return undefined
+
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
