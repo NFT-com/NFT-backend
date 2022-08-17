@@ -4,9 +4,7 @@ import { In, UpdateResult } from 'typeorm'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, txActivityError } from '@nftcom/gql/error'
 import { auth } from '@nftcom/gql/helper'
-import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityType } from '@nftcom/shared/defs'
-
+import { defs, entity, helper } from '@nftcom/shared/'
 interface UpdatedIds {
   id: string
 }
@@ -28,16 +26,18 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
     )
   }
 
-  let ownedActivities: TxActivity[] = []
+  let ownedActivities: entity.TxActivity[] = []
 
-  if (wallet.address) {
+  const walletAddress: string = helper.checkSum(wallet.address)
+
+  if (walletAddress) {
     // check ids are owned by wallet
     ownedActivities = await repositories.txActivity.find({
       where: {
         id: In(ids),
         chainId: chain.id,
         read: false,
-        walletId: wallet.address,
+        walletId: walletAddress,
       },
     })
   }
@@ -51,11 +51,13 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
     )
   }
 
-  const ownedIds: string[] = ownedActivities.map((ownedActivity: TxActivity) => ownedActivity.id)
+  const ownedIds: string[] = ownedActivities.map(
+    (ownedActivity: entity.TxActivity) => ownedActivity.id,
+  )
   
   const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
     ownedIds,
-    wallet.address,
+    walletAddress,
     chain.id)
   activities.updatedIdsSuccess = updatedIds?.raw?.map(
     (item: UpdatedIds) => item.id,
@@ -67,16 +69,16 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
 }
 
 const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx: Context)
-: Promise<TxActivity[]> => {
+: Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
-  const activityType = ActivityType[args.activityType]
+  const activityType = defs.ActivityType[args.activityType]
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
 const getActivitiesByWalletId = (_: any, args: gql.QueryGetActivitiesByWalletIdArgs, ctx: Context)
-: Promise<TxActivity[]> => {
+: Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -88,9 +90,9 @@ const getActivitiesByWalletIdAndType = (
   _: any,
   args: gql.QueryGetActivitiesByWalletIdAndTypeArgs,
   ctx: Context,
-): Promise<TxActivity[]> => {
+): Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
-  const activityType = ActivityType[args.input.activityType]
+  const activityType = defs.ActivityType[args.input.activityType]
   const chainId = args.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
