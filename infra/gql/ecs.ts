@@ -195,7 +195,7 @@ exporters:
   logging: 
     loglevel: info
   otlphttp:
-    endpoint: tempogw.leonardo.nft.prv:80
+    endpoint: jaeger.leonardo.nft.prv:80
 
 service:
   pipelines:
