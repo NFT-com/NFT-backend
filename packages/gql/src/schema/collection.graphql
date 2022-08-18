@@ -126,6 +126,10 @@ type saveCollectionForContractOutput {
   message: String
 }
 
+type UpdateCollectionImageUrlsOutput {
+  message: String
+}
+
 type SyncCollectionsWithNFTsOutput {
   message: String
 }
@@ -152,4 +156,5 @@ extend type Mutation {
   saveCollectionForContract(contract: Address!): saveCollectionForContractOutput!
   syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
   fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!
+  updateCollectionImageUrls(count: Int!): UpdateCollectionImageUrlsOutput!
 }
