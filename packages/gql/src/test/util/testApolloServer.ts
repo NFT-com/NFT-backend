@@ -10,6 +10,7 @@ export function getTestApolloServer(
   user?: User,
   wallet?: Wallet,
   chain?: defs.Chain,
+  teamKey?: string,
 ): ApolloServer {
   return new ApolloServer({
     schema: rateLimitedSchema(),
@@ -21,6 +22,7 @@ export function getTestApolloServer(
         user: user ?? null,
         wallet: wallet ?? null,
         repositories: testDB,
+        teamKey: teamKey ?? null,
       }
     },
     formatError,
