@@ -41,7 +41,7 @@ const getCollectionsByDeployer = async (
       return []
     }
     return ctx.repositories.collection.find({
-      where: { deployer: ethers.utils.getAddress(args?.deployer) },
+      where: { deployer: ethers.utils.getAddress(args?.deployer), isSpam: false },
     })
   } catch {
     Sentry.captureMessage('Error in getCollectionsByDeployer: invalid address')

@@ -100,6 +100,7 @@ type Collection {
   logoUrl: String
   description: String
   isCurated: Boolean
+  isSpam: Boolean
 }
 
 type CollectionInfo {
