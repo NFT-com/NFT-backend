@@ -43,43 +43,6 @@ describe('collection resolver', () => {
       testMockUser,
       testMockWallet,
     )
-
-    nftA = await repositories.nft.save({
-      userId,
-      walletId,
-      chainId,
-      contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-      tokenId: '0x086a79',
-      type: defs.NFTType.ERC721,
-      metadata: {
-        name: 'MultiFaucet Test NFT',
-        description: 'A test NFT dispensed from faucet.paradigm.xyz.',
-      },
-    })
-    nftB = await repositories.nft.save({
-      userId,
-      walletId,
-      chainId,
-      contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-      tokenId: '0x086a76',
-      type: defs.NFTType.ERC721,
-      metadata: {
-        name: 'MultiFaucet Test NFT',
-        description: 'A test NFT dispensed from faucet.paradigm.xyz.',
-      },
-    })
-    nftC = await repositories.nft.save({
-      userId,
-      walletId,
-      chainId,
-      contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
-      tokenId: '0x05',
-      type: defs.NFTType.ERC721,
-      metadata: {
-        name: 'The Elon Musk Twitter Experience #5',
-        description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
-      },
-    })
   })
 
   afterAll(async () => {
@@ -93,6 +56,42 @@ describe('collection resolver', () => {
 
   describe('removeDuplicates', () => {
     beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        tokenId: '0x086a79',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'MultiFaucet Test NFT',
+          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+        },
+      })
+      nftB = await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        tokenId: '0x086a76',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'MultiFaucet Test NFT',
+          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+        },
+      })
+      nftC = await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        tokenId: '0x05',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'The Elon Musk Twitter Experience #5',
+          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+        },
+      })
       const collectionA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
@@ -187,6 +186,32 @@ describe('collection resolver', () => {
   })
 
   describe('syncCollectionsWithNFTs', () => {
+    beforeAll(async () => {
+      await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        tokenId: '0x086a79',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'MultiFaucet Test NFT',
+          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+        },
+      })
+      await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        tokenId: '0x05',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'The Elon Musk Twitter Experience #5',
+          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+        },
+      })
+    })
     afterAll(async () => {
       await clearDB(repositories)
     })
@@ -204,7 +229,7 @@ describe('collection resolver', () => {
       const collections = await repositories.collection.findAll()
       expect(collections.length).toEqual(2)
       const edges = await repositories.edge.findAll()
-      expect(edges.length).toEqual(3)
+      expect(edges.length).toEqual(2)
     })
   })
 
