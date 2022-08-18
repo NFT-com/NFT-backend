@@ -1,3 +1,5 @@
+import { In, UpdateResult } from 'typeorm'
+
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType } from '@nftcom/shared/defs'
 
@@ -74,6 +76,24 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
+  }
+
+  public updateActivities = (
+    ids: string[],
+    walletId: string,
+    chainId: string,
+  ): Promise<UpdateResult> =>{
+    return this.getRepository().createQueryBuilder('activity')
+      .update({ read: true })
+      .where({
+        id: In(ids),
+        read: false,
+        walletId,
+        chainId,
+      })
+      .returning(['id'])
+      .updateEntity(true)
+      .execute()
   }
 
 }

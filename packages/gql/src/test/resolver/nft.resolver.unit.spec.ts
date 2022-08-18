@@ -450,9 +450,6 @@ describe('nft resolver', () => {
             pageInput: {
               first: 100,
             },
-            types: [
-              'ERC721',
-            ],
           },
         },
       })

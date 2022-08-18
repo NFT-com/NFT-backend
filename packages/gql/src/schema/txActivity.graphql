@@ -57,6 +57,11 @@ type TxConsideration {
   recipient: String
 }
 
+type UpdateReadOutput {
+  updatedIdsSuccess: [String]!
+  idsNotFoundOrFailed: [String]!
+}
+
 input TxWalletIdAndTypeInput {
   walletId: ID!
   activityType: String!
@@ -66,5 +71,11 @@ input TxWalletIdAndTypeInput {
 extend type Query {
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
   getActivitiesByWalletId(walletId: ID, chainId: String): [TxActivity]
+  "AUTHETICATED"
   getActivitiesByWalletIdAndType(input: TxWalletIdAndTypeInput): [TxActivity]
+}
+
+extend type Mutation {
+  "AUTHETICATED"
+  updateReadByIds(ids: [String]!): UpdateReadOutput!
 }
