@@ -386,7 +386,7 @@ const getNFTMetaData = async (
       nftMetadata?.metadata?.attributes.map((trait) => {
         traits.push(({
           type: trait?.trait_type,
-          value: trait?.value,
+          value: trait?.value || trait?.trait_value,
         }))
       })
     } else {
