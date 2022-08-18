@@ -51,7 +51,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['ASSET_BUCKET'] = infraOutput.assetBucket
   parsedFile['ASSET_BUCKET_ROLE'] = infraOutput.assetBucketRole
   parsedFile['ETH_GAS_STATION_API_KEY'] = process.env.ETH_GAS_STATION_API_KEY || parsedFile['ETH_GAS_STATION_API_KEY']
-  parsedFile['PROFILE_AUCTION_END_PASSWORD'] = process.env.PROFILE_AUCTION_END_PASSWORD || parsedFile['PROFILE_AUCTION_END_PASSWORD']
+  parsedFile['TEAM_AUTH_TOKEN'] = process.env.TEAM_AUTH_TOKEN || parsedFile['TEAM_AUTH_TOKEN']
   parsedFile['MNEMONIC'] = process.env.MNEMONIC || parsedFile['MNEMONIC']
   parsedFile['MNEMONIC_RINKEBY'] = process.env.MNEMONIC_RINKEBY || parsedFile['MNEMONIC_RINKEBY']
   parsedFile['HCS_TOPIC_ID'] = process.env.HCS_TOPIC_ID || parsedFile['HCS_TOPIC_ID']
