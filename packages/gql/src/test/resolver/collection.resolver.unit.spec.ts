@@ -8,6 +8,7 @@ import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'
 
 import { testMockUser, testMockWallet } from '../util/constants'
+import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(500000)
@@ -30,17 +31,9 @@ const userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
 const walletId = '9qE9dsueMEQuhtdzQ8J2p'
 const chainId = '4'
 let nftA, nftB, nftC
+let cA, cB
 
 const repositories = db.newRepositories()
-
-const clearCollectionEdge = async (): Promise<void> => {
-  const collections = await repositories.collection.findAll()
-  const edges = await repositories.edge.findAll()
-  const collectionIds = collections.map((collection) => collection.id)
-  const edgeIds = edges.map((edge) => edge.id)
-  await repositories.collection.hardDeleteByIds(collectionIds)
-  await repositories.edge.hardDeleteByIds(edgeIds)
-}
 
 describe('collection resolver', () => {
   beforeAll(async () => {
@@ -50,49 +43,10 @@ describe('collection resolver', () => {
       testMockUser,
       testMockWallet,
     )
-
-    nftA = await repositories.nft.save({
-      userId,
-      walletId,
-      chainId,
-      contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-      tokenId: '0x086a79',
-      type: defs.NFTType.ERC721,
-      metadata: {
-        name: 'MultiFaucet Test NFT',
-        description: 'A test NFT dispensed from faucet.paradigm.xyz.',
-      },
-    })
-    nftB = await repositories.nft.save({
-      userId,
-      walletId,
-      chainId,
-      contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
-      tokenId: '0x086a76',
-      type: defs.NFTType.ERC721,
-      metadata: {
-        name: 'MultiFaucet Test NFT',
-        description: 'A test NFT dispensed from faucet.paradigm.xyz.',
-      },
-    })
-    nftC = await repositories.nft.save({
-      userId,
-      walletId,
-      chainId,
-      contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
-      tokenId: '0x05',
-      type: defs.NFTType.ERC721,
-      metadata: {
-        name: 'The Elon Musk Twitter Experience #5',
-        description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
-      },
-    })
   })
 
   afterAll(async () => {
-    const nfts = await repositories.nft.findAll()
-    const nftIds = nfts.map((nft) => nft.id)
-    await repositories.nft.hardDeleteByIds(nftIds)
+    await clearDB(repositories)
 
     await testServer.stop()
 
@@ -102,6 +56,42 @@ describe('collection resolver', () => {
 
   describe('removeDuplicates', () => {
     beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        tokenId: '0x086a79',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'MultiFaucet Test NFT',
+          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+        },
+      })
+      nftB = await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        tokenId: '0x086a76',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'MultiFaucet Test NFT',
+          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+        },
+      })
+      nftC = await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        tokenId: '0x05',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'The Elon Musk Twitter Experience #5',
+          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+        },
+      })
       const collectionA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
@@ -141,7 +131,7 @@ describe('collection resolver', () => {
     })
 
     afterAll(async () => {
-      await clearCollectionEdge()
+      await clearDB(repositories)
     })
 
     it('should remove duplicated collections', async () => {
@@ -190,14 +180,40 @@ describe('collection resolver', () => {
           deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
         },
       })
-  
+
       expect(result.data.collectionsByDeployer.length).toBeDefined()
     })
   })
 
   describe('syncCollectionsWithNFTs', () => {
+    beforeAll(async () => {
+      await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        tokenId: '0x086a79',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'MultiFaucet Test NFT',
+          description: 'A test NFT dispensed from faucet.paradigm.xyz.',
+        },
+      })
+      await repositories.nft.save({
+        userId,
+        walletId,
+        chainId,
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        tokenId: '0x05',
+        type: defs.NFTType.ERC721,
+        metadata: {
+          name: 'The Elon Musk Twitter Experience #5',
+          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+        },
+      })
+    })
     afterAll(async () => {
-      await clearCollectionEdge()
+      await clearDB(repositories)
     })
 
     it('should sync collections with nfts', async () => {
@@ -213,7 +229,49 @@ describe('collection resolver', () => {
       const collections = await repositories.collection.findAll()
       expect(collections.length).toEqual(2)
       const edges = await repositories.edge.findAll()
-      expect(edges.length).toEqual(3)
+      expect(edges.length).toEqual(2)
+    })
+  })
+
+  describe('updateCollectionImageUrls', () => {
+    beforeAll(async () => {
+      cA = await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'MultiFaucet NFT',
+        chainId,
+        deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+        bannerUrl: 'https://cdn.nft.com/staging/collections/1/1660833572267-banner.com/v1/nft/media/ethereum/mainnet/',
+        logoUrl: 'https://cdn.nft.com/staging/collections/1/1660833572400-logo.com/v1/nft/media/ethereum/mainnet/',
+      })
+      cB = await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        name: 'tinyMusktweetz',
+        chainId,
+        deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+        bannerUrl: 'https://cdn.nft.com/staging/collections/1/1660833572264-banner.com/v1/nft/media/ethereum/mainnet/',
+        logoUrl: 'https://cdn.nft.com/staging/collections/1/1660833572422-logo.com/v1/nft/media/ethereum/mainnet/',
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should update collections image urls', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateCollectionImageUrls($count: Int!) { updateCollectionImageUrls(count: $count) { message } }',
+        variables: {
+          count: 1000,
+        },
+      })
+
+      expect(result.data.updateCollectionImageUrls.message).toBeDefined()
+      expect(result.data.updateCollectionImageUrls.message).toEqual('Updated 2 collections')
+      const collectionA = await repositories.collection.findById(cA.id)
+      expect(collectionA.bannerUrl).toBeNull()
+      expect(collectionA.logoUrl).toBeNull()
+      const collectionB = await repositories.collection.findById(cB.id)
+      expect(collectionB.bannerUrl).toBeNull()
+      expect(collectionB.logoUrl).toBeNull()
     })
   })
 })

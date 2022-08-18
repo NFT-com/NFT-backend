@@ -1109,6 +1109,7 @@ const downloadAndUploadImageToS3 = async (
     const fullName = ext ? fileName + '.' + ext : fileName
     const imageKey = `collections/${chainId}/` + Date.now() + '-' + fullName
     const contentType = contentTypeFromExt(ext)
+    if (!contentType) return undefined
     const buffer = await downloadImageFromUbiquity(url)
     if (buffer) {
       const s3config = await getAWSConfig()
@@ -1143,7 +1144,7 @@ export const getCollectionInfo = async (
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
-      const collection = await repositories.collection.findByContractAddress(
+      let collection = await repositories.collection.findByContractAddress(
         contract,
         chainId,
       )
@@ -1160,67 +1161,80 @@ export const getCollectionInfo = async (
         collection.deployer = collectionDeployer
       }
 
-      let returnObject
       let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
       let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
       let description = 'placeholder collection description text'
+      const ubiquityFolder = 'https://ubiquity.api.blockdaemon.com/v1/nft/media/ethereum/mainnet/'
+      let ubiquityResults = undefined
       if (chainId === '1') {
+        // check if banner or logo url we saved are incorrect images
+        let bannerExt
+        let bannerContentType
+        let logoExt
+        let logoContentType
+        if (collection.bannerUrl) {
+          bannerExt = extensionFromFilename(collection.bannerUrl)
+          bannerContentType = contentTypeFromExt(bannerExt)
+        }
+        if (collection.logoUrl) {
+          logoExt = extensionFromFilename(collection.logoUrl)
+          logoContentType = contentTypeFromExt(logoExt)
+        }
         // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
-        if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
-          const ubiquityResults = await getUbiquity(contract, chainId)
+        if (!collection.bannerUrl || !collection.logoUrl || !collection.description
+          || !bannerContentType || !logoContentType
+        ) {
+          ubiquityResults = await getUbiquity(contract, chainId)
           if (ubiquityResults) {
-            bannerUrl = await downloadAndUploadImageToS3(
-              chainId,
-              ubiquityResults.collection.banner,
-              'banner',
-            )
-            if (bannerUrl) {
-              await repositories.collection.updateOneById(collection.id, {
-                bannerUrl,
-              })
+            // check if banner url from Ubiquity is correct one
+            if (ubiquityResults.collection.banner !== ubiquityFolder) {
+              const banner = await downloadAndUploadImageToS3(
+                chainId,
+                ubiquityResults.collection.banner,
+                'banner',
+              )
+              bannerUrl = banner ? banner : bannerUrl
             }
-            logoUrl = await downloadAndUploadImageToS3(
-              chainId,
-              ubiquityResults.collection.logo,
-              'logo',
-            )
-            if (logoUrl) {
-              await repositories.collection.updateOneById(collection.id, {
-                logoUrl,
-              })
+            // check if logo url from Ubiquity is correct one
+            if (ubiquityResults.collection.logo !== ubiquityFolder) {
+              const logo = await downloadAndUploadImageToS3(
+                chainId,
+                ubiquityResults.collection.logo,
+                'logo',
+              )
+              logoUrl = logo ? logo : logoUrl
             }
-            description = ubiquityResults.collection.description
-            if (description) {
-              await repositories.collection.updateOneById(collection.id, {
-                description,
-              })
-            }
-            returnObject = {
-              collection,
-              ubiquityResults,
-            }
-          } else {
-            returnObject = {
-              collection,
-              undefined,
-            }
+
+            description = ubiquityResults.collection.description.length ?
+              ubiquityResults.collection.description : description
           }
-        } else {
-          returnObject = {
-            collection,
-            undefined,
-          }
+          await repositories.collection.updateOneById(collection.id, {
+            bannerUrl,
+            logoUrl,
+            description,
+          })
+          collection = await repositories.collection.findByContractAddress(
+            ethers.utils.getAddress(contract),
+            chainId,
+          )
         }
       } else {
-        await repositories.collection.updateOneById(collection.id, {
-          bannerUrl,
-          logoUrl,
-          description,
-        })
-        returnObject = {
-          collection,
-          undefined,
+        if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
+          await repositories.collection.updateOneById(collection.id, {
+            bannerUrl,
+            logoUrl,
+            description,
+          })
+          collection = await repositories.collection.findByContractAddress(
+            ethers.utils.getAddress(contract),
+            chainId,
+          )
         }
+      }
+
+      const returnObject = {
+        collection,
+        ubiquityResults,
       }
 
       await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
