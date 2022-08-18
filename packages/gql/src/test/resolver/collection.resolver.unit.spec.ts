@@ -274,4 +274,52 @@ describe('collection resolver', () => {
       expect(collectionB.logoUrl).toBeNull()
     })
   })
+
+  describe('updateSpamStatus', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'MultiFaucet NFT',
+        chainId: '5',
+      })
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        name: 'tinyMusktweetz',
+        chainId: '5',
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should update spam status', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateSpamStatus($contracts: [Address!]!, $isSpam: Boolean!) { updateSpamStatus(contracts: $contracts, isSpam: $isSpam) { message } }',
+        variables: {
+          contracts: ['0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b', '0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'],
+          isSpam: true,
+        },
+      })
+
+      expect(result.data.updateSpamStatus.message).toBeDefined()
+      expect(result.data.updateSpamStatus.message).toEqual('2 collections are set as spam')
+      const collections = await repositories.collection.find({
+        where: {
+          isSpam: true,
+          chainId: '5',
+        },
+      })
+      expect(collections.length).toEqual(2)
+    })
+  })
 })

@@ -7,7 +7,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { contentTypeFromExt, extensionFromFilename } from '@nftcom/gql/service/core.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, db, defs, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity,provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
@@ -304,6 +304,43 @@ const updateCollectionImageUrls = async (
   }
 }
 
+const updateSpamStatus = async (
+  _: any,
+  args: gql.MutationUpdateSpamStatusArgs,
+  ctx: Context,
+): Promise<gql.UpdateSpamStatusOutput> => {
+  const { repositories, chain } = ctx
+  logger.debug('updateSpamStatus', { contracts: args?.contracts, isSpam: args?.isSpam })
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const { contracts, isSpam } = args
+    const toUpdate: entity.Collection[] = []
+    await Promise.allSettled(
+      contracts.map(async (contract) => {
+        const collection = await repositories.collection.findOne({ where: {
+          contract: ethers.utils.getAddress(contract),
+          chainId,
+        } })
+        if (collection && collection.isSpam !== isSpam) {
+          collection.isSpam = isSpam
+          toUpdate.push(collection)
+        }
+      }),
+    )
+    if (toUpdate.length) {
+      await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
+    }
+    return { message: isSpam ? `${toUpdate.length} collections are set as spam`
+      : `${toUpdate.length} collections are set as not spam`,
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateSpamStatus: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
@@ -316,5 +353,6 @@ export default {
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
     syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
     updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),
+    updateSpamStatus: combineResolvers(auth.isAuthenticated, updateSpamStatus),
   },
 }

@@ -144,6 +144,10 @@ type AssociatedAddressesForContractOutput {
   deployerIsAssociated: Boolean
 }
 
+type UpdateSpamStatusOutput {
+  message: String
+}
+
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
@@ -157,4 +161,5 @@ extend type Mutation {
   syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
   fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!
   updateCollectionImageUrls(count: Int!): UpdateCollectionImageUrlsOutput!
+  updateSpamStatus(contracts: [Address!]!, isSpam: Boolean!): UpdateSpamStatusOutput!
 }
