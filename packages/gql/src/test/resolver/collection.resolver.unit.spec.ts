@@ -217,7 +217,6 @@ describe('collection resolver', () => {
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
         bannerUrl: 'https://cdn.nft.com/staging/collections/1/1660833572267-banner.com/v1/nft/media/ethereum/mainnet/',
         logoUrl: 'https://cdn.nft.com/staging/collections/1/1660833572400-logo.com/v1/nft/media/ethereum/mainnet/',
-
       })
       cB = await repositories.collection.save({
         contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
