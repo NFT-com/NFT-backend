@@ -287,6 +287,7 @@ describe('collection resolver', () => {
         testMockUser,
         testMockWallet,
         { id: '5', name: 'goerli' },
+        process.env.PROFILE_AUCTION_END_PASSWORD,
       )
 
       await repositories.collection.save({
