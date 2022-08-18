@@ -283,12 +283,12 @@ describe('collection resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      const temKey = process.env.TEAM_AUTH_TOKEN
+      const teamKey = process.env.TEAM_AUTH_TOKEN
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
         { id: '5', name: 'goerli' },
-        temKey,
+        teamKey,
       )
 
       await repositories.collection.save({
