@@ -281,6 +281,7 @@ const updateCollectionImageUrls = async (
         const logoExt = extensionFromFilename(collection.logoUrl)
         logoContentType = contentTypeFromExt(logoExt)
       }
+      // check saved banner or logo image urls are incorrect
       if (!bannerContentType || !logoContentType) {
         collection.bannerUrl = null
         collection.logoUrl = null
