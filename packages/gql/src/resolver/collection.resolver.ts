@@ -5,8 +5,9 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
+import { contentTypeFromExt, extensionFromFilename } from '@nftcom/gql/service/core.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, db, defs, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity,provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
@@ -40,7 +41,7 @@ const getCollectionsByDeployer = async (
       return []
     }
     return ctx.repositories.collection.find({
-      where: { deployer: ethers.utils.getAddress(args?.deployer) },
+      where: { deployer: ethers.utils.getAddress(args?.deployer), isSpam: false },
     })
   } catch {
     Sentry.captureMessage('Error in getCollectionsByDeployer: invalid address')
@@ -256,6 +257,90 @@ export const associatedAddressesForContract = async (
   }
 }
 
+const updateCollectionImageUrls = async (
+  _: any,
+  args: gql.MutationUpdateCollectionImageUrlsArgs,
+  ctx: Context,
+): Promise<gql.UpdateCollectionImageUrlsOutput> => {
+  const { repositories, chain } = ctx
+  logger.debug('updateCollectionImageUrls', { count: args?.count })
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const { count } = args
+    const collections = await repositories.collection.find({ where: { chainId } })
+
+    let toUpdate = collections.map((collection) => {
+      let bannerContentType
+      let logoContentType
+      if (collection.bannerUrl) {
+        const bannerExt = extensionFromFilename(collection.bannerUrl)
+        bannerContentType = contentTypeFromExt(bannerExt)
+      }
+      if (collection.logoUrl) {
+        const logoExt = extensionFromFilename(collection.logoUrl)
+        logoContentType = contentTypeFromExt(logoExt)
+      }
+      // check saved banner or logo image urls are incorrect
+      if (!bannerContentType || !logoContentType) {
+        collection.bannerUrl = null
+        collection.logoUrl = null
+        return collection
+      } else {
+        return undefined
+      }
+    })
+    toUpdate = toUpdate.filter((collection) => collection !== undefined)
+    const length = toUpdate.length > count ? count : toUpdate.length
+    toUpdate = toUpdate.slice(0, length)
+    await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
+    return {
+      message: `Updated ${length} collections`,
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateCollectionImageUrls: ${err}`)
+    return err
+  }
+}
+
+const updateSpamStatus = async (
+  _: any,
+  args: gql.MutationUpdateSpamStatusArgs,
+  ctx: Context,
+): Promise<gql.UpdateSpamStatusOutput> => {
+  const { repositories, chain } = ctx
+  logger.debug('updateSpamStatus', { contracts: args?.contracts, isSpam: args?.isSpam })
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const { contracts, isSpam } = args
+    const toUpdate: entity.Collection[] = []
+    await Promise.allSettled(
+      contracts.map(async (contract) => {
+        const collection = await repositories.collection.findOne({ where: {
+          contract: ethers.utils.getAddress(contract),
+          chainId,
+        } })
+        if (collection && collection.isSpam !== isSpam) {
+          collection.isSpam = isSpam
+          toUpdate.push(collection)
+        }
+      }),
+    )
+    if (toUpdate.length) {
+      await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
+    }
+    return { message: isSpam ? `${toUpdate.length} collections are set as spam`
+      : `${toUpdate.length} collections are set as not spam`,
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateSpamStatus: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
@@ -267,5 +352,7 @@ export default {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
     syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
+    updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),
+    updateSpamStatus: combineResolvers(auth.isAuthenticated, updateSpamStatus),
   },
 }
