@@ -353,6 +353,6 @@ export default {
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
     syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
     updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),
-    updateSpamStatus: combineResolvers(auth.isAuthenticated, updateSpamStatus),
+    updateSpamStatus: combineResolvers(auth.isTeamAuthenticated, updateSpamStatus),
   },
 }
