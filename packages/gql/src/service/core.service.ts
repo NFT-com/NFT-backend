@@ -970,7 +970,7 @@ export const extensionFromFilename = (filename: string): string | undefined => {
   return strArray.pop()
 }
 
-export const contentTypeFromExt = (ext: string): string => {
+export const contentTypeFromExt = (ext: string): string | undefined => {
   switch(ext.toLowerCase()) {
   case 'jpg':
     return 'image/jpeg'
@@ -990,5 +990,7 @@ export const contentTypeFromExt = (ext: string): string => {
     return 'image/bmp'
   case 'tiff':
     return 'image/tiff'
+  default:
+    return undefined
   }
 }
