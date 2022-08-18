@@ -98,6 +98,7 @@ const getLooksRareInterceptor = (
     baseURL,
     headers: {
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
       'X-Looks-Api-Key':LOOKSRARE_API_KEY,
     },
   })
@@ -241,16 +242,9 @@ export const createLooksrareListing = async (
     return false
   }
   try {
-    const res = await axios.post(
-      baseUrl + '/orders',
+    const res = await getLooksRareInterceptor(baseUrl).post('/orders',
       JSON.parse(order),
-      {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          'X-Looks-Api-Key': LOOKSRARE_API_KEY,
-        },
-      })
+    )
     if (res.status === 200) {
       return true
     }

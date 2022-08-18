@@ -401,6 +401,7 @@ const getOpenseaInterceptor = (
     baseURL,
     headers: {
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
       'X-API-KEY': chainId === '1'? OPENSEA_API_KEY : '',
     },
   })
@@ -661,22 +662,12 @@ export const createSeaportListing = async (
     return false
   }
   try {
-    const config = chainId === '4' ? {
-      headers: { Accept: 'application/json' },
-    } :  {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-API-KEY': OPENSEA_API_KEY,
-      },
-    }
-    const res = await axios.post(
-      baseUrlV2 + `/orders/${chainId === '4' ? 'rinkeby' : 'ethereum'}/seaport/listings`,
+    const res = await getOpenseaInterceptor(baseUrlV2, chainId).post(
+      `/orders/${chainId === '4' ? 'rinkeby' : 'ethereum'}/seaport/listings`,
       {
         signature,
         parameters: JSON.parse(parameters),
-      },
-      config)
+      })
     if (res.status === 200) {
       return true
     }
