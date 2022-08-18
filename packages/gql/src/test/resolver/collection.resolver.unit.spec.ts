@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'
+import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
@@ -32,6 +33,7 @@ const walletId = '9qE9dsueMEQuhtdzQ8J2p'
 const chainId = '4'
 let nftA, nftB, nftC
 let cA, cB
+let profile
 
 const repositories = db.newRepositories()
 
@@ -272,6 +274,143 @@ describe('collection resolver', () => {
       const collectionB = await repositories.collection.findById(cB.id)
       expect(collectionB.bannerUrl).toBeNull()
       expect(collectionB.logoUrl).toBeNull()
+    })
+  })
+
+  describe('updateSpamStatus', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x9Ef7A34dcCc32065802B1358129a226B228daB4E'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+
+      profile = await repositories.profile.save({
+        url: '1',
+        ownerUserId: testMockUser.id,
+        ownerWalletId: testMockWallet.id,
+        tokenId: '2',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: false,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      const nftA = await repositories.nft.save({
+        contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+        tokenId: '0x03',
+        metadata: {
+          name: 'chunks',
+          description: 'NFT.com profile for chunks',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId: '5',
+      })
+      const nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x1359',
+        metadata: {
+          name: 'NFT.com Genesis Key #4953',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId: '5',
+      })
+
+      await repositories.edge.save({
+        thatEntityId: nftA.id,
+        thatEntityType: EntityType.NFT,
+        thisEntityId: profile.id,
+        thisEntityType: EntityType.Profile,
+        edgeType: EdgeType.Displays,
+        weight: 'aaaa',
+        hide: false,
+      })
+
+      await repositories.edge.save({
+        thatEntityId: nftB.id,
+        thatEntityType: EntityType.NFT,
+        thisEntityId: profile.id,
+        thisEntityType: EntityType.Profile,
+        edgeType: EdgeType.Displays,
+        weight: 'aaab',
+        hide: false,
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update spam status', async () => {
+      // check NFTs before setting spam collection
+      let result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            profileId: profile.id,
+            pageInput: {
+              first: 100,
+            },
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toEqual(2)
+      result = await testServer.executeOperation({
+        query: 'mutation UpdateSpamStatus($contracts: [Address!]!, $isSpam: Boolean!) { updateSpamStatus(contracts: $contracts, isSpam: $isSpam) { message } }',
+        variables: {
+          contracts: ['0x9Ef7A34dcCc32065802B1358129a226B228daB4E'],
+          isSpam: true,
+        },
+      })
+
+      expect(result.data.updateSpamStatus.message).toBeDefined()
+      expect(result.data.updateSpamStatus.message).toEqual('1 collections are set as spam')
+      const collections = await repositories.collection.find({
+        where: {
+          isSpam: true,
+          chainId: '5',
+        },
+      })
+      expect(collections.length).toEqual(1)
+      // check NFTs after setting spam collection
+      result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            profileId: profile.id,
+            pageInput: {
+              first: 100,
+            },
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toEqual(1)
     })
   })
 })
