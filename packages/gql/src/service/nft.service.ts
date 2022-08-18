@@ -1214,7 +1214,7 @@ export const getCollectionInfo = async (
             description,
           })
           collection = await repositories.collection.findByContractAddress(
-            contract,
+            ethers.utils.getAddress(contract),
             chainId,
           )
         }
@@ -1226,7 +1226,7 @@ export const getCollectionInfo = async (
             description,
           })
           collection = await repositories.collection.findByContractAddress(
-            contract,
+            ethers.utils.getAddress(contract),
             chainId,
           )
         }
