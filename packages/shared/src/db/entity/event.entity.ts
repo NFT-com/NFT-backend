@@ -4,7 +4,7 @@ import { BaseEntity } from './base.entity'
 
 // this entity is to store events primarily related to profile claims
 
-@Unique('UQ_EVENT', ['txHash', 'profileUrl'])
+@Unique(['txHash', 'profileUrl'])
 @Entity()
 export class Event extends BaseEntity {
 
