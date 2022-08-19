@@ -32,7 +32,7 @@ describe('transaction activity resolver', () => {
       activity.activityType = ActivityType.Listing
       activity.activityTypeId = orderHash
       activity.timestamp = new Date(timestamp + (10000 * i))
-      activity.walletId = 'x29hruG3hC0rrkag7ChQb'
+      activity.walletAddress = testMockWallet.address
       activity.chainId = '4'
 
       let activityType

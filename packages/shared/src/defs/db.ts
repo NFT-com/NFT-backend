@@ -153,6 +153,15 @@ export type Signature = {
   s: string
 }
 
+export interface ActivityFilters {
+  walletAddress: string
+  chainId: string
+  activityType?: ActivityType
+  read?: boolean
+  tokenId?: string
+  contract?: string
+}
+
 export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition
 
 export type DBConfig = {

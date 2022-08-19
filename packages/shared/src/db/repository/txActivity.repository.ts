@@ -1,5 +1,7 @@
+import { In, UpdateResult } from 'typeorm'
+
 import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityType } from '@nftcom/shared/defs'
+import { ActivityFilters,ActivityType } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -74,6 +76,39 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
+  }
+
+  public findActivities = (condition: ActivityFilters): Promise<TxActivity[]> => {
+    return this.getRepository().createQueryBuilder('activity')
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+      .where({
+        ...condition,
+      })
+      .orderBy({ timestamp: 'DESC' })
+      .getMany()
+  }
+
+  public updateActivities = (
+    ids: string[],
+    walletAddress: string,
+    chainId: string,
+  ): Promise<UpdateResult> =>{
+    return this.getRepository().createQueryBuilder('activity')
+      .update({ read: true })
+      .where({
+        id: In(ids),
+        read: false,
+        walletAddress,
+        chainId,
+      })
+      .returning(['id'])
+      .updateEntity(true)
+      .execute()
   }
 
 }

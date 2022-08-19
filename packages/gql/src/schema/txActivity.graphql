@@ -63,8 +63,20 @@ input TxWalletIdAndTypeInput {
   chainId: String
 }
 
+input TxActivitiesInput {
+  walletAddress: String!
+  activityType: String
+  read: Boolean
+  tokenId: String
+  contract: String
+  chainId: String
+}
+
 extend type Query {
+  "AUTHETICATED"
+  getActivities(input: TxActivitiesInput): [TxActivity]
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
+  "AUTHETICATED"
   getActivitiesByWalletId(walletId: ID, chainId: String): [TxActivity]
   getActivitiesByWalletIdAndType(input: TxWalletIdAndTypeInput): [TxActivity]
 }

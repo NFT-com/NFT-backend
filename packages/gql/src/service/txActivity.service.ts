@@ -1,6 +1,6 @@
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
-import { db, entity } from '@nftcom/shared'
+import { db, entity, helper } from '@nftcom/shared'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 type Order = SeaportOrder | LooksRareOrder
@@ -17,7 +17,7 @@ const repositories = db.newRepositories()
 const orderActivityBuilder = async (
   orderType: ActivityType,
   orderHash: string,
-  walletId: string,
+  walletAddress: string,
   chainId: string,
 ): Promise<entity.TxActivity> => {
   let activity: entity.TxActivity
@@ -34,7 +34,7 @@ const orderActivityBuilder = async (
   activity.activityTypeId = orderHash
   activity.read = false
   activity.timestamp = new Date()
-  activity.walletId = walletId
+  activity.walletAddress = helper.checkSum(walletAddress)
   activity.chainId = chainId
 
   return activity
@@ -104,20 +104,20 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
 ):  Promise<Partial<entity.TxOrder>> => {
-  let orderHash: string, walletId: string, orderEntity: Partial<entity.TxOrder>
+  let orderHash: string, walletAddress: string, orderEntity: Partial<entity.TxOrder>
   let seaportOrder: SeaportOrder
   let looksrareOrder: LooksRareOrder
   switch (protocol) {
   case ProtocolType.Seaport:
     seaportOrder = order as SeaportOrder
     orderHash = seaportOrder.order_hash
-    walletId = seaportOrder?.protocol_data?.parameters?.offerer
+    walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
     orderEntity = seaportOrderBuilder(seaportOrder)
     break
   case ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
     orderHash = looksrareOrder.hash
-    walletId = looksrareOrder.signer
+    walletAddress = looksrareOrder.signer
     orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
   default:
@@ -127,7 +127,7 @@ export const orderEntityBuilder = async (
   const activity: entity.TxActivity = await orderActivityBuilder(
     orderType,
     orderHash,
-    walletId,
+    walletAddress,
     chainId,
   )
 
