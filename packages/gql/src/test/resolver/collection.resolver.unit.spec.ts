@@ -15,7 +15,10 @@ import { getTestApolloServer } from '../util/testApolloServer'
 jest.setTimeout(500000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
-  cache: jest.fn(),
+  cache: {
+    get: jest.fn(),
+    set: jest.fn(),
+  },
   createCacheConnection: jest.fn(),
 }))
 
@@ -237,21 +240,21 @@ describe('collection resolver', () => {
 
   describe('updateCollectionImageUrls', () => {
     beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
       cA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
         chainId,
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
-        bannerUrl: 'https://cdn.nft.com/staging/collections/1/1660833572267-banner.com/v1/nft/media/ethereum/mainnet/',
-        logoUrl: 'https://cdn.nft.com/staging/collections/1/1660833572400-logo.com/v1/nft/media/ethereum/mainnet/',
       })
       cB = await repositories.collection.save({
         contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
         name: 'tinyMusktweetz',
         chainId,
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
-        bannerUrl: 'https://cdn.nft.com/staging/collections/1/1660833572264-banner.com/v1/nft/media/ethereum/mainnet/',
-        logoUrl: 'https://cdn.nft.com/staging/collections/1/1660833572422-logo.com/v1/nft/media/ethereum/mainnet/',
       })
     })
     afterAll(async () => {
@@ -269,11 +272,11 @@ describe('collection resolver', () => {
       expect(result.data.updateCollectionImageUrls.message).toBeDefined()
       expect(result.data.updateCollectionImageUrls.message).toEqual('Updated 2 collections')
       const collectionA = await repositories.collection.findById(cA.id)
-      expect(collectionA.bannerUrl).toBeNull()
-      expect(collectionA.logoUrl).toBeNull()
+      expect(collectionA.bannerUrl).toBeDefined()
+      expect(collectionA.logoUrl).toBeDefined()
       const collectionB = await repositories.collection.findById(cB.id)
-      expect(collectionB.bannerUrl).toBeNull()
-      expect(collectionB.logoUrl).toBeNull()
+      expect(collectionB.bannerUrl).toBeDefined()
+      expect(collectionB.logoUrl).toBeDefined()
     })
   })
 
