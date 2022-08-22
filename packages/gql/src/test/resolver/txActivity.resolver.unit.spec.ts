@@ -5,6 +5,7 @@ import { db } from '@nftcom/shared'
 import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
+import { testMockUser, testMockWallet } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(300000)
@@ -24,7 +25,7 @@ let connection: Connection
 describe('transaction activity resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
-    testServer = getTestApolloServer(repositories)
+    testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
     const timestamp = new Date().getTime()
     testData = await Promise.all(['txOrder', 'txTransaction', 'txCancel'].map(async (table, i) => {
       const orderHash = `${table}-hash`
@@ -157,5 +158,31 @@ describe('transaction activity resolver', () => {
       expect(activity.order.exchange).toBe(ExchangeType.OpenSea)
     }
     expect(activities.length).toBe(listData.length)
+  })
+
+  it('should update acitivities read property', async () => {
+    const activityIds: string[] = testData
+      .reduce((aggregator: string[], data: any ) => {
+        if (data?.activity?.id) {
+          aggregator.push(data.activity.id)
+        }
+        return aggregator
+      }, [])
+    const result = await testServer.executeOperation({
+      query: `mutation UpdateReadByIds($ids: [String]!) {
+        updateReadByIds(ids: $ids) {
+          updatedIdsSuccess
+          idsNotFoundOrFailed
+        }
+      }`,
+      variables: { ids: [...activityIds, 'test-failed-id'] },
+    })
+
+    expect(result.data.updateReadByIds.updatedIdsSuccess.length).toEqual(activityIds.length)
+    expect(result.data.updateReadByIds.updatedIdsSuccess)
+      .toEqual(expect.arrayContaining(activityIds))
+    expect(result.data.updateReadByIds.idsNotFoundOrFailed.length).toEqual(1)
+    expect(result.data.updateReadByIds.idsNotFoundOrFailed)
+      .toEqual(expect.arrayContaining(['test-failed-id']))
   })
 })

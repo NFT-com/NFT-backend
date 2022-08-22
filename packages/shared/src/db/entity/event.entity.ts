@@ -1,9 +1,10 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, Unique } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
 // this entity is to store events primarily related to profile claims
 
+@Unique(['txHash', 'profileUrl'])
 @Entity()
 export class Event extends BaseEntity {
 

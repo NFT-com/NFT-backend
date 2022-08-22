@@ -31,4 +31,7 @@ export class Collection extends BaseEntity {
   @Column( { nullable: true, default: false })
   isCurated: boolean
 
+  @Column( { default: false })
+  isSpam: boolean
+
 }

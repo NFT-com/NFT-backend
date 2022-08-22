@@ -1,10 +1,10 @@
 import { combineResolvers } from 'graphql-resolvers'
+import { In, UpdateResult } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
+import { appError, txActivityError } from '@nftcom/gql/error'
 import { auth } from '@nftcom/gql/helper'
-import { _logger,defs, entity, helper } from '@nftcom/shared'
-import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityType } from '@nftcom/shared/defs'
+import { defs, entity, helper } from '@nftcom/shared/'
 
 interface UpdatedIds {
   id: string
@@ -70,16 +70,16 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
 }
 
 const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx: Context)
-: Promise<TxActivity[]> => {
+: Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
-  const activityType = ActivityType[args.activityType]
+  const activityType = defs.ActivityType[args.activityType]
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
 const getActivitiesByWalletId = (_: any, args: gql.QueryGetActivitiesByWalletIdArgs, ctx: Context)
-: Promise<TxActivity[]> => {
+: Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -91,9 +91,9 @@ const getActivitiesByWalletIdAndType = (
   _: any,
   args: gql.QueryGetActivitiesByWalletIdAndTypeArgs,
   ctx: Context,
-): Promise<TxActivity[]> => {
+): Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
-  const activityType = ActivityType[args.input.activityType]
+  const activityType = defs.ActivityType[args.input.activityType]
   const chainId = args.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
@@ -127,8 +127,8 @@ const getActivities = (
   let condition: defs.ActivityFilters = { walletAddress, chainId }
 
   if(activityType) {
-    const castedActivityType: ActivityType = activityType as ActivityType
-    if (!Object.values(ActivityType).includes(castedActivityType)) {
+    const castedActivityType: defs.ActivityType = activityType as defs.ActivityType
+    if (!Object.values(defs.ActivityType).includes(castedActivityType)) {
       //build error
       return
     }
@@ -162,8 +162,14 @@ export default {
       getActivities,
     ),
     getActivitiesByType,
-    getActivitiesByWalletId,
-    getActivitiesByWalletIdAndType,
+    getActivitiesByWalletId: combineResolvers(
+      auth.isAuthenticated,
+      getActivitiesByWalletId,
+    ),
+    getActivitiesByWalletIdAndType: combineResolvers(
+      auth.isAuthenticated,
+      getActivitiesByWalletIdAndType,
+    ),
   },
   Mutation: {
     updateReadByIds: combineResolvers(

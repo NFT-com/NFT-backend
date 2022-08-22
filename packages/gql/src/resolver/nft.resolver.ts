@@ -220,10 +220,10 @@ const getMyNFTs = async (
     pageInput: Joi.any(),
   })
   const { input } = args
-  
+
   joi.validateSchema(schema, input)
-  
-  const { types, profileId } = helper.safeObject(args?.input)
+
+  const { profileId } = helper.safeObject(args?.input)
 
   // ensure profileId is owned by user.id
   const profile = await ctx.repositories.profile.findById(profileId)
@@ -240,9 +240,6 @@ const getMyNFTs = async (
     thatEntityType: defs.EntityType.NFT,
     edgeType: defs.EdgeType.Displays,
   })
-  const nftFilter = helper.removeEmpty({
-    type: helper.safeInForOmitBy(types),
-  })
   return core.paginatedThatEntitiesOfEdgesBy(
     ctx,
     ctx.repositories.nft,
@@ -250,7 +247,8 @@ const getMyNFTs = async (
     pageInput,
     'weight',
     'ASC',
-    nftFilter,
+    chainId,
+    'NFT',
   )
 }
 
@@ -734,6 +732,8 @@ const updateNFTsForProfile = (
             pageInput,
             'weight',
             'ASC',
+            chainId,
+            'NFT',
           )
         }
       })
