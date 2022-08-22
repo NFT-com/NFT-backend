@@ -236,21 +236,29 @@ export const retrieveMultipleOrdersLooksrare = async (
 export const createLooksrareListing = async (
   order: string,
   chainId: string,
-): Promise<boolean> => {
+): Promise<Partial<entity.TxOrder> | null> => {
+  let looksrareOrder: Partial<entity.TxOrder>
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   if (order == null || order.length === 0   ) {
-    return false
+    return null
   }
   try {
     const res = await getLooksRareInterceptor(baseUrl).post('/orders',
       JSON.parse(order),
     )
-    if (res.status === 200) {
-      return true
+    console.log('res', res)
+    if (res.status === 200 && res.data.data) {
+      looksrareOrder = await orderEntityBuilder(
+        ProtocolType.LooksRare,
+        res.data.data?.isOrderAsk ? ActivityType.Listing : ActivityType.Bid,
+        res.data.data,
+        chainId,
+      )
+      return looksrareOrder
     }
-    return false
+    return null
   } catch (err) {
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
-    return false
+    return null
   }
 }

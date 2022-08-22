@@ -654,12 +654,13 @@ export const createSeaportListing = async (
   parameters: Maybe<string>,
   chainId: string,
 ): Promise<boolean> => {
+  // let openseaOrder: Partial<entity.TxOrder>
   const baseUrlV2 = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
   if (
     signature == null || signature.length === 0 ||
     parameters == null || parameters.length === 0
   ) {
-    return false
+    return null
   }
   try {
     const res = await getOpenseaInterceptor(baseUrlV2, chainId).post(
@@ -668,11 +669,12 @@ export const createSeaportListing = async (
         signature,
         parameters: JSON.parse(parameters),
       })
-    if (res.status === 200) {
+    if (res.status === 200 && res.data) {
       return true
     }
     return false
   } catch (err) {
+    console.log('err', err.response.data)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
     return false
   }
