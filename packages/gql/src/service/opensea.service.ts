@@ -104,7 +104,7 @@ enum OpenseaQueryParamType {
 interface OpenseaBaseOrder {
   created_date: string
   closing_date: string
-  closing_extendable: boolean
+  closing_extendable?: boolean
   expiration_time: number
   listing_time: number
   order_hash: string
@@ -653,8 +653,8 @@ export const createSeaportListing = async (
   signature: Maybe<string>,
   parameters: Maybe<string>,
   chainId: string,
-): Promise<boolean> => {
-  // let openseaOrder: Partial<entity.TxOrder>
+): Promise<Partial<entity.TxOrder> | null> => {
+  let openseaOrder: Partial<entity.TxOrder>
   const baseUrlV2 = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
   if (
     signature == null || signature.length === 0 ||
@@ -669,13 +669,18 @@ export const createSeaportListing = async (
         signature,
         parameters: JSON.parse(parameters),
       })
-    if (res.status === 200 && res.data) {
-      return true
+    if (res.status === 200 && res.data.order) {
+      openseaOrder = await orderEntityBuilder(
+        ProtocolType.Seaport,
+        ActivityType.Listing,
+        res.data.order,
+        chainId,
+      )
+      return openseaOrder
     }
-    return false
+    return null
   } catch (err) {
-    console.log('err', err.response.data)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
-    return false
+    return null
   }
 }

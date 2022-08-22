@@ -26,7 +26,7 @@ export interface LooksRareOrder {
   strategy: string
   currencyAddress: string
   amount: number
-  price:number
+  price: string
   nonce: string
   startTime:number
   endTime:number
@@ -246,11 +246,10 @@ export const createLooksrareListing = async (
     const res = await getLooksRareInterceptor(baseUrl).post('/orders',
       JSON.parse(order),
     )
-    console.log('res', res)
-    if (res.status === 200 && res.data.data) {
+    if (res.status === 201 && res.data.data) {
       looksrareOrder = await orderEntityBuilder(
         ProtocolType.LooksRare,
-        res.data.data?.isOrderAsk ? ActivityType.Listing : ActivityType.Bid,
+        ActivityType.Listing,
         res.data.data,
         chainId,
       )

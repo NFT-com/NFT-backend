@@ -1157,12 +1157,18 @@ export const listNFTSeaport = async (
   args: gql.MutationListNFTSeaportArgs,
   ctx: Context,
 ): Promise<boolean> => {
+  const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return await createSeaportListing(seaportSignature, seaportParams, chainId)
+  return createSeaportListing(seaportSignature, seaportParams, chainId)
+    .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
+      return repositories.txOrder.save(order)
+    }))
+    .then(order => !!order.id)
+    .catch(() => false)
 }
 
 export const listNFTLooksrare = async (
@@ -1180,7 +1186,7 @@ export const listNFTLooksrare = async (
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save(order)
     }))
-    .then(order => order.id)
+    .then(order => !!order.id)
     .catch(() => false)
 }
 
