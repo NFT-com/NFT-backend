@@ -1183,6 +1183,7 @@ export const getCollectionInfo = async (
         // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description
           || !bannerContentType || !logoContentType
+          || collection.bannerUrl === bannerUrl || collection.logoUrl === logoUrl
         ) {
           ubiquityResults = await getUbiquity(contract, chainId)
           if (ubiquityResults) {
