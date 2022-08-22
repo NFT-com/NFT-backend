@@ -5,6 +5,19 @@ import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 type Order = SeaportOrder | LooksRareOrder
 
+// interface SeaportOffer {
+//   itemType: number
+//   token: string
+//   identifierOrCriteria: string
+//   startAmount: string
+//   endAmount: string
+  
+// }
+
+// interface SeaportConsideration extends SeaportOffer {
+//   recipient: string
+// }
+
 const repositories = db.newRepositories()
 
 /**
@@ -104,7 +117,11 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
 ):  Promise<Partial<entity.TxOrder>> => {
-  let orderHash: string, walletAddress: string, orderEntity: Partial<entity.TxOrder>
+  let orderHash: string,
+    walletAddress: string,
+    orderEntity: Partial<entity.TxOrder>,
+    nftIds: string[]
+
   let seaportOrder: SeaportOrder
   let looksrareOrder: LooksRareOrder
   switch (protocol) {
@@ -112,18 +129,21 @@ export const orderEntityBuilder = async (
     seaportOrder = order as SeaportOrder
     orderHash = seaportOrder.order_hash
     walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
+    nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: any) => offer.id)
     orderEntity = seaportOrderBuilder(seaportOrder)
     break
   case ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
     orderHash = looksrareOrder.hash
     walletAddress = looksrareOrder.signer
+    nftIds = []
     orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
   default:
     break
   }
 
+  console.log('nftIds', nftIds)
   const activity: entity.TxActivity = await orderActivityBuilder(
     orderType,
     orderHash,

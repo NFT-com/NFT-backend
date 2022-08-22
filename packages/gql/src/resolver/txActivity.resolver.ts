@@ -104,25 +104,23 @@ const getActivitiesByWalletIdAndType = (
   )
 }
 
-const getActivities = (
+const getActivities = async (
   _: any,
   args: gql.TxActivitiesInput,
   ctx: Context,
 ): Promise<entity.TxActivity[]> => {
-  const { repositories, wallet, network } = ctx
-  const {  walletAddress,
+  const { repositories, network } = ctx
+  const {
+    walletAddress,
     activityType,
     read,
     tokenId,
     contract,
   } = args
 
-  const chainId: string =  args.chainId || process.env.chainId
+  const chainId: string =  args.chainId || process.env.CHAIN_ID
+
   auth.verifyAndGetNetworkChain(network, chainId)
-  if (walletAddress !== wallet.address) {
-    // build error
-    return
-  }
 
   let condition: defs.ActivityFilters = { walletAddress, chainId }
 
@@ -152,7 +150,9 @@ const getActivities = (
     condition = { ...condition, read }
   }
 
-  return repositories.txActivity.findActivities(condition)
+  const resp = await repositories.txActivity.findActivities(condition)
+  console.log('res', resp)
+  return resp
 }
 
 export default {
