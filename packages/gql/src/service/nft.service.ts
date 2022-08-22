@@ -1206,8 +1206,10 @@ export const getCollectionInfo = async (
               logoUrl = logo ? logo : logoUrl
             }
 
-            description = ubiquityResults.collection.description.length ?
-              ubiquityResults.collection.description : description
+            if (ubiquityResults.collection.description) {
+              description = ubiquityResults.collection.description.length ?
+                ubiquityResults.collection.description : description
+            }
           }
           await repositories.collection.updateOneById(collection.id, {
             bannerUrl,
