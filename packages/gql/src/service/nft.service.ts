@@ -203,6 +203,7 @@ const filterNFTsWithAlchemy = async (
             .then(() => repositories.nft.hardDelete({
               id: dbNFT.id,
             }))
+          await seService.deleteNFT(dbNFT.id)
         }
       }),
     )
@@ -442,7 +443,7 @@ const updateNFTOwnershipAndMetadata = async (
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      const savedNFT = await repositories.nft.save({
+      return await repositories.nft.save({
         chainId: walletChainId || process.env.CHAIN_ID,
         userId,
         walletId,
@@ -456,8 +457,6 @@ const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-      await seService.indexNFT(savedNFT)
-      return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
@@ -578,6 +577,7 @@ export const updateWalletNFTs = async (
       if (savedNFT) savedNFTs.push(savedNFT)
     }),
   )
+  await seService.indexNFTs(savedNFTs)
   await updateCollectionForNFTs(savedNFTs)
 }
 

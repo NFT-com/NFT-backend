@@ -6,10 +6,12 @@ import { auth } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, db, defs, entity,provider, typechain } from '@nftcom/shared'
+import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
+import { _logger,contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
+const seService = new SearchEngineService()
 
 const MAX_SAVE_COUNTS = 500
 
@@ -318,6 +320,11 @@ const updateSpamStatus = async (
     )
     if (toUpdate.length) {
       await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
+      if (isSpam) {
+        seService.deleteCollections(toUpdate)
+      } else {
+        seService.indexCollections(toUpdate)
+      }
     }
     return { message: isSpam ? `${toUpdate.length} collections are set as spam`
       : `${toUpdate.length} collections are set as not spam`,
