@@ -1,3 +1,4 @@
+import { ethers } from 'ethers'
 import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
@@ -386,8 +387,20 @@ describe('nft resolver', () => {
         { id: '5', name: 'goerli' },
       )
 
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x9Ef7A34dcCc32065802B1358129a226B228daB4E'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+
       profileA = await repositories.profile.save({
         url: 'test-profile-url',
+        ownerUserId: 'test-user-id',
       })
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -449,9 +462,6 @@ describe('nft resolver', () => {
             pageInput: {
               first: 100,
             },
-            types: [
-              'ERC721',
-            ],
           },
         },
       })

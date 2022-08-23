@@ -229,21 +229,6 @@ export const thatEntitiesOfEdges = <T>(ctx: Context) => {
   }
 }
 
-export const thatEntitiesOfEdgesBy = <T>(
-  ctx: Context,
-  filter: Partial<entity.Edge>,
-): Promise<T[]> => {
-  const { repositories } = ctx
-  return entitiesBy(repositories.edge, filter)
-    .then(thatEntitiesOfEdges(ctx))
-}
-
-// TODO use EdgeStats table
-export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<number> => {
-  const { repositories } = ctx
-  return repositories.edge.count({ ...filter, deletedAt: null })
-}
-
 export const paginatedThatEntitiesOfEdgesBy = <T>(
   ctx: Context,
   repo: repository.BaseRepository<T>,
@@ -251,6 +236,8 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
   pageInput: gql.PageInput,
   orderKey= 'createdAt',
   orderDirection = 'DESC',
+  chainId: string,
+  entityName?: string,
   entityFilter?: Partial<any>,
 ): Promise<any> => {
   const { repositories } = ctx
@@ -263,18 +250,55 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
     orderDirection,
   ).then((result: defs.PageableResult<entity.Edge>) => {
     const edges = result[0] as entity.Edge[]
-    return Promise.all(
-      edges.map((edge: entity.Edge) => {
-        return entityFilter ? repo.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
-          repo.findOne({ where: { id: edge.thatEntityId } })
-            .then(fp.thruIfNotEmpty((entry: T) => entry,
-            ))
-      }),
-    ).then((entries: T[]) => {
-      const filteredEntries = entries.filter((entry) => entry !== undefined)
-      return [filteredEntries, filteredEntries.length]
-    }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
+    if (entityName === 'NFT') {
+      return Promise.all(
+        edges.map((edge: entity.Edge) => {
+          return entityFilter ?
+            repositories.nft.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
+            repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+              .then(fp.thruIfNotEmpty((entry: entity.NFT) => {
+                return repositories.collection.findOne({ where: {
+                  contract: entry.contract,
+                  isSpam: false,
+                  chainId,
+                } })
+                  .then(fp.thruIfNotEmpty(() => entry))
+              } ))
+        }),
+      ).then((entries: T[]) => {
+        const filteredEntries = entries.filter((entry) => entry !== undefined)
+        return [filteredEntries, filteredEntries.length]
+      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
+    } else {
+      return Promise.all(
+        edges.map((edge: entity.Edge) => {
+          return entityFilter ?
+            repo.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
+            repo.findOne({ where: { id: edge.thatEntityId } })
+              .then(fp.thruIfNotEmpty((entry: T) => entry,
+              ))
+        }),
+      ).then((entries: T[]) => {
+        const filteredEntries = entries.filter((entry) => entry !== undefined)
+        return [filteredEntries, filteredEntries.length]
+      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
+    }
   })
+}
+
+export const thatEntitiesOfEdgesBy = <T>(
+  ctx: Context,
+  filter: Partial<entity.Edge>,
+): Promise<T[]> => {
+  const { repositories } = ctx
+  return entitiesBy(repositories.edge, filter)
+    .then(thatEntitiesOfEdges(ctx))
+}
+// TODO use EdgeStats table
+
+export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<number> => {
+  const { repositories } = ctx
+  return repositories.edge.count({ ...filter, deletedAt: null })
 }
 
 // global object for blacklist profiles
@@ -552,6 +576,9 @@ export const reservedProfiles = {
   '0xD1ac1e553E029f5dE5732C041DfC9f8CEd937A20': ['venice', 'venicemusic'],
   '0x1598535C9e05E2130F9F239B2F23215166Bb41a7': ['scottdonnell', 'heromaker'],
   '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
+
+  // reserved partners (TODO: mint later for DON)
+  '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1': ['anonymice', 'anonymice'],
 }
 
 export const OFAC = {
@@ -958,3 +985,36 @@ export const getLastWeight = async (
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
+
+export const extensionFromFilename = (filename: string): string | undefined => {
+  const strArray = filename.split('.')
+  // if filename has no extension
+  if (strArray.length < 2) return undefined
+  // else return extension
+  return strArray.pop()
+}
+
+export const contentTypeFromExt = (ext: string): string | undefined => {
+  switch(ext.toLowerCase()) {
+  case 'jpg':
+    return 'image/jpeg'
+  case 'jpeg':
+    return 'image/jpeg'
+  case 'png':
+    return 'image/png'
+  case 'svg':
+    return 'image/svg+xml'
+  case 'gif':
+    return 'image/gif'
+  case 'webp':
+    return 'image/webp'
+  case 'avif':
+    return 'image/avif'
+  case 'bmp':
+    return 'image/bmp'
+  case 'tiff':
+    return 'image/tiff'
+  default:
+    return undefined
+  }
+}

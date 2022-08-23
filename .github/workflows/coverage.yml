@@ -50,7 +50,7 @@ jobs:
         envkey_ASSET_BUCKET: "tbd"
         envkey_ASSET_BUCKET_ROLE: "tbd"
         envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
-        envkey_PROFILE_AUCTION_END_PASSWORD: ${{ secrets.PROFILE_AUCTION_END_PASSWORD }}
+        envkey_TEAM_AUTH_TOKEN: ${{ secrets.TEAM_AUTH_TOKEN }}
         envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
         envkey_MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
         envkey_HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}

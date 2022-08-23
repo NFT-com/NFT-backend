@@ -21,7 +21,8 @@ export enum LoggerContext {
   MarketSwap = 'marketSwap',
   Typesense = 'typesense',
   Bull = 'bull',
-  TxActivity = 'txActivity'
+  TxActivity = 'txActivity',
+  WebsocketProvider = 'websocketProvider'
 }
 
 export enum LogLevel {
