@@ -4,7 +4,8 @@ import { In, UpdateResult } from 'typeorm'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, txActivityError } from '@nftcom/gql/error'
 import { auth } from '@nftcom/gql/helper'
-import { defs, entity, helper } from '@nftcom/shared/'
+import { _logger,defs, entity, helper } from '@nftcom/shared'
+
 interface UpdatedIds {
   id: string
 }

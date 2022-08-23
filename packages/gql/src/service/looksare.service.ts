@@ -26,7 +26,7 @@ export interface LooksRareOrder {
   strategy: string
   currencyAddress: string
   amount: number
-  price:number
+  price: string
   nonce: string
   startTime:number
   endTime:number
@@ -98,6 +98,7 @@ const getLooksRareInterceptor = (
     baseURL,
     headers: {
       'Accept': 'application/json',
+      'Content-Type': 'application/json',
       'X-Looks-Api-Key':LOOKSRARE_API_KEY,
     },
   })
@@ -235,28 +236,28 @@ export const retrieveMultipleOrdersLooksrare = async (
 export const createLooksrareListing = async (
   order: string,
   chainId: string,
-): Promise<boolean> => {
+): Promise<Partial<entity.TxOrder> | null> => {
+  let looksrareOrder: Partial<entity.TxOrder>
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   if (order == null || order.length === 0   ) {
-    return false
+    return null
   }
   try {
-    const res = await axios.post(
-      baseUrl + '/orders',
+    const res = await getLooksRareInterceptor(baseUrl).post('/orders',
       JSON.parse(order),
-      {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          'X-Looks-Api-Key': LOOKSRARE_API_KEY,
-        },
-      })
-    if (res.status === 201) {
-      return true
+    )
+    if (res.status === 201 && res.data.data) {
+      looksrareOrder = await orderEntityBuilder(
+        ProtocolType.LooksRare,
+        ActivityType.Listing,
+        res.data.data,
+        chainId,
+      )
+      return looksrareOrder
     }
-    return false
+    return null
   } catch (err) {
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
-    return false
+    return null
   }
 }
