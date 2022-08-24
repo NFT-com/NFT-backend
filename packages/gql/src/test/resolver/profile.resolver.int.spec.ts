@@ -467,7 +467,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
-        visibleNFTs: '5',
+        visibleNFTs: 10,
       })
 
       await repositories.profile.save({
@@ -479,7 +479,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
-        visibleNFTs: '2',
+        visibleNFTs: 1,
       })
 
       await repositories.profile.save({
@@ -491,7 +491,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
-        visibleNFTs: '0',
+        visibleNFTs: 2,
       })
     })
 
@@ -542,16 +542,15 @@ describe('profile resolver', () => {
             sortBy: 'MostVisibleNFTs',
             chainId: '5',
             pageInput: {
-              first: 1,
-              beforeCursor: '0',
+              first: 3,
             },
           },
         },
       })
 
-      expect(result.data.latestProfiles.items.length).toEqual(1)
-      expect(result.data.latestProfiles.pageInfo.firstCursor).toEqual('1')
-      expect(result.data.latestProfiles.pageInfo.lastCursor).toEqual('1')
+      expect(result.data.latestProfiles.items.length).toEqual(3)
+      expect(result.data.latestProfiles.pageInfo.firstCursor).toEqual('0')
+      expect(result.data.latestProfiles.pageInfo.lastCursor).toEqual('2')
     })
   })
 })

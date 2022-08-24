@@ -1054,7 +1054,7 @@ const saveNFTVisibility = async (
   logger.debug('saveNFTVisibility', { count: args?.count })
   try {
     const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
-    const profiles = await repositories.profile.find({ where: { visibleNFTs: '0', chainId } })
+    const profiles = await repositories.profile.find({ where: { visibleNFTs: 0, chainId } })
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async (profile) => {
