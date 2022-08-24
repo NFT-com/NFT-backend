@@ -15,7 +15,8 @@ export enum CacheKeys {
   REFRESH_NFT = 'refresh_nft',
   LEADERBOARD_RESPONSE = 'Leaderboard_response',
   CACHED_GKS = 'cached_gks',
-  GET_GK = 'get_gk'
+  GET_GK = 'get_gk',
+  SORTED_PROFILES_BY_VISIBLE_NFTS = 'sorted_profiles_by_visible_nfts',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {

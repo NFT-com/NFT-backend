@@ -29,7 +29,7 @@ import {
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
@@ -689,6 +689,61 @@ const createCompositeImage = async (
   return profile
 }
 
+const sortedProfilesByVisibleNFTs = async (
+  repositories: db.Repository,
+  args: gql.QueryLatestProfilesArgs,
+  chainId: string,
+): Promise<gql.ProfilesOutput> => {
+  const key = `${CacheKeys.SORTED_PROFILES_BY_VISIBLE_NFTS}_${chainId}`
+  const cachedData = await cache.get(key)
+  let indexedProfiles: Array<gql.Profile> = []
+  if (cachedData) {
+    indexedProfiles = JSON.parse(cachedData)
+  } else {
+    const profiles = await repositories.profile.find({  where: { chainId }, order: { visibleNFTs: 'DESC' } })
+    for (let i = 0; i < profiles.length; i++) {
+      indexedProfiles.push({
+        index: i,
+        ...profiles[i],
+      })
+    }
+    await cache.set(key, JSON.stringify(indexedProfiles), 'EX', 60 * 10)
+  }
+
+  const { pageInput } = helper.safeObject(args?.input)
+  let paginatedProfiles: Array<gql.Profile>
+  let defaultCursor
+  if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+      { afterCursor: indexedProfiles.length.toString() }
+  }
+
+  const safePageInput = safeInput(pageInput, defaultCursor)
+
+  let totalItems
+  if (pagination.hasFirst(safePageInput)) {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedProfiles = indexedProfiles.filter((profile) => profile.index > Number(cursor))
+    totalItems = paginatedProfiles.length
+    paginatedProfiles = paginatedProfiles.slice(0, safePageInput.first)
+  } else {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedProfiles = indexedProfiles.filter((profile) => profile.index < Number(cursor))
+    totalItems = paginatedProfiles.length
+    paginatedProfiles =
+      paginatedProfiles.slice(paginatedProfiles.length - safePageInput.last)
+  }
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedProfiles[0],
+    paginatedProfiles[paginatedProfiles.length - 1],
+    'index',
+  )([paginatedProfiles, totalItems])
+}
+
 const getLatestProfiles = async (
   _: any,
   args: gql.QueryLatestProfilesArgs,
@@ -726,15 +781,7 @@ const getLatestProfiles = async (
     )
       .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
   } else if (args?.input.sortBy === gql.ProfileSortType.MostVisibleNFTs) {
-    return core.paginatedEntitiesBy(
-      repositories.profile,
-      pageInput,
-      filters,
-      [],
-      'visibleNFTs',
-      'DESC',
-    )
-      .then(pagination.toPageable(pageInput, null, null, 'visibleNFTs'))
+    return await sortedProfilesByVisibleNFTs(repositories, args, chainId)
   } else {
     return Promise.reject(appError.buildNotFound(
       profileError.buildProfileSortByType(),

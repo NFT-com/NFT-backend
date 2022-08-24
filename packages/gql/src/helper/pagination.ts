@@ -57,7 +57,7 @@ const isOrderByDate = (orderKey: string): boolean =>
 export const getDefaultCursor = (orderBy: string): DefaultCursor => {
   return isOrderByDate(orderBy)
     ? { afterCursor: helper.toDateIsoString() }
-    : { beforeCursor: '-1' }
+    : { beforeCursor: '0' }
 }
 
 /**

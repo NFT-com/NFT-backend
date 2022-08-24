@@ -41,6 +41,7 @@ enum ProfileSortType {
 
 type Profile {
   id: ID!
+  index: Int
   bannerURL: String
   createdAt: DateTime!
   chainId: String
