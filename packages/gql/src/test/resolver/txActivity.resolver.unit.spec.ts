@@ -75,7 +75,7 @@ describe('transaction activity resolver', () => {
     await connection.close()
   })
 
-  describe.skip('transaction activity byType, byWalletAddress, and byWalletAddressAndType', () => {
+  describe('transaction activity byType, byWalletAddress, and byWalletAddressAndType', () => {
     it('should query activity by type', async () => {
       const result = await testServer.executeOperation({
         query: `query Query($activityType: String, $chainId: String) { 
@@ -231,7 +231,7 @@ describe('transaction activity resolver', () => {
       expect(result.data.getActivities.totalItems).toBe(1)
     })
   
-    it.skip('should fail if input is missing', async () => {
+    it('should fail if input is missing', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -260,7 +260,7 @@ describe('transaction activity resolver', () => {
       expect(result.errors).toBeDefined()
     })
 
-    it.skip('should fail if page input is missing', async () => {
+    it('should fail if page input is missing', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -289,7 +289,7 @@ describe('transaction activity resolver', () => {
     })
   })
   
-  describe.skip('transaction activity mutations', () => {
+  describe('transaction activity mutations', () => {
     it('should update acitivities read property', async () => {
       const activityIds: string[] = testData
         .reduce((aggregator: string[], data: any ) => {
