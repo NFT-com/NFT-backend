@@ -60,6 +60,7 @@ type Profile {
   url: String!
   winningBid: Bid
   profileView: ProfileViewType
+  visibleNFTs: String
 }
 
 type LeaderboardProfile {

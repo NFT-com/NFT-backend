@@ -463,7 +463,9 @@ export const saveVisibleNFTsForProfile = async (
         hide: false,
       },
     })
-    await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length.toString() })
+    if (edges.length) {
+      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length.toString() })
+    }
   } catch (err) {
     Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
     return err

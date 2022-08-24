@@ -1007,7 +1007,7 @@ const saveNFTVisibility = async (
   logger.debug('saveNFTVisibility', { count: args?.count })
   try {
     const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
-    const profiles = await repositories.profile.find({ where: { visibleNFTs: null, chainId } })
+    const profiles = await repositories.profile.find({ where: { visibleNFTs: '0', chainId } })
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async (profile) => {
@@ -1016,7 +1016,7 @@ const saveNFTVisibility = async (
     )
     logger.debug('Amount of visible NFTs for profiles are cached', { counts: slicedProfiles.length })
     return {
-      message: `Saved amount of visible NFTs for ${count} profiles`,
+      message: `Saved amount of visible NFTs for ${slicedProfiles.length} profiles`,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in saveNFTVisibility: ${err}`)
