@@ -1001,11 +1001,13 @@ const saveNFTVisibility = async (
   args: gql.MutationSaveNFTVisibilityForProfilesArgs,
   ctx: Context,
 ): Promise<gql.SaveNFTVisibilityForProfilesOutput> => {
-  const { repositories } = ctx
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('saveNFTVisibility', { count: args?.count })
   try {
     const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
-    const profiles = await repositories.profile.find({ where: { visibleNFTs: null } })
+    const profiles = await repositories.profile.find({ where: { visibleNFTs: null, chainId } })
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async (profile) => {
