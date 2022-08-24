@@ -17,7 +17,6 @@ type TxActivity {
   walletAddress: String!
   order: TxOrder
   cancel: TxCancel
-  transaction: TxTransaction
 }
 
 type TxCancel {

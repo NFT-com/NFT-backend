@@ -49,8 +49,6 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',
         'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
       .where({
         walletAddress,
         chainId,
@@ -109,8 +107,6 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',
         'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
       .cache(true)
       .getManyAndCount()
   }
