@@ -154,8 +154,8 @@ export type Signature = {
 }
 
 export interface ActivityFilters {
-  walletAddress: string
   chainId: string
+  walletAddress: string
   activityType?: ActivityType
   read?: boolean
   tokenId?: string

@@ -167,8 +167,13 @@ export const testSeaportOrder : SeaportOrder = {
     signature: 'test-signature',
   },
   protocol_address: 'test-protocol-address',
-  maker_fees: {},
-  taker_fees: {},
+  maker_fees: [{
+    account: {
+      address: 'test-address',
+    },
+    basis_points: '250',
+  }],
+  taker_fees: null,
   side: 'ask',
   order_type: 'basic',
   client_signature: 'test-s,ignature',
@@ -185,7 +190,7 @@ export const testLooksrareOrder: LooksRareOrder = {
   strategy: 'test-strategy',
   currencyAddress: 'test-currency-address',
   amount: 10,
-  price: 10,
+  price: '10',
   nonce: 'test-nonce',
   startTime: 12345,
   endTime: 12345,
@@ -207,7 +212,7 @@ export const testLooksrareExistingOrder: LooksRareOrder = {
   strategy: 'test-strategy',
   currencyAddress: 'test-currency-address',
   amount: 10,
-  price: 10,
+  price: '10',
   nonce: 'test-nonce',
   startTime: 12345,
   endTime: 12345,
@@ -222,7 +227,7 @@ export const testLooksrareExistingOrder: LooksRareOrder = {
 
 export const testExistingActivity: TxActivity = {
   id: 'test-activity-id',
-  walletId: 'test-wallet-id',
+  walletAddress: 'test-wallet-id',
   activityType: ActivityType.Listing,
   activityTypeId: 'test-existing-order-hash',
   read: false,

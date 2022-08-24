@@ -1,10 +1,13 @@
+import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import { In, UpdateResult } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, txActivityError } from '@nftcom/gql/error'
-import { auth } from '@nftcom/gql/helper'
-import { defs, entity, helper } from '@nftcom/shared/'
+import { auth, pagination } from '@nftcom/gql/helper'
+import { core } from '@nftcom/gql/service'
+import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
+import { _logger,defs, entity, helper } from '@nftcom/shared'
 
 interface UpdatedIds {
   id: string
@@ -106,61 +109,104 @@ const getActivitiesByWalletIdAndType = (
 
 const getActivities = async (
   _: any,
-  args: gql.TxActivitiesInput,
+  args: gql.QueryGetActivitiesArgs,
   ctx: Context,
-): Promise<entity.TxActivity[]> => {
+): Promise<any> => {
   const { repositories, network } = ctx
+
+  if (!args.input) {
+    return Promise.reject(appError.buildInvalid(
+      txActivityError.buildNullInput(),
+      txActivityError.ErrorType.NullInput,
+    ))
+  }
   const {
+    pageInput,
     walletAddress,
     activityType,
     read,
     tokenId,
     contract,
-  } = args
+    skipRelations,
+  } = args.input
 
-  const chainId: string =  args.chainId || process.env.CHAIN_ID
+  const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
 
   auth.verifyAndGetNetworkChain(network, chainId)
 
-  let condition: defs.ActivityFilters = { walletAddress, chainId }
+  let filters: any = { chainId }
+
+  if (walletAddress) {
+    const walletAddressVerifed: string = helper.checkSum(walletAddress)
+    filters = { ...filters, walletAddress: walletAddressVerifed }
+  }
 
   if(activityType) {
     const castedActivityType: defs.ActivityType = activityType as defs.ActivityType
     if (!Object.values(defs.ActivityType).includes(castedActivityType)) {
-      //build error
-      return
+      return Promise.reject(appError.buildInvalid(
+        txActivityError.buildIncorrectActivity(castedActivityType),
+        txActivityError.ErrorType.ActivityIncorrect,
+      ))
     }
-    condition = { ...condition, activityType: castedActivityType }
+    filters = { ...filters, activityType: castedActivityType }
   }
 
+  let nftId: string
   // build nft id
-  if (contract) {
-    condition = { ...condition, contract }
+  if (contract && !tokenId) {
+    return Promise.reject(appError.buildInvalid(
+      txActivityError.buildCollectionNotSupported(),
+      txActivityError.ErrorType.CollectionNotSupported,
+    ))
   }
 
-  if (tokenId) {
-    // throw error if contract is absent
-    if(!condition.contract) {
-      return
-    }
-    condition = { ...condition, tokenId }
+  if (!contract && tokenId) {
+    return Promise.reject(appError.buildInvalid(
+      txActivityError.buildTokenWithNoContract(),
+      txActivityError.ErrorType.TokenWithNoContract,
+    ))
+  }
+  if (contract && tokenId) {
+    nftId = `ethereum/${contract}/${BigNumber.from(tokenId).toHexString()}`
+  }
+
+  if(nftId?.length) {
+    filters = { nftId }
   }
 
   if (read) {
-    condition = { ...condition, read }
+    filters = { ...filters, read }
   }
 
-  const resp = await repositories.txActivity.findActivities(condition)
-  console.log('res', resp)
-  return resp
+  const safefilters = [helper.inputT2SafeK(filters)]
+
+  if (skipRelations) {
+    return core.paginatedEntitiesBy(
+      repositories.txActivity,
+      pageInput,
+      safefilters,
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  }
+
+  return paginatedActivitiesBy(
+    repositories.txActivity,
+    pageInput,
+    safefilters,
+    [],
+    'updatedAt',
+    'DESC',
+  )
+    .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
 }
 
 export default {
   Query: {
-    getActivities: combineResolvers(
-      auth.isAuthenticated,
-      getActivities,
-    ),
+    getActivities,
     getActivitiesByType,
     getActivitiesByWalletId: combineResolvers(
       auth.isAuthenticated,

@@ -217,6 +217,8 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         persistActivity.push(repositories.txOrder.saveMany(bids, { chunk: MAX_CHUNK_SIZE }))
       }
 
+      console.log('persist', persistActivity)
+
       await Promise.all(persistActivity)
 
       // set ttl for timestamp members

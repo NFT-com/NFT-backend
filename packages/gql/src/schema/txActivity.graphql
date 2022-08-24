@@ -1,11 +1,20 @@
+
+enum ActivityType {
+  Listing 
+  Bid
+  Cancel
+  Sale
+  Transfer
+}
+
 type TxActivity {
   id: ID!
   chainId: String
   activityType: String!
   activityTypeId: String!
   read: Boolean!
-  timestamp: String!
-  walletId: String!
+  timestamp: Date!
+  walletAddress: String!
   order: TxOrder
   cancel: TxCancel
   transaction: TxTransaction
@@ -62,24 +71,34 @@ type UpdateReadOutput {
   idsNotFoundOrFailed: [String]!
 }
 
+type TxActivitiesOutput {
+  items: [TxActivity]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
 input TxWalletIdAndTypeInput {
+  pageInput: PageInput
   walletId: ID!
   activityType: String!
   chainId: String
 }
 
 input TxActivitiesInput {
-  walletAddress: String!
-  activityType: String
+  pageInput: PageInput!
+  walletAddress: String
+  activityType: ActivityType
   read: Boolean
   tokenId: String
   contract: String
   chainId: String
+  skipRelations: Boolean
 }
 
+
+
 extend type Query {
-  "AUTHETICATED"
-  getActivities(input: TxActivitiesInput): [TxActivity]
+  getActivities(input: TxActivitiesInput): TxActivitiesOutput!
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
   "AUTHETICATED"
   getActivitiesByWalletId(walletId: ID, chainId: String): [TxActivity]

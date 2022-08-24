@@ -1183,6 +1183,7 @@ export const getCollectionInfo = async (
         // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description
           || !bannerContentType || !logoContentType
+          || collection.bannerUrl === bannerUrl || collection.logoUrl === logoUrl
         ) {
           ubiquityResults = await getUbiquity(contract, chainId)
           if (ubiquityResults) {
@@ -1205,8 +1206,10 @@ export const getCollectionInfo = async (
               logoUrl = logo ? logo : logoUrl
             }
 
-            description = ubiquityResults.collection.description.length ?
-              ubiquityResults.collection.description : description
+            if (ubiquityResults.collection.description) {
+              description = ubiquityResults.collection.description.length ?
+                ubiquityResults.collection.description : description
+            }
           }
           await repositories.collection.updateOneById(collection.id, {
             bannerUrl,
