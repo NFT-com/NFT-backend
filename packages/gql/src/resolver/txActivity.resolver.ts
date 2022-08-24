@@ -81,18 +81,22 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
-const getActivitiesByWalletId = (_: any, args: gql.QueryGetActivitiesByWalletIdArgs, ctx: Context)
+const getActivitiesByWalletAddress = (
+  _: any,
+  args: gql.QueryGetActivitiesByWalletAddressArgs, ctx: Context,
+)
 : Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByWalletId(args.walletId, chainId)
+  const walletAddress: string = helper.checkSum(args.walletAddress)
+  return repositories.txActivity.findActivitiesByWalletAddress(walletAddress, chainId)
 }
 
-const getActivitiesByWalletIdAndType = (
+const getActivitiesByWalletAddressAndType = (
   _: any,
-  args: gql.QueryGetActivitiesByWalletIdAndTypeArgs,
+  args: gql.QueryGetActivitiesByWalletAddressAndTypeArgs,
   ctx: Context,
 ): Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
@@ -100,8 +104,10 @@ const getActivitiesByWalletIdAndType = (
   const chainId = args.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByWalletIdAndType(
-    args.input.walletId,
+  const walletAddress: string = helper.checkSum(args.input?.walletAddress)
+
+  return repositories.txActivity.findActivitiesByWalletAddressAndType(
+    walletAddress,
     activityType,
     chainId,
   )
@@ -208,13 +214,13 @@ export default {
   Query: {
     getActivities,
     getActivitiesByType,
-    getActivitiesByWalletId: combineResolvers(
+    getActivitiesByWalletAddress: combineResolvers(
       auth.isAuthenticated,
-      getActivitiesByWalletId,
+      getActivitiesByWalletAddress,
     ),
-    getActivitiesByWalletIdAndType: combineResolvers(
+    getActivitiesByWalletAddressAndType: combineResolvers(
       auth.isAuthenticated,
-      getActivitiesByWalletIdAndType,
+      getActivitiesByWalletAddressAndType,
     ),
   },
   Mutation: {

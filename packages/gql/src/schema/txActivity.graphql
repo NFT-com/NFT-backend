@@ -77,9 +77,9 @@ type TxActivitiesOutput {
   totalItems: Int
 }
 
-input TxWalletIdAndTypeInput {
+input TxWalletAddressAndTypeInput {
   pageInput: PageInput
-  walletId: ID!
+  walletAddress: String!
   activityType: String!
   chainId: String
 }
@@ -101,9 +101,9 @@ extend type Query {
   getActivities(input: TxActivitiesInput): TxActivitiesOutput!
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
   "AUTHETICATED"
-  getActivitiesByWalletId(walletId: ID, chainId: String): [TxActivity]
+  getActivitiesByWalletAddress(walletAddress: String, chainId: String): [TxActivity]
   "AUTHETICATED"
-  getActivitiesByWalletIdAndType(input: TxWalletIdAndTypeInput): [TxActivity]
+  getActivitiesByWalletAddressAndType(input: TxWalletAddressAndTypeInput): [TxActivity]
 }
 
 extend type Mutation {
