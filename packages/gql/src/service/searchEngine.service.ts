@@ -72,25 +72,29 @@ export class SearchEngineService {
   }
 
   indexCollections = async (collections: CollectionEntity[]): Promise<boolean> => {
-    const collectionsToIndex = await Promise.all(collections.map(async (collection) => {
-      const nft = await this._repos.nft.findOne({
-        select: ['type'],
-        where: {
-          contract: utils.getAddress(collection.contract),
-          chainId: collection.chainId,
-        },
-      })
-  
-      return {
-        id: collection.id,
-        contractAddr: collection.contract,
-        contractName: collection.name,
-        chain: collection.chainId,
-        description: '',
-        floor: 0.0,
-        nftType: nft.type || '',
-      }
-    }))
+    const collectionsToIndex = await Promise.all(
+      collections
+        .filter((collection) => !collection.isSpam)
+        .map(async (collection) => {
+          const nft = await this._repos.nft.findOne({
+            select: ['type'],
+            where: {
+              contract: utils.getAddress(collection.contract),
+              chainId: collection.chainId,
+            },
+          })
+      
+          return {
+            id: collection.id,
+            contractAddr: collection.contract,
+            contractName: collection.name,
+            chain: collection.chainId,
+            description: '',
+            floor: 0.0,
+            nftType: nft.type || '',
+          }
+        }),
+    )
     
     return this._client.insertDocuments('collections', collectionsToIndex)
   }

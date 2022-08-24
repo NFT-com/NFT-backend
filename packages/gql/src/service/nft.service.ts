@@ -1154,11 +1154,11 @@ export const getCollectionInfo = async (
         ethers.utils.getAddress(collection.deployer) !== collection.deployer
       )) {
         const collectionDeployer = await getCollectionDeployer(contract, chainId)
-        await repositories.collection.save({
+        collection = await repositories.collection.save({
           ...collection,
           deployer: collectionDeployer,
         })
-        collection.deployer = collectionDeployer
+        await seService.indexCollections([collection])
       }
 
       let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
@@ -1211,11 +1211,13 @@ export const getCollectionInfo = async (
                 ubiquityResults.collection.description : description
             }
           }
-          await repositories.collection.updateOneById(collection.id, {
-            bannerUrl,
-            logoUrl,
-            description,
-          })
+          await seService.indexCollections([
+            await repositories.collection.updateOneById(collection.id, {
+              bannerUrl,
+              logoUrl,
+              description,
+            }),
+          ])
           collection = await repositories.collection.findByContractAddress(
             ethers.utils.getAddress(contract),
             chainId,
@@ -1223,11 +1225,13 @@ export const getCollectionInfo = async (
         }
       } else {
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
-          await repositories.collection.updateOneById(collection.id, {
-            bannerUrl,
-            logoUrl,
-            description,
-          })
+          await seService.indexCollections([
+            await repositories.collection.updateOneById(collection.id, {
+              bannerUrl,
+              logoUrl,
+              description,
+            }),
+          ])
           collection = await repositories.collection.findByContractAddress(
             ethers.utils.getAddress(contract),
             chainId,

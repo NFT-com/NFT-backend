@@ -119,6 +119,7 @@ const fetchAndSaveCollectionInfo = async (
         chainId: nfts[0]?.chainId || process.env.CHAIN_ID,
         name: collectionName,
       })
+      await seService.indexCollections([collection])
 
       await Promise.allSettled(
         nfts.map(async (nft) => {
