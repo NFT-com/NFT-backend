@@ -101,6 +101,9 @@ enum OpenseaQueryParamType {
   ASSET_CONTRACT_ADDRESS = 'asset_contract_address'
 }
 
+interface MakerOrTaker {
+  address: string
+}
 interface OpenseaBaseOrder {
   created_date: string
   closing_date: string
@@ -109,8 +112,8 @@ interface OpenseaBaseOrder {
   listing_time: number
   order_hash: string
   current_price: string
-  maker: any
-  taker: any
+  maker: MakerOrTaker
+  taker: MakerOrTaker
   cancelled: boolean
   finalized: boolean
   marked_invalid: boolean
@@ -157,12 +160,32 @@ export interface WyvernOrder extends OpenseaBaseOrder {
   prefixed_hash: string
 }
 
+interface MakerOrTakerFees {
+  account: {
+    address: string
+  }
+  basis_points: string
+}
+
+export interface SeaportOffer {
+  itemType: number
+  token: string
+  identifierOrCriteria: string
+  startAmount: string
+  endAmount: string
+  
+}
+
+export interface SeaportConsideration extends SeaportOffer {
+  recipient: string
+}
+
 export interface SeaportOrder extends OpenseaBaseOrder {
   protocol_data: {
     parameters: {
       offerer: string
-      offer: any
-      consideration: any
+      offer: SeaportOffer[]
+      consideration: SeaportConsideration[]
       startTime: string
       endTime: string
       orderType: number
@@ -176,8 +199,8 @@ export interface SeaportOrder extends OpenseaBaseOrder {
     signature: string
   }
   protocol_address: string
-  maker_fees: any
-  taker_fees: any
+  maker_fees: MakerOrTakerFees[]
+  taker_fees: MakerOrTakerFees[] | null
   side: string
   order_type: string
   client_signature: string
@@ -655,7 +678,7 @@ export const createSeaportListing = async (
   chainId: string,
 ): Promise<Partial<entity.TxOrder> | null> => {
   let openseaOrder: Partial<entity.TxOrder>
-  const baseUrlV2 = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
+  const baseUrlV2 = chainId === '1' ? OPENSEA_API_BASE_URL : OPENSEA_API_TESTNET_BASE_URL
   if (
     signature == null || signature.length === 0 ||
     parameters == null || parameters.length === 0
@@ -669,6 +692,7 @@ export const createSeaportListing = async (
         signature,
         parameters: JSON.parse(parameters),
       })
+
     if (res.status === 200 && res.data.order) {
       openseaOrder = await orderEntityBuilder(
         ProtocolType.Seaport,

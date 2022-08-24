@@ -1,7 +1,7 @@
-import { In, UpdateResult } from 'typeorm'
+import { In, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityType } from '@nftcom/shared/defs'
+import { ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -40,8 +40,8 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .getMany()
   }
 
-  public findActivitiesByWalletId = (
-    walletId: string,
+  public findActivitiesByWalletAddress = (
+    walletAddress: string,
     chainId: string,
   ): Promise<TxActivity[]> => {
     return this.getRepository().createQueryBuilder('activity')
@@ -49,18 +49,16 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',
         'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
       .where({
-        walletId,
+        walletAddress,
         chainId,
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
-  public findActivitiesByWalletIdAndType = (
-    walletId: string,
+  public findActivitiesByWalletAddressAndType = (
+    walletAddress: string,
     activityType: ActivityType,
     chainId: string,
   ): Promise<TxActivity[]> => {
@@ -71,16 +69,51 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'activity.id = activityType.activityId')
       .where({
         activityType,
-        walletId,
+        walletAddress,
         chainId,
       })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
+  public findActivities = (query: PageableQuery<TxActivity>)
+  : Promise<PageableResult<TxActivity>> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository()
+      .createQueryBuilder('activity')
+    const { nftIds, remainingFilters } = query.filters.reduce(
+      (aggregator: any, filter: TxActivity) => {
+        const { nftId, ...remaingFilters } = filter
+        if (nftId) {
+          aggregator.nftIds.push(nftId)
+        }
+
+        if (Object.keys(remaingFilters).length) {
+          aggregator.remainingFilters.push(remaingFilters)
+        }
+        return aggregator
+      }, { nftIds: [], remainingFilters: [] })
+    queryBuilder
+      .where(remainingFilters)
+
+    if (nftIds.length) {
+      queryBuilder
+        .andWhere('activity.nftId @> ARRAY[:...nftId]', { nftId: nftIds })
+    }
+
+    return queryBuilder
+      .orderBy(query.orderBy)
+      .take(query.take)
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+      .cache(true)
+      .getManyAndCount()
+  }
+
   public updateActivities = (
     ids: string[],
-    walletId: string,
+    walletAddress: string,
     chainId: string,
   ): Promise<UpdateResult> =>{
     return this.getRepository().createQueryBuilder('activity')
@@ -88,7 +121,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .where({
         id: In(ids),
         read: false,
-        walletId,
+        walletAddress,
         chainId,
       })
       .returning(['id'])

@@ -1,6 +1,11 @@
+import { BigNumber } from 'ethers'
+
+import { gql } from '@nftcom/gql/defs'
+import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
-import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
-import { db, entity } from '@nftcom/shared'
+import { SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
+import { db, defs, entity, helper, repository } from '@nftcom/shared'
+import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 type Order = SeaportOrder | LooksRareOrder
@@ -17,8 +22,9 @@ const repositories = db.newRepositories()
 const orderActivityBuilder = async (
   orderType: ActivityType,
   orderHash: string,
-  walletId: string,
+  walletAddress: string,
   chainId: string,
+  nftIds: string[],
 ): Promise<entity.TxActivity> => {
   let activity: entity.TxActivity
   if (orderHash) {
@@ -34,8 +40,9 @@ const orderActivityBuilder = async (
   activity.activityTypeId = orderHash
   activity.read = false
   activity.timestamp = new Date()
-  activity.walletId = walletId
+  activity.walletAddress = helper.checkSum(walletAddress)
   activity.chainId = chainId
+  activity.nftId = [...nftIds]
 
   return activity
 }
@@ -104,20 +111,31 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
 ):  Promise<Partial<entity.TxOrder>> => {
-  let orderHash: string, walletId: string, orderEntity: Partial<entity.TxOrder>
+  let orderHash: string,
+    walletAddress: string,
+    tokenId: string,
+    orderEntity: Partial<entity.TxOrder>,
+    nftIds: string[]
+
   let seaportOrder: SeaportOrder
   let looksrareOrder: LooksRareOrder
   switch (protocol) {
   case ProtocolType.Seaport:
     seaportOrder = order as SeaportOrder
     orderHash = seaportOrder.order_hash
-    walletId = seaportOrder?.protocol_data?.parameters?.offerer
+    walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
+    nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
+      tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
+      return `ethereum/${offer.token}/${tokenId}`
+    })
     orderEntity = seaportOrderBuilder(seaportOrder)
     break
   case ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
     orderHash = looksrareOrder.hash
-    walletId = looksrareOrder.signer
+    walletAddress = looksrareOrder.signer
+    tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
+    nftIds = [`ethereum/${looksrareOrder.collectionAddress}/${tokenId}`]
     orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
   default:
@@ -127,8 +145,9 @@ export const orderEntityBuilder = async (
   const activity: entity.TxActivity = await orderActivityBuilder(
     orderType,
     orderHash,
-    walletId,
+    walletAddress,
     chainId,
+    nftIds,
   )
 
   return {
@@ -140,5 +159,50 @@ export const orderEntityBuilder = async (
     protocol,
     ...orderEntity,
   }
+}
+
+export const paginatedActivitiesBy = (
+  repo: repository.TxActivityRepository,
+  pageInput: gql.PageInput,
+  filters: Partial<TxActivity>[],
+  relations: string[],
+  orderKey= 'createdAt',
+  orderDirection = 'DESC',
+  distinctOn?: defs.DistinctOn<TxActivity>,
+): Promise<defs.PageableResult<TxActivity>> => {
+  const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
+  const orderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: orderDirection }
+  const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
+  const reversedOrderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: reversedOrderDirection }
+  return pagination.resolvePage<TxActivity>(pageInput, {
+    firstAfter: () => repo.findActivities({
+      filters: pageableFilters,
+      relations: relations,
+      orderBy,
+      take: pageInput.first,
+      distinctOn,
+    }),
+    firstBefore: () => repo.findActivities({
+      filters: pageableFilters,
+      relations: relations,
+      orderBy,
+      take: pageInput.first,
+      distinctOn,
+    }),
+    lastAfter: () => repo.findActivities({
+      filters: pageableFilters,
+      relations: relations,
+      orderBy: reversedOrderBy,
+      take: pageInput.last,
+      distinctOn,
+    }).then(pagination.reverseResult),
+    lastBefore: () => repo.findActivities({
+      filters: pageableFilters,
+      relations: relations,
+      orderBy: reversedOrderBy,
+      take: pageInput.last,
+      distinctOn,
+    }).then(pagination.reverseResult),
+  })
 }
   
