@@ -4,7 +4,7 @@ import { ActivityType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from '.'
 
-@Index(['walletId', 'timestamp'])
+@Index(['walletAddress', 'timestamp'])
 @Entity()
 export class TxActivity extends BaseEntity {
 
@@ -20,9 +20,11 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false })
   timestamp: Date
 
-  // @TODO: should this be walletAddress since we could also fetch external orders?
+  @Column('text', { array: true })
+  nftId: string[]
+
   @Column({ nullable: false })
-  walletId: string
+  walletAddress: string
 
   @Column({ nullable: true })
   chainId: string

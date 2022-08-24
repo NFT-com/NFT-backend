@@ -151,8 +151,14 @@ export const testSeaportOrder : SeaportOrder = {
   approved_on_chain: false,
   protocol_data: {
     parameters: {
-      offerer: 'test-maker',
-      offer: [],
+      offerer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+      offer: [{
+        itemType: 3,
+        token: 'test-proxy-contract',
+        identifierOrCriteria: '1234',
+        startAmount: '1',
+        endAmount: '1',
+      }],
       consideration: [],
       startTime: '12345',
       endTime: '12345',
@@ -167,11 +173,16 @@ export const testSeaportOrder : SeaportOrder = {
     signature: 'test-signature',
   },
   protocol_address: 'test-protocol-address',
-  maker_fees: {},
-  taker_fees: {},
+  maker_fees: [{
+    account: {
+      address: 'test-address',
+    },
+    basis_points: '250',
+  }],
+  taker_fees: null,
   side: 'ask',
   order_type: 'basic',
-  client_signature: 'test-s,ignature',
+  client_signature: 'test-signature',
   relay_id: 'test-relay-id',
   criteria_proof: 'test-criteria-proof',
 }
@@ -179,9 +190,9 @@ export const testSeaportOrder : SeaportOrder = {
 export const testLooksrareOrder: LooksRareOrder = {
   hash: 'test-order-hash',
   collectionAddress: 'test-collection-address',
-  tokenId: 'test-token-id',
+  tokenId: '1234',
   isOrderAsk: false,
-  signer: 'test-signer',
+  signer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   strategy: 'test-strategy',
   currencyAddress: 'test-currency-address',
   amount: 10,
@@ -201,7 +212,7 @@ export const testLooksrareOrder: LooksRareOrder = {
 export const testLooksrareExistingOrder: LooksRareOrder = {
   hash: 'test-existing-order-hash',
   collectionAddress: 'test-collection-address',
-  tokenId: 'test-token-id',
+  tokenId: '123',
   isOrderAsk: true,
   signer: 'test-signer',
   strategy: 'test-strategy',
@@ -222,7 +233,7 @@ export const testLooksrareExistingOrder: LooksRareOrder = {
 
 export const testExistingActivity: TxActivity = {
   id: 'test-activity-id',
-  walletId: 'test-wallet-id',
+  walletAddress: 'test-wallet-id',
   activityType: ActivityType.Listing,
   activityTypeId: 'test-existing-order-hash',
   read: false,
