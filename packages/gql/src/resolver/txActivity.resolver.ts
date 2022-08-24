@@ -1,10 +1,11 @@
 import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import Joi from 'joi'
 import { In, UpdateResult } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, txActivityError } from '@nftcom/gql/error'
-import { auth, pagination } from '@nftcom/gql/helper'
+import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger,defs, entity, helper } from '@nftcom/shared'
@@ -120,12 +121,20 @@ const getActivities = async (
 ): Promise<any> => {
   const { repositories, network } = ctx
 
-  if (!args.input) {
-    return Promise.reject(appError.buildInvalid(
-      txActivityError.buildNullInput(),
-      txActivityError.ErrorType.NullInput,
-    ))
-  }
+  const schema = Joi.object().keys({
+    input: Joi.object().required().keys({
+      pageInput: Joi.any().required(),
+      walletAddress: Joi.string(),
+      activityType: Joi.string(),
+      read: Joi.boolean(),
+      tokenId: Joi.custom(joi.buildBigNumber),
+      contract: Joi.string(),
+      chainId: Joi.string(),
+      skipRelations: Joi.boolean(),
+    }),
+  })
+
+  joi.validateSchema(schema, args)
   const {
     pageInput,
     walletAddress,
