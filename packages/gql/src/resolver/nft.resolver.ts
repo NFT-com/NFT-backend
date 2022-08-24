@@ -218,13 +218,12 @@ const getMyNFTs = async (
   const schema = Joi.object().keys({
     profileId: Joi.string().required(),
     pageInput: Joi.any(),
-    types: Joi.array().items(Joi.string()).required(),
   })
   const { input } = args
-  
+
   joi.validateSchema(schema, input)
-  
-  const { types, profileId } = helper.safeObject(args?.input)
+
+  const { profileId } = helper.safeObject(args?.input)
 
   // ensure profileId is owned by user.id
   const profile = await ctx.repositories.profile.findById(profileId)
@@ -241,9 +240,6 @@ const getMyNFTs = async (
     thatEntityType: defs.EntityType.NFT,
     edgeType: defs.EdgeType.Displays,
   })
-  const nftFilter = helper.removeEmpty({
-    type: helper.safeInForOmitBy(types),
-  })
   return core.paginatedThatEntitiesOfEdgesBy(
     ctx,
     ctx.repositories.nft,
@@ -251,7 +247,8 @@ const getMyNFTs = async (
     pageInput,
     'weight',
     'ASC',
-    nftFilter,
+    chainId,
+    'NFT',
   )
 }
 
@@ -735,6 +732,8 @@ const updateNFTsForProfile = (
             pageInput,
             'weight',
             'ASC',
+            chainId,
+            'NFT',
           )
         }
       })
@@ -1158,12 +1157,18 @@ export const listNFTSeaport = async (
   args: gql.MutationListNFTSeaportArgs,
   ctx: Context,
 ): Promise<boolean> => {
+  const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return await createSeaportListing(seaportSignature, seaportParams, chainId)
+  return createSeaportListing(seaportSignature, seaportParams, chainId)
+    .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
+      return repositories.txOrder.save(order)
+    }))
+    .then(order => !!order.id)
+    .catch(() => false)
 }
 
 export const listNFTLooksrare = async (
@@ -1171,12 +1176,18 @@ export const listNFTLooksrare = async (
   args: gql.MutationListNFTLooksrareArgs,
   ctx: Context,
 ): Promise<boolean> => {
+  const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return await createLooksrareListing(looksrareOrder, chainId)
+  return createLooksrareListing(looksrareOrder, chainId)
+    .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
+      return repositories.txOrder.save(order)
+    }))
+    .then(order => !!order.id)
+    .catch(() => false)
 }
 
 export default {

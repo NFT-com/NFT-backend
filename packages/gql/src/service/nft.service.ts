@@ -1,13 +1,22 @@
 import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
+import fetch from 'node-fetch'
 import * as typeorm from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { getChain } from '@nftcom/gql/config'
+import { Upload } from '@aws-sdk/lib-storage'
+import { assetBucket, getChain } from '@nftcom/gql/config'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import { generateWeight, getLastWeight, midWeight } from '@nftcom/gql/service/core.service'
+import {
+  contentTypeFromExt,
+  extensionFromFilename,
+  generateWeight,
+  getAWSConfig,
+  getLastWeight,
+  midWeight, s3ToCdn,
+} from '@nftcom/gql/service/core.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -347,7 +356,7 @@ const updateCollectionForNFTs = async (
 const getNFTMetaData = async (
   contract: string,
   tokenId: string,
-): Promise<NFTMetaData> => {
+): Promise<NFTMetaData | undefined> => {
   try {
     let type: defs.NFTType
     const traits: Array<defs.Trait> = []
@@ -356,6 +365,8 @@ const getNFTMetaData = async (
       contract,
       tokenId,
     )
+
+    if (!nftMetadata) return
 
     const contractMetadata: ContractMetaDataResponse =
       await getContractMetaDataFromAlchemy(contract)
@@ -375,7 +386,7 @@ const getNFTMetaData = async (
       nftMetadata?.metadata?.attributes.map((trait) => {
         traits.push(({
           type: trait?.trait_type,
-          value: trait?.value,
+          value: trait?.value || trait?.trait_value,
         }))
       })
     } else {
@@ -426,6 +437,8 @@ const updateNFTOwnershipAndMetadata = async (
     }
 
     const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+    if (!metadata) return undefined
+
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
@@ -1074,6 +1087,51 @@ export const removeEdgesForNonassociatedAddresses = async (
   )
 }
 
+export const downloadImageFromUbiquity = async (
+  url: string,
+): Promise<Buffer | undefined> => {
+  try {
+    const res = await fetch(url + `?apiKey=${process.env.UBIQUITY_API_KEY}`)
+    return await res.buffer()
+  } catch (err) {
+    Sentry.captureMessage(`Error in downloadImageFromUbiquity: ${err}`)
+    return undefined
+  }
+}
+
+const downloadAndUploadImageToS3 = async (
+  chainId: string,
+  url: string,
+  fileName: string,
+): Promise<string | undefined> => {
+  try {
+    const ext = extensionFromFilename(url)
+    const fullName = ext ? fileName + '.' + ext : fileName
+    const imageKey = `collections/${chainId}/` + Date.now() + '-' + fullName
+    const contentType = contentTypeFromExt(ext)
+    if (!contentType) return undefined
+    const buffer = await downloadImageFromUbiquity(url)
+    if (buffer) {
+      const s3config = await getAWSConfig()
+      const upload = new Upload({
+        client: s3config,
+        params: {
+          Bucket: assetBucket.name,
+          Key: imageKey,
+          Body: buffer,
+          ContentType: contentType,
+        },
+      })
+      await upload.done()
+
+      return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    } else return undefined
+  } catch (err) {
+    Sentry.captureMessage(`Error in downloadAndUploadImageToS3: ${err}`)
+    return undefined
+  }
+}
+
 export const getCollectionInfo = async (
   contract: string,
   chainId: string,
@@ -1086,7 +1144,7 @@ export const getCollectionInfo = async (
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
-      const collection = await repositories.collection.findByContractAddress(
+      let collection = await repositories.collection.findByContractAddress(
         contract,
         chainId,
       )
@@ -1103,7 +1161,79 @@ export const getCollectionInfo = async (
         collection.deployer = collectionDeployer
       }
 
-      const ubiquityResults = await getUbiquity(contract, chainId)
+      let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
+      let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
+      let description = 'placeholder collection description text'
+      const ubiquityFolder = 'https://ubiquity.api.blockdaemon.com/v1/nft/media/ethereum/mainnet/'
+      let ubiquityResults = undefined
+      if (chainId === '1') {
+        // check if banner or logo url we saved are incorrect images
+        let bannerExt
+        let bannerContentType
+        let logoExt
+        let logoContentType
+        if (collection.bannerUrl) {
+          bannerExt = extensionFromFilename(collection.bannerUrl)
+          bannerContentType = contentTypeFromExt(bannerExt)
+        }
+        if (collection.logoUrl) {
+          logoExt = extensionFromFilename(collection.logoUrl)
+          logoContentType = contentTypeFromExt(logoExt)
+        }
+        // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
+        if (!collection.bannerUrl || !collection.logoUrl || !collection.description
+          || !bannerContentType || !logoContentType
+          || collection.bannerUrl === bannerUrl || collection.logoUrl === logoUrl
+        ) {
+          ubiquityResults = await getUbiquity(contract, chainId)
+          if (ubiquityResults) {
+            // check if banner url from Ubiquity is correct one
+            if (ubiquityResults.collection.banner !== ubiquityFolder) {
+              const banner = await downloadAndUploadImageToS3(
+                chainId,
+                ubiquityResults.collection.banner,
+                'banner',
+              )
+              bannerUrl = banner ? banner : bannerUrl
+            }
+            // check if logo url from Ubiquity is correct one
+            if (ubiquityResults.collection.logo !== ubiquityFolder) {
+              const logo = await downloadAndUploadImageToS3(
+                chainId,
+                ubiquityResults.collection.logo,
+                'logo',
+              )
+              logoUrl = logo ? logo : logoUrl
+            }
+
+            if (ubiquityResults.collection.description) {
+              description = ubiquityResults.collection.description.length ?
+                ubiquityResults.collection.description : description
+            }
+          }
+          await repositories.collection.updateOneById(collection.id, {
+            bannerUrl,
+            logoUrl,
+            description,
+          })
+          collection = await repositories.collection.findByContractAddress(
+            ethers.utils.getAddress(contract),
+            chainId,
+          )
+        }
+      } else {
+        if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
+          await repositories.collection.updateOneById(collection.id, {
+            bannerUrl,
+            logoUrl,
+            description,
+          })
+          collection = await repositories.collection.findByContractAddress(
+            ethers.utils.getAddress(contract),
+            chainId,
+          )
+        }
+      }
 
       const returnObject = {
         collection,

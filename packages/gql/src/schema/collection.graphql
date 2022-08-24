@@ -96,6 +96,11 @@ type Collection {
   name: String
   chainId: String
   deployer: String
+  bannerUrl: String
+  logoUrl: String
+  description: String
+  isCurated: Boolean
+  isSpam: Boolean
 }
 
 type CollectionInfo {
@@ -122,6 +127,10 @@ type saveCollectionForContractOutput {
   message: String
 }
 
+type UpdateCollectionImageUrlsOutput {
+  message: String
+}
+
 type SyncCollectionsWithNFTsOutput {
   message: String
 }
@@ -136,6 +145,10 @@ type AssociatedAddressesForContractOutput {
   deployerIsAssociated: Boolean
 }
 
+type UpdateSpamStatusOutput {
+  message: String
+}
+
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
@@ -148,4 +161,6 @@ extend type Mutation {
   saveCollectionForContract(contract: Address!): saveCollectionForContractOutput!
   syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
   fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!
+  updateCollectionImageUrls(count: Int!): UpdateCollectionImageUrlsOutput!
+  updateSpamStatus(contracts: [Address!]!, isSpam: Boolean!): UpdateSpamStatusOutput!
 }
