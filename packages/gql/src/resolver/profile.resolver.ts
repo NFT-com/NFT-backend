@@ -14,7 +14,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
-import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
+import { saveProfileScore, saveVisibleNFTsForProfile } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
@@ -725,11 +725,16 @@ const getLatestProfiles = async (
       'DESC',
     )
       .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
-  } else if (args?.input.sortBy === gql.ProfileSortType.RecentUpdatedCustomized) {
-    return Promise.reject(appError.buildNotFound(
-      profileError.buildProfileSortByType(),
-      profileError.ErrorType.ProfileSortByType,
-    ))
+  } else if (args?.input.sortBy === gql.ProfileSortType.MostVisibleNFTs) {
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'visibleNFTs',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'visibleNFTs'))
   } else {
     return Promise.reject(appError.buildNotFound(
       profileError.buildProfileSortByType(),
@@ -1000,28 +1005,16 @@ const saveNFTVisibility = async (
   logger.debug('saveNFTVisibility', { count: args?.count })
   try {
     const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
-    const profiles = await repositories.profile.findAll()
+    const profiles = await repositories.profile.find({ where: { visibleNFTs: null } })
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async (profile) => {
-        const edges = await repositories.edge.find({
-          where: {
-            thisEntityId: profile.id,
-            thisEntityType: defs.EntityType.Profile,
-            thatEntityType: defs.EntityType.NFT,
-            edgeType: defs.EdgeType.Displays,
-            hide: false,
-          },
-        })
-        if (edges.length) {
-          await cache.zadd(`Visible_NFTS_${profile.chainId}`, edges.length, profile.id)
-          logger.debug(`Amount of visible NFTs is cached for Profile ${ profile.id }`)
-        }
+        await saveVisibleNFTsForProfile(profile.id, repositories)
       }),
     )
     logger.debug('Amount of visible NFTs for profiles are cached', { counts: slicedProfiles.length })
     return {
-      message: 'Saved amount of visible NFTs for profiles',
+      message: `Saved amount of visible NFTs for ${count} profiles`,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in saveNFTVisibility: ${err}`)
