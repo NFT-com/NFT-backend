@@ -78,6 +78,9 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true, type: 'timestamp with time zone' })
   lastScored: Date
 
+  @Column({ nullable: true, default: 0 })
+  visibleNFTs: number
+
   @Column({ nullable: true })
   chainId: string
 
