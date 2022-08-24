@@ -697,6 +697,7 @@ const updateNFTsForProfile = (
                           return syncEdgesWithNFTs(profile.id)
                             .then(() => {
                               logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
+                              // save visible NFT amount of profile
                               return saveVisibleNFTsForProfile(profile.id, repositories)
                                 .then(() => {
                                   logger.debug('saved amount of visible NFTs to profile', profile.id)

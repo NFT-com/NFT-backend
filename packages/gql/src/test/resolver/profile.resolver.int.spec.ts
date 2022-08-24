@@ -400,4 +400,158 @@ describe('profile resolver', () => {
       expect(result.data.associatedCollectionForProfile.collection).toBeDefined()
     })
   })
+
+  describe('saveNFTVisibilityForProfiles', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      await repositories.profile.save({
+        url: 'testprofile1',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '1',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update visible NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation SaveNFTVisibilityForProfiles($count: Int!) { saveNFTVisibilityForProfiles(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.saveNFTVisibilityForProfiles.message).toEqual('Saved amount of visible NFTs for 0 profiles')
+    })
+  })
+
+  describe('latestProfiles', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+        visibleNFTs: '5',
+      })
+
+      await repositories.profile.save({
+        url: 'testprofile1',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '1',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+        visibleNFTs: '2',
+      })
+
+      await repositories.profile.save({
+        url: 'testprofile2',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '2',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+        visibleNFTs: '0',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return sorted profiles by minted date', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id } pageInfo { firstCursor lastCursor } totalItems } }',
+        variables: {
+          input: {
+            sortBy: 'RecentMinted',
+            chainId: '5',
+            pageInput: {
+              first: 2,
+            },
+          },
+        },
+      })
+
+      expect(result.data.latestProfiles.items.length).toEqual(2)
+    })
+
+    it('should return sorted profiles by updated date', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id } pageInfo { firstCursor lastCursor } totalItems } }',
+        variables: {
+          input: {
+            sortBy: 'RecentUpdated',
+            chainId: '5',
+            pageInput: {
+              first: 2,
+            },
+          },
+        },
+      })
+
+      expect(result.data.latestProfiles.items.length).toEqual(2)
+    })
+
+    it('should return sorted profiles by visible NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id visibleNFTs index } pageInfo { firstCursor lastCursor } totalItems } }',
+        variables: {
+          input: {
+            sortBy: 'MostVisibleNFTs',
+            chainId: '5',
+            pageInput: {
+              first: 1,
+              beforeCursor: '0',
+            },
+          },
+        },
+      })
+
+      expect(result.data.latestProfiles.items.length).toEqual(1)
+      expect(result.data.latestProfiles.pageInfo.firstCursor).toEqual('1')
+      expect(result.data.latestProfiles.pageInfo.lastCursor).toEqual('1')
+    })
+  })
 })
