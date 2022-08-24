@@ -88,6 +88,7 @@ const removeCollectionDuplicates = async (
           )
           const removeIds = toRemove.map((collection) => collection.id)
           await repositories.collection.hardDeleteByIds(removeIds)
+          await seService.deleteCollections(toRemove)
           removedDuplicates = true
         }
       }),
