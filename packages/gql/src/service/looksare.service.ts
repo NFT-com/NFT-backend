@@ -3,14 +3,14 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { entity } from '@nftcom/shared'
-import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
+import { _logger, defs,entity } from '@nftcom/shared'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
 const LOOKSRARE_LISTING_BATCH_SIZE = 4
 const LOOKSRARE_API_KEY = process.env.LOOKSRARE_API_KEY
 
+const logger = _logger.Factory(_logger.Context.Looksrare)
 export interface LooksRareOrderRequest {
   contract: string
   tokenId: string
@@ -86,6 +86,7 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
+    logger.log(`Error in retrieveOrdersLooksrare: ${err}`)
     //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }
@@ -158,8 +159,8 @@ const retrieveLooksRareOrdersInBatches = async (
       if( queryUrl.includes('isOrderAsk=true')){
         listings.push(
           orderEntityBuilder(
-            ProtocolType.LooksRare,
-            ActivityType.Listing,
+            defs.ProtocolType.LooksRare,
+            defs.ActivityType.Listing,
             assets[0],
             chainId,
           ),
@@ -168,8 +169,8 @@ const retrieveLooksRareOrdersInBatches = async (
       else  {
         offers.push(
           orderEntityBuilder(
-            ProtocolType.LooksRare,
-            ActivityType.Bid,
+            defs.ProtocolType.LooksRare,
+            defs.ActivityType.Bid,
             assets[0],
             chainId,
           ),
@@ -223,6 +224,7 @@ export const retrieveMultipleOrdersLooksrare = async (
       }
     }
   } catch (err) {
+    logger.log(`Error in retrieveMultipleOrdersLooksrare: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
   return responseAggregator
@@ -248,8 +250,8 @@ export const createLooksrareListing = async (
     )
     if (res.status === 201 && res.data.data) {
       looksrareOrder = await orderEntityBuilder(
-        ProtocolType.LooksRare,
-        ActivityType.Listing,
+        defs.ProtocolType.LooksRare,
+        defs.ActivityType.Listing,
         res.data.data,
         chainId,
       )
@@ -257,6 +259,7 @@ export const createLooksrareListing = async (
     }
     return null
   } catch (err) {
+    logger.log(`Error in createLooksrareListing: ${err}`)
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
     return null
   }
