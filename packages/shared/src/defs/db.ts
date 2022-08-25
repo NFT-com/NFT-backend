@@ -83,19 +83,18 @@ export enum ActivityType {
   Transfer = 'Transfer',
 }
 
-export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
-export type CancelActivityType = typeof CancelActivities[number]
-
 export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',
 }
 
 export enum ProtocolType {
-  Wyvern = 'Wyvern',
   Seaport = 'Seaport',
   LooksRare = 'LooksRare',
 }
+
+export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
+export type CancelActivityType = typeof CancelActivities[number]
 
 export enum CurrencyType {
   ETH = 'ETH',

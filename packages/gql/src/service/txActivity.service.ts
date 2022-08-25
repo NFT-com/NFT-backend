@@ -6,7 +6,6 @@ import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
 import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 type Order = SeaportOrder | LooksRareOrder
 
@@ -20,7 +19,7 @@ const repositories = db.newRepositories()
  * @param chainId
  */
 const orderActivityBuilder = async (
-  orderType: ActivityType,
+  orderType: defs.ActivityType,
   orderHash: string,
   walletAddress: string,
   chainId: string,
@@ -55,7 +54,7 @@ const seaportOrderBuilder = (
   order: SeaportOrder,
 ): Partial<entity.TxOrder> => {
   return {
-    exchange: ExchangeType.OpenSea,
+    exchange: defs.ExchangeType.OpenSea,
     makerAddress: order.maker?.address,
     takerAddress: order.taker?.address,
     protocolData: {
@@ -73,7 +72,7 @@ const looksrareOrderBuilder = (
   order: LooksRareOrder,
 ): Partial<entity.TxOrder> => {
   return {
-    exchange: ExchangeType.LooksRare,
+    exchange: defs.ExchangeType.LooksRare,
     makerAddress: order.signer,
     takerAddress: order.strategy,
     protocolData: {
@@ -106,8 +105,8 @@ const looksrareOrderBuilder = (
  */
 
 export const orderEntityBuilder = async (
-  protocol: ProtocolType,
-  orderType: ActivityType,
+  protocol: defs.ProtocolType,
+  orderType: defs.ActivityType,
   order: Order,
   chainId: string,
 ):  Promise<Partial<entity.TxOrder>> => {
@@ -120,7 +119,7 @@ export const orderEntityBuilder = async (
   let seaportOrder: SeaportOrder
   let looksrareOrder: LooksRareOrder
   switch (protocol) {
-  case ProtocolType.Seaport:
+  case defs.ProtocolType.Seaport:
     seaportOrder = order as SeaportOrder
     orderHash = seaportOrder.order_hash
     walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
@@ -130,7 +129,7 @@ export const orderEntityBuilder = async (
     })
     orderEntity = seaportOrderBuilder(seaportOrder)
     break
-  case ProtocolType.LooksRare:
+  case defs.ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
     orderHash = looksrareOrder.hash
     walletAddress = looksrareOrder.signer
