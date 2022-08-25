@@ -3,8 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { _logger,entity } from '@nftcom/shared'
-import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
+import { _logger, defs,entity } from '@nftcom/shared'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
@@ -160,8 +159,8 @@ const retrieveLooksRareOrdersInBatches = async (
       if( queryUrl.includes('isOrderAsk=true')){
         listings.push(
           orderEntityBuilder(
-            ProtocolType.LooksRare,
-            ActivityType.Listing,
+            defs.ProtocolType.LooksRare,
+            defs.ActivityType.Listing,
             assets[0],
             chainId,
           ),
@@ -170,8 +169,8 @@ const retrieveLooksRareOrdersInBatches = async (
       else  {
         offers.push(
           orderEntityBuilder(
-            ProtocolType.LooksRare,
-            ActivityType.Bid,
+            defs.ProtocolType.LooksRare,
+            defs.ActivityType.Bid,
             assets[0],
             chainId,
           ),
@@ -251,8 +250,8 @@ export const createLooksrareListing = async (
     )
     if (res.status === 201 && res.data.data) {
       looksrareOrder = await orderEntityBuilder(
-        ProtocolType.LooksRare,
-        ActivityType.Listing,
+        defs.ProtocolType.LooksRare,
+        defs.ActivityType.Listing,
         res.data.data,
         chainId,
       )

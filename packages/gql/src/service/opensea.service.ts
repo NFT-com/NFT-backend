@@ -6,8 +6,7 @@ import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { _logger,entity } from '@nftcom/shared'
-import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
+import { _logger,defs,entity } from '@nftcom/shared'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
@@ -506,8 +505,8 @@ const retrieveListingsInBatches = async (
           if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
             listings.push(
               orderEntityBuilder(
-                ProtocolType.Seaport,
-                ActivityType.Listing,
+                defs.ProtocolType.Seaport,
+                defs.ActivityType.Listing,
                 seaportOrders?.[0],
                 chainId,
               ),
@@ -583,8 +582,8 @@ const retrieveOffersInBatches = async (
             seaportOffers = response?.data?.orders
             offers.push(
               orderEntityBuilder(
-                ProtocolType.Seaport,
-                ActivityType.Bid,
+                defs.ProtocolType.Seaport,
+                defs.ActivityType.Bid,
                 seaportOffers?.[0],
                 chainId,
               ),
@@ -699,8 +698,8 @@ export const createSeaportListing = async (
 
     if (res.status === 200 && res.data.order) {
       openseaOrder = await orderEntityBuilder(
-        ProtocolType.Seaport,
-        ActivityType.Listing,
+        defs.ProtocolType.Seaport,
+        defs.ActivityType.Listing,
         res.data.order,
         chainId,
       )
