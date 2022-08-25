@@ -783,10 +783,15 @@ const getLatestProfiles = async (
   } else if (args?.input.sortBy === gql.ProfileSortType.MostVisibleNFTs) {
     return await sortedProfilesByVisibleNFTs(repositories, args, chainId)
   } else {
-    return Promise.reject(appError.buildNotFound(
-      profileError.buildProfileSortByType(),
-      profileError.ErrorType.ProfileSortByType,
-    ))
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
   }
 }
 

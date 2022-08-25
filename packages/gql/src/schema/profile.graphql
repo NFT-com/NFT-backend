@@ -131,7 +131,7 @@ input CreateCompositeImageInput {
 input LatestProfilesInput {
   pageInput: PageInput
   chainId: String
-  sortBy: ProfileSortType!
+  sortBy: ProfileSortType
 }
 
 input OrderUpdateInput {
