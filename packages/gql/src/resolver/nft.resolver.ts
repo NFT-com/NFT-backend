@@ -1021,7 +1021,7 @@ export const refreshNft = async (
 
 // @TODO: Force Refresh as a second iteration
 export const refreshNFTOrder = async (  _: any,
-  args: gql.MutationRefreshNFTArgs,
+  args: gql.MutationRefreshNFTOrderArgs,
   ctx: Context): Promise<string> => {
   const { repositories, chain } = ctx
   logger.debug('refreshNftOrders', { id: args?.id })
@@ -1040,8 +1040,9 @@ export const refreshNFTOrder = async (  _: any,
       return 'Refreshed Recently! Try in sometime!'
     }
 
+    const nftCacheId: string = args?.manualTrigger ? `${nft.contract}:${nft.tokenId}:manual` : `${nft.contract}:${nft.tokenId}`
     // add to cache list
-    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, `${nft.contract}:${nft.tokenId}`)
+    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, nftCacheId)
     return 'Added to queue! Check back shortly!'
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)

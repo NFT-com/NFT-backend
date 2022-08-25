@@ -1,7 +1,7 @@
 
 import Bull, { Job } from 'bull'
 
-import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys, removeExpiredTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
@@ -219,10 +219,17 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       await Promise.all(persistActivity)
 
-      // set ttl for timestamp members
-      const TTL: number = ttlForTimestampedZsetMembers()
       const refreshedOrders  = nfts.reduce((acc, curr) => {
-        acc.push(...[TTL, curr])
+        const nftSplit: Array<string> = curr.split(':')
+        const nft: string = nftSplit.slice(2).join(':')
+        const ttlCondition: string = nftSplit.length === 3 && nftSplit?.[2] === 'manual' ? 'manual': ''
+        const currentTime: Date = new Date()
+        if (ttlCondition) {
+          currentTime.setMinutes(currentTime.getMinutes() + 5)
+        } else {
+          currentTime.setMinutes(currentTime.getMinutes() + 30)
+        }
+        acc.push(...[currentTime.getTime(), nft])
         return acc
       }, [])
       await Promise.all([
