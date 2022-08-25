@@ -7,6 +7,64 @@ enum ActivityType {
   Transfer
 }
 
+type SeaportOffer {
+  itemType: Int
+  token: String
+  identifierOrCriteria: String
+  startAmount: String
+  endAmount: String
+}
+
+type SeaportConsideration {
+  itemType: Int
+  token: String
+  identifierOrCriteria: String
+  startAmount: String
+  endAmount: String
+  recipient: String
+}
+
+type SeaportProtocolDataParams {
+  offerer: String
+  offer: [SeaportOffer]
+  consideration: [SeaportConsideration]
+  startTime: String
+  endTime: String
+  orderType: Int
+  zone: String
+  zoneHash: String
+  salt: String
+  conduitKey: String
+  totalOriginalConsiderationItems: Int
+  counter: Int
+}
+
+type SeaportProtocolData {
+  parameters: SeaportProtocolDataParams
+  signature: String
+}
+
+type LooksrareProtocolData {
+  isOrderAsk: Boolean
+  signer: String
+  collectionAddress: String
+  price: String
+  tokenId: String
+  amount: String
+  strategy: String
+  currencyAddress: String
+  nonce: String
+  startTime: String
+  endTime: String
+  minPercentageToAsk: String
+  params: String
+  v: String
+  r: String
+  s: String
+}
+
+union ProtocolData = SeaportProtocolData | LooksrareProtocolData
+
 type TxActivity {
   id: ID!
   chainId: String
@@ -36,7 +94,7 @@ type TxOrder {
   makerAddress: String!
   takerAddress: String
   protocol: String!
-  protocolData: [String]
+  protocolData: ProtocolData
 }
 
 type TxTransaction {
