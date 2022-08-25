@@ -2,13 +2,12 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { Maybe } from 'graphql/jsutils/Maybe'
 
-import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { entity } from '@nftcom/shared'
-import { ActivityType, Chain, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
@@ -570,10 +569,8 @@ const retrieveOffersInBatches = async (
             queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
           }
 
-          const openseaSupportedChainId:string = TESTNET_CHAIN_IDS.includes(chainId)? '4':chainId
-          const chain:Chain =  getChain('ethereum',openseaSupportedChainId)
           const response: AxiosResponse = await offerInterceptor(
-            `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
+            `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
       
           if (response?.data?.orders?.length) {
@@ -687,7 +684,7 @@ export const createSeaportListing = async (
   }
   try {
     const res = await getOpenseaInterceptor(baseUrlV2, chainId).post(
-      `/orders/${chainId === '4' ? 'rinkeby' : 'ethereum'}/seaport/listings`,
+      `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/listings`,
       {
         signature,
         parameters: JSON.parse(parameters),
