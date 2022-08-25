@@ -17,11 +17,10 @@ import {
   getLastWeight,
   midWeight, s3ToCdn,
 } from '@nftcom/gql/service/core.service'
+import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
-
-import { SearchEngineService } from '../service/searchEngine.service'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -1158,7 +1157,7 @@ export const getCollectionInfo = async (
           ...collection,
           deployer: collectionDeployer,
         })
-        await seService.indexCollections([collection])
+        // await seService.indexCollections([collection])
       }
 
       let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
@@ -1211,13 +1210,12 @@ export const getCollectionInfo = async (
                 ubiquityResults.collection.description : description
             }
           }
-          await seService.indexCollections([
-            await repositories.collection.updateOneById(collection.id, {
-              bannerUrl,
-              logoUrl,
-              description,
-            }),
-          ])
+          const updatedCollection = await repositories.collection.updateOneById(collection.id, {
+            bannerUrl,
+            logoUrl,
+            description,
+          })
+          await seService.indexCollections([updatedCollection])
           collection = await repositories.collection.findByContractAddress(
             ethers.utils.getAddress(contract),
             chainId,
