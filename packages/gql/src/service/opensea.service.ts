@@ -6,7 +6,7 @@ import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { entity } from '@nftcom/shared'
+import { _logger,entity } from '@nftcom/shared'
 import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
@@ -22,6 +22,8 @@ const OPENSEA_LISTING_BATCH_SIZE = 30
 const DELAY_AFTER_BATCH_RUN = 4
 const MAX_QUERY_LENGTH = 4014 // 4094 - 80
 const TESTNET_CHAIN_IDS = ['4', '5']
+
+const logger = _logger.Factory(_logger.Context.Opensea)
 
 interface OpenseaAsset {
   image_url: string
@@ -332,6 +334,7 @@ export const retrieveOrdersOpensea = async (
 
     return responses
   } catch (err) {
+    logger.log(`Error in retrieveOrdersOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined
   }
@@ -357,6 +360,7 @@ export const retrieveCollectionOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
+    logger.log(`Error in retrieveCollectionOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
     return undefined
   }
@@ -382,6 +386,7 @@ export const retrieveCollectionStatsOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
+    logger.log(`Error in retrieveCollectionStatsOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
     return undefined
   }
@@ -409,6 +414,7 @@ export const retrieveOffersOpensea = async (
       const offers = result.data.offers as Array<OpenseaResponse>
       return offers
     } catch (err) {
+      logger.log(`Error in retrieveOffersOpensea: ${err}`)
       // Sentry.captureMessage(`Error in retrieveOffersOpensea: ${err}`)
       return undefined
     }
@@ -658,6 +664,7 @@ export const retrieveMultipleOrdersOpensea = async (
       }
     }
   } catch (err) {
+    logger.log(`Error in retrieveMultipleOrdersOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
   }
   return responseAggregator
@@ -701,6 +708,7 @@ export const createSeaportListing = async (
     }
     return null
   } catch (err) {
+    logger.log(`Error in createSeaportListing: ${err}`)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
     return null
   }
