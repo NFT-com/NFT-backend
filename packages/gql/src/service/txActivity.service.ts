@@ -5,7 +5,6 @@ import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
-import { TxActivity } from '@nftcom/shared/db/entity'
 
 type Order = SeaportOrder | LooksRareOrder
 
@@ -163,17 +162,17 @@ export const orderEntityBuilder = async (
 export const paginatedActivitiesBy = (
   repo: repository.TxActivityRepository,
   pageInput: gql.PageInput,
-  filters: Partial<TxActivity>[],
+  filters: Partial<entity.TxActivity>[],
   relations: string[],
   orderKey= 'createdAt',
   orderDirection = 'DESC',
-  distinctOn?: defs.DistinctOn<TxActivity>,
-): Promise<defs.PageableResult<TxActivity>> => {
+  distinctOn?: defs.DistinctOn<entity.TxActivity>,
+): Promise<defs.PageableResult<entity.TxActivity>> => {
   const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
   const orderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: orderDirection }
   const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reversedOrderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: reversedOrderDirection }
-  return pagination.resolvePage<TxActivity>(pageInput, {
+  return pagination.resolvePage<entity.TxActivity>(pageInput, {
     firstAfter: () => repo.findActivities({
       filters: pageableFilters,
       relations: relations,
