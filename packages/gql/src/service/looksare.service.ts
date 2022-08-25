@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { entity } from '@nftcom/shared'
+import { _logger,entity } from '@nftcom/shared'
 import { ActivityType, ProtocolType } from '@nftcom/shared/defs'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
@@ -11,6 +11,7 @@ const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1
 const LOOKSRARE_LISTING_BATCH_SIZE = 4
 const LOOKSRARE_API_KEY = process.env.LOOKSRARE_API_KEY
 
+const logger = _logger.Factory(_logger.Context.Looksrare)
 export interface LooksRareOrderRequest {
   contract: string
   tokenId: string
@@ -86,6 +87,7 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
+    logger.log(`Error in retrieveOrdersLooksrare: ${err}`)
     //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }
@@ -223,6 +225,7 @@ export const retrieveMultipleOrdersLooksrare = async (
       }
     }
   } catch (err) {
+    logger.log(`Error in retrieveMultipleOrdersLooksrare: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
   return responseAggregator
@@ -257,6 +260,7 @@ export const createLooksrareListing = async (
     }
     return null
   } catch (err) {
+    logger.log(`Error in createLooksrareListing: ${err}`)
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
     return null
   }
