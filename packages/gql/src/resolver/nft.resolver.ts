@@ -449,6 +449,29 @@ export const saveProfileScore = async (
   }
 }
 
+export const saveVisibleNFTsForProfile = async (
+  profileId: string,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profileId,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    if (edges.length) {
+      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
+    return err
+  }
+}
+
 const updateGKIconVisibleStatus = async (
   repositories: db.Repository,
   chainId: string,
@@ -674,35 +697,43 @@ const updateNFTsForProfile = (
                           return syncEdgesWithNFTs(profile.id)
                             .then(() => {
                               logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
-                              // refresh NFTs for associated addresses
-                              return updateNFTsForAssociatedAddresses(
-                                repositories,
-                                profile,
-                                chainId,
-                              ).then((msg) => {
-                                logger.debug(msg)
-                                // update associated contract
-                                return updateCollectionForAssociatedContract(
-                                  repositories,
-                                  profile,
-                                  chainId,
-                                  wallet.address,
-                                ).then((msg) => {
-                                  logger.debug(msg)
-                                  // if gkIconVisible is true, we check if this profile owner still owns genesis key,
-                                  if (profile.gkIconVisible) {
-                                    return updateGKIconVisibleStatus(repositories, chainId, profile)
-                                      .then(() => {
-                                        logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                              // save visible NFT amount of profile
+                              return saveVisibleNFTsForProfile(profile.id, repositories)
+                                .then(() => {
+                                  logger.debug('saved amount of visible NFTs to profile', profile.id)
+                                  // refresh NFTs for associated addresses
+                                  return updateNFTsForAssociatedAddresses(
+                                    repositories,
+                                    profile,
+                                    chainId,
+                                  ).then((msg) => {
+                                    logger.debug(msg)
+                                    // update associated contract
+                                    return updateCollectionForAssociatedContract(
+                                      repositories,
+                                      profile,
+                                      chainId,
+                                      wallet.address,
+                                    ).then((msg) => {
+                                      logger.debug(msg)
+                                      // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                                      if (profile.gkIconVisible) {
+                                        return updateGKIconVisibleStatus(
+                                          repositories,
+                                          chainId,
+                                          profile,
+                                        ).then(() => {
+                                          logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                          const updateEnd = Date.now()
+                                          logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+                                        })
+                                      } else {
                                         const updateEnd = Date.now()
                                         logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                      })
-                                  } else {
-                                    const updateEnd = Date.now()
-                                    logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                  }
+                                      }
+                                    })
+                                  })
                                 })
-                              })
                             })
                         })
                     })
@@ -1157,12 +1188,18 @@ export const listNFTSeaport = async (
   args: gql.MutationListNFTSeaportArgs,
   ctx: Context,
 ): Promise<boolean> => {
+  const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return await createSeaportListing(seaportSignature, seaportParams, chainId)
+  return createSeaportListing(seaportSignature, seaportParams, chainId)
+    .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
+      return repositories.txOrder.save(order)
+    }))
+    .then(order => !!order.id)
+    .catch(() => false)
 }
 
 export const listNFTLooksrare = async (
@@ -1170,12 +1207,18 @@ export const listNFTLooksrare = async (
   args: gql.MutationListNFTLooksrareArgs,
   ctx: Context,
 ): Promise<boolean> => {
+  const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return await createLooksrareListing(looksrareOrder, chainId)
+  return createLooksrareListing(looksrareOrder, chainId)
+    .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
+      return repositories.txOrder.save(order)
+    }))
+    .then(order => !!order.id)
+    .catch(() => false)
 }
 
 export default {

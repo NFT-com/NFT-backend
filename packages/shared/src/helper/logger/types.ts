@@ -13,6 +13,8 @@ export enum LoggerContext {
   PubSub = 'pubsub',
   Profile = 'profile',
   SendGrid = 'sendgrid',
+  Opensea = 'opensea',
+  Looksrare = 'looksrare',
   User = 'user',
   Wallet = 'wallet',
   Watchlist = 'watchlist',

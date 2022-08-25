@@ -1,10 +1,15 @@
+import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import Joi from 'joi'
 import { In, UpdateResult } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, txActivityError } from '@nftcom/gql/error'
-import { auth } from '@nftcom/gql/helper'
-import { defs, entity, helper } from '@nftcom/shared/'
+import { auth, joi, pagination } from '@nftcom/gql/helper'
+import { core } from '@nftcom/gql/service'
+import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
+import { _logger,defs, entity, helper } from '@nftcom/shared'
+
 interface UpdatedIds {
   id: string
 }
@@ -37,7 +42,7 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
         id: In(ids),
         chainId: chain.id,
         read: false,
-        walletId: walletAddress,
+        walletAddress,
       },
     })
   }
@@ -77,18 +82,22 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
   return repositories.txActivity.findActivitiesByType(activityType, chainId)
 }
 
-const getActivitiesByWalletId = (_: any, args: gql.QueryGetActivitiesByWalletIdArgs, ctx: Context)
+const getActivitiesByWalletAddress = (
+  _: any,
+  args: gql.QueryGetActivitiesByWalletAddressArgs, ctx: Context,
+)
 : Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByWalletId(args.walletId, chainId)
+  const walletAddress: string = helper.checkSum(args.walletAddress)
+  return repositories.txActivity.findActivitiesByWalletAddress(walletAddress, chainId)
 }
 
-const getActivitiesByWalletIdAndType = (
+const getActivitiesByWalletAddressAndType = (
   _: any,
-  args: gql.QueryGetActivitiesByWalletIdAndTypeArgs,
+  args: gql.QueryGetActivitiesByWalletAddressAndTypeArgs,
   ctx: Context,
 ): Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
@@ -96,23 +105,131 @@ const getActivitiesByWalletIdAndType = (
   const chainId = args.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return repositories.txActivity.findActivitiesByWalletIdAndType(
-    args.input.walletId,
+  const walletAddress: string = helper.checkSum(args.input?.walletAddress)
+
+  return repositories.txActivity.findActivitiesByWalletAddressAndType(
+    walletAddress,
     activityType,
     chainId,
   )
 }
 
+const getActivities = async (
+  _: any,
+  args: gql.QueryGetActivitiesArgs,
+  ctx: Context,
+): Promise<any> => {
+  const { repositories, network } = ctx
+
+  const schema = Joi.object().keys({
+    input: Joi.object().required().keys({
+      pageInput: Joi.any().required(),
+      walletAddress: Joi.string(),
+      activityType: Joi.string(),
+      read: Joi.boolean(),
+      tokenId: Joi.custom(joi.buildBigNumber),
+      contract: Joi.string(),
+      chainId: Joi.string(),
+      skipRelations: Joi.boolean(),
+    }),
+  })
+
+  joi.validateSchema(schema, args)
+  const {
+    pageInput,
+    walletAddress,
+    activityType,
+    read,
+    tokenId,
+    contract,
+    skipRelations,
+  } = args.input
+
+  const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
+
+  auth.verifyAndGetNetworkChain(network, chainId)
+
+  let filters: any = { chainId }
+
+  if (walletAddress) {
+    const walletAddressVerifed: string = helper.checkSum(walletAddress)
+    filters = { ...filters, walletAddress: walletAddressVerifed }
+  }
+
+  if(activityType) {
+    const castedActivityType: defs.ActivityType = activityType as defs.ActivityType
+    if (!Object.values(defs.ActivityType).includes(castedActivityType)) {
+      return Promise.reject(appError.buildInvalid(
+        txActivityError.buildIncorrectActivity(castedActivityType),
+        txActivityError.ErrorType.ActivityIncorrect,
+      ))
+    }
+    filters = { ...filters, activityType: castedActivityType }
+  }
+
+  let nftId: string
+  // build nft id
+  if (contract && !tokenId) {
+    return Promise.reject(appError.buildInvalid(
+      txActivityError.buildCollectionNotSupported(),
+      txActivityError.ErrorType.CollectionNotSupported,
+    ))
+  }
+
+  if (!contract && tokenId) {
+    return Promise.reject(appError.buildInvalid(
+      txActivityError.buildTokenWithNoContract(),
+      txActivityError.ErrorType.TokenWithNoContract,
+    ))
+  }
+  if (contract && tokenId) {
+    nftId = `ethereum/${contract}/${BigNumber.from(tokenId).toHexString()}`
+  }
+
+  if(nftId?.length) {
+    filters = { nftId }
+  }
+
+  if (read) {
+    filters = { ...filters, read }
+  }
+
+  const safefilters = [helper.inputT2SafeK(filters)]
+
+  if (skipRelations) {
+    return core.paginatedEntitiesBy(
+      repositories.txActivity,
+      pageInput,
+      safefilters,
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  }
+
+  return paginatedActivitiesBy(
+    repositories.txActivity,
+    pageInput,
+    safefilters,
+    [],
+    'updatedAt',
+    'DESC',
+  )
+    .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+}
+
 export default {
   Query: {
+    getActivities,
     getActivitiesByType,
-    getActivitiesByWalletId: combineResolvers(
+    getActivitiesByWalletAddress: combineResolvers(
       auth.isAuthenticated,
-      getActivitiesByWalletId,
+      getActivitiesByWalletAddress,
     ),
-    getActivitiesByWalletIdAndType: combineResolvers(
+    getActivitiesByWalletAddressAndType: combineResolvers(
       auth.isAuthenticated,
-      getActivitiesByWalletIdAndType,
+      getActivitiesByWalletAddressAndType,
     ),
   },
   Mutation: {

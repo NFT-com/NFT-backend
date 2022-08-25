@@ -5,7 +5,6 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
-import { contentTypeFromExt, extensionFromFilename } from '@nftcom/gql/service/core.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, db, defs, entity,provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -268,32 +267,21 @@ const updateCollectionImageUrls = async (
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   try {
     const { count } = args
-    const collections = await repositories.collection.find({ where: { chainId } })
-
-    let toUpdate = collections.map((collection) => {
-      let bannerContentType
-      let logoContentType
-      if (collection.bannerUrl) {
-        const bannerExt = extensionFromFilename(collection.bannerUrl)
-        bannerContentType = contentTypeFromExt(bannerExt)
-      }
-      if (collection.logoUrl) {
-        const logoExt = extensionFromFilename(collection.logoUrl)
-        logoContentType = contentTypeFromExt(logoExt)
-      }
-      // check saved banner or logo image urls are incorrect
-      if (!bannerContentType || !logoContentType) {
-        collection.bannerUrl = null
-        collection.logoUrl = null
-        return collection
-      } else {
-        return undefined
-      }
+    const collections = await repositories.collection.find({
+      where: {
+        chainId,
+        bannerUrl: null,
+        logoUrl: null,
+      },
     })
-    toUpdate = toUpdate.filter((collection) => collection !== undefined)
-    const length = toUpdate.length > count ? count : toUpdate.length
-    toUpdate = toUpdate.slice(0, length)
-    await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
+    const length = collections.length > count ? count : collections.length
+    const toUpdate = collections.slice(0, length)
+    await Promise.allSettled(
+      toUpdate.map(async (collection) => {
+        await getCollectionInfo(collection.contract, chainId, repositories)
+      }),
+    )
+
     return {
       message: `Updated ${length} collections`,
     }

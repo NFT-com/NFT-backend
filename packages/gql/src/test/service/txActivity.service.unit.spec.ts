@@ -53,8 +53,9 @@ describe('txActivity service', () => {
       activity.activityType = ActivityType.Listing
       activity.activityTypeId = testLooksrareExistingOrder.hash
       activity.timestamp = new Date()
-      activity.walletId = 'x29hruG3hC0rrkag7ChQb'
+      activity.walletAddress = 'x29hruG3hC0rrkag7ChQb'
       activity.chainId = '4'
+      activity.nftId = [`ethereum/${testLooksrareExistingOrder.collectionAddress}/${testLooksrareExistingOrder.tokenId}`]
 
       const savedActivity: entity.TxActivity = await repositories.txActivity.save(activity)
 

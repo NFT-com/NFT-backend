@@ -14,7 +14,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
-import { saveProfileScore } from '@nftcom/gql/resolver/nft.resolver'
+import { saveProfileScore, saveVisibleNFTsForProfile } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
@@ -29,7 +29,7 @@ import {
   getOwnersOfGenesisKeys,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
@@ -689,7 +689,62 @@ const createCompositeImage = async (
   return profile
 }
 
-const getLatestProfiles = (
+const sortedProfilesByVisibleNFTs = async (
+  repositories: db.Repository,
+  args: gql.QueryLatestProfilesArgs,
+  chainId: string,
+): Promise<gql.ProfilesOutput> => {
+  const key = `${CacheKeys.SORTED_PROFILES_BY_VISIBLE_NFTS}_${chainId}`
+  const cachedData = await cache.get(key)
+  let indexedProfiles: Array<gql.Profile> = []
+  if (cachedData) {
+    indexedProfiles = JSON.parse(cachedData)
+  } else {
+    const profiles = await repositories.profile.find({  where: { chainId }, order: { visibleNFTs: 'DESC' } })
+    for (let i = 0; i < profiles.length; i++) {
+      indexedProfiles.push({
+        index: i,
+        ...profiles[i],
+      })
+    }
+    await cache.set(key, JSON.stringify(indexedProfiles), 'EX', 60 * 10)
+  }
+
+  const { pageInput } = helper.safeObject(args?.input)
+  let paginatedProfiles: Array<gql.Profile>
+  let defaultCursor
+  if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+      { afterCursor: indexedProfiles.length.toString() }
+  }
+
+  const safePageInput = safeInput(pageInput, defaultCursor)
+
+  let totalItems
+  if (pagination.hasFirst(safePageInput)) {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedProfiles = indexedProfiles.filter((profile) => profile.index > Number(cursor))
+    totalItems = paginatedProfiles.length
+    paginatedProfiles = paginatedProfiles.slice(0, safePageInput.first)
+  } else {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedProfiles = indexedProfiles.filter((profile) => profile.index < Number(cursor))
+    totalItems = paginatedProfiles.length
+    paginatedProfiles =
+      paginatedProfiles.slice(paginatedProfiles.length - safePageInput.last)
+  }
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedProfiles[0],
+    paginatedProfiles[paginatedProfiles.length - 1],
+    'index',
+  )([paginatedProfiles, totalItems])
+}
+
+const getLatestProfiles = async (
   _: any,
   args: gql.QueryLatestProfilesArgs,
   ctx: Context,
@@ -705,15 +760,39 @@ const getLatestProfiles = (
     chainId: chainId,
   }
   const filters = [helper.inputT2SafeK(inputFilters)]
-  return core.paginatedEntitiesBy(
-    repositories.profile,
-    pageInput,
-    filters,
-    [],
-    'updatedAt',
-    'DESC',
-  )
-    .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  if (args?.input.sortBy === gql.ProfileSortType.RecentUpdated) {
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  } else if (args?.input.sortBy === gql.ProfileSortType.RecentMinted) {
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'createdAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+  } else if (args?.input.sortBy === gql.ProfileSortType.MostVisibleNFTs) {
+    return await sortedProfilesByVisibleNFTs(repositories, args, chainId)
+  } else {
+    return core.paginatedEntitiesBy(
+      repositories.profile,
+      pageInput,
+      filters,
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  }
 }
 
 const orderingUpdates = (
@@ -969,6 +1048,34 @@ const updateProfileView = async (
   }
 }
 
+const saveNFTVisibility = async (
+  _: any,
+  args: gql.MutationSaveNFTVisibilityForProfilesArgs,
+  ctx: Context,
+): Promise<gql.SaveNFTVisibilityForProfilesOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('saveNFTVisibility', { count: args?.count })
+  try {
+    const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
+    const profiles = await repositories.profile.find({ where: { visibleNFTs: 0, chainId } })
+    const slicedProfiles = profiles.slice(0, count)
+    await Promise.allSettled(
+      slicedProfiles.map(async (profile) => {
+        await saveVisibleNFTsForProfile(profile.id, repositories)
+      }),
+    )
+    logger.debug('Amount of visible NFTs for profiles are cached', { counts: slicedProfiles.length })
+    return {
+      message: `Saved amount of visible NFTs for ${slicedProfiles.length} profiles`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveNFTVisibility: ${err}`)
+    return err
+  }
+}
+
 const getIgnoredEvents = async (
   _: any,
   args: gql.QueryIgnoredEventsArgs,
@@ -1091,6 +1198,7 @@ export default {
     saveScoreForProfiles: combineResolvers(auth.isAuthenticated, saveScoreForProfiles),
     clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
     updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
+    saveNFTVisibilityForProfiles: combineResolvers(auth.isAuthenticated, saveNFTVisibility),
   },
   Profile: {
     followersCount: getFollowersCount,
