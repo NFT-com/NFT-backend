@@ -750,4 +750,48 @@ describe('nft resolver', () => {
       expect(result.data.updateNFTsForProfile.items).toHaveLength(0)
     })
   })
+
+  describe('uploadMetadataImagesToS3', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.nft.save({
+        contract: nftTestMockData.contract,
+        tokenId: nftTestMockData.tokenId,
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          imageURL: 'ipfs://QmYQdCpm5JWBuodHUsNVqhGng1NBt9DBn91QZSMV7B9D2g/4.png',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update previewLink of NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 1 NFTs')
+    })
+  })
 })

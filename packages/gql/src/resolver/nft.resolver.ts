@@ -1243,15 +1243,17 @@ const saveNFTMetadataImageToS3 = async (
         previewLink: nft.metadata.imageURL + '?width=600',
       })
     } else {
+      if (!nft.metadata.imageURL.startsWith('ipfs')) return
+      const imageUrl = 'https://ipfs.io/ipfs/' + nft.metadata.imageURL.slice(7)
       const filename = nft.metadata.imageURL.split('/').pop()
       if (filename) {
-        const res = await fetch(nft.metadata.imageURL)
+        const res = await fetch(imageUrl)
         const buffer = await res.buffer()
         if (buffer) {
-          const ext = extensionFromFilename(nft.metadata.imageURL)
-          const fullName = ext ? filename + '.' + ext : filename
-          const imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + fullName
+          const ext = extensionFromFilename(filename)
           const contentType = contentTypeFromExt(ext)
+          if (!contentType) return
+          const imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
           const s3config = await getAWSConfig()
           const upload = new Upload({
             client: s3config,
@@ -1265,7 +1267,7 @@ const saveNFTMetadataImageToS3 = async (
           await upload.done()
 
           const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-          await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath })
+          await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath + '?width=600' })
           logger.debug('Preview link of NFT metadata image is saved', { previewLink: cdnPath })
         }
       }
