@@ -1252,3 +1252,50 @@ export const getCollectionInfo = async (
     return err
   }
 }
+
+export const saveNFTMetadataImageToS3 = async (
+  nft: entity.NFT,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    if (!nft.metadata.imageURL) return
+    if (!nft.metadata.imageURL.length) return
+    if (nft.metadata.imageURL.startsWith('https://cdn.nft.com')) {
+      await repositories.nft.updateOneById(nft.id, {
+        previewLink: nft.metadata.imageURL + '?width=600',
+      })
+    } else {
+      if (!nft.metadata.imageURL.startsWith('ipfs')) return
+      const imageUrl = 'https://ipfs.io/ipfs/' + nft.metadata.imageURL.slice(7)
+      const filename = nft.metadata.imageURL.split('/').pop()
+      if (filename) {
+        const res = await fetch(imageUrl)
+        const buffer = await res.buffer()
+        if (buffer) {
+          const ext = extensionFromFilename(filename)
+          const contentType = contentTypeFromExt(ext)
+          if (!contentType) return
+          const imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
+          const s3config = await getAWSConfig()
+          const upload = new Upload({
+            client: s3config,
+            params: {
+              Bucket: assetBucket.name,
+              Key: imageKey,
+              Body: buffer,
+              ContentType: contentType,
+            },
+          })
+          await upload.done()
+
+          const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+          await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath + '?width=600' })
+          logger.debug('Preview link of NFT metadata image is saved', { previewLink: cdnPath })
+        }
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveNFTMetadatImageToS3: ${err}`)
+    return
+  }
+}
