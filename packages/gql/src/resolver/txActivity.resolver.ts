@@ -238,4 +238,12 @@ export default {
       updateReadByIds,
     ),
   },
+  ProtocolData:{
+    __resolveType(obj) {
+      if (obj.signer) {
+        return 'LooksrareProtocolData'
+      }
+      return 'SeaportProtocolData'
+    },
+  },
 }
