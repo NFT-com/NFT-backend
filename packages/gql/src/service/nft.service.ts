@@ -1099,15 +1099,16 @@ export const downloadImageFromUbiquity = async (
   }
 }
 
-const downloadAndUploadImageToS3 = async (
+export const downloadAndUploadImageToS3 = async (
   chainId: string,
   url: string,
   fileName: string,
+  uploadPath: string,
 ): Promise<string | undefined> => {
   try {
     const ext = extensionFromFilename(url)
     const fullName = ext ? fileName + '.' + ext : fileName
-    const imageKey = `collections/${chainId}/` + Date.now() + '-' + fullName
+    const imageKey = uploadPath + Date.now() + '-' + fullName
     const contentType = contentTypeFromExt(ext)
     if (!contentType) return undefined
     const buffer = await downloadImageFromUbiquity(url)
@@ -1187,12 +1188,14 @@ export const getCollectionInfo = async (
         ) {
           ubiquityResults = await getUbiquity(contract, chainId)
           if (ubiquityResults) {
+            const uploadPath = `collections/${chainId}/`
             // check if banner url from Ubiquity is correct one
             if (ubiquityResults.collection.banner !== ubiquityFolder) {
               const banner = await downloadAndUploadImageToS3(
                 chainId,
                 ubiquityResults.collection.banner,
                 'banner',
+                uploadPath,
               )
               bannerUrl = banner ? banner : bannerUrl
             }
@@ -1202,6 +1205,7 @@ export const getCollectionInfo = async (
                 chainId,
                 ubiquityResults.collection.logo,
                 'logo',
+                uploadPath,
               )
               logoUrl = logo ? logo : logoUrl
             }

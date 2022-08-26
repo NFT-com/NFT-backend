@@ -191,6 +191,10 @@ type UpdateAssociatedContractOutput {
   message: String
 }
 
+type UploadMetadataImagesToS3Output {
+  message: String
+}
+
 extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
@@ -219,4 +223,6 @@ extend type Mutation {
   updateNFTMemo(nftId: ID!, memo: String!): NFT!
   "AUTHENTICATED"
   updateNFTProfileId(nftId: ID!, profileId: ID!): NFT!
+  "AUTHENTICATED"
+  uploadMetadataImagesToS3(count: Int!): UploadMetadataImagesToS3Output!
 }
