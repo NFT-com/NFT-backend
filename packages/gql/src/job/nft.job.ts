@@ -13,7 +13,7 @@ import { nftCronSubqueue } from './job'
 
 // exported for tests
 export const repositories = db.newRepositories()
-const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+const logger = _logger.Factory(_logger.Context.Bull)
 
 const MAX_CHUNK_SIZE = 500
 
@@ -251,6 +251,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
      
     logger.debug('updated external orders for nfts - on demand')
   } catch (err) {
+    logger.log(`Error in nftExternalOrdersOnDemand Job: ${err}`)
     Sentry.captureMessage(`Error in nftExternalOrdersOnDemand Job: ${err}`)
   }
 }
