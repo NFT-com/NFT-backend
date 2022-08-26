@@ -17,6 +17,9 @@ export class NullTypesenseClient implements NullClient {
           import: (_: any[]) => {
             return this._importResponse
           },
+          delete: () => {
+            return { id: 'true' }
+          },
         }
       },
     }

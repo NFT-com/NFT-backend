@@ -20,7 +20,7 @@ const typesenseClient: Client = new Client({
 export type NullClient = Record<string, unknown> // Null object passed in for testing
 export class SearchEngineClient {
 
-  private _client: any
+  private _client: Client | Partial<Client>
 
   static create(): SearchEngineClient {
     return new SearchEngineClient(typesenseClient)
@@ -51,6 +51,12 @@ export class SearchEngineClient {
       logger.error('Error importing to Typesense:', e)
     }
     return this.isFullySuccessful(response)
+  }
+
+  removeDocument = async (collection: string, documentId: string): Promise<boolean> => {
+    const response = await this._client.collections(collection).documents(documentId)
+      .delete() as {id: string}
+    return !!response.id
   }
 
 }
