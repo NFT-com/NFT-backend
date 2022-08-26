@@ -17,11 +17,10 @@ import {
   getLastWeight,
   midWeight, s3ToCdn,
 } from '@nftcom/gql/service/core.service'
+import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
-
-import { SearchEngineService } from '../service/searchEngine.service'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -203,6 +202,7 @@ const filterNFTsWithAlchemy = async (
             .then(() => repositories.nft.hardDelete({
               id: dbNFT.id,
             }))
+          await seService.deleteNFT(dbNFT.id)
         }
       }),
     )
@@ -505,7 +505,6 @@ const updateNFTOwnershipAndMetadata = async (
       })
       // save previewLink of NFT metadata image if it's from IPFS
       await saveNFTMetadataImageToS3(savedNFT, repositories)
-      await seService.indexNFT(savedNFT)
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -632,6 +631,7 @@ export const updateWalletNFTs = async (
       if (savedNFT) savedNFTs.push(savedNFT)
     }),
   )
+  await seService.indexNFTs(savedNFTs)
   await updateCollectionForNFTs(savedNFTs)
 }
 
@@ -1209,11 +1209,11 @@ export const getCollectionInfo = async (
         ethers.utils.getAddress(collection.deployer) !== collection.deployer
       )) {
         const collectionDeployer = await getCollectionDeployer(contract, chainId)
-        await repositories.collection.save({
+        collection = await repositories.collection.save({
           ...collection,
           deployer: collectionDeployer,
         })
-        collection.deployer = collectionDeployer
+        // await seService.indexCollections([collection])
       }
 
       let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
@@ -1269,11 +1269,12 @@ export const getCollectionInfo = async (
                 ubiquityResults.collection.description : description
             }
           }
-          await repositories.collection.updateOneById(collection.id, {
+          const updatedCollection = await repositories.collection.updateOneById(collection.id, {
             bannerUrl,
             logoUrl,
             description,
           })
+          await seService.indexCollections([updatedCollection])
           collection = await repositories.collection.findByContractAddress(
             ethers.utils.getAddress(contract),
             chainId,
@@ -1281,11 +1282,13 @@ export const getCollectionInfo = async (
         }
       } else {
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
-          await repositories.collection.updateOneById(collection.id, {
-            bannerUrl,
-            logoUrl,
-            description,
-          })
+          await seService.indexCollections([
+            await repositories.collection.updateOneById(collection.id, {
+              bannerUrl,
+              logoUrl,
+              description,
+            }),
+          ])
           collection = await repositories.collection.findByContractAddress(
             ethers.utils.getAddress(contract),
             chainId,

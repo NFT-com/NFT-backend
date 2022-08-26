@@ -46,6 +46,8 @@ import {
 import { createSeaportListing, retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
 
+import { SearchEngineService } from '../service/searchEngine.service'
+
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 
@@ -107,6 +109,8 @@ const baseCoins = [
     chainId: 4,
   },
 ]
+
+const seService = new SearchEngineService()
 
 const getNFT = (
   _: unknown,
@@ -606,12 +610,13 @@ const updateCollectionForAssociatedContract = async (
     } else {
       const collection = await repositories.collection.findByContractAddress(contract, chainId)
       if (!collection) {
-        await repositories.collection.save({
+        const savedCollection = await repositories.collection.save({
           contract,
           name: collectionName,
           chainId,
           deployer,
         })
+        await seService.indexCollections([savedCollection])
       }
       const checkedDeployer =  ethers.utils.getAddress(deployer)
       const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
