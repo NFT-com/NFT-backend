@@ -15,7 +15,7 @@ import {
   generateWeight,
   getAWSConfig,
   getLastWeight,
-  midWeight, s3ToCdn,
+  midWeight, processIPFSURL, s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
@@ -425,27 +425,30 @@ export const saveNFTMetadataImageToS3 = async (
         previewLink: nft.metadata.imageURL + '?width=600',
       })
     } else {
-      if (!nft.metadata.imageURL.startsWith('ipfs')) return
-      const imageUrl = 'https://ipfs.io/ipfs/' + nft.metadata.imageURL.slice(7)
+      const imageUrl = processIPFSURL(nft.metadata.imageURL)
       const filename = nft.metadata.imageURL.split('/').pop()
       if (filename) {
         const res = await fetch(imageUrl)
         const buffer = await res.buffer()
         if (buffer) {
-          const ext = extensionFromFilename(filename)
+          let ext = extensionFromFilename(filename)
+          const imageKey = ext ? `nfts/${nft.chainId}/` + Date.now() + '-' + filename :
+            `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
+          ext = ext ?? 'png'
           const contentType = contentTypeFromExt(ext)
-          if (!contentType) return
-          const imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
           const s3config = await getAWSConfig()
-          const upload = new Upload({
-            client: s3config,
-            params: {
-              Bucket: assetBucket.name,
-              Key: imageKey,
-              Body: buffer,
-              ContentType: contentType,
-            },
-          })
+          let upload
+          if (contentType) {
+            upload = new Upload({
+              client: s3config,
+              params: {
+                Bucket: assetBucket.name,
+                Key: imageKey,
+                Body: buffer,
+                ContentType: contentType,
+              },
+            })
+          }
           await upload.done()
 
           const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
