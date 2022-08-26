@@ -1,7 +1,7 @@
 
 import Bull, { Job } from 'bull'
 
-import { cache, CacheKeys, removeExpiredTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
@@ -222,14 +222,22 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       const refreshedOrders  = nfts.reduce((acc, curr) => {
         const nftSplit: Array<string> = curr.split(':')
         const nft: string = nftSplit.slice(0, 2).join(':')
-        const ttlCondition: string = nftSplit.length === 3 && nftSplit?.[2] === 'manual' ? 'manual': ''
+        const ttlCondition: string = nftSplit.length === 3? nftSplit?.[2] === 'manual' ? 'manual': 'automated' : ''
         const currentTime: Date = new Date()
-        if (ttlCondition) {
+        let date: Date
+        switch(ttlCondition) {
+        case 'manual':
           currentTime.setMinutes(currentTime.getMinutes() + 5)
-        } else {
-          currentTime.setMinutes(currentTime.getMinutes() + 30)
+          date = currentTime
+          break
+        case 'automated':
+          date = new Date(Number(nftSplit?.[2]))
+          break
+        default:
+          break
         }
-        acc.push(...[currentTime.getTime(), nft])
+        const ttl: number = ttlForTimestampedZsetMembers(date)
+        acc.push(...[ttl, nft])
         return acc
       }, [])
       await Promise.all([

@@ -1040,7 +1040,18 @@ export const refreshNFTOrder = async (  _: any,
       return 'Refreshed Recently! Try in sometime!'
     }
 
-    const nftCacheId: string = args?.manualTrigger ? `${nft.contract}:${nft.tokenId}:manual` : `${nft.contract}:${nft.tokenId}`
+    let nftCacheId = `${nft.contract}:${nft.tokenId}`
+    if (args.ttl === null) {
+      nftCacheId += ':manual'
+    }
+
+    if(args?.ttl) {
+      const ttlDate: Date = new Date(args?.ttl)
+      const now: Date = new Date()
+      if (ttlDate && ttlDate > now) {
+        nftCacheId += `:${ttlDate.getTime()}`
+      }
+    }
     // add to cache list
     await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, nftCacheId)
     return 'Added to queue! Check back shortly!'
