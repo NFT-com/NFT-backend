@@ -36,7 +36,7 @@ let testServer
 const repositories = db.newRepositories()
 let connection: Connection
 let profile
-let nft
+let nft, nftA
 
 const mockTestServer = (): any => {
   const mockArgs ={
@@ -762,7 +762,7 @@ describe('nft resolver', () => {
         { id: '5', name: 'goerli' },
       )
 
-      await repositories.nft.save({
+      nftA = await repositories.nft.save({
         contract: nftTestMockData.contract,
         tokenId: nftTestMockData.tokenId,
         chainId: '5',
@@ -792,6 +792,8 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 1 NFTs')
+      const nft = await repositories.nft.findById(nftA.id)
+      expect(nft.previewLink).toBeDefined()
     })
   })
 })
