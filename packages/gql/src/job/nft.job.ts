@@ -222,7 +222,16 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       const refreshedOrders  = nfts.reduce((acc, curr) => {
         const nftSplit: Array<string> = curr.split(':')
         const nft: string = nftSplit.slice(0, 2).join(':')
-        const ttlCondition: string = nftSplit.length === 3? nftSplit?.[2] === 'manual' ? 'manual': 'automated' : ''
+        let ttlCondition = ''
+
+        if (nftSplit.length === 3) {
+          if (nftSplit?.[2] === 'manual') {
+            ttlCondition = 'manual'
+          } else {
+            ttlCondition = 'automated'
+          }
+        }
+
         const currentTime: Date = new Date()
         let date: Date
         switch(ttlCondition) {
