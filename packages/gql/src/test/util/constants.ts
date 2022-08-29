@@ -154,7 +154,7 @@ export const testSeaportOrder : SeaportOrder = {
       offerer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
       offer: [{
         itemType: 3,
-        token: 'test-proxy-contract',
+        token: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         identifierOrCriteria: '1234',
         startAmount: '1',
         endAmount: '1',
@@ -175,7 +175,7 @@ export const testSeaportOrder : SeaportOrder = {
   protocol_address: 'test-protocol-address',
   maker_fees: [{
     account: {
-      address: 'test-address',
+      address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
     },
     basis_points: '250',
   }],
@@ -189,7 +189,7 @@ export const testSeaportOrder : SeaportOrder = {
 
 export const testLooksrareOrder: LooksRareOrder = {
   hash: 'test-order-hash',
-  collectionAddress: 'test-collection-address',
+  collectionAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   tokenId: '1234',
   isOrderAsk: false,
   signer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
@@ -211,7 +211,7 @@ export const testLooksrareOrder: LooksRareOrder = {
 
 export const testLooksrareExistingOrder: LooksRareOrder = {
   hash: 'test-existing-order-hash',
-  collectionAddress: 'test-collection-address',
+  collectionAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   tokenId: '123',
   isOrderAsk: true,
   signer: 'test-signer',
@@ -241,7 +241,7 @@ export const testExistingActivity: TxActivity = {
   order: {
     id: 'test-existing-order-hash',
     exchange: ExchangeType.LooksRare,
-    makerAddress: 'test-maker-address',
+    makerAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
     orderHash: 'test-existing-order-hash',
     orderType: ActivityType.Listing,
     protocol: ProtocolType.LooksRare,

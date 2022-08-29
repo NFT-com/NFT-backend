@@ -154,11 +154,12 @@ export type Signature = {
 
 export interface ActivityFilters {
   chainId: string
-  walletAddress: string
+  walletAddress?: string
   activityType?: ActivityType
   read?: boolean
   tokenId?: string
-  contract?: string
+  nftId?: string
+  nftContract?: string
 }
 
 export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition
