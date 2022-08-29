@@ -20,6 +20,9 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false })
   timestamp: Date
 
+  @Column({ nullable: false, default: '0x' })
+  nftContract: string
+
   @Column('text', { array: true })
   nftId: string[]
 
