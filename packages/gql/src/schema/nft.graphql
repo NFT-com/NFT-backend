@@ -214,7 +214,7 @@ extend type Mutation {
   listNFTLooksrare(input: ListNFTLooksrareInput!): Boolean!
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
-  refreshNFTOrder(id: ID!): String!
+  refreshNFTOrder(id: ID!, ttl: DateTime): String!
   "AUTHENTICATED"
   updateNFTMemo(nftId: ID!, memo: String!): NFT!
   "AUTHENTICATED"

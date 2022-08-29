@@ -11,7 +11,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError, profileError } from '@nftcom/gql/error'
+import { appError, mintError, nftError,profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { saveProfileScore, saveVisibleNFTsForProfile } from '@nftcom/gql/resolver/nft.resolver'
@@ -1171,6 +1171,40 @@ const isProfileCustomized = async (
   }
 }
 
+const profilesByDisplayNft = async (
+  _: any,
+  args: gql.QueryProfilesByDisplayNFTArgs,
+  ctx: Context,
+): Promise<gql.ProfilesOutput> => {
+  const { repositories } = ctx
+  const schema = Joi.object().keys({
+    collectionAddress: Joi.string().required(),
+    tokenId: Joi.string().required(),
+    chainId: Joi.string(),
+  })
+  joi.validateSchema(schema, args?.input)
+  const chainId = args?.input?.chainId || process.env.CHAIN_ID
+  return repositories.nft.findOne({ where:
+    {
+      contract: utils.getAddress(args?.input?.collectionAddress),
+      tokenId: ethers.BigNumber.from(args?.input?.tokenId).toHexString(),
+      chainId,
+    },
+  })
+    .then(fp.rejectIfEmpty(
+      appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg(`profilesByDisplayNft ${args?.input?.collectionAddress} ${args?.input?.tokenId}`),
+        nftError.ErrorType.NFTNotFound,
+      ),
+    )).then((nft) => {
+      return core.thisEntitiesOfEdgesBy<entity.Profile>(ctx, {
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nft.id,
+        edgeType: defs.EdgeType.Displays,
+      })
+    }).then(toProfilesOutput)
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1186,6 +1220,7 @@ export default {
     ignoredEvents: getIgnoredEvents,
     associatedCollectionForProfile: getAssociatedCollectionForProfile,
     isProfileCustomized: isProfileCustomized,
+    profilesByDisplayNft,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

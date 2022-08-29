@@ -219,10 +219,34 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       await Promise.all(persistActivity)
 
-      // set ttl for timestamp members
-      const TTL: number = ttlForTimestampedZsetMembers()
       const refreshedOrders  = nfts.reduce((acc, curr) => {
-        acc.push(...[TTL, curr])
+        const nftSplit: Array<string> = curr.split(':')
+        const nft: string = nftSplit.slice(0, 2).join(':')
+        let ttlCondition = ''
+
+        if (nftSplit.length === 3) {
+          if (nftSplit?.[2] === 'manual') {
+            ttlCondition = 'manual'
+          } else {
+            ttlCondition = 'automated'
+          }
+        }
+
+        const currentTime: Date = new Date()
+        let date: Date
+        switch(ttlCondition) {
+        case 'manual':
+          currentTime.setMinutes(currentTime.getMinutes() + 5)
+          date = currentTime
+          break
+        case 'automated':
+          date = new Date(Number(nftSplit?.[2]))
+          break
+        default:
+          break
+        }
+        const ttl: number = ttlForTimestampedZsetMembers(date)
+        acc.push(...[ttl, nft])
         return acc
       }, [])
       await Promise.all([

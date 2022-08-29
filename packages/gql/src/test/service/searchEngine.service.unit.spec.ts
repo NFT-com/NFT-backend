@@ -49,7 +49,7 @@ describe('search engine service', () => {
       const seService = new SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])), repos)
 
-      const result = await seService.indexNFT(nft)
+      const result = await seService.indexNFTs([nft])
 
       expect(result).toBe(true)
     })
@@ -58,9 +58,29 @@ describe('search engine service', () => {
       const seService = new SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])), repos)
 
-      const result = await seService.indexNFT(nft)
+      const result = await seService.indexNFTs([nft])
 
       expect(result).toBe(false)
+    })
+  })
+
+  describe('deleteNFT', () => {
+    let repos
+    beforeAll(() => {
+      repos = {}
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('calls the search engine client to remove the NFT document', async () => {
+      const seService = new SearchEngineService(
+        SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
+      
+      const result = await seService.deleteNFT('123456abc')
+
+      expect(result).toBeTruthy()
     })
   })
 
@@ -106,6 +126,31 @@ describe('search engine service', () => {
       const result = await seService.indexCollections(collections)
 
       expect(result).toBe(false)
+    })
+  })
+
+  describe('deleteCollections', () => {
+    let repos
+    beforeAll(() => {
+      repos = {}
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('calls the search engine client to remove the NFT document', async () => {
+      const seService = new SearchEngineService(
+        SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
+
+      const collections = [
+        { id: '123456abc' } as Collection,
+        { id: '789012def' } as Collection,
+      ]
+      
+      expect.assertions(1)
+      await seService.deleteCollections(collections)
+      expect(true).toBeTruthy()
     })
   })
 })
