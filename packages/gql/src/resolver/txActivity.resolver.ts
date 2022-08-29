@@ -143,7 +143,7 @@ const getActivities = async (
     tokenId,
     contract,
     skipRelations,
-  } = args.input
+  } = helper.safeObject(args.input)
 
   const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
 
@@ -169,11 +169,8 @@ const getActivities = async (
 
   let nftId: string
   // build nft id
-  if (contract && !tokenId) {
-    return Promise.reject(appError.buildInvalid(
-      txActivityError.buildCollectionNotSupported(),
-      txActivityError.ErrorType.CollectionNotSupported,
-    ))
+  if (contract) {
+    filters = { ...filters, nftContract: contract }
   }
 
   if (!contract && tokenId) {
@@ -187,7 +184,7 @@ const getActivities = async (
   }
 
   if(nftId?.length) {
-    filters = { nftId }
+    filters = { ...filters, nftId }
   }
 
   if (read) {

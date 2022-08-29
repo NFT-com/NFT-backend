@@ -136,6 +136,7 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
 
     logger.debug('updated external orders for nfts')
   } catch (err) {
+    logger.error(`Error in nftExternalOrders Job: ${err}`)
     Sentry.captureMessage(`Error in nftExternalOrders Job: ${err}`)
   }
 }
@@ -260,7 +261,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
      
     logger.debug('updated external orders for nfts - on demand')
   } catch (err) {
-    logger.log(`Error in nftExternalOrdersOnDemand Job: ${err}`)
+    logger.error(`Error in nftExternalOrdersOnDemand Job: ${err}`)
     Sentry.captureMessage(`Error in nftExternalOrdersOnDemand Job: ${err}`)
   }
 }
