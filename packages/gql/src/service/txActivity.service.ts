@@ -16,6 +16,7 @@ const repositories = db.newRepositories()
  * @param orderHash
  * @param walletId
  * @param chainId
+ * @param contract
  */
 const orderActivityBuilder = async (
   orderType: defs.ActivityType,
@@ -23,11 +24,15 @@ const orderActivityBuilder = async (
   walletAddress: string,
   chainId: string,
   nftIds: string[],
+  contract: string,
 ): Promise<entity.TxActivity> => {
   let activity: entity.TxActivity
   if (orderHash) {
     activity = await repositories.txActivity.findOne({ where: { activityTypeId: orderHash } })
     if (activity) {
+      activity.updatedAt = new Date()
+      // in case contract is not present for default contracts
+      activity.nftContract = helper.checkSum(contract)
       return activity
     }
   }
@@ -40,6 +45,7 @@ const orderActivityBuilder = async (
   activity.timestamp = new Date()
   activity.walletAddress = helper.checkSum(walletAddress)
   activity.chainId = chainId
+  activity.nftContract = helper.checkSum(contract)
   activity.nftId = [...nftIds]
 
   return activity
@@ -54,8 +60,8 @@ const seaportOrderBuilder = (
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.OpenSea,
-    makerAddress: order.maker?.address,
-    takerAddress: order.taker?.address,
+    makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address): null,
+    takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address): null,
     protocolData: {
       ...order.protocol_data,
     },
@@ -72,17 +78,17 @@ const looksrareOrderBuilder = (
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
-    makerAddress: order.signer,
-    takerAddress: order.strategy,
+    makerAddress: helper.checkSum(order.signer),
+    takerAddress: null,
     protocolData: {
       isOrderAsk: order.isOrderAsk,
-      signer: order.signer,
-      collectionAddress: order.collectionAddress,
+      signer: helper.checkSum(order.signer),
+      collectionAddress: helper.checkSum(order.collectionAddress),
       price: order.price,
       tokenId: order.tokenId,
       amount: order.amount,
-      strategy: order.strategy,
-      currencyAddress: order.currencyAddress,
+      strategy: helper.checkSum(order.strategy),
+      currencyAddress: helper.checkSum(order.currencyAddress),
       nonce: order.nonce,
       startTime: order.startTime,
       endTime: order.endTime,
@@ -101,6 +107,7 @@ const looksrareOrderBuilder = (
  * @param orderType
  * @param order
  * @param chainId
+ * @param contract
  */
 
 export const orderEntityBuilder = async (
@@ -108,6 +115,7 @@ export const orderEntityBuilder = async (
   orderType: defs.ActivityType,
   order: Order,
   chainId: string,
+  contract: string,
 ):  Promise<Partial<entity.TxOrder>> => {
   let orderHash: string,
     walletAddress: string,
@@ -124,7 +132,7 @@ export const orderEntityBuilder = async (
     walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
     nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
       tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
-      return `ethereum/${offer.token}/${tokenId}`
+      return `ethereum/${contract}/${tokenId}`
     })
     orderEntity = seaportOrderBuilder(seaportOrder)
     break
@@ -133,7 +141,7 @@ export const orderEntityBuilder = async (
     orderHash = looksrareOrder.hash
     walletAddress = looksrareOrder.signer
     tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
-    nftIds = [`ethereum/${looksrareOrder.collectionAddress}/${tokenId}`]
+    nftIds = [`ethereum/${contract}/${tokenId}`]
     orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
   default:
@@ -146,6 +154,7 @@ export const orderEntityBuilder = async (
     walletAddress,
     chainId,
     nftIds,
+    contract,
   )
 
   return {
