@@ -27,13 +27,17 @@ import { differenceInMilliseconds } from 'date-fns'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
+import {
+  saveUsersForAssociatedAddress,
+} from '@nftcom/gql/service/core.service'
 import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses, getCollectionNameFromContract,
+  checkNFTContractAddresses,
+  getCollectionNameFromContract,
   getOwnersOfGenesisKeys,
   initiateWeb3,
-  refreshNFTMetadata, removeEdgesForNonassociatedAddresses,
+  refreshNFTMetadata,
+  removeEdgesForNonassociatedAddresses, saveNFTMetadataImageToS3,
   syncEdgesWithNFTs,
   updateEdgesWeightForProfile,
   updateNFTsForAssociatedWallet,
@@ -1238,6 +1242,34 @@ export const listNFTLooksrare = async (
     .catch(() => false)
 }
 
+const uploadMetadataImagesToS3 = async (
+  _: any,
+  args: gql.MutationUploadMetadataImagesToS3Args,
+  ctx: Context,
+): Promise<gql.UploadMetadataImagesToS3Output> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('uploadMetadataImagesToS3', { count: args?.count })
+  try {
+    const count = Number(args?.count) > 1000 ? 1000 : Number(args?.count)
+    const nfts = await repositories.nft.find({ where: { previewLink: null, chainId } })
+    const slidedNFTs = nfts.slice(0, count)
+    await Promise.allSettled(
+      slidedNFTs.map(async (nft) => {
+        await saveNFTMetadataImageToS3(nft, repositories)
+      }),
+    )
+    logger.debug('Preview link of metadata image for NFTs are saved', { counts: slidedNFTs.length })
+    return {
+      message: `Saved preview link of metadata image for ${slidedNFTs.length} NFTs`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in uploadMetadataImagesToS3: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1259,8 +1291,10 @@ export default {
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
+    uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
     listNFTSeaport,
     listNFTLooksrare,
+
   },
   NFT: {
     collection: core.resolveEntityById<gql.NFT, entity.Collection>(
