@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { Maybe } from 'graphql/jsutils/Maybe'
 
@@ -449,7 +449,7 @@ const getOpenseaInterceptor = (
         }
       }
       return axiosRetry.exponentialDelay(retryCount)
-    }
+    },
   }
   axiosRetry(openseaInstance,  retryOptions)
 
@@ -501,7 +501,7 @@ const retrieveListingsInBatches = async (
       if (assets?.length) {
         for (const asset of assets) {
           const contract: string = asset?.asset_contract?.address
-          const seaportOrders: SeaportOrder[] | null = asset?.seaport_sell_orders 
+          const seaportOrders: SeaportOrder[] | null = asset?.seaport_sell_orders
           // seaport orders - always returns cheapest order
           if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
             listings.push(
@@ -588,7 +588,7 @@ const retrieveOffersInBatches = async (
                 defs.ActivityType.Bid,
                 seaportOffers?.[0],
                 chainId,
-                contract
+                contract,
               ),
             )
           }
@@ -706,7 +706,7 @@ export const createSeaportListing = async (
         defs.ActivityType.Listing,
         res.data.order,
         chainId,
-        contract
+        contract,
       )
       return openseaOrder
     }
