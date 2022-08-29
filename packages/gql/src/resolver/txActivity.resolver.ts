@@ -180,7 +180,6 @@ const getActivities = async (
     ))
   }
 
-
   if (contract && tokenId) {
     nftId = `ethereum/${contract}/${BigNumber.from(tokenId).toHexString()}`
   }
