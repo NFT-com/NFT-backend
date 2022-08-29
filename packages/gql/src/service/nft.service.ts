@@ -1219,7 +1219,7 @@ export const getCollectionInfo = async (
         // await seService.indexCollections([collection])
       }
 
-      let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
+      let bannerUrl = 'https://cdn.nft.com/collectionBanner_default.png'
       let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
       let description = 'placeholder collection description text'
       const ubiquityFolder = 'https://ubiquity.api.blockdaemon.com/v1/nft/media/ethereum/mainnet/'
