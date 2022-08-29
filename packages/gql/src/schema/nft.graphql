@@ -42,7 +42,7 @@ type NFT {
   collection: Collection
   createdAt: DateTime!
   memo: String
-  previewLink: String
+#  previewLink: String
 }
 
 input NFTsInput {
