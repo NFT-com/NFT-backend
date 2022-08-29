@@ -1,14 +1,14 @@
 {
   "name": "@nftcom/shared",
-  "main": "src/index",
-  "types": "src/index",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prebuild": "npx json -I -f package.json -e \"this.main='dist/index'\" -e \"this.types='dist/index.d.ts'\"",
     "build": "npm run clean && npm run compile && npm run copy:cert",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/db/rds-combined-ca-bundle.cer",
     "compile": "tsc && tsc-alias",
-    "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ../../node_modules/typeorm/cli",
+    "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli",
     "typeorm:gen": "npm run typeorm:cli -- migration:generate",
     "typeorm:revert": "npm run typeorm:cli --  migration:revert",
     "typechain": "typechain --target=ethers-v5 ./src/helper/abis/*.json --out-dir ./src/helper/typechain"

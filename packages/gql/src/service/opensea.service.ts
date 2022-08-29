@@ -333,7 +333,7 @@ export const retrieveOrdersOpensea = async (
 
     return responses
   } catch (err) {
-    logger.log(`Error in retrieveOrdersOpensea: ${err}`)
+    logger.error(`Error in retrieveOrdersOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined
   }
@@ -359,7 +359,7 @@ export const retrieveCollectionOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
-    logger.log(`Error in retrieveCollectionOpensea: ${err}`)
+    logger.error(`Error in retrieveCollectionOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
     return undefined
   }
@@ -385,7 +385,7 @@ export const retrieveCollectionStatsOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
-    logger.log(`Error in retrieveCollectionStatsOpensea: ${err}`)
+    logger.error(`Error in retrieveCollectionStatsOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
     return undefined
   }
@@ -413,7 +413,7 @@ export const retrieveOffersOpensea = async (
       const offers = result.data.offers as Array<OpenseaResponse>
       return offers
     } catch (err) {
-      logger.log(`Error in retrieveOffersOpensea: ${err}`)
+      logger.error(`Error in retrieveOffersOpensea: ${err}`)
       // Sentry.captureMessage(`Error in retrieveOffersOpensea: ${err}`)
       return undefined
     }
@@ -500,7 +500,8 @@ const retrieveListingsInBatches = async (
       const assets = response?.data?.assets
       if (assets?.length) {
         for (const asset of assets) {
-          const seaportOrders: SeaportOrder[] | null =  asset?.seaport_sell_orders
+          const contract: string = asset?.asset_contract?.address
+          const seaportOrders: SeaportOrder[] | null = asset?.seaport_sell_orders
           // seaport orders - always returns cheapest order
           if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
             listings.push(
@@ -509,6 +510,7 @@ const retrieveListingsInBatches = async (
                 defs.ActivityType.Listing,
                 seaportOrders?.[0],
                 chainId,
+                contract,
               ),
             )
           }
@@ -586,6 +588,7 @@ const retrieveOffersInBatches = async (
                 defs.ActivityType.Bid,
                 seaportOffers?.[0],
                 chainId,
+                contract,
               ),
             )
           }
@@ -663,7 +666,7 @@ export const retrieveMultipleOrdersOpensea = async (
       }
     }
   } catch (err) {
-    logger.log(`Error in retrieveMultipleOrdersOpensea: ${err}`)
+    logger.error(`Error in retrieveMultipleOrdersOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
   }
   return responseAggregator
@@ -697,17 +700,19 @@ export const createSeaportListing = async (
       })
 
     if (res.status === 200 && res.data.order) {
+      const contract: string = JSON.parse(parameters)?.offer?.[0]?.token
       openseaOrder = await orderEntityBuilder(
         defs.ProtocolType.Seaport,
         defs.ActivityType.Listing,
         res.data.order,
         chainId,
+        contract,
       )
       return openseaOrder
     }
     return null
   } catch (err) {
-    logger.log(`Error in createSeaportListing: ${err}`)
+    logger.error(`Error in createSeaportListing: ${err}`)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
     return null
   }

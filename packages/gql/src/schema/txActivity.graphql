@@ -72,6 +72,8 @@ type TxActivity {
   activityTypeId: String!
   read: Boolean!
   timestamp: Date!
+  nftContract: String!
+  nftId: [String]!
   walletAddress: String!
   order: TxOrder
   cancel: TxCancel
