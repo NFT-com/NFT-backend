@@ -43,4 +43,7 @@ export class NFT extends BaseEntity {
   @Column({ nullable: true })
   profileId: string
 
+  @Column({ nullable: true })
+  previewLink: string
+
 }

@@ -8,7 +8,7 @@ import { appError, txActivityError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
-import { _logger,defs, entity, helper } from '@nftcom/shared'
+import { defs, entity, helper } from '@nftcom/shared'
 
 interface UpdatedIds {
   id: string
@@ -59,7 +59,7 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
   const ownedIds: string[] = ownedActivities.map(
     (ownedActivity: entity.TxActivity) => ownedActivity.id,
   )
-  
+
   const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
     ownedIds,
     walletAddress,
