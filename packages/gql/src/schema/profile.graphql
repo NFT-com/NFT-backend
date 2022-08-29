@@ -33,8 +33,15 @@ enum ProfileViewType {
   Gallery
 }
 
+enum ProfileSortType {
+  RecentMinted
+  RecentUpdated
+  MostVisibleNFTs
+}
+
 type Profile {
   id: ID!
+  index: Int
   bannerURL: String
   createdAt: DateTime!
   chainId: String
@@ -54,6 +61,7 @@ type Profile {
   url: String!
   winningBid: Bid
   profileView: ProfileViewType
+  visibleNFTs: Int
 }
 
 type LeaderboardProfile {
@@ -123,6 +131,7 @@ input CreateCompositeImageInput {
 input LatestProfilesInput {
   pageInput: PageInput
   chainId: String
+  sortBy: ProfileSortType
 }
 
 input OrderUpdateInput {
@@ -165,9 +174,19 @@ input UpdateProfileViewInput {
   profileViewType: ProfileViewType!
 }
 
+type SaveNFTVisibilityForProfilesOutput {
+  message: String
+}
+
 input IgnoredEventsInput {
   profileUrl: String!
   walletAddress: Address!
+  chainId: String
+}
+
+input ProfilesByDisplayNftInput {
+  collectionAddress: String
+  tokenId: String
   chainId: String
 }
 
@@ -187,6 +206,7 @@ extend type Query {
   ignoredEvents(input: IgnoredEventsInput!): [Event!]!
   associatedCollectionForProfile(url: String!, chainId: String): CollectionInfo!
   isProfileCustomized(url: String!, chainId: String): Boolean!
+  profilesByDisplayNft(input: ProfilesByDisplayNftInput!): ProfilesOutput!
 }
 
 extend type Mutation {
@@ -211,4 +231,6 @@ extend type Mutation {
   clearGKIconVisible: ClearGKIconVisibleOutput!
   "AUTHENTICATED"
   updateProfileView(input: UpdateProfileViewInput): Profile!
+  "AUTHENTICATED"
+  saveNFTVisibilityForProfiles(count: Int!): SaveNFTVisibilityForProfilesOutput!
 }

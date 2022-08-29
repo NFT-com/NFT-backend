@@ -42,6 +42,8 @@ import {
 import { createSeaportListing, retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
 
+import { SearchEngineService } from '../service/searchEngine.service'
+
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 
@@ -103,6 +105,8 @@ const baseCoins = [
     chainId: 4,
   },
 ]
+
+const seService = new SearchEngineService()
 
 const getNFT = (
   _: unknown,
@@ -449,6 +453,29 @@ export const saveProfileScore = async (
   }
 }
 
+export const saveVisibleNFTsForProfile = async (
+  profileId: string,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profileId,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    if (edges.length) {
+      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
+    return err
+  }
+}
+
 const updateGKIconVisibleStatus = async (
   repositories: db.Repository,
   chainId: string,
@@ -579,12 +606,13 @@ const updateCollectionForAssociatedContract = async (
     } else {
       const collection = await repositories.collection.findByContractAddress(contract, chainId)
       if (!collection) {
-        await repositories.collection.save({
+        const savedCollection = await repositories.collection.save({
           contract,
           name: collectionName,
           chainId,
           deployer,
         })
+        await seService.indexCollections([savedCollection])
       }
       const checkedDeployer =  ethers.utils.getAddress(deployer)
       const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
@@ -674,35 +702,43 @@ const updateNFTsForProfile = (
                           return syncEdgesWithNFTs(profile.id)
                             .then(() => {
                               logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
-                              // refresh NFTs for associated addresses
-                              return updateNFTsForAssociatedAddresses(
-                                repositories,
-                                profile,
-                                chainId,
-                              ).then((msg) => {
-                                logger.debug(msg)
-                                // update associated contract
-                                return updateCollectionForAssociatedContract(
-                                  repositories,
-                                  profile,
-                                  chainId,
-                                  wallet.address,
-                                ).then((msg) => {
-                                  logger.debug(msg)
-                                  // if gkIconVisible is true, we check if this profile owner still owns genesis key,
-                                  if (profile.gkIconVisible) {
-                                    return updateGKIconVisibleStatus(repositories, chainId, profile)
-                                      .then(() => {
-                                        logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                              // save visible NFT amount of profile
+                              return saveVisibleNFTsForProfile(profile.id, repositories)
+                                .then(() => {
+                                  logger.debug('saved amount of visible NFTs to profile', profile.id)
+                                  // refresh NFTs for associated addresses
+                                  return updateNFTsForAssociatedAddresses(
+                                    repositories,
+                                    profile,
+                                    chainId,
+                                  ).then((msg) => {
+                                    logger.debug(msg)
+                                    // update associated contract
+                                    return updateCollectionForAssociatedContract(
+                                      repositories,
+                                      profile,
+                                      chainId,
+                                      wallet.address,
+                                    ).then((msg) => {
+                                      logger.debug(msg)
+                                      // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+                                      if (profile.gkIconVisible) {
+                                        return updateGKIconVisibleStatus(
+                                          repositories,
+                                          chainId,
+                                          profile,
+                                        ).then(() => {
+                                          logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+                                          const updateEnd = Date.now()
+                                          logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+                                        })
+                                      } else {
                                         const updateEnd = Date.now()
                                         logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                      })
-                                  } else {
-                                    const updateEnd = Date.now()
-                                    logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                  }
+                                      }
+                                    })
+                                  })
                                 })
-                              })
                             })
                         })
                     })
@@ -990,7 +1026,7 @@ export const refreshNft = async (
 
 // @TODO: Force Refresh as a second iteration
 export const refreshNFTOrder = async (  _: any,
-  args: gql.MutationRefreshNFTArgs,
+  args: gql.MutationRefreshNFTOrderArgs,
   ctx: Context): Promise<string> => {
   const { repositories, chain } = ctx
   logger.debug('refreshNftOrders', { id: args?.id })
@@ -1009,8 +1045,20 @@ export const refreshNFTOrder = async (  _: any,
       return 'Refreshed Recently! Try in sometime!'
     }
 
+    let nftCacheId = `${nft.contract}:${nft.tokenId}`
+    if (args.ttl === null) {
+      nftCacheId += ':manual'
+    }
+
+    if(args?.ttl) {
+      const ttlDate: Date = new Date(args?.ttl)
+      const now: Date = new Date()
+      if (ttlDate && ttlDate > now) {
+        nftCacheId += `:${ttlDate.getTime()}`
+      }
+    }
     // add to cache list
-    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, `${nft.contract}:${nft.tokenId}`)
+    await cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chain.id}`, 'INCR', 1, nftCacheId)
     return 'Added to queue! Check back shortly!'
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNftOrders: ${err}`)

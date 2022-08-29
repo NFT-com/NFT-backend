@@ -2,13 +2,11 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { Maybe } from 'graphql/jsutils/Maybe'
 
-import { getChain } from '@nftcom/gql/config'
 import { gql } from '@nftcom/gql/defs'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { entity } from '@nftcom/shared'
-import { ActivityType, Chain, ProtocolType } from '@nftcom/shared/defs'
+import { _logger,defs,entity } from '@nftcom/shared'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
@@ -23,6 +21,8 @@ const OPENSEA_LISTING_BATCH_SIZE = 30
 const DELAY_AFTER_BATCH_RUN = 4
 const MAX_QUERY_LENGTH = 4014 // 4094 - 80
 const TESTNET_CHAIN_IDS = ['4', '5']
+
+const logger = _logger.Factory(_logger.Context.Opensea)
 
 interface OpenseaAsset {
   image_url: string
@@ -101,6 +101,9 @@ enum OpenseaQueryParamType {
   ASSET_CONTRACT_ADDRESS = 'asset_contract_address'
 }
 
+interface MakerOrTaker {
+  address: string
+}
 interface OpenseaBaseOrder {
   created_date: string
   closing_date: string
@@ -109,8 +112,8 @@ interface OpenseaBaseOrder {
   listing_time: number
   order_hash: string
   current_price: string
-  maker: any
-  taker: any
+  maker: MakerOrTaker
+  taker: MakerOrTaker
   cancelled: boolean
   finalized: boolean
   marked_invalid: boolean
@@ -157,12 +160,32 @@ export interface WyvernOrder extends OpenseaBaseOrder {
   prefixed_hash: string
 }
 
+interface MakerOrTakerFees {
+  account: {
+    address: string
+  }
+  basis_points: string
+}
+
+export interface SeaportOffer {
+  itemType: number
+  token: string
+  identifierOrCriteria: string
+  startAmount: string
+  endAmount: string
+  
+}
+
+export interface SeaportConsideration extends SeaportOffer {
+  recipient: string
+}
+
 export interface SeaportOrder extends OpenseaBaseOrder {
   protocol_data: {
     parameters: {
       offerer: string
-      offer: any
-      consideration: any
+      offer: SeaportOffer[]
+      consideration: SeaportConsideration[]
       startTime: string
       endTime: string
       orderType: number
@@ -176,8 +199,8 @@ export interface SeaportOrder extends OpenseaBaseOrder {
     signature: string
   }
   protocol_address: string
-  maker_fees: any
-  taker_fees: any
+  maker_fees: MakerOrTakerFees[]
+  taker_fees: MakerOrTakerFees[] | null
   side: string
   order_type: string
   client_signature: string
@@ -310,6 +333,7 @@ export const retrieveOrdersOpensea = async (
 
     return responses
   } catch (err) {
+    logger.log(`Error in retrieveOrdersOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
     return undefined
   }
@@ -335,6 +359,7 @@ export const retrieveCollectionOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
+    logger.log(`Error in retrieveCollectionOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveCollectionOpensea: ${err}`)
     return undefined
   }
@@ -360,6 +385,7 @@ export const retrieveCollectionStatsOpensea = async (
     const res = await axios.get(url, config)
     return res.data
   } catch (err) {
+    logger.log(`Error in retrieveCollectionStatsOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveCollectionStatsOpensea: ${err}`)
     return undefined
   }
@@ -387,6 +413,7 @@ export const retrieveOffersOpensea = async (
       const offers = result.data.offers as Array<OpenseaResponse>
       return offers
     } catch (err) {
+      logger.log(`Error in retrieveOffersOpensea: ${err}`)
       // Sentry.captureMessage(`Error in retrieveOffersOpensea: ${err}`)
       return undefined
     }
@@ -478,8 +505,8 @@ const retrieveListingsInBatches = async (
           if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
             listings.push(
               orderEntityBuilder(
-                ProtocolType.Seaport,
-                ActivityType.Listing,
+                defs.ProtocolType.Seaport,
+                defs.ActivityType.Listing,
                 seaportOrders?.[0],
                 chainId,
               ),
@@ -547,18 +574,16 @@ const retrieveOffersInBatches = async (
             queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
           }
 
-          const openseaSupportedChainId:string = TESTNET_CHAIN_IDS.includes(chainId)? '4':chainId
-          const chain:Chain =  getChain('ethereum',openseaSupportedChainId)
           const response: AxiosResponse = await offerInterceptor(
-            `/orders/${chain.name}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
+            `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
       
           if (response?.data?.orders?.length) {
             seaportOffers = response?.data?.orders
             offers.push(
               orderEntityBuilder(
-                ProtocolType.Seaport,
-                ActivityType.Bid,
+                defs.ProtocolType.Seaport,
+                defs.ActivityType.Bid,
                 seaportOffers?.[0],
                 chainId,
               ),
@@ -638,6 +663,7 @@ export const retrieveMultipleOrdersOpensea = async (
       }
     }
   } catch (err) {
+    logger.log(`Error in retrieveMultipleOrdersOpensea: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersOpensea: ${err}`)
   }
   return responseAggregator
@@ -655,7 +681,7 @@ export const createSeaportListing = async (
   chainId: string,
 ): Promise<Partial<entity.TxOrder> | null> => {
   let openseaOrder: Partial<entity.TxOrder>
-  const baseUrlV2 = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
+  const baseUrlV2 = chainId === '1' ? OPENSEA_API_BASE_URL : OPENSEA_API_TESTNET_BASE_URL
   if (
     signature == null || signature.length === 0 ||
     parameters == null || parameters.length === 0
@@ -664,15 +690,16 @@ export const createSeaportListing = async (
   }
   try {
     const res = await getOpenseaInterceptor(baseUrlV2, chainId).post(
-      `/orders/${chainId === '4' ? 'rinkeby' : 'ethereum'}/seaport/listings`,
+      `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/listings`,
       {
         signature,
         parameters: JSON.parse(parameters),
       })
+
     if (res.status === 200 && res.data.order) {
       openseaOrder = await orderEntityBuilder(
-        ProtocolType.Seaport,
-        ActivityType.Listing,
+        defs.ProtocolType.Seaport,
+        defs.ActivityType.Listing,
         res.data.order,
         chainId,
       )
@@ -680,6 +707,7 @@ export const createSeaportListing = async (
     }
     return null
   } catch (err) {
+    logger.log(`Error in createSeaportListing: ${err}`)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
     return null
   }

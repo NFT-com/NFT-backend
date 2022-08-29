@@ -1,14 +1,80 @@
+
+enum ActivityType {
+  Listing 
+  Bid
+  Cancel
+  Sale
+  Transfer
+}
+
+type SeaportOffer {
+  itemType: Int
+  token: String
+  identifierOrCriteria: String
+  startAmount: String
+  endAmount: String
+}
+
+type SeaportConsideration {
+  itemType: Int
+  token: String
+  identifierOrCriteria: String
+  startAmount: String
+  endAmount: String
+  recipient: String
+}
+
+type SeaportProtocolDataParams {
+  offerer: String
+  offer: [SeaportOffer]
+  consideration: [SeaportConsideration]
+  startTime: String
+  endTime: String
+  orderType: Int
+  zone: String
+  zoneHash: String
+  salt: String
+  conduitKey: String
+  totalOriginalConsiderationItems: Int
+  counter: Int
+}
+
+type SeaportProtocolData {
+  parameters: SeaportProtocolDataParams
+  signature: String
+}
+
+type LooksrareProtocolData {
+  isOrderAsk: Boolean
+  signer: String
+  collectionAddress: String
+  price: String
+  tokenId: String
+  amount: String
+  strategy: String
+  currencyAddress: String
+  nonce: String
+  startTime: String
+  endTime: String
+  minPercentageToAsk: String
+  params: String
+  v: String
+  r: String
+  s: String
+}
+
+union ProtocolData = SeaportProtocolData | LooksrareProtocolData
+
 type TxActivity {
   id: ID!
   chainId: String
   activityType: String!
   activityTypeId: String!
   read: Boolean!
-  timestamp: String!
-  walletId: String!
+  timestamp: Date!
+  walletAddress: String!
   order: TxOrder
   cancel: TxCancel
-  transaction: TxTransaction
 }
 
 type TxCancel {
@@ -28,7 +94,7 @@ type TxOrder {
   makerAddress: String!
   takerAddress: String
   protocol: String!
-  protocolData: [String]
+  protocolData: ProtocolData
 }
 
 type TxTransaction {
@@ -62,17 +128,39 @@ type UpdateReadOutput {
   idsNotFoundOrFailed: [String]!
 }
 
-input TxWalletIdAndTypeInput {
-  walletId: ID!
+type TxActivitiesOutput {
+  items: [TxActivity]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input TxWalletAddressAndTypeInput {
+  pageInput: PageInput
+  walletAddress: String!
   activityType: String!
   chainId: String
 }
 
+input TxActivitiesInput {
+  pageInput: PageInput!
+  walletAddress: String
+  activityType: ActivityType
+  read: Boolean
+  tokenId: String
+  contract: String
+  chainId: String
+  skipRelations: Boolean
+}
+
+
+
 extend type Query {
+  getActivities(input: TxActivitiesInput): TxActivitiesOutput!
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
-  getActivitiesByWalletId(walletId: ID, chainId: String): [TxActivity]
   "AUTHETICATED"
-  getActivitiesByWalletIdAndType(input: TxWalletIdAndTypeInput): [TxActivity]
+  getActivitiesByWalletAddress(walletAddress: String, chainId: String): [TxActivity]
+  "AUTHETICATED"
+  getActivitiesByWalletAddressAndType(input: TxWalletAddressAndTypeInput): [TxActivity]
 }
 
 extend type Mutation {

@@ -13,7 +13,7 @@ import { nftCronSubqueue } from './job'
 
 // exported for tests
 export const repositories = db.newRepositories()
-const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+const logger = _logger.Factory(_logger.Context.Bull)
 
 const MAX_CHUNK_SIZE = 500
 
@@ -219,10 +219,34 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       await Promise.all(persistActivity)
 
-      // set ttl for timestamp members
-      const TTL: number = ttlForTimestampedZsetMembers()
       const refreshedOrders  = nfts.reduce((acc, curr) => {
-        acc.push(...[TTL, curr])
+        const nftSplit: Array<string> = curr.split(':')
+        const nft: string = nftSplit.slice(0, 2).join(':')
+        let ttlCondition = ''
+
+        if (nftSplit.length === 3) {
+          if (nftSplit?.[2] === 'manual') {
+            ttlCondition = 'manual'
+          } else {
+            ttlCondition = 'automated'
+          }
+        }
+
+        const currentTime: Date = new Date()
+        let date: Date
+        switch(ttlCondition) {
+        case 'manual':
+          currentTime.setMinutes(currentTime.getMinutes() + 5)
+          date = currentTime
+          break
+        case 'automated':
+          date = new Date(Number(nftSplit?.[2]))
+          break
+        default:
+          break
+        }
+        const ttl: number = ttlForTimestampedZsetMembers(date)
+        acc.push(...[ttl, nft])
         return acc
       }, [])
       await Promise.all([
@@ -236,6 +260,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
      
     logger.debug('updated external orders for nfts - on demand')
   } catch (err) {
+    logger.log(`Error in nftExternalOrdersOnDemand Job: ${err}`)
     Sentry.captureMessage(`Error in nftExternalOrdersOnDemand Job: ${err}`)
   }
 }

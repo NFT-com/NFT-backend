@@ -3,7 +3,7 @@ import Redis from 'ioredis'
 import { redisConfig } from '@nftcom/gql/config'
 
 let redis: Redis
-const DEFAULT_TTL_HOURS = 2
+const DEFAULT_TTL_MINS = 30 // 30 mins
 
 export enum CacheKeys {
   REFRESH_NFT_ORDERS_EXT = 'refresh_nft_orders_ext',
@@ -15,13 +15,14 @@ export enum CacheKeys {
   REFRESH_NFT = 'refresh_nft',
   LEADERBOARD_RESPONSE = 'Leaderboard_response',
   CACHED_GKS = 'cached_gks',
-  GET_GK = 'get_gk'
+  GET_GK = 'get_gk',
+  SORTED_PROFILES_BY_VISIBLE_NFTS = 'sorted_profiles_by_visible_nfts',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
   const currentTime: Date = new Date(ttl? ttl: Date.now())
   if (!ttl) {
-    currentTime.setHours(currentTime.getHours() + DEFAULT_TTL_HOURS)
+    currentTime.setMinutes(currentTime.getMinutes() + DEFAULT_TTL_MINS)
   }
   return currentTime.getTime()
 }
