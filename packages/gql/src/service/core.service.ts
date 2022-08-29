@@ -1,8 +1,8 @@
 import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
+import * as IPFS from 'is-ipfs'
 
-// import * as IPFS from 'is-ipfs'
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -1034,9 +1034,8 @@ export const processIPFSURL = (image: string): string => {
     return prefix + image.slice(34)
   } else if (image.indexOf('https://infura-ipfs.io/ipfs/') === 0) {
     return prefix + image.slice(28)
+  } else if (IPFS.base32cid(image) || IPFS.multihash(image) || IPFS.cid(image)) {
+    return prefix + image
   }
-  // else if (IPFS.base32cid(image) || IPFS.multihash(image) || IPFS.cid(image)) {
-  //   return prefix + image
-  // }
   return image
 }
