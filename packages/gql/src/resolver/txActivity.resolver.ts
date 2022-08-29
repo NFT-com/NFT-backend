@@ -143,7 +143,7 @@ const getActivities = async (
     tokenId,
     contract,
     skipRelations,
-  } = args.input
+  } = helper.safeObject(args.input)
 
   const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
 
