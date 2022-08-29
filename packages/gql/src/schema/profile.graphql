@@ -184,6 +184,12 @@ input IgnoredEventsInput {
   chainId: String
 }
 
+input ProfilesByDisplayNftInput {
+  collectionAddress: String
+  tokenId: String
+  chainId: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -200,6 +206,7 @@ extend type Query {
   ignoredEvents(input: IgnoredEventsInput!): [Event!]!
   associatedCollectionForProfile(url: String!, chainId: String): CollectionInfo!
   isProfileCustomized(url: String!, chainId: String): Boolean!
+  profilesByDisplayNft(input: ProfilesByDisplayNftInput!): ProfilesOutput!
 }
 
 extend type Mutation {
