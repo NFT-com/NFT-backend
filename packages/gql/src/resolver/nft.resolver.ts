@@ -863,8 +863,9 @@ const getExternalListings = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${chainId}`
     const cachedData = await cache.get(key)
-
-    if (cachedData) {
+    if (process.env.ACTIVITY_ENDPOINTS_ENABLED === 'false') {
+      return { listings: [] }
+    } else if (cachedData) {
       return JSON.parse(cachedData)
     } else {
       // 1. Opensea
@@ -968,7 +969,7 @@ const getExternalListings = async (
         baseCoin: looksrareBaseCoin ?? null,
       }
 
-      const finalData = process.env.ACTIVITY_ENDPOINTS_ENABLED ?
+      const finalData = process.env.ACTIVITY_ENDPOINTS_ENABLED !== 'false' ?
         { listings: [opensea, looksrare] } :
         { listings: [] }
 
