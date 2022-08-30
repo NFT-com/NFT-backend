@@ -426,6 +426,7 @@ export const saveNFTMetadataImageToS3 = async (
       })
     } else {
       const imageUrl = processIPFSURL(nft.metadata.imageURL)
+      if (!imageUrl) return
       const filename = nft.metadata.imageURL.split('/').pop()
       if (filename) {
         const res = await fetch(imageUrl)

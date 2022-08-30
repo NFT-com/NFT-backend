@@ -1033,6 +1033,7 @@ export const processIPFSURL = (image: string): string => {
     return prefix + image.slice(34)
   } else if (image.indexOf('https://infura-ipfs.io/ipfs/') === 0) {
     return prefix + image.slice(28)
+  } else {
+    return null
   }
-  return image
 }
