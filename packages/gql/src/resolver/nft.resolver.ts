@@ -968,7 +968,9 @@ const getExternalListings = async (
         baseCoin: looksrareBaseCoin ?? null,
       }
 
-      const finalData = { listings: [opensea, looksrare] }
+      const finalData = process.env.ACTIVITY_ENDPOINTS_ENABLED ?
+        { listings: [opensea, looksrare] } :
+        { listings: [] }
 
       await cache.set(key, JSON.stringify(finalData), 'EX', 60 * 30)
 
