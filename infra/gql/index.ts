@@ -84,6 +84,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['TEST_DB_PORT'] = process.env.TEST_DB_PORT || parsedFile['TEST_DB_PORT']
   parsedFile['TEST_DB_PASSWORD'] = process.env.TEST_DB_PASSWORD || parsedFile['TEST_DB_PASSWORD']
   parsedFile['TEST_DB_USE_SSL'] = process.env.TEST_DB_USE_SSL || parsedFile['TEST_DB_USE_SSL']
+  parsedFile['ACTIVITY_ENDPOINTS_ENABLED'] = process.env.ACTIVITY_ENDPOINTS_ENABLED || parsedFile['ACTIVITY_ENDPOINTS_ENABLED']
 
   console.log(JSON.stringify(parsedFile))
 

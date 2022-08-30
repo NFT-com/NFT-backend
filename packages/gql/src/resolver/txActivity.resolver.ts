@@ -145,6 +145,17 @@ const getActivities = async (
     skipRelations,
   } = helper.safeObject(args.input)
 
+  if (!process.env.ACTIVITY_ENDPOINTS_ENABLED) {
+    return {
+      items: [],
+      totalItems: 0,
+      pageInfo: {
+        firstCursor: '',
+        lastCursor: '',
+      },
+    }
+  }
+
   const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
 
   auth.verifyAndGetNetworkChain(network, chainId)
