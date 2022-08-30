@@ -428,34 +428,32 @@ export const saveNFTMetadataImageToS3 = async (
       const imageUrl = processIPFSURL(nft.metadata.imageURL)
       if (!imageUrl) return
       const filename = nft.metadata.imageURL.split('/').pop()
-      if (filename) {
-        const res = await fetch(imageUrl)
-        const buffer = await res.buffer()
-        if (buffer) {
-          let ext = extensionFromFilename(filename)
-          const imageKey = ext ? `nfts/${nft.chainId}/` + Date.now() + '-' + filename :
-            `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
-          ext = ext ?? 'png'
-          const contentType = contentTypeFromExt(ext)
-          const s3config = await getAWSConfig()
-          let upload
-          if (contentType) {
-            upload = new Upload({
-              client: s3config,
-              params: {
-                Bucket: assetBucket.name,
-                Key: imageKey,
-                Body: buffer,
-                ContentType: contentType,
-              },
-            })
-          }
-          await upload.done()
+      if (!filename) return
+      const res = await fetch(imageUrl)
+      const buffer = await res.buffer()
+      if (!buffer) return
+      let ext = extensionFromFilename(filename)
+      const imageKey = ext ? `nfts/${nft.chainId}/` + Date.now() + '-' + filename :
+        `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
+      ext = ext ?? 'png'
+      const contentType = contentTypeFromExt(ext)
+      const s3config = await getAWSConfig()
+      let upload
+      if (contentType) {
+        upload = new Upload({
+          client: s3config,
+          params: {
+            Bucket: assetBucket.name,
+            Key: imageKey,
+            Body: buffer,
+            ContentType: contentType,
+          },
+        })
+        await upload.done()
 
-          const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-          await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath + '?width=600' })
-          logger.debug('Preview link of NFT metadata image is saved', { id: nft.id, previewLink: cdnPath })
-        }
+        const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+        await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath + '?width=600' })
+        logger.debug('Preview link of NFT metadata image is saved', { id: nft.id, previewLink: cdnPath })
       }
     }
   } catch (err) {
