@@ -1255,7 +1255,7 @@ const uploadMetadataImagesToS3 = async (
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('uploadMetadataImagesToS3', { count: args?.count })
   try {
-    const count = Number(args?.count) > 10000 ? 10000 : Number(args?.count)
+    const count = Math.min(Number(args?.count), 10000)
     const nfts = await repositories.nft.find({ where: { previewLink: null, chainId } })
     const slidedNFTs = nfts.slice(0, count)
     await Promise.allSettled(
