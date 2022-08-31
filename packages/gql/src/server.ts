@@ -7,6 +7,7 @@ import { GraphQLError } from 'graphql'
 import { graphqlUploadExpress } from 'graphql-upload'
 import http from 'http'
 import Keyv from 'keyv'
+import { pinoHttp } from 'pino-http'
 
 import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
@@ -75,13 +76,13 @@ export const formatError = (error: GraphQLError): GQLError => {
   const { message, path, extensions } = error
   const errorKey = extensions?.['errorKey'] || 'UNKNOWN'
   const statusCode = extensions?.['code'] || ''
-  logger.error('formatError', JSON.stringify({
+  logger.error({
     message,
     statusCode,
     errorKey,
     stacktrace: extensions?.['exception']?.['stacktrace'].join('\n'),
     path,
-  }))
+  })
   return <GQLError>{
     statusCode,
     errorKey,
@@ -91,11 +92,10 @@ export const formatError = (error: GraphQLError): GQLError => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler = (err: Error, req, res, next): void => {
-  const { stack, message } = err
+const errorHandler = (err: Error, req, res, _next): void => {
   const path = req.path || req.originalUrl
   const responseData = { path, statusCode: '500', message: 'An error has occured' }
-  logger.error(JSON.stringify({ ...responseData, message, stacktrace: stack }))
+  logger.error({ ...responseData, message: undefined, err })
   res.status(500).send(responseData)
 }
 
@@ -125,6 +125,9 @@ export const start = async (): Promise<void> => {
 
   const httpServer = http.createServer(app)
 
+  app.use(pinoHttp({
+    logger: _logger.parent,
+  }))
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
 

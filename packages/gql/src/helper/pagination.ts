@@ -40,7 +40,7 @@ export const resolvePage = <T>(
   pageInput: gql.PageInput,
   pageResolvers: PageResolvers<T>,
 ): Promise<defs.PageableResult<T>> => {
-  logger.debug('resolvePage', { pageInput })
+  logger.debug({ pageInput }, 'resolvePage')
   if (hasAfter(pageInput)) {
     return hasFirst(pageInput)
       ? pageResolvers.firstAfter()

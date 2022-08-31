@@ -159,12 +159,12 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
       nftResolverAddress,
     )
 
-    logger.debug(`nft resolver outgoing associate events chainId=${chainId}`, { log2: log2.logs.length })
+    logger.debug({ log2: log2.logs.length }, `nft resolver outgoing associate events chainId=${chainId}`)
     log2.logs.map(async (unparsedEvent) => {
       let evt
       try {
         evt = nftResolverInterface.parseLog(unparsedEvent)
-        logger.info(`Found event ${evt.name} with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
+        logger.info(evt.args, `Found event ${evt.name} with chainId: ${chainId}`)
 
         if (evt.name === EventName.AssociateEvmUser) {
           const [owner,profileUrl,destinationAddress] = evt.args
@@ -322,7 +322,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
         }
       } catch (err) {
         if (err.code != 'BUFFER_OVERRUN' && err.code != 'INVALID_ARGUMENT') { // error parsing old event on goerli, and chainId mismatch
-          logger.error('error parsing resolver: ', err)
+          logger.error(err, 'error parsing resolver')
         }
       }
     })
@@ -330,7 +330,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     log.logs.map(async (unparsedEvent) => {
       try {
         const evt = profileAuctionInterface.parseLog(unparsedEvent)
-        logger.info(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
+        logger.info(evt.args, `Found event MintedProfile with chainId: ${chainId}`)
         const [owner,profileUrl,tokenId,,] = evt.args
 
         if (evt.name === 'MintedProfile') {
@@ -385,9 +385,9 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
           }
         }
         await cache.set(chainIdToCacheKeyProfile(chainId), log.latestBlockNumber)
-        logger.debug('saved all minted profiles and their events', { counts: log.logs.length })
+        logger.debug({ counts: log.logs.length }, 'saved all minted profiles and their events')
       } catch (err) {
-        logger.error('error parsing minted profiles: ', err)
+        logger.error(err, 'error parsing minted profiles: ')
       }
     })
   } catch (err) {

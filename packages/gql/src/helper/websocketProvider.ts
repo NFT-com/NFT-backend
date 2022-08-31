@@ -59,7 +59,7 @@ const keepAlive = ({
     const nftResolverAddress = helper.checkSum(
       contracts.nftResolverAddress(Number(chainId).toString()),
     )
-    logger.debug(`nftResolverAddress: ${nftResolverAddress}, chainId: ${chainId}`)
+    logger.debug({ nftResolverAddress, chainId })
 
     const filter = {
       address: utils.getAddress(nftResolverAddress),
@@ -68,7 +68,7 @@ const keepAlive = ({
 
     provider.on(filter, async (e) => {
       const evt = nftResolverInterface.parseLog(e)
-      logger.debug('******** wss parsed event: ', evt)
+      logger.debug(evt, '******** wss parsed event' )
 
       if (evt.name === EventName.AssociateEvmUser) {
         const [owner,profileUrl,destinationAddress] = evt.args
@@ -187,7 +187,7 @@ const keepAlive = ({
         }
       } else {
         // not relevant in our search space
-        logger.error('topic hash not covered: ', e.transactionHash)
+        logger.error({ txnHash: e.transactionHash }, 'topic hash not covered')
       }
     })
   })
@@ -221,7 +221,7 @@ export const start = (
     chainId,
     onDisconnect: (err) => {
       start(chainId)
-      logger.error('The ws connection was closed', JSON.stringify(err, null, 2))
+      logger.error(err, 'The ws connection was closed')
     },
   })
 

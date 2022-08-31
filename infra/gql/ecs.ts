@@ -169,6 +169,7 @@ const createEcsTaskDefinition = (
   const resourceName = getResourceName('gql')
   const otelName = getResourceName('aws-otel-collector')
   const otelMemory = 80
+  const loggerMemory = 50
 
   const otelConfig = new aws.ssm.Parameter('otel-collector-config', {
     name: 'otel-collector-config',
@@ -192,10 +193,8 @@ processors:
     timeout: 60s
 
 exporters:
-  logging: 
-    loglevel: info
   otlphttp:
-    endpoint: jaeger.leonardo.nft.prv:80
+    endpoint: tempo.leonardo.nft.prv:80
 
 service:
   pipelines:
@@ -215,15 +214,17 @@ service:
           essential: true,
           image: ecrImage,
           logConfiguration: {
-            logDriver: 'awslogs',
+            logDriver: 'awsfirelens',
             options: {
-              'awslogs-create-group': 'True',
-              'awslogs-group': `/ecs/${resourceName}`,
-              'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'gql',
+              Name: 'grafana-loki',
+              Url: 'loki.leonardo.nft.prv/loki/api/v1/push',
+              Labels: '{job="firelens"}',
+              RemoveKeys: 'container_id,ecs_task_arn',
+              LabelKeys: 'container_name,ecs_task_definition,source,ecs_cluster',
+              LineFormat: 'json',
             },
           },
-          memoryReservation: config.requireNumber('ecsTaskMemory') - otelMemory,
+          memoryReservation: config.requireNumber('ecsTaskMemory') - (otelMemory + loggerMemory),
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
@@ -239,15 +240,6 @@ service:
           name: otelName,
           image: 'amazon/aws-otel-collector',
           essential: true,
-          logConfiguration: {
-            logDriver: 'awslogs',
-            options: {
-              'awslogs-group': `/ecs/${otelName}`,
-              'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'otel',
-              'awslogs-create-group': 'True',
-            },
-          },
           memory: otelMemory,
           secrets: [
             {
@@ -255,6 +247,18 @@ service:
               valueFrom: 'otel-collector-config',
             },
           ],
+        },
+        {
+          name: getResourceName('log-router'),
+          image: 'grafana/fluent-bit-plugin-loki:2.6.1-amd64',
+          essential: true,
+          firelensConfiguration: {
+            type: 'fluentbit',
+            'options': {
+              'enable-ecs-log-metadata': true,
+            },
+          },
+          memoryReservation: loggerMemory,
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
