@@ -41,6 +41,15 @@ let testServer
 let nftA
 
 describe('nft resolver', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.close()
+  })
+
   describe('refresh nft endpoint', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
@@ -101,8 +110,6 @@ describe('nft resolver', () => {
 
   describe('getCollectionInfo', () => {
     beforeAll(async () => {
-      connection = await db.connectTestDB(testDBConfig)
-
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
         name: 'Warner Bros nft',
@@ -118,8 +125,6 @@ describe('nft resolver', () => {
     })
     afterAll(async () => {
       await clearDB(repositories)
-      if (!connection) return
-      await connection.close()
     })
     it('should return default banner, logo image and description', async () => {
       const contract = '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'
@@ -141,8 +146,6 @@ describe('nft resolver', () => {
 
   describe('updateENSNFTMedata', () => {
     beforeAll(async () => {
-      connection = await db.connectTestDB(testDBConfig)
-
       nftA = await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
         tokenId: '0x3f183afce162dcff1453495c6932401729f4cc3832aa5807293967ee9efa53db',
@@ -159,8 +162,6 @@ describe('nft resolver', () => {
     })
     afterAll(async () => {
       await clearDB(repositories)
-      if (!connection) return
-      await connection.close()
     })
     it('should update image url of ENS NFT metadata', async () => {
       await updateENSNFTMedata(nftA, repositories)
