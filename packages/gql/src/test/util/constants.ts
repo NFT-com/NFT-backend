@@ -1,6 +1,6 @@
 import { DeepPartial } from 'typeorm'
 
-import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import { ActivityStatus, NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
@@ -236,6 +236,7 @@ export const testExistingActivity: TxActivity = {
   walletAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   activityType: ActivityType.Listing,
   activityTypeId: 'test-existing-order-hash',
+  status: ActivityStatus.Valid,
   read: false,
   timestamp: 'test-timestamp',
   nftContract: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
