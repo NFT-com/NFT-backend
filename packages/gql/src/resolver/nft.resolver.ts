@@ -27,9 +27,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import {
-  saveUsersForAssociatedAddress,
-} from '@nftcom/gql/service/core.service'
+import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
