@@ -83,6 +83,12 @@ export enum ActivityType {
   Transfer = 'Transfer',
 }
 
+export enum ActivityStatus {
+  Valid = 'Valid',
+  Cancelled = 'Cancelled',
+  Executed = 'Executed'
+}
+
 export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',
@@ -151,7 +157,6 @@ export type Signature = {
   r: string
   s: string
 }
-
 export interface ActivityFilters {
   chainId: string
   walletAddress?: string

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { ActivityType } from '@nftcom/shared/defs'
+import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from '.'
 
@@ -19,6 +19,9 @@ export class TxActivity extends BaseEntity {
 
   @Column({ nullable: false })
   timestamp: Date
+
+  @Column({ type: 'enum', enum: ActivityStatus, nullable: false, default: ActivityStatus.Valid })
+  status: ActivityStatus
 
   @Column({ nullable: false, default: '0x' })
   nftContract: string
