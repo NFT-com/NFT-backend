@@ -360,14 +360,12 @@ const getNumberOfNFTs = async (
       },
     })
     if (!collection) return 0
-    const nftCount = await repositories.nft.find({
-      where: {
-        contract: ethers.utils.getAddress(args?.contract),
-        chainId,
-      },
+    const count = await repositories.nft.count({
+      contract: ethers.utils.getAddress(args?.contract),
+      chainId,
     })
-    await cache.set(key, nftCount.length.toString(), 'EX', 60 * 5)
-    return nftCount.length
+    await cache.set(key, count.toString(), 'EX', 60 * 5)
+    return count
   } catch (err) {
     Sentry.captureMessage(`Error in getNumberOfNFTs: ${err}`)
     return err
