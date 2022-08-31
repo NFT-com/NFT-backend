@@ -3,6 +3,7 @@ import { mergeResolvers } from '@graphql-tools/merge'
 import approvalResolvers from './approval.resolver'
 import bidResolvers from './bid.resolver'
 import collectionResolvers from './collection.resolver'
+import contractDataResolver from './contractData.resolver'
 import curationResolvers from './curation.resolver'
 import marketAskResolvers from './marketAsk.resolver'
 import marketBidResolvers from './marketBid.resolver'
@@ -22,6 +23,7 @@ export const resolvers: any = mergeResolvers([
   bidResolvers,
   curationResolvers,
   collectionResolvers,
+  contractDataResolver,
   marketAskResolvers,
   marketBidResolvers,
   marketSwapResolvers,
