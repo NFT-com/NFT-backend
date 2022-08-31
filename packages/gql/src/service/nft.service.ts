@@ -594,6 +594,7 @@ const updateNFTOwnershipAndMetadata = async (
       }
     }
   } catch (err) {
+    console.log(err)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     return undefined
   }
