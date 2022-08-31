@@ -7,6 +7,12 @@ enum ActivityType {
   Transfer
 }
 
+enum ActivityStatus {
+  Valid
+  Cancelled
+  Executed
+}
+
 type SeaportOffer {
   itemType: Int
   token: String
@@ -68,10 +74,11 @@ union ProtocolData = SeaportProtocolData | LooksrareProtocolData
 type TxActivity {
   id: ID!
   chainId: String
-  activityType: String!
+  activityType: ActivityType!
   activityTypeId: String!
   read: Boolean!
   timestamp: Date!
+  status: ActivityStatus!
   nftContract: String!
   nftId: [String]!
   walletAddress: String!
@@ -147,14 +154,13 @@ input TxActivitiesInput {
   pageInput: PageInput!
   walletAddress: String
   activityType: ActivityType
+  status: ActivityStatus
   read: Boolean
   tokenId: String
   contract: String
   chainId: String
   skipRelations: Boolean
 }
-
-
 
 extend type Query {
   getActivities(input: TxActivitiesInput): TxActivitiesOutput!
@@ -168,4 +174,6 @@ extend type Query {
 extend type Mutation {
   "AUTHETICATED"
   updateReadByIds(ids: [String]!): UpdateReadOutput!
+  "AUTHETICATED"
+  updateStatusByIds(ids: [String]!, status: ActivityStatus): UpdateReadOutput!
 }

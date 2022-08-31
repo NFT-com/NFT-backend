@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { In, UpdateResult } from 'typeorm'
+import { In, Not, UpdateResult } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, txActivityError } from '@nftcom/gql/error'
@@ -12,6 +12,90 @@ import { defs, entity, helper } from '@nftcom/shared'
 
 interface UpdatedIds {
   id: string
+}
+
+// only update to fulfilled or cancelled allowed
+const updateStatusByIds = async (_: any, args: gql.MutationUpdateStatusByIdsArgs, ctx: Context)
+: Promise<gql.UpdateReadOutput> => {
+  const activities: gql.UpdateReadOutput = {
+    updatedIdsSuccess: [],
+    idsNotFoundOrFailed: [],
+  }
+  const { repositories, chain, wallet } = ctx
+  const { ids, status } = args
+
+  if (!ids.length) {
+    return Promise.reject(
+      appError.buildInvalid(
+        txActivityError.buildNoActivityId(),
+        txActivityError.ErrorType.ActivityNotSet,
+      ),
+    )
+  }
+
+  if(!Object.keys(defs.ActivityStatus).includes(status)) {
+    return Promise.reject(
+      appError.buildInvalid(
+        txActivityError.buildIncorrectStatus(status),
+        txActivityError.ErrorType.StatusNotAllowed,
+      ),
+    )
+  }
+
+  if(status === defs.ActivityStatus.Valid) {
+    return Promise.reject(
+      appError.buildInvalid(
+        txActivityError.buildStatusNotAllowed(status),
+        txActivityError.ErrorType.StatusNotAllowed,
+      ),
+    )
+  }
+
+  let ownedActivities: entity.TxActivity[] = []
+
+  const walletAddress: string = helper.checkSum(wallet.address)
+
+  if (walletAddress) {
+    // check ids are owned by wallet
+    ownedActivities = await repositories.txActivity.find({
+      where: {
+        id: In(ids),
+        chainId: chain.id,
+        status: Not(status),
+        walletAddress,
+      },
+    })
+  }
+
+  if (!ownedActivities.length) {
+    return Promise.reject(
+      appError.buildInvalid(
+        txActivityError.buildNoActivitiesStatusToUpdate(),
+        txActivityError.ErrorType.NoActivityToUpdate,
+      ),
+    )
+  }
+
+  const ownedIds: string[] = ownedActivities.map(
+    (ownedActivity: entity.TxActivity) => ownedActivity.id,
+  )
+
+  const filters: defs.ActivityFilters = {
+    walletAddress,
+    chainId: chain.id,
+  }
+  const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
+    ownedIds,
+    filters,
+    'status',
+    status)
+  activities.updatedIdsSuccess = updatedIds?.raw?.map(
+    (item: UpdatedIds) => item.id,
+  )
+  activities.idsNotFoundOrFailed = ids.filter(
+    (id: string) => !activities.updatedIdsSuccess.includes(id),
+  )
+  return activities
 }
 
 const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)
@@ -50,7 +134,7 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
   if (!ownedActivities.length) {
     return Promise.reject(
       appError.buildInvalid(
-        txActivityError.buildNoActivitiesToUpdate(),
+        txActivityError.buildNoActivitiesReadToUpdate(),
         txActivityError.ErrorType.NoActivityToUpdate,
       ),
     )
@@ -60,10 +144,15 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
     (ownedActivity: entity.TxActivity) => ownedActivity.id,
   )
 
+  const filters: defs.ActivityFilters = {
+    walletAddress,
+    chainId: chain.id,
+  }
   const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
     ownedIds,
-    walletAddress,
-    chain.id)
+    filters,
+    'read',
+    true)
   activities.updatedIdsSuccess = updatedIds?.raw?.map(
     (item: UpdatedIds) => item.id,
   )
@@ -126,6 +215,7 @@ const getActivities = async (
       pageInput: Joi.any().required(),
       walletAddress: Joi.string(),
       activityType: Joi.string(),
+      status: Joi.string(),
       read: Joi.boolean(),
       tokenId: Joi.custom(joi.buildBigNumber),
       contract: Joi.string(),
@@ -139,6 +229,7 @@ const getActivities = async (
     pageInput,
     walletAddress,
     activityType,
+    status,
     read,
     tokenId,
     contract,
@@ -160,7 +251,7 @@ const getActivities = async (
 
   auth.verifyAndGetNetworkChain(network, chainId)
 
-  let filters: any = { chainId }
+  let filters: any = { chainId, status: defs.ActivityStatus.Valid }
 
   if (walletAddress) {
     const walletAddressVerifed: string = helper.checkSum(walletAddress)
@@ -176,6 +267,17 @@ const getActivities = async (
       ))
     }
     filters = { ...filters, activityType: castedActivityType }
+  }
+
+  if(status && status !== defs.ActivityStatus.Valid) {
+    const castedStatus: defs.ActivityStatus = status
+    if(!Object.values(defs.ActivityStatus).includes(castedStatus)) {
+      return Promise.reject(appError.buildInvalid(
+        txActivityError.buildIncorrectStatus(castedStatus),
+        txActivityError.ErrorType.StatusIncorrect,
+      ))
+    }
+    filters = { ...filters, status: castedStatus }
   }
 
   let nftId: string
@@ -244,6 +346,10 @@ export default {
     updateReadByIds: combineResolvers(
       auth.isAuthenticated,
       updateReadByIds,
+    ),
+    updateStatusByIds: combineResolvers(
+      auth.isAuthenticated,
+      updateStatusByIds,
     ),
   },
   ProtocolData:{
