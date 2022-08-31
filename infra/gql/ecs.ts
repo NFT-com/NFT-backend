@@ -254,8 +254,8 @@ service:
           essential: true,
           firelensConfiguration: {
             type: 'fluentbit',
-            'options': {
-              'enable-ecs-log-metadata': true,
+            options: {
+              'enable-ecs-log-metadata': 'true',
             },
           },
           memoryReservation: loggerMemory,
