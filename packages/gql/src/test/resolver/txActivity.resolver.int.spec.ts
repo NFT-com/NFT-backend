@@ -3,7 +3,7 @@ import { Connection } from 'typeorm'
 import { testDBConfig } from '@nftcom/gql/config'
 import { db } from '@nftcom/shared'
 import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'
@@ -32,8 +32,10 @@ describe('transaction activity resolver', () => {
       let activity = new TxActivity()
       activity.activityType = ActivityType.Listing
       activity.activityTypeId = orderHash
+      activity.status = ActivityStatus.Valid
       activity.timestamp = new Date(timestamp + (10000 * i))
       activity.walletAddress = testMockWallet.address
+      activity.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.nftId = ['ethereum/test-nft-contract/test-token-id']
       activity.chainId = '4'
 
@@ -226,6 +228,7 @@ describe('transaction activity resolver', () => {
           chainId: '4',
         } },
       })
+   
       expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Listing)
       expect(result.data.getActivities?.items?.[0].order).toBeNull()
       expect(result.data.getActivities.totalItems).toBe(1)
@@ -315,5 +318,30 @@ describe('transaction activity resolver', () => {
       expect(result.data.updateReadByIds.idsNotFoundOrFailed)
         .toEqual(expect.arrayContaining(['test-failed-id']))
     })
+  })
+  it('should update acitivities status property', async () => {
+    const activityIds: string[] = testData
+      .reduce((aggregator: string[], data: any ) => {
+        if (data?.activity?.id) {
+          aggregator.push(data.activity.id)
+        }
+        return aggregator
+      }, [])
+    const result = await testServer.executeOperation({
+      query: `mutation UpdateStatusByIds($ids: [String]!, $status: ActivityStatus) {
+          updateStatusByIds(ids: $ids, status: $status) {
+            updatedIdsSuccess
+            idsNotFoundOrFailed
+          }
+        }`,
+      variables: { ids: [...activityIds, 'test-failed-id'], status: 'Executed' },
+    })
+      
+    expect(result.data.updateStatusByIds.updatedIdsSuccess.length).toEqual(activityIds.length)
+    expect(result.data.updateStatusByIds.updatedIdsSuccess)
+      .toEqual(expect.arrayContaining(activityIds))
+    expect(result.data.updateStatusByIds.idsNotFoundOrFailed.length).toEqual(1)
+    expect(result.data.updateStatusByIds.idsNotFoundOrFailed)
+      .toEqual(expect.arrayContaining(['test-failed-id']))
   })
 })

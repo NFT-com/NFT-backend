@@ -118,7 +118,7 @@ describe('nft resolver', () => {
       const contract = '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'
       const chainId = '1'
       const collectionInfo = await getCollectionInfo(contract, chainId, repositories)
-      expect(collectionInfo.collection.bannerUrl).toEqual('https://cdn.nft.com/profile-banner-default-logo-key.png')
+      expect(collectionInfo.collection.bannerUrl).toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).toEqual('https://cdn.nft.com/profile-image-default.svg')
       expect(collectionInfo.collection.description).toEqual('placeholder collection description text')
     })

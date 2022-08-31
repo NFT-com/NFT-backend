@@ -86,7 +86,7 @@ export const retrieveOrdersLooksrare = async (
     }
     return undefined
   } catch (err) {
-    logger.log(`Error in retrieveOrdersLooksrare: ${err}`)
+    logger.error(`Error in retrieveOrdersLooksrare: ${err}`)
     //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
     return undefined
   }
@@ -155,14 +155,15 @@ const retrieveLooksRareOrdersInBatches = async (
     
     if (response?.data?.data?.length)
     {
-      const assets = response?.data?.data
+      const orders = response?.data?.data
       if( queryUrl.includes('isOrderAsk=true')){
         listings.push(
           orderEntityBuilder(
             defs.ProtocolType.LooksRare,
             defs.ActivityType.Listing,
-            assets[0],
+            orders[0],
             chainId,
+            orders[0]?.collectionAddress,
           ),
         )
       }
@@ -171,8 +172,9 @@ const retrieveLooksRareOrdersInBatches = async (
           orderEntityBuilder(
             defs.ProtocolType.LooksRare,
             defs.ActivityType.Bid,
-            assets[0],
+            orders?.[0],
             chainId,
+            orders[0]?.collectionAddress,
           ),
         )
       }
@@ -224,7 +226,7 @@ export const retrieveMultipleOrdersLooksrare = async (
       }
     }
   } catch (err) {
-    logger.log(`Error in retrieveMultipleOrdersLooksrare: ${err}`)
+    logger.error(`Error in retrieveMultipleOrdersLooksrare: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
   return responseAggregator
@@ -254,12 +256,13 @@ export const createLooksrareListing = async (
         defs.ActivityType.Listing,
         res.data.data,
         chainId,
+        res.data.data.collectionAddress,
       )
       return looksrareOrder
     }
     return null
   } catch (err) {
-    logger.log(`Error in createLooksrareListing: ${err}`)
+    logger.error(`Error in createLooksrareListing: ${err}`)
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
     return null
   }

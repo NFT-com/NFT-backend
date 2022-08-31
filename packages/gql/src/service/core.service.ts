@@ -1018,3 +1018,22 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
     return undefined
   }
 }
+
+export const processIPFSURL = (image: string): string => {
+  const prefix = 'https://nft-llc-3.mypinata.cloud/ipfs/'
+  if (image == null) {
+    return null
+  } else if (image.indexOf('ipfs://ipfs/') === 0) {
+    return prefix + image.slice(12)
+  } else if (image.indexOf('ipfs://') === 0) {
+    return prefix + image.slice(7)
+  } else if (image.indexOf('https://ipfs.io/ipfs/') === 0) {
+    return prefix + image.slice(21)
+  } else if (image.indexOf('https://gateway.pinata.cloud/ipfs/') === 0) {
+    return prefix + image.slice(34)
+  } else if (image.indexOf('https://infura-ipfs.io/ipfs/') === 0) {
+    return prefix + image.slice(28)
+  } else {
+    return null
+  }
+}

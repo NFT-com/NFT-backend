@@ -3,7 +3,7 @@ import { Connection } from 'typeorm'
 import { testDBConfig } from '@nftcom/gql/config'
 import * as testActivityService from '@nftcom/gql/service/txActivity.service'
 import { db, entity } from '@nftcom/shared'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { testLooksrareExistingOrder, testLooksrareOrder,testSeaportOrder } from '../util/constants'
 
@@ -27,6 +27,7 @@ describe('txActivity service', () => {
         ActivityType.Listing,
         testSeaportOrder,
         '4',
+        '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
       )
 
       expect(order.id).toBe(testSeaportOrder.order_hash)
@@ -41,6 +42,7 @@ describe('txActivity service', () => {
         ActivityType.Bid,
         testLooksrareOrder,
         '4',
+        testLooksrareOrder.collectionAddress,
       )
       expect(order.id).toBe(testLooksrareOrder.hash)
       expect(order.activity.activityType).toBe(ActivityType.Bid)
@@ -52,8 +54,9 @@ describe('txActivity service', () => {
       const activity: entity.TxActivity = new entity.TxActivity()
       activity.activityType = ActivityType.Listing
       activity.activityTypeId = testLooksrareExistingOrder.hash
+      activity.status = ActivityStatus.Valid
       activity.timestamp = new Date()
-      activity.walletAddress = 'x29hruG3hC0rrkag7ChQb'
+      activity.walletAddress = '0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.chainId = '4'
       activity.nftId = [`ethereum/${testLooksrareExistingOrder.collectionAddress}/${testLooksrareExistingOrder.tokenId}`]
 
@@ -64,6 +67,7 @@ describe('txActivity service', () => {
         ActivityType.Listing,
         testLooksrareExistingOrder,
         '4',
+        testLooksrareExistingOrder.collectionAddress,
       )
 
       expect(order.activity.id).toBe(savedActivity.id)

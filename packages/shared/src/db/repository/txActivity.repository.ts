@@ -1,7 +1,7 @@
-import { In, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import { In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
+import { ActivityFilters, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -113,16 +113,16 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   public updateActivities = (
     ids: string[],
-    walletAddress: string,
-    chainId: string,
+    filters: ActivityFilters,
+    updateField: string,
+    updateValue: any,
   ): Promise<UpdateResult> =>{
     return this.getRepository().createQueryBuilder('activity')
-      .update({ read: true })
+      .update({ [updateField]: updateValue })
       .where({
         id: In(ids),
-        read: false,
-        walletAddress,
-        chainId,
+        ...filters,
+        [updateField]: Not(updateValue),
       })
       .returning(['id'])
       .updateEntity(true)

@@ -47,7 +47,7 @@ let testServer
 const repositories = db.newRepositories()
 let connection: Connection
 let profile
-let nft
+let nft, nftA
 
 const mockTestServer = (): any => {
   const mockArgs ={
@@ -759,6 +759,52 @@ describe('nft resolver', () => {
       // and repository.nft.hardDelete are being evaluated before the code is
       // reached. It's likely because of how the promises are structured...
       expect(result.data.updateNFTsForProfile.items).toHaveLength(0)
+    })
+  })
+
+  describe('uploadMetadataImagesToS3', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      nftA = await repositories.nft.save({
+        contract: nftTestMockData.contract,
+        tokenId: nftTestMockData.tokenId,
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          imageURL: 'ipfs://QmYQdCpm5JWBuodHUsNVqhGng1NBt9DBn91QZSMV7B9D2g/4.png',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update previewLink of NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 1 NFTs')
+      const nft = await repositories.nft.findById(nftA.id)
+      expect(nft.previewLink).toBeDefined()
     })
   })
 })

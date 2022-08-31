@@ -1,6 +1,6 @@
 import { DeepPartial } from 'typeorm'
 
-import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import { ActivityStatus, NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
@@ -140,10 +140,10 @@ export const testSeaportOrder : SeaportOrder = {
   order_hash: 'test-order-hash',
   current_price: 'test-current-price',
   maker: {
-    address: 'test-maker',
+    address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   },
   taker: {
-    address: 'test-taker',
+    address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   },
   cancelled: false,
   finalized: false,
@@ -154,7 +154,7 @@ export const testSeaportOrder : SeaportOrder = {
       offerer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
       offer: [{
         itemType: 3,
-        token: 'test-proxy-contract',
+        token: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         identifierOrCriteria: '1234',
         startAmount: '1',
         endAmount: '1',
@@ -170,31 +170,31 @@ export const testSeaportOrder : SeaportOrder = {
       totalOriginalConsiderationItems: 1,
       counter: 1,
     },
-    signature: 'test-signature',
+    signature: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   },
-  protocol_address: 'test-protocol-address',
+  protocol_address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   maker_fees: [{
     account: {
-      address: 'test-address',
+      address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
     },
     basis_points: '250',
   }],
   taker_fees: null,
   side: 'ask',
   order_type: 'basic',
-  client_signature: 'test-signature',
+  client_signature: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   relay_id: 'test-relay-id',
   criteria_proof: 'test-criteria-proof',
 }
 
 export const testLooksrareOrder: LooksRareOrder = {
   hash: 'test-order-hash',
-  collectionAddress: 'test-collection-address',
+  collectionAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   tokenId: '1234',
   isOrderAsk: false,
   signer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  strategy: 'test-strategy',
-  currencyAddress: 'test-currency-address',
+  strategy: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+  currencyAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   amount: 10,
   price: '10',
   nonce: 'test-nonce',
@@ -203,7 +203,7 @@ export const testLooksrareOrder: LooksRareOrder = {
   minPercentageToAsk: 1,
   params: '',
   status: '',
-  signature: 'test-signature',
+  signature: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   v: 1,
   r: 'test-r',
   s: 'test-s',
@@ -211,12 +211,12 @@ export const testLooksrareOrder: LooksRareOrder = {
 
 export const testLooksrareExistingOrder: LooksRareOrder = {
   hash: 'test-existing-order-hash',
-  collectionAddress: 'test-collection-address',
+  collectionAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   tokenId: '123',
   isOrderAsk: true,
-  signer: 'test-signer',
-  strategy: 'test-strategy',
-  currencyAddress: 'test-currency-address',
+  signer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+  strategy: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+  currencyAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   amount: 10,
   price: '10',
   nonce: 'test-nonce',
@@ -233,15 +233,18 @@ export const testLooksrareExistingOrder: LooksRareOrder = {
 
 export const testExistingActivity: TxActivity = {
   id: 'test-activity-id',
-  walletAddress: 'test-wallet-id',
+  walletAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   activityType: ActivityType.Listing,
   activityTypeId: 'test-existing-order-hash',
+  status: ActivityStatus.Valid,
   read: false,
   timestamp: 'test-timestamp',
+  nftContract: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+  nftId: ['ethereum/0x47D3ceD01EF669eF085e041f94820EbE368bF27e/123'],
   order: {
     id: 'test-existing-order-hash',
     exchange: ExchangeType.LooksRare,
-    makerAddress: 'test-maker-address',
+    makerAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
     orderHash: 'test-existing-order-hash',
     orderType: ActivityType.Listing,
     protocol: ProtocolType.LooksRare,

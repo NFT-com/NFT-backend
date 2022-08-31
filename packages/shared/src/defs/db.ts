@@ -83,6 +83,12 @@ export enum ActivityType {
   Transfer = 'Transfer',
 }
 
+export enum ActivityStatus {
+  Valid = 'Valid',
+  Cancelled = 'Cancelled',
+  Executed = 'Executed'
+}
+
 export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',
@@ -151,14 +157,15 @@ export type Signature = {
   r: string
   s: string
 }
-
 export interface ActivityFilters {
   chainId: string
-  walletAddress: string
+  walletAddress?: string
   activityType?: ActivityType
   read?: boolean
   tokenId?: string
   contract?: string
+  nftId?: string
+  nftContract?: string
 }
 
 export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition

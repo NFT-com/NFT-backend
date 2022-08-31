@@ -149,7 +149,7 @@ export const start = async (): Promise<void> => {
               attributes: [
                 {
                   trait_type: 'name',
-                  trait_value: username.toLowerCase(),
+                  value: username.toLowerCase(),
                 },
               ],
             })
@@ -162,7 +162,7 @@ export const start = async (): Promise<void> => {
               attributes: [
                 {
                   trait_type: 'name',
-                  trait_value: username.toLowerCase(),
+                  value: username.toLowerCase(),
                 },
               ],
             }
@@ -177,7 +177,7 @@ export const start = async (): Promise<void> => {
     const { key } = req.params
 
     if (!isNaN(Number(key)) && Number(key) >= 1 && Number(key) <= 10000) {
-      const url = 'https://nft-llc.mypinata.cloud/ipfs/Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi'
+      const url = 'https://nft-llc-3.mypinata.cloud/ipfs/Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi'
       return res.send(
         `<!DOCTYPE html>
         <html lang="en">
