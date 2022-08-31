@@ -5,7 +5,6 @@ import fetch from 'node-fetch'
 import * as typeorm from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
-import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { assetBucket, getChain } from '@nftcom/gql/config'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
@@ -417,7 +416,6 @@ const getNFTMetaData = async (
 export const saveNFTMetadataImageToS3 = async (
   nft: entity.NFT,
   repositories: db.Repository,
-  s3config: S3Client,
 ): Promise<void> => {
   try {
     if (!nft.metadata.imageURL) return
@@ -458,6 +456,7 @@ export const saveNFTMetadataImageToS3 = async (
       const contentType = contentTypeFromExt(ext)
       let upload
       if (contentType) {
+        const s3config = await getAWSConfig()
         upload = new Upload({
           client: s3config,
           params: {
@@ -525,8 +524,7 @@ const updateNFTOwnershipAndMetadata = async (
         },
       })
       // save previewLink of NFT metadata image if it's from IPFS
-      const s3config = await getAWSConfig()
-      await saveNFTMetadataImageToS3(savedNFT, repositories, s3config)
+      await saveNFTMetadataImageToS3(savedNFT, repositories)
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -583,8 +581,7 @@ const updateNFTOwnershipAndMetadata = async (
           })
           if (existingNFT.metadata.imageURL !== image) {
             // update previewLink of NFT metadata image if it's from IPFS
-            const s3config = await getAWSConfig()
-            await saveNFTMetadataImageToS3(updatedNFT, repositories, s3config)
+            await saveNFTMetadataImageToS3(updatedNFT, repositories)
           }
           return updatedNFT
         } else {

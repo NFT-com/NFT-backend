@@ -27,10 +27,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import {
-  getAWSConfig,
-  saveUsersForAssociatedAddress,
-} from '@nftcom/gql/service/core.service'
+import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -1259,10 +1256,9 @@ const uploadMetadataImagesToS3 = async (
     const count = Math.min(Number(args?.count), 10000)
     const nfts = await repositories.nft.find({ where: { previewLink: null, chainId } })
     const slidedNFTs = nfts.slice(0, count)
-    const s3config = await getAWSConfig()
     await Promise.allSettled(
       slidedNFTs.map(async (nft) => {
-        await saveNFTMetadataImageToS3(nft, repositories, s3config)
+        await saveNFTMetadataImageToS3(nft, repositories)
       }),
     )
     logger.debug('Preview link of metadata image for NFTs are saved', { counts: slidedNFTs.length })
