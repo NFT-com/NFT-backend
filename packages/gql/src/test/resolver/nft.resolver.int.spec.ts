@@ -780,7 +780,12 @@ describe('nft resolver', () => {
         metadata: {
           name: '',
           description: '',
-          imageURL: 'ipfs://QmYQdCpm5JWBuodHUsNVqhGng1NBt9DBn91QZSMV7B9D2g/4.png',
+          // imageURL: 'ipfs://QmYQdCpm5JWBuodHUsNVqhGng1NBt9DBn91QZSMV7B9D2g/4.png',
+          // imageURL: 'https://etherheads.mypinata.cloud/ipfs/QmVMETREsj6gML5CL8ozNAcNyom9Qkp2W5iqC8cDbVxu6j/429.png',
+          // imageURL: 'https://metadata.ens.domains/mainnet/0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85/0xe4a8957929d1acdb9a8532ecf39922292e280337dd6db3c1b1500288e38a67f5/image',
+          // imageURL: 'https://lh3.googleusercontent.com/XnVDILmz1xpvGkQ38XMh_W-yV_32JztFZVX3xIAt9HIqSnwOgbcqIT_fj-zP8uFbsMVmprFdCGarDl-9IhLKD9FwkFlceaVHpYa5',
+          // imageURL: 'https://decentralizeddevs.mypinata.cloud/ipfs/QmVEz1ZjB259xad4JCUeQcYppAzsZv7ahgUXmR41B8suck/908.gif',
+          imageURL: 'https://arweave.net/v7kfq-kmSbRVkpD23x81gHH5CKmUvngOvdwK0KiNRic',
           traits: [],
         },
         type: defs.NFTType.ERC721,

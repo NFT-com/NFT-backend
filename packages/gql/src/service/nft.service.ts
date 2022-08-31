@@ -427,17 +427,32 @@ export const saveNFTMetadataImageToS3 = async (
         previewLink: nft.metadata.imageURL + '?width=600',
       })
     } else {
-      const imageUrl = processIPFSURL(nft.metadata.imageURL)
-      if (!imageUrl) return
-      const filename = nft.metadata.imageURL.split('/').pop()
-      if (!filename) return
-      const res = await fetch(imageUrl)
-      const buffer = await res.buffer()
-      if (!buffer) return
-      let ext = extensionFromFilename(filename)
-      const imageKey = ext ? `nfts/${nft.chainId}/` + Date.now() + '-' + filename :
-        `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
-      ext = ext ?? 'png'
+      let imageUrl, ext
+      let imageKey
+      let buffer
+      if (nft.metadata.imageURL.indexOf('data:image/svg+xml') === 0) {
+        buffer = nft.metadata.imageURL
+        ext = 'svg'
+        imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + nft.contract + '.svg'
+      } else {
+        imageUrl = processIPFSURL(nft.metadata.imageURL)
+        if (!imageUrl) return
+        const filename = nft.metadata.imageURL.split('/').pop()
+        if (!filename) return
+        const res = await fetch(imageUrl)
+        buffer = await res.buffer()
+        if (!buffer) return
+        ext = extensionFromFilename(filename)
+        if (!ext) {
+          if (imageUrl.includes('ipfs'))  {
+            ext = 'png'
+          } else if (imageUrl.includes('https://metadata.ens.domains/')) {
+            ext = 'svg'
+          }
+        }
+        imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
+        ext = ext ?? 'png'
+      }
       const contentType = contentTypeFromExt(ext)
       let upload
       if (contentType) {
@@ -458,6 +473,7 @@ export const saveNFTMetadataImageToS3 = async (
       }
     }
   } catch (err) {
+    logger.debug(`Error in saveNFTMetadatImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadatImageToS3: ${err}`)
     return
   }
