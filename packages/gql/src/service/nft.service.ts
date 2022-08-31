@@ -1313,3 +1313,27 @@ export const getCollectionInfo = async (
     return err
   }
 }
+
+export const updateENSNFTMedata = async (
+  nft: entity.NFT,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    initiateWeb3(nft.chainId)
+    const metadata = await getNFTMetaData(nft.contract, nft.tokenId)
+    if (!metadata) return
+    const { type, name, description, image, traits } = metadata
+    await repositories.nft.updateOneById(nft.id, {
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+  } catch (err) {
+    logger.debug(`Error in updateENSNFTMedata: ${err}`)
+    Sentry.captureMessage(`Error in updateENSNFTMedata: ${err}`)
+  }
+}

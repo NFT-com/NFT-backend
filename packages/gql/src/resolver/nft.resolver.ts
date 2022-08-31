@@ -39,7 +39,7 @@ import {
   refreshNFTMetadata,
   removeEdgesForNonassociatedAddresses, saveNFTMetadataImageToS3,
   syncEdgesWithNFTs,
-  updateEdgesWeightForProfile,
+  updateEdgesWeightForProfile, updateENSNFTMedata,
   updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -1273,6 +1273,39 @@ const uploadMetadataImagesToS3 = async (
   }
 }
 
+const updateENSNFTMetadata = async (
+  _: any,
+  args: gql.MutationUpdateEnsnftMetadataArgs,
+  ctx: Context,
+): Promise<gql.UploadMetadataImagesToS3Output> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('updateENSNFTMetadata', { count: args?.count })
+  try {
+    const count = Math.min(Number(args?.count), 1000)
+    const nfts = await repositories.nft.find({ where: { type: defs.NFTType.UNKNOWN, chainId } })
+    const toUpdate = []
+    for (let i = 0; i < nfts.length; i++) {
+      if (!nfts[i].metadata.imageURL)
+        toUpdate.push(nfts[i])
+    }
+    const slidedNFTs = toUpdate.slice(0, count)
+    await Promise.allSettled(
+      slidedNFTs.map(async (nft) => {
+        await updateENSNFTMedata(nft, repositories)
+      }),
+    )
+    logger.debug('Update image urls of ENS NFTs', { counts: slidedNFTs.length })
+    return {
+      message: `Updated image urls of metadata for ${slidedNFTs.length} ENS NFTs`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateENSNFTMetadata: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1295,6 +1328,7 @@ export default {
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
     uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
+    updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
     listNFTSeaport,
     listNFTLooksrare,
 
