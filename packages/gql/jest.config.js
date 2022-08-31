@@ -15,4 +15,7 @@ module.exports = {
     '@nftcom/shared/(.*)': '<rootDir>/../shared/src/$1',
     '@nftcom/gql/(.*)': '<rootDir>/src/$1',
   },
+  coveragePathIgnorePatterns: [
+    'src/config.ts'
+  ]
 }
