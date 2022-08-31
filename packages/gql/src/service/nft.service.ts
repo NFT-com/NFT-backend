@@ -444,14 +444,16 @@ export const saveNFTMetadataImageToS3 = async (
         if (!buffer) return
         ext = extensionFromFilename(filename)
         if (!ext) {
-          if (imageUrl.includes('ipfs'))  {
-            ext = 'png'
-          } else if (imageUrl.includes('https://metadata.ens.domains/')) {
+          if (imageUrl.includes('https://metadata.ens.domains/')) {
             ext = 'svg'
+            imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.svg'
+          } else {
+            ext = 'png'
+            imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
           }
+        } else {
+          imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
         }
-        imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
-        ext = ext ?? 'png'
       }
       const contentType = contentTypeFromExt(ext)
       let upload
