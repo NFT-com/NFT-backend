@@ -16,6 +16,6 @@ module.exports = {
     '@nftcom/gql/(.*)': '<rootDir>/src/$1',
   },
   coveragePathIgnorePatterns: [
-    'src/config.ts'
+    'src/tracer.ts'
   ]
 }
