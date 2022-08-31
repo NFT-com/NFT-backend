@@ -15,7 +15,7 @@ import {
   generateWeight,
   getAWSConfig,
   getLastWeight,
-  midWeight, s3ToCdn,
+  midWeight, processIPFSURL, s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
@@ -413,6 +413,57 @@ const getNFTMetaData = async (
   }
 }
 
+export const saveNFTMetadataImageToS3 = async (
+  nft: entity.NFT,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    if (!nft.metadata.imageURL) return
+    if (!nft.metadata.imageURL.length) return
+    if (nft.metadata.imageURL.startsWith('https://cdn.nft.com')) {
+      await repositories.nft.updateOneById(nft.id, {
+        previewLink: nft.metadata.imageURL + '?width=600',
+      })
+    } else {
+      const imageUrl = processIPFSURL(nft.metadata.imageURL)
+      if (!imageUrl) return
+      const filename = nft.metadata.imageURL.split('/').pop()
+      if (filename) {
+        const res = await fetch(imageUrl)
+        const buffer = await res.buffer()
+        if (buffer) {
+          let ext = extensionFromFilename(filename)
+          const imageKey = ext ? `nfts/${nft.chainId}/` + Date.now() + '-' + filename :
+            `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
+          ext = ext ?? 'png'
+          const contentType = contentTypeFromExt(ext)
+          const s3config = await getAWSConfig()
+          let upload
+          if (contentType) {
+            upload = new Upload({
+              client: s3config,
+              params: {
+                Bucket: assetBucket.name,
+                Key: imageKey,
+                Body: buffer,
+                ContentType: contentType,
+              },
+            })
+          }
+          await upload.done()
+
+          const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+          await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath + '?width=600' })
+          logger.debug('Preview link of NFT metadata image is saved', { id: nft.id, previewLink: cdnPath })
+        }
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in saveNFTMetadatImageToS3: ${err}`)
+    return
+  }
+}
+
 const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
@@ -442,7 +493,7 @@ const updateNFTOwnershipAndMetadata = async (
     const { type, name, description, image, traits } = metadata
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      return await repositories.nft.save({
+      const savedNFT = await repositories.nft.save({
         chainId: walletChainId || process.env.CHAIN_ID,
         userId,
         walletId,
@@ -456,6 +507,9 @@ const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
+      // save previewLink of NFT metadata image if it's from IPFS
+      await saveNFTMetadataImageToS3(savedNFT, repositories)
+      return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
@@ -498,7 +552,7 @@ const updateNFTOwnershipAndMetadata = async (
           existingNFT.metadata.imageURL !== image ||
           !isTraitSame
         ) {
-          return await repositories.nft.updateOneById(existingNFT.id, {
+          const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId,
             type,
@@ -509,6 +563,11 @@ const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
+          if (existingNFT.metadata.imageURL !== image) {
+            // update previewLink of NFT metadata image if it's from IPFS
+            await saveNFTMetadataImageToS3(updatedNFT, repositories)
+          }
+          return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
           return undefined
@@ -1098,15 +1157,16 @@ export const downloadImageFromUbiquity = async (
   }
 }
 
-const downloadAndUploadImageToS3 = async (
+export const downloadAndUploadImageToS3 = async (
   chainId: string,
   url: string,
   fileName: string,
+  uploadPath: string,
 ): Promise<string | undefined> => {
   try {
     const ext = extensionFromFilename(url)
     const fullName = ext ? fileName + '.' + ext : fileName
-    const imageKey = `collections/${chainId}/` + Date.now() + '-' + fullName
+    const imageKey = uploadPath + Date.now() + '-' + fullName
     const contentType = contentTypeFromExt(ext)
     if (!contentType) return undefined
     const buffer = await downloadImageFromUbiquity(url)
@@ -1160,7 +1220,7 @@ export const getCollectionInfo = async (
         // await seService.indexCollections([collection])
       }
 
-      let bannerUrl = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
+      let bannerUrl = 'https://cdn.nft.com/collectionBanner_default.png'
       let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
       let description = 'placeholder collection description text'
       const ubiquityFolder = 'https://ubiquity.api.blockdaemon.com/v1/nft/media/ethereum/mainnet/'
@@ -1186,12 +1246,14 @@ export const getCollectionInfo = async (
         ) {
           ubiquityResults = await getUbiquity(contract, chainId)
           if (ubiquityResults) {
+            const uploadPath = `collections/${chainId}/`
             // check if banner url from Ubiquity is correct one
             if (ubiquityResults.collection.banner !== ubiquityFolder) {
               const banner = await downloadAndUploadImageToS3(
                 chainId,
                 ubiquityResults.collection.banner,
                 'banner',
+                uploadPath,
               )
               bannerUrl = banner ? banner : bannerUrl
             }
@@ -1201,6 +1263,7 @@ export const getCollectionInfo = async (
                 chainId,
                 ubiquityResults.collection.logo,
                 'logo',
+                uploadPath,
               )
               logoUrl = logo ? logo : logoUrl
             }

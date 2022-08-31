@@ -34,6 +34,7 @@ describe('transaction activity resolver', () => {
       activity.activityTypeId = orderHash
       activity.timestamp = new Date(timestamp + (10000 * i))
       activity.walletAddress = testMockWallet.address
+      activity.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.nftId = ['ethereum/test-nft-contract/test-token-id']
       activity.chainId = '4'
 

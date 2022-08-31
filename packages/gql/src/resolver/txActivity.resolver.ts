@@ -8,7 +8,7 @@ import { appError, txActivityError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
-import { _logger,defs, entity, helper } from '@nftcom/shared'
+import { defs, entity, helper } from '@nftcom/shared'
 
 interface UpdatedIds {
   id: string
@@ -59,7 +59,7 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
   const ownedIds: string[] = ownedActivities.map(
     (ownedActivity: entity.TxActivity) => ownedActivity.id,
   )
-  
+
   const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
     ownedIds,
     walletAddress,
@@ -143,7 +143,18 @@ const getActivities = async (
     tokenId,
     contract,
     skipRelations,
-  } = args.input
+  } = helper.safeObject(args.input)
+
+  if (!process.env.ACTIVITY_ENDPOINTS_ENABLED) {
+    return {
+      items: [],
+      totalItems: 0,
+      pageInfo: {
+        firstCursor: '',
+        lastCursor: '',
+      },
+    }
+  }
 
   const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
 
@@ -169,11 +180,8 @@ const getActivities = async (
 
   let nftId: string
   // build nft id
-  if (contract && !tokenId) {
-    return Promise.reject(appError.buildInvalid(
-      txActivityError.buildCollectionNotSupported(),
-      txActivityError.ErrorType.CollectionNotSupported,
-    ))
+  if (contract) {
+    filters = { ...filters, nftContract: contract }
   }
 
   if (!contract && tokenId) {
@@ -187,7 +195,7 @@ const getActivities = async (
   }
 
   if(nftId?.length) {
-    filters = { nftId }
+    filters = { ...filters, nftId }
   }
 
   if (read) {
