@@ -870,4 +870,47 @@ describe('nft resolver', () => {
       }
     })
   })
+
+  describe('updateENSNFTMetadata', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.nft.save({
+        contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
+        tokenId: '0x3f183afce162dcff1453495c6932401729f4cc3832aa5807293967ee9efa53db',
+        chainId: '4',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.UNKNOWN,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should not update any ENS NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateENSNFTMetadata($count: Int!) { updateENSNFTMetadata(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.updateENSNFTMetadata.message).toEqual('Updated image urls of metadata for 0 ENS NFTs')
+    })
+  })
 })
