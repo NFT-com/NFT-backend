@@ -3,9 +3,11 @@ import Joi from 'joi'
 import { format } from 'util'
 
 import { Context, gql } from '@nftcom/gql/defs'
+import { appError } from '@nftcom/gql/error'
 import { joi } from '@nftcom/gql/helper'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
+import { LoggerContext } from '@nftcom/shared/helper/logger/types'
 
 const NFTPORT_KEY = process.env.NFTPORT_KEY || ''
 
@@ -14,14 +16,11 @@ const NFTPORT_ENDPOINTS = {
   stats: 'https://api.nftport.xyz/v0/transactions/stats/%s',
 }
 
-const fetchData =
-  async (endpoint: string, key: string, args: string[], extraHeaders={}): Promise<any> => {
-    const cachedData = await cache.get(key)
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    }
-    const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
-    const { data } = await axios.get(url, {
+const logger = _logger.Factory('ContractDataResolver', LoggerContext.GraphQL)
+
+const sendRequest = async (url: string, extraHeaders={}): Promise<any> => {
+  try {
+    return await axios.get(url, {
       params: {
         chain: 'ethereum',
       },
@@ -31,7 +30,30 @@ const fetchData =
         ...extraHeaders,
       },
     })
+  } catch (error) {
+    if (error.response) {
+      logger.error({
+        data: error.response.data,
+        status: error.response.status,
+        headers: error.response.headers,
+      }, `Request failed to ${url}`)
+    } else if (error.request) {
+      logger.error(error.request, `Request failed to ${url}`)
+    } else {
+      logger.error(`Error: ${error.message}`, `Request failed to ${url}`)
+    }
+    throw appError.buildInternal()
+  }
+}
 
+const fetchData =
+  async (endpoint: string, key: string, args: string[], extraHeaders={}): Promise<any> => {
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    }
+    const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
+    const { data } = await sendRequest(url, extraHeaders)
     if (data.response === 'OK') {
       await cache.set(
         key,
@@ -39,6 +61,8 @@ const fetchData =
         'EX',
         60 * 60, // 60 minutes
       )
+    } else {
+      logger.error(data, `Unsuccessful response from ${url}`)
     }
 
     return data
