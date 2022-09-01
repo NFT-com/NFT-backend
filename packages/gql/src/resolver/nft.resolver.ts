@@ -1259,7 +1259,10 @@ const uploadMetadataImagesToS3 = async (
     const slidedNFTs = filteredNFTs.slice(0, count)
     await Promise.allSettled(
       slidedNFTs.map(async (nft) => {
-        await saveNFTMetadataImageToS3(nft, repositories)
+        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
+        if (previewLink) {
+          await repositories.nft.updateOneById(nft.id, { previewLink })
+        }
       }),
     )
     logger.debug('Preview link of metadata image for NFTs are saved', { counts: slidedNFTs.length })
