@@ -55,52 +55,16 @@ export interface LookrareResponse {
   status: string
 }
 
-/**
- * Retrieve sell or buy orders
- * if isOrderAsk is true, it's listing, or else it's offer
- * @param contract
- * @param tokenId
- * @param chainId
- * @param isOrderAsk
- * @param status
- */
-export const retrieveOrdersLooksrare = async (
-  contract: string,
-  tokenId: string,
-  chainId: string,
-  isOrderAsk: boolean,
-  status: string,
-): Promise<Array<LookrareResponse> | undefined> => {
-  if (chainId !== '4' && chainId !== '1') return undefined
-  let url
-  const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
-  const config = {
-    headers: { Accept: 'application/json' },
-  }
-  try {
-    url = `${baseUrl}/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=${status}&sort=PRICE_ASC`
-    const res = await axios.get(url, config)
-    if (res && res.data && res.data.data) {
-      const orders = res.data.data as Array<LookrareResponse>
-      return orders
-    }
-    return undefined
-  } catch (err) {
-    logger.error(`Error in retrieveOrdersLooksrare: ${err}`)
-    //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
-    return undefined
-  }
-}
-
 const getLooksRareInterceptor = (
   baseURL: string,
+  chainId: string,
 ): AxiosInstance => {
   const looksrareInstance = axios.create({
     baseURL,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'X-Looks-Api-Key':LOOKSRARE_API_KEY,
+      'X-Looks-Api-Key': chainId === '1'? LOOKSRARE_API_KEY : '',
     },
   })
   // retry logic with exponential backoff
@@ -126,6 +90,45 @@ const getLooksRareInterceptor = (
 }
 
 /**
+ * Retrieve sell or buy orders
+ * if isOrderAsk is true, it's listing, or else it's offer
+ * @param contract
+ * @param tokenId
+ * @param chainId
+ * @param isOrderAsk
+ * @param status
+ */
+export const retrieveOrdersLooksrare = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+  isOrderAsk: boolean,
+  status: string,
+): Promise<Array<LookrareResponse> | undefined> => {
+  if (chainId !== '4' && chainId !== '1') return undefined
+  let url
+  const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
+  const looksrareInterceptor = getLooksRareInterceptor(
+    baseUrl,
+    chainId,
+  )
+
+  try {
+    url = `/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=${status}&sort=PRICE_ASC`
+    const res = await looksrareInterceptor.get(url)
+    if (res && res.data && res.data.data) {
+      const orders = res.data.data as Array<LookrareResponse>
+      return orders
+    }
+    return undefined
+  } catch (err) {
+    logger.error(`Error in retrieveOrdersLooksrare: ${err}`)
+    //Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
+    return undefined
+  }
+}
+
+/**
  * Retrieve listings in batches
  * @param listingQueryParams
  * @param chainId
@@ -142,6 +145,7 @@ const retrieveLooksRareOrdersInBatches = async (
   const listingBaseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   const listingInterceptorLooksrare = getLooksRareInterceptor(
     listingBaseUrl,
+    chainId,
   )
   let delayCounter = 0
   let size: number
@@ -247,7 +251,7 @@ export const createLooksrareListing = async (
     return null
   }
   try {
-    const res = await getLooksRareInterceptor(baseUrl).post('/orders',
+    const res = await getLooksRareInterceptor(baseUrl, chainId).post('/orders',
       JSON.parse(order),
     )
     if (res.status === 201 && res.data.data) {

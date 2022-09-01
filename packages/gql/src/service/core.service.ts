@@ -1,6 +1,7 @@
 import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
+import fetch from 'node-fetch'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
@@ -1037,5 +1038,20 @@ export const processIPFSURL = (image: string): string => {
   } else {
     return image
   }
+}
+
+export const fetchWithTimeout = async (
+  resource: any,
+  options: any,
+): Promise<any> => {
+  const { timeout = 8000 } = options
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeout)
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal,
+  })
+  clearTimeout(id)
+  return response
 }
 
