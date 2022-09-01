@@ -191,8 +191,8 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
           .add({ GENERATE_PREVIEW_LINK: QUEUE_TYPES.GENERATE_PREVIEW_LINK }, {
             removeOnComplete: true,
             removeOnFail: true,
-            // repeat every  3 minutes
-            repeat: { every: 3 * 60000 },
+            // repeat every  5 minutes
+            repeat: { every: 5 * 60000 },
             jobId: 'generate_preview_link',
           })
       default:

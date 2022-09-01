@@ -271,7 +271,22 @@ export const generatePreviewLink = async (job: Job): Promise<any> => {
   try {
     logger.debug('generate preview links', job.data)
 
-    const MAX_NFT_COUNTS = 100
+    // to avoid overlap of NFTs during cron jobs
+    const key = 'generate_preview_link_available'
+    const cachedData = await cache.get(key)
+    if (!cachedData) {
+      // if no cached flag value, we continue job and availability as false
+      await cache.set(key, JSON.stringify(false))
+    } else {
+      const available = JSON.parse(cachedData) as boolean
+      // if flag is false, job should be suspended
+      if (!available) return
+      else {
+        // else if flag is true, we start new job and suspend execution of other jobs
+        await cache.set(key, JSON.stringify(false))
+      }
+    }
+    const MAX_NFT_COUNTS = 200
     const nfts = await repositories.nft.find({ where: { previewLink: null } })
     const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
     const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
@@ -284,6 +299,7 @@ export const generatePreviewLink = async (job: Job): Promise<any> => {
         }
       }),
     )
+    await cache.set(key, JSON.stringify(true))
     logger.debug('generated previewLink for NFTs', { counts: length })
   } catch (err) {
     Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
