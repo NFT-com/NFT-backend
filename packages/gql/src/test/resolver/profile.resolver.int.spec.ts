@@ -451,6 +451,122 @@ describe('profile resolver', () => {
     })
   })
 
+  describe('profilesByDisplayNft', () => {
+    let profileA, profileB, nft
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      profileA = await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      profileB = await repositories.profile.save({
+        url: 'testprofile1',
+        ownerUserId: 'test-user-id1',
+        ownerWalletId: 'test-wallet-id1',
+        tokenId: '1',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      nft = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+
+      await repositories.edge.save({
+        thisEntityId: profileA.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nft.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaaa',
+        hide: false,
+      })
+
+      await repositories.edge.save({
+        thisEntityId: profileB.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nft.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaaa',
+        hide: true,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should display visible NFT profile', async () => {
+      console.log(nft)
+      const result = await testServer.executeOperation({
+        query: `query ProfilesByDisplayNft($input: ProfilesByDisplayNftInput!) {
+          profilesByDisplayNft(input: $input) {
+            items {
+              id
+            }
+          }
+        }`,
+        variables: {
+          input: {
+            collectionAddress: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+            tokenId: '0x09c5',
+            chainId: '5',
+            showOnlyVisibleNFTProfile: true,
+          },
+        },
+      })
+      expect(result.data.profilesByDisplayNft.items.length).toEqual(1)
+    })
+
+    it('should display all NFT profile', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ProfilesByDisplayNft($input: ProfilesByDisplayNftInput!) {
+          profilesByDisplayNft(input: $input) {
+            items {
+              id
+            }
+          }
+        }`,
+        variables: {
+          input: {
+            collectionAddress: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+            tokenId: '0x09c5',
+            chainId: '5',
+          },
+        },
+      })
+      expect(result.data.profilesByDisplayNft.items.length).toEqual(2)
+    })
+  })
+
   describe('latestProfiles', () => {
     beforeAll(async () => {
       testServer = getTestApolloServer(repositories,
