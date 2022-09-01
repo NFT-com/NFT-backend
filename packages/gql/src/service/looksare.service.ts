@@ -110,12 +110,10 @@ export const retrieveOrdersLooksrare = async (
   const looksrareInterceptor = getLooksRareInterceptor(
     baseUrl,
   )
-  const config = {
-    headers: { Accept: 'application/json' },
-  }
   try {
-    url = `${baseUrl}/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=${status}&sort=PRICE_ASC`
-    const res = await looksrareInterceptor.get(url, config)
+    url = `/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=${status}&sort=PRICE_ASC`
+    const res = await looksrareInterceptor.get(url)
+  
     if (res && res.data && res.data.data) {
       const orders = res.data.data as Array<LookrareResponse>
       return orders
