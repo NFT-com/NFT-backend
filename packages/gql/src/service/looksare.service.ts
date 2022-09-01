@@ -57,13 +57,14 @@ export interface LookrareResponse {
 
 const getLooksRareInterceptor = (
   baseURL: string,
+  chainId: string,
 ): AxiosInstance => {
   const looksrareInstance = axios.create({
     baseURL,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'X-Looks-Api-Key':LOOKSRARE_API_KEY,
+      'X-Looks-Api-Key': chainId === '1'? LOOKSRARE_API_KEY : '',
     },
   })
   // retry logic with exponential backoff
@@ -109,11 +110,12 @@ export const retrieveOrdersLooksrare = async (
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   const looksrareInterceptor = getLooksRareInterceptor(
     baseUrl,
+    chainId,
   )
+
   try {
     url = `/orders?isOrderAsk=${isOrderAsk}&collection=${contract}&tokenId=${tokenId}&status%5B%5D=${status}&sort=PRICE_ASC`
     const res = await looksrareInterceptor.get(url)
-  
     if (res && res.data && res.data.data) {
       const orders = res.data.data as Array<LookrareResponse>
       return orders
@@ -143,6 +145,7 @@ const retrieveLooksRareOrdersInBatches = async (
   const listingBaseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   const listingInterceptorLooksrare = getLooksRareInterceptor(
     listingBaseUrl,
+    chainId,
   )
   let delayCounter = 0
   let size: number
@@ -248,7 +251,7 @@ export const createLooksrareListing = async (
     return null
   }
   try {
-    const res = await getLooksRareInterceptor(baseUrl).post('/orders',
+    const res = await getLooksRareInterceptor(baseUrl, chainId).post('/orders',
       JSON.parse(order),
     )
     if (res.status === 201 && res.data.data) {
