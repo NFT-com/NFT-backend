@@ -106,9 +106,6 @@ describe('profile resolver', () => {
         }`,
         variables: { url: 'test', chainId: '4' },
       })
-
-      console.log('result: ', result)
-
       expect(result.errors).toBeUndefined()
     })
 
@@ -525,7 +522,6 @@ describe('profile resolver', () => {
     })
 
     it('should display visible NFT profile', async () => {
-      console.log(nft)
       const result = await testServer.executeOperation({
         query: `query ProfilesByDisplayNft($input: ProfilesByDisplayNftInput!) {
           profilesByDisplayNft(input: $input) {
