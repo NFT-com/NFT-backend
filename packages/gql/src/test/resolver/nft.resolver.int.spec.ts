@@ -866,7 +866,7 @@ describe('nft resolver', () => {
       const nfts = await repositories.nft.findAll()
       expect(nfts.length).toEqual(5)
       for (nft of nfts) {
-        expect(nft.previewLink).toBeDefined()
+        expect(nft.previewLink).not.toBeNull()
       }
     })
   })

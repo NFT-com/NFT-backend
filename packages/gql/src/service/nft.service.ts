@@ -11,7 +11,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename,
+  extensionFromFilename, fetchWithTimeout,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -437,7 +437,8 @@ export const saveNFTMetadataImageToS3 = async (
         if (!imageUrl) return
         const filename = nft.metadata.imageURL.split('/').pop()
         if (!filename) return
-        const res = await fetch(imageUrl)
+        // get buffer from imageURL, timeout is set to 5 seconds
+        const res = await fetchWithTimeout(imageUrl, { timeout: 5000 })
         buffer = await res.buffer()
         if (!buffer) return
         ext = extensionFromFilename(filename)
