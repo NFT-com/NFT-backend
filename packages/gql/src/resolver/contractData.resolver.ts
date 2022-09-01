@@ -7,7 +7,6 @@ import { appError } from '@nftcom/gql/error'
 import { joi } from '@nftcom/gql/helper'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
-import { LoggerContext } from '@nftcom/shared/helper/logger/types'
 
 const NFTPORT_KEY = process.env.NFTPORT_KEY || ''
 
@@ -16,7 +15,7 @@ const NFTPORT_ENDPOINTS = {
   stats: 'https://api.nftport.xyz/v0/transactions/stats/%s',
 }
 
-const logger = _logger.Factory('ContractDataResolver', LoggerContext.GraphQL)
+const logger = _logger.Factory('ContractDataResolver', _logger.Context.GraphQL)
 
 const sendRequest = async (url: string, extraHeaders={}): Promise<any> => {
   try {
