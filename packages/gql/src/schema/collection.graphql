@@ -153,6 +153,7 @@ type UpdateSpamStatusOutput {
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
   collectionsByDeployer(deployer: String!): [Collection]
+  numberOfNFTs(contract: Address!, chainId: String): Int
   associatedAddressesForContract(contract: Address!): AssociatedAddressesForContractOutput!
 }
 

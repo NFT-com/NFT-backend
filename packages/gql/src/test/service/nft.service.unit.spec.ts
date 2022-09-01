@@ -2,8 +2,13 @@ import { ethers } from 'ethers'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import * as nftService from '@nftcom/gql/service/nft.service'
-import { downloadImageFromUbiquity, getCollectionInfo } from '@nftcom/gql/service/nft.service'
-import { db } from '@nftcom/shared'
+import {
+  downloadImageFromUbiquity,
+  getCollectionInfo,
+  updateENSNFTMedata,
+} from '@nftcom/gql/service/nft.service'
+import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
+import { db,defs } from '@nftcom/shared'
 
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
@@ -33,7 +38,18 @@ const repositories = db.newRepositories()
 
 let connection
 let testServer
+let nftA
+
 describe('nft resolver', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.close()
+  })
+
   describe('refresh nft endpoint', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
@@ -94,8 +110,6 @@ describe('nft resolver', () => {
 
   describe('getCollectionInfo', () => {
     beforeAll(async () => {
-      connection = await db.connectTestDB(testDBConfig)
-
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
         name: 'Warner Bros nft',
@@ -111,8 +125,6 @@ describe('nft resolver', () => {
     })
     afterAll(async () => {
       await clearDB(repositories)
-      if (!connection) return
-      await connection.close()
     })
     it('should return default banner, logo image and description', async () => {
       const contract = '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'
@@ -129,6 +141,32 @@ describe('nft resolver', () => {
       expect(collectionInfo.collection.bannerUrl).toBeDefined()
       expect(collectionInfo.collection.logoUrl).toBeDefined()
       expect(collectionInfo.collection.description).toBeDefined()
+    })
+  })
+
+  describe('updateENSNFTMedata', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
+        tokenId: '0x3f183afce162dcff1453495c6932401729f4cc3832aa5807293967ee9efa53db',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.UNKNOWN,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+    it('should update image url of ENS NFT metadata', async () => {
+      await updateENSNFTMedata(nftA, repositories)
+      const nft = await repositories.nft.findById(nftA.id)
+      expect(nft.metadata.imageURL).toBeDefined()
     })
   })
 })
