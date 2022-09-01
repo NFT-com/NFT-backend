@@ -416,10 +416,10 @@ const getNFTMetaData = async (
 export const saveNFTMetadataImageToS3 = async (
   nft: entity.NFT,
   repositories: db.Repository,
-): Promise<void> => {
+): Promise<string | undefined> => {
   try {
-    if (!nft.metadata.imageURL) return
-    if (!nft.metadata.imageURL.length) return
+    if (!nft.metadata.imageURL) return undefined
+    if (!nft.metadata.imageURL.length) return undefined
     if (nft.metadata.imageURL.startsWith('https://cdn.nft.com')) {
       await repositories.nft.updateOneById(nft.id, {
         previewLink: nft.metadata.imageURL + '?width=600',
@@ -434,13 +434,13 @@ export const saveNFTMetadataImageToS3 = async (
         imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + nft.contract + '.svg'
       } else {
         imageUrl = processIPFSURL(nft.metadata.imageURL)
-        if (!imageUrl) return
+        if (!imageUrl) return undefined
         const filename = nft.metadata.imageURL.split('/').pop()
-        if (!filename) return
+        if (!filename) return undefined
         // get buffer from imageURL, timeout is set to 5 seconds
         const res = await fetchWithTimeout(imageUrl, { timeout: 5000 })
         buffer = await res.buffer()
-        if (!buffer) return
+        if (!buffer) return undefined
         ext = extensionFromFilename(filename)
         if (!ext) {
           if (imageUrl.includes('https://metadata.ens.domains/')) {
@@ -470,14 +470,14 @@ export const saveNFTMetadataImageToS3 = async (
         await upload.done()
 
         const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-        await repositories.nft.updateOneById(nft.id, { previewLink: cdnPath + '?width=600' })
-        logger.debug('Preview link of NFT metadata image is saved', { id: nft.id, previewLink: cdnPath })
+        logger.debug('Preview link of NFT metadata image is saved', { id: nft.id, previewLink: cdnPath + '?width=600' })
+        return cdnPath + '?width=600'
       }
     }
   } catch (err) {
     logger.debug(`Error in saveNFTMetadatImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadatImageToS3: ${err}`)
-    return
+    return undefined
   }
 }
 
@@ -525,7 +525,10 @@ const updateNFTOwnershipAndMetadata = async (
         },
       })
       // save previewLink of NFT metadata image if it's from IPFS
-      await saveNFTMetadataImageToS3(savedNFT, repositories)
+      const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
+      if (previewLink) {
+        await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+      }
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -582,7 +585,10 @@ const updateNFTOwnershipAndMetadata = async (
           })
           if (existingNFT.metadata.imageURL !== image) {
             // update previewLink of NFT metadata image if it's from IPFS
-            await saveNFTMetadataImageToS3(updatedNFT, repositories)
+            const previewLink = await saveNFTMetadataImageToS3(updatedNFT, repositories)
+            if (previewLink) {
+              await repositories.nft.updateOneById(updatedNFT.id, { previewLink })
+            }
           }
           return updatedNFT
         } else {
