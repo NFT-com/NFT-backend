@@ -437,8 +437,8 @@ export const saveNFTMetadataImageToS3 = async (
         if (!imageUrl) return undefined
         const filename = nft.metadata.imageURL.split('/').pop()
         if (!filename) return undefined
-        // get buffer from imageURL, timeout is set to 5 seconds
-        const res = await fetchWithTimeout(imageUrl, { timeout: 5000 })
+        // get buffer from imageURL, timeout is set to 10 seconds
+        const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 10 })
         buffer = await res.buffer()
         if (!buffer) return undefined
         ext = extensionFromFilename(filename)
