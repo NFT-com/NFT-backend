@@ -58,3 +58,4 @@ You can see generated GQL schema documentation at [https://prod-gql-docs.nft.com
 since you're logged into GitHub
 
 You can see the automated coverage report at [https://prod-gql-docs.nft.com/coverage/index.html](https://prod-gql-docs.nft.com/coverage/index.html)
+
