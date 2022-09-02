@@ -248,8 +248,9 @@ const getActivities = async (
   }
 
   const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
+  const verificationNetwork: string = network || 'ethereum'
 
-  auth.verifyAndGetNetworkChain(network, chainId)
+  auth.verifyAndGetNetworkChain(verificationNetwork, chainId)
 
   let filters: any = { chainId, status: defs.ActivityStatus.Valid }
 
