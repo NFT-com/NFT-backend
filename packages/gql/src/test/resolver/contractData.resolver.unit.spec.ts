@@ -1,7 +1,6 @@
 import axios from 'axios'
 
 import { getContractSalesStatistics, getNFTDetails, getTxByContract, getTxByNFT } from '@nftcom/gql/resolver/contractData.resolver'
-import { _logger } from '@nftcom/shared'
 
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
@@ -14,6 +13,9 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
 }))
 
 describe('contract data resolver', () => {
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
   describe('getNFTDetails', () => {
     it('should return nft details', async () => {
       const nftDetails = {
