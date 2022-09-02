@@ -470,7 +470,7 @@ export const saveNFTMetadataImageToS3 = async (
         await upload.done()
 
         const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-        logger.debug('Preview link of NFT metadata image is saved', { id: nft.id, previewLink: cdnPath + '?width=600' })
+        logger.debug(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
         return cdnPath + '?width=600'
       }
     }
