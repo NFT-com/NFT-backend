@@ -267,7 +267,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
   }
 }
 
-export const generatePreviewLink = async (job: Job): Promise<any> => {
+export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
   try {
     const begin = Date.now()
     logger.info('generate preview links', job.data)
