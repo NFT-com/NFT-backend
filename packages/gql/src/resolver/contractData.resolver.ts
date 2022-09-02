@@ -66,7 +66,7 @@ const fetchData = async (
     return JSON.parse(cachedData)
   }
   const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
-  const { data, config, request } = await sendRequest(url, extraHeaders, queryParams)
+  const { data } = await sendRequest(url, extraHeaders, queryParams)
   if (data.response === 'OK') {
     await cache.set(
       key,
@@ -78,12 +78,10 @@ const fetchData = async (
     logger.error(data, `Unsuccessful response from ${url}`)
   }
 
-  logger.info(`${config.url}${request.path}`)
-
   return data
 }
 
-const getNFTDetails = async (
+export const getNFTDetails = async (
   _: any,
   args: gql.QueryGetNFTDetailsArgs,
   _ctx: Context,
@@ -102,7 +100,7 @@ const getNFTDetails = async (
   })
 }
 
-const getContractSalesStatistics = async (
+export const getContractSalesStatistics = async (
   _: any,
   args: gql.QueryGetContractSalesStatisticsArgs,
   _ctx: Context,
@@ -117,7 +115,7 @@ const getContractSalesStatistics = async (
   return await fetchData('stats', key, [contractAddress])
 }
 
-const getTxByContract = async (
+export const getTxByContract = async (
   _: any,
   args: gql.QueryGetTxByContractArgs,
   _ctx: Context,
@@ -133,17 +131,16 @@ const getTxByContract = async (
   const { contractAddress, chain, type, continuation, pageSize } = args.input
   const queryParams = {
     chain: chain || 'ethereum',
-    type,
+    type: type || 'all',
     continuation,
     page_size: pageSize,
   }
-  logger.info(type)
 
   const key = `tx_by_contract_${contractAddress}_${continuation||''}_${pageSize||''}`
   return await fetchData('txByContract', key, [contractAddress], {}, queryParams)
 }
 
-const getTxByNFT = async (
+export const getTxByNFT = async (
   _: any,
   args: gql.QueryGetTxByNFTArgs,
   _ctx: Context,
@@ -160,7 +157,7 @@ const getTxByNFT = async (
   const { contractAddress, tokenId, chain, type, continuation, pageSize } = args.input
   const queryParams = {
     chain: chain || 'ethereum',
-    type,
+    type: type || 'all',
     continuation,
     page_size: pageSize,
   }
