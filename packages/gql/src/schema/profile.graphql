@@ -188,6 +188,7 @@ input ProfilesByDisplayNftInput {
   collectionAddress: String
   tokenId: String
   chainId: String
+  showOnlyVisibleNFTProfile: Boolean
 }
 
 extend type Query {
