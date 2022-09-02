@@ -303,7 +303,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     )
     await cache.set(key, JSON.stringify(true))
     const end = Date.now()
-    logger.info('generated previewLink for NFTs', { counts: length, duration: `${(end - begin) / 1000} seconds` })
+    logger.info('generated previewLink for NFTs', { duration: `${(end - begin) / 1000} seconds` })
   } catch (err) {
     logger.error(`Error in generatePreviewLink Job: ${err}`)
     Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
