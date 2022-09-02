@@ -269,6 +269,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
 export const generatePreviewLink = async (job: Job): Promise<any> => {
   try {
+    const begin = Date.now()
     logger.debug('generate preview links', job.data)
 
     // to avoid overlap of NFTs during cron jobs
@@ -300,7 +301,8 @@ export const generatePreviewLink = async (job: Job): Promise<any> => {
       }),
     )
     await cache.set(key, JSON.stringify(true))
-    logger.debug('generated previewLink for NFTs', { counts: length })
+    const end = Date.now()
+    logger.debug('generated previewLink for NFTs', { counts: length, duration: `${(end - begin) / 1000} seconds` })
   } catch (err) {
     Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
   }
