@@ -31,11 +31,15 @@ const sendRequest = async (url: string, extraHeaders={}): Promise<any> => {
     })
   } catch (error) {
     if (error.response) {
+      const { data, headers, status } = error.response
       logger.error({
-        data: error.response.data,
-        status: error.response.status,
-        headers: error.response.headers,
+        data,
+        headers,
+        status,
       }, `Request failed to ${url}`)
+      if (status >= 400 && status < 500) {
+        throw appError.buildInvalid(data.error.message, 'BAD_REQUEST')
+      }
     } else if (error.request) {
       logger.error(error.request, `Request failed to ${url}`)
     } else {
