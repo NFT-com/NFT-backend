@@ -36,9 +36,9 @@ export const getCode = async (
   const headers = {
     'Content-Type': 'application/json',
   }
-    
+
   const result = await axios.post(url, payload, { headers }).then(res => res.data.result)
-  
+
   return result
 }
 
@@ -57,7 +57,7 @@ const binarySearch = async (
   }
 
   const mid = Math.floor((start + end) / 2)
-  
+
   const code = await getCode(url, contractAddress, '0x' + mid.toString(16))
   if (code !== '0x') {
     return binarySearch(url, start, mid, contractAddress)
@@ -70,17 +70,28 @@ const getTxReceipts = async (
   url: string,
   blockNumber: number,
 ): Promise<any[]> => {
-  const payload = {
-    'jsonrpc': '2.0',
-    'method': 'alchemy_getTransactionReceipts',
-    'params': [{ blockNumber: '0x' + blockNumber.toString(16) }],
-    'id': 1,
+  try {
+    const payload = {
+      'jsonrpc': '2.0',
+      'method': 'alchemy_getTransactionReceipts',
+      'params': [{ blockNumber: '0x' + blockNumber.toString(16) }],
+      'id': 1,
+    }
+    const headers = {
+      'Content-Type': 'application/json',
+    }
+    const res = await axios.post(url, payload, { headers })
+    if (res && res.data.result) {
+      const result = res.data.result
+      return result?.['receipts']
+    } else {
+      console.log(res.data.error)
+      return []
+    }
+  } catch (err) {
+    console.log('error in getTxReceipts err: ', err)
+    return []
   }
-  const headers = {
-    'Content-Type': 'application/json',
-  }
-  const result = await axios.post(url, payload, { headers }).then(res => res.data.result)
-  return result?.['receipts']
 }
 
 export const getCollectionDeployer = async (
@@ -92,14 +103,14 @@ export const getCollectionDeployer = async (
     const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL :
       (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
     const lastBlock = await getLatestBlockNumber(REQUEST_URL)
-    
+
     const deployedBlockNumber = await binarySearch(
       REQUEST_URL,
       0, // start
       parseInt(lastBlock, 16) - 1, // end
       contractAddress,
     )
-    
+
     const receipts = await getTxReceipts(REQUEST_URL, deployedBlockNumber)
     const collectionDeployer = receipts?.find(
       receipt => receipt?.contractAddress === contractAddress.toLowerCase(),
