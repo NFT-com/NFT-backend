@@ -38,16 +38,17 @@ const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Pr
     })
   } catch (error) {
     if (error.response) {
-      logger.error(
-        {
-          data: error.response.data,
-          status: error.response.status,
-          headers: error.response.headers,
-          params: error.response.config.params,
-          url: `${error.response.config.url}${error.response.request.path}`,
-        },
-        `Request failed to ${url}`,
-      )
+      const { config, data, headers, status, request } = error.response
+      logger.error({
+        data,
+        headers,
+        status,
+        params: config.params,
+        url: `${config.url}${request.path}`,
+      }, `Request failed to ${url}`)
+      if (status >= 400 && status < 500) {
+        throw appError.buildInvalid(data.error.message, 'BAD_REQUEST')
+      }
     } else if (error.request) {
       logger.error(error.request, `Request failed to ${url}`)
     } else {
