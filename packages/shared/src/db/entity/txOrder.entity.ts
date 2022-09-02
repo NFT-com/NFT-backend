@@ -41,6 +41,10 @@ export class TxOrder extends BaseEntity {
   @Column({ type: 'json' })
   protocolData: any
 
+  // only valid for LR at the moment
+  @Column({ nullable: true })
+  nonce: number
+
   @Column({ nullable: true })
   chainId: string
 
