@@ -283,7 +283,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe('updateAssociatedContract', () => {
+  describe.skip('updateAssociatedContract', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
