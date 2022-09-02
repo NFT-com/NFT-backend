@@ -6,6 +6,7 @@ import {
 } from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
+  generatePreviewLink,
   nftExternalOrders,
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
@@ -28,7 +29,8 @@ const queuePrefix = 'queue'
 enum QUEUE_TYPES {
   GENERATE_COMPOSITE_IMAGE = 'GENERATE_COMPOSITE_IMAGE',
   FETCH_EXTERNAL_ORDERS = 'FETCH_EXTERNAL_ORDERS',
-  FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND'
+  FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND',
+  GENERATE_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK',
 }
 
 const queues = new Map<string, Bull.Queue>()
@@ -60,7 +62,7 @@ const createQueues = (): Promise<void> => {
         redis,
       }))
     })
-    
+
     // add composite image generation job to queue...
     queues.set(QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE, new Bull(
       QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE, {
@@ -84,6 +86,13 @@ const createQueues = (): Promise<void> => {
     // external orders on demand
     queues.set(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND, new Bull(
       QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND, {
+        prefix: queuePrefix,
+        redis,
+      }))
+
+    // add previewLink generation job...
+    queues.set(QUEUE_TYPES.GENERATE_PREVIEW_LINK, new Bull(
+      QUEUE_TYPES.GENERATE_PREVIEW_LINK, {
         prefix: queuePrefix,
         redis,
       }))
@@ -177,6 +186,15 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
             repeat: { every: 2 * 60000 },
             jobId: 'fetch_external_orders_on_demand',
           })
+      case QUEUE_TYPES.GENERATE_PREVIEW_LINK:
+        return queues.get(QUEUE_TYPES.GENERATE_PREVIEW_LINK)
+          .add({ GENERATE_PREVIEW_LINK: QUEUE_TYPES.GENERATE_PREVIEW_LINK }, {
+            removeOnComplete: true,
+            removeOnFail: true,
+            // repeat every  3 minutes
+            repeat: { every: 3 * 60000 },
+            jobId: 'generate_preview_link',
+          })
       default:
         return queues.get(chainId).add({ chainId }, {
           removeOnComplete: true,
@@ -203,6 +221,9 @@ const listenToJobs = async (): Promise<void> => {
       break
     case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
       queue.process(nftExternalOrdersOnDemand)
+      break
+    case QUEUE_TYPES.GENERATE_PREVIEW_LINK:
+      queue.process(generatePreviewLink)
       break
     default:
       queue.process(getEthereumEvents)

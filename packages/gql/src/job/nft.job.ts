@@ -2,6 +2,7 @@
 import Bull, { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
+import { saveNFTMetadataImageToS3 } from '@nftcom/gql/service/nft.service'
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
@@ -62,7 +63,7 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
           persistActivity.push(repositories.txOrder.saveMany(openseaResponse.listings,
             { chunk: MAX_PROCESS_BATCH_SIZE }))
         }
-         
+
         // offers
         if (openseaResponse.offers.length) {
           persistActivity.push(repositories.txOrder.saveMany(openseaResponse.offers,
@@ -71,7 +72,7 @@ const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
         break
       case ExchangeType.LooksRare:
         looksrareResponse = await retrieveMultipleOrdersLooksrare(nftRequest, chainId, true)
-  
+
         // listings
         if (looksrareResponse.listings.length) {
           persistActivity.push(repositories.txOrder.saveMany(looksrareResponse.listings,
@@ -130,7 +131,7 @@ export const nftExternalOrders = async (job: Job): Promise<void> => {
     if (existingJobs.flat().length) {
       nftCronSubqueue.obliterate({ force: true })
     }
-     
+
     // process subqueues in series; hence concurrency is explicitly set to one for rate limits
     nftCronSubqueue.process(1, nftExternalOrderBatchProcessor)
 
@@ -173,7 +174,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
           chainId,
         }
       })
-      
+
       // settlements should not depend on each other
       const [opensea, looksrare] = await Promise.allSettled([
         retrieveMultipleOrdersOpensea(nftRequest, chainId, true),
@@ -183,7 +184,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       const listings: entity.TxOrder[] = []
       const bids: entity.TxOrder[] = []
       const persistActivity: any[] = []
-    
+
       if (opensea.status === 'fulfilled') {
         // opensea listings
         if (opensea.value.listings.length) {
@@ -258,10 +259,49 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         cache.zremrangebyscore(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, 1, '+inf'),
       ])
     }
-     
+
     logger.debug('updated external orders for nfts - on demand')
   } catch (err) {
     logger.error(`Error in nftExternalOrdersOnDemand Job: ${err}`)
     Sentry.captureMessage(`Error in nftExternalOrdersOnDemand Job: ${err}`)
+  }
+}
+
+export const generatePreviewLink = async (job: Job): Promise<any> => {
+  try {
+    logger.debug('generate preview links', job.data)
+
+    // to avoid overlap of NFTs during cron jobs
+    const key = 'generate_preview_link_available'
+    const cachedData = await cache.get(key)
+    if (!cachedData) {
+      // if no cached flag value, we continue job and availability as false
+      await cache.set(key, JSON.stringify(false))
+    } else {
+      const available = JSON.parse(cachedData) as boolean
+      // if flag is false, job should be suspended
+      if (!available) return
+      else {
+        // else if flag is true, we start new job and suspend execution of other jobs
+        await cache.set(key, JSON.stringify(false))
+      }
+    }
+    const MAX_NFT_COUNTS = 100
+    const nfts = await repositories.nft.find({ where: { previewLink: null } })
+    const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
+    const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
+    const slicedNFTs = filteredNFTs.slice(0, length)
+    await Promise.allSettled(
+      slicedNFTs.map(async (nft) => {
+        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
+        if (previewLink) {
+          await repositories.nft.updateOneById(nft.id, { previewLink })
+        }
+      }),
+    )
+    await cache.set(key, JSON.stringify(true))
+    logger.debug('generated previewLink for NFTs', { counts: length })
+  } catch (err) {
+    Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
   }
 }
