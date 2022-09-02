@@ -231,6 +231,42 @@ export interface OpenseaOrderRequest {
   chainId: string
 }
 
+const getOpenseaInterceptor = (
+  baseURL: string,
+  chainId: string,
+): AxiosInstance => {
+  const openseaInstance = axios.create({
+    baseURL,
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-API-KEY': chainId === '1'? OPENSEA_API_KEY : '',
+    },
+  })
+
+  // retry logic with exponential backoff
+  const retryOptions: IAxiosRetryConfig= { retries: 3,
+    retryCondition: (err: AxiosError<any>) => {
+      return (
+        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
+        err.response.status === 429
+      )
+    },
+    retryDelay: (retryCount: number, err: AxiosError<any>) => {
+      if (err.response) {
+        const retry_after = err.response.headers['retry-after']
+        if (retry_after) {
+          return retry_after
+        }
+      }
+      return axiosRetry.exponentialDelay(retryCount)
+    },
+  }
+  axiosRetry(openseaInstance,  retryOptions)
+
+  return openseaInstance
+}
+
 /**
  * Retrieve sell or buy orders
  * if buyOrSell is 0, it returns buy orders and else if it is 1, it returns sell orders
@@ -248,15 +284,16 @@ export const retrieveOrdersOpensea = async (
   const baseCoinGeckoUrl = 'https://api.coingecko.com/api/v3/simple/price'
   const baseUrlV1 = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
   const baseUrlV2 = chainId === '4' ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
-  const config = chainId === '4' ? {
-    headers: { Accept: 'application/json' },
-  } :  {
-    headers: {
-      Accept: 'application/json',
-      'X-API-KEY': OPENSEA_API_KEY,
-    },
-  }
   try {
+    const listingInterceptorV1 = getOpenseaInterceptor(
+      baseUrlV1,
+      chainId,
+    )
+
+    const listingInterceptorV2 = getOpenseaInterceptor(
+      baseUrlV2,
+      chainId,
+    )
     const responses: OpenseaOrderResponse = {
       listings: {
         v1: [],
@@ -270,18 +307,19 @@ export const retrieveOrdersOpensea = async (
     }
 
     // Get Listings
-    listingUrl = `${baseUrlV1}/asset/${contract}/${tokenId}/listings?limit=50`
+    listingUrl = `/asset/${contract}/${tokenId}/listings?limit=50`
 
-    const res = await axios.get(listingUrl, config)
+    const res = await listingInterceptorV1.get(listingUrl)
     if (res && res.data) {
       const listings = res.data.listings as Array<OpenseaResponseV1>
       if (listings) responses.listings.v1.push(...listings)
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        listingUrl = `${baseUrlV2}/orders/ethereum/seaport/listings?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
+        listingUrl = `/orders/ethereum/seaport/listings?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
 
-        const res = await axios.get(listingUrl, config)
+        const res = await listingInterceptorV2.get(listingUrl)
+  
         if (res && res.data && res.data.orders) {
           const orders = res.data.orders as Array<OpenseaResponse>
           responses.listings.seaport.push(...orders)
@@ -296,8 +334,8 @@ export const retrieveOrdersOpensea = async (
     }
 
     // Get Offers
-    offerUrl = `${baseUrlV1}/asset/${contract}/${tokenId}/offers?limit=50`
-    const res2 = await axios.get(offerUrl, config)
+    offerUrl = `/asset/${contract}/${tokenId}/offers?limit=50`
+    const res2 = await listingInterceptorV1.get(offerUrl)
     if (res2 && res2.data) {
       const orders = res2.data.offers as Array<OpenseaResponseV1>
       if (orders) responses.offers.v1.push(...orders)
@@ -305,8 +343,9 @@ export const retrieveOrdersOpensea = async (
       // eslint-disable-next-line no-constant-condition
       while (true) {
         // seaport
-        offerUrl = `${baseUrlV2}/orders/ethereum/seaport/offers?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
-        const res2 = await axios.get(offerUrl, config)
+        offerUrl = `/orders/ethereum/seaport/offers?asset_contract_address=${contract}&limit=50&token_ids=${tokenId}`
+        const res2 = await listingInterceptorV2.get(offerUrl)
+  
         if (res2 && res2.data && res2.data.orders) {
           const orders = res2.data.orders as Array<OpenseaResponse>
           responses.offers.seaport.push(...orders)
@@ -345,18 +384,13 @@ export const retrieveCollectionOpensea = async (
 ) : Promise<gql.OpenseaContract> => {
   try {
     const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
+    const collectionInterceptor = getOpenseaInterceptor(
+      baseUrl,
+      chainId,
+    )
 
-    const config = chainId === '4' ? {
-      headers: { Accept: 'application/json' },
-    } :  {
-      headers: {
-        Accept: 'application/json',
-        'X-API-KEY': OPENSEA_API_KEY,
-      },
-    }
-
-    const url = `${baseUrl}/asset_contract/${contract}`
-    const res = await axios.get(url, config)
+    const url = `/asset_contract/${contract}`
+    const res = await collectionInterceptor.get(url)
     return res.data
   } catch (err) {
     logger.error(`Error in retrieveCollectionOpensea: ${err}`)
@@ -371,18 +405,13 @@ export const retrieveCollectionStatsOpensea = async (
 ) : Promise<gql.OpenseaStats> => {
   try {
     const baseUrl = chainId === '4' ? V1_OPENSEA_API_TESTNET_BASE_URL : V1_OPENSEA_API_BASE_URL
-
-    const config = chainId === '4' ? {
-      headers: { Accept: 'application/json' },
-    } :  {
-      headers: {
-        Accept: 'application/json',
-        'X-API-KEY': OPENSEA_API_KEY,
-      },
-    }
-
-    const url = `${baseUrl}/collection/${slug}/stats`
-    const res = await axios.get(url, config)
+    const collectionStatsInterceptor = getOpenseaInterceptor(
+      baseUrl,
+      chainId,
+    )
+   
+    const url = `/collection/${slug}/stats`
+    const res = await collectionStatsInterceptor.get(url)
     return res.data
   } catch (err) {
     logger.error(`Error in retrieveCollectionStatsOpensea: ${err}`)
@@ -397,19 +426,16 @@ export const retrieveOffersOpensea = async (
   chainId: string,
 ): Promise<Array<OpenseaResponse> | undefined> => {
   let url
-  let config
   if (chainId === '4') {
     return []
   } else {
     url = `https://api.opensea.io/api/v1/asset/${contract}/${tokenId}/offers?limit=50`
-    config = {
-      headers: {
-        Accept: 'application/json',
-        'X-API-KEY': OPENSEA_API_KEY,
-      },
-    }
+    const offerInterceptor = getOpenseaInterceptor(
+      url,
+      chainId,
+    )
     try {
-      const result = await axios.get(url, config)
+      const result = await offerInterceptor.get(url)
       const offers = result.data.offers as Array<OpenseaResponse>
       return offers
     } catch (err) {
@@ -418,42 +444,6 @@ export const retrieveOffersOpensea = async (
       return undefined
     }
   }
-}
-
-const getOpenseaInterceptor = (
-  baseURL: string,
-  chainId: string,
-): AxiosInstance => {
-  const openseaInstance = axios.create({
-    baseURL,
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'X-API-KEY': chainId === '1'? OPENSEA_API_KEY : '',
-    },
-  })
-
-  // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
-    retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
-    },
-    retryDelay: (retryCount: number, err: AxiosError<any>) => {
-      if (err.response) {
-        const retry_after = err.response.headers['retry-after']
-        if (retry_after) {
-          return retry_after
-        }
-      }
-      return axiosRetry.exponentialDelay(retryCount)
-    },
-  }
-  axiosRetry(openseaInstance,  retryOptions)
-
-  return openseaInstance
 }
 
 /**
@@ -717,3 +707,4 @@ export const createSeaportListing = async (
     return null
   }
 }
+
