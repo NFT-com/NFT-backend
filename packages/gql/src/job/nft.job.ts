@@ -275,6 +275,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     // to avoid overlap of NFTs during cron jobs
     const key = 'generate_preview_link_available'
     const cachedData = await cache.get(key)
+    console.log(cachedData)
     if (!cachedData) {
       // if no cached flag value, we continue job and availability as false
       await cache.set(key, JSON.stringify(false))
@@ -305,6 +306,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     const end = Date.now()
     logger.info('generated previewLink for NFTs', { counts: length, duration: `${(end - begin) / 1000} seconds` })
   } catch (err) {
+    logger.error(`Error in generatePreviewLink Job: ${err}`)
     Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
   }
 }
