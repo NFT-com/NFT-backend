@@ -275,14 +275,12 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     // to avoid overlap of NFTs during cron jobs
     const key = 'generate_preview_link_available'
     const cachedData = await cache.get(key)
-    logger.info('cachedData', { cachedData: cachedData })
     if (cachedData === null) {
       // if no cached flag value, we continue job and availability as false
       await cache.set(key, JSON.stringify(false))
     } else {
-      const available = cachedData === 'true'
-      logger.info('cachedData-available', available)
-      logger.info(key, available)
+      const available = JSON.parse(cachedData) as boolean
+      logger.info(key, { availability: available })
       // if flag is false, job should be suspended
       if (!available) return
       else {
