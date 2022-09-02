@@ -280,6 +280,7 @@ export const generatePreviewLink = async (job: Job): Promise<any> => {
       await cache.set(key, JSON.stringify(false))
     } else {
       const available = JSON.parse(cachedData) as boolean
+      logger.info(key, available)
       // if flag is false, job should be suspended
       if (!available) return
       else {
