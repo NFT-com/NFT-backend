@@ -299,6 +299,8 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
         if (previewLink) {
           logger.info(`previewLink for nft ${nft.id}`, { previewLink: previewLink })
           await repositories.nft.updateOneById(nft.id, { previewLink })
+        } else {
+          logger.info(`no previewLink for nft ${nft.id}`)
         }
       }),
     )
