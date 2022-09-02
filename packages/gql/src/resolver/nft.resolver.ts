@@ -27,9 +27,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import {
-  saveUsersForAssociatedAddress,
-} from '@nftcom/gql/service/core.service'
+import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -39,7 +37,7 @@ import {
   refreshNFTMetadata,
   removeEdgesForNonassociatedAddresses, saveNFTMetadataImageToS3,
   syncEdgesWithNFTs,
-  updateEdgesWeightForProfile,
+  updateEdgesWeightForProfile, updateENSNFTMedata,
   updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -1255,12 +1253,16 @@ const uploadMetadataImagesToS3 = async (
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('uploadMetadataImagesToS3', { count: args?.count })
   try {
-    const count = Math.min(Number(args?.count), 10000)
     const nfts = await repositories.nft.find({ where: { previewLink: null, chainId } })
-    const slidedNFTs = nfts.slice(0, count)
+    const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
+    const count = Math.min(Number(args?.count), filteredNFTs.length)
+    const slidedNFTs = filteredNFTs.slice(0, count)
     await Promise.allSettled(
       slidedNFTs.map(async (nft) => {
-        await saveNFTMetadataImageToS3(nft, repositories)
+        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
+        if (previewLink) {
+          await repositories.nft.updateOneById(nft.id, { previewLink })
+        }
       }),
     )
     logger.debug('Preview link of metadata image for NFTs are saved', { counts: slidedNFTs.length })
@@ -1269,6 +1271,39 @@ const uploadMetadataImagesToS3 = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in uploadMetadataImagesToS3: ${err}`)
+    return err
+  }
+}
+
+const updateENSNFTMetadata = async (
+  _: any,
+  args: gql.MutationUpdateEnsnftMetadataArgs,
+  ctx: Context,
+): Promise<gql.UploadMetadataImagesToS3Output> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('updateENSNFTMetadata', { count: args?.count })
+  try {
+    const count = Math.min(Number(args?.count), 1000)
+    const nfts = await repositories.nft.find({ where: { type: defs.NFTType.UNKNOWN, chainId } })
+    const toUpdate = []
+    for (let i = 0; i < nfts.length; i++) {
+      if (!nfts[i].metadata.imageURL)
+        toUpdate.push(nfts[i])
+    }
+    const slidedNFTs = toUpdate.slice(0, count)
+    await Promise.allSettled(
+      slidedNFTs.map(async (nft) => {
+        await updateENSNFTMedata(nft, repositories)
+      }),
+    )
+    logger.debug('Update image urls of ENS NFTs', { counts: slidedNFTs.length })
+    return {
+      message: `Updated image urls of metadata for ${slidedNFTs.length} ENS NFTs`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateENSNFTMetadata: ${err}`)
     return err
   }
 }
@@ -1295,6 +1330,7 @@ export default {
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
     uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
+    updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
     listNFTSeaport,
     listNFTLooksrare,
 

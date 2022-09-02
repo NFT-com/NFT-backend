@@ -1,6 +1,7 @@
 import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
+import fetch from 'node-fetch'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
@@ -1029,11 +1030,28 @@ export const processIPFSURL = (image: string): string => {
     return prefix + image.slice(7)
   } else if (image.indexOf('https://ipfs.io/ipfs/') === 0) {
     return prefix + image.slice(21)
-  } else if (image.indexOf('https://gateway.pinata.cloud/ipfs/') === 0) {
-    return prefix + image.slice(34)
   } else if (image.indexOf('https://infura-ipfs.io/ipfs/') === 0) {
     return prefix + image.slice(28)
+  } else if (image.indexOf('pinata.cloud/ipfs/') !== -1) {
+    const index = image.indexOf('pinata.cloud/ipfs/')
+    return prefix + image.slice(index + 18)
   } else {
-    return null
+    return image
   }
 }
+
+export const fetchWithTimeout = async (
+  resource: any,
+  options: any,
+): Promise<any> => {
+  const { timeout = 8000 } = options
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeout)
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal,
+  })
+  clearTimeout(id)
+  return response
+}
+

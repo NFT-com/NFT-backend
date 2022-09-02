@@ -85,6 +85,7 @@ runs:
         TEST_DB_PASSWORD: ${{ fromJSON(inputs.secrets).TEST_DB_PASSWORD }}
         TEST_DB_USE_SSL: ${{ fromJSON(inputs.secrets).TEST_DB_USE_SSL }}
         ACTIVITY_ENDPOINTS_ENABLED: ${{ fromJSON(inputs.secrets).ACTIVITY_ENDPOINTS_ENABLED}}
+        NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY}}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash

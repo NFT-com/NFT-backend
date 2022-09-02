@@ -1,0 +1,98 @@
+type NFTDetail {
+  response: String,
+  nft: NFTPortNFT,
+  owner: String,
+  contract: NFTPortContract
+}
+
+type NFTPortNFT {
+  chain: String,
+  contract_address: String,
+  token_id: String,
+  metadata_url: String,
+  metadata: NFTPortNFTMetadata,
+  file_information: NFTPortNFTFileInfo,
+  file_url: String,
+  animation_url: String,
+  cached_file_url: String,
+  cached_animation_url: String,
+  mint_date: String,
+  updated_date: String
+}
+
+type NFTPortNFTMetadata {
+  description: String,
+  background_color: String,
+  external_url: String,
+  image: String,
+  name: String,
+  animation_url: String
+}
+
+type NFTPortNFTFileInfo {
+  height: Uint256,
+  width: Uint256,
+  file_size: Uint256
+}
+
+type NFTPortContract {
+  name: String,
+  symbol: String,
+  type: String,
+  metadata: NFTPortContractMetadata
+}
+
+type NFTPortContractMetadata {
+  description: String,
+  thumbnail_url: String,
+  cached_thumbnail_url: String,
+  banner_url: String,
+  cached_banner_url: String
+}
+
+type ContractSalesStatistics {
+  response: String,
+  statistics: NFTPortStatistics
+}
+
+type NFTPortStatistics {
+  one_day_volume: Float,
+  one_day_change: Float,
+  one_day_sales: Uint256,
+  one_day_average_price: Float,
+  seven_day_volume: Float,
+  seven_day_change: Float,
+  seven_day_sales: Uint256,
+  seven_day_average_price: Float,
+  thirty_day_volume: Float,
+  thirty_day_change: Float,
+  thirty_day_sales: Uint256,
+  thirty_day_average_price: Float,
+  total_volume: Float,
+  total_sales: Uint256,
+  total_supply: Uint256,
+  total_minted: Uint256,
+  num_owners: Uint256,
+  average_price: Float,
+  market_cap: Float,
+  floor_price: Float,
+  floor_price_historic_one_day: Float,
+  floor_price_historic_seven_day: Float,
+  floor_price_historic_thirty_day: Uint256,
+  updated_date: String
+}
+
+input NFTDetailInput {
+  contractAddress: String!
+  tokenId: String!
+  refreshMetadata: Boolean
+}
+
+input ContractSalesStatisticsInput {
+  contractAddress: String!
+}
+
+extend type Query {
+  getNFTDetails(input: NFTDetailInput): NFTDetail
+  getContractSalesStatistics(input: ContractSalesStatisticsInput): ContractSalesStatistics
+}

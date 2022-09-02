@@ -7,7 +7,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import { _logger,contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
@@ -338,12 +338,47 @@ const updateSpamStatus = async (
   }
 }
 
+const getNumberOfNFTs = async (
+  _: any,
+  args: gql.QueryNumberOfNFTsArgs,
+  ctx: Context,
+): Promise<number> => {
+  try {
+    const { repositories } = ctx
+    logger.debug('getNumberOfNFTs', { contract: args?.contract, chainId: args?.chainId })
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const key = `nft_amount_${args?.contract}_${chainId}`
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    }
+    const collection = await repositories.collection.findOne({
+      where: {
+        contract: ethers.utils.getAddress(args?.contract),
+        chainId,
+      },
+    })
+    if (!collection) return 0
+    const count = await repositories.nft.count({
+      contract: ethers.utils.getAddress(args?.contract),
+      chainId,
+    })
+    await cache.set(key, count.toString(), 'EX', 60 * 5)
+    return count
+  } catch (err) {
+    Sentry.captureMessage(`Error in getNumberOfNFTs: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
     collectionsByDeployer: getCollectionsByDeployer,
     associatedAddressesForContract:
       combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
+    numberOfNFTs: getNumberOfNFTs,
   },
   Mutation: {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),

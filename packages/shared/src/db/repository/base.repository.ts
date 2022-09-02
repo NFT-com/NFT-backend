@@ -106,21 +106,21 @@ export class BaseRepository<T> {
   }
 
   public save = (entity: typeorm.DeepPartial<T>, opts?: typeorm.SaveOptions): Promise<T> => {
-    return this.getRepository().save(this.getRepository().create(entity), opts)
+    return this.getRepository().save(this.getRepository().create(entity) as any, opts)
   }
 
   public saveMany = (
     entities: typeorm.DeepPartial<T>[],
     opts?: typeorm.SaveOptions,
   ): Promise<T[]> => {
-    return this.getRepository().save(this.getRepository().create(entities), opts)
+    return this.getRepository().save(this.getRepository().create(entities) as any, opts)
   }
 
   public updateOneById = (
     id: string,
     entity: typeorm.DeepPartial<T>,
   ): Promise<T | undefined> => {
-    return this.getRepository().update(id, entity)
+    return this.getRepository().update(id, entity as any)
       .then(() => this.findById(id))
   }
 
@@ -128,7 +128,7 @@ export class BaseRepository<T> {
     opts: typeorm.FindConditions<T>,
     entity: typeorm.DeepPartial<T>,
   ): Promise<typeorm.UpdateResult> => {
-    return this.getRepository().update(opts, entity)
+    return this.getRepository().update(opts, entity as any)
   }
 
   /* Insert/update (Cascades not supported) */
@@ -136,7 +136,7 @@ export class BaseRepository<T> {
     entity: typeorm.DeepPartial<T>,
     opts: UpsertOptions,
   ): Promise<typeorm.InsertResult> => {
-    return this.getRepository().upsert(this.getRepository().create(entity), opts)
+    return this.getRepository().upsert(this.getRepository().create(entity) as any, opts)
   }
 
   /* Bulk insert/update (Cascades not supported) */
@@ -144,7 +144,7 @@ export class BaseRepository<T> {
     entities: typeorm.DeepPartial<T>[],
     opts: UpsertOptions,
   ): Promise<typeorm.InsertResult> => {
-    return this.getRepository().upsert(entities, opts)
+    return this.getRepository().upsert(entities as any, opts)
   }
 
   public exists = (opts: Partial<T>): Promise<boolean> => {
