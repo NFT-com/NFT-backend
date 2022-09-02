@@ -475,8 +475,8 @@ export const saveNFTMetadataImageToS3 = async (
       }
     }
   } catch (err) {
-    logger.debug(`Error in saveNFTMetadatImageToS3: ${err}`)
-    Sentry.captureMessage(`Error in saveNFTMetadatImageToS3: ${err}`)
+    logger.debug(`Error in saveNFTMetadataImageToS3: ${err}`)
+    Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
     return undefined
   }
 }
