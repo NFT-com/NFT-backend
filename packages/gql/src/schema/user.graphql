@@ -129,6 +129,16 @@ type RemovedAssociationsForSenderOutput {
   hidden: Boolean!
 }
 
+input UpdateCacheInput {
+  key: String!
+  value: String!
+  expireSeconds: Int
+}
+
+type UpdateCacheOutput {
+  message: String
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -160,4 +170,6 @@ extend type Mutation {
   updateHidden(input: UpdateHiddenInput!): UpdateHiddenOutput!
   "AUTHENTICATED"
   resendEmailConfirm: User!
+  "AUTHENTICATED"
+  updateCache(input: UpdateCacheInput!): UpdateCacheOutput!
 }
