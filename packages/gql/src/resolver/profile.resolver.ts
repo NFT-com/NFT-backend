@@ -1181,6 +1181,7 @@ const profilesByDisplayNft = async (
     collectionAddress: Joi.string().required(),
     tokenId: Joi.string().required(),
     chainId: Joi.string(),
+    showOnlyVisibleNFTProfile: Joi.boolean(),
   })
   joi.validateSchema(schema, args?.input)
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
@@ -1197,11 +1198,18 @@ const profilesByDisplayNft = async (
         nftError.ErrorType.NFTNotFound,
       ),
     )).then((nft) => {
-      return core.thisEntitiesOfEdgesBy<entity.Profile>(ctx, {
+      let filters: Partial<entity.Edge>  = {
         thatEntityType: defs.EntityType.NFT,
         thatEntityId: nft.id,
         edgeType: defs.EdgeType.Displays,
-      })
+      }
+
+      const showOnlyVisibleNFTProfile = Boolean(args?.input?.showOnlyVisibleNFTProfile)
+      if (showOnlyVisibleNFTProfile) {
+        // showOnlyVisibleNFTProfile = true is hide = false and vice versa
+        filters = { ...filters, hide: !showOnlyVisibleNFTProfile }
+      }
+      return core.thisEntitiesOfEdgesBy<entity.Profile>(ctx, filters)
     }).then(toProfilesOutput)
 }
 

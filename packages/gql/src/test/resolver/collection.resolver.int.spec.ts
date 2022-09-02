@@ -429,4 +429,69 @@ describe('collection resolver', () => {
       expect(result.data.myNFTs.items.length).toEqual(1)
     })
   })
+
+  describe('numberOfNFTs', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x03',
+        metadata: {
+          name: 'chunks',
+          description: 'NFT.com profile for #4952',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId: '5',
+      })
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x1359',
+        metadata: {
+          name: 'NFT.com Genesis Key #4953',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+    it('should return number of NFTs in collections', async () => {
+      const result = await testServer.executeOperation({
+        query: `
+        query NumberOfNFTs($contract: Address!, $chainId: String) {
+          numberOfNFTs(contract: $contract, chainId: $chainId)
+        }
+        `,
+        variables: {
+          contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+          chainId: '5',
+        },
+      })
+
+      expect(result.data.numberOfNFTs).toEqual(2)
+    })
+  })
 })
