@@ -1,9 +1,10 @@
 import { ethers, providers, utils } from 'ethers'
 
-import { _logger, contracts, db, helper } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity,helper } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
+const looksrareExchangeInterface = new utils.Interface(contracts.looksrareExchangeABI())
 const logger = _logger.Factory(_logger.Context.WebsocketProvider, _logger.Context.GraphQL)
 
 type KeepAliveParams = {
@@ -20,6 +21,13 @@ enum EventName {
   ClearAllAssociatedAddresses = 'ClearAllAssociatedAddresses',
   AssociateSelfWithUser = 'AssociateSelfWithUser',
   RemovedAssociateProfile = 'RemovedAssociateProfile',
+}
+
+enum LooksrareEventName {
+  CancelAllOrders = 'CancelAllOrders',
+  CancelMultipleOrders = 'CancelMultipleOrders',
+  TakerAsk = 'TakerAsk',
+  TakerBid = 'TakerBid'
 }
 
 const keepAlive = ({
@@ -45,7 +53,7 @@ const keepAlive = ({
       }, expectedPongBack)
     }, checkInterval)
 
-    // logic for listening and parsing via WSS
+    //logic for listening and parsing via WSS
     const topicFilter = [
       [
         helper.id('AssociateEvmUser(address,string,address)'),
@@ -184,6 +192,108 @@ const keepAlive = ({
             },
           )
           logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (receiver = ${receiver}) profileOwner = ${[profileOwner]}. chainId=${chainId}`)
+        }
+      } else {
+        // not relevant in our search space
+        logger.error('topic hash not covered: ', e.transactionHash)
+      }
+    })
+
+    const looksrareExchangeAddress = helper.checkSum(
+      contracts.looksrareExchangeAddress(chainId.toString()),
+    )
+
+    logger.debug(`looksrareExchangeAddress: ${looksrareExchangeAddress}, chainId: ${chainId}`)
+
+    // logic for listening and parsing via WSS
+    const looksrareTopicFilter = [
+      [
+        helper.id('CancelAllOrders(address, uint256)'),
+        helper.id('CancelMultipleOrders(address,uint256[])'),
+        helper.id('TakerAsk(bytes32,uint256,address,address,address,address,address,uint256,uint256,uint256)'),
+        helper.id('TakerBid(bytes32,uint256,address,address,address,address,address,uint256,uint256,uint256)'),
+      ],
+    ]
+
+    const looksrareFilter = {
+      address: utils.getAddress(looksrareExchangeAddress),
+      topics: looksrareTopicFilter,
+    }
+
+    logger.debug(`looksrareExchangeAddress Filters: ${looksrareFilter}, chainId: ${chainId}`)
+
+    provider.on(looksrareFilter, async (e) => {
+      const evt = looksrareExchangeInterface.parseLog(e)
+      console.log('===test===', evt)
+      if (evt.name === LooksrareEventName.CancelAllOrders) {
+        const [user, orderNonces] = evt.args
+        console.log('user', user)
+        console.log('order nonces', orderNonces)
+      } else if (evt.name === LooksrareEventName.CancelMultipleOrders) {
+        const [user, orderNonces] = evt.args
+        console.log('user', user)
+        console.log('order nonces', orderNonces)
+      } else if (evt.name === LooksrareEventName.TakerAsk) {
+        const [orderHash, maker, taker, collection, orderNonce] = evt.args
+        console.log('order hash', orderHash)
+        console.log('maker', maker)
+        console.log('taker', taker)
+        console.log('collection', collection)
+        console.log('nonce', orderNonce)
+        const activity: entity.TxActivity = await repositories.txActivity.findOne({
+          where: {
+            chainId: String(chainId),
+            activityTypeId: orderHash,
+            status: defs.ActivityStatus.Valid,
+            nftContract: helper.checkSum(collection),
+            walletAddress: helper.checkSum(maker),
+          },
+        })
+
+        if (activity) {
+          await repositories.txActivity.updateActivities(
+            [activity.id],
+            {
+              chainId: String(chainId),
+              activityTypeId: orderHash,
+              nftContract: helper.checkSum(collection),
+              walletAddress: helper.checkSum(maker),
+              status: defs.ActivityStatus.Valid,
+            },
+            'status',
+            defs.ActivityStatus.Executed,
+          )
+        }
+      } else if (evt.name === LooksrareEventName.TakerBid) {
+        const [orderHash, maker, taker, collection, orderNonce] = evt.args
+        console.log('order hash', orderHash)
+        console.log('maker', maker)
+        console.log('taker', taker)
+        console.log('collection', collection)
+        console.log('nonce', orderNonce)
+        const activity: entity.TxActivity = await repositories.txActivity.findOne({
+          where: {
+            chainId: String(chainId),
+            activityTypeId: orderHash,
+            status: defs.ActivityStatus.Valid,
+            nftContract: helper.checkSum(collection),
+            walletAddress: helper.checkSum(maker),
+          },
+        })
+
+        if (activity) {
+          await repositories.txActivity.updateActivities(
+            [activity.id],
+            {
+              chainId: String(chainId),
+              activityTypeId: orderHash,
+              nftContract: helper.checkSum(collection),
+              walletAddress: helper.checkSum(maker),
+              status: defs.ActivityStatus.Valid,
+            },
+            'status',
+            defs.ActivityStatus.Executed,
+          )
         }
       } else {
         // not relevant in our search space

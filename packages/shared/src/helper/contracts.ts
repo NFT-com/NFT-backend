@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 import genesisKeyABIJSON from '@nftcom/shared/helper/abis/GenesisKey.json'
 import genKeyClaimABIJSON from '@nftcom/shared/helper/abis/GenesisKeyDistributor.json'
 import genKeyStakeABIJSON from '@nftcom/shared/helper/abis/GenesisNftStake.json'
+import looksrareExchangeABIJSON from '@nftcom/shared/helper/abis/LooksrareExchange.json'
 import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/MarketplaceEvent.json'
 import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
@@ -267,6 +268,24 @@ export function genesisKeyDistributor(chainId: string | number = 'mainnet'): str
   }
 }
 
+// looksrare exchange
+export function looksrareExchangeAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '4':
+  case 'rinkeby':
+  case 4:
+    return utils.getAddress('0x1AA777972073Ff66DCFDeD85749bDD555C0665dA')
+  case '5':
+  case 'goerli':
+  case 5:
+    return utils.getAddress('0xD112466471b5438C1ca2D218694200e49d81D047')
+  case '1':
+  case 1:
+  case 'mainnet':
+    return utils.getAddress('0x59728544b08ab483533076417fbbb2fd0b17ce3a')
+  }
+}
+
 export const MintedProfileTopic = '0xfdbd996e3e72e8c7d34fc2f374c3c85c80a530bd1cdaa4a748d34e32103c5cc3'
 
 export function validationLogicABI(): any {
@@ -307,6 +326,10 @@ export function merkleAirdropABI(): any {
 
 export function genKeyClaimABI(): any {
   return genKeyClaimABIJSON
+}
+
+export function looksrareExchangeABI(): any {
+  return looksrareExchangeABIJSON
 }
 
 export interface GasInfo {

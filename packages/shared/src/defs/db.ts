@@ -166,6 +166,8 @@ export interface ActivityFilters {
   contract?: string
   nftId?: string
   nftContract?: string
+  activityTypeId?: string
+  status?: string
 }
 
 export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition
