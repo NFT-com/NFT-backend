@@ -17,6 +17,8 @@ const repositories = db.newRepositories()
  * @param walletId
  * @param chainId
  * @param contract
+ * @param timestampFromSource
+ * @param expirationFromSource
  */
 const orderActivityBuilder = async (
   orderType: defs.ActivityType,
@@ -25,6 +27,8 @@ const orderActivityBuilder = async (
   chainId: string,
   nftIds: string[],
   contract: string,
+  timestampFromSource: number,
+  expirationFromSource: number,
 ): Promise<entity.TxActivity> => {
   let activity: entity.TxActivity
   if (orderHash) {
@@ -42,7 +46,8 @@ const orderActivityBuilder = async (
   activity.activityType = orderType
   activity.activityTypeId = orderHash
   activity.read = false
-  activity.timestamp = new Date()
+  activity.timestamp = new Date(timestampFromSource)
+  activity.expiration = new Date(expirationFromSource)
   activity.walletAddress = helper.checkSum(walletAddress)
   activity.chainId = chainId
   activity.nftContract = helper.checkSum(contract)
@@ -122,7 +127,9 @@ export const orderEntityBuilder = async (
     walletAddress: string,
     tokenId: string,
     orderEntity: Partial<entity.TxOrder>,
-    nftIds: string[]
+    nftIds: string[],
+    timestampFromSource: number,
+    expirationFromSource: number
 
   let seaportOrder: SeaportOrder
   let looksrareOrder: LooksRareOrder
@@ -131,6 +138,8 @@ export const orderEntityBuilder = async (
     seaportOrder = order as SeaportOrder
     orderHash = seaportOrder.order_hash
     walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
+    timestampFromSource = Number(seaportOrder?.protocol_data?.parameters?.startTime)
+    expirationFromSource = Number(seaportOrder?.protocol_data?.parameters?.endTime)
     nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
       tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
       return `ethereum/${contract}/${tokenId}`
@@ -142,6 +151,8 @@ export const orderEntityBuilder = async (
     orderHash = looksrareOrder.hash
     walletAddress = looksrareOrder.signer
     tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
+    timestampFromSource = Number(looksrareOrder.startTime)
+    expirationFromSource =  Number(looksrareOrder.endTime)
     nftIds = [`ethereum/${contract}/${tokenId}`]
     orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
@@ -156,6 +167,8 @@ export const orderEntityBuilder = async (
     chainId,
     nftIds,
     contract,
+    timestampFromSource,
+    expirationFromSource,
   )
 
   return {

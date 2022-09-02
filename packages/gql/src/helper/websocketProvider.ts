@@ -221,8 +221,6 @@ const keepAlive = ({
       topics: looksrareTopicFilter,
     }
 
-    logger.debug(`looksrareExchangeAddress Filters: ${looksrareFilter}, chainId: ${chainId}`)
-
     provider.on(looksrareFilter, async (e) => {
       const evt = looksrareExchangeInterface.parseLog(e)
       if (evt.name === LooksrareEventName.CancelAllOrders) {
@@ -244,6 +242,7 @@ const keepAlive = ({
             }
 
             await repositories.txOrder.saveMany(orders)
+            logger.debug(`Evt Saved: ${LooksrareEventName.CancelAllOrders} -- txhash: ${e.transactionHash}`)
           }
         } catch (err) {
           logger.error(`Evt: ${LooksrareEventName.CancelAllOrders} -- Err: ${err}`)
@@ -270,6 +269,7 @@ const keepAlive = ({
             }
   
             await repositories.txOrder.saveMany(orders)
+            logger.debug(`Evt Saved: ${LooksrareEventName.CancelMultipleOrders} -- txhash: ${e.transactionHash}`)
           }
         } catch (err) {
           logger.error(`Evt: ${LooksrareEventName.CancelMultipleOrders} -- Err: ${err}`)
