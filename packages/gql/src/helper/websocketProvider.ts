@@ -1,4 +1,5 @@
-import { ethers, providers, utils } from 'ethers'
+import { BigNumber, ethers, providers, utils } from 'ethers'
+import { In, LessThan } from 'typeorm'
 
 import { _logger, contracts, db, defs, entity,helper } from '@nftcom/shared'
 
@@ -53,7 +54,7 @@ const keepAlive = ({
       }, expectedPongBack)
     }, checkInterval)
 
-    //logic for listening and parsing via WSS
+    // logic for listening and parsing via WSS
     const topicFilter = [
       [
         helper.id('AssociateEvmUser(address,string,address)'),
@@ -224,76 +225,114 @@ const keepAlive = ({
 
     provider.on(looksrareFilter, async (e) => {
       const evt = looksrareExchangeInterface.parseLog(e)
-      console.log('===test===', evt)
       if (evt.name === LooksrareEventName.CancelAllOrders) {
-        const [user, orderNonces] = evt.args
-        console.log('user', user)
-        console.log('order nonces', orderNonces)
+        const [user, newMinNonce] = evt.args
+        try {
+          const orders: entity.TxOrder[] = await repositories.txOrder.find({
+            where: {
+              makerAddress: helper.checkSum(user),
+              nonce: LessThan(newMinNonce),
+              activity: {
+                status: defs.ActivityStatus.Valid,
+              },
+            },
+          })
+
+          if (orders.length) {
+            for (const order of orders) {
+              order.activity.status = defs.ActivityStatus.Cancelled
+            }
+
+            await repositories.txOrder.saveMany(orders)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${LooksrareEventName.CancelAllOrders} -- Err: ${err}`)
+        }
       } else if (evt.name === LooksrareEventName.CancelMultipleOrders) {
         const [user, orderNonces] = evt.args
-        console.log('user', user)
-        console.log('order nonces', orderNonces)
-      } else if (evt.name === LooksrareEventName.TakerAsk) {
-        const [orderHash, maker, taker, collection, orderNonce] = evt.args
-        console.log('order hash', orderHash)
-        console.log('maker', maker)
-        console.log('taker', taker)
-        console.log('collection', collection)
-        console.log('nonce', orderNonce)
-        const activity: entity.TxActivity = await repositories.txActivity.findOne({
-          where: {
-            chainId: String(chainId),
-            activityTypeId: orderHash,
-            status: defs.ActivityStatus.Valid,
-            nftContract: helper.checkSum(collection),
-            walletAddress: helper.checkSum(maker),
-          },
-        })
-
-        if (activity) {
-          await repositories.txActivity.updateActivities(
-            [activity.id],
-            {
-              chainId: String(chainId),
-              activityTypeId: orderHash,
-              nftContract: helper.checkSum(collection),
-              walletAddress: helper.checkSum(maker),
-              status: defs.ActivityStatus.Valid,
+        const nonces: number[] = orderNonces?.map((orderNonce: BigNumber) => Number(orderNonce))
+        try {
+          const orders: entity.TxOrder[] = await repositories.txOrder.find({
+            relations: ['activity'],
+            where: {
+              makerAddress: helper.checkSum(user),
+              nonce: In(nonces),
+              exchange: defs.ExchangeType.LooksRare,
+              activity: {
+                status: defs.ActivityStatus.Valid,
+              },
             },
-            'status',
-            defs.ActivityStatus.Executed,
-          )
+          })
+  
+          if (orders.length) {
+            for (const order of orders) {
+              order.activity.status = defs.ActivityStatus.Cancelled
+            }
+  
+            await repositories.txOrder.saveMany(orders)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${LooksrareEventName.CancelMultipleOrders} -- Err: ${err}`)
+        }
+      } else if (evt.name === LooksrareEventName.TakerAsk) {
+        const [orderHash, orderNonce, taker, maker, strategy, currency, collection] = evt.args
+        try {
+          const order: entity.TxOrder = await repositories.txOrder.findOne({
+            relations: ['activity'],
+            where: {
+              chainId: String(chainId),
+              id: orderHash,
+              makerAddress: helper.checkSum(maker),
+              exchange: defs.ExchangeType.LooksRare,
+              protocol: defs.ProtocolType.LooksRare,
+              activity: {
+                status: defs.ActivityStatus.Valid,
+                nftContract: helper.checkSum(collection),
+              },
+            },
+          })
+      
+          if (order) {
+            order.activity.status = defs.ActivityStatus.Executed
+            order.takerAddress = helper.checkSum(taker)
+            await repositories.txOrder.save(order)
+            logger.log(`
+                updated ${orderHash} for collection ${collection} -- strategy:
+                ${strategy}, currency:${currency} orderNonce:${orderNonce}
+                `)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${LooksrareEventName.TakerAsk} -- Err: ${err}`)
         }
       } else if (evt.name === LooksrareEventName.TakerBid) {
-        const [orderHash, maker, taker, collection, orderNonce] = evt.args
-        console.log('order hash', orderHash)
-        console.log('maker', maker)
-        console.log('taker', taker)
-        console.log('collection', collection)
-        console.log('nonce', orderNonce)
-        const activity: entity.TxActivity = await repositories.txActivity.findOne({
-          where: {
-            chainId: String(chainId),
-            activityTypeId: orderHash,
-            status: defs.ActivityStatus.Valid,
-            nftContract: helper.checkSum(collection),
-            walletAddress: helper.checkSum(maker),
-          },
-        })
-
-        if (activity) {
-          await repositories.txActivity.updateActivities(
-            [activity.id],
-            {
+        const [orderHash, orderNonce, taker, maker, strategy, currency, collection] = evt.args
+        try {
+          const order: entity.TxOrder = await repositories.txOrder.findOne({
+            relations: ['activity'],
+            where: {
               chainId: String(chainId),
-              activityTypeId: orderHash,
-              nftContract: helper.checkSum(collection),
-              walletAddress: helper.checkSum(maker),
-              status: defs.ActivityStatus.Valid,
+              id: orderHash,
+              makerAddress: helper.checkSum(maker),
+              exchange: defs.ExchangeType.LooksRare,
+              protocol: defs.ProtocolType.LooksRare,
+              activity: {
+                status: defs.ActivityStatus.Valid,
+                nftContract: helper.checkSum(collection),
+              },
             },
-            'status',
-            defs.ActivityStatus.Executed,
-          )
+          })
+  
+          if (order) {
+            order.activity.status = defs.ActivityStatus.Executed
+            order.takerAddress = helper.checkSum(taker)
+            await repositories.txOrder.save(order)
+            logger.log(`
+            updated ${orderHash} for collection ${collection} -- strategy:
+            ${strategy}, currency:${currency} orderNonce:${orderNonce}
+            `)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${LooksrareEventName.TakerBid} -- Err: ${err}`)
         }
       } else {
         // not relevant in our search space

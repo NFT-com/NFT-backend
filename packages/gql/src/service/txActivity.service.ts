@@ -80,6 +80,7 @@ const looksrareOrderBuilder = (
     exchange: defs.ExchangeType.LooksRare,
     makerAddress: helper.checkSum(order.signer),
     takerAddress: null,
+    nonce: Number(order.nonce),
     protocolData: {
       isOrderAsk: order.isOrderAsk,
       signer: helper.checkSum(order.signer),
