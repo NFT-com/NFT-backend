@@ -11,6 +11,7 @@ import {
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
@@ -121,7 +122,11 @@ const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
     logger.info('🐮 fewer bull jobs than queues -- wiping queues for restart')
     return Promise.all(values.map((queue) => {
       return queue.obliterate({ force: true })
-    })).then(() => true)
+    })).then(() => {
+      // if all jobs need to restart, we can set preview link cache key as true to be available
+      return cache.set('generate_preview_link_available', JSON.stringify(true))
+        .then(() => true)
+    })
   }
 
   for (const network of networks.keys()) {
@@ -135,7 +140,11 @@ const checkJobQueues = (jobs: Bull.Job[][]): Promise<boolean> => {
       logger.info('🐮 bull job needs to restart -- wiping queues for restart')
       return Promise.all(values.map((queue) => {
         return queue.obliterate({ force: true })
-      })).then(() => true)
+      })).then(() => {
+        // if all jobs need to restart, we can set preview link cache key as true to be available
+        return cache.set('generate_preview_link_available', JSON.stringify(true))
+          .then(() => true)
+      })
     }
   }
 
