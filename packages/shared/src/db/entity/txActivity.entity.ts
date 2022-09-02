@@ -20,6 +20,9 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false })
   timestamp: Date
 
+  @Column({ type: 'timestamptz', nullable: false, default: () => 'CURRENT_TIMESTAMP' })
+  expiration: Date
+
   @Column({ type: 'enum', enum: ActivityStatus, nullable: false, default: ActivityStatus.Valid })
   status: ActivityStatus
 
