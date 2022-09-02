@@ -367,7 +367,6 @@ export const blacklistProfilePatterns = [
   /^paky$/,
   /^wop$/,
   // "reserved" list
-  /^you$/,
   /^app$/,
   /^whitelist$/,
   /^dao$/,
@@ -579,7 +578,7 @@ export const reservedProfiles = {
   '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
 
   // reserved partners (TODO: mint later for DON)
-  '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1': ['anonymice', 'anonymice'],
+  '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1': ['you', 'anonymice'],
 }
 
 export const OFAC = {
