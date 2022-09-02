@@ -1,5 +1,6 @@
 import axios from 'axios'
 import Joi from 'joi'
+import { stringify } from 'qs'
 import { format } from 'util'
 
 import { Context, gql } from '@nftcom/gql/defs'
@@ -13,15 +14,21 @@ const NFTPORT_KEY = process.env.NFTPORT_KEY || ''
 const NFTPORT_ENDPOINTS = {
   nfts: 'https://api.nftport.xyz/v0/nfts/%s/%s',
   stats: 'https://api.nftport.xyz/v0/transactions/stats/%s',
+  txByContract: 'https://api.nftport.xyz/v0/transactions/nfts/%s',
+  txByNFT: 'https://api.nftport.xyz/v0/transactions/nfts/%s/%s',
 }
 
 const logger = _logger.Factory('ContractDataResolver', _logger.Context.GraphQL)
 
-const sendRequest = async (url: string, extraHeaders={}): Promise<any> => {
+const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Promise<any> => {
   try {
     return await axios.get(url, {
       params: {
         chain: 'ethereum',
+        ...queryParams,
+      },
+      paramsSerializer: function(params) {
+        return stringify(params, { arrayFormat: 'repeat' })
       },
       headers: {
         Authorization: NFTPORT_KEY,
@@ -31,11 +38,13 @@ const sendRequest = async (url: string, extraHeaders={}): Promise<any> => {
     })
   } catch (error) {
     if (error.response) {
-      const { data, headers, status } = error.response
+      const { config, data, headers, status, request } = error.response
       logger.error({
         data,
         headers,
         status,
+        params: config.params,
+        url: `${config.url}${request.path}`,
       }, `Request failed to ${url}`)
       if (status >= 400 && status < 500) {
         throw appError.buildInvalid(data.error.message, 'BAD_REQUEST')
@@ -49,58 +58,120 @@ const sendRequest = async (url: string, extraHeaders={}): Promise<any> => {
   }
 }
 
-const fetchData =
-  async (endpoint: string, key: string, args: string[], extraHeaders={}): Promise<any> => {
-    const cachedData = await cache.get(key)
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    }
-    const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
-    const { data } = await sendRequest(url, extraHeaders)
-    if (data.response === 'OK') {
-      await cache.set(
-        key,
-        JSON.stringify(data),
-        'EX',
-        60 * 60, // 60 minutes
-      )
-    } else {
-      logger.error(data, `Unsuccessful response from ${url}`)
-    }
-
-    return data
+const fetchData = async (
+  endpoint: string, key: string, args: string[],
+  extraHeaders = {}, queryParams = {},
+): Promise<any> => {
+  const cachedData = await cache.get(key)
+  if (cachedData) {
+    return JSON.parse(cachedData)
+  }
+  const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
+  const { data } = await sendRequest(url, extraHeaders, queryParams)
+  if (data.response === 'OK') {
+    await cache.set(
+      key,
+      JSON.stringify(data),
+      'EX',
+      60 * 60, // 60 minutes
+    )
+  } else {
+    logger.error(data, `Unsuccessful response from ${url}`)
   }
 
-const getNFTDetails =
-  async (_: any,  args: any, _ctx: Context): Promise<gql.NFTDetail> => {
-    const schema = Joi.object().keys({
-      contractAddress: Joi.string().required(),
-      tokenId: Joi.string().required(),
-      refreshMetadata: Joi.boolean().optional(),
-    })
-    joi.validateSchema(schema, args.input)
-    const { contractAddress, tokenId, refreshMetadata } = args.input
+  return data
+}
 
-    const key = `nft_details_${contractAddress}_${tokenId}`
-    return await fetchData(
-      'nfts', key, [contractAddress, tokenId], { refresh_metadata: !!refreshMetadata })
+export const getNFTDetails = async (
+  _: any,
+  args: gql.QueryGetNFTDetailsArgs,
+  _ctx: Context,
+): Promise<gql.NFTDetail> => {
+  const schema = Joi.object().keys({
+    contractAddress: Joi.string().required(),
+    tokenId: Joi.string().required(),
+    refreshMetadata: Joi.boolean().optional(),
+  })
+  joi.validateSchema(schema, args.input)
+  const { contractAddress, tokenId, refreshMetadata } = args.input
+
+  const key = `nft_details_${contractAddress}_${tokenId}`
+  return await fetchData('nfts', key, [contractAddress, tokenId], {
+    refresh_metadata: !!refreshMetadata,
+  })
+}
+
+export const getContractSalesStatistics = async (
+  _: any,
+  args: gql.QueryGetContractSalesStatisticsArgs,
+  _ctx: Context,
+): Promise<gql.ContractSalesStatistics> => {
+  const schema = Joi.object().keys({
+    contractAddress: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args.input)
+  const { contractAddress } = args.input
+
+  const key = `contract_sales_stats_${contractAddress}`
+  return await fetchData('stats', key, [contractAddress])
+}
+
+export const getTxByContract = async (
+  _: any,
+  args: gql.QueryGetTxByContractArgs,
+  _ctx: Context,
+): Promise<gql.NFTPortTxByContract> => {
+  const schema = Joi.object().keys({
+    contractAddress: Joi.string().required(),
+    chain: Joi.string().valid('ethereum').optional(),
+    type: Joi.array().items(Joi.string().valid('transfer', 'burn', 'mint', 'sale', 'all')).optional(),
+    continuation: Joi.string().optional(),
+    pageSize: Joi.number().integer().min(1).max(50).optional(),
+  })
+  joi.validateSchema(schema, args.input)
+  const { contractAddress, chain, type, continuation, pageSize } = args.input
+  const queryParams = {
+    chain: chain || 'ethereum',
+    type: type || 'all',
+    continuation,
+    page_size: pageSize,
   }
 
-const getContractSalesStatistics =
-  async (_: any, args: any, _ctx: Context): Promise<gql.ContractSalesStatistics> => {
-    const schema = Joi.object().keys({
-      contractAddress: Joi.string().required(),
-    })
-    joi.validateSchema(schema, args.input)
-    const { contractAddress } = args.input
+  const key = `tx_by_contract_${contractAddress}_${continuation||''}_${pageSize||''}`
+  return await fetchData('txByContract', key, [contractAddress], {}, queryParams)
+}
 
-    const key = `contract_sales_stats_${contractAddress}`
-    return await fetchData('stats', key, [contractAddress])
+export const getTxByNFT = async (
+  _: any,
+  args: gql.QueryGetTxByNFTArgs,
+  _ctx: Context,
+): Promise<gql.NFTPortTxByContract> => {
+  const schema = Joi.object().keys({
+    contractAddress: Joi.string().required(),
+    tokenId: Joi.string().required(),
+    chain: Joi.string().valid('ethereum').optional(),
+    type: Joi.array().items(Joi.string().valid('transfer', 'burn', 'mint', 'sale', 'all')).optional(),
+    continuation: Joi.string().optional(),
+    pageSize: Joi.number().integer().min(1).max(50).optional(),
+  })
+  joi.validateSchema(schema, args.input)
+  const { contractAddress, tokenId, chain, type, continuation, pageSize } = args.input
+  const queryParams = {
+    chain: chain || 'ethereum',
+    type: type || 'all',
+    continuation,
+    page_size: pageSize,
   }
+
+  const key = `tx_by_nft_${contractAddress}_${tokenId}_${continuation||''}_${pageSize||''}`
+  return await fetchData('txByNFT', key, [contractAddress, tokenId], {}, queryParams)
+}
 
 export default {
   Query: {
     getNFTDetails,
     getContractSalesStatistics,
+    getTxByContract,
+    getTxByNFT,
   },
 }
