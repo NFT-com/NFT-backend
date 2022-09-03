@@ -297,10 +297,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
       slicedNFTs.map(async (nft) => {
         const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
         if (previewLink) {
-          logger.info(`previewLink for nft ${nft.id}`, { previewLink: previewLink })
           await repositories.nft.updateOneById(nft.id, { previewLink })
-        } else {
-          logger.info(`no previewLink for nft ${nft.id}`)
         }
       }),
     )
