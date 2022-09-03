@@ -6,7 +6,7 @@ import {
 } from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
-  generatePreviewLink,
+  generateNFTsPreviewLink,
   nftExternalOrders,
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
@@ -31,7 +31,7 @@ enum QUEUE_TYPES {
   GENERATE_COMPOSITE_IMAGE = 'GENERATE_COMPOSITE_IMAGE',
   FETCH_EXTERNAL_ORDERS = 'FETCH_EXTERNAL_ORDERS',
   FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND',
-  GENERATE_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK',
+  GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_NFTS_PREVIEW_LINK',
 }
 
 const queues = new Map<string, Bull.Queue>()
@@ -92,8 +92,8 @@ const createQueues = (): Promise<void> => {
       }))
 
     // add previewLink generation job...
-    queues.set(QUEUE_TYPES.GENERATE_PREVIEW_LINK, new Bull(
-      QUEUE_TYPES.GENERATE_PREVIEW_LINK, {
+    queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
+      QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
         prefix: queuePrefix,
         redis,
       }))
@@ -195,9 +195,9 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
             repeat: { every: 2 * 60000 },
             jobId: 'fetch_external_orders_on_demand',
           })
-      case QUEUE_TYPES.GENERATE_PREVIEW_LINK:
-        return queues.get(QUEUE_TYPES.GENERATE_PREVIEW_LINK)
-          .add({ GENERATE_PREVIEW_LINK: QUEUE_TYPES.GENERATE_PREVIEW_LINK }, {
+      case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
+        return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
+          .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
             removeOnComplete: true,
             removeOnFail: true,
             // repeat every  3 minutes
@@ -231,8 +231,8 @@ const listenToJobs = async (): Promise<void> => {
     case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
       queue.process(nftExternalOrdersOnDemand)
       break
-    case QUEUE_TYPES.GENERATE_PREVIEW_LINK:
-      queue.process(generatePreviewLink)
+    case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
+      queue.process(generateNFTsPreviewLink)
       break
     default:
       queue.process(getEthereumEvents)
