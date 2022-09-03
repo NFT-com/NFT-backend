@@ -439,8 +439,8 @@ export const saveNFTMetadataImageToS3 = async (
         if (!imageUrl) return undefined
         const filename = nft.metadata.imageURL.split('/').pop()
         if (!filename) return undefined
-        // get buffer from imageURL, timeout is set to 5 seconds
-        const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 5 })
+        // get buffer from imageURL, timeout is set to 30 seconds
+        const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 30 })
         buffer = await res.buffer()
         if (!buffer) return undefined
         ext = extensionFromFilename(filename)
@@ -477,7 +477,7 @@ export const saveNFTMetadataImageToS3 = async (
       }
     }
   } catch (err) {
-    logger.debug(`Error in saveNFTMetadataImageToS3: ${err}`)
+    logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
     return undefined
   }
