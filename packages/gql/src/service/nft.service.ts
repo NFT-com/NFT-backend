@@ -424,6 +424,7 @@ export const saveNFTMetadataImageToS3 = async (
       await repositories.nft.updateOneById(nft.id, {
         previewLink: nft.metadata.imageURL + '?width=600',
       })
+      logger.debug(`previewLink for NFT ${ nft.id } was generated`, { previewLink: nft.metadata.imageURL + '?width=600' })
       return nft.metadata.imageURL + '?width=600'
     } else {
       let imageUrl, ext
