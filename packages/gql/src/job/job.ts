@@ -93,11 +93,11 @@ const createQueues = (): Promise<void> => {
       }))
 
     // add previewLink generation job...
-    queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
-      QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
-        prefix: queuePrefix,
-        redis,
-      }))
+    // queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
+    //   QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
+    //     prefix: queuePrefix,
+    //     redis,
+    //   }))
 
     resolve()
   })
@@ -196,15 +196,15 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
             repeat: { every: 2 * 60000 },
             jobId: 'fetch_external_orders_on_demand',
           })
-      case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-        return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
-          .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
-            removeOnComplete: true,
-            removeOnFail: true,
-            // repeat every  3 minutes
-            repeat: { every: 3 * 60000 },
-            jobId: 'generate_preview_link',
-          })
+      // case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
+      //   return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
+      //     .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
+      //       removeOnComplete: true,
+      //       removeOnFail: true,
+      //       // repeat every  3 minutes
+      //       repeat: { every: 3 * 60000 },
+      //       jobId: 'generate_preview_link',
+      //     })
       default:
         return queues.get(chainId).add({ chainId }, {
           removeOnComplete: true,
