@@ -6,6 +6,7 @@ import {
 } from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   generateNFTsPreviewLink,
   nftExternalOrders,
   nftExternalOrdersOnDemand,
@@ -232,7 +233,7 @@ const listenToJobs = async (): Promise<void> => {
       queue.process(nftExternalOrdersOnDemand)
       break
     case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-      queue.process(generateNFTsPreviewLink)
+      // queue.process(generateNFTsPreviewLink)
       break
     default:
       queue.process(getEthereumEvents)
