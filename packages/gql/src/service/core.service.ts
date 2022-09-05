@@ -626,6 +626,7 @@ const getSTS = (): STS => {
   if (helper.isEmpty(cachedSTS)) {
     cachedSTS = new STS({ region: process.env.AWS_REGION })
   }
+  console.log('STS', cachedSTS)
   return cachedSTS
 }
 
@@ -661,6 +662,7 @@ export const getAWSConfig = async (): Promise<S3Client> => {
     RoleArn: assetBucket.role,
     RoleSessionName: sessionName,
   }
+  console.log('AWSConfig', params)
   const response = await getSTS().assumeRole(params)
   const accessKeyId = response.Credentials.AccessKeyId
   const secretAccessKey = response.Credentials.SecretAccessKey
