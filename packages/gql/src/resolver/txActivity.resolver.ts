@@ -221,6 +221,7 @@ const getActivities = async (
       contract: Joi.string(),
       chainId: Joi.string(),
       skipRelations: Joi.boolean(),
+      includeExpired: Joi.boolean(),
     }),
   })
 
@@ -234,6 +235,7 @@ const getActivities = async (
     tokenId,
     contract,
     skipRelations,
+    includeExpired,
   } = helper.safeObject(args.input)
 
   if (!process.env.ACTIVITY_ENDPOINTS_ENABLED) {
@@ -249,6 +251,7 @@ const getActivities = async (
 
   const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
   const verificationNetwork: string = network || 'ethereum'
+  let checksumContract: string
 
   auth.verifyAndGetNetworkChain(verificationNetwork, chainId)
 
@@ -284,6 +287,7 @@ const getActivities = async (
   let nftId: string
   // build nft id
   if (contract) {
+    checksumContract = helper.checkSum(contract)
     filters = { ...filters, nftContract: contract }
   }
 
@@ -294,7 +298,7 @@ const getActivities = async (
     ))
   }
   if (contract && tokenId) {
-    nftId = `ethereum/${contract}/${BigNumber.from(tokenId).toHexString()}`
+    nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
   }
 
   if(nftId?.length) {
@@ -303,6 +307,10 @@ const getActivities = async (
 
   if (read) {
     filters = { ...filters, read }
+  }
+
+  if (!includeExpired) {
+    filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
   }
 
   const safefilters = [helper.inputT2SafeK(filters)]
