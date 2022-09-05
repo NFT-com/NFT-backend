@@ -76,7 +76,7 @@ export const retrieveNFTDetailsNFTPort = async (
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
-    const tokenIdInteger = ethers.BigNumber.from(tokenId).toNumber()
+    const tokenIdInteger = ethers.BigNumber.from(tokenId).toString()
     const url = `/nfts/${contract}/${tokenIdInteger}`
     const res = await nftInterceptor.get(url, {
       params: {
