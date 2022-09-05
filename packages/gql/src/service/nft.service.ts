@@ -491,13 +491,14 @@ export const saveNFTMetadataImageToS3 = async (
       logger.debug(`previewLink for NFT ${ nft.id } was generated`, { previewLink: nft.metadata.imageURL + '?width=600' })
       return nft.metadata.imageURL + '?width=600'
     } else {
+      let cdnPath
       const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
       // if image url from NFTPortResult is valid
-      let cdnPath
-      if (nftPortResult && nftPortResult.cached_file_url) {
+      if (nftPortResult && nftPortResult.cached_file_url && nftPortResult.cached_file_url.length) {
         const filename = nftPortResult.cached_file_url.split('/').pop()
         cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract)
       } else {
+        // we try to get url from metadata
         if (nft.metadata.imageURL.indexOf('data:image/svg+xml') === 0) {
           cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract)
         } else {
