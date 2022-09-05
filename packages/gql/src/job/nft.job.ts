@@ -273,22 +273,22 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     logger.info('generate preview links', job.data)
 
     // to avoid overlap of NFTs during cron jobs
-    const key = 'generate_preview_link_available'
-    const cachedData = await cache.get(key)
-    if (cachedData === null) {
-      // if no cached flag value, we continue job and availability as false
-      await cache.set(key, JSON.stringify(false))
-    } else {
-      const available = JSON.parse(cachedData) as boolean
-      logger.info(key, { availability: available })
-      // if flag is false, job should be suspended
-      if (!available) return
-      else {
-        // else if flag is true, we start new job and suspend execution of other jobs
-        await cache.set(key, JSON.stringify(false))
-      }
-    }
-    const MAX_NFT_COUNTS = 50
+    // const key = 'generate_preview_link_available'
+    // const cachedData = await cache.get(key)
+    // if (cachedData === null) {
+    //   // if no cached flag value, we continue job and availability as false
+    //   await cache.set(key, JSON.stringify(false))
+    // } else {
+    //   const available = JSON.parse(cachedData) as boolean
+    //   logger.info(key, { availability: available })
+    //   // if flag is false, job should be suspended
+    //   if (!available) return
+    //   else {
+    //     // else if flag is true, we start new job and suspend execution of other jobs
+    //     await cache.set(key, JSON.stringify(false))
+    //   }
+    // }
+    const MAX_NFT_COUNTS = 10
     const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
     const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
     const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
@@ -302,7 +302,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
         }
       }),
     )
-    await cache.set(key, JSON.stringify(true))
+    // await cache.set(key, JSON.stringify(true))
     const end = Date.now()
     logger.info('generated previewLink for NFTs', { duration: `${(end - begin) / 1000} seconds` })
   } catch (err) {
