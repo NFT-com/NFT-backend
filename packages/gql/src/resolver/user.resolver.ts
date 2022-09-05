@@ -556,7 +556,7 @@ const getMyGenesisKeys = async (
       const ipfsHash = strippedUri.split('/')[0]
 
       return keyIds.map(async (keyId) => {
-        const fullUrl = `https://nft-llc-3.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
+        const fullUrl = `https://nft-llc.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
 
         const cachedGkData = await cache.get(fullUrl)
         const metadata = cachedGkData ?? (await axios.get(fullUrl)).data

@@ -293,6 +293,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
     const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
     const slicedNFTs = filteredNFTs.slice(0, length)
+    logger.info('NFTs to be added', { count: slicedNFTs.length })
     await Promise.allSettled(
       slicedNFTs.map(async (nft) => {
         const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
