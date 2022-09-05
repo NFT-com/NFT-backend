@@ -1270,6 +1270,7 @@ const uploadMetadataImagesToS3 = async (
       message: `Saved preview link of metadata image for ${slidedNFTs.length} NFTs`,
     }
   } catch (err) {
+    console.log(err)
     Sentry.captureMessage(`Error in uploadMetadataImagesToS3: ${err}`)
     return err
   }
