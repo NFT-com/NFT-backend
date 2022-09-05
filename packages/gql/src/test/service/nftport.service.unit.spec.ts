@@ -3,7 +3,10 @@ import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 jest.setTimeout(150000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
-  cache: jest.fn(),
+  cache: {
+    get: jest.fn(),
+    set: jest.fn(),
+  },
   createCacheConnection: jest.fn(),
 }))
 
