@@ -8,7 +8,6 @@ import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   generateNFTsPreviewLink,
-  nftExternalOrders,
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
@@ -227,13 +226,13 @@ const listenToJobs = async (): Promise<void> => {
       queue.process(generateCompositeImages)
       break
     case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
-      queue.process(nftExternalOrders)
+      // queue.process(nftExternalOrders)
       break
     case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
       queue.process(nftExternalOrdersOnDemand)
       break
     case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-      // queue.process(generateNFTsPreviewLink)
+      queue.process(generateNFTsPreviewLink)
       break
     default:
       queue.process(getEthereumEvents)

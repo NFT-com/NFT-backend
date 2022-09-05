@@ -40,11 +40,14 @@ export class TxTransaction extends BaseEntity {
   @Column({ nullable: false })
   nftContractTokenId: string
 
-  @Column({ nullable: false })
-  sender: string
+  @Column({ nullable: false, default: 'Default' })
+  eventType: string
 
   @Column({ nullable: false })
-  receiver: string
+  maker: string
+
+  @Column({ nullable: false })
+  taker: string
 
   @Column({ nullable: true })
   chainId: string

@@ -2,10 +2,12 @@ import { BigNumber, ethers, providers, utils } from 'ethers'
 import { In, LessThan } from 'typeorm'
 
 import { _logger, contracts, db, defs, entity,helper } from '@nftcom/shared'
+import { lessThan } from '@nftcom/shared/helper/misc'
 
 const repositories = db.newRepositories()
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 const looksrareExchangeInterface = new utils.Interface(contracts.looksrareExchangeABI())
+const openseaSeaportInterface = new utils.Interface(contracts.openseaSeaportABI())
 const logger = _logger.Factory(_logger.Context.WebsocketProvider, _logger.Context.GraphQL)
 
 type KeepAliveParams = {
@@ -29,6 +31,12 @@ enum LooksrareEventName {
   CancelMultipleOrders = 'CancelMultipleOrders',
   TakerAsk = 'TakerAsk',
   TakerBid = 'TakerBid'
+}
+
+enum OSSeaportEventName {
+  OrderCancelled = 'OrderCancelled',
+  CounterIncremented = 'CounterIncremented',
+  OrderFulfilled = 'OrderFulfilled'
 }
 
 const keepAlive = ({
@@ -206,10 +214,10 @@ const keepAlive = ({
 
     logger.debug(`looksrareExchangeAddress: ${looksrareExchangeAddress}, chainId: ${chainId}`)
 
-    // logic for listening and parsing via WSS
+    // logic for listening to Looksrare on-chain events and parsing via WSS
     const looksrareTopicFilter = [
       [
-        helper.id('CancelAllOrders(address, uint256)'),
+        helper.id('CancelAllOrders(address,uint256)'),
         helper.id('CancelMultipleOrders(address,uint256[])'),
         helper.id('TakerAsk(bytes32,uint256,address,address,address,address,address,uint256,uint256,uint256)'),
         helper.id('TakerBid(bytes32,uint256,address,address,address,address,address,uint256,uint256,uint256)'),
@@ -333,6 +341,126 @@ const keepAlive = ({
           }
         } catch (err) {
           logger.error(`Evt: ${LooksrareEventName.TakerBid} -- Err: ${err}`)
+        }
+      } else {
+        // not relevant in our search space
+        logger.error('topic hash not covered: ', e.transactionHash)
+      }
+    })
+
+    const openseaSeaportAddress = helper.checkSum(
+      contracts.openseaSeaportAddress(chainId.toString()),
+    )
+
+    logger.debug(`openseaSeaportAddress: ${openseaSeaportAddress}, chainId: ${chainId}`)
+
+    // logic for listening to Looksrare on-chain events and parsing via WSS
+    const openseaTopicFilter = [
+      [
+        helper.id('OrderCancelled(bytes32,address,address)'),
+        helper.id('CounterIncremented(unint256,address)'),
+        helper.id('OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])'),
+      ],
+    ]
+
+    const openseaFilter = {
+      address: utils.getAddress(openseaSeaportAddress),
+      topics: openseaTopicFilter,
+    }
+
+    provider.on(openseaFilter, async (e) => {
+      const evt = openseaSeaportInterface.parseLog(e)
+
+      if(evt.name === OSSeaportEventName.OrderCancelled) {
+        const [orderHash, offerer, zone] = evt.args
+        try {
+          const order: entity.TxOrder = await repositories.txOrder.findOne({
+            relations: ['activity'],
+            where: {
+              chainId: String(chainId),
+              id: orderHash,
+              makerAddress: helper.checkSum(offerer),
+              zone: helper.checkSum(zone),
+              exchange: defs.ExchangeType.OpenSea,
+              protocol: defs.ProtocolType.Seaport,
+              activity: {
+                status: defs.ActivityStatus.Valid,
+              },
+            },
+          })
+      
+          if (order) {
+            order.activity.status = defs.ActivityStatus.Cancelled
+            await repositories.txOrder.save(order)
+            logger.log(`
+                Evt Saved: ${OSSeaportEventName.OrderCancelled} for orderHash ${orderHash},
+                offerer ${offerer},
+                zone ${zone}
+            `)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${OSSeaportEventName.OrderCancelled} -- Err: ${err}`)
+        }
+      } else if (evt.name === OSSeaportEventName.CounterIncremented) {
+        const [newCounter, offerer] = evt.args
+        try {
+          const orders: entity.TxOrder[] = await repositories.txOrder.find({
+            relations: ['activity'],
+            where: {
+              chainId: String(chainId),
+              makerAddress: helper.checkSum(offerer),
+              nonce: lessThan(newCounter),
+              exchange: defs.ExchangeType.OpenSea,
+              protocol: defs.ProtocolType.Seaport,
+              activity: {
+                status: defs.ActivityStatus.Valid,
+              },
+            },
+          })
+      
+          if (orders.length) {
+            for (const order of orders) {
+              order.activity.status = defs.ActivityStatus.Cancelled
+            }
+            await repositories.txOrder.saveMany(orders)
+            logger.log(`
+                  Evt Saved: ${OSSeaportEventName.CounterIncremented} for
+                  offerer ${offerer}
+            `)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${OSSeaportEventName.CounterIncremented} -- Err: ${err}`)
+        }
+      } else if (evt.name === OSSeaportEventName.OrderFulfilled) {
+        const [orderHash, offerer, zone, recipient] = evt.args
+        try {
+          const order: entity.TxOrder = await repositories.txOrder.findOne({
+            relations: ['activity'],
+            where: {
+              chainId: String(chainId),
+              id: orderHash,
+              makerAddress: helper.checkSum(offerer),
+              zone: helper.checkSum(zone),
+              exchange: defs.ExchangeType.OpenSea,
+              protocol: defs.ProtocolType.Seaport,
+              activity: {
+                status: defs.ActivityStatus.Valid,
+              },
+            },
+          })
+  
+          if (order) {
+            order.activity.status = defs.ActivityStatus.Executed
+            order.takerAddress = helper.checkSum(recipient)
+            await repositories.txOrder.save(order)
+            logger.log(`
+            Evt Saved: ${OSSeaportEventName.OrderFulfilled} for orderHash ${orderHash},
+            offerer ${offerer},
+            zone ${zone}
+        `)
+          }
+        } catch (err) {
+          logger.error(`Evt: ${OSSeaportEventName.OrderFulfilled} -- Err: ${err}`)
         }
       } else {
         // not relevant in our search space
