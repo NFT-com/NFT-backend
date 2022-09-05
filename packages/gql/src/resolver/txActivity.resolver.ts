@@ -255,7 +255,7 @@ const getActivities = async (
 
   auth.verifyAndGetNetworkChain(verificationNetwork, chainId)
 
-  let filters: any = { chainId, status: defs.ActivityStatus.Valid }
+  let filters: defs.ActivityFilters = { chainId, status: defs.ActivityStatus.Valid }
 
   if (walletAddress) {
     const walletAddressVerifed: string = helper.checkSum(walletAddress)
