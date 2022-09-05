@@ -41,11 +41,15 @@ export class TxOrder extends BaseEntity {
   @Column({ type: 'json' })
   protocolData: any
 
-  // only valid for LR at the moment
+  // counter is mapped to nonce for OS
   @Column({ nullable: true })
   nonce: number
 
   @Column({ nullable: true })
   chainId: string
+
+  // only required for OS
+  @Column({ nullable: true })
+  zone: string
 
 }
