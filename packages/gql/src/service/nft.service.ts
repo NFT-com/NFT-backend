@@ -515,7 +515,7 @@ export const saveNFTMetadataImageToS3 = async (
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
-      previewLinkError: `${err}`,
+      previewLinkError: JSON.stringify(err),
     })
     logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)

@@ -289,7 +289,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
       }
     }
     const MAX_NFT_COUNTS = 300
-    const nfts = await repositories.nft.find({ where: { previewLink: null } })
+    const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
     const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
     const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
     const slicedNFTs = filteredNFTs.slice(0, length)
