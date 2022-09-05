@@ -1,3 +1,4 @@
+import { FindOperator } from 'typeorm'
 import { EntityFieldsNames } from 'typeorm/common/EntityFieldsNames'
 import { OrderByCondition } from 'typeorm/find-options/OrderByCondition'
 
@@ -168,6 +169,7 @@ export interface ActivityFilters {
   nftContract?: string
   activityTypeId?: string
   status?: string
+  expiration?: FindOperator<Date>
 }
 
 export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition

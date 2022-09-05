@@ -34,6 +34,9 @@ describe('transaction activity resolver', () => {
       activity.activityTypeId = orderHash
       activity.status = ActivityStatus.Valid
       activity.timestamp = new Date(timestamp + (10000 * i))
+      const currentDate: Date = new Date()
+      currentDate.setDate(currentDate.getDate() - 1)
+      activity.expiration = currentDate
       activity.walletAddress = testMockWallet.address
       activity.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.nftId = ['ethereum/test-nft-contract/test-token-id']
@@ -192,6 +195,7 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           chainId: '4',
+          includeExpired: true,
         } },
       })
   
@@ -226,12 +230,42 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
+          includeExpired: true,
         } },
       })
    
       expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Listing)
       expect(result.data.getActivities?.items?.[0].order).toBeNull()
       expect(result.data.getActivities.totalItems).toBe(1)
+    })
+
+    it('should not return expired items by default', async () => {
+      const result = await testServer.executeOperation({
+        query: `query GetActivities($input: TxActivitiesInput) {
+          getActivities(input: $input) {
+            items {
+              id
+            }
+            totalItems
+            pageInfo {
+              firstCursor
+              lastCursor
+            }
+          }
+        }`,
+        variables: { input: {
+          activityType: 'Listing',
+          pageInput: {
+            first: 0,
+            last: null,
+          },
+          skipRelations: true,
+          chainId: '4',
+        } },
+      })
+   
+      expect(result.data.getActivities?.items).toHaveLength(0)
+      expect(result.data.getActivities.totalItems).toBe(0)
     })
   
     it('should fail if input is missing', async () => {
