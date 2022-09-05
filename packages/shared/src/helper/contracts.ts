@@ -10,6 +10,7 @@ import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.j
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
 import nftProfileABIJSON from '@nftcom/shared/helper/abis/NftProfile.json'
 import nftResolverABIJSON from '@nftcom/shared/helper/abis/NftResolver.json'
+import openseaSeaportABIJSON from '@nftcom/shared/helper/abis/OSSeaport.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
 import validationLogicABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 
@@ -286,6 +287,24 @@ export function looksrareExchangeAddress(chainId: string | number = 'mainnet'): 
   }
 }
 
+// opensea seaport 1.1
+export function openseaSeaportAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '4':
+  case 'rinkeby':
+  case 4:
+    return utils.getAddress('0x00000000006c3852cbEf3e08E8dF289169EdE581')
+  case '5':
+  case 'goerli':
+  case 5:
+    return utils.getAddress('0x00000000006c3852cbEf3e08E8dF289169EdE581')
+  case '1':
+  case 1:
+  case 'mainnet':
+    return utils.getAddress('0x00000000006c3852cbEf3e08E8dF289169EdE581')
+  }
+}
+
 export const MintedProfileTopic = '0xfdbd996e3e72e8c7d34fc2f374c3c85c80a530bd1cdaa4a748d34e32103c5cc3'
 
 export function validationLogicABI(): any {
@@ -330,6 +349,10 @@ export function genKeyClaimABI(): any {
 
 export function looksrareExchangeABI(): any {
   return looksrareExchangeABIJSON
+}
+
+export function openseaSeaportABI(): any {
+  return openseaSeaportABIJSON
 }
 
 export interface GasInfo {

@@ -17,6 +17,7 @@ import {
   getLastWeight,
   midWeight, processIPFSURL, s3ToCdn,
 } from '@nftcom/gql/service/core.service'
+import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
@@ -413,6 +414,69 @@ const getNFTMetaData = async (
   }
 }
 
+/**
+ * Upload buffer from external image url to our S3 and return CDN path
+ * @param imageUrl
+ * @param filename
+ * @param chainId
+ * @param contract
+ */
+
+const uploadImageToS3 = async (
+  imageUrl: string,
+  filename: string,
+  chainId: string,
+  contract: string,
+): Promise<string | undefined> => {
+  try {
+    let buffer
+    let ext
+    let imageKey
+    if (imageUrl.indexOf('data:image/svg+xml') === 0) {
+      buffer = imageUrl
+      ext = 'svg'
+      imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
+    } else {
+      // get buffer from imageURL, timeout is set to 30 seconds
+      const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 30 })
+      buffer = await res.buffer()
+      if (!buffer) return undefined
+      ext = extensionFromFilename(filename)
+      if (!ext) {
+        if (imageUrl.includes('https://metadata.ens.domains/')) {
+          ext = 'svg'
+          imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.svg'
+        } else {
+          ext = 'png'
+          imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.png'
+        }
+      } else {
+        imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename
+      }
+    }
+
+    const contentType = contentTypeFromExt(ext)
+    if (!contentType) return undefined
+    const s3config = await getAWSConfig()
+    const upload = new Upload({
+      client: s3config,
+      params: {
+        Bucket: assetBucket.name,
+        Key: imageKey,
+        Body: buffer,
+        ContentType: contentType,
+      },
+    })
+    await upload.done()
+
+    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+  } catch (err) {
+    logger.error(`Error in uploadImageToS3 ${err}`)
+    Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
+    throw err
+  }
+}
+
 export const saveNFTMetadataImageToS3 = async (
   nft: entity.NFT,
   repositories: db.Repository,
@@ -427,57 +491,33 @@ export const saveNFTMetadataImageToS3 = async (
       logger.debug(`previewLink for NFT ${ nft.id } was generated`, { previewLink: nft.metadata.imageURL + '?width=600' })
       return nft.metadata.imageURL + '?width=600'
     } else {
-      let imageUrl, ext
-      let imageKey
-      let buffer
-      if (nft.metadata.imageURL.indexOf('data:image/svg+xml') === 0) {
-        buffer = nft.metadata.imageURL
-        ext = 'svg'
-        imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + nft.contract + '.svg'
+      let cdnPath
+      const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
+      // if image url from NFTPortResult is valid
+      if (nftPortResult && nftPortResult.cached_file_url && nftPortResult.cached_file_url.length) {
+        const filename = nftPortResult.cached_file_url.split('/').pop()
+        cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract)
       } else {
-        imageUrl = processIPFSURL(nft.metadata.imageURL)
-        if (!imageUrl) return undefined
-        const filename = nft.metadata.imageURL.split('/').pop()
-        if (!filename) return undefined
-        // get buffer from imageURL, timeout is set to 5 seconds
-        const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 5 })
-        buffer = await res.buffer()
-        if (!buffer) return undefined
-        ext = extensionFromFilename(filename)
-        if (!ext) {
-          if (imageUrl.includes('https://metadata.ens.domains/')) {
-            ext = 'svg'
-            imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.svg'
-          } else {
-            ext = 'png'
-            imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename + '.png'
-          }
+        // we try to get url from metadata
+        if (nft.metadata.imageURL.indexOf('data:image/svg+xml') === 0) {
+          cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract)
         } else {
-          imageKey = `nfts/${nft.chainId}/` + Date.now() + '-' + filename
+          const imageUrl = processIPFSURL(nft.metadata.imageURL)
+          if (!imageUrl) return undefined
+          const filename = nft.metadata.imageURL.split('/').pop()
+          if (!filename) return undefined
+          cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract)
         }
       }
-      const contentType = contentTypeFromExt(ext)
-      let upload
-      if (contentType) {
-        const s3config = await getAWSConfig()
-        upload = new Upload({
-          client: s3config,
-          params: {
-            Bucket: assetBucket.name,
-            Key: imageKey,
-            Body: buffer,
-            ContentType: contentType,
-          },
-        })
-        await upload.done()
-
-        const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-        logger.debug(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
-        return cdnPath + '?width=600'
-      }
+      if (!cdnPath) return undefined
+      logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
+      return cdnPath + '?width=600'
     }
   } catch (err) {
-    logger.debug(`Error in saveNFTMetadataImageToS3: ${err}`)
+    await repositories.nft.updateOneById(nft.id, {
+      previewLinkError: JSON.stringify(err),
+    })
+    logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
     return undefined
   }

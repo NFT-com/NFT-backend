@@ -6,9 +6,7 @@ import {
 } from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   generateNFTsPreviewLink,
-  nftExternalOrders,
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
@@ -16,9 +14,9 @@ import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
-const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
-  process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION,
-) || 720 // by default 12 hours
+// const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
+//  process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION,
+// ) || 720 // by default 12 hours
 
 const logger = _logger.Factory(_logger.Context.Bull)
 
@@ -32,16 +30,16 @@ enum QUEUE_TYPES {
   GENERATE_COMPOSITE_IMAGE = 'GENERATE_COMPOSITE_IMAGE',
   FETCH_EXTERNAL_ORDERS = 'FETCH_EXTERNAL_ORDERS',
   FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND',
-  GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_NFTS_PREVIEW_LINK',
+  GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK_FOR_NFTS',
 }
 
 const queues = new Map<string, Bull.Queue>()
 
 // nft cron subqueue
-const subqueuePrefix = 'nft-cron'
-const subqueueName = 'nft-batch-processor'
+// const subqueuePrefix = 'nft-cron'
+// const subqueueName = 'nft-batch-processor'
 
-export let nftCronSubqueue: Bull.Queue = null
+export const nftCronSubqueue: Bull.Queue = null
 
 const networkList = process.env.SUPPORTED_NETWORKS.split('|')
 const networks = new Map()
@@ -73,17 +71,17 @@ const createQueues = (): Promise<void> => {
       }))
 
     // external orders cron
-    queues.set(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS, new Bull(
-      QUEUE_TYPES.FETCH_EXTERNAL_ORDERS, {
-        prefix: queuePrefix,
-        redis,
-      }))
+    // queues.set(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS, new Bull(
+    //   QUEUE_TYPES.FETCH_EXTERNAL_ORDERS, {
+    //     prefix: queuePrefix,
+    //     redis,
+    //   }))
 
     // cron subqueue
-    nftCronSubqueue = new Bull(subqueueName, {
-      redis: redis,
-      prefix: subqueuePrefix,
-    })
+    // nftCronSubqueue = new Bull(subqueueName, {
+    //   redis: redis,
+    //   prefix: subqueuePrefix,
+    // })
 
     // external orders on demand
     queues.set(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND, new Bull(
@@ -93,11 +91,11 @@ const createQueues = (): Promise<void> => {
       }))
 
     // add previewLink generation job...
-    // queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
-    //   QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
-    //     prefix: queuePrefix,
-    //     redis,
-    //   }))
+    queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
+      QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
+        prefix: queuePrefix,
+        redis,
+      }))
 
     resolve()
   })
@@ -167,18 +165,18 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
             repeat: { every: 2 * 60000 },
             jobId: 'generate_composite_image',
           })
-      case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
-        return queues.get(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS)
-          .add({
-            FETCH_EXTERNAL_ORDERS: QUEUE_TYPES.FETCH_EXTERNAL_ORDERS,
-            chainId: process.env.CHAIN_ID,
-          }, {
-            removeOnComplete: true,
-            removeOnFail: true,
-            // repeat every  6 hrs - configurable
-            repeat: { every: NFT_EXTERNAL_ORDER_REFRESH_DURATION * 60000 },
-            jobId: 'fetch_external_orders',
-          })
+      // case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
+      //   return queues.get(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS)
+      //     .add({
+      //       FETCH_EXTERNAL_ORDERS: QUEUE_TYPES.FETCH_EXTERNAL_ORDERS,
+      //       chainId: process.env.CHAIN_ID,
+      //     }, {
+      //       removeOnComplete: true,
+      //       removeOnFail: true,
+      //       // repeat every  6 hrs - configurable
+      //       repeat: { every: NFT_EXTERNAL_ORDER_REFRESH_DURATION * 60000 },
+      //       jobId: 'fetch_external_orders',
+      //     })
       case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
         return queues.get(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND)
           .add({
@@ -196,15 +194,15 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
             repeat: { every: 2 * 60000 },
             jobId: 'fetch_external_orders_on_demand',
           })
-      // case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-      //   return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
-      //     .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
-      //       removeOnComplete: true,
-      //       removeOnFail: true,
-      //       // repeat every  3 minutes
-      //       repeat: { every: 3 * 60000 },
-      //       jobId: 'generate_preview_link',
-      //     })
+      case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
+        return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
+          .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
+            removeOnComplete: true,
+            removeOnFail: true,
+            // repeat every  3 minutes
+            repeat: { every: 3 * 60000 },
+            jobId: 'generate_preview_link',
+          })
       default:
         return queues.get(chainId).add({ chainId }, {
           removeOnComplete: true,
@@ -227,13 +225,13 @@ const listenToJobs = async (): Promise<void> => {
       queue.process(generateCompositeImages)
       break
     case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
-      queue.process(nftExternalOrders)
+      // queue.process(nftExternalOrders)
       break
     case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
       queue.process(nftExternalOrdersOnDemand)
       break
     case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-      // queue.process(generateNFTsPreviewLink)
+      queue.process(generateNFTsPreviewLink)
       break
     default:
       queue.process(getEthereumEvents)

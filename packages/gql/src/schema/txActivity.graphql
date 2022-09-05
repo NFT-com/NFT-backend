@@ -160,6 +160,7 @@ input TxActivitiesInput {
   contract: String
   chainId: String
   skipRelations: Boolean
+  includeExpired: Boolean
 }
 
 extend type Query {
