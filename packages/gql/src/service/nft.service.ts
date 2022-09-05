@@ -414,6 +414,14 @@ const getNFTMetaData = async (
   }
 }
 
+/**
+ * Upload buffer from external image url to our S3 and return CDN path
+ * @param imageUrl
+ * @param filename
+ * @param chainId
+ * @param contract
+ */
+
 const uploadImageToS3 = async (
   imageUrl: string,
   filename: string,
@@ -500,10 +508,14 @@ export const saveNFTMetadataImageToS3 = async (
           cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract)
         }
       }
+      if (!cdnPath) return undefined
       logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
       return cdnPath + '?width=600'
     }
   } catch (err) {
+    await repositories.nft.updateOneById(nft.id, {
+      previewLinkError: `${err}`,
+    })
     logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
     return undefined
