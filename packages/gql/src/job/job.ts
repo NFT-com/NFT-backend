@@ -6,8 +6,7 @@ import {
 } from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // generateNFTsPreviewLink,
+  generateNFTsPreviewLink,
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
