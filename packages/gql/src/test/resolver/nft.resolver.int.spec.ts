@@ -788,35 +788,35 @@ describe('nft resolver', () => {
         walletId: testMockWallet.id,
       })
 
-      await repositories.nft.save({
-        contract: '0xD1E5b0FF1287aA9f9A268759062E4Ab08b9Dacbe',
-        tokenId: nftTestMockData.tokenId,
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'ipfs://QmYQdCpm5JWBuodHUsNVqhGng1NBt9DBn91QZSMV7B9D2g/4.png',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
+      // await repositories.nft.save({
+      //   contract: '0xD1E5b0FF1287aA9f9A268759062E4Ab08b9Dacbe',
+      //   tokenId: nftTestMockData.tokenId,
+      //   chainId: '5',
+      //   metadata: {
+      //     name: '',
+      //     description: '',
+      //     imageURL: 'ipfs://QmYQdCpm5JWBuodHUsNVqhGng1NBt9DBn91QZSMV7B9D2g/4.png',
+      //     traits: [],
+      //   },
+      //   type: defs.NFTType.ERC721,
+      //   userId: testMockUser.id,
+      //   walletId: testMockWallet.id,
+      // })
 
-      await repositories.nft.save({
-        contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-        tokenId: nftTestMockData.tokenId,
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'https://etherheads.mypinata.cloud/ipfs/QmVMETREsj6gML5CL8ozNAcNyom9Qkp2W5iqC8cDbVxu6j/429.png',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
+      // await repositories.nft.save({
+      //   contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
+      //   tokenId: nftTestMockData.tokenId,
+      //   chainId: '5',
+      //   metadata: {
+      //     name: '',
+      //     description: '',
+      //     imageURL: 'https://etherheads.mypinata.cloud/ipfs/QmVMETREsj6gML5CL8ozNAcNyom9Qkp2W5iqC8cDbVxu6j/429.png',
+      //     traits: [],
+      //   },
+      //   type: defs.NFTType.ERC721,
+      //   userId: testMockUser.id,
+      //   walletId: testMockWallet.id,
+      // })
 
       await repositories.nft.save({
         contract: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
@@ -833,20 +833,20 @@ describe('nft resolver', () => {
         walletId: testMockWallet.id,
       })
 
-      await repositories.nft.save({
-        contract: '0xbFF8194280133EA979aAF16D1A7BDd004493ABE5',
-        tokenId: nftTestMockData.tokenId,
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'https://decentralizeddevs.mypinata.cloud/ipfs/QmVEz1ZjB259xad4JCUeQcYppAzsZv7ahgUXmR41B8suck/908.gif',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
+      // await repositories.nft.save({
+      //   contract: '0xbFF8194280133EA979aAF16D1A7BDd004493ABE5',
+      //   tokenId: nftTestMockData.tokenId,
+      //   chainId: '5',
+      //   metadata: {
+      //     name: '',
+      //     description: '',
+      //     imageURL: 'https://decentralizeddevs.mypinata.cloud/ipfs/QmVEz1ZjB259xad4JCUeQcYppAzsZv7ahgUXmR41B8suck/908.gif',
+      //     traits: [],
+      //   },
+      //   type: defs.NFTType.ERC721,
+      //   userId: testMockUser.id,
+      //   walletId: testMockWallet.id,
+      // })
     })
 
     afterAll(async () => {
@@ -862,11 +862,11 @@ describe('nft resolver', () => {
         },
       })
 
-      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 5 NFTs')
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
       const nfts = await repositories.nft.findAll()
-      expect(nfts.length).toEqual(5)
+      expect(nfts.length).toEqual(2)
       for (nft of nfts) {
-        expect(nft.previewLink).toBeDefined()
+        expect(nft.previewLink).not.toBeNull()
       }
     })
   })
