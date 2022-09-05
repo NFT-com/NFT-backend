@@ -2,6 +2,7 @@
 import Bull, { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
+import { delay } from '@nftcom/gql/service/core.service'
 import { saveNFTMetadataImageToS3 } from '@nftcom/gql/service/nft.service'
 import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db, entity } from '@nftcom/shared'
@@ -288,7 +289,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     //     await cache.set(key, JSON.stringify(false))
     //   }
     // }
-    const MAX_NFT_COUNTS = 50
+    const MAX_NFT_COUNTS = 30
     const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
     const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
     const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
@@ -297,6 +298,7 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     await Promise.allSettled(
       slicedNFTs.map(async (nft) => {
         const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
+        await delay(1000)
         if (previewLink) {
           await repositories.nft.updateOneById(nft.id, { previewLink })
         }
