@@ -354,7 +354,7 @@ const keepAlive = ({
 
     logger.debug(`openseaSeaportAddress: ${openseaSeaportAddress}, chainId: ${chainId}`)
 
-    // logic for listening to Looksrare on-chain events and parsing via WSS
+    // logic for listening to Seaport on-chain events and parsing via WSS
     const openseaTopicFilter = [
       [
         helper.id('OrderCancelled(bytes32,address,address)'),
