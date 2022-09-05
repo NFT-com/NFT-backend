@@ -6,8 +6,7 @@ import {
 } from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // generateNFTsPreviewLink,
+  generateNFTsPreviewLink,
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
@@ -92,11 +91,11 @@ const createQueues = (): Promise<void> => {
       }))
 
     // add previewLink generation job...
-    // queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
-    //   QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
-    //     prefix: queuePrefix,
-    //     redis,
-    //   }))
+    queues.set(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, new Bull(
+      QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK, {
+        prefix: queuePrefix,
+        redis,
+      }))
 
     resolve()
   })
@@ -195,15 +194,15 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
             repeat: { every: 2 * 60000 },
             jobId: 'fetch_external_orders_on_demand',
           })
-      // case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-      //   return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
-      //     .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
-      //       removeOnComplete: true,
-      //       removeOnFail: true,
-      //       // repeat every  3 minutes
-      //       repeat: { every: 3 * 60000 },
-      //       jobId: 'generate_preview_link',
-      //     })
+      case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
+        return queues.get(QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK)
+          .add({ GENERATE_NFTS_PREVIEW_LINK: QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK }, {
+            removeOnComplete: true,
+            removeOnFail: true,
+            // repeat every  3 minutes
+            repeat: { every: 3 * 60000 },
+            jobId: 'generate_preview_link',
+          })
       default:
         return queues.get(chainId).add({ chainId }, {
           removeOnComplete: true,
@@ -232,7 +231,7 @@ const listenToJobs = async (): Promise<void> => {
       queue.process(nftExternalOrdersOnDemand)
       break
     case QUEUE_TYPES.GENERATE_NFTS_PREVIEW_LINK:
-      // queue.process(generateNFTsPreviewLink)
+      queue.process(generateNFTsPreviewLink)
       break
     default:
       queue.process(getEthereumEvents)
