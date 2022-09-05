@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosInstance } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { ethers } from 'ethers'
 
+import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -68,6 +69,10 @@ export const retrieveNFTDetailsNFTPort = async (
   chainId: string,
 ): Promise<NFTPortNFT | undefined> => {
   try {
+    const key = `NFTPORT_NFT_DETAIL_${chainId}_${contract}_${tokenId}`
+    const cachedData = await cache.get(key)
+    if (cachedData)
+      return JSON.parse(cachedData)
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
@@ -79,6 +84,7 @@ export const retrieveNFTDetailsNFTPort = async (
       },
     })
     if (res && res.data && res.data.nft) {
+      await cache.set(key, JSON.stringify(res.data.nft), 'EX', 60 * 10)
       return res.data.nft as NFTPortNFT
     } else return undefined
   } catch (err) {
