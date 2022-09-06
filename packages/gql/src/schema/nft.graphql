@@ -170,6 +170,7 @@ input NftsForCollectionsInput {
 type CollectionNFT {
   collectionAddress: Address!
   nfts: [NFT!]!
+  actualNumberOfNFTs: Int!
 }
 
 input UpdateAssociatedContractInput {
