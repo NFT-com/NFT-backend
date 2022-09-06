@@ -96,6 +96,10 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+    - name: Login to AWS ECR
+      id: login_ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
     - name: Cache node modules
       id: cache-npm
       uses: actions/cache@v3
