@@ -194,7 +194,7 @@ processors:
 
 exporters:
   otlphttp:
-    endpoint: tempo.leonardo.nft.prv:80
+    endpoint: "https://tempo.leonardo.nft.prv"
 
 service:
   pipelines:
@@ -217,7 +217,7 @@ service:
             logDriver: 'awsfirelens',
             options: {
               Name: 'grafana-loki',
-              Url: 'loki.leonardo.nft.prv/loki/api/v1/push',
+              Url: 'https://loki.leonardo.nft.prv/loki/api/v1/push',
               Labels: '{job="firelens"}',
               RemoveKeys: 'container_id,ecs_task_arn',
               LabelKeys: 'container_name,ecs_task_definition,source,ecs_cluster',
@@ -256,6 +256,15 @@ service:
             type: 'fluentbit',
             options: {
               'enable-ecs-log-metadata': 'true',
+            },
+          },
+          logConfiguration: {
+            logDriver: 'awslogs',
+            options: {
+              'awslogs-group': 'firelens-container',
+              'awslogs-region': 'us-east-1',
+              'awslogs-create-group': 'true',
+              'awslogs-stream-prefix': 'firelens',
             },
           },
           memoryReservation: loggerMemory,
