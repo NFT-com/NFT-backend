@@ -1139,17 +1139,20 @@ export const getNFTsForCollections = async (
             result.push({
               collectionAddress: address,
               nfts: nfts.slice(0, length),
+              actualNumberOfNFTs: nfts.length,
             })
           } else {
             result.push({
               collectionAddress: address,
               nfts: [],
+              actualNumberOfNFTs: 0,
             })
           }
         } else {
           result.push({
             collectionAddress: address,
             nfts: [],
+            actualNumberOfNFTs: 0,
           })
         }
       }),
