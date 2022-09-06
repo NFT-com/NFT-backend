@@ -1,12 +1,12 @@
 import { performance } from 'perf_hooks'
-import { Logger, pino } from 'pino'
+import { pino } from 'pino'
 import * as util from 'util'
 
 import { context, trace } from '@opentelemetry/api'
 
 import { LoggerContext, LogLevel } from './types'
 
-export const rootLogger: Logger<pino.LoggerOptions> = pino({
+export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({
   level:  (process.env.LOG_LEVEL || LogLevel.Info).toLowerCase(),
   formatters: {
     level: (label) => {
