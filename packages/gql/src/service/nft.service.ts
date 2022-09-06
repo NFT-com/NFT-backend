@@ -434,7 +434,9 @@ const uploadImageToS3 = async (
     let ext
     let imageKey
     if (!imageUrl) return undefined
+    let isRaw = false
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
+      isRaw = true
       buffer = generateSVGFromBase64String(imageUrl)
       ext = 'svg'
       imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
@@ -478,8 +480,8 @@ const uploadImageToS3 = async (
     await upload.done()
 
     logger.info(`finished uploading in uploadImageToS3: ${imageUrl} ${filename} ${chainId} ${contract}`)
-
-    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    return isRaw ? cdnPath : cdnPath + '?width=600'
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
@@ -530,8 +532,8 @@ export const saveNFTMetadataImageToS3 = async (
       }
 
       if (!cdnPath) return undefined
-      logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
-      return cdnPath + '?width=600'
+      logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath })
+      return cdnPath
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
