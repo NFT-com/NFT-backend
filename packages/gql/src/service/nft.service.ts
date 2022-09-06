@@ -435,7 +435,6 @@ const uploadImageToS3 = async (
     let imageKey
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
       buffer = generateSVGFromBase64String(imageUrl)
-      buffer = imageUrl
       ext = 'svg'
       imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
     } else {
