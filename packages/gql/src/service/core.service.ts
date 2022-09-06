@@ -1008,6 +1008,8 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
     return 'image/webp'
   case 'avif':
     return 'image/avif'
+  case 'mp4':
+    return 'video/mp4'
   case 'bmp':
     return 'image/bmp'
   case 'tiff':
@@ -1018,7 +1020,7 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
 }
 
 export const processIPFSURL = (image: string): string => {
-  const prefix = 'https://cloudflare-ipfs.com/ipfs/'
+  const prefix = 'https://opensea.mypinata.cloud/ipfs/'
   if (image == null) {
     return null
   } else if (image.indexOf('ipfs://ipfs/') === 0) {

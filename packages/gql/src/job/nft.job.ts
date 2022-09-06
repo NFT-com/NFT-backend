@@ -273,38 +273,42 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     logger.info('generate preview links', job.data)
 
     // to avoid overlap of NFTs during cron jobs
-    const key = 'generate_preview_link_available'
-    const cachedData = await cache.get(key)
-    if (cachedData === null) {
-      // if no cached flag value, we continue job and availability as false
-      await cache.set(key, JSON.stringify(false))
-    } else {
-      const available = JSON.parse(cachedData) as boolean
-      logger.info(key, { availability: available })
-      // if flag is false, job should be suspended
-      if (!available) return
-      else {
-        // else if flag is true, we start new job and suspend execution of other jobs
-        await cache.set(key, JSON.stringify(false))
+    // const key = 'generate_preview_link_available'
+    // const cachedData = await cache.get(key)
+    // if (cachedData === null) {
+    //   // if no cached flag value, we continue job and availability as false
+    //   await cache.set(key, JSON.stringify(false))
+    // } else {
+    //   const available = JSON.parse(cachedData) as boolean
+    //   logger.info(key, { availability: available })
+    //   // if flag is false, job should be suspended
+    //   if (!available) return
+    //   else {
+    //     // else if flag is true, we start new job and suspend execution of other jobs
+    //     await cache.set(key, JSON.stringify(false))
+    //   }
+    // }
+    const MAX_NFT_COUNTS = 15
+    const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
+    const length = Math.min(MAX_NFT_COUNTS, nfts.length)
+    const slicedNFTs = nfts.slice(0, length)
+    logger.info('NFTs does not own preview links', { count: slicedNFTs.length })
+
+    let processed = 0
+    for (let i = 0; i < slicedNFTs.length; i++) {
+      logger.info(`nft job: ${i + 1} / ${slicedNFTs.length}`)
+      const previewLink = await saveNFTMetadataImageToS3(slicedNFTs[i], repositories)
+      if (previewLink) {
+        logger.info(`SAVED nft job: ${i + 1} / ${slicedNFTs.length}`)
+        processed += 1
+        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink })
+      } else {
+        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLinkError: 'undefined previewLink' })
       }
     }
-    const MAX_NFT_COUNTS = 50
-    const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
-    const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
-    const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
-    const slicedNFTs = filteredNFTs.slice(0, length)
-    logger.info('NFTs does not own preview links', { count: slicedNFTs.length })
-    await Promise.allSettled(
-      slicedNFTs.map(async (nft) => {
-        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
-        if (previewLink) {
-          await repositories.nft.updateOneById(nft.id, { previewLink })
-        }
-      }),
-    )
-    await cache.set(key, JSON.stringify(true))
+    // await cache.set(key, JSON.stringify(true))
     const end = Date.now()
-    logger.info('generated previewLink for NFTs', { duration: `${(end - begin) / 1000} seconds` })
+    logger.info(`generated previewLink for ${processed} NFTs`, { duration: `${(end - begin) / 1000} seconds` })
   } catch (err) {
     logger.error(`Error in generatePreviewLink Job: ${err}`)
     Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
