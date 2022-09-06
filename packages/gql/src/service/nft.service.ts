@@ -11,7 +11,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename, fetchWithTimeout,
+  extensionFromFilename, fetchWithTimeout, generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -434,6 +434,7 @@ const uploadImageToS3 = async (
     let ext
     let imageKey
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
+      buffer = generateSVGFromBase64String(imageUrl)
       buffer = imageUrl
       ext = 'svg'
       imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'

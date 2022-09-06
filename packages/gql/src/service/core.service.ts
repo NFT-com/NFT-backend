@@ -1052,3 +1052,11 @@ export const fetchWithTimeout = async (
   return response
 }
 
+export const generateSVGFromBase64String = (
+  base64String: string,
+): string => {
+  return `<svg width="600" height="600"
+  xmlns="http://www.w3.org/2000/svg">
+  <image xmlns="http://www.w3.org/2000/svg" href="${base64String}" width="600" height="600"/>
+</svg>`
+}
