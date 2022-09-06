@@ -46,4 +46,7 @@ export class NFT extends BaseEntity {
   @Column({ nullable: true })
   previewLink: string
 
+  @Column({ type: 'varchar', nullable: true, length: 2000 })
+  previewLinkError: string
+
 }

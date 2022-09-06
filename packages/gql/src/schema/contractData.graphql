@@ -30,9 +30,9 @@ type NFTPortNFTMetadata {
 }
 
 type NFTPortNFTFileInfo {
-  height: Uint256,
-  width: Uint256,
-  file_size: Uint256
+  height: Int,
+  width: Int,
+  file_size: Int
 }
 
 type NFTPortContract {
@@ -58,29 +58,129 @@ type ContractSalesStatistics {
 type NFTPortStatistics {
   one_day_volume: Float,
   one_day_change: Float,
-  one_day_sales: Uint256,
+  one_day_sales: Int,
   one_day_average_price: Float,
   seven_day_volume: Float,
   seven_day_change: Float,
-  seven_day_sales: Uint256,
+  seven_day_sales: Int,
   seven_day_average_price: Float,
   thirty_day_volume: Float,
   thirty_day_change: Float,
-  thirty_day_sales: Uint256,
+  thirty_day_sales: Int,
   thirty_day_average_price: Float,
   total_volume: Float,
-  total_sales: Uint256,
-  total_supply: Uint256,
-  total_minted: Uint256,
-  num_owners: Uint256,
+  total_sales: Int,
+  total_supply: Int,
+  total_minted: Int,
+  num_owners: Int,
   average_price: Float,
   market_cap: Float,
   floor_price: Float,
   floor_price_historic_one_day: Float,
   floor_price_historic_seven_day: Float,
-  floor_price_historic_thirty_day: Uint256,
+  floor_price_historic_thirty_day: Float,
   updated_date: String
 }
+
+type NFTPortTxByContractPriceDetails {
+  asset_type: String
+  contract_address: String
+  price: String
+  price_usd: Float
+}
+
+type NFTPortTxByContractRoyalties {
+  account_address: String
+  royalty_share: String
+}
+
+type NFTPortTxByContractCreators {
+  account_address: String
+  creator_share: String
+}
+
+type NFTPortTxByContractNft {
+  contract_type: String
+  contract_address: String
+  token_id: String
+  metadata_url: String
+  total: Int
+  signatures: [String]
+  royalties: [NFTPortTxByContractRoyalties]
+  creators: [NFTPortTxByContractCreators]
+}
+
+type NFTPortTxByContractTransactions {
+  type: String
+  owner_address: String
+  contract_address: String
+  token_id: String
+  quantity: Int
+  transaction_hash: String
+  block_hash: String
+  block_number: Int
+  transaction_date: String
+  transfer_from: String
+  transfer_to: String
+  buyer_address: String
+  seller_address: String
+  marketplace: String
+  price_details: NFTPortTxByContractPriceDetails
+  nft: NFTPortTxByContractNft
+}
+
+type NFTPortTxByContract {
+  response: String
+  continuation: String
+  transactions: [NFTPortTxByContractTransactions]
+}
+
+type NFTPortTxByNFTPriceDetails {
+  asset_type: String
+  price: Float
+  price_usd: Float
+}
+
+type NFTPortTxByNFTListingDetails {
+  asset_type: String
+  contract_address: String
+  price: String
+  price_usd: Float
+}
+
+type NFTPortTxByNFTNft {
+  contract_type: String
+  contract_address: String
+  token_id: String
+}
+
+type NFTPortTxByNFTTransactions {
+  type: String
+  lister_address: String
+  quantity: Int
+  transaction_date: String
+  marketplace: String
+  owner_address: String
+  contract_address: String
+  token_id: String
+  transaction_hash: String
+  block_hash: String
+  block_number: Int
+  transfer_from: String
+  transfer_to: String
+  buyer_address: String
+  seller_address: String
+  price_details: NFTPortTxByNFTPriceDetails
+  listing_details: NFTPortTxByNFTListingDetails
+  nft: NFTPortTxByNFTNft
+}
+
+type NFTPortTxByNFT {
+  response: String
+  continuation: String
+  transactions: [NFTPortTxByNFTTransactions]
+}
+
 
 input NFTDetailInput {
   contractAddress: String!
@@ -92,7 +192,26 @@ input ContractSalesStatisticsInput {
   contractAddress: String!
 }
 
+input TransactionsByContractInput {
+  contractAddress: String!
+  chain: String # only ethereum allowed right now
+  type: [String] # Value in [transfer, mint, burn, sale, all]
+  continuation: String
+  pageSize: Int
+}
+
+input TransactionsByNFTInput {
+  contractAddress: String!
+  tokenId: String!
+  chain: String # only ethereum allowed right now
+  type: [String] # Value in [transfer, mint, burn, sale, all]
+  continuation: String
+  pageSize: Int
+}
+
 extend type Query {
   getNFTDetails(input: NFTDetailInput): NFTDetail
   getContractSalesStatistics(input: ContractSalesStatisticsInput): ContractSalesStatistics
+  getTxByContract(input: TransactionsByContractInput): NFTPortTxByContract
+  getTxByNFT(input: TransactionsByNFTInput): NFTPortTxByNFT
 }

@@ -556,7 +556,7 @@ const getMyGenesisKeys = async (
       const ipfsHash = strippedUri.split('/')[0]
 
       return keyIds.map(async (keyId) => {
-        const fullUrl = `https://nft-llc-3.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
+        const fullUrl = `https://nft-llc.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
 
         const cachedGkData = await cache.get(fullUrl)
         const metadata = cachedGkData ?? (await axios.get(fullUrl)).data
@@ -660,6 +660,36 @@ export const updateHidden = async (
   }
 }
 
+export const updateCache = async (
+  _: any,
+  args: gql.MutationUpdateCacheArgs,
+  ctx: Context,
+): Promise<gql.UpdateCacheOutput> => {
+  try {
+    const { chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('updateCache', { input: args?.input })
+    if (args?.input.expireSeconds) {
+      await cache.set(
+        args?.input.key,
+        args?.input.value,
+        'EX',
+        Number(args?.input.expireSeconds),
+      )
+    } else {
+      await cache.set(args?.input.key, args?.input.value)
+    }
+
+    return {
+      message: 'Cache value is updated.',
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateCache: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
@@ -681,6 +711,7 @@ export default {
     updateHideIgnored: combineResolvers(auth.isAuthenticated, updateHideIgnored),
     updateHidden: combineResolvers(auth.isAuthenticated, updateHidden),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
+    updateCache: combineResolvers(auth.isAuthenticated, updateCache),
   },
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),

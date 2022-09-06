@@ -1253,13 +1253,16 @@ const uploadMetadataImagesToS3 = async (
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('uploadMetadataImagesToS3', { count: args?.count })
   try {
-    const nfts = await repositories.nft.find({ where: { previewLink: null, chainId } })
+    const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null, chainId } })
     const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
     const count = Math.min(Number(args?.count), filteredNFTs.length)
     const slidedNFTs = filteredNFTs.slice(0, count)
     await Promise.allSettled(
       slidedNFTs.map(async (nft) => {
-        await saveNFTMetadataImageToS3(nft, repositories)
+        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
+        if (previewLink) {
+          await repositories.nft.updateOneById(nft.id, { previewLink })
+        }
       }),
     )
     logger.debug('Preview link of metadata image for NFTs are saved', { counts: slidedNFTs.length })
@@ -1267,6 +1270,7 @@ const uploadMetadataImagesToS3 = async (
       message: `Saved preview link of metadata image for ${slidedNFTs.length} NFTs`,
     }
   } catch (err) {
+    console.log(err)
     Sentry.captureMessage(`Error in uploadMetadataImagesToS3: ${err}`)
     return err
   }
