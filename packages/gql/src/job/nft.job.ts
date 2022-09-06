@@ -290,9 +290,8 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     // }
     const MAX_NFT_COUNTS = 15
     const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
-    const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
-    const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
-    const slicedNFTs = filteredNFTs.slice(0, length)
+    const length = Math.min(MAX_NFT_COUNTS, nfts.length)
+    const slicedNFTs = nfts.slice(0, length)
     logger.info('NFTs does not own preview links', { count: slicedNFTs.length })
 
     let processed = 0
@@ -303,6 +302,8 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
         logger.info(`SAVED nft job: ${i + 1} / ${slicedNFTs.length}`)
         processed += 1
         await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink })
+      } else {
+        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLinkError: 'undefined previewLink' })
       }
     }
     // await cache.set(key, JSON.stringify(true))

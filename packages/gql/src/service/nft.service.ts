@@ -433,18 +433,24 @@ const uploadImageToS3 = async (
     let buffer
     let ext
     let imageKey
+    if (!imageUrl) return undefined
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
       buffer = generateSVGFromBase64String(imageUrl)
       ext = 'svg'
       imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
     } else {
+      imageUrl = processIPFSURL(imageUrl)
+      logger.info(`parsed uploadImageToS3: ${imageUrl} ${filename} ${chainId} ${contract}`)
+
       // get buffer from imageURL, timeout is set to 30 seconds
       const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 30 })
-      logger.info('uploadImageToS3: post fetch buffer')
       buffer = await res.buffer()
+
       if (!buffer) return undefined
       ext = extensionFromFilename(filename)
+
       if (!ext) {
+        logger.info(`no extension: ${imageUrl} ${filename}`)
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           ext = 'svg'
           imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.svg'
@@ -486,10 +492,8 @@ export const saveNFTMetadataImageToS3 = async (
   repositories: db.Repository,
 ): Promise<string | undefined> => {
   try {
-    logger.info(`starting saveNFTMetadataImageToS3: ${nft.metadata.imageURL}`)
-    if (!nft.metadata.imageURL) return undefined
-    if (!nft.metadata.imageURL.length) return undefined
-    if (nft.metadata.imageURL.startsWith('https://cdn.nft.com')) {
+    logger.info(`starting saveNFTMetadataImageToS3: ${nft?.metadata?.imageURL}, id=${nft?.id}`)
+    if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.startsWith('https://cdn.nft.com')) {
       await repositories.nft.updateOneById(nft.id, {
         previewLink: nft.metadata.imageURL + '?width=600',
       })
@@ -497,24 +501,34 @@ export const saveNFTMetadataImageToS3 = async (
       return nft.metadata.imageURL + '?width=600'
     } else {
       let cdnPath
-      const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
-      logger.info(`nftPortResult: ${JSON.stringify(nftPortResult)}`)
-      // if image url from NFTPortResult is valid
-      if (nftPortResult && nftPortResult.cached_file_url && nftPortResult.cached_file_url.length) {
-        const filename = nftPortResult.cached_file_url.split('/').pop()
-        cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract)
+      initiateWeb3(nft.chainId)
+      const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
+      logger.info(`alchemy result: ${nftAlchemyResult ? JSON.stringify(nftAlchemyResult): 'undefined'}`)
+
+      if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
+        const filename = nftAlchemyResult.metadata.image.split('/').pop()
+        cdnPath = await uploadImageToS3(nftAlchemyResult.metadata.image, filename, nft.chainId, nft.contract)
       } else {
-        // we try to get url from metadata
-        if (nft.metadata.imageURL.indexOf('data:image/svg+xml') === 0) {
-          cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract)
+        const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
+        logger.info(`nftPortResult: ${nftPortResult ? JSON.stringify(nftPortResult) : 'undefined'}`)
+        // if image url from NFTPortResult is valid
+        if (nftPortResult && nftPortResult.cached_file_url && nftPortResult.cached_file_url.length) {
+          const filename = nftPortResult.cached_file_url.split('/').pop()
+          cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract)
         } else {
-          const imageUrl = processIPFSURL(nft.metadata.imageURL)
-          if (!imageUrl) return undefined
-          const filename = nft.metadata.imageURL.split('/').pop()
-          if (!filename) return undefined
-          cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract)
+          // we try to get url from metadata
+          if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.indexOf('data:image/svg+xml') === 0) {
+            cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract)
+          } else {
+            const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
+            if (!imageUrl) return undefined
+            const filename = nft.metadata.imageURL.split('/').pop()
+            if (!filename) return undefined
+            cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract)
+          }
         }
       }
+
       if (!cdnPath) return undefined
       logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
       return cdnPath + '?width=600'

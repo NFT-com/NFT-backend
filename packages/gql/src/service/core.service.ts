@@ -1008,6 +1008,8 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
     return 'image/webp'
   case 'avif':
     return 'image/avif'
+  case 'mp4':
+    return 'video/mp4'
   case 'bmp':
     return 'image/bmp'
   case 'tiff':
