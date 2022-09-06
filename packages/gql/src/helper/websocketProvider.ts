@@ -1,8 +1,7 @@
 import { BigNumber, ethers, providers, utils } from 'ethers'
 import { In, LessThan } from 'typeorm'
 
-import { _logger, contracts, db, defs, entity,helper } from '@nftcom/shared'
-import { lessThan } from '@nftcom/shared/helper/misc'
+import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
@@ -409,7 +408,7 @@ const keepAlive = ({
             where: {
               chainId: String(chainId),
               makerAddress: helper.checkSum(offerer),
-              nonce: lessThan(newCounter),
+              nonce: helper.lessThan(newCounter),
               exchange: defs.ExchangeType.OpenSea,
               protocol: defs.ProtocolType.Seaport,
               activity: {
