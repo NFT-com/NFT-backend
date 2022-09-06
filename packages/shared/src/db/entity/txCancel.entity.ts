@@ -29,6 +29,9 @@ export class TxCancel extends BaseEntity {
   @Column({ nullable: false })
   transactionHash: string
 
+  @Column({ nullable: false, default: '0' })
+  blockNumber: string
+
   @Column({ nullable: true })
   chainId: string
 

@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { ActivityType, CurrencyType, ExchangeType } from '@nftcom/shared/defs'
+import { ActivityType, ExchangeType } from '@nftcom/shared/defs'
 
 import { BaseEntity,TxActivity } from '.'
 
@@ -25,8 +25,8 @@ export class TxTransaction extends BaseEntity {
   @Column({ nullable: false })
   price: string
 
-  @Column({ type: 'enum', enum: CurrencyType, nullable: false })
-  currency: CurrencyType
+  @Column({ nullable: false })
+  currencyAddress: string
 
   @Column({ nullable: false })
   transactionHash: string

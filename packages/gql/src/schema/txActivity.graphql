@@ -83,6 +83,7 @@ type TxActivity {
   nftId: [String]!
   walletAddress: String!
   order: TxOrder
+  transaction: TxTransaction
   cancel: TxCancel
 }
 

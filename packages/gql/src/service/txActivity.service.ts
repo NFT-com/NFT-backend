@@ -11,18 +11,18 @@ type Order = SeaportOrder | LooksRareOrder
 const repositories = db.newRepositories()
 
 /**
- * orderActivityBuilder 
- * @param orderType
- * @param orderHash
- * @param walletId
- * @param chainId
- * @param contract
- * @param timestampFromSource
- * @param expirationFromSource
+ * activityBuilder 
+ * @param activityType - type of activity
+ * @param activityHash - orderHash for off-chain, txHash for on-chain
+ * @param walletId - maker address
+ * @param chainId - chainId
+ * @param contract - asset contract
+ * @param timestampFromSource - event creation timestamp of activity
+ * @param expirationFromSource - expiration or null for on-chain
  */
-const orderActivityBuilder = async (
-  orderType: defs.ActivityType,
-  orderHash: string,
+const activityBuilder = async (
+  activityType: defs.ActivityType,
+  activityHash: string,
   walletAddress: string,
   chainId: string,
   nftIds: string[],
@@ -31,8 +31,8 @@ const orderActivityBuilder = async (
   expirationFromSource: number,
 ): Promise<entity.TxActivity> => {
   let activity: entity.TxActivity
-  if (orderHash) {
-    activity = await repositories.txActivity.findOne({ where: { activityTypeId: orderHash } })
+  if (activityHash) {
+    activity = await repositories.txActivity.findOne({ where: { activityTypeId: activityHash } })
     if (activity) {
       activity.updatedAt = new Date()
       // in case contract is not present for default contracts
@@ -43,8 +43,8 @@ const orderActivityBuilder = async (
 
   // new activity
   activity = new entity.TxActivity()
-  activity.activityType = orderType
-  activity.activityTypeId = orderHash
+  activity.activityType = activityType
+  activity.activityTypeId = activityHash
   activity.read = false
   activity.timestamp = new Date(timestampFromSource * 1000) // convert to ms
   activity.expiration = new Date(expirationFromSource * 1000) // conver to ms
@@ -52,6 +52,7 @@ const orderActivityBuilder = async (
   activity.chainId = chainId
   activity.nftContract = helper.checkSum(contract)
   activity.nftId = [...nftIds]
+  activity.status = defs.ActivityStatus.Valid
 
   return activity
 }
@@ -163,7 +164,7 @@ export const orderEntityBuilder = async (
     break
   }
 
-  const activity: entity.TxActivity = await orderActivityBuilder(
+  const activity: entity.TxActivity = await activityBuilder(
     orderType,
     orderHash,
     walletAddress,
@@ -182,6 +183,115 @@ export const orderEntityBuilder = async (
     chainId,
     protocol,
     ...orderEntity,
+  }
+}
+
+/**
+ * transactionEntityBuilder 
+ * @param txType
+ * @param txHash
+ * @param chainId
+ * @param contract
+ * @param tokenId
+ */
+
+export const txEntityBuilder = async (
+  txType: defs.ActivityType,
+  txHash: string,
+  blockNumber: string,
+  chainId: string,
+  contract: string,
+  tokenId: string,
+  maker: string,
+  taker: string,
+  exchange: defs.ExchangeType,
+  price: string,
+  currency: string,
+  eventType: string,
+):  Promise<Partial<entity.TxTransaction>> => {
+  const checksumContract: string = helper.checkSum(contract)
+  const tokenIdHex: string = helper.bigNumberToHex(tokenId)
+  const nftIds: string[] = [`ethereum/${checksumContract}/${tokenIdHex}`]
+  const timestampFromSource: number = new Date().getTime()
+  const expirationFromSource = null
+
+  const activity: entity.TxActivity = await activityBuilder(
+    txType,
+    txHash,
+    maker,
+    chainId,
+    nftIds,
+    checksumContract,
+    timestampFromSource,
+    expirationFromSource,
+  )
+
+  return {
+    id: txHash,
+    activity,
+    exchange,
+    transactionType: txType,
+    price,
+    currencyAddress: helper.checkSum(currency),
+    transactionHash: txHash,
+    blockNumber,
+    nftContractAddress: checksumContract,
+    nftContractTokenId: tokenIdHex,
+    eventType,
+    maker: helper.checkSum(maker),
+    taker: helper.checkSum(taker),
+    chainId,
+  }
+}
+
+/**
+ * cancelEntityBuilder 
+ * @param txType
+ * @param txHash
+ * @param chainId
+ * @param contract
+ * @param nftIds
+ * @param maker
+ * @param exchange
+ * @param orderType
+ * @param orderHash
+ */
+
+export const cancelEntityBuilder = async (
+  txType: defs.ActivityType,
+  txHash: string,
+  blockNumber: string,
+  chainId: string,
+  contract: string,
+  nftIds: string[],
+  maker: string,
+  exchange: defs.ExchangeType,
+  orderType: defs.CancelActivityType,
+  orderHash: string,
+):  Promise<Partial<entity.TxCancel>> => {
+  const checksumContract: string = helper.checkSum(contract)
+  const timestampFromSource: number = new Date().getTime()
+  const expirationFromSource = null
+
+  const activity: entity.TxActivity = await activityBuilder(
+    txType,
+    txHash,
+    maker,
+    chainId,
+    nftIds,
+    checksumContract,
+    timestampFromSource,
+    expirationFromSource,
+  )
+
+  return {
+    id: txHash,
+    activity,
+    exchange,
+    foreignType: orderType,
+    foreignKeyId: orderHash,
+    blockNumber,
+    chainId,
   }
 }
 
