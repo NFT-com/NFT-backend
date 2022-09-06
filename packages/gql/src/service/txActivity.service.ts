@@ -140,7 +140,7 @@ export const orderEntityBuilder = async (
   case defs.ProtocolType.Seaport:
     seaportOrder = order as SeaportOrder
     orderHash = seaportOrder.order_hash
-    walletAddress = seaportOrder?.protocol_data?.parameters?.offerer
+    walletAddress = helper.checkSum(seaportOrder?.protocol_data?.parameters?.offerer)
     timestampFromSource = Number(seaportOrder?.protocol_data?.parameters?.startTime)
     expirationFromSource = Number(seaportOrder?.protocol_data?.parameters?.endTime)
     nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
@@ -152,7 +152,7 @@ export const orderEntityBuilder = async (
   case defs.ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
     orderHash = looksrareOrder.hash
-    walletAddress = looksrareOrder.signer
+    walletAddress = helper.checkSum(looksrareOrder.signer)
     tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
     timestampFromSource = Number(looksrareOrder.startTime)
     expirationFromSource =  Number(looksrareOrder.endTime)
