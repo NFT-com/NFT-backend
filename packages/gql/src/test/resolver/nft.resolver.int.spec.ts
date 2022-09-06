@@ -537,7 +537,7 @@ describe('nft resolver', () => {
 
     it('should return nfts for collections', async () => {
       const result = await testServer.executeOperation({
-        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress amountOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
+        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
         variables: {
           input: {
             collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
