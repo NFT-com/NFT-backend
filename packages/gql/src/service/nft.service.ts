@@ -439,6 +439,9 @@ const uploadImageToS3 = async (
       ext = 'svg'
       imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
     } else {
+      imageUrl = processIPFSURL(imageUrl)
+      logger.info(`parsed uploadImageToS3: ${imageUrl} ${filename} ${chainId} ${contract}`)
+      
       // get buffer from imageURL, timeout is set to 30 seconds
       const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 30 })
       logger.info('uploadImageToS3: post fetch buffer')
