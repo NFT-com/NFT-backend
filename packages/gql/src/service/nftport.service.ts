@@ -69,6 +69,7 @@ export const retrieveNFTDetailsNFTPort = async (
   chainId: string,
 ): Promise<NFTPortNFT | undefined> => {
   try {
+    logger.debug(`starting retrieveNFTDetailsNFTPort: ${contract} ${tokenId} ${chainId}`)
     const key = `NFTPORT_NFT_DETAIL_${chainId}_${contract}_${tokenId}`
     const cachedData = await cache.get(key)
     if (cachedData)
