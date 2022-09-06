@@ -89,6 +89,13 @@ jobs:
         file_name: packages/gql/.env
         fail_on_empty: false
 
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        aws-secret_access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     - name: Cache node modules
       id: cache-npm
       uses: actions/cache@v3

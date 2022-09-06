@@ -483,6 +483,7 @@ const uploadImageToS3 = async (
     const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
     return isRaw ? cdnPath : cdnPath + '?width=600'
   } catch (err) {
+    console.log(err)
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
     throw err
