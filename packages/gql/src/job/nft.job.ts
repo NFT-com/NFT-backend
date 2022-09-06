@@ -294,14 +294,15 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     const length = Math.min(MAX_NFT_COUNTS, filteredNFTs.length)
     const slicedNFTs = filteredNFTs.slice(0, length)
     logger.info('NFTs does not own preview links', { count: slicedNFTs.length })
-    await Promise.allSettled(
-      slicedNFTs.map(async (nft) => {
-        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
-        if (previewLink) {
-          await repositories.nft.updateOneById(nft.id, { previewLink })
-        }
-      }),
-    )
+
+    for (let i = 0; i < slicedNFTs.length; i++) {
+      logger.debug(`nft job: ${i + 1} / ${slicedNFTs.length}`)
+      const previewLink = await saveNFTMetadataImageToS3(slicedNFTs[i], repositories)
+      if (previewLink) {
+        logger.debug(`SAVED nft job: ${i + 1} / ${slicedNFTs.length}`)
+        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink })
+      }
+    }
     // await cache.set(key, JSON.stringify(true))
     const end = Date.now()
     logger.info('generated previewLink for NFTs', { duration: `${(end - begin) / 1000} seconds` })
