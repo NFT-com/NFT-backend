@@ -11,7 +11,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename, fetchWithTimeout,
+  extensionFromFilename, fetchWithTimeout, generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -434,17 +434,18 @@ const uploadImageToS3 = async (
     let ext
     let imageKey
     if (!imageUrl) return undefined
+    let isRaw = false
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
-      buffer = imageUrl
+      isRaw = true
+      buffer = generateSVGFromBase64String(imageUrl)
       ext = 'svg'
       imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
     } else {
       imageUrl = processIPFSURL(imageUrl)
       logger.info(`parsed uploadImageToS3: ${imageUrl} ${filename} ${chainId} ${contract}`)
-      
+
       // get buffer from imageURL, timeout is set to 30 seconds
       const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 30 })
-      logger.info('uploadImageToS3: post fetch buffer')
       buffer = await res.buffer()
 
       if (!buffer) return undefined
@@ -479,8 +480,8 @@ const uploadImageToS3 = async (
     await upload.done()
 
     logger.info(`finished uploading in uploadImageToS3: ${imageUrl} ${filename} ${chainId} ${contract}`)
-
-    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
+    return isRaw ? cdnPath : cdnPath + '?width=600'
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
@@ -529,10 +530,10 @@ export const saveNFTMetadataImageToS3 = async (
           }
         }
       }
-      
+
       if (!cdnPath) return undefined
-      logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath + '?width=600' })
-      return cdnPath + '?width=600'
+      logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath })
+      return cdnPath
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
