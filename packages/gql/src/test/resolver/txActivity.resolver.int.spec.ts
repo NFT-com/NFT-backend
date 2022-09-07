@@ -195,7 +195,6 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           chainId: '4',
-          includeExpired: true,
         } },
       })
   
@@ -230,7 +229,6 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
-          includeExpired: true,
         } },
       })
    
@@ -239,7 +237,7 @@ describe('transaction activity resolver', () => {
       expect(result.data.getActivities.totalItems).toBe(1)
     })
 
-    it('should not return expired items by default', async () => {
+    it('should not return expired items if ignoreExpired is provided', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -261,6 +259,7 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
+          ignoreExpired: true,
         } },
       })
    
