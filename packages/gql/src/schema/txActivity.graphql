@@ -161,7 +161,7 @@ input TxActivitiesInput {
   contract: String
   chainId: String
   skipRelations: Boolean
-  includeExpired: Boolean
+  ignoreExpired: Boolean
 }
 
 extend type Query {
