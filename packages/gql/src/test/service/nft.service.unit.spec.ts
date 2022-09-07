@@ -4,7 +4,7 @@ import { testDBConfig } from '@nftcom/gql/config'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import {
   downloadImageFromUbiquity,
-  getCollectionInfo,
+  getCollectionInfo, saveNFTMetadataImageToS3,
   updateENSNFTMedata,
 } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
@@ -141,6 +141,32 @@ describe('nft resolver', () => {
       expect(collectionInfo.collection.bannerUrl).toBeDefined()
       expect(collectionInfo.collection.logoUrl).toBeDefined()
       expect(collectionInfo.collection.description).toBeDefined()
+    })
+  })
+
+  describe('saveNFTMetadataImageToS3', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+        tokenId: '0x039ea3',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          imageURL: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InJlZCIvPjwvc3ZnPg==',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+    it('should return valid SVG path uploaded to S3', async () => {
+      const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
+      expect(cdnPath).toBeDefined()
     })
   })
 

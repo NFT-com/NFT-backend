@@ -537,7 +537,7 @@ describe('nft resolver', () => {
 
     it('should return nfts for collections', async () => {
       const result = await testServer.executeOperation({
-        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress nfts { id contract profileId preferredProfile { url } } } }',
+        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
         variables: {
           input: {
             collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
@@ -548,7 +548,8 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.nftsForCollections).toBeDefined()
-      expect(result.data.nftsForCollections.length).toBeGreaterThan(0)
+      expect(result.data.nftsForCollections.length).toEqual(1)
+      expect(result.data.nftsForCollections[0].actualNumberOfNFTs).toEqual(1)
       expect(result.data.nftsForCollections[0].collectionAddress).toEqual('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55')
       expect(result.data.nftsForCollections[0].nfts.length).toBeGreaterThan(0)
       expect(result.data.nftsForCollections[0].nfts[0].profileId).toBe(profileA.id)
@@ -821,7 +822,7 @@ describe('nft resolver', () => {
       const nfts = await repositories.nft.findAll()
       expect(nfts.length).toEqual(2)
       for (nft of nfts) {
-        expect(nft.previewLink).toBeDefined()
+        expect(nft.previewLink).not.toBeNull()
       }
     })
   })
