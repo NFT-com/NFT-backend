@@ -272,27 +272,10 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
     const begin = Date.now()
     logger.info('generate preview links', job.data)
 
-    // to avoid overlap of NFTs during cron jobs
-    // const key = 'generate_preview_link_available'
-    // const cachedData = await cache.get(key)
-    // if (cachedData === null) {
-    //   // if no cached flag value, we continue job and availability as false
-    //   await cache.set(key, JSON.stringify(false))
-    // } else {
-    //   const available = JSON.parse(cachedData) as boolean
-    //   logger.info(key, { availability: available })
-    //   // if flag is false, job should be suspended
-    //   if (!available) return
-    //   else {
-    //     // else if flag is true, we start new job and suspend execution of other jobs
-    //     await cache.set(key, JSON.stringify(false))
-    //   }
-    // }
     const MAX_NFT_COUNTS = 15
     const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
     const length = Math.min(MAX_NFT_COUNTS, nfts.length)
     const slicedNFTs = nfts.slice(0, length)
-    logger.info('NFTs does not own preview links', { count: slicedNFTs.length })
 
     let processed = 0
     for (let i = 0; i < slicedNFTs.length; i++) {
@@ -306,7 +289,6 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
         await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLinkError: 'undefined previewLink' })
       }
     }
-    // await cache.set(key, JSON.stringify(true))
     const end = Date.now()
     logger.info(`generated previewLink for ${processed} NFTs`, { duration: `${(end - begin) / 1000} seconds` })
   } catch (err) {
