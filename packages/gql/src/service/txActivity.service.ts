@@ -3,10 +3,25 @@ import { BigNumber } from 'ethers'
 import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
-import { SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
+import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
 
 type Order = SeaportOrder | LooksRareOrder
+
+interface TxSeaportProtocolData {
+  offer: SeaportOffer[]
+  consideration: SeaportConsideration[]
+}
+
+interface TxLooksrareProtocolData {
+  taker: string
+  maker: string
+  strategy: string
+  currency: string
+  collection: string
+}
+
+type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
 
 const repositories = db.newRepositories()
 
@@ -205,8 +220,8 @@ export const txEntityBuilder = async (
   maker: string,
   taker: string,
   exchange: defs.ExchangeType,
-  price: string,
-  currency: string,
+  protocol: defs.ProtocolType,
+  protocolData: TxProtocolData,
   eventType: string,
 ):  Promise<Partial<entity.TxTransaction>> => {
   const checksumContract: string = helper.checkSum(contract)
@@ -231,8 +246,8 @@ export const txEntityBuilder = async (
     activity,
     exchange,
     transactionType: txType,
-    price,
-    currencyAddress: helper.checkSum(currency),
+    protocol,
+    protocolData,
     transactionHash: txHash,
     blockNumber,
     nftContractAddress: checksumContract,
@@ -290,6 +305,7 @@ export const cancelEntityBuilder = async (
     exchange,
     foreignType: orderType,
     foreignKeyId: orderHash,
+    transactionHash: txHash,
     blockNumber,
     chainId,
   }

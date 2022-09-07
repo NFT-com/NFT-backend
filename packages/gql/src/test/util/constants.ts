@@ -1,6 +1,6 @@
 import { DeepPartial } from 'typeorm'
 
-import { ActivityStatus, NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import { ActivityStatus, NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, ProtocolData, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
@@ -249,4 +249,74 @@ export const testExistingActivity: TxActivity = {
     orderType: ActivityType.Listing,
     protocol: ProtocolType.LooksRare,
   },
+}
+
+export const seaportProtocolData: ProtocolData = {
+  parameters: {
+    offerer: '0x86c8203fe8f7d60afaa0bdda4d92cc5abd901578',
+    offer: [
+      {
+        itemType: 2,
+        token: '0x41da98f744BE9ae23c425147289db704Db942417',
+        identifierOrCriteria: '317',
+        startAmount: '1',
+        endAmount: '1',
+      },
+    ],
+    consideration: [
+      {
+        itemType: 0,
+        token: '0x0000000000000000000000000000000000000000',
+        identifierOrCriteria: '0',
+        startAmount: '21060000000000000',
+        endAmount: '21060000000000000',
+        recipient: '0x86C8203Fe8F7d60Afaa0bddA4d92cc5abd901578',
+      },
+      {
+        itemType: 0,
+        token: '0x0000000000000000000000000000000000000000',
+        identifierOrCriteria: '0',
+        startAmount: '585000000000000',
+        endAmount: '585000000000000',
+        recipient: '0x0000a26b00c1F0DF003000390027140000fAa719',
+      },
+      {
+        itemType: 0,
+        token: '0x0000000000000000000000000000000000000000',
+        identifierOrCriteria: '0',
+        startAmount: '1755000000000000',
+        endAmount: '1755000000000000',
+        recipient: '0xDC6A9CE51a4e3F82434DAF0AB953733A3cf99419',
+      },
+    ],
+    startTime: '1662147396',
+    endTime: '1664739396',
+    orderType: 2,
+    zone: '0x004C00500000aD104D7DBd00e3ae0A5C00560C00',
+    zoneHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    salt: '20355692518651699',
+    conduitKey: '0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000',
+    totalOriginalConsiderationItems: 3,
+    counter: 1,
+  },
+  signature: '0x13cb5579ce2c24c79316577862338fca160b85bf49a520c1cb4288ba93d9c0094bca5295861751c76fe847c2ccad572b8e693cbcb94a9146e930243823032f141b',
+}
+
+export const looksrareProtocolData: ProtocolData = {
+  isOrderAsk: true,
+  signer: '0x86C8203Fe8F7d60Afaa0bddA4d92cc5abd901578',
+  collectionAddress: '0xEc8d2c7767c1aE1c8f3D34ED380B9344D59096a1',
+  price: '1000000000000000',
+  tokenId: '605',
+  amount: '1',
+  strategy: '0x56244Bb70CbD3EA9Dc8007399F61dFC065190031',
+  currencyAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+  nonce: '20',
+  startTime: '1662157499',
+  endTime: '1662243899',
+  minPercentageToAsk: '9800',
+  params: '0x',
+  v: '27',
+  r: '0x0769c55fdc97d9324bb766d44dc2cff34062abf3fc0394c2846434f6391a2240',
+  s: '0x097c479c4f7aecd81de313d6edd22e0a52596baa8f8239126a4f842b228d3feb',
 }

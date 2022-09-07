@@ -401,8 +401,8 @@ const keepAlive = ({
               maker,
               taker,
               defs.ExchangeType.OpenSea,
-              order.protocolData?.price,
-              order.protocolData?.currencyAddress,
+              order.protocol,
+              order.protocolData,
               LooksrareEventName.TakerBid,
             )
             await repositories.txTransaction.save(newTx)
@@ -438,7 +438,6 @@ const keepAlive = ({
 
     provider.on(openseaFilter, async (e) => {
       const evt = openseaSeaportInterface.parseLog(e)
-
       if(evt.name === OSSeaportEventName.OrderCancelled) {
         const [orderHash, offerer, zone] = evt.args
         try {
@@ -469,7 +468,7 @@ const keepAlive = ({
               order.activity.nftContract,
               order.activity.nftId,
               order.makerAddress,
-              defs.ExchangeType.LooksRare,
+              defs.ExchangeType.OpenSea,
               order.orderType as defs.CancelActivityType,
               order.id,
             )
@@ -513,7 +512,7 @@ const keepAlive = ({
                 order.activity.nftContract,
                 order.activity.nftId,
                 order.makerAddress,
-                defs.ExchangeType.LooksRare,
+                defs.ExchangeType.OpenSea,
                 order.orderType as defs.CancelActivityType,
                 order.id,
               ))
@@ -530,7 +529,7 @@ const keepAlive = ({
           logger.error(`Evt: ${OSSeaportEventName.CounterIncremented} -- Err: ${err}`)
         }
       } else if (evt.name === OSSeaportEventName.OrderFulfilled) {
-        const [orderHash, offerer, zone, recipient] = evt.args
+        const [orderHash, offerer, zone, recipient, offer, consideration] = evt.args
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
             relations: ['activity'],
@@ -551,7 +550,6 @@ const keepAlive = ({
             order.activity.status = defs.ActivityStatus.Executed
             order.takerAddress = helper.checkSum(recipient)
             await repositories.txOrder.save(order)
-
             // new transaction
             const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
               defs.ActivityType.Sale,
@@ -559,13 +557,16 @@ const keepAlive = ({
               e.blockNumber,
               chainId.toString(),
               order.activity.nftContract,
-              order.protocolData?.tokenId,
+              order.protocolData?.parameters?.offer?.[0]?.identifierOrCriteria,
               offerer,
               recipient,
               defs.ExchangeType.OpenSea,
-              order.protocolData?.price,
-              order.protocolData?.currencyAddress,
-              LooksrareEventName.TakerBid,
+              order.protocol,
+              {
+                offer,
+                consideration,
+              },
+              OSSeaportEventName.OrderFulfilled,
             )
             await repositories.txTransaction.save(newTx)
             logger.log(`

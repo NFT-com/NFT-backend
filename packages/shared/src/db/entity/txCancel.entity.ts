@@ -14,7 +14,10 @@ export class TxCancel extends BaseEntity {
       cascade: ['insert', 'update'],
     },
   )
-  @JoinColumn()
+  @JoinColumn({
+    name: 'activityId',
+    referencedColumnName: 'id',
+  })
   activity: TxActivity
 
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })

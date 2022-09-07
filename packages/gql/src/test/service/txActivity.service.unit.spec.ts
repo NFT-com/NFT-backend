@@ -86,9 +86,15 @@ describe('txActivity service', () => {
         '123',
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-        ExchangeType.OpenSea,
-        '0',
-        '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+        ExchangeType.LooksRare,
+        ProtocolType.LooksRare,
+        {
+          taker: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+          maker: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+          currency: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+          strategy: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+          collection: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+        },
         'TakerBid',
       )
 
@@ -118,9 +124,12 @@ describe('txActivity service', () => {
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         ExchangeType.OpenSea,
-        '0',
-        '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-        'TakerBid',
+        ProtocolType.Seaport,
+        {
+          offer: [],
+          consideration: [],
+        },
+        'OrderCancelled',
       )
 
       expect(tx.activity.id).toBe(savedActivity.id)
