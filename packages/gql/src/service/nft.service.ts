@@ -19,7 +19,6 @@ import {
 } from '@nftcom/gql/service/core.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import { getUbiquity } from '@nftcom/gql/service/ubiquity.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -420,6 +419,7 @@ const getNFTMetaData = async (
  * @param filename
  * @param chainId
  * @param contract
+ * @param uploadPath
  */
 
 const uploadImageToS3 = async (
@@ -427,6 +427,7 @@ const uploadImageToS3 = async (
   filename: string,
   chainId: string,
   contract: string,
+  uploadPath: string,
 ): Promise<string | undefined> => {
   try {
     let buffer
@@ -438,7 +439,7 @@ const uploadImageToS3 = async (
       isRaw = true
       buffer = generateSVGFromBase64String(imageUrl)
       ext = 'svg'
-      imageKey = `nfts/${chainId}/` + Date.now() + '-' + contract + '.svg'
+      imageKey = uploadPath + Date.now() + '-' + contract + '.svg'
     } else {
       imageUrl = processIPFSURL(imageUrl)
 
@@ -452,22 +453,22 @@ const uploadImageToS3 = async (
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           ext = 'svg'
-          imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.svg'
+          imageKey = uploadPath + Date.now() + '-' + filename + '.svg'
         } else if (imageUrl.includes('https://arweave.net/')) {
           // Size of augmented reality images are huge, so we keep them as raw data
           isRaw = true
           ext = 'mp4'
-          imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.mp4'
+          imageKey = uploadPath + Date.now() + '-' + filename + '.mp4'
         } else {
           ext = 'png'
-          imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.png'
+          imageKey = uploadPath + Date.now() + '-' + filename + '.png'
         }
       } else {
         if (ext === 'mp4') {
           // we keep mp4 files as raw data
           isRaw = true
         }
-        imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename
+        imageKey = uploadPath + Date.now() + '-' + filename
       }
     }
 
@@ -509,26 +510,27 @@ export const saveNFTMetadataImageToS3 = async (
       let cdnPath
       initiateWeb3(nft.chainId)
       const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
+      const bucket = `nfts/${nft.chainId}/`
 
       if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
         const filename = nftAlchemyResult.metadata.image.split('/').pop()
-        cdnPath = await uploadImageToS3(nftAlchemyResult.metadata.image, filename, nft.chainId, nft.contract)
+        cdnPath = await uploadImageToS3(nftAlchemyResult.metadata.image, filename, nft.chainId, nft.contract, bucket)
       } else {
         const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
         // if image url from NFTPortResult is valid
         if (nftPortResult && nftPortResult.cached_file_url && nftPortResult.cached_file_url.length) {
           const filename = nftPortResult.cached_file_url.split('/').pop()
-          cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract)
+          cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract, bucket)
         } else {
           // we try to get url from metadata
           if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.indexOf('data:image/svg+xml') === 0) {
-            cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract)
+            cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, bucket)
           } else {
             const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
             if (!imageUrl) return undefined
             const filename = nft.metadata.imageURL.split('/').pop()
             if (!filename) return undefined
-            cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract)
+            cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, bucket)
           }
         }
       }
@@ -1310,58 +1312,54 @@ export const getCollectionInfo = async (
         // await seService.indexCollections([collection])
       }
 
+      let nftPortResults = undefined
+      const nft = await repositories.nft.findOne({
+        where: {
+          contract: ethers.utils.getAddress(contract),
+          chainId,
+        },
+      })
+
+      if (!nft) {
+        return {
+          collection,
+          nftPortResults,
+        }
+      }
+
       let bannerUrl = 'https://cdn.nft.com/collectionBanner_default.png'
       let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
       let description = 'placeholder collection description text'
-      const ubiquityFolder = 'https://ubiquity.api.blockdaemon.com/v1/nft/media/ethereum/mainnet/'
-      let ubiquityResults = undefined
-      if (chainId === '1') {
-        // check if banner or logo url we saved are incorrect images
-        let bannerExt
-        let bannerContentType
-        let logoExt
-        let logoContentType
-        if (collection.bannerUrl) {
-          bannerExt = extensionFromFilename(collection.bannerUrl)
-          bannerContentType = contentTypeFromExt(bannerExt)
-        }
-        if (collection.logoUrl) {
-          logoExt = extensionFromFilename(collection.logoUrl)
-          logoContentType = contentTypeFromExt(logoExt)
-        }
-        // we won't call Ubiquity api so often because we have a limited number of calls to Ubiquity
-        if (!collection.bannerUrl || !collection.logoUrl || !collection.description
-          || !bannerContentType || !logoContentType
-          || collection.bannerUrl === bannerUrl || collection.logoUrl === logoUrl
-        ) {
-          ubiquityResults = await getUbiquity(contract, chainId)
-          if (ubiquityResults) {
-            const uploadPath = `collections/${chainId}/`
-            // check if banner url from Ubiquity is correct one
-            if (ubiquityResults.collection.banner !== ubiquityFolder) {
-              const banner = await downloadAndUploadImageToS3(
-                chainId,
-                ubiquityResults.collection.banner,
-                'banner',
-                uploadPath,
-              )
-              bannerUrl = banner ? banner : bannerUrl
-            }
-            // check if logo url from Ubiquity is correct one
-            if (ubiquityResults.collection.logo !== ubiquityFolder) {
-              const logo = await downloadAndUploadImageToS3(
-                chainId,
-                ubiquityResults.collection.logo,
-                'logo',
-                uploadPath,
-              )
-              logoUrl = logo ? logo : logoUrl
-            }
+      const uploadPath = `collections/${chainId}/`
 
-            if (ubiquityResults.collection.description) {
-              description = ubiquityResults.collection.description.length ?
-                ubiquityResults.collection.description : description
-            }
+      const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
+      if (details) {
+        if (details.contract) {
+          if (details.contract.metadata.cached_banner_url && details.contract.metadata.cached_banner_url.length) {
+            const filename = details.contract.metadata.cached_banner_url.split('/').pop()
+            const banner = await uploadImageToS3(
+              details.contract.metadata.cached_banner_url,
+              filename,
+              chainId,
+              contract,
+              uploadPath,
+            )
+            bannerUrl = banner ? banner : bannerUrl
+          }
+          if (details.contract.metadata.cached_thumbnail_url && details.contract.metadata.cached_thumbnail_url.length) {
+            const filename = details.contract.metadata.cached_thumbnail_url.split('/').pop()
+            const logo = await uploadImageToS3(
+              details.contract.metadata.cached_thumbnail_url,
+              filename,
+              chainId,
+              contract,
+              uploadPath,
+            )
+            logoUrl = logo ? logo : logoUrl
+          }
+          if (details.contract.metadata.description) {
+            description = details.contract.metadata.description.length ?
+              details.contract.metadata.description : description
           }
           const updatedCollection = await repositories.collection.updateOneById(collection.id, {
             bannerUrl,
@@ -1373,6 +1371,13 @@ export const getCollectionInfo = async (
             ethers.utils.getAddress(contract),
             chainId,
           )
+        }
+        nftPortResults = {
+          name: details.contract.name,
+          symbol: details.contract.symbol,
+          bannerUrl: details.contract.metadata.cached_banner_url,
+          logoUrl: details.contract.metadata.cached_thumbnail_url,
+          description: details.contract.metadata.description,
         }
       } else {
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
@@ -1392,7 +1397,7 @@ export const getCollectionInfo = async (
 
       const returnObject = {
         collection,
-        ubiquityResults,
+        nftPortResults,
       }
 
       await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))

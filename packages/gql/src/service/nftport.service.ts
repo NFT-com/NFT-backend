@@ -15,6 +15,16 @@ export interface NFTPortNFT {
   metadata_url?: string
   cached_file_url?: string
   status_message?: string
+  contract: {
+    name?: string
+    symbol?: string
+    type?: string
+    metadata: {
+      description?: string
+      cached_thumbnail_url?: string
+      cached_banner_url?: string
+    }
+  }
 }
 const  getNFTPortInterceptor = (
   baseURL: string,
