@@ -510,27 +510,39 @@ export const saveNFTMetadataImageToS3 = async (
       let cdnPath
       initiateWeb3(nft.chainId)
       const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
-      const bucket = `nfts/${nft.chainId}/`
+      const uploadPath = `nfts/${nft.chainId}/`
 
       if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
         const filename = nftAlchemyResult.metadata.image.split('/').pop()
-        cdnPath = await uploadImageToS3(nftAlchemyResult.metadata.image, filename, nft.chainId, nft.contract, bucket)
+        cdnPath = await uploadImageToS3(
+          nftAlchemyResult.metadata.image,
+          filename,
+          nft.chainId,
+          nft.contract,
+          uploadPath,
+        )
       } else {
         const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
         // if image url from NFTPortResult is valid
-        if (nftPortResult && nftPortResult.cached_file_url && nftPortResult.cached_file_url.length) {
-          const filename = nftPortResult.cached_file_url.split('/').pop()
-          cdnPath = await uploadImageToS3(nftPortResult.cached_file_url, filename, nft.chainId, nft.contract, bucket)
+        if (nftPortResult && nftPortResult.nft.cached_file_url && nftPortResult.nft.cached_file_url.length) {
+          const filename = nftPortResult.nft.cached_file_url.split('/').pop()
+          cdnPath = await uploadImageToS3(
+            nftPortResult.nft.cached_file_url,
+            filename,
+            nft.chainId,
+            nft.contract,
+            uploadPath,
+          )
         } else {
           // we try to get url from metadata
           if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.indexOf('data:image/svg+xml') === 0) {
-            cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, bucket)
+            cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, uploadPath)
           } else {
             const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
             if (!imageUrl) return undefined
             const filename = nft.metadata.imageURL.split('/').pop()
             if (!filename) return undefined
-            cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, bucket)
+            cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, uploadPath)
           }
         }
       }
@@ -1299,6 +1311,14 @@ export const getCollectionInfo = async (
         contract,
         chainId,
       )
+      let nftPortResults = undefined
+
+      if (!collection) {
+        return {
+          collection,
+          nftPortResults,
+        }
+      }
 
       if (collection && (
         collection.deployer == null ||
@@ -1312,7 +1332,6 @@ export const getCollectionInfo = async (
         // await seService.indexCollections([collection])
       }
 
-      let nftPortResults = undefined
       const nft = await repositories.nft.findOne({
         where: {
           contract: ethers.utils.getAddress(contract),
@@ -1373,11 +1392,11 @@ export const getCollectionInfo = async (
           )
         }
         nftPortResults = {
-          name: details.contract.name,
-          symbol: details.contract.symbol,
-          bannerUrl: details.contract.metadata.cached_banner_url,
-          logoUrl: details.contract.metadata.cached_thumbnail_url,
-          description: details.contract.metadata.description,
+          name: details.contract?.name,
+          symbol: details.contract?.symbol,
+          bannerUrl: details.contract?.metadata?.cached_banner_url,
+          logoUrl: details.contract?.metadata?.cached_thumbnail_url,
+          description: details.contract?.metadata?.description,
         }
       } else {
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {

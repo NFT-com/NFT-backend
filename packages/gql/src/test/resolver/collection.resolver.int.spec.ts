@@ -267,6 +267,34 @@ describe('collection resolver', () => {
         chainId,
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
       })
+
+      await repositories.nft.save({
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x086a75',
+        metadata: {
+          name: 'chunks',
+          description: 'NFT.com profile for chunks',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId,
+      })
+
+      await repositories.nft.save({
+        contract: '0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77',
+        tokenId: '0x01',
+        metadata: {
+          name: 'chunks',
+          description: 'NFT.com profile for chunks',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId,
+      })
     })
     afterAll(async () => {
       await clearDB(repositories)
