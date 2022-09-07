@@ -444,8 +444,8 @@ const uploadImageToS3 = async (
       imageUrl = processIPFSURL(imageUrl)
       logger.info(`parsed uploadImageToS3: ${imageUrl} ${filename} ${chainId} ${contract}`)
 
-      // get buffer from imageURL, timeout is set to 30 seconds
-      const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 30 })
+      // get buffer from imageURL, timeout is set to 60 seconds
+      const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 60 })
       buffer = await res.buffer()
 
       if (!buffer) return undefined
@@ -456,11 +456,20 @@ const uploadImageToS3 = async (
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           ext = 'svg'
           imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.svg'
+        } else if (imageUrl.includes('https://arweave.net/')) {
+          // Size of augmented reality images are huge, so we keep them as raw data
+          isRaw = true
+          ext = 'mp4'
+          imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.mp4'
         } else {
           ext = 'png'
           imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename + '.png'
         }
       } else {
+        if (ext === 'mp4') {
+          // we keep mp4 files as raw data
+          isRaw = true
+        }
         imageKey = `nfts/${chainId}/` + Date.now() + '-' + filename
       }
     }

@@ -38,7 +38,7 @@ const repositories = db.newRepositories()
 
 let connection
 let testServer
-let nftA
+let nftA, nftB
 
 describe('nft resolver', () => {
   beforeAll(async () => {
@@ -160,12 +160,31 @@ describe('nft resolver', () => {
         userId: testMockUser.id,
         walletId: testMockWallet.id,
       })
+
+      nftB = await repositories.nft.save({
+        contract: '0x71276AFD922f48721035b2B112413215a2627F6E',
+        tokenId: '0xf7',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          imageURL: 'ar://y47vMQxxY00-r5TYLyOuvwPXxsO-AdvOlGAyNmOtRzw',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
     })
     afterAll(async () => {
       await clearDB(repositories)
     })
     it('should return valid SVG path uploaded to S3', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
+      expect(cdnPath).toBeDefined()
+    })
+    it('should return valid mp4 path uploaded to S3', async () => {
+      const cdnPath = await saveNFTMetadataImageToS3(nftB, repositories)
       expect(cdnPath).toBeDefined()
     })
   })

@@ -1034,6 +1034,8 @@ export const processIPFSURL = (image: string): string => {
   } else if (image.indexOf('pinata.cloud/ipfs/') !== -1) {
     const index = image.indexOf('pinata.cloud/ipfs/')
     return prefix + image.slice(index + 18)
+  } else if (image.indexOf('ar://') === 0) {
+    return 'https://arweave.net/' + image.slice(5)
   } else {
     return image
   }
