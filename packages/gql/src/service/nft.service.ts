@@ -1354,7 +1354,7 @@ export const getCollectionInfo = async (
       const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
       if (details) {
         if (details.contract) {
-          if (details.contract.metadata.cached_banner_url && details.contract.metadata.cached_banner_url.length) {
+          if (details.contract.metadata?.cached_banner_url && details.contract.metadata?.cached_banner_url?.length) {
             const filename = details.contract.metadata.cached_banner_url.split('/').pop()
             const banner = await uploadImageToS3(
               details.contract.metadata.cached_banner_url,
@@ -1365,7 +1365,9 @@ export const getCollectionInfo = async (
             )
             bannerUrl = banner ? banner : bannerUrl
           }
-          if (details.contract.metadata.cached_thumbnail_url && details.contract.metadata.cached_thumbnail_url.length) {
+          if (details.contract.metadata?.cached_thumbnail_url &&
+            details.contract.metadata?.cached_thumbnail_url?.length
+          ) {
             const filename = details.contract.metadata.cached_thumbnail_url.split('/').pop()
             const logo = await uploadImageToS3(
               details.contract.metadata.cached_thumbnail_url,
@@ -1376,8 +1378,8 @@ export const getCollectionInfo = async (
             )
             logoUrl = logo ? logo : logoUrl
           }
-          if (details.contract.metadata.description) {
-            description = details.contract.metadata.description.length ?
+          if (details.contract.metadata?.description) {
+            description = details.contract.metadata?.description?.length ?
               details.contract.metadata.description : description
           }
           const updatedCollection = await repositories.collection.updateOneById(collection.id, {
