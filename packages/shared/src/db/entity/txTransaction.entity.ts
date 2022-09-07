@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { ActivityType, CurrencyType, ExchangeType } from '@nftcom/shared/defs'
+import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseEntity,TxActivity } from '.'
 
@@ -8,12 +8,16 @@ import { BaseEntity,TxActivity } from '.'
 export class TxTransaction extends BaseEntity {
 
   @OneToOne(() => TxActivity,
+    (activity) =>  activity.activityTypeId,
     {
       nullable: false,
       cascade: ['insert', 'update'],
     },
   )
-  @JoinColumn()
+  @JoinColumn({
+    name: 'activityId',
+    referencedColumnName: 'id',
+  })
   activity: TxActivity
 
   @Column({ type: 'enum', enum: ExchangeType, nullable: false })
@@ -22,13 +26,13 @@ export class TxTransaction extends BaseEntity {
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   transactionType: ActivityType
 
-  @Column({ nullable: false })
-  price: string
+  @Column({ type: 'enum', enum: ProtocolType, nullable: false })
+  protocol: ProtocolType
 
-  @Column({ type: 'enum', enum: CurrencyType, nullable: false })
-  currency: CurrencyType
+  @Column({ type: 'json' })
+  protocolData: any
 
-  @Column({ nullable: false })
+  @Column({ unique: true, nullable: false })
   transactionHash: string
 
   @Column({ nullable: false })
