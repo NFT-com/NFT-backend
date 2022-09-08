@@ -1393,17 +1393,17 @@ export const getCollectionInfo = async (
             description = details.contract.metadata?.description?.length ?
               details.contract.metadata.description : description
           }
-          const updatedCollection = await repositories.collection.updateOneById(collection.id, {
-            bannerUrl,
-            logoUrl,
-            description,
-          })
-          await seService.indexCollections([updatedCollection])
-          collection = await repositories.collection.findByContractAddress(
-            ethers.utils.getAddress(contract),
-            chainId,
-          )
         }
+        const updatedCollection = await repositories.collection.updateOneById(collection.id, {
+          bannerUrl,
+          logoUrl,
+          description,
+        })
+        await seService.indexCollections([updatedCollection])
+        collection = await repositories.collection.findByContractAddress(
+          ethers.utils.getAddress(contract),
+          chainId,
+        )
         nftPortResults = {
           name: details.contract?.name,
           symbol: details.contract?.symbol,
