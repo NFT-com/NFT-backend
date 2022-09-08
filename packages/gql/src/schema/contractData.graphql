@@ -181,6 +181,28 @@ type NFTPortTxByNFT {
   transactions: [NFTPortTxByNFTTransactions]
 }
 
+type TransactionSales {
+  transactionHash: String,
+  priceUSD: Float,
+  date: DateTime,
+  transaction: TransactionSalesTx
+}
+
+type TransactionSalesTx {
+  type: String
+  lister_address: String
+  quantity: Int
+  transaction_date: String
+  marketplace: String
+  transaction_hash: String
+  block_hash: String
+  block_number: Int
+  buyer_address: String
+  seller_address: String
+  price_details: NFTPortTxByContractPriceDetails
+  nft: NFTPortTxByNFTNft
+}
+
 
 input NFTDetailInput {
   contractAddress: String!
@@ -209,9 +231,16 @@ input TransactionsByNFTInput {
   pageSize: Int
 }
 
+input TransactionSalesInput {
+  contractAddress: Address!
+  dateRange: String
+  tokenId: String
+}
+
 extend type Query {
   getNFTDetails(input: NFTDetailInput): NFTDetail
   getContractSalesStatistics(input: ContractSalesStatisticsInput): ContractSalesStatistics
   getTxByContract(input: TransactionsByContractInput): NFTPortTxByContract
   getTxByNFT(input: TransactionsByNFTInput): NFTPortTxByNFT
+  getSales(input: TransactionSalesInput): [TransactionSales]
 }
