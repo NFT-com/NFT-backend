@@ -216,7 +216,6 @@ describe('profile resolver', () => {
       for (let i = 0; i < 500; i++) {
         description += 'a'
       }
-      mockUpdateProfileInput.description = description
       const result = await testServer.executeOperation({
         query: `mutation UpdateProfile($input: UpdateProfileInput!) {
           updateProfile(input: $input) {
@@ -225,7 +224,13 @@ describe('profile resolver', () => {
             description
           }
         }`,
-        variables: { input: mockUpdateProfileInput },
+        variables: {
+          input: {
+            description,
+            id: mockUpdateProfileInput.id,
+            deployedContractsVisible: true,
+          },
+        },
       })
       expect(result?.errors.length).toBeGreaterThan(0)
       expect(result?.errors[0].errorKey).toEqual('PROFILE_DESCRIPTION_LENGTH')
