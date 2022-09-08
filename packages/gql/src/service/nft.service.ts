@@ -96,6 +96,11 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
+type UploadedImage = {
+  cdnPath: string
+  isRaw: boolean
+}
+
 export const initiateWeb3 = (chainId?: string): void => {
   chainId = chainId || process.env.CHAIN_ID // attach default value
   const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
@@ -428,7 +433,7 @@ const uploadImageToS3 = async (
   chainId: string,
   contract: string,
   uploadPath: string,
-): Promise<string | undefined> => {
+): Promise<UploadedImage | undefined> => {
   try {
     let buffer
     let ext
@@ -488,7 +493,10 @@ const uploadImageToS3 = async (
 
     logger.info(`finished uploading in uploadImageToS3: ${imageUrl}`)
     const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-    return isRaw ? cdnPath : cdnPath + '?width=600'
+    return {
+      cdnPath,
+      isRaw,
+    }
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
@@ -507,14 +515,14 @@ export const saveNFTMetadataImageToS3 = async (
       })
       return nft.metadata.imageURL + '?width=600'
     } else {
-      let cdnPath
+      let uploadedImage
       initiateWeb3(nft.chainId)
       const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
       const uploadPath = `nfts/${nft.chainId}/`
 
       if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
         const filename = nftAlchemyResult.metadata.image.split('/').pop()
-        cdnPath = await uploadImageToS3(
+        uploadedImage = await uploadImageToS3(
           nftAlchemyResult.metadata.image,
           filename,
           nft.chainId,
@@ -526,7 +534,7 @@ export const saveNFTMetadataImageToS3 = async (
         // if image url from NFTPortResult is valid
         if (nftPortResult && nftPortResult.nft.cached_file_url && nftPortResult.nft.cached_file_url.length) {
           const filename = nftPortResult.nft.cached_file_url.split('/').pop()
-          cdnPath = await uploadImageToS3(
+          uploadedImage = await uploadImageToS3(
             nftPortResult.nft.cached_file_url,
             filename,
             nft.chainId,
@@ -536,20 +544,23 @@ export const saveNFTMetadataImageToS3 = async (
         } else {
           // we try to get url from metadata
           if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.indexOf('data:image/svg+xml') === 0) {
-            cdnPath = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, uploadPath)
+            uploadedImage = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, uploadPath)
           } else {
             const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
             if (!imageUrl) return undefined
             const filename = nft.metadata.imageURL.split('/').pop()
             if (!filename) return undefined
-            cdnPath = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, uploadPath)
+            uploadedImage = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, uploadPath)
           }
         }
       }
 
-      if (!cdnPath) return undefined
-      logger.info(`previewLink for NFT ${ nft.id } was generated`, { previewLink: cdnPath })
-      return cdnPath
+      if (!uploadedImage) return undefined
+      logger.info(`previewLink for NFT ${ nft.id } was generated`,
+        {
+          previewLink: uploadedImage.isRaw ? uploadedImage : uploadedImage + '?width=600',
+        })
+      return uploadedImage.isRaw ? uploadedImage : uploadedImage + '?width=600'
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
@@ -1363,7 +1374,7 @@ export const getCollectionInfo = async (
               contract,
               uploadPath,
             )
-            bannerUrl = banner ? banner : bannerUrl
+            bannerUrl = banner ? banner.cdnPath : bannerUrl
           }
           if (details.contract.metadata?.cached_thumbnail_url &&
             details.contract.metadata?.cached_thumbnail_url?.length
@@ -1376,7 +1387,7 @@ export const getCollectionInfo = async (
               contract,
               uploadPath,
             )
-            logoUrl = logo ? logo : logoUrl
+            logoUrl = logo ? logo.cdnPath : logoUrl
           }
           if (details.contract.metadata?.description) {
             description = details.contract.metadata?.description?.length ?
