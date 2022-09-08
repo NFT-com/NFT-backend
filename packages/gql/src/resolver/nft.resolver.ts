@@ -1065,20 +1065,25 @@ export const refreshNFTOrder = async (  _: any,
     }
 
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chain.id}`, `${nft.contract}:${nft.tokenId}`)
-    if (recentlyRefreshed) {
+    if (!args.force && recentlyRefreshed) {
       return 'Refreshed Recently! Try in sometime!'
     }
 
     let nftCacheId = `${nft.contract}:${nft.tokenId}`
-    if (args.ttl === null) {
-      nftCacheId += ':manual'
-    }
 
-    if(args?.ttl) {
-      const ttlDate: Date = new Date(args?.ttl)
-      const now: Date = new Date()
-      if (ttlDate && ttlDate > now) {
-        nftCacheId += `:${ttlDate.getTime()}`
+    if (args?.force) {
+      nftCacheId += ':force'
+    } else {
+      if (args?.ttl === null) {
+        nftCacheId += ':manual'
+      }
+  
+      if(args?.ttl) {
+        const ttlDate: Date = new Date(args?.ttl)
+        const now: Date = new Date()
+        if (ttlDate && ttlDate > now) {
+          nftCacheId += `:${ttlDate.getTime()}`
+        }
       }
     }
     // add to cache list
