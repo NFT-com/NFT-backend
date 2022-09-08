@@ -12,8 +12,20 @@ const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
 const logger = _logger.Factory(_logger.Context.NFTPort)
 
 export interface NFTPortNFT {
-  metadata_url?: string
-  cached_file_url?: string
+  nft: {
+    metadata_url?: string
+    cached_file_url?: string
+  }
+  contract: {
+    name?: string
+    symbol?: string
+    type?: string
+    metadata: {
+      description?: string
+      cached_thumbnail_url?: string
+      cached_banner_url?: string
+    }
+  }
   status_message?: string
 }
 const  getNFTPortInterceptor = (
@@ -84,9 +96,9 @@ export const retrieveNFTDetailsNFTPort = async (
         chain: chain,
       },
     })
-    if (res && res.data && res.data.nft) {
-      await cache.set(key, JSON.stringify(res.data.nft), 'EX', 60 * 10)
-      return res.data.nft as NFTPortNFT
+    if (res && res.data && res.data) {
+      await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
+      return res.data as NFTPortNFT
     } else return undefined
   } catch (err) {
     logger.error(`Error in retrieveNFTDetailsNFTPort: ${err}`)

@@ -103,9 +103,17 @@ type Collection {
   isSpam: Boolean
 }
 
+type NFTPortResults {
+  name: String
+  symbol: String
+  bannerUrl: String
+  logoUrl: String
+  description: String
+}
+
 type CollectionInfo {
   collection: Collection
-  ubiquityResults: UbiquityResults
+  nftPortResults: NFTPortResults
 }
 
 input CollectionInput {
