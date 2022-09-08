@@ -211,6 +211,31 @@ describe('profile resolver', () => {
       expect(result?.data?.updateProfile?.description).toBe(mockUpdateProfileInput.description)
     })
 
+    it('should return error when description is too long', async () => {
+      let description = ''
+      for (let i = 0; i < 500; i++) {
+        description += 'a'
+      }
+      const result = await testServer.executeOperation({
+        query: `mutation UpdateProfile($input: UpdateProfileInput!) {
+          updateProfile(input: $input) {
+            id
+            bannerURL
+            description
+          }
+        }`,
+        variables: {
+          input: {
+            description,
+            id: mockUpdateProfileInput.id,
+            deployedContractsVisible: true,
+          },
+        },
+      })
+      expect(result?.errors.length).toBeGreaterThan(0)
+      expect(result?.errors[0].errorKey).toEqual('PROFILE_DESCRIPTION_LENGTH')
+    })
+
     it('should update visibility of deployed collections', async () => {
       const result = await testServer.executeOperation({
         query: `mutation UpdateProfile($input: UpdateProfileInput!) {
