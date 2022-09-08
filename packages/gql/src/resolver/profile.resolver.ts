@@ -391,26 +391,33 @@ const updateProfile = (
       profileError.ErrorType.ProfileNotOwned,
     )))
     .then((p: entity.Profile) => {
-      p.bannerURL = args.input.bannerURL ?? p.bannerURL
-      p.description = args.input.description ?? p.description
-      p.photoURL = args.input.photoURL ?? p.photoURL
-      p.displayType = args.input.displayType ?? p.displayType
-      p.layoutType = args.input.layoutType ?? p.layoutType
-      p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
-      p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible
-      p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
-      return changeNFTsVisibility(
-        repositories,
-        wallet.id,
-        p.id, // profileId
-        args.input.showAllNFTs,
-        args.input.hideAllNFTs,
-        args.input.showNFTIds,
-        args.input.hideNFTIds,
-        p.chainId,
-      ).then(() => {
-        return repositories.profile.save(p)
-      })
+      if (args?.input.description && args?.input.description.length > 300) {
+        return Promise.reject(appError.buildForbidden(
+          profileError.buildProfileDescriptionLength(),
+          profileError.ErrorType.ProfileDescriptionLength,
+        ))
+      } else {
+        p.bannerURL = args.input.bannerURL ?? p.bannerURL
+        p.description = args.input.description ?? p.description
+        p.photoURL = args.input.photoURL ?? p.photoURL
+        p.displayType = args.input.displayType ?? p.displayType
+        p.layoutType = args.input.layoutType ?? p.layoutType
+        p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
+        p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible
+        p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
+        return changeNFTsVisibility(
+          repositories,
+          wallet.id,
+          p.id, // profileId
+          args.input.showAllNFTs,
+          args.input.hideAllNFTs,
+          args.input.showNFTIds,
+          args.input.hideNFTIds,
+          p.chainId,
+        ).then(() => {
+          return repositories.profile.save(p)
+        })
+      }
     })
 }
 
