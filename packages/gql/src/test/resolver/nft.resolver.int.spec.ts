@@ -480,6 +480,23 @@ describe('nft resolver', () => {
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
+
+    it('should return lessn than 100 NFTs of profile', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            profileId: profileA.id,
+            pageInput: {
+              first: 1000,
+            },
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toBeLessThanOrEqual(100)
+    })
   })
 
   describe('nftsForCollections', () => {
@@ -554,6 +571,87 @@ describe('nft resolver', () => {
       expect(result.data.nftsForCollections[0].nfts.length).toBeGreaterThan(0)
       expect(result.data.nftsForCollections[0].nfts[0].profileId).toBe(profileA.id)
       expect(result.data.nftsForCollections[0].nfts[0].preferredProfile.url).toBe('test-profile')
+    })
+
+    it('should return less than 100 nfts for collections', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
+        variables: {
+          input: {
+            collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
+            count: 1000,
+            chainId: '5',
+          },
+        },
+      })
+
+      expect(result.data.nftsForCollections).toBeDefined()
+      expect(result.data.nftsForCollections.length).toEqual(1)
+      expect(result.data.nftsForCollections[0].nfts.length).toBeLessThanOrEqual(100)
+    })
+  })
+
+  describe('collectionNFTs', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      const collection = await repositories.collection.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+
+      const nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x09c5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+        chainId: '5',
+      })
+
+      await repositories.edge.save({
+        thisEntityId: collection.id,
+        thisEntityType: defs.EntityType.Collection,
+        thatEntityId: nftA.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Includes,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return less than 100 nfts of collection', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query CollectionNFTs($input: CollectionNFTsInput!) { collectionNFTs(input: $input) { items { id contract } totalItems } }',
+        variables: {
+          input: {
+            collectionAddress: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+            pageInput: { first: 100 },
+            chainId: '5',
+          },
+        },
+      })
+
+      expect(result.data.collectionNFTs).toBeDefined()
+      expect(result.data.collectionNFTs.items.length).toBeLessThanOrEqual(100)
+      expect(result.data.collectionNFTs.totalItems).toBeLessThanOrEqual(100)
     })
   })
 
