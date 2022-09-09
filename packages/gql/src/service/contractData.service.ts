@@ -11,8 +11,8 @@ import { format } from 'util'
 
 import { cache } from '@nftcom/gql/service/cache.service'
 import { db } from '@nftcom/shared'
+import { _logger } from '@nftcom/shared'
 import { MarketplaceSale } from '@nftcom/shared/db/entity'
-import { _logger } from '@nftcom/shared/helper'
 
 import { appError } from '../error'
 
