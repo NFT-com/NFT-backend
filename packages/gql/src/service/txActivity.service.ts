@@ -55,14 +55,14 @@ const activityBuilder = async (
       return activity
     }
   }
-
+  
   // new activity
   activity = new entity.TxActivity()
   activity.activityType = activityType
   activity.activityTypeId = activityHash
   activity.read = false
   activity.timestamp = new Date(timestampFromSource * 1000) // convert to ms
-  activity.expiration = new Date(expirationFromSource * 1000) // conver to ms
+  activity.expiration = expirationFromSource ? new Date(expirationFromSource * 1000) : null // conver to ms
   activity.walletAddress = helper.checkSum(walletAddress)
   activity.chainId = chainId
   activity.nftContract = helper.checkSum(contract)
@@ -227,7 +227,7 @@ export const txEntityBuilder = async (
   const checksumContract: string = helper.checkSum(contract)
   const tokenIdHex: string = helper.bigNumberToHex(tokenId)
   const nftIds: string[] = [`ethereum/${checksumContract}/${tokenIdHex}`]
-  const timestampFromSource: number = new Date().getTime()
+  const timestampFromSource: number = (new Date().getTime())/1000
   const expirationFromSource = null
 
   const activity: entity.TxActivity = await activityBuilder(
@@ -285,7 +285,7 @@ export const cancelEntityBuilder = async (
   orderHash: string,
 ):  Promise<Partial<entity.TxCancel>> => {
   const checksumContract: string = helper.checkSum(contract)
-  const timestampFromSource: number = new Date().getTime()
+  const timestampFromSource: number = (new Date().getTime())/1000
   const expirationFromSource = null
 
   const activity: entity.TxActivity = await activityBuilder(
