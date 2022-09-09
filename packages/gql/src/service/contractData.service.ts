@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { minTime, parseISO } from 'date-fns'
 import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
+import { utils } from 'ethers'
 import { differenceBy,snakeCase } from 'lodash'
 import { stringify } from 'qs'
 import { MoreThanOrEqual } from 'typeorm'
@@ -124,7 +125,7 @@ const transformTxns = (txns: any[]): any => {
       id: getTxId(tx),
       priceUSD: tx.price_details.price_usd,
       date: parseISO(tx.transaction_date),
-      contractAddress: tx.nft.contract_address.toLowerCase(),
+      contractAddress: utils.getAddress(tx.nft.contract_address),
       tokenId: tx.nft.token_id,
       transaction: tx,
     } as MarketplaceSale)
@@ -148,7 +149,7 @@ export const getSalesData = async (
     filteredTxns = [],
     result: MarketplaceSale[] = []
   let whereOptions: any = {
-    contractAddress: contractAddress.toLowerCase(),
+    contractAddress: utils.getAddress(contractAddress),
     date: MoreThanOrEqual(oldestTransactionDate),
   }
   if (tokenId) {
