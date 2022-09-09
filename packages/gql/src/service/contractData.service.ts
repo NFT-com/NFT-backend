@@ -22,20 +22,11 @@ const NFTPORT_ENDPOINTS = {
 
 const logger = _logger.Factory('ContractDataService', _logger.Context.GraphQL)
 
-const getCacheKey = (
-  endpoint: string,
-  args: string[],
-  continuation?: string,
-  pageSize?: string,
-): string => {
+const getCacheKey = (endpoint: string, args: string[], continuation?: string, pageSize?: string): string => {
   return `${snakeCase(endpoint)}_${args.join('_')}_${continuation || ''}_${pageSize || ''}`
 }
 
-const sendRequest = async (
-  url: string,
-  extraHeaders = {},
-  queryParams = {},
-): Promise<any> => {
+const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Promise<any> => {
   try {
     return await axios.get(url, {
       params: {
@@ -82,12 +73,7 @@ export const fetchData = async (
   extraHeaders = {},
   queryParams = {} as any,
 ): Promise<any> => {
-  const key = getCacheKey(
-    endpoint,
-    args,
-    queryParams.continuation,
-    queryParams.page_size,
-  )
+  const key = getCacheKey(endpoint, args, queryParams.continuation, queryParams.page_size)
   const cachedData = await cache.get(key)
   if (cachedData) {
     return JSON.parse(cachedData)
@@ -113,9 +99,7 @@ const durationMap = {
   d: 'days',
   h: 'hours',
 }
-const parseDateRangeForDateFns = (
-  dateRange: string,
-): { [duration: string]: number } => {
+const parseDateRangeForDateFns = (dateRange: string): { [duration: string]: number } => {
   return {
     [durationMap[dateRange.slice(-1)]]: parseInt(dateRange.slice(0, -1)),
   }
@@ -134,11 +118,7 @@ const transformTxns = (txns: any[]): any => {
   return transformed
 }
 
-export const getSalesData = async (
-  contractAddress: string,
-  dateRange = 'all',
-  tokenId: string,
-): Promise<any> => {
+export const getSalesData = async (contractAddress: string, dateRange = 'all', tokenId: string): Promise<any> => {
   const endpoint = tokenId ? 'txByNFT' : 'txByContract'
   const args = [contractAddress, tokenId].filter((x) => x !== undefined)
   let continuation: string
@@ -151,28 +131,18 @@ export const getSalesData = async (
     result = []
   let getMoreSalesData = true
   while (getMoreSalesData) {
-    salesData = await fetchData(
-      endpoint,
-      args,
-      {},
-      { chain: 'ethereum', type: 'sale', continuation },
-    )
+    salesData = await fetchData(endpoint, args, {}, { chain: 'ethereum', type: 'sale', continuation })
     if (
       isAfter(
-        parseISO(
-          salesData.transactions[salesData.transactions.length - 1]
-            .transaction_date,
-        ),
+        parseISO(salesData.transactions[salesData.transactions.length - 1].transaction_date),
         oldestTransactionDate,
       )
     ) {
       filteredTxns = salesData.transactions.filter((tx) => tx.type === 'sale')
     } else {
-      filteredTxns = salesData.transactions.filter(
-        (tx) =>
-          tx.type === 'sale' &&
-          isAfter(parseISO(tx.transaction_date), oldestTransactionDate),
-      )
+      filteredTxns = salesData.transactions.filter((tx) => {
+        return tx.type === 'sale' && isAfter(parseISO(tx.transaction_date), oldestTransactionDate)
+      })
       getMoreSalesData = false
     }
     result = result.concat(transformTxns(filteredTxns))
