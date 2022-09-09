@@ -402,7 +402,7 @@ const keepAlive = ({
               order.protocolData?.tokenId,
               maker,
               taker,
-              defs.ExchangeType.OpenSea,
+              defs.ExchangeType.LooksRare,
               order.protocol,
               order.protocolData,
               LooksrareEventName.TakerBid,

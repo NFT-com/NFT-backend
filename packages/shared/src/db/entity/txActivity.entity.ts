@@ -17,6 +17,9 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false, default: false })
   read: boolean
 
+  @Column({ type: 'timestamptz', nullable: true })
+  readTimestamp: Date
+
   @Column({ nullable: false })
   timestamp: Date
 
