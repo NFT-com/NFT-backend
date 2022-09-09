@@ -242,7 +242,7 @@ const filterNFTsWithAlchemy = async (
           const owners = await getOwnersForNFT(dbNFT)
           if (owners.length) {
             if (owners.length > 1) {
-              // This is ERC1155 token, so we don't update owner for now and delete NFT
+              // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
               await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
                 .then(() => repositories.nft.hardDelete({
                   id: dbNFT.id,
