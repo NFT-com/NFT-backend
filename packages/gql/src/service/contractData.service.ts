@@ -1,12 +1,16 @@
 import axios from 'axios'
+import crypto from 'crypto'
 import { minTime, parseISO } from 'date-fns'
-import isAfter from 'date-fns/isAfter'
+import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
 import { snakeCase } from 'lodash'
 import { stringify } from 'qs'
+import { MoreThanOrEqual } from 'typeorm'
 import { format } from 'util'
 
 import { cache } from '@nftcom/gql/service/cache.service'
+import { db } from '@nftcom/shared'
+import { MarketplaceSale } from '@nftcom/shared/db/entity'
 import { _logger } from '@nftcom/shared/helper'
 
 import { appError } from '../error'
@@ -21,6 +25,8 @@ const NFTPORT_ENDPOINTS = {
 }
 
 const logger = _logger.Factory('ContractDataService', _logger.Context.GraphQL)
+
+const repositories = db.newRepositories()
 
 const getCacheKey = (endpoint: string, args: string[], continuation?: string, pageSize?: string): string => {
   return `${snakeCase(endpoint)}_${args.join('_')}_${continuation || ''}_${pageSize || ''}`
@@ -108,32 +114,59 @@ const parseDateRangeForDateFns = (dateRange: string): { [duration: string]: numb
 const transformTxns = (txns: any[]): any => {
   const transformed = []
   for (const tx of txns) {
+    const hmac = crypto.createHmac('sha256', 'contractData')
     transformed.push({
+      id: hmac.update(JSON.stringify(tx)).digest('hex'),
       priceUSD: tx.price_details.price_usd,
       date: parseISO(tx.transaction_date),
-      transactionHash: tx.transaction_hash,
+      contractAddress: tx.nft.contract_address.toLowerCase(),
+      tokenId: tx.nft.token_id,
       transaction: tx,
-    })
+    } as MarketplaceSale)
   }
   return transformed
 }
 
-export const getSalesData = async (contractAddress: string, dateRange = 'all', tokenId: string): Promise<any> => {
+export const getSalesData = async (contractAddress: string, dateRange = 'all', tokenId: string): Promise<MarketplaceSale[]> => {
   const endpoint = tokenId ? 'txByNFT' : 'txByContract'
-  const args = [contractAddress, tokenId].filter((x) => x !== undefined)
+  const args = [contractAddress, tokenId].filter((x) => !!x) // not falsey
   let continuation: string
-  const oldestTransactionDate =
+  let oldestTransactionDate =
     dateRange === 'all'
       ? new Date(minTime)
       : sub(new Date(), parseDateRangeForDateFns(dateRange))
   let salesData = { transactions: [] } as any,
     filteredTxns = [],
-    result = []
+    result: MarketplaceSale[] = []
+  let whereOptions: any = {
+    contractAddress: contractAddress.toLowerCase(),
+    date: MoreThanOrEqual(oldestTransactionDate),
+  }
+  if (tokenId) {
+    whereOptions = {
+      ...whereOptions,
+      tokenId,
+    }
+  }
+  const savedSales = await repositories.marketplaceSale.find({
+    where: {
+      ...whereOptions,
+    },
+    order: {
+      date: 'DESC',
+    },
+  })
+
+  if (savedSales.length) {
+    oldestTransactionDate = savedSales[0].date
+    logger.log('Saved sales:', savedSales.length)
+  }
+
   let getMoreSalesData = true
   while (getMoreSalesData) {
     salesData = await fetchData(endpoint, args, {}, { chain: 'ethereum', type: 'sale', continuation })
     if (
-      isAfter(
+      !isBefore(
         parseISO(salesData.transactions[salesData.transactions.length - 1].transaction_date),
         oldestTransactionDate,
       )
@@ -141,7 +174,7 @@ export const getSalesData = async (contractAddress: string, dateRange = 'all', t
       filteredTxns = salesData.transactions.filter((tx) => tx.type === 'sale')
     } else {
       filteredTxns = salesData.transactions.filter((tx) => {
-        return tx.type === 'sale' && isAfter(parseISO(tx.transaction_date), oldestTransactionDate)
+        return tx.type === 'sale' && !isBefore(parseISO(tx.transaction_date), oldestTransactionDate)
       })
       getMoreSalesData = false
     }
@@ -149,5 +182,13 @@ export const getSalesData = async (contractAddress: string, dateRange = 'all', t
     continuation = salesData.continuation
     if (!continuation) getMoreSalesData = false
   }
+
+  await repositories.marketplaceSale.saveMany(result)
+
+  result = [
+    ...result,
+    ...savedSales,
+  ]
+
   return result
 }

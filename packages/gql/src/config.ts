@@ -54,7 +54,7 @@ export const dbConfig = {
   user: process.env.DB_USERNAME || 'app',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'app',
-  logging: helper.parseBoolean(process.env.DB_LOGGING) || false,
+  logging: helper.parseBoolean(process.env.DB_LOGGING) || true,
   useSSL: helper.parseBoolean(process.env.DB_USE_SSL),
 }
 

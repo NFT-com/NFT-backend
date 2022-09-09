@@ -26,6 +26,7 @@
       "src/db/entity/event.entity.ts",
       "src/db/entity/marketAsk.entity.ts",
       "src/db/entity/marketBid.entity.ts",
+      "src/db/entity/marketplaceSale.entity.ts",
       "src/db/entity/marketSwap.entity.ts",
       "src/db/entity/nft.entity.ts",
       "src/db/entity/profile.entity.ts",
