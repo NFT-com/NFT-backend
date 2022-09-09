@@ -326,7 +326,7 @@ describe('transaction activity resolver', () => {
   })
   
   describe('transaction activity mutations', () => {
-    it('should update acitivities read property', async () => {
+    it('should update activities read property', async () => {
       const activityIds: string[] = testData
         .reduce((aggregator: string[], data: any ) => {
           if (data?.activity?.id) {
@@ -352,7 +352,7 @@ describe('transaction activity resolver', () => {
         .toEqual(expect.arrayContaining(['test-failed-id']))
     })
   })
-  it('should update acitivities status property', async () => {
+  it('should update activities status property', async () => {
     const activityIds: string[] = testData
       .reduce((aggregator: string[], data: any ) => {
         if (data?.activity?.id) {
