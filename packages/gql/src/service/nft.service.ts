@@ -205,6 +205,7 @@ export const getOwnersForNFT = async (
       }
     }
   } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
     Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
     return []
   }
