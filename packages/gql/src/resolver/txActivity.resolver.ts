@@ -106,14 +106,6 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
   }
   const { repositories, chain, wallet } = ctx
   const { ids } = args
-  if (!ids.length) {
-    return Promise.reject(
-      appError.buildInvalid(
-        txActivityError.buildNoActivityId(),
-        txActivityError.ErrorType.ActivityNotSet,
-      ),
-    )
-  }
 
   let ownedActivities: entity.TxActivity[] = []
 
@@ -121,28 +113,30 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
 
   if (walletAddress) {
     // check ids are owned by wallet
-    ownedActivities = await repositories.txActivity.find({
-      where: {
-        id: In(ids),
-        chainId: chain.id,
-        read: false,
-        walletAddress,
-      },
-    })
-  }
+    if(ids.length) {
+      ownedActivities = await repositories.txActivity.find({
+        where: {
+          id: In(ids),
+          chainId: chain.id,
+          read: false,
+          walletAddress,
+        },
+      })
 
-  if (!ownedActivities.length) {
-    return Promise.reject(
-      appError.buildInvalid(
-        txActivityError.buildNoActivitiesReadToUpdate(),
-        txActivityError.ErrorType.NoActivityToUpdate,
-      ),
-    )
+      if (!ownedActivities.length) {
+        return Promise.reject(
+          appError.buildInvalid(
+            txActivityError.buildNoActivitiesReadToUpdate(),
+            txActivityError.ErrorType.NoActivityToUpdate,
+          ),
+        )
+      }
+    }
   }
-
-  const ownedIds: string[] = ownedActivities.map(
+    
+  const ownedIds: string[] = ownedActivities.length ?  ownedActivities.map(
     (ownedActivity: entity.TxActivity) => ownedActivity.id,
-  )
+  ) : []
 
   const filters: defs.ActivityFilters = {
     walletAddress,
