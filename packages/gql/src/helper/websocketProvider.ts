@@ -233,11 +233,14 @@ const keepAlive = ({
       const evt = looksrareExchangeInterface.parseLog(e)
       if (evt.name === LooksrareEventName.CancelAllOrders) {
         const [user, newMinNonce] = evt.args
+        const newMinNonceInNumber = Number(newMinNonce)
+        
         try {
           const orders: entity.TxOrder[] = await repositories.txOrder.find({
+            relations: ['activity'],
             where: {
               makerAddress: helper.checkSum(user),
-              nonce: LessThan(newMinNonce),
+              nonce: LessThan(newMinNonceInNumber),
               activity: {
                 status: defs.ActivityStatus.Valid,
               },
@@ -250,7 +253,7 @@ const keepAlive = ({
               order.activity.status = defs.ActivityStatus.Cancelled
               cancelEntityPromises.push(cancelEntityBuilder(
                 defs.ActivityType.Cancel,
-                e.transactionHash,
+                `${e.transactionHash}:${order.orderHash}`,
                 e.blockNumber,
                 chainId.toString(),
                 order.activity.nftContract,
@@ -292,18 +295,17 @@ const keepAlive = ({
               order.activity.status = defs.ActivityStatus.Cancelled
               cancelEntityPromises.push(cancelEntityBuilder(
                 defs.ActivityType.Cancel,
-                e.transactionHash,
+                `${e.transactionHash}:${order.orderHash}`,
                 e.blockNumber,
                 chainId.toString(),
-                order.activity.nftContract,
+                helper.checkSum(order.activity.nftContract),
                 order.activity.nftId,
-                order.makerAddress,
+                helper.checkSum(order.makerAddress),
                 defs.ExchangeType.LooksRare,
                 order.orderType as defs.CancelActivityType,
                 order.id,
               ))
             }
-  
             await repositories.txOrder.saveMany(orders)
             const cancelEntities = await Promise.all(cancelEntityPromises)
             await repositories.txCancel.saveMany(cancelEntities)
@@ -329,18 +331,18 @@ const keepAlive = ({
               },
             },
           })
-      
+          
           if (order) {
             order.activity.status = defs.ActivityStatus.Executed
             order.takerAddress = helper.checkSum(taker)
             await repositories.txOrder.save(order)
 
             const checksumContract: string = helper.checkSum(collection)
-        
+            
             // new transaction
             const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
               defs.ActivityType.Sale,
-              e.transactionHash,
+              `${e.transactionHash}:${order.orderHash}`,
               e.blockNumber,
               chainId.toString(),
               checksumContract,
@@ -393,7 +395,7 @@ const keepAlive = ({
             // new transaction
             const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
               defs.ActivityType.Sale,
-              e.transactionHash,
+              `${e.transactionHash}:${orderHash}`,
               e.blockNumber,
               chainId.toString(),
               checksumContract,
@@ -462,7 +464,7 @@ const keepAlive = ({
 
             const cancelledEntity: Partial<entity.TxCancel> = await cancelEntityBuilder(
               defs.ActivityType.Cancel,
-              e.transactionHash,
+              `${e.transactionHash}:${orderHash}`,
               e.blockNumber,
               chainId.toString(),
               order.activity.nftContract,
@@ -506,7 +508,7 @@ const keepAlive = ({
               order.activity.status = defs.ActivityStatus.Cancelled
               cancelEntityPromises.push(cancelEntityBuilder(
                 defs.ActivityType.Cancel,
-                e.transactionHash,
+                `${e.transactionHash}:${order.orderHash}`,
                 e.blockNumber,
                 chainId.toString(),
                 order.activity.nftContract,
@@ -545,7 +547,6 @@ const keepAlive = ({
               },
             },
           })
-  
           if (order) {
             order.activity.status = defs.ActivityStatus.Executed
             order.takerAddress = helper.checkSum(recipient)
@@ -553,7 +554,7 @@ const keepAlive = ({
             // new transaction
             const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
               defs.ActivityType.Sale,
-              e.transactionHash,
+              `${e.transactionHash}:${orderHash}`,
               e.blockNumber,
               chainId.toString(),
               order.activity.nftContract,
