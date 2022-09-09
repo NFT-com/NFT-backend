@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { minTime, parseISO } from 'date-fns'
 import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
-import { snakeCase } from 'lodash'
+import { differenceBy,snakeCase } from 'lodash'
 import { stringify } from 'qs'
 import { MoreThanOrEqual } from 'typeorm'
 import { format } from 'util'
@@ -111,12 +111,17 @@ const parseDateRangeForDateFns = (dateRange: string): { [duration: string]: numb
   }
 }
 
+const getTxId = (tx):string => {
+  const hmac = crypto.createHmac('sha256', 'contractData')
+  return hmac
+    .update(`${tx.transaction_hash}-${tx.buyer_address}-${tx.seller_address}-${tx.nft.token_id}`)
+    .digest('hex')
+}
 const transformTxns = (txns: any[]): any => {
   const transformed = []
   for (const tx of txns) {
-    const hmac = crypto.createHmac('sha256', 'contractData')
     transformed.push({
-      id: hmac.update(JSON.stringify(tx)).digest('hex'),
+      id: getTxId(tx),
       priceUSD: tx.price_details.price_usd,
       date: parseISO(tx.transaction_date),
       contractAddress: tx.nft.contract_address.toLowerCase(),
@@ -127,7 +132,11 @@ const transformTxns = (txns: any[]): any => {
   return transformed
 }
 
-export const getSalesData = async (contractAddress: string, dateRange = 'all', tokenId: string): Promise<MarketplaceSale[]> => {
+export const getSalesData = async (
+  contractAddress: string,
+  dateRange = 'all',
+  tokenId: string,
+): Promise<MarketplaceSale[]> => {
   const endpoint = tokenId ? 'txByNFT' : 'txByContract'
   const args = [contractAddress, tokenId].filter((x) => !!x) // not falsey
   let continuation: string
@@ -159,7 +168,6 @@ export const getSalesData = async (contractAddress: string, dateRange = 'all', t
 
   if (savedSales.length) {
     oldestTransactionDate = savedSales[0].date
-    logger.log('Saved sales:', savedSales.length)
   }
 
   let getMoreSalesData = true
@@ -178,7 +186,7 @@ export const getSalesData = async (contractAddress: string, dateRange = 'all', t
       })
       getMoreSalesData = false
     }
-    result = result.concat(transformTxns(filteredTxns))
+    result = result.concat(differenceBy(transformTxns(filteredTxns), savedSales, 'id') as any[])
     continuation = salesData.continuation
     if (!continuation) getMoreSalesData = false
   }
