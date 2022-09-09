@@ -4,7 +4,7 @@ import { testDBConfig } from '@nftcom/gql/config'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import {
   downloadImageFromUbiquity,
-  getCollectionInfo, saveNFTMetadataImageToS3,
+  getCollectionInfo, getOwnersForNFT, saveNFTMetadataImageToS3,
   updateENSNFTMedata,
 } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
@@ -238,6 +238,31 @@ describe('nft resolver', () => {
       await updateENSNFTMedata(nftA, repositories)
       const nft = await repositories.nft.findById(nftA.id)
       expect(nft.metadata.imageURL).toBeDefined()
+    })
+  })
+
+  describe('getOwnersForNFT', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xa49a0e5eF83cF89Ac8aae182f22E6464B229eFC8',
+        tokenId: '0x0a',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC1155,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+    it('should return owners of NFT', async () => {
+      const owners = await getOwnersForNFT(nftA)
+      expect(owners.length).toBeGreaterThan(0)
     })
   })
 })

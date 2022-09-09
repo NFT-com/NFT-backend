@@ -182,10 +182,11 @@ export const getNFTsFromAlchemy = async (
   }
 }
 
-const getOwnersForNFT = async (
+export const getOwnersForNFT = async (
   nft: typeorm.DeepPartial<entity.NFT>,
 ): Promise<string[]> => {
   try {
+    initiateWeb3(nft.chainId)
     const contract = ethers.utils.getAddress(nft.contract)
     const key = `getOwnersForNFT_${nft.chainId}_${contract}_${nft.tokenId}`
     const cachedData = await cache.get(key)
@@ -199,7 +200,7 @@ const getOwnersForNFT = async (
       if (response.data) {
         await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
       }
-      return response.data.owners
+      return response.data.owners as string[]
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
