@@ -155,10 +155,13 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
     const nfts: Array<string> = []
 
     for (const item of cachedNfts) {
+      const itemSplit: string[] = item.split(':')
+      const isItemForced = itemSplit.length === 3 && itemSplit?.[2] === 'force' ? true: false
+
       const itemPresentInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, item)
 
       // item is not present in refresh cache
-      if(!itemPresentInRefreshedCache) {
+      if(!itemPresentInRefreshedCache || isItemForced) {
         nfts.push(item)
       }
     }
@@ -168,6 +171,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         const nftSplit: Array<string> = nft.split(':')
         const contract: string = nftSplit?.[0]
         const tokenId: string = helper.bigNumber(nftSplit?.[1]).toString()
+   
         return {
           contract,
           tokenId,
@@ -227,7 +231,9 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         let ttlCondition = ''
 
         if (nftSplit.length === 3) {
-          if (nftSplit?.[2] === 'manual') {
+          if (nftSplit?.[2] === 'force') {
+            ttlCondition = 'force'
+          } else if (nftSplit?.[2] === 'manual') {
             ttlCondition = 'manual'
           } else {
             ttlCondition = 'automated'
@@ -244,6 +250,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         case 'automated':
           date = new Date(Number(nftSplit?.[2]))
           break
+        case 'force':
         default:
           break
         }

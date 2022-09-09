@@ -11,6 +11,7 @@ export enum ErrorType {
   KeyInvalid = 'KEY_INVALID',
   ProfileAssociatedContractNotFoundMsg = 'PROFILE_ASSOCIATED_CONTRACT_NOT_FOUND',
   ProfileViewTypeWrong = 'PROFILE_VIEW_TYPE_WRONG',
+  ProfileDescriptionLength = 'PROFILE_DESCRIPTION_LENGTH',
 }
 
 export const buildProfileNotFoundMsg = (id: string): string => `Profile ${id} not found`
@@ -44,3 +45,5 @@ export const buildProfileBannerFileSize = (): string => 'Banner image file size 
 export const buildProfileAvatarFileSize = (): string => 'Avatar image file size should not exceed 2MB.'
 
 export const buildProfileSortByType = (): string => 'Profile sortBy type is not valid.'
+
+export const buildProfileDescriptionLength = (): string => 'Length of profile description could not be longer than 300.'
