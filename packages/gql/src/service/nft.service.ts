@@ -197,10 +197,12 @@ export const getOwnersForNFT = async (
       const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
       const response = await axios.get(baseUrl)
 
-      if (response.data) {
+      if (response.data && response.data.owners) {
         await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
+        return response.data.owners as string[]
+      } else {
+        return []
       }
-      return response.data.owners as string[]
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
