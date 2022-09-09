@@ -575,26 +575,26 @@ export const saveNFTMetadataImageToS3 = async (
       return nft.metadata.imageURL + '?width=600'
     } else {
       let uploadedImage
-      initiateWeb3(nft.chainId)
-      const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
       const uploadPath = `nfts/${nft.chainId}/`
 
-      if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
-        const filename = nftAlchemyResult.metadata.image.split('/').pop()
+      const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
+      // if image url from NFTPortResult is valid
+      if (nftPortResult && nftPortResult.nft.cached_file_url && nftPortResult.nft.cached_file_url.length) {
+        const filename = nftPortResult.nft.cached_file_url.split('/').pop()
         uploadedImage = await uploadImageToS3(
-          nftAlchemyResult.metadata.image,
+          nftPortResult.nft.cached_file_url,
           filename,
           nft.chainId,
           nft.contract,
           uploadPath,
         )
       } else {
-        const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
-        // if image url from NFTPortResult is valid
-        if (nftPortResult && nftPortResult.nft.cached_file_url && nftPortResult.nft.cached_file_url.length) {
-          const filename = nftPortResult.nft.cached_file_url.split('/').pop()
+        initiateWeb3(nft.chainId)
+        const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
+        if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
+          const filename = nftAlchemyResult.metadata.image.split('/').pop()
           uploadedImage = await uploadImageToS3(
-            nftPortResult.nft.cached_file_url,
+            nftAlchemyResult.metadata.image,
             filename,
             nft.chainId,
             nft.contract,
