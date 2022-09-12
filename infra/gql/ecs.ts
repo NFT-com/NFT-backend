@@ -194,7 +194,7 @@ processors:
 
 exporters:
   otlphttp:
-    endpoint: "https://tempo.leonardo.nft.prv"
+    endpoint: "tempo.leonardo.nft.prv"
 
 service:
   pipelines:
