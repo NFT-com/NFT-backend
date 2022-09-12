@@ -908,7 +908,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it('should update previewLink of NFTs', async () => {
+    it.only('should update previewLink of NFTs', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
         variables: {
@@ -965,6 +965,38 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.updateENSNFTMetadata.message).toEqual('Updated image urls of metadata for 0 ENS NFTs')
+    })
+  })
+
+  describe('updateNFT', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should save new NFT in our DB', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation updateNFT($input: UpdateNFTInput!) { updateNFT(input:$input) {  id contract } }',
+        variables: {
+          input: {
+            contract: '0x657732980685C29A51053894542D7cb97de144Fe',
+            tokenId: '0x07',
+          },
+        },
+      })
+
+      expect(result.data.updateNFT.id).toBeDefined()
     })
   })
 })
