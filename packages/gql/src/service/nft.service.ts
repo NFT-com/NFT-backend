@@ -217,7 +217,7 @@ export const getOwnersForNFT = async (
  *
  * If not, deletes the NFT record from the DB.
  */
-const filterNFTsWithAlchemy = async (
+export const filterNFTsWithAlchemy = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<any[]> => {
