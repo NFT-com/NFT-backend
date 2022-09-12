@@ -38,7 +38,7 @@ const repositories = db.newRepositories()
 
 let connection
 let testServer
-let nftA, nftB
+let nftA, nftB, nftC
 
 describe('nft resolver', () => {
   beforeAll(async () => {
@@ -201,6 +201,20 @@ describe('nft resolver', () => {
         userId: testMockUser.id,
         walletId: testMockWallet.id,
       })
+
+      nftC = await repositories.nft.save({
+        contract: '0x0E3A2A1f2146d86A604adc220b4967A898D7Fe07',
+        tokenId: '0x08b8693d',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
     })
     afterAll(async () => {
       await clearDB(repositories)
@@ -211,6 +225,10 @@ describe('nft resolver', () => {
     })
     it('should return valid mp4 path uploaded to S3', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftB, repositories)
+      expect(cdnPath).toBeDefined()
+    })
+    it('should return valid image path uploaded to S3', async () => {
+      const cdnPath = await saveNFTMetadataImageToS3(nftC, repositories)
       expect(cdnPath).toBeDefined()
     })
   })
@@ -319,7 +337,7 @@ describe('nft resolver', () => {
       // ERC1155 NFT should be removed
       const updatedNFTs = await repositories.nft.findAll()
       expect(updatedNFTs.length).toEqual(1)
-      // Owner of ERC721  NFT should be updated
+      // Owner of ERC721 NFT should be updated
       expect(updatedNFTs[0].walletId).toEqual(wallets[0].id)
       expect(updatedNFTs[0].userId).toEqual(users[0].id)
     })
