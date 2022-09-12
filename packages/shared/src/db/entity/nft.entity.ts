@@ -49,4 +49,7 @@ export class NFT extends BaseEntity {
   @Column({ type: 'varchar', nullable: true, length: 2000 })
   previewLinkError: string
 
+  @Column({ nullable: true, type: 'timestamp with time zone' })
+  lastRefreshed: Date
+
 }

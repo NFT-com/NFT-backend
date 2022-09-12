@@ -634,7 +634,7 @@ export const saveNFTMetadataImageToS3 = async (
   }
 }
 
-const updateNFTOwnershipAndMetadata = async (
+export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
@@ -1503,7 +1503,7 @@ export const getCollectionInfo = async (
   }
 }
 
-export const updateENSNFTMedata = async (
+export const updateNFTMetadata = async (
   nft: entity.NFT,
   repositories: db.Repository,
 ): Promise<void> => {
@@ -1522,7 +1522,79 @@ export const updateENSNFTMedata = async (
       },
     })
   } catch (err) {
-    logger.debug(`Error in updateENSNFTMedata: ${err}`)
-    Sentry.captureMessage(`Error in updateENSNFTMedata: ${err}`)
+    logger.debug(`Error in updateNFTMedata: ${err}`)
+    Sentry.captureMessage(`Error in updateNFTMedata: ${err}`)
+  }
+}
+
+export const getUserWalletFromNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<entity.Wallet | undefined> => {
+  try {
+    const nft = {
+      contract,
+      tokenId,
+      chainId,
+    }
+    const owners = await getOwnersForNFT(nft)
+    if (!owners.length) {
+      return undefined
+    } else {
+      if (owners.length > 1) {
+        // We don't save multiple owners for now, so we don't keep this NFT too
+        return undefined
+      } else {
+        // save User, Wallet for new owner addresses if it's not in our DB ...
+        return await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
+      }
+    }
+  } catch (err) {
+    logger.debug(`Error in getUserWalletFromNFT: ${err}`)
+    Sentry.captureMessage(`Error in getUserWalletFromNFT: ${err}`)
+    return undefined
+  }
+}
+
+export const saveNewNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<entity.NFT | undefined> => {
+  try {
+    const wallet = await getUserWalletFromNFT(contract, tokenId, chainId)
+    if (!wallet) {
+      return undefined
+    }
+    const metadata = await getNFTMetaData(contract, tokenId)
+    if (!metadata) return undefined
+
+    const { type, name, description, image, traits } = metadata
+    const savedNFT = await repositories.nft.save({
+      chainId: chainId,
+      userId: wallet.userId,
+      walletId: wallet.id,
+      contract: ethers.utils.getAddress(contract),
+      tokenId: BigNumber.from(tokenId).toHexString(),
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+    // save previewLink of NFT metadata image if it's from IPFS
+    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
+    if (previewLink) {
+      await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+    }
+    await seService.indexNFTs([savedNFT])
+    await updateCollectionForNFTs([savedNFT])
+    return savedNFT
+  } catch (err) {
+    logger.debug(`Error in saveNewNFT: ${err}`)
+    Sentry.captureMessage(`Error in saveNewNFT: ${err}`)
   }
 }
