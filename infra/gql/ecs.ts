@@ -353,7 +353,7 @@ export const createEcsService = (
     enableEcsManagedTags: true,
     enableExecuteCommand: true,
     forceNewDeployment: true,
-    healthCheckGracePeriodSeconds: 20,
+    healthCheckGracePeriodSeconds: 40,
     launchType: 'FARGATE',
     loadBalancers: [
       {
