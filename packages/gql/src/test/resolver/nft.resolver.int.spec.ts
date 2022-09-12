@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
+import { delay } from '@nftcom/gql/service/core.service'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import { defs, typechain } from '@nftcom/shared/'
 import { db } from '@nftcom/shared/db'
@@ -999,7 +1000,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it('should return error since this NFT is invalid', async () => {
+    it('should throw error since this NFT is not existing', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation updateNFT($input: UpdateNFTInput!) { updateNFT(input:$input) {  id contract } }',
         variables: {
@@ -1051,6 +1052,46 @@ describe('nft resolver', () => {
         },
       })
       expect(edge).toBeDefined()
+    })
+
+    it('should not update NFT twice in NFT_REFRESH_DURATION period ', async () => {
+      await testServer.executeOperation({
+        query: 'mutation updateNFT($input: UpdateNFTInput!) { updateNFT(input:$input) {  id contract } }',
+        variables: {
+          input: {
+            contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+            tokenId: '0x0d5415',
+          },
+        },
+      })
+
+      await delay(10000)
+      let nft = await repositories.nft.findOne({
+        where: {
+          contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+          tokenId: '0x0d5415',
+          chainId: '5',
+        },
+      })
+      expect(nft.lastRefreshed).toBeDefined()
+      const lastUpdated = nft.lastRefreshed
+      await testServer.executeOperation({
+        query: 'mutation updateNFT($input: UpdateNFTInput!) { updateNFT(input:$input) {  id contract } }',
+        variables: {
+          input: {
+            contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+            tokenId: '0x0d5415',
+          },
+        },
+      })
+      nft = await repositories.nft.findOne({
+        where: {
+          contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+          tokenId: '0x0d5415',
+          chainId: '5',
+        },
+      })
+      expect(nft.lastRefreshed).toEqual(lastUpdated)
     })
   })
 })
