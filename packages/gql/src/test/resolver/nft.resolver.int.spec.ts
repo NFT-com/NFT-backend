@@ -908,7 +908,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it.only('should update previewLink of NFTs', async () => {
+    it('should update previewLink of NFTs', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
         variables: {
