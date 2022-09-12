@@ -5,7 +5,7 @@ import * as nftService from '@nftcom/gql/service/nft.service'
 import {
   downloadImageFromUbiquity,
   getCollectionInfo, saveNFTMetadataImageToS3,
-  updateENSNFTMedata,
+  updateNFTMetadata,
 } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
 import { db,defs } from '@nftcom/shared'
@@ -235,7 +235,7 @@ describe('nft resolver', () => {
       await clearDB(repositories)
     })
     it('should update image url of ENS NFT metadata', async () => {
-      await updateENSNFTMedata(nftA, repositories)
+      await updateNFTMetadata(nftA, repositories)
       const nft = await repositories.nft.findById(nftA.id)
       expect(nft.metadata.imageURL).toBeDefined()
     })

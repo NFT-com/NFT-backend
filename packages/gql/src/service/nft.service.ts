@@ -15,7 +15,7 @@ import {
   generateWeight,
   getAWSConfig,
   getLastWeight,
-  midWeight, processIPFSURL, s3ToCdn,
+  midWeight, processIPFSURL, s3ToCdn, saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
@@ -172,6 +172,35 @@ export const getNFTsFromAlchemy = async (
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
+    return []
+  }
+}
+
+export const getOwnersForNFT = async (
+  nft: typeorm.DeepPartial<entity.NFT>,
+): Promise<string[]> => {
+  try {
+    initiateWeb3(nft.chainId)
+    const contract = ethers.utils.getAddress(nft.contract)
+    const key = `getOwnersForNFT_${nft.chainId}_${contract}_${nft.tokenId}`
+    const cachedData = await cache.get(key)
+
+    if (cachedData) {
+      return JSON.parse(cachedData) as string[]
+    } else {
+      const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
+      const response = await axios.get(baseUrl)
+
+      if (response.data && response.data.owners) {
+        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
+        return response.data.owners as string[]
+      } else {
+        return []
+      }
+    }
+  } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
+    Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
     return []
   }
 }
@@ -572,7 +601,7 @@ export const saveNFTMetadataImageToS3 = async (
   }
 }
 
-const updateNFTOwnershipAndMetadata = async (
+export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
@@ -1441,7 +1470,7 @@ export const getCollectionInfo = async (
   }
 }
 
-export const updateENSNFTMedata = async (
+export const updateNFTMetadata = async (
   nft: entity.NFT,
   repositories: db.Repository,
 ): Promise<void> => {
@@ -1460,7 +1489,63 @@ export const updateENSNFTMedata = async (
       },
     })
   } catch (err) {
-    logger.debug(`Error in updateENSNFTMedata: ${err}`)
-    Sentry.captureMessage(`Error in updateENSNFTMedata: ${err}`)
+    logger.debug(`Error in updateNFTMedata: ${err}`)
+    Sentry.captureMessage(`Error in updateNFTMedata: ${err}`)
+  }
+}
+
+export const saveNewNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<entity.NFT | undefined> => {
+  const nft = {
+    contract,
+    tokenId,
+    chainId,
+  }
+  const owners = await getOwnersForNFT(nft)
+  if (!owners.length) {
+    // There is no owner contains this NFT, so we don't need to keep in our DB
+    return undefined
+  } else {
+    if (owners.length > 1) {
+      // We don't save multiple owners for now, so we don't keep this NFT too
+      return undefined
+    }
+    // save User, Wallet for new owner addresses if it's not in our DB ...
+    const wallet = await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
+    const user = await repositories.user.findOne({
+      where: {
+        username: 'ethereum-' + ethers.utils.getAddress(owners[0]),
+      },
+    })
+
+    const metadata = await getNFTMetaData(contract, nft.tokenId)
+    if (!metadata) return undefined
+
+    const { type, name, description, image, traits } = metadata
+    const savedNFT = await repositories.nft.save({
+      chainId: chainId,
+      userId: user.id,
+      walletId: wallet.id,
+      contract: ethers.utils.getAddress(contract),
+      tokenId: BigNumber.from(tokenId).toHexString(),
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+    // save previewLink of NFT metadata image if it's from IPFS
+    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
+    if (previewLink) {
+      await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+    }
+    await seService.indexNFTs([savedNFT])
+    await updateCollectionForNFTs([savedNFT])
+    return savedNFT
   }
 }
