@@ -1073,6 +1073,8 @@ describe('nft resolver', () => {
           chainId: '5',
         },
       })
+      expect(nft.userId).not.toEqual('test-user-id')
+      expect(nft.walletId).not.toEqual('test-wallet-id')
       expect(nft.lastRefreshed).toBeDefined()
       const lastUpdated = nft.lastRefreshed
       await testServer.executeOperation({
