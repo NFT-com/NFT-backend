@@ -1499,53 +1499,58 @@ export const saveNewNFT = async (
   tokenId: string,
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
-  const nft = {
-    contract,
-    tokenId,
-    chainId,
-  }
-  const owners = await getOwnersForNFT(nft)
-  if (!owners.length) {
-    // There is no owner contains this NFT, so we don't need to keep in our DB
-    return undefined
-  } else {
-    if (owners.length > 1) {
-      // We don't save multiple owners for now, so we don't keep this NFT too
+  try {
+    const nft = {
+      contract,
+      tokenId,
+      chainId,
+    }
+    const owners = await getOwnersForNFT(nft)
+    if (!owners.length) {
+      // There is no owner contains this NFT, so we don't need to keep in our DB
       return undefined
-    }
-    // save User, Wallet for new owner addresses if it's not in our DB ...
-    const wallet = await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
-    const user = await repositories.user.findOne({
-      where: {
-        username: 'ethereum-' + ethers.utils.getAddress(owners[0]),
-      },
-    })
+    } else {
+      if (owners.length > 1) {
+        // We don't save multiple owners for now, so we don't keep this NFT too
+        return undefined
+      }
+      // save User, Wallet for new owner addresses if it's not in our DB ...
+      const wallet = await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
+      const user = await repositories.user.findOne({
+        where: {
+          username: 'ethereum-' + ethers.utils.getAddress(owners[0]),
+        },
+      })
 
-    const metadata = await getNFTMetaData(contract, nft.tokenId)
-    if (!metadata) return undefined
+      const metadata = await getNFTMetaData(contract, nft.tokenId)
+      if (!metadata) return undefined
 
-    const { type, name, description, image, traits } = metadata
-    const savedNFT = await repositories.nft.save({
-      chainId: chainId,
-      userId: user.id,
-      walletId: wallet.id,
-      contract: ethers.utils.getAddress(contract),
-      tokenId: BigNumber.from(tokenId).toHexString(),
-      type,
-      metadata: {
-        name,
-        description,
-        imageURL: image,
-        traits: traits,
-      },
-    })
-    // save previewLink of NFT metadata image if it's from IPFS
-    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-    if (previewLink) {
-      await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+      const { type, name, description, image, traits } = metadata
+      const savedNFT = await repositories.nft.save({
+        chainId: chainId,
+        userId: user.id,
+        walletId: wallet.id,
+        contract: ethers.utils.getAddress(contract),
+        tokenId: BigNumber.from(tokenId).toHexString(),
+        type,
+        metadata: {
+          name,
+          description,
+          imageURL: image,
+          traits: traits,
+        },
+      })
+      // save previewLink of NFT metadata image if it's from IPFS
+      const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
+      if (previewLink) {
+        await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+      }
+      await seService.indexNFTs([savedNFT])
+      await updateCollectionForNFTs([savedNFT])
+      return savedNFT
     }
-    await seService.indexNFTs([savedNFT])
-    await updateCollectionForNFTs([savedNFT])
-    return savedNFT
+  } catch (err) {
+    logger.debug(`Error in saveNewNFT: ${err}`)
+    Sentry.captureMessage(`Error in saveNewNFT: ${err}`)
   }
 }

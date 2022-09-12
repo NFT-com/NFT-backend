@@ -1392,8 +1392,16 @@ const updateNFT = async (
         ethers.BigNumber.from(args?.input.tokenId).toHexString(),
         chainId,
       )
-      logger.info(`New NFT is saved for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
-      return newNFT
+      if (!newNFT) {
+        logger.error(`NFT is not valid for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
+        return Promise.reject(appError.buildInvalid(
+          nftError.buildNFTNotValid(),
+          nftError.ErrorType.NFTNotFound,
+        ))
+      } else {
+        logger.info(`New NFT is saved for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
+        return newNFT
+      }
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFT: ${err}`)
