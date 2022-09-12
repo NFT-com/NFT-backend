@@ -1527,11 +1527,11 @@ export const updateNFTMetadata = async (
   }
 }
 
-export const saveNewNFT = async (
+export const getUserWalletFromNFT = async (
   contract: string,
   tokenId: string,
   chainId: string,
-): Promise<entity.NFT | undefined> => {
+): Promise<entity.Wallet | undefined> => {
   try {
     const nft = {
       contract,
@@ -1540,48 +1540,59 @@ export const saveNewNFT = async (
     }
     const owners = await getOwnersForNFT(nft)
     if (!owners.length) {
-      // There is no owner contains this NFT, so we don't need to keep in our DB
       return undefined
     } else {
       if (owners.length > 1) {
         // We don't save multiple owners for now, so we don't keep this NFT too
         return undefined
+      } else {
+        // save User, Wallet for new owner addresses if it's not in our DB ...
+        return await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
       }
-      // save User, Wallet for new owner addresses if it's not in our DB ...
-      const wallet = await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
-      const user = await repositories.user.findOne({
-        where: {
-          username: 'ethereum-' + ethers.utils.getAddress(owners[0]),
-        },
-      })
-
-      const metadata = await getNFTMetaData(contract, nft.tokenId)
-      if (!metadata) return undefined
-
-      const { type, name, description, image, traits } = metadata
-      const savedNFT = await repositories.nft.save({
-        chainId: chainId,
-        userId: user.id,
-        walletId: wallet.id,
-        contract: ethers.utils.getAddress(contract),
-        tokenId: BigNumber.from(tokenId).toHexString(),
-        type,
-        metadata: {
-          name,
-          description,
-          imageURL: image,
-          traits: traits,
-        },
-      })
-      // save previewLink of NFT metadata image if it's from IPFS
-      const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-      if (previewLink) {
-        await repositories.nft.updateOneById(savedNFT.id, { previewLink })
-      }
-      await seService.indexNFTs([savedNFT])
-      await updateCollectionForNFTs([savedNFT])
-      return savedNFT
     }
+  } catch (err) {
+    logger.debug(`Error in getUserWalletFromNFT: ${err}`)
+    Sentry.captureMessage(`Error in getUserWalletFromNFT: ${err}`)
+    return undefined
+  }
+}
+
+export const saveNewNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<entity.NFT | undefined> => {
+  try {
+    const wallet = await getUserWalletFromNFT(contract, tokenId, chainId)
+    if (!wallet) {
+      return undefined
+    }
+    const metadata = await getNFTMetaData(contract, tokenId)
+    if (!metadata) return undefined
+
+    const { type, name, description, image, traits } = metadata
+    const savedNFT = await repositories.nft.save({
+      chainId: chainId,
+      userId: wallet.userId,
+      walletId: wallet.id,
+      contract: ethers.utils.getAddress(contract),
+      tokenId: BigNumber.from(tokenId).toHexString(),
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+    // save previewLink of NFT metadata image if it's from IPFS
+    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
+    if (previewLink) {
+      await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+    }
+    await seService.indexNFTs([savedNFT])
+    await updateCollectionForNFTs([savedNFT])
+    return savedNFT
   } catch (err) {
     logger.debug(`Error in saveNewNFT: ${err}`)
     Sentry.captureMessage(`Error in saveNewNFT: ${err}`)

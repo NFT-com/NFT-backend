@@ -978,6 +978,20 @@ describe('nft resolver', () => {
         testMockWallet,
         { id: '5', name: 'goerli' },
       )
+
+      await repositories.nft.save({
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x0d5415',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
     })
 
     afterAll(async () => {
@@ -985,7 +999,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it('should save new NFT in our DB', async () => {
+    it('should return error since this NFT is invalid', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation updateNFT($input: UpdateNFTInput!) { updateNFT(input:$input) {  id contract } }',
         variables: {
@@ -996,7 +1010,47 @@ describe('nft resolver', () => {
         },
       })
 
+      expect(result.errors.length).toEqual(1)
+      expect(result.errors[0].errorKey).toEqual('NFT_NOT_VALID')
+    })
+
+    it('should save new NFT in our DB', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation updateNFT($input: UpdateNFTInput!) { updateNFT(input:$input) {  id contract } }',
+        variables: {
+          input: {
+            contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+            tokenId: '0x0226',
+          },
+        },
+      })
+
       expect(result.data.updateNFT.id).toBeDefined()
+      const nft = await repositories.nft.findOne({
+        where: {
+          contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+          tokenId: '0x0226',
+          chainId: '5',
+        },
+      })
+      expect(nft).toBeDefined()
+      const collection = await repositories.collection.findOne({
+        where: {
+          contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+          chainId: '5',
+        },
+      })
+      expect(collection).toBeDefined()
+      const edge = await repositories.edge.findOne({
+        where: {
+          thisEntityId: collection.id,
+          thisEntityType: defs.EntityType.Collection,
+          thatEntityId: nft.id,
+          thatEntityType: defs.EntityType.NFT,
+          edgeType: defs.EdgeType.Includes,
+        },
+      })
+      expect(edge).toBeDefined()
     })
   })
 })

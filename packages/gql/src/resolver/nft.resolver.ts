@@ -32,7 +32,7 @@ import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/ser
 import {
   checkNFTContractAddresses,
   getCollectionNameFromContract,
-  getOwnersOfGenesisKeys,
+  getOwnersOfGenesisKeys, getUserWalletFromNFT,
   initiateWeb3,
   refreshNFTMetadata,
   removeEdgesForNonassociatedAddresses, saveNewNFT, saveNFTMetadataImageToS3,
@@ -1374,14 +1374,21 @@ const updateNFT = async (
                 tokenId: nft.tokenId,
               },
             }
-            updateNFTOwnershipAndMetadata(
-              obj,
-              nft.userId,
-              nft.walletId,
-              chainId,
-            ).then(() => {
-              logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
-            })
+            getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+              .then((wallet) => {
+                if (!wallet) {
+                  logger.error('Failed to create new user and wallet for NFT ownership')
+                } else {
+                  updateNFTOwnershipAndMetadata(
+                    obj,
+                    wallet.userId,
+                    wallet.id,
+                    chainId,
+                  ).then(() => {
+                    logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
+                  })
+                }
+              })
           })
       }
       return nft
@@ -1396,7 +1403,7 @@ const updateNFT = async (
         logger.error(`NFT is not valid for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
         return Promise.reject(appError.buildInvalid(
           nftError.buildNFTNotValid(),
-          nftError.ErrorType.NFTNotFound,
+          nftError.ErrorType.NFTNotValid,
         ))
       } else {
         logger.info(`New NFT is saved for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
