@@ -299,7 +299,7 @@ const getActivities = async (
     filters = { ...filters, nftId }
   }
 
-  if (read) {
+  if (read !== null) {
     filters = { ...filters, read }
   }
 

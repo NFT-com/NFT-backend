@@ -5,7 +5,7 @@ import Joi from 'joi'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
-import { appError, curationError, nftError, profileError } from '@nftcom/gql/error'
+import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import {
@@ -1236,7 +1236,7 @@ export const listNFTSeaport = async (
   _: any,
   args: gql.MutationListNFTSeaportArgs,
   ctx: Context,
-): Promise<boolean> => {
+): Promise<any> => {
   const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const seaportSignature = args?.input?.seaportSignature
@@ -1248,14 +1248,17 @@ export const listNFTSeaport = async (
       return repositories.txOrder.save(order)
     }))
     .then(order => !!order.id)
-    .catch(() => false)
+    .catch(err => appError.buildInvalid(
+      txActivityError.buildOpenSea(err),
+      txActivityError.ErrorType.OpenSea,
+    ))
 }
 
 export const listNFTLooksrare = async (
   _: any,
   args: gql.MutationListNFTLooksrareArgs,
   ctx: Context,
-): Promise<boolean> => {
+): Promise<any> => {
   const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
@@ -1267,7 +1270,10 @@ export const listNFTLooksrare = async (
       return repositories.txOrder.save(order)
     }))
     .then(order => !!order.id)
-    .catch(() => false)
+    .catch(err => appError.buildInvalid(
+      txActivityError.buildLooksRare(err),
+      txActivityError.ErrorType.LooksRare,
+    ))
 }
 
 const uploadMetadataImagesToS3 = async (
