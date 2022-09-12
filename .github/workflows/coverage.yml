@@ -86,6 +86,7 @@ jobs:
         envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
         envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
         envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
+        envkey_REFRESH_NFT_DURATION: ${{ secrets.REFRESH_NFT_DURATION }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
