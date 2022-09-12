@@ -271,6 +271,7 @@ describe('nft resolver', () => {
       const testMockWallet1 = testMockWallet
       testMockWallet1.chainId = '5'
       testMockWallet1.address = '0x59495589849423692778a8c5aaCA62CA80f875a4'
+      // These NFTs should be updated by fiterNFTsWithAlchemy function
       await repositories.nft.save({
         contract: '0xa49a0e5eF83cF89Ac8aae182f22E6464B229eFC8',
         tokenId: '0x0a',
@@ -315,9 +316,12 @@ describe('nft resolver', () => {
       expect(users.length).toEqual(1)
       expect(wallets.length).toEqual(1)
 
-      // One NFT should be removed
+      // ERC1155 NFT should be removed
       const updatedNFTs = await repositories.nft.findAll()
       expect(updatedNFTs.length).toEqual(1)
+      // Owner of ERC721  NFT should be updated
+      expect(updatedNFTs[0].walletId).toEqual(wallets[0].id)
+      expect(updatedNFTs[0].userId).toEqual(users[0].id)
     })
   })
 })
