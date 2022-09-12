@@ -77,7 +77,7 @@ type TxActivity {
   activityType: ActivityType!
   activityTypeId: String!
   read: Boolean!
-  timestamp: Date!
+  timestamp: DateTime!
   status: ActivityStatus!
   nftContract: String!
   nftId: [String]!
@@ -85,6 +85,7 @@ type TxActivity {
   order: TxOrder
   transaction: TxTransaction
   cancel: TxCancel
+  readTimestamp: DateTime!
 }
 
 type TxCancel {

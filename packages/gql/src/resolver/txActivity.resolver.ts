@@ -299,16 +299,17 @@ const getActivities = async (
     filters = { ...filters, nftId }
   }
 
-  if (read !== null || read !== undefined) {
-    filters = { ...filters, read }
-  }
-
   // by default expired items are included
   if (ignoreExpired) {
     filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
   }
 
-  const safefilters = [helper.inputT2SafeK(filters)]
+  let safefilters
+  if (read !== null || read !== undefined) {
+    safefilters = [{ ...helper.inputT2SafeK(filters),  read }]
+  } else {
+    safefilters = [helper.inputT2SafeK(filters)]
+  }
 
   if (skipRelations) {
     return core.paginatedEntitiesBy(
