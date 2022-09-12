@@ -86,6 +86,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['TEST_DB_USE_SSL'] = process.env.TEST_DB_USE_SSL || parsedFile['TEST_DB_USE_SSL']
   parsedFile['ACTIVITY_ENDPOINTS_ENABLED'] = process.env.ACTIVITY_ENDPOINTS_ENABLED || parsedFile['ACTIVITY_ENDPOINTS_ENABLED']
   parsedFile['NFTPORT_KEY'] = process.env.NFTPORT_KEY || parsedFile['NFTPORT_KEY']
+  parsedFile['IPFS_WEB_GATEWAY'] = process.env.IPFS_WEB_GATEWAY || parsedFile['IPFS_WEB_GATEWAY']
 
   console.log(JSON.stringify(parsedFile))
 

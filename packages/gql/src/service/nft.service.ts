@@ -558,9 +558,9 @@ export const saveNFTMetadataImageToS3 = async (
       if (!uploadedImage) return undefined
       logger.info(`previewLink for NFT ${ nft.id } was generated`,
         {
-          previewLink: uploadedImage.isRaw ? uploadedImage : uploadedImage + '?width=600',
+          previewLink: uploadedImage.isRaw ? uploadedImage.cdnPath : uploadedImage.cdnPath + '?width=600',
         })
-      return uploadedImage.isRaw ? uploadedImage : uploadedImage + '?width=600'
+      return uploadedImage.isRaw ? uploadedImage.cdnPath : uploadedImage.cdnPath + '?width=600'
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {

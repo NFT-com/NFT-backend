@@ -69,7 +69,7 @@ type LooksrareProtocolData {
   s: String
 }
 
-union ProtocolData = SeaportProtocolData | LooksrareProtocolData
+union ProtocolData = SeaportProtocolData | LooksrareProtocolData 
 
 type TxActivity {
   id: ID!
@@ -93,6 +93,7 @@ type TxCancel {
   foreignType: String!
   foreignKeyId: String!
   transactionHash: String!
+  blockNumber: String!
 }
 
 type TxOrder {
@@ -114,8 +115,10 @@ type TxTransaction {
   blockNumber: String!
   nftContractAddress: String!
   nftContractTokenId: String!
-  sender: String!
-  receiver: String!
+  maker: String!
+  taker: String!
+  protocol: String!
+  exchange: String!
 }
 
 type TxOffer {

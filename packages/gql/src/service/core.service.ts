@@ -1021,7 +1021,7 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
 }
 
 export const processIPFSURL = (image: string): string => {
-  const prefix = 'https://opensea.mypinata.cloud/ipfs/'
+  const prefix = process.env.IPFS_WEB_GATEWAY
   if (image == null) {
     return null
   } else if (image.indexOf('ipfs://ipfs/') === 0) {
