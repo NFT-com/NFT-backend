@@ -127,6 +127,11 @@ export const start = async (): Promise<void> => {
 
   app.use(pinoHttp({
     logger: _logger.parent,
+    autoLogging: {
+      ignore: (req) => {
+        return req.url === '/.well-known/apollo/server-health'
+      },
+    },
   }))
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
