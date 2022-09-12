@@ -273,7 +273,7 @@ service:
           firelensConfiguration: {
             type: 'fluentbit',
             options: {
-              'enable-ecs-log-metadata': 'True',
+              'enable-ecs-log-metadata': 'true',
             },
           },
           logConfiguration: {
