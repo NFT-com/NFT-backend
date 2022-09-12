@@ -1,4 +1,4 @@
-import { In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import {  In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
@@ -105,6 +105,9 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .take(query.take)
       .leftJoinAndMapOne('activity.order', 'TxOrder',
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+      .cache(true)
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',
         'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
       .cache(true)
@@ -117,13 +120,22 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     updateField: string,
     updateValue: any,
   ): Promise<UpdateResult> =>{
+    let queryFilter: any = {
+      ...filters,
+      [updateField]: Not(updateValue),
+    }
+
+    if (ids.length) {
+      queryFilter = { ...queryFilter, id: In(ids) }
+    }
+
+    let updates: any = { [updateField]: updateValue }
+    if (updateField === 'read') {
+      updates = { ...updates, readTimestamp: new Date() }
+    }
     return this.getRepository().createQueryBuilder('activity')
-      .update({ [updateField]: updateValue })
-      .where({
-        id: In(ids),
-        ...filters,
-        [updateField]: Not(updateValue),
-      })
+      .update(updates)
+      .where(queryFilter)
       .returning(['id'])
       .updateEntity(true)
       .execute()

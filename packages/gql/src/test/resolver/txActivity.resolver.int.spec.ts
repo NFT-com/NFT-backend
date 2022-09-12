@@ -195,7 +195,6 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           chainId: '4',
-          includeExpired: true,
         } },
       })
   
@@ -230,7 +229,6 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
-          includeExpired: true,
         } },
       })
    
@@ -239,7 +237,7 @@ describe('transaction activity resolver', () => {
       expect(result.data.getActivities.totalItems).toBe(1)
     })
 
-    it('should not return expired items by default', async () => {
+    it('should not return expired items if ignoreExpired is provided', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -261,6 +259,7 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
+          ignoreExpired: true,
         } },
       })
    
@@ -327,7 +326,7 @@ describe('transaction activity resolver', () => {
   })
   
   describe('transaction activity mutations', () => {
-    it('should update acitivities read property', async () => {
+    it('should update activities read property', async () => {
       const activityIds: string[] = testData
         .reduce((aggregator: string[], data: any ) => {
           if (data?.activity?.id) {
@@ -353,7 +352,7 @@ describe('transaction activity resolver', () => {
         .toEqual(expect.arrayContaining(['test-failed-id']))
     })
   })
-  it('should update acitivities status property', async () => {
+  it('should update activities status property', async () => {
     const activityIds: string[] = testData
       .reduce((aggregator: string[], data: any ) => {
         if (data?.activity?.id) {

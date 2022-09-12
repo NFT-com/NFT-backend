@@ -158,6 +158,7 @@ export type Signature = {
   r: string
   s: string
 }
+
 export interface ActivityFilters {
   chainId: string
   walletAddress?: string

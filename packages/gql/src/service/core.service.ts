@@ -368,6 +368,7 @@ export const blacklistProfilePatterns = [
   /^wop$/,
   // "reserved" list
   /^anonymice$/,
+  /^fees$/,
   /^app$/,
   /^whitelist$/,
   /^dao$/,
@@ -1034,6 +1035,8 @@ export const processIPFSURL = (image: string): string => {
   } else if (image.indexOf('pinata.cloud/ipfs/') !== -1) {
     const index = image.indexOf('pinata.cloud/ipfs/')
     return prefix + image.slice(index + 18)
+  } else if (image.indexOf('ar://') === 0) {
+    return 'https://arweave.net/' + image.slice(5)
   } else {
     return image
   }
@@ -1054,3 +1057,11 @@ export const fetchWithTimeout = async (
   return response
 }
 
+export const generateSVGFromBase64String = (
+  base64String: string,
+): string => {
+  return `<svg width="600" height="600"
+  xmlns="http://www.w3.org/2000/svg">
+  <image xmlns="http://www.w3.org/2000/svg" href="${base64String}" width="600" height="600"/>
+</svg>`
+}

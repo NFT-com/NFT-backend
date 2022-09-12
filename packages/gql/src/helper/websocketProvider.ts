@@ -1,6 +1,7 @@
 import { BigNumber, ethers, providers, utils } from 'ethers'
 import { In, LessThan } from 'typeorm'
 
+import { cancelEntityBuilder,txEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
 const repositories = db.newRepositories()
@@ -232,11 +233,14 @@ const keepAlive = ({
       const evt = looksrareExchangeInterface.parseLog(e)
       if (evt.name === LooksrareEventName.CancelAllOrders) {
         const [user, newMinNonce] = evt.args
+        const newMinNonceInNumber = Number(newMinNonce)
+        
         try {
           const orders: entity.TxOrder[] = await repositories.txOrder.find({
+            relations: ['activity'],
             where: {
               makerAddress: helper.checkSum(user),
-              nonce: LessThan(newMinNonce),
+              nonce: LessThan(newMinNonceInNumber),
               activity: {
                 status: defs.ActivityStatus.Valid,
               },
@@ -244,11 +248,26 @@ const keepAlive = ({
           })
 
           if (orders.length) {
+            const cancelEntityPromises: Promise<Partial<entity.TxCancel>>[] = []
             for (const order of orders) {
               order.activity.status = defs.ActivityStatus.Cancelled
+              cancelEntityPromises.push(cancelEntityBuilder(
+                defs.ActivityType.Cancel,
+                `${e.transactionHash}:${order.orderHash}`,
+                e.blockNumber,
+                chainId.toString(),
+                order.activity.nftContract,
+                order.activity.nftId,
+                order.makerAddress,
+                defs.ExchangeType.LooksRare,
+                order.orderType as defs.CancelActivityType,
+                order.id,
+              ))
             }
 
             await repositories.txOrder.saveMany(orders)
+            const cancelEntities = await Promise.all(cancelEntityPromises)
+            await repositories.txCancel.saveMany(cancelEntities)
             logger.debug(`Evt Saved: ${LooksrareEventName.CancelAllOrders} -- txhash: ${e.transactionHash}`)
           }
         } catch (err) {
@@ -271,11 +290,25 @@ const keepAlive = ({
           })
   
           if (orders.length) {
+            const cancelEntityPromises: Promise<Partial<entity.TxCancel>>[] = []
             for (const order of orders) {
               order.activity.status = defs.ActivityStatus.Cancelled
+              cancelEntityPromises.push(cancelEntityBuilder(
+                defs.ActivityType.Cancel,
+                `${e.transactionHash}:${order.orderHash}`,
+                e.blockNumber,
+                chainId.toString(),
+                helper.checkSum(order.activity.nftContract),
+                order.activity.nftId,
+                helper.checkSum(order.makerAddress),
+                defs.ExchangeType.LooksRare,
+                order.orderType as defs.CancelActivityType,
+                order.id,
+              ))
             }
-  
             await repositories.txOrder.saveMany(orders)
+            const cancelEntities = await Promise.all(cancelEntityPromises)
+            await repositories.txCancel.saveMany(cancelEntities)
             logger.debug(`Evt Saved: ${LooksrareEventName.CancelMultipleOrders} -- txhash: ${e.transactionHash}`)
           }
         } catch (err) {
@@ -298,11 +331,30 @@ const keepAlive = ({
               },
             },
           })
-      
+          
           if (order) {
             order.activity.status = defs.ActivityStatus.Executed
             order.takerAddress = helper.checkSum(taker)
             await repositories.txOrder.save(order)
+
+            const checksumContract: string = helper.checkSum(collection)
+            
+            // new transaction
+            const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
+              defs.ActivityType.Sale,
+              `${e.transactionHash}:${order.orderHash}`,
+              e.blockNumber,
+              chainId.toString(),
+              checksumContract,
+              order.protocolData?.tokenId,
+              maker,
+              taker,
+              defs.ExchangeType.LooksRare,
+              order.protocolData?.price,
+              order.protocolData?.currencyAddress,
+              LooksrareEventName.TakerAsk,
+            )
+            await repositories.txTransaction.save(newTx)
             logger.log(`
                 updated ${orderHash} for collection ${collection} -- strategy:
                 ${strategy}, currency:${currency} orderNonce:${orderNonce}
@@ -337,6 +389,25 @@ const keepAlive = ({
             updated ${orderHash} for collection ${collection} -- strategy:
             ${strategy}, currency:${currency} orderNonce:${orderNonce}
             `)
+
+            const checksumContract: string = helper.checkSum(collection)
+        
+            // new transaction
+            const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
+              defs.ActivityType.Sale,
+              `${e.transactionHash}:${orderHash}`,
+              e.blockNumber,
+              chainId.toString(),
+              checksumContract,
+              order.protocolData?.tokenId,
+              maker,
+              taker,
+              defs.ExchangeType.LooksRare,
+              order.protocol,
+              order.protocolData,
+              LooksrareEventName.TakerBid,
+            )
+            await repositories.txTransaction.save(newTx)
           }
         } catch (err) {
           logger.error(`Evt: ${LooksrareEventName.TakerBid} -- Err: ${err}`)
@@ -369,7 +440,6 @@ const keepAlive = ({
 
     provider.on(openseaFilter, async (e) => {
       const evt = openseaSeaportInterface.parseLog(e)
-
       if(evt.name === OSSeaportEventName.OrderCancelled) {
         const [orderHash, offerer, zone] = evt.args
         try {
@@ -391,6 +461,21 @@ const keepAlive = ({
           if (order) {
             order.activity.status = defs.ActivityStatus.Cancelled
             await repositories.txOrder.save(order)
+
+            const cancelledEntity: Partial<entity.TxCancel> = await cancelEntityBuilder(
+              defs.ActivityType.Cancel,
+              `${e.transactionHash}:${orderHash}`,
+              e.blockNumber,
+              chainId.toString(),
+              order.activity.nftContract,
+              order.activity.nftId,
+              order.makerAddress,
+              defs.ExchangeType.OpenSea,
+              order.orderType as defs.CancelActivityType,
+              order.id,
+            )
+
+            await repositories.txCancel.save(cancelledEntity)
             logger.log(`
                 Evt Saved: ${OSSeaportEventName.OrderCancelled} for orderHash ${orderHash},
                 offerer ${offerer},
@@ -418,10 +503,25 @@ const keepAlive = ({
           })
       
           if (orders.length) {
+            const cancelEntityPromises: Promise<Partial<entity.TxCancel>>[] = []
             for (const order of orders) {
               order.activity.status = defs.ActivityStatus.Cancelled
+              cancelEntityPromises.push(cancelEntityBuilder(
+                defs.ActivityType.Cancel,
+                `${e.transactionHash}:${order.orderHash}`,
+                e.blockNumber,
+                chainId.toString(),
+                order.activity.nftContract,
+                order.activity.nftId,
+                order.makerAddress,
+                defs.ExchangeType.OpenSea,
+                order.orderType as defs.CancelActivityType,
+                order.id,
+              ))
             }
             await repositories.txOrder.saveMany(orders)
+            const cancelEntities = await Promise.all(cancelEntityPromises)
+            await repositories.txCancel.saveMany(cancelEntities)
             logger.log(`
                   Evt Saved: ${OSSeaportEventName.CounterIncremented} for
                   offerer ${offerer}
@@ -431,7 +531,7 @@ const keepAlive = ({
           logger.error(`Evt: ${OSSeaportEventName.CounterIncremented} -- Err: ${err}`)
         }
       } else if (evt.name === OSSeaportEventName.OrderFulfilled) {
-        const [orderHash, offerer, zone, recipient] = evt.args
+        const [orderHash, offerer, zone, recipient, offer, consideration] = evt.args
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
             relations: ['activity'],
@@ -447,11 +547,29 @@ const keepAlive = ({
               },
             },
           })
-  
           if (order) {
             order.activity.status = defs.ActivityStatus.Executed
             order.takerAddress = helper.checkSum(recipient)
             await repositories.txOrder.save(order)
+            // new transaction
+            const newTx: Partial<entity.TxTransaction> = await txEntityBuilder(
+              defs.ActivityType.Sale,
+              `${e.transactionHash}:${orderHash}`,
+              e.blockNumber,
+              chainId.toString(),
+              order.activity.nftContract,
+              order.protocolData?.parameters?.offer?.[0]?.identifierOrCriteria,
+              offerer,
+              recipient,
+              defs.ExchangeType.OpenSea,
+              order.protocol,
+              {
+                offer,
+                consideration,
+              },
+              OSSeaportEventName.OrderFulfilled,
+            )
+            await repositories.txTransaction.save(newTx)
             logger.log(`
             Evt Saved: ${OSSeaportEventName.OrderFulfilled} for orderHash ${orderHash},
             offerer ${offerer},

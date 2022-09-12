@@ -83,6 +83,7 @@ type TxActivity {
   nftId: [String]!
   walletAddress: String!
   order: TxOrder
+  transaction: TxTransaction
   cancel: TxCancel
 }
 
@@ -160,7 +161,7 @@ input TxActivitiesInput {
   contract: String
   chainId: String
   skipRelations: Boolean
-  includeExpired: Boolean
+  ignoreExpired: Boolean
 }
 
 extend type Query {
