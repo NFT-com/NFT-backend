@@ -82,13 +82,13 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .createQueryBuilder('activity')
     const { nftIds, remainingFilters } = query.filters.reduce(
       (aggregator: any, filter: TxActivity) => {
-        const { nftId, ...remaingFilters } = filter
+        const { nftId, ...remainingFilters } = filter
         if (nftId) {
           aggregator.nftIds.push(nftId)
         }
 
-        if (Object.keys(remaingFilters).length) {
-          aggregator.remainingFilters.push(remaingFilters)
+        if (Object.keys(remainingFilters).length) {
+          aggregator.remainingFilters.push(remainingFilters)
         }
         return aggregator
       }, { nftIds: [], remainingFilters: [] })
