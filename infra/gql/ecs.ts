@@ -217,7 +217,7 @@ service:
             logDriver: 'awsfirelens',
             options: {
               Name: 'grafana-loki',
-              Url: 'https://loki.leonardo.nft.prv/loki/api/v1/push',
+              Url: 'loki.leonardo.nft.prv/loki/api/v1/push',
               Labels: '{job="firelens"}',
               RemoveKeys: 'container_id,ecs_task_arn',
               LabelKeys: 'container_name,ecs_task_definition,source,ecs_cluster',
