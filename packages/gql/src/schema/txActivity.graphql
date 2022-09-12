@@ -85,7 +85,6 @@ type TxActivity {
   order: TxOrder
   transaction: TxTransaction
   cancel: TxCancel
-  readTimestamp: DateTime!
 }
 
 type TxCancel {
