@@ -11,15 +11,21 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename, fetchWithTimeout, generateSVGFromBase64String,
+  extensionFromFilename,
+  fetchWithTimeout,
+  generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
-  midWeight, processIPFSURL, s3ToCdn, saveUsersForAssociatedAddress,
+  midWeight,
+  processIPFSURL,
+  s3ToCdn,
+  saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { EdgeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -211,7 +217,7 @@ export const getOwnersForNFT = async (
  *
  * If not, deletes the NFT record from the DB.
  */
-const filterNFTsWithAlchemy = async (
+export const filterNFTsWithAlchemy = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<any[]> => {
@@ -232,11 +238,38 @@ const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
-            .then(() => repositories.nft.hardDelete({
-              id: dbNFT.id,
-            }))
-          await seService.deleteNFT(dbNFT.id)
+          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: EdgeType.Displays } )
+          const owners = await getOwnersForNFT(dbNFT)
+          if (owners.length) {
+            if (owners.length > 1) {
+              // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+              await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+                .then(() => repositories.nft.hardDelete({
+                  id: dbNFT.id,
+                }))
+              await seService.deleteNFT(dbNFT.id)
+            } else {
+              const newOwner = owners[0]
+              // save User, Wallet for new owner addresses if it's not in our DB ...
+              const wallet = await saveUsersForAssociatedAddress(dbNFT.chainId, newOwner, repositories)
+              const user = await repositories.user.findOne({
+                where: {
+                  username: 'ethereum-' + ethers.utils.getAddress(newOwner),
+                },
+              })
+              await repositories.nft.updateOneById(dbNFT.id, {
+                userId: user.id,
+                walletId: wallet.id,
+              })
+            }
+          } else {
+            // if there is no owner from api, then we just delete it from our DB
+            await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+              .then(() => repositories.nft.hardDelete({
+                id: dbNFT.id,
+              }))
+            await seService.deleteNFT(dbNFT.id)
+          }
         }
       }),
     )
@@ -587,9 +620,9 @@ export const saveNFTMetadataImageToS3 = async (
       if (!uploadedImage) return undefined
       logger.info(`previewLink for NFT ${ nft.id } was generated`,
         {
-          previewLink: uploadedImage.isRaw ? uploadedImage : uploadedImage + '?width=600',
+          previewLink: uploadedImage.isRaw ? uploadedImage.cdnPath : uploadedImage.cdnPath + '?width=600',
         })
-      return uploadedImage.isRaw ? uploadedImage : uploadedImage + '?width=600'
+      return uploadedImage.isRaw ? uploadedImage.cdnPath : uploadedImage.cdnPath + '?width=600'
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
