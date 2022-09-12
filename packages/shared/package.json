@@ -22,7 +22,7 @@
     "nanoid": "^3.1.30",
     "node-fetch": "^2.6.6",
     "pg": "^8.7.1",
-    "pino": "8.4.2",
+    "pino": "^8.4.2",
     "typeorm": "0.2.41"
   },
   "devDependencies": {
