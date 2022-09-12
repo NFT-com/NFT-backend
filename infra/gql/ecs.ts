@@ -224,6 +224,15 @@ service:
               LineFormat: 'json',
             },
           },
+          // logConfiguration: {
+          //   logDriver: 'awslogs',
+          //   options: {
+          //     'awslogs-create-group': 'True',
+          //     'awslogs-group': `/ecs/${resourceName}`,
+          //     'awslogs-region': 'us-east-1',
+          //     'awslogs-stream-prefix': 'gql',
+          //   },
+          // },
           memoryReservation: config.requireNumber('ecsTaskMemory') - (otelMemory + loggerMemory),
           name: resourceName,
           portMappings: [
@@ -239,6 +248,15 @@ service:
         {
           name: otelName,
           image: 'amazon/aws-otel-collector',
+          logConfiguration: {
+            logDriver: 'awslogs',
+            options: {
+              'awslogs-create-group': 'True',
+              'awslogs-group': `/ecs/${resourceName}`,
+              'awslogs-region': 'us-east-1',
+              'awslogs-stream-prefix': 'otel',
+            },
+          },
           essential: true,
           memory: otelMemory,
           secrets: [
@@ -255,15 +273,15 @@ service:
           firelensConfiguration: {
             type: 'fluentbit',
             options: {
-              'enable-ecs-log-metadata': 'true',
+              'enable-ecs-log-metadata': 'True',
             },
           },
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-group': 'firelens-container',
+              'awslogs-group': `/ecs/${resourceName}`,
               'awslogs-region': 'us-east-1',
-              'awslogs-create-group': 'true',
+              'awslogs-create-group': 'True',
               'awslogs-stream-prefix': 'firelens',
             },
           },
