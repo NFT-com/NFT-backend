@@ -305,7 +305,7 @@ const getActivities = async (
   }
 
   let safefilters
-  if (read !== null || read !== undefined) {
+  if (read !== undefined) {
     safefilters = [{ ...helper.inputT2SafeK(filters),  read }]
   } else {
     safefilters = [helper.inputT2SafeK(filters)]
