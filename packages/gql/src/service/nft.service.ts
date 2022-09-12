@@ -11,15 +11,21 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename, fetchWithTimeout, generateSVGFromBase64String,
+  extensionFromFilename,
+  fetchWithTimeout,
+  generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
-  midWeight, processIPFSURL, s3ToCdn,
+  midWeight,
+  processIPFSURL,
+  s3ToCdn,
+  saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { EdgeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -176,13 +182,42 @@ export const getNFTsFromAlchemy = async (
   }
 }
 
+export const getOwnersForNFT = async (
+  nft: typeorm.DeepPartial<entity.NFT>,
+): Promise<string[]> => {
+  try {
+    initiateWeb3(nft.chainId)
+    const contract = ethers.utils.getAddress(nft.contract)
+    const key = `getOwnersForNFT_${nft.chainId}_${contract}_${nft.tokenId}`
+    const cachedData = await cache.get(key)
+
+    if (cachedData) {
+      return JSON.parse(cachedData) as string[]
+    } else {
+      const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
+      const response = await axios.get(baseUrl)
+
+      if (response.data && response.data.owners) {
+        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
+        return response.data.owners as string[]
+      } else {
+        return []
+      }
+    }
+  } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
+    Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
+    return []
+  }
+}
+
 /**
  * Takes a bunch of NFTs (pulled from the DB), and checks
  * that the given owner is still correct.
  *
  * If not, deletes the NFT record from the DB.
  */
-const filterNFTsWithAlchemy = async (
+export const filterNFTsWithAlchemy = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<any[]> => {
@@ -203,11 +238,38 @@ const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
-            .then(() => repositories.nft.hardDelete({
-              id: dbNFT.id,
-            }))
-          await seService.deleteNFT(dbNFT.id)
+          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: EdgeType.Displays } )
+          const owners = await getOwnersForNFT(dbNFT)
+          if (owners.length) {
+            if (owners.length > 1) {
+              // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+              await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+                .then(() => repositories.nft.hardDelete({
+                  id: dbNFT.id,
+                }))
+              await seService.deleteNFT(dbNFT.id)
+            } else {
+              const newOwner = owners[0]
+              // save User, Wallet for new owner addresses if it's not in our DB ...
+              const wallet = await saveUsersForAssociatedAddress(dbNFT.chainId, newOwner, repositories)
+              const user = await repositories.user.findOne({
+                where: {
+                  username: 'ethereum-' + ethers.utils.getAddress(newOwner),
+                },
+              })
+              await repositories.nft.updateOneById(dbNFT.id, {
+                userId: user.id,
+                walletId: wallet.id,
+              })
+            }
+          } else {
+            // if there is no owner from api, then we just delete it from our DB
+            await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+              .then(() => repositories.nft.hardDelete({
+                id: dbNFT.id,
+              }))
+            await seService.deleteNFT(dbNFT.id)
+          }
         }
       }),
     )
