@@ -1021,13 +1021,21 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
 }
 
 export const processIPFSURL = (image: string): string => {
-  const prefixes = process.env.IPFS_WEB_GATEWAY.split(',')
   let prefix
-  if (!prefixes.length) {
+  if (!process.env.IPFS_WEB_GATEWAY) {
     prefix = 'https://cloudflare-ipfs.com/ipfs/'
   } else {
-    // we pick prefix randomly to avoid dependency on just one gateway
-    prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+    const prefixes = process.env.IPFS_WEB_GATEWAY.split(',')
+    if (!prefixes.length) {
+      prefix = 'https://cloudflare-ipfs.com/ipfs/'
+    } else {
+      if (prefixes.length === 1 && prefixes[0] === '') {
+        prefix = 'https://cloudflare-ipfs.com/ipfs/'
+      } else {
+        // we pick prefix randomly to avoid dependency on just one gateway
+        prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+      }
+    }
   }
 
   if (image == null) {
