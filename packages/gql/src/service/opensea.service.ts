@@ -9,6 +9,7 @@ import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { _logger,defs,entity } from '@nftcom/shared'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
+const OPENSEA_ORDERS_API_KEY = process.env.OPENSEA_ORDERS_API_KEY
 const V1_OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/api/v1'
 const V1_OPENSEA_API_BASE_URL = 'https://api.opensea.io/api/v1'
 const OPENSEA_API_TESTNET_BASE_URL = 'https://testnets-api.opensea.io/v2'
@@ -234,13 +235,15 @@ export interface OpenseaOrderRequest {
 const getOpenseaInterceptor = (
   baseURL: string,
   chainId: string,
+  apiKey?: string,
 ): AxiosInstance => {
+  const apiKeyApplied: string = apiKey ? apiKey : OPENSEA_API_KEY
   const openseaInstance = axios.create({
     baseURL,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'X-API-KEY': chainId === '1'? OPENSEA_API_KEY : '',
+      'X-API-KEY': chainId === '1'? apiKeyApplied : '',
     },
   })
 
@@ -672,7 +675,7 @@ export const createSeaportListing = async (
   signature: Maybe<string>,
   parameters: Maybe<string>,
   chainId: string,
-): Promise<Partial<entity.TxOrder> | null> => {
+): Promise<Partial<entity.TxOrder> | null| Error> => {
   let openseaOrder: Partial<entity.TxOrder>
   const baseUrlV2 = chainId === '1' ? OPENSEA_API_BASE_URL : OPENSEA_API_TESTNET_BASE_URL
   if (
@@ -682,7 +685,7 @@ export const createSeaportListing = async (
     return null
   }
   try {
-    const res = await getOpenseaInterceptor(baseUrlV2, chainId).post(
+    const res = await getOpenseaInterceptor(baseUrlV2, chainId, OPENSEA_ORDERS_API_KEY).post(
       `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/listings`,
       {
         signature,
@@ -704,7 +707,7 @@ export const createSeaportListing = async (
   } catch (err) {
     logger.error(`Error in createSeaportListing: ${err}`)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
-    return null
+    throw err
   }
 }
 

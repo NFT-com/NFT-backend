@@ -77,6 +77,7 @@ runs:
         PROFILE_NFTS_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_NFTS_EXPIRE_DURATION }}
         BULL_MAX_REPEAT_COUNT: ${{ fromJSON(inputs.secrets).BULL_MAX_REPEAT_COUNT }}
         OPENSEA_API_KEY: ${{ fromJSON(inputs.secrets).OPENSEA_API_KEY }}
+        OPENSEA_ORDERS_API_KEY: ${{ fromJSON(inputs.secrets).OPENSEA_ORDERS_API_KEY }}
         LOOKSRARE_API_KEY: ${{ fromJSON(inputs.secrets).LOOKSRARE_API_KEY }}
         PROFILE_SCORE_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_SCORE_EXPIRE_DURATION }}
         NFT_EXTERNAL_ORDER_REFRESH_DURATION: ${{ fromJSON(inputs.secrets).NFT_EXTERNAL_ORDER_REFRESH_DURATION }}
@@ -88,6 +89,8 @@ runs:
         TEST_DB_USE_SSL: ${{ fromJSON(inputs.secrets).TEST_DB_USE_SSL }}
         ACTIVITY_ENDPOINTS_ENABLED: ${{ fromJSON(inputs.secrets).ACTIVITY_ENDPOINTS_ENABLED}}
         NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY}}
+        REFRESH_NFT_DURATION: ${{ fromJSON(inputs.secrets).REFRESH_NFT_DURATION}}
+        IPFS_WEB_GATEWAY: ${{ fromJSON(inputs.secrets).IPFS_WEB_GATEWAY }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash

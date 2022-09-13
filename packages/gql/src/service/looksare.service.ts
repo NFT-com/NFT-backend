@@ -244,7 +244,7 @@ export const retrieveMultipleOrdersLooksrare = async (
 export const createLooksrareListing = async (
   order: string,
   chainId: string,
-): Promise<Partial<entity.TxOrder> | null> => {
+): Promise<Partial<entity.TxOrder> | null | Error> => {
   let looksrareOrder: Partial<entity.TxOrder>
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   if (order == null || order.length === 0   ) {
@@ -268,6 +268,6 @@ export const createLooksrareListing = async (
   } catch (err) {
     logger.error(`Error in createLooksrareListing: ${err}`)
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
-    return null
+    throw err
   }
 }

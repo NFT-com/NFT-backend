@@ -77,6 +77,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['PROFILE_NFTS_EXPIRE_DURATION'] = process.env.PROFILE_NFTS_EXPIRE_DURATION || parsedFile['PROFILE_NFTS_EXPIRE_DURATION']
   parsedFile['BULL_MAX_REPEAT_COUNT'] = process.env.BULL_MAX_REPEAT_COUNT || parsedFile['BULL_MAX_REPEAT_COUNT']
   parsedFile['OPENSEA_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_API_KEY']
+  parsedFile['OPENSEA_ORDERS_API_KEY'] = process.env.OPENSEA_API_KEY || parsedFile['OPENSEA_ORDERS_API_KEY']
   parsedFile['LOOKSRARE_API_KEY'] = process.env.LOOKSRARE_API_KEY || parsedFile['LOOKSRARE_API_KEY']
   parsedFile['PROFILE_SCORE_EXPIRE_DURATION'] = process.env.PROFILE_SCORE_EXPIRE_DURATION || parsedFile['PROFILE_SCORE_EXPIRE_DURATION']
   parsedFile['NFT_EXTERNAL_ORDER_REFRESH_DURATION'] = process.env.NFT_EXTERNAL_ORDER_REFRESH_DURATION || parsedFile['NFT_EXTERNAL_ORDER_REFRESH_DURATION']
@@ -88,6 +89,8 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['TEST_DB_USE_SSL'] = process.env.TEST_DB_USE_SSL || parsedFile['TEST_DB_USE_SSL']
   parsedFile['ACTIVITY_ENDPOINTS_ENABLED'] = process.env.ACTIVITY_ENDPOINTS_ENABLED || parsedFile['ACTIVITY_ENDPOINTS_ENABLED']
   parsedFile['NFTPORT_KEY'] = process.env.NFTPORT_KEY || parsedFile['NFTPORT_KEY']
+  parsedFile['REFRESH_NFT_DURATION'] = process.env.REFRESH_NFT_DURATION || parsedFile['REFRESH_NFT_DURATION']
+  parsedFile['IPFS_WEB_GATEWAY'] = process.env.IPFS_WEB_GATEWAY || parsedFile['IPFS_WEB_GATEWAY']
 
   console.log(JSON.stringify(parsedFile))
 
