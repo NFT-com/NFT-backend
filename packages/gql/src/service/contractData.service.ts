@@ -104,6 +104,7 @@ export const fetchData = async (
 
 const durationMap = {
   y: 'years',
+  m: 'months',
   d: 'days',
   h: 'hours',
 }
