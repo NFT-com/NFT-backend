@@ -1028,6 +1028,7 @@ export const refreshNft = async (
 
       if (nft) {
         const refreshedNFT = await refreshNFTMetadata(nft)
+        await seService.indexNFTs([refreshedNFT])
 
         await cache.set(
           cacheKey,
@@ -1390,7 +1391,10 @@ const updateNFT = async (
                     wallet.userId,
                     wallet.id,
                     chainId,
-                  ).then(() => {
+                  ).then(async (nft) => {
+                    if (nft) {
+                      await seService.indexNFTs([nft])
+                    }
                     logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
                   })
                 }

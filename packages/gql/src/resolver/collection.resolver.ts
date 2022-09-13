@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
+import { In } from 'typeorm/find-options/operator/In'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
@@ -324,8 +325,20 @@ const updateSpamStatus = async (
       await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
       if (isSpam) {
         seService.deleteCollections(toUpdate)
+        await Promise.all((await repositories.nft.find({
+          where: {
+            contract: In(toUpdate.map(coll => coll.contract)),
+          },
+        })).map(async (nft) => {
+          await seService.deleteNFT(nft.id)
+        }))
       } else {
         seService.indexCollections(toUpdate)
+        seService.indexNFTs(await repositories.nft.find({
+          where: {
+            contract: In(toUpdate.map(coll => coll.contract)),
+          },
+        }))
       }
     }
     return { message: isSpam ? `${toUpdate.length} collections are set as spam`
