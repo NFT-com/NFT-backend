@@ -1029,11 +1029,10 @@ export const processIPFSURL = (image: string): string => {
     if (!prefixes.length) {
       prefix = 'https://cloudflare-ipfs.com/ipfs/'
     } else {
-      if (prefixes.length === 1 && prefixes[0] === '') {
+      // we pick prefix randomly to avoid dependency on just one gateway
+      prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+      if (!prefix.startsWith('https://')) {
         prefix = 'https://cloudflare-ipfs.com/ipfs/'
-      } else {
-        // we pick prefix randomly to avoid dependency on just one gateway
-        prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
       }
     }
   }
