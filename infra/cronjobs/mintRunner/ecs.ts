@@ -69,7 +69,7 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
       }]),
     cpu: '512',
     executionRoleArn: execRole,
-    family: 'mintRunner',
+    family: resourceName,
     memory: '1024',
     networkMode: 'awsvpc',
     requiresCompatibilities: ['FARGATE'],
