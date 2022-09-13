@@ -30,6 +30,7 @@ export const createEventBridgeTarget = (
       taskDefinitionArn: taskDef.arn,
     },
     retryPolicy: {
+      maximumEventAgeInSeconds: 600,
       maximumRetryAttempts: 2,
     },
     // hardcoded iam role for eventbridge to trigger ecs
