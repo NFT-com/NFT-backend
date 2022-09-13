@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 const NFTPORT_API_KEY = process.env.NFTPORT_KEY
 
-export const  getNFTPortInterceptor = (
+export const getNFTPortInterceptor = (
   baseURL: string,
 ): AxiosInstance => {
   const instance = axios.create({
