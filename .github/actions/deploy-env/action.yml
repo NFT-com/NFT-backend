@@ -61,6 +61,8 @@ runs:
         UBIQUITY_API_KEY: ${{ fromJSON(inputs.secrets).UBIQUITY_API_KEY }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
         ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
+        ALCHEMY_API_KEY_PREVIEWLINK: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY_PREVIEWLINK }}
+        ALCHEMY_API_KEY_PREVIEWLINK_GOERLI: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY_PREVIEWLINK_GOERLI }}
         ALCHEMY_API_URL: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL }}
         ALCHEMY_API_URL_RINKEBY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL_RINKEBY }}
         ALCHEMY_API_URL_GOERLI: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL_GOERLI }}

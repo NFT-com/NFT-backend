@@ -111,6 +111,13 @@ export const initiateWeb3 = (chainId?: string): void => {
       Number(chainId) == 4 ? process.env.ALCHEMY_API_URL_RINKEBY : ''
 }
 
+export const initiateWeb3PreviewLink = (chainId?: string): void => {
+  chainId = chainId || process.env.CHAIN_ID // attach default value
+  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
+    Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
+  web3 = createAlchemyWeb3(alchemyUrl)
+}
+
 export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
@@ -529,8 +536,24 @@ export const saveNFTMetadataImageToS3 = async (
           nft.contract,
           uploadPath,
         )
+      } else if (nftPortResult && nftPortResult.contract.metadata.cached_thumbnail_url) {
+        const filename = `${nftPortResult.contract.name}_${nftPortResult.nft.token_id}`
+        const cachedContract = await cache.get(`nftport_contract_${nft.contract}`)
+
+        if (!cachedContract) {
+          uploadedImage = await uploadImageToS3(
+            nftPortResult.nft.cached_file_url,
+            filename,
+            nft.chainId,
+            nft.contract,
+            uploadPath,
+          )
+          await cache.set(`nftport_contract_${nft.contract}`, uploadedImage)
+        } else {
+          uploadedImage = cachedContract
+        }
       } else {
-        initiateWeb3(nft.chainId)
+        initiateWeb3PreviewLink(nft.chainId)
         const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
         if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
           const filename = nftAlchemyResult.metadata.image.split('/').pop()
