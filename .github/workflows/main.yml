@@ -32,3 +32,14 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
+  deploy-dev-cronjobs:
+    if: ${{ startsWith(github.ref_name, 'jobFix/') || startsWith(github.ref_name, 'jobFeat/') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_dev_cronjobs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy cronjobs
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: dev
