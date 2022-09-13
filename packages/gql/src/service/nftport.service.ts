@@ -13,6 +13,7 @@ const logger = _logger.Factory(_logger.Context.NFTPort)
 
 export interface NFTPortNFT {
   nft: {
+    token_id?: string
     metadata_url?: string
     cached_file_url?: string
   }
