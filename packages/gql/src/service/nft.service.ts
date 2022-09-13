@@ -598,7 +598,10 @@ export const saveNFTMetadataImageToS3 = async (
           nft.contract,
           uploadPath,
         )
-      } else if (nftPortResult && nftPortResult.contract.metadata.cached_thumbnail_url) {
+      } else if (nftPortResult && nftPortResult.contract &&
+        nftPortResult.contract?.metadata &&
+        nftPortResult.contract?.metadata?.cached_thumbnail_url
+      ) {
         const cachedContract = await cache.get(`nftport_contract_${nft.contract}`)
 
         if (!cachedContract) {
