@@ -1021,7 +1021,22 @@ export const contentTypeFromExt = (ext: string): string | undefined => {
 }
 
 export const processIPFSURL = (image: string): string => {
-  const prefix = process.env.IPFS_WEB_GATEWAY
+  let prefix
+  if (!process.env.IPFS_WEB_GATEWAY) {
+    prefix = 'https://cloudflare-ipfs.com/ipfs/'
+  } else {
+    const prefixes = process.env.IPFS_WEB_GATEWAY.split(',')
+    if (!prefixes.length) {
+      prefix = 'https://cloudflare-ipfs.com/ipfs/'
+    } else {
+      // we pick prefix randomly to avoid dependency on just one gateway
+      prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+      if (!prefix.startsWith('https://')) {
+        prefix = 'https://cloudflare-ipfs.com/ipfs/'
+      }
+    }
+  }
+
   if (image == null) {
     return null
   } else if (image.indexOf('ipfs://ipfs/') === 0) {

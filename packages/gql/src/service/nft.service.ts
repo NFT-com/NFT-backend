@@ -11,15 +11,21 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename, fetchWithTimeout, generateSVGFromBase64String,
+  extensionFromFilename,
+  fetchWithTimeout,
+  generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
-  midWeight, processIPFSURL, s3ToCdn,
+  midWeight,
+  processIPFSURL,
+  s3ToCdn,
+  saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { EdgeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -111,6 +117,13 @@ export const initiateWeb3 = (chainId?: string): void => {
       Number(chainId) == 4 ? process.env.ALCHEMY_API_URL_RINKEBY : ''
 }
 
+export const initiateWeb3PreviewLink = (chainId?: string): void => {
+  chainId = chainId || process.env.CHAIN_ID // attach default value
+  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
+    Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
+  web3 = createAlchemyWeb3(alchemyUrl)
+}
+
 export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
@@ -176,13 +189,42 @@ export const getNFTsFromAlchemy = async (
   }
 }
 
+export const getOwnersForNFT = async (
+  nft: typeorm.DeepPartial<entity.NFT>,
+): Promise<string[]> => {
+  try {
+    initiateWeb3(nft.chainId)
+    const contract = ethers.utils.getAddress(nft.contract)
+    const key = `getOwnersForNFT_${nft.chainId}_${contract}_${nft.tokenId}`
+    const cachedData = await cache.get(key)
+
+    if (cachedData) {
+      return JSON.parse(cachedData) as string[]
+    } else {
+      const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
+      const response = await axios.get(baseUrl)
+
+      if (response.data && response.data.owners) {
+        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
+        return response.data.owners as string[]
+      } else {
+        return []
+      }
+    }
+  } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
+    Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
+    return []
+  }
+}
+
 /**
  * Takes a bunch of NFTs (pulled from the DB), and checks
  * that the given owner is still correct.
  *
  * If not, deletes the NFT record from the DB.
  */
-const filterNFTsWithAlchemy = async (
+export const filterNFTsWithAlchemy = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<any[]> => {
@@ -203,11 +245,38 @@ const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
-            .then(() => repositories.nft.hardDelete({
-              id: dbNFT.id,
-            }))
-          await seService.deleteNFT(dbNFT.id)
+          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: EdgeType.Displays } )
+          const owners = await getOwnersForNFT(dbNFT)
+          if (owners.length) {
+            if (owners.length > 1) {
+              // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+              await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+                .then(() => repositories.nft.hardDelete({
+                  id: dbNFT.id,
+                }))
+              await seService.deleteNFT(dbNFT.id)
+            } else {
+              const newOwner = owners[0]
+              // save User, Wallet for new owner addresses if it's not in our DB ...
+              const wallet = await saveUsersForAssociatedAddress(dbNFT.chainId, newOwner, repositories)
+              const user = await repositories.user.findOne({
+                where: {
+                  username: 'ethereum-' + ethers.utils.getAddress(newOwner),
+                },
+              })
+              await repositories.nft.updateOneById(dbNFT.id, {
+                userId: user.id,
+                walletId: wallet.id,
+              })
+            }
+          } else {
+            // if there is no owner from api, then we just delete it from our DB
+            await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+              .then(() => repositories.nft.hardDelete({
+                id: dbNFT.id,
+              }))
+            await seService.deleteNFT(dbNFT.id)
+          }
         }
       }),
     )
@@ -529,8 +598,27 @@ export const saveNFTMetadataImageToS3 = async (
           nft.contract,
           uploadPath,
         )
+      } else if (nftPortResult && nftPortResult.contract &&
+        nftPortResult.contract?.metadata &&
+        nftPortResult.contract?.metadata?.cached_thumbnail_url
+      ) {
+        const cachedContract = await cache.get(`nftport_contract_${nft.contract}`)
+
+        if (!cachedContract) {
+          const filename = `${nftPortResult.contract.name}_${nftPortResult.nft.token_id}`
+          uploadedImage = await uploadImageToS3(
+            nftPortResult.nft.cached_file_url,
+            filename,
+            nft.chainId,
+            nft.contract,
+            uploadPath,
+          )
+          await cache.set(`nftport_contract_${nft.contract}`, JSON.stringify(uploadedImage))
+        } else {
+          uploadedImage = JSON.parse(cachedContract)
+        }
       } else {
-        initiateWeb3(nft.chainId)
+        initiateWeb3PreviewLink(nft.chainId)
         const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
         if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
           const filename = nftAlchemyResult.metadata.image.split('/').pop()
@@ -572,7 +660,7 @@ export const saveNFTMetadataImageToS3 = async (
   }
 }
 
-const updateNFTOwnershipAndMetadata = async (
+export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
   walletId: string,
@@ -624,6 +712,8 @@ const updateNFTOwnershipAndMetadata = async (
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+        // we remove edge of previous profile
+        await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: EdgeType.Displays } )
         // if this NFT is a profile NFT...
         if (existingNFT.contract === contracts.nftProfileAddress(chainId)) {
           const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
@@ -1441,7 +1531,7 @@ export const getCollectionInfo = async (
   }
 }
 
-export const updateENSNFTMedata = async (
+export const updateNFTMetadata = async (
   nft: entity.NFT,
   repositories: db.Repository,
 ): Promise<void> => {
@@ -1460,7 +1550,79 @@ export const updateENSNFTMedata = async (
       },
     })
   } catch (err) {
-    logger.debug(`Error in updateENSNFTMedata: ${err}`)
-    Sentry.captureMessage(`Error in updateENSNFTMedata: ${err}`)
+    logger.debug(`Error in updateNFTMedata: ${err}`)
+    Sentry.captureMessage(`Error in updateNFTMedata: ${err}`)
+  }
+}
+
+export const getUserWalletFromNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<entity.Wallet | undefined> => {
+  try {
+    const nft = {
+      contract,
+      tokenId,
+      chainId,
+    }
+    const owners = await getOwnersForNFT(nft)
+    if (!owners.length) {
+      return undefined
+    } else {
+      if (owners.length > 1) {
+        // We don't save multiple owners for now, so we don't keep this NFT too
+        return undefined
+      } else {
+        // save User, Wallet for new owner addresses if it's not in our DB ...
+        return await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
+      }
+    }
+  } catch (err) {
+    logger.debug(`Error in getUserWalletFromNFT: ${err}`)
+    Sentry.captureMessage(`Error in getUserWalletFromNFT: ${err}`)
+    return undefined
+  }
+}
+
+export const saveNewNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<entity.NFT | undefined> => {
+  try {
+    const wallet = await getUserWalletFromNFT(contract, tokenId, chainId)
+    if (!wallet) {
+      return undefined
+    }
+    const metadata = await getNFTMetaData(contract, tokenId)
+    if (!metadata) return undefined
+
+    const { type, name, description, image, traits } = metadata
+    const savedNFT = await repositories.nft.save({
+      chainId: chainId,
+      userId: wallet.userId,
+      walletId: wallet.id,
+      contract: ethers.utils.getAddress(contract),
+      tokenId: BigNumber.from(tokenId).toHexString(),
+      type,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+    // save previewLink of NFT metadata image if it's from IPFS
+    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
+    if (previewLink) {
+      await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+    }
+    await seService.indexNFTs([savedNFT])
+    await updateCollectionForNFTs([savedNFT])
+    return savedNFT
+  } catch (err) {
+    logger.debug(`Error in saveNewNFT: ${err}`)
+    Sentry.captureMessage(`Error in saveNewNFT: ${err}`)
   }
 }
