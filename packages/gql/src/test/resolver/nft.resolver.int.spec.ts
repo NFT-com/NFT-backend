@@ -50,6 +50,8 @@ let connection: Connection
 let profile
 let nft
 
+const env = Object.assign({}, process.env)
+
 const mockTestServer = (): any => {
   const mockArgs ={
     contract: nftTestMockData.contract,
@@ -863,7 +865,7 @@ describe('nft resolver', () => {
   })
 
   describe('uploadMetadataImagesToS3', () => {
-    beforeAll(async () => {
+    beforeEach(async () => {
       testMockUser.chainId = '4'
       testMockWallet.chainId = '4'
       testMockWallet.chainName = 'rinkeby'
@@ -904,12 +906,64 @@ describe('nft resolver', () => {
       })
     })
 
-    afterAll(async () => {
+    afterEach(async () => {
       await clearDB(repositories)
       await testServer.stop()
+      process.env = env
     })
 
     it('should update previewLink of NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
+      const nfts = await repositories.nft.findAll()
+      expect(nfts.length).toEqual(2)
+      for (nft of nfts) {
+        expect(nft.previewLink).not.toBeNull()
+      }
+    })
+
+    it('should update previewLink of NFTs when there is no IPFS gateway defined', async () => {
+      process.env.IPFS_WEB_GATEWAY = ''
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
+      const nfts = await repositories.nft.findAll()
+      expect(nfts.length).toEqual(2)
+      for (nft of nfts) {
+        expect(nft.previewLink).not.toBeNull()
+      }
+    })
+
+    it('should update previewLink of NFTs when there is one IPFS gateway defined', async () => {
+      process.env.IPFS_WEB_GATEWAY = 'https://ipns.co/ipfs/'
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
+      const nfts = await repositories.nft.findAll()
+      expect(nfts.length).toEqual(2)
+      for (nft of nfts) {
+        expect(nft.previewLink).not.toBeNull()
+      }
+    })
+
+    it('should update previewLink of NFTs when there are multiple IPFS gateways defined', async () => {
+      process.env.IPFS_WEB_GATEWAY = 'https://ipns.co/ipfs/,https://dweb.link/ipfs/,https://cf-ipfs.com/ipfs/'
       const result = await testServer.executeOperation({
         query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
         variables: {
