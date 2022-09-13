@@ -33,7 +33,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
   deploy-dev-cronjobs:
-    if: ${{ startsWith(github.ref_name, 'jobFix/') || startsWith(github.ref_name, 'jobFeat/') }}
+    if: ${{ startsWith(github.ref_name, 'fixJob') || startsWith(github.ref_name, 'featJob') }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
