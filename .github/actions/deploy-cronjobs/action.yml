@@ -40,7 +40,7 @@ runs:
         ECR_REPOSITORY: ${{ inputs.stage }}-mintrunner  #for simplicity, ecr repo created outside pulumi stack
       run: |
         export DOCKER_BUILDKIT=1
-        docker build . -f mint.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+        docker build . -f cronjobs/mintrunner/mint.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
     - name: Deploy Cronjob Infra
