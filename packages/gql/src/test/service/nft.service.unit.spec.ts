@@ -4,11 +4,14 @@ import { testDBConfig } from '@nftcom/gql/config'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import {
   downloadImageFromUbiquity,
-  getCollectionInfo, getOwnersForNFT, saveNFTMetadataImageToS3,
+  getCollectionInfo,
+  getOwnersForNFT,
+  saveNFTMetadataImageToS3,
   updateNFTMetadata,
 } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
-import { db,defs } from '@nftcom/shared'
+import { db, defs } from '@nftcom/shared'
+import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
@@ -39,6 +42,7 @@ const repositories = db.newRepositories()
 let connection
 let testServer
 let nftA, nftB, nftC
+let user, wallet
 
 describe('nft resolver', () => {
   beforeAll(async () => {
@@ -340,6 +344,77 @@ describe('nft resolver', () => {
       // Owner of ERC721 NFT should be updated
       expect(updatedNFTs[0].walletId).toEqual(wallets[0].id)
       expect(updatedNFTs[0].userId).toEqual(users[0].id)
+    })
+  })
+
+  describe('updateNFTOwnershipAndMetadata', () => {
+    beforeAll(async () => {
+      const profile = await repositories.profile.save({
+        url: 'testprofile1',
+        ownerUserId: testMockUser.id,
+        ownerWalletId: testMockWallet.id,
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      nftA = await repositories.nft.save({
+        contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+        tokenId: '0x22',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+
+      await repositories.edge.save({
+        thisEntityId: profile.id,
+        thisEntityType: EntityType.Profile,
+        thatEntityId: nftA.id,
+        thatEntityType: EntityType.NFT,
+        edgeType: EdgeType.Displays,
+      })
+
+      user = await repositories.user.save({
+        username: 'ethereum-0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349',
+        referralId: '5kv.KtsA7c',
+      })
+
+      wallet = await repositories.wallet.save({
+        address: '0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349',
+        network: 'ethereum',
+        chainId: '5',
+        chainName: 'goerli',
+        userId: user.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it.only('should remove edge of profile for previous owner', async () => {
+      const nft = {
+        contract: {
+          address: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+        },
+        id: {
+          tokenId: '0x22',
+        },
+      }
+      nftService.initiateWeb3('5')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '5')
+
+      // Previous edges should be removed
+      const edges = await repositories.edge.findAll()
+      expect(edges.length).toEqual(0)
     })
   })
 })
