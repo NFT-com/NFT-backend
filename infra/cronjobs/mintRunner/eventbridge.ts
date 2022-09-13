@@ -6,7 +6,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('mintRunner-eventRule')
   return new aws.cloudwatch.EventRule('mintRunner-eventRule', {
     name: resourceName,
-    scheduleExpression: 'cron(05 09 * * ? *)',  // run daily at 09:05 UTC 
+    scheduleExpression: 'cron(05 09 * * ? *)',  // run daily at 09:05 UTC
   })
 }
 
