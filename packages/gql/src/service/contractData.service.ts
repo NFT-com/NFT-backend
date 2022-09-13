@@ -192,12 +192,10 @@ export const getSalesData = async (
       }
       result = result.concat(differenceBy(transformTxns(filteredTxns), savedSales, 'id') as any[])
     }
-    console.log(salesData.continuation)
     continuation = salesData.continuation
     if (!continuation) getMoreSalesData = false
   }
 
-  console.log(result.filter(r => r.priceUSD === undefined).map(r => r.transaction.price_details))
   await repositories.marketplaceSale.saveMany(result, { chunk: 4000 })
 
   result = [
