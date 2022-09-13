@@ -610,9 +610,9 @@ export const saveNFTMetadataImageToS3 = async (
             nft.contract,
             uploadPath,
           )
-          await cache.set(`nftport_contract_${nft.contract}`, uploadedImage)
+          await cache.set(`nftport_contract_${nft.contract}`, JSON.stringify(uploadedImage))
         } else {
-          uploadedImage = cachedContract
+          uploadedImage = JSON.parse(cachedContract)
         }
       } else {
         initiateWeb3PreviewLink(nft.chainId)
