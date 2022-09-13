@@ -10,31 +10,11 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   })
 }
 
-const createEventBridgeRole = (): aws.iam.Role => {
-  const resourceName = getResourceName('mintRunner-eventRole')
-  return new aws.iam.Role('mintRunner-eventRole', {
-    assumeRolePolicy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [{
-        Action: 'sts.AssumeRole',
-        Effect: 'Allow',
-        Sid: '',
-        Principal: {
-          Service: 'events.amazon.com',
-        },
-      }],
-    }),
-    inlinePolicies: [{}],
-    name: resourceName,
-  })
-}
-
 export const createEventBridgeTarget = (
   taskDef: aws.ecs.TaskDefinition,
   subnets: string[],
   cluster: aws.ecs.Cluster,
 ): aws.cloudwatch.EventTarget => {
-  const role = createEventBridgeRole()
   const rule = createEventBridgeRule()
 
   return new aws.cloudwatch.EventTarget('mintRunner-eventTarget', {
@@ -52,7 +32,8 @@ export const createEventBridgeTarget = (
     retryPolicy: {
       maximumRetryAttempts: 2,
     },
-    roleArn: role.name,
+    // hardcoded iam role for eventbridge to trigger ecs
+    roleArn: 'arn:aws:iam::016437323894:role/service-role/Amazon_EventBridge_Invoke_ECS_306739191',
     rule: rule.name,
   })
 }

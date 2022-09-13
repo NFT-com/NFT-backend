@@ -10,6 +10,7 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     backupWindow: '04:30-05:00',
     caCertIdentifier: 'rds-ca-2019',
     name: resourceName,
+    dbSubnetGroupName: `${process.env.STAGE}-aurora`,
     engine: 'postgres',
     engineVersion: '14.2',
     identifier: resourceName,
