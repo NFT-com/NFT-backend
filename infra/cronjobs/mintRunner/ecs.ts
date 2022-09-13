@@ -74,7 +74,6 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
     networkMode: 'awsvpc',
     requiresCompatibilities: ['FARGATE'],
     runtimePlatform: {
-      cpuArchitecture: 'ARM64',
       operatingSystemFamily: 'LINUX',
     },
     taskRoleArn: taskRole,
