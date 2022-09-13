@@ -9,7 +9,6 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     allocatedStorage: 20,
     backupWindow: '04:30-05:00',
     caCertIdentifier: 'rds-ca-2019',
-    name: resourceName,
     dbSubnetGroupName: `${process.env.STAGE}-aurora`,
     engine: 'postgres',
     engineVersion: '14.2',
@@ -21,6 +20,7 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     publiclyAccessible: true,
     skipFinalSnapshot: true,
     storageType: 'gp2',
+    name: process.env.ANALYTICS_DB_NAME,
     username: process.env.ANALYTICS_DB_USER,
     password: process.env.ANALYTICS_DB_PASS,
   })
