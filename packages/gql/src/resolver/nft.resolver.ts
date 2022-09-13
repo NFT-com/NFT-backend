@@ -308,7 +308,6 @@ const getCollectionNFTs = (
   } else if (pageInput.last) {
     pageInput.last = Math.min(pageInput.last, 100)
   }
-
   return repositories.collection.findByContractAddress(
     utils.getAddress(collectionAddress),
     chainId,
@@ -668,7 +667,6 @@ const updateNFTsForProfile = (
     } else if (pageInput.last) {
       pageInput.last = Math.min(pageInput.last, 100)
     }
-
     return repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
