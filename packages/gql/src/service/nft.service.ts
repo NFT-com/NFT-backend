@@ -686,6 +686,8 @@ export const updateNFTOwnershipAndMetadata = async (
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+        // we remove edge of previous profile
+        await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: EdgeType.Displays } )
         // if this NFT is a profile NFT...
         if (existingNFT.contract === contracts.nftProfileAddress(chainId)) {
           const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
