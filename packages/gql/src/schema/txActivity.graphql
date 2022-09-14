@@ -13,6 +13,12 @@ enum ActivityStatus {
   Executed
 }
 
+enum ActivityExpiration {
+  Expired
+  Active
+  Both
+}
+
 type SeaportOffer {
   itemType: Int
   token: String
@@ -164,7 +170,7 @@ input TxActivitiesInput {
   contract: String
   chainId: String
   skipRelations: Boolean
-  ignoreExpired: Boolean
+  expirationType: ActivityExpiration
 }
 
 extend type Query {
