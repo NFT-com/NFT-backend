@@ -1,6 +1,7 @@
 import { BigNumber, ethers, providers, utils } from 'ethers'
 import { In, LessThan } from 'typeorm'
 
+import { getUserWalletFromNFT, updateNFTOwnershipAndMetadata } from '@nftcom/gql/service/nft.service'
 import { cancelEntityBuilder,txEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
@@ -355,6 +356,25 @@ const keepAlive = ({
               LooksrareEventName.TakerAsk,
             )
             await repositories.txTransaction.save(newTx)
+
+            // update NFT ownership
+            const tokenId: string = helper.bigNumberToHex(order.protocolData?.tokenId)
+
+            const obj = {
+              contract: {
+                address: checksumContract,
+              },
+              id: {
+                tokenId,
+              },
+            }
+
+            const wallet = await getUserWalletFromNFT(checksumContract, tokenId, chainId.toString())
+
+            if (wallet) {
+              await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId.toString())
+            }
+
             logger.log(`
                 updated ${orderHash} for collection ${collection} -- strategy:
                 ${strategy}, currency:${currency} orderNonce:${orderNonce}
@@ -385,10 +405,6 @@ const keepAlive = ({
             order.activity.status = defs.ActivityStatus.Executed
             order.takerAddress = helper.checkSum(taker)
             await repositories.txOrder.save(order)
-            logger.log(`
-            updated ${orderHash} for collection ${collection} -- strategy:
-            ${strategy}, currency:${currency} orderNonce:${orderNonce}
-            `)
 
             const checksumContract: string = helper.checkSum(collection)
         
@@ -408,6 +424,29 @@ const keepAlive = ({
               LooksrareEventName.TakerBid,
             )
             await repositories.txTransaction.save(newTx)
+
+            // update NFT ownership
+            const tokenId: string = helper.bigNumberToHex(order.protocolData?.tokenId)
+
+            const obj = {
+              contract: {
+                address: checksumContract,
+              },
+              id: {
+                tokenId,
+              },
+            }
+
+            const wallet = await getUserWalletFromNFT(checksumContract, tokenId, chainId.toString())
+
+            if (wallet) {
+              await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId.toString())
+            }
+
+            logger.log(`
+            updated ${orderHash} for collection ${collection} -- strategy:
+            ${strategy}, currency:${currency} orderNonce:${orderNonce}
+            `)
           }
         } catch (err) {
           logger.error(`Evt: ${LooksrareEventName.TakerBid} -- Err: ${err}`)
@@ -532,6 +571,7 @@ const keepAlive = ({
         }
       } else if (evt.name === OSSeaportEventName.OrderFulfilled) {
         const [orderHash, offerer, zone, recipient, offer, consideration] = evt.args
+    
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
             relations: ['activity'],
@@ -564,12 +604,31 @@ const keepAlive = ({
               defs.ExchangeType.OpenSea,
               order.protocol,
               {
-                offer,
-                consideration,
+                offer: offer?.[0],
+                consideration: consideration?.[0],
               },
               OSSeaportEventName.OrderFulfilled,
             )
             await repositories.txTransaction.save(newTx)
+
+            // update NFT ownership
+            const contract: string = helper.checkSum(order.activity.nftContract)
+            const tokenId: string = helper.bigNumberToHex(
+              order.protocolData?.parameters?.offer?.[0]?.identifierOrCriteria,
+            )
+            const obj = {
+              contract: {
+                address: contract,
+              },
+              id: {
+                tokenId,
+              },
+            }
+    
+            const wallet = await getUserWalletFromNFT(contract, tokenId, chainId.toString())
+            if (wallet) {
+              await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId.toString())
+            }
             logger.log(`
             Evt Saved: ${OSSeaportEventName.OrderFulfilled} for orderHash ${orderHash},
             offerer ${offerer},
