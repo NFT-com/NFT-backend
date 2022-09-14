@@ -667,6 +667,7 @@ export const updateNFTOwnershipAndMetadata = async (
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
   try {
+    logger.info('inside updateNFTOwnershipAndMetadata: ', nft)
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: ethers.utils.getAddress(nft.contract.address),
@@ -674,6 +675,8 @@ export const updateNFTOwnershipAndMetadata = async (
         chainId: chainId,
       },
     })
+
+    logger.info('existingNFT: ', existingNFT)
 
     let walletChainId: string = await cache.get(`chainId_${walletId}`)
 
@@ -684,6 +687,8 @@ export const updateNFTOwnershipAndMetadata = async (
     }
 
     const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+    logger.info('metadata: ', metadata)
+
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata
@@ -712,6 +717,7 @@ export const updateNFTOwnershipAndMetadata = async (
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+        logger.info('new wallet / userId: ', userId, walletId)
         // we remove edge of previous profile
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: EdgeType.Displays } )
         // if this NFT is a profile NFT...
