@@ -36,7 +36,8 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   createCacheConnection: jest.fn(),
 }))
 
-jest.mock('@nftcom/gql/service/nft.service')
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+jest.mock('@nftcom/gql/service/nft.service', () => {})
 
 jest.mock('@nftcom/gql/service', () => {
   return {
