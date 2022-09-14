@@ -571,7 +571,6 @@ const keepAlive = ({
         }
       } else if (evt.name === OSSeaportEventName.OrderFulfilled) {
         const [orderHash, offerer, zone, recipient, offer, consideration] = evt.args
-    
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
             relations: ['activity'],
@@ -604,8 +603,8 @@ const keepAlive = ({
               defs.ExchangeType.OpenSea,
               order.protocol,
               {
-                offer: offer?.[0],
-                consideration: consideration?.[0],
+                offer: offer,
+                consideration: consideration,
               },
               OSSeaportEventName.OrderFulfilled,
             )
