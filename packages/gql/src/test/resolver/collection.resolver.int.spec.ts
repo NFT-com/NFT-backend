@@ -20,6 +20,7 @@ jest.mock('@nftcom/gql/service/searchEngine.service', () => {
       return {
         indexCollections: jest.fn().mockResolvedValue(true),
         deleteCollections: jest.fn().mockResolvedValue(true),
+        deleteNFT: jest.fn().mockResolvedValue(true),
       }
     }),
   }
