@@ -215,7 +215,7 @@ const getActivities = async (
       contract: Joi.string(),
       chainId: Joi.string(),
       skipRelations: Joi.boolean(),
-      ignoreExpired: Joi.boolean(),
+      expirationType: Joi.string(),
     }),
   })
 
@@ -229,7 +229,7 @@ const getActivities = async (
     tokenId,
     contract,
     skipRelations,
-    ignoreExpired,
+    expirationType,
   } = helper.safeObject(args.input)
 
   if (!process.env.ACTIVITY_ENDPOINTS_ENABLED) {
@@ -300,10 +300,12 @@ const getActivities = async (
   }
 
   // by default expired items are included
-  if (ignoreExpired) {
+  if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
     filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
+  } else if (expirationType === gql.ActivityExpiration.Expired){
+    filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
   }
-
+  
   let safefilters
   if (read !== undefined) {
     safefilters = [{ ...helper.inputT2SafeK(filters),  read }]
