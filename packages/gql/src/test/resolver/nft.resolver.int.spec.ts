@@ -26,6 +26,7 @@ jest.mock('@nftcom/gql/service/searchEngine.service', () => {
       return {
         indexCollections: jest.fn().mockResolvedValue(true),
         indexNFTs: jest.fn().mockResolvedValue(true),
+        deleteNFT: jest.fn().mockResolvedValue(true),
       }
     }),
   }
@@ -948,6 +949,7 @@ describe('nft resolver', () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
+
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,

@@ -1094,6 +1094,7 @@ export const refreshNft = async (
           return nft
         } else {
           const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId)
+          await seService.indexNFTs([refreshedNFT])
 
           await cache.set(
             cacheKey,
