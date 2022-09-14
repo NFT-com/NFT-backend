@@ -229,7 +229,6 @@ extend type Mutation {
   listNFTSeaport(input: ListNFTSeaportInput!): Boolean!
   listNFTLooksrare(input: ListNFTLooksrareInput!): Boolean!
   refreshNft(id: ID!, chainId: String): NFT!
-  updateNFT(input: UpdateNFTInput): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!, ttl: DateTime, force: Boolean): String!
   "AUTHENTICATED"

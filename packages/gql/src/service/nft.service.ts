@@ -25,7 +25,6 @@ import {
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
-import { EdgeType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -115,6 +114,13 @@ export const initiateWeb3 = (chainId?: string): void => {
   alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL :
     Number(chainId) == 5 ? process.env.ALCHEMY_API_URL_GOERLI :
       Number(chainId) == 4 ? process.env.ALCHEMY_API_URL_RINKEBY : ''
+}
+
+export const initiateWeb3PreviewLink = (chainId?: string): void => {
+  chainId = chainId || process.env.CHAIN_ID // attach default value
+  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
+    Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
+  web3 = createAlchemyWeb3(alchemyUrl)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -238,7 +244,7 @@ export const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: EdgeType.Displays } )
+          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: defs.EdgeType.Displays } )
           const owners = await getOwnersForNFT(dbNFT)
           if (owners.length) {
             if (owners.length > 1) {
@@ -591,8 +597,27 @@ export const saveNFTMetadataImageToS3 = async (
           nft.contract,
           uploadPath,
         )
+      } else if (nftPortResult && nftPortResult.contract &&
+        nftPortResult.contract?.metadata &&
+        nftPortResult.contract?.metadata?.cached_thumbnail_url
+      ) {
+        const cachedContract = await cache.get(`nftport_contract_${nft.contract}`)
+
+        if (!cachedContract) {
+          const filename = `${nftPortResult.contract.name}_${nftPortResult.nft.token_id}`
+          uploadedImage = await uploadImageToS3(
+            nftPortResult.nft.cached_file_url,
+            filename,
+            nft.chainId,
+            nft.contract,
+            uploadPath,
+          )
+          await cache.set(`nftport_contract_${nft.contract}`, JSON.stringify(uploadedImage))
+        } else {
+          uploadedImage = JSON.parse(cachedContract)
+        }
       } else {
-        initiateWeb3(nft.chainId)
+        initiateWeb3PreviewLink(nft.chainId)
         const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
         if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
           const filename = nftAlchemyResult.metadata.image.split('/').pop()
@@ -658,6 +683,7 @@ export const updateNFTOwnershipAndMetadata = async (
     }
 
     const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata
@@ -687,9 +713,10 @@ export const updateNFTOwnershipAndMetadata = async (
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
         // we remove edge of previous profile
-        await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: EdgeType.Displays } )
+        await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
         // if this NFT is a profile NFT...
-        if (existingNFT.contract === contracts.nftProfileAddress(chainId)) {
+        if (ethers.utils.getAddress(existingNFT.contract) ==
+          ethers.utils.getAddress(contracts.nftProfileAddress(chainId))) {
           const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
           const profile = await repositories.profile.findOne({ where: {
             tokenId: BigNumber.from(existingNFT.tokenId).toString(),
