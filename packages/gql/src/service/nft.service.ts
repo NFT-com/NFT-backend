@@ -6,7 +6,7 @@ import * as typeorm from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
-import { assetBucket, getChain } from '@nftcom/gql/config'
+import { assetBucket } from '@nftcom/gql/config'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
@@ -332,17 +332,16 @@ export const getCollectionNameFromContract = (
   type:  defs.NFTType,
 ): Promise<string> => {
   try {
-    const network = getChain('ethereum', chainId)
     if (type === defs.NFTType.ERC721) {
       const tokenContract = typechain.ERC721__factory.connect(
         contractAddress,
-        provider.provider(network.name),
+        provider.provider(Number(chainId)),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else if (type === defs.NFTType.ERC1155 || type === defs.NFTType.UNKNOWN) {
       const tokenContract = typechain.ERC1155__factory.connect(
         contractAddress,
-        provider.provider(network.name),
+        provider.provider(Number(chainId)),
       )
       return tokenContract.name().catch(() => Promise.resolve('Unknown Name'))
     } else {
