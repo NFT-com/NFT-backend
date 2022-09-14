@@ -84,6 +84,11 @@ export enum ActivityType {
   Transfer = 'Transfer',
 }
 
+export enum ActivityHL {
+  Highest = 'highest',
+  Lowest = 'lowest'
+}
+
 export enum ActivityStatus {
   Valid = 'Valid',
   Cancelled = 'Cancelled',
