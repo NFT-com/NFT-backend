@@ -400,7 +400,7 @@ describe('nft resolver', () => {
       await clearDB(repositories)
     })
 
-    it.only('should remove edge of profile for previous owner', async () => {
+    it('should remove edge of profile for previous owner', async () => {
       const nft = {
         contract: {
           address: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
@@ -415,6 +415,17 @@ describe('nft resolver', () => {
       // Previous edges should be removed
       const edges = await repositories.edge.findAll()
       expect(edges.length).toEqual(0)
+    })
+  })
+
+  describe('getCollectionNameFromContract', () => {
+    it('should return correct collection name from contract', async () => {
+      const contractAddress = '0x23581767a106ae21c074b2276D25e5C3e136a68b'
+      const chainId = '1'
+      const type = defs.NFTType.ERC721
+      const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown name')
     })
   })
 })

@@ -296,6 +296,55 @@ const updateCollectionImageUrls = async (
   }
 }
 
+const updateCollectionName = async (
+  _: any,
+  args: gql.MutationUpdateCollectionNameArgs,
+  ctx: Context,
+): Promise<gql.UpdateCollectionNameOutput> => {
+  const { repositories, chain } = ctx
+  logger.debug('updateCollectionName', { count: args?.count })
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const { count } = args
+    const collections = await repositories.collection.find({
+      where: {
+        chainId,
+        name: 'Unknown Name',
+      },
+    })
+    const length = Math.min(collections.length, count)
+    const toUpdate = collections.slice(0, length)
+    await Promise.allSettled(
+      toUpdate.map(async (collection) => {
+        const nft = await repositories.nft.findOne({
+          where: {
+            contract: ethers.utils.getAddress(collection.contract),
+            chainId,
+          },
+        })
+        const name = await getCollectionNameFromContract(collection.contract, chainId, nft.type)
+        if (name !== 'Unknown Name') {
+          await repositories.collection.updateOneById(collection.id, { name })
+        } else {
+          // If NFT is ENS token,we change collection name to ENS
+          if (nft.metadata.name.endsWith('.eth')) {
+            await repositories.collection.updateOneById(collection.id, { name : 'ENS: Ethereum Name Service' })
+          }
+        }
+      }),
+    )
+
+    return {
+      message: `Updated ${length} collections`,
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in updateCollectionImageUrls: ${err}`)
+    return err
+  }
+}
+
 const updateSpamStatus = async (
   _: any,
   args: gql.MutationUpdateSpamStatusArgs,
@@ -385,6 +434,7 @@ export default {
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
     syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
     updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),
+    updateCollectionName: combineResolvers(auth.isAuthenticated, updateCollectionName),
     updateSpamStatus: combineResolvers(auth.isTeamAuthenticated, updateSpamStatus),
   },
 }

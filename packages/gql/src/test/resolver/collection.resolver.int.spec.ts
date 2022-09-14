@@ -319,6 +319,74 @@ describe('collection resolver', () => {
     })
   })
 
+  describe('updateCollectionName', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+      cA = await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'Unknown Name',
+        chainId,
+        deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+      })
+      cB = await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        name: 'Unknown Name',
+        chainId,
+        deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+      })
+
+      await repositories.nft.save({
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x086a75',
+        metadata: {
+          name: 'chunks',
+          description: 'NFT.com profile for chunks',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId,
+      })
+
+      await repositories.nft.save({
+        contract: '0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77',
+        tokenId: '0x01',
+        metadata: {
+          name: 'chunks',
+          description: 'NFT.com profile for chunks',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        chainId,
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should update collections names', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateCollectionName($count: Int!) { updateCollectionName(count: $count) { message } }',
+        variables: {
+          count: 1000,
+        },
+      })
+
+      expect(result.data.updateCollectionName.message).toBeDefined()
+      expect(result.data.updateCollectionName.message).toEqual('Updated 2 collections')
+      const collectionA = await repositories.collection.findById(cA.id)
+      expect(collectionA.name).not.toEqual('Unknown Name')
+      const collectionB = await repositories.collection.findById(cB.id)
+      expect(collectionB.name).not.toEqual('Unknown Name')
+    })
+  })
+
   describe('updateSpamStatus', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
