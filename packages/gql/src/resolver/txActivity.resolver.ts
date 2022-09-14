@@ -367,4 +367,12 @@ export default {
       return 'SeaportProtocolData'
     },
   },
+  TxProtocolData:{
+    __resolveType(obj) {
+      if (obj.signer) {
+        return 'TxLooksrareProtocolData'
+      }
+      return 'TxSeaportProtocolData'
+    },
+  },
 }
