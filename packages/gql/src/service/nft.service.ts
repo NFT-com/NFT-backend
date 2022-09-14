@@ -721,7 +721,8 @@ export const updateNFTOwnershipAndMetadata = async (
         // we remove edge of previous profile
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: EdgeType.Displays } )
         // if this NFT is a profile NFT...
-        if (existingNFT.contract === contracts.nftProfileAddress(chainId)) {
+        if (ethers.utils.getAddress(existingNFT.contract) ==
+          ethers.utils.getAddress(contracts.nftProfileAddress(chainId))) {
           const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
           const profile = await repositories.profile.findOne({ where: {
             tokenId: BigNumber.from(existingNFT.tokenId).toString(),

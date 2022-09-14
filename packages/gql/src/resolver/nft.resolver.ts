@@ -1038,6 +1038,8 @@ export const refreshNft = async (
         const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
         const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId)
 
+        logger.info('refreshed nft: ', refreshedNFT)
+
         await cache.set(
           cacheKey,
           JSON.stringify(refreshedNFT),
