@@ -34,7 +34,6 @@ import {
   getCollectionNameFromContract,
   getOwnersOfGenesisKeys, getUserWalletFromNFT,
   initiateWeb3,
-  refreshNFTMetadata,
   removeEdgesForNonassociatedAddresses, saveNewNFT, saveNFTMetadataImageToS3,
   syncEdgesWithNFTs,
   updateEdgesWeightForProfile, updateNFTMetadata, updateNFTOwnershipAndMetadata,
@@ -1027,7 +1026,17 @@ export const refreshNft = async (
       })
 
       if (nft) {
-        const refreshedNFT = await refreshNFTMetadata(nft)
+        const obj = {
+          contract: {
+            address: nft.contract,
+          },
+          id: {
+            tokenId: nft.tokenId,
+          },
+        }
+
+        const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+        const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId)
 
         await cache.set(
           cacheKey,

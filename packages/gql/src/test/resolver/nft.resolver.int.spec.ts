@@ -50,6 +50,8 @@ let connection: Connection
 let profile
 let nft
 
+const env = Object.assign({}, process.env)
+
 const mockTestServer = (): any => {
   const mockArgs ={
     contract: nftTestMockData.contract,
@@ -863,24 +865,24 @@ describe('nft resolver', () => {
   })
 
   describe('uploadMetadataImagesToS3', () => {
-    beforeAll(async () => {
-      testMockUser.chainId = '4'
-      testMockWallet.chainId = '4'
-      testMockWallet.chainName = 'rinkeby'
+    beforeEach(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
-        { id: '4', name: 'rinkeby' },
+        { id: '5', name: 'goerli' },
       )
 
       await repositories.nft.save({
-        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
-        tokenId: '0x0add04',
-        chainId: '4',
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0390',
+        chainId: '5',
         metadata: {
           name: '',
           description: '',
-          imageURL: 'https://ipfs.io/ipfs/bafybeifvwitulq6elvka2hoqhwixfhgb42l4aiukmtrw335osetikviuuu',
+          imageURL: 'ipfs://QmNivD575CW7sxP5wJJiw1jbDdQTScuCcwxnjwKLEZTSqo',
           traits: [],
         },
         type: defs.NFTType.ERC721,
@@ -889,13 +891,13 @@ describe('nft resolver', () => {
       })
 
       await repositories.nft.save({
-        contract: '0x38119D0149138147B4b474d867e3E19ffC31CBCF',
-        tokenId: '0x0282',
-        chainId: '4',
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01cf',
+        chainId: '5',
         metadata: {
           name: '',
           description: '',
-          imageURL: 'ipfs://Qmf5cvyAyfo7Dg8C7fbJYw5aDw2VG7ZcQTyoK3KEUzo4JK',
+          imageURL: 'ipfs://Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi',
           traits: [],
         },
         type: defs.NFTType.ERC721,
@@ -904,12 +906,64 @@ describe('nft resolver', () => {
       })
     })
 
-    afterAll(async () => {
+    afterEach(async () => {
       await clearDB(repositories)
       await testServer.stop()
+      process.env = env
     })
 
     it('should update previewLink of NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
+      const nfts = await repositories.nft.findAll()
+      expect(nfts.length).toEqual(2)
+      for (nft of nfts) {
+        expect(nft.previewLink).not.toBeNull()
+      }
+    })
+
+    it('should update previewLink of NFTs when there is no IPFS gateway defined', async () => {
+      process.env.IPFS_WEB_GATEWAY = ''
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
+      const nfts = await repositories.nft.findAll()
+      expect(nfts.length).toEqual(2)
+      for (nft of nfts) {
+        expect(nft.previewLink).not.toBeNull()
+      }
+    })
+
+    it('should update previewLink of NFTs when there is one IPFS gateway defined', async () => {
+      process.env.IPFS_WEB_GATEWAY = 'https://ipns.co/ipfs/'
+      const result = await testServer.executeOperation({
+        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
+      const nfts = await repositories.nft.findAll()
+      expect(nfts.length).toEqual(2)
+      for (nft of nfts) {
+        expect(nft.previewLink).not.toBeNull()
+      }
+    })
+
+    it('should update previewLink of NFTs when there are multiple IPFS gateways defined', async () => {
+      process.env.IPFS_WEB_GATEWAY = 'https://ipns.co/ipfs/,https://dweb.link/ipfs/,https://cf-ipfs.com/ipfs/'
       const result = await testServer.executeOperation({
         query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
         variables: {
