@@ -596,25 +596,6 @@ export const saveNFTMetadataImageToS3 = async (
           nft.contract,
           uploadPath,
         )
-      } else if (nftPortResult && nftPortResult.contract &&
-        nftPortResult.contract?.metadata &&
-        nftPortResult.contract?.metadata?.cached_thumbnail_url
-      ) {
-        const cachedContract = await cache.get(`nftport_contract_${nft.contract}`)
-
-        if (!cachedContract) {
-          const filename = `${nftPortResult.contract.name}_${nftPortResult.nft.token_id}`
-          uploadedImage = await uploadImageToS3(
-            nftPortResult.nft.cached_file_url,
-            filename,
-            nft.chainId,
-            nft.contract,
-            uploadPath,
-          )
-          await cache.set(`nftport_contract_${nft.contract}`, JSON.stringify(uploadedImage))
-        } else {
-          uploadedImage = JSON.parse(cachedContract)
-        }
       } else {
         initiateWeb3PreviewLink(nft.chainId)
         const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)

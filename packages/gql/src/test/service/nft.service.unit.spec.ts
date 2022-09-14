@@ -227,7 +227,7 @@ describe('nft resolver', () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
       expect(cdnPath).toBeDefined()
     })
-    it.skip('should return valid mp4 path uploaded to S3', async () => {
+    it('should return valid mp4 path uploaded to S3', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftB, repositories)
       expect(cdnPath).toBeDefined()
     })
