@@ -319,10 +319,10 @@ const getActivities = async (
       pageInput,
       safefilters,
       [],
-      'updatedAt',
+      'createdAt',
       'DESC',
     )
-      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+      .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
   }
 
   return paginatedActivitiesBy(
@@ -330,10 +330,10 @@ const getActivities = async (
     pageInput,
     safefilters,
     [],
-    'updatedAt',
+    'createdAt',
     'DESC',
   )
-    .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+    .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
 }
 
 export default {
@@ -365,6 +365,14 @@ export default {
         return 'LooksrareProtocolData'
       }
       return 'SeaportProtocolData'
+    },
+  },
+  TxProtocolData:{
+    __resolveType(obj) {
+      if (obj.signer) {
+        return 'TxLooksrareProtocolData'
+      }
+      return 'TxSeaportProtocolData'
     },
   },
 }
