@@ -27,6 +27,8 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   createCacheConnection: jest.fn(),
 }))
 
+jest.mock('@nftcom/gql/helper/websocketProvider')
+
 jest.mock('@nftcom/gql/service', () => {
   return {
     core: {
