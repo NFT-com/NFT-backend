@@ -200,6 +200,38 @@ export const orderEntityBuilder = async (
     ...orderEntity,
   }
 }
+/**
+ * txSeaportProcotolDataParser 
+ * @param protocolData
+ */
+
+export const txSeaportProcotolDataParser = (protocolData: any): TxSeaportProtocolData => {
+  const { offer, consideration } = protocolData
+  const txOffer: SeaportOffer[] = offer.map((offerItem: any) => {
+    const [itemType, token, identifierOrCriteria, amount] = offerItem
+    return {
+      itemType,
+      token: helper.checkSum(token),
+      identifierOrCriteria: helper.bigNumberToNumber(identifierOrCriteria),
+      startAmount: helper.bigNumberToNumber(amount),
+      endAmount: helper.bigNumberToNumber(amount),
+    }
+  })
+
+  const txConsideration: SeaportConsideration[] = consideration.map((considerationItem: any) => {
+    const [itemType, token, identifierOrCriteria, amount, recipient] = considerationItem
+    return {
+      itemType,
+      token: helper.checkSum(token),
+      identifierOrCriteria: helper.bigNumberToNumber(identifierOrCriteria),
+      startAmount: helper.bigNumberToNumber(amount),
+      endAmount: helper.bigNumberToNumber(amount),
+      recipient: helper.checkSum(recipient),
+    }
+  })
+
+  return  { offer: txOffer, consideration: txConsideration }
+}
 
 /**
  * transactionEntityBuilder 
@@ -221,7 +253,7 @@ export const txEntityBuilder = async (
   taker: string,
   exchange: defs.ExchangeType,
   protocol: defs.ProtocolType,
-  protocolData: TxProtocolData,
+  protocolData: any,
   eventType: string,
 ):  Promise<Partial<entity.TxTransaction>> => {
   const checksumContract: string = helper.checkSum(contract)
@@ -241,13 +273,18 @@ export const txEntityBuilder = async (
     expirationFromSource,
   )
 
+  let txProtocolData: TxProtocolData = protocolData
+
+  if (protocol === defs.ProtocolType.Seaport) {
+    txProtocolData =  txSeaportProcotolDataParser(protocolData)
+  }
   return {
     id: txHash,
     activity,
     exchange,
     transactionType: txType,
     protocol,
-    protocolData,
+    protocolData: txProtocolData,
     transactionHash: txHash,
     blockNumber,
     nftContractAddress: checksumContract,
