@@ -1235,15 +1235,13 @@ export const getNFTsForCollections = async (
                 thatEntityType: defs.EntityType.NFT,
                 edgeType: defs.EdgeType.Includes,
               },
-              take: Math.min(count, 100),
+              take: Math.min(count, 100), // prevent showing more than 100 NFTs
             })
             if (edges.length) {
-              await Promise.allSettled(
-                edges.map(async (edge) => {
-                  const nft = await repositories.nft.findById(edge.thatEntityId)
-                  if (nft) nfts.push(nft)
-                }),
-              )
+              for (const edge of edges) {
+                const nft = await repositories.nft.findById(edge.thatEntityId)
+                if (nft) nfts.push(nft)
+              }
             }
             await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
@@ -1251,7 +1249,7 @@ export const getNFTsForCollections = async (
           const length = Math.min(nfts.length, count)
           result.push({
             collectionAddress: ethers.utils.getAddress(collectionAddresses[i]),
-            nfts: nfts.slice(0, Math.min(length, 100)), // prevent showing more than 100 NFTs
+            nfts: nfts.slice(0, length),
             actualNumberOfNFTs: actualNFTCount,
           })
         } else {
