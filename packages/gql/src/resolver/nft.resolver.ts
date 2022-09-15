@@ -1264,6 +1264,7 @@ export const getNFTsForCollections = async (
     )
     return result
   } catch (err) {
+    logger.error(`Error in getNFTsForCollections: ${err}`)
     Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
     return err
   }
