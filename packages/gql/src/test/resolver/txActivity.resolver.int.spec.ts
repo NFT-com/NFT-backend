@@ -195,6 +195,7 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           chainId: '4',
+          expirationType: 'Both',
         } },
       })
   
@@ -229,6 +230,7 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
+          expirationType: 'Both',
         } },
       })
    
@@ -237,7 +239,7 @@ describe('transaction activity resolver', () => {
       expect(result.data.getActivities.totalItems).toBe(1)
     })
 
-    it('should not return expired items if ignoreExpired is provided', async () => {
+    it('should not return expired items if expirationType is Active', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -259,12 +261,72 @@ describe('transaction activity resolver', () => {
           },
           skipRelations: true,
           chainId: '4',
-          ignoreExpired: true,
+          expirationType: 'Active',
         } },
       })
    
       expect(result.data.getActivities?.items).toHaveLength(0)
       expect(result.data.getActivities.totalItems).toBe(0)
+    })
+
+    it('should not return expired items if expirationType is Expired', async () => {
+      const result = await testServer.executeOperation({
+        query: `query GetActivities($input: TxActivitiesInput) {
+          getActivities(input: $input) {
+            items {
+              id
+            }
+            totalItems
+            pageInfo {
+              firstCursor
+              lastCursor
+            }
+          }
+        }`,
+        variables: { input: {
+          activityType: 'Listing',
+          pageInput: {
+            first: 0,
+            last: null,
+          },
+          skipRelations: true,
+          chainId: '4',
+          expirationType: 'Expired',
+        } },
+      })
+   
+      expect(result.data.getActivities?.items).toHaveLength(1)
+      expect(result.data.getActivities.totalItems).toBe(1)
+    })
+
+    it('should not return expired items if expirationType is Both', async () => {
+      const result = await testServer.executeOperation({
+        query: `query GetActivities($input: TxActivitiesInput) {
+          getActivities(input: $input) {
+            items {
+              id
+            }
+            totalItems
+            pageInfo {
+              firstCursor
+              lastCursor
+            }
+          }
+        }`,
+        variables: { input: {
+          activityType: 'Listing',
+          pageInput: {
+            first: 0,
+            last: null,
+          },
+          skipRelations: true,
+          chainId: '4',
+          expirationType: 'Both',
+        } },
+      })
+   
+      expect(result.data.getActivities?.items).toHaveLength(1)
+      expect(result.data.getActivities.totalItems).toBe(1)
     })
   
     it('should fail if input is missing', async () => {

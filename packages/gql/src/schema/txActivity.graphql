@@ -13,6 +13,12 @@ enum ActivityStatus {
   Executed
 }
 
+enum ActivityExpiration {
+  Expired
+  Active
+  Both
+}
+
 type SeaportOffer {
   itemType: Int
   token: String
@@ -71,6 +77,32 @@ type LooksrareProtocolData {
 
 union ProtocolData = SeaportProtocolData | LooksrareProtocolData 
 
+type TxSeaportProtocolData {
+  offer: [SeaportOffer]
+  consideration: [SeaportConsideration]
+}
+
+type TxLooksrareProtocolData {
+  isOrderAsk: Boolean
+  signer: String
+  collectionAddress: String
+  price: String
+  tokenId: String
+  amount: String
+  strategy: String
+  currencyAddress: String
+  nonce: String
+  startTime: String
+  endTime: String
+  minPercentageToAsk: String
+  params: String
+  v: String
+  r: String
+  s: String
+}
+
+union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
+
 type TxActivity {
   id: ID!
   chainId: String
@@ -117,8 +149,9 @@ type TxTransaction {
   nftContractTokenId: String!
   maker: String!
   taker: String!
-  protocol: String!
   exchange: String!
+  protocol: String!
+  protocolData: TxProtocolData
 }
 
 type TxOffer {
@@ -164,7 +197,7 @@ input TxActivitiesInput {
   contract: String
   chainId: String
   skipRelations: Boolean
-  ignoreExpired: Boolean
+  expirationType: ActivityExpiration
 }
 
 extend type Query {

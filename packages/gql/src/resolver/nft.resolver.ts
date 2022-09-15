@@ -34,7 +34,6 @@ import {
   getCollectionNameFromContract,
   getOwnersOfGenesisKeys, getUserWalletFromNFT,
   initiateWeb3,
-  refreshNFTMetadata,
   removeEdgesForNonassociatedAddresses, saveNewNFT, saveNFTMetadataImageToS3,
   syncEdgesWithNFTs,
   updateEdgesWeightForProfile, updateNFTMetadata, updateNFTOwnershipAndMetadata,
@@ -125,37 +124,90 @@ const getNFT = (
   return repositories.nft.findById(args.id)
 }
 
-const getContractNFT = (
+const getContractNFT = async (
   _: unknown,
   args: gql.QueryNFTArgs,
   ctx: Context,
 ): Promise<gql.NFT> => {
-  const { user, repositories } = ctx
-  logger.debug('getContractNFT', { loggedInUserId: user?.id, input: args })
-  const schema = Joi.object().keys({
-    id: Joi.string().required(),
-    contract: Joi.string().required(),
-    chainId: Joi.string(),
-  })
-  joi.validateSchema(schema, args)
-  const chainId = args?.chainId || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  return repositories.nft.findOne({ where:
-    {
-      contract: utils.getAddress(args.contract),
-      tokenId: ethers.BigNumber.from(args.id).toHexString(),
-      chainId,
-    },
-  })
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg(`getContractNFT ${args.contract} ${args.id}`),
-        nftError.ErrorType.NFTNotFound,
-      ),
-    ))
-    .then(fp.tap((nft) => {
-      logger.debug(nft) // todo: refresh metadata?
-    }))
+  try {
+    const { user, repositories } = ctx
+    logger.debug('getContractNFT', { loggedInUserId: user?.id, input: args })
+    const schema = Joi.object().keys({
+      id: Joi.string().required(),
+      contract: Joi.string().required(),
+      chainId: Joi.string(),
+    })
+    joi.validateSchema(schema, args)
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    initiateWeb3(chainId)
+
+    const nft = await repositories.nft.findOne({
+      where: {
+        contract: utils.getAddress(args.contract),
+        tokenId: ethers.BigNumber.from(args.id).toHexString(),
+        chainId,
+      },
+    })
+    if (nft) {
+      const now = helper.toUTCDate()
+      let duration
+      if (nft.lastRefreshed) {
+        duration = differenceInMilliseconds(now, nft.lastRefreshed)
+      }
+      if (!nft.lastRefreshed  ||
+        (duration && duration > NFT_REFRESH_DURATION)
+      ) {
+        repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
+          .then((nft) => {
+            const obj = {
+              contract: {
+                address: nft.contract,
+              },
+              id: {
+                tokenId: nft.tokenId,
+              },
+            }
+            getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+              .then((wallet) => {
+                if (!wallet) {
+                  logger.error('Failed to create new user and wallet for NFT ownership')
+                } else {
+                  updateNFTOwnershipAndMetadata(
+                    obj,
+                    wallet.userId,
+                    wallet.id,
+                    chainId,
+                  ).then(() => {
+                    logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
+                  })
+                }
+              })
+          })
+      }
+      return nft
+    } else {
+      // This NFT is not existing in our DB, so we try to get and save
+      const newNFT = await saveNewNFT(
+        utils.getAddress(args.contract),
+        ethers.BigNumber.from(args.id).toHexString(),
+        chainId,
+      )
+      if (!newNFT) {
+        logger.error(`NFT is not valid for contract ${args?.contract} and tokenId ${ethers.BigNumber.from(args?.id).toHexString()}`)
+        return Promise.reject(appError.buildInvalid(
+          nftError.buildNFTNotValid(),
+          nftError.ErrorType.NFTNotValid,
+        ))
+      } else {
+        logger.info(`New NFT is saved for contract ${args?.contract} and tokenId ${ethers.BigNumber.from(args?.id).toHexString()}`)
+        return newNFT
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getContractNFT: ${err}`)
+    return err
+  }
 }
 
 const getNFTs = (
@@ -1027,15 +1079,31 @@ export const refreshNft = async (
       })
 
       if (nft) {
-        const refreshedNFT = await refreshNFTMetadata(nft)
+        const obj = {
+          contract: {
+            address: nft.contract,
+          },
+          id: {
+            tokenId: nft.tokenId,
+          },
+        }
 
-        await cache.set(
-          cacheKey,
-          JSON.stringify(refreshedNFT),
-          'EX',
-          5 * 60, // 5 minutes
-        )
-        return refreshedNFT
+        const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+        if (!wallet) {
+          logger.error('Failed to create new user and wallet for NFT ownership')
+          return nft
+        } else {
+          const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId)
+          await seService.indexNFTs([refreshedNFT])
+
+          await cache.set(
+            cacheKey,
+            JSON.stringify(refreshedNFT),
+            'EX',
+            5 * 60, // 5 minutes
+          )
+          return refreshedNFT
+        }
       } else {
         return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
@@ -1146,33 +1214,45 @@ export const getNFTsForCollections = async (
           chainId,
         )
         if (collection) {
-          const edges = await repositories.edge.find({ where: {
+          const actualNFTCount = await repositories.edge.count({
             thisEntityType: defs.EntityType.Collection,
             thisEntityId: collection.id,
             thatEntityType: defs.EntityType.NFT,
             edgeType: defs.EdgeType.Includes,
-          } })
-          if (edges.length) {
-            const nfts: entity.NFT[] = []
-            await Promise.allSettled(
-              edges.map(async (edge) => {
-                const nft = await repositories.nft.findById(edge.thatEntityId)
-                if (nft) nfts.push(nft)
-              }),
-            )
-            const length = nfts.length > count ? count: nfts.length
-            result.push({
-              collectionAddress: address,
-              nfts: nfts.slice(0, Math.min(length, 100)), // prevent showing more than 100 NFTs
-              actualNumberOfNFTs: nfts.length,
-            })
+          })
+          const key = `getNFTsForCollections_${chainId}_${address}_${count}`
+          const cachedData = await cache.get(key)
+          let nfts = []
+
+          if (cachedData) {
+            nfts = JSON.parse(cachedData) as entity.NFT[]
           } else {
-            result.push({
-              collectionAddress: address,
-              nfts: [],
-              actualNumberOfNFTs: 0,
+            const edges = await repositories.edge.find({
+              where: {
+                thisEntityType: defs.EntityType.Collection,
+                thisEntityId: collection.id,
+                thatEntityType: defs.EntityType.NFT,
+                edgeType: defs.EdgeType.Includes,
+              },
+              take: Math.min(count, 100),
             })
+            if (edges.length) {
+              await Promise.allSettled(
+                edges.map(async (edge) => {
+                  const nft = await repositories.nft.findById(edge.thatEntityId)
+                  if (nft) nfts.push(nft)
+                }),
+              )
+            }
+            await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
+
+          const length = Math.min(nfts.length, count)
+          result.push({
+            collectionAddress: address,
+            nfts: nfts.slice(0, Math.min(length, 100)), // prevent showing more than 100 NFTs
+            actualNumberOfNFTs: actualNFTCount,
+          })
         } else {
           result.push({
             collectionAddress: address,
@@ -1343,85 +1423,6 @@ const updateENSNFTMetadata = async (
   }
 }
 
-const updateNFT = async (
-  _: any,
-  args: gql.MutationUpdateNFTArgs,
-  ctx: Context,
-): Promise<gql.NFT> => {
-  try {
-    const { repositories } = ctx
-    logger.debug('updateNFT', { input: args?.input })
-    const chainId = args?.input.chainId || process.env.CHAIN_ID
-    auth.verifyAndGetNetworkChain('ethereum', chainId)
-    initiateWeb3(chainId)
-    const nft = await repositories.nft.findOne({
-      where: {
-        contract: args?.input.contract,
-        tokenId: ethers.BigNumber.from(args?.input.tokenId).toHexString(),
-        chainId,
-      },
-    })
-    if (nft) {
-      const now = helper.toUTCDate()
-      let duration
-      if (nft.lastRefreshed) {
-        duration = differenceInMilliseconds(now, nft.lastRefreshed)
-      }
-      if (!nft.lastRefreshed  ||
-        (duration && duration > NFT_REFRESH_DURATION)
-      ) {
-        repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
-          .then((nft) => {
-            const obj = {
-              contract: {
-                address: nft.contract,
-              },
-              id: {
-                tokenId: nft.tokenId,
-              },
-            }
-            getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
-              .then((wallet) => {
-                if (!wallet) {
-                  logger.error('Failed to create new user and wallet for NFT ownership')
-                } else {
-                  updateNFTOwnershipAndMetadata(
-                    obj,
-                    wallet.userId,
-                    wallet.id,
-                    chainId,
-                  ).then(() => {
-                    logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
-                  })
-                }
-              })
-          })
-      }
-      return nft
-    } else {
-      // This NFT is not existing in our DB, so we try to get and save
-      const newNFT = await saveNewNFT(
-        args?.input.contract,
-        ethers.BigNumber.from(args?.input.tokenId).toHexString(),
-        chainId,
-      )
-      if (!newNFT) {
-        logger.error(`NFT is not valid for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
-        return Promise.reject(appError.buildInvalid(
-          nftError.buildNFTNotValid(),
-          nftError.ErrorType.NFTNotValid,
-        ))
-      } else {
-        logger.info(`New NFT is saved for contract ${args?.input.contract} and tokenId ${ethers.BigNumber.from(args?.input.tokenId).toHexString()}`)
-        return newNFT
-      }
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in updateNFT: ${err}`)
-    return err
-  }
-}
-
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1440,7 +1441,6 @@ export default {
     updateAssociatedAddresses: updateAssociatedAddresses,
     updateAssociatedContract: updateAssociatedContract,
     refreshNft,
-    updateNFT,
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
