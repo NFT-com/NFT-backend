@@ -1221,7 +1221,7 @@ export const getNFTsForCollections = async (
             thatEntityType: defs.EntityType.NFT,
             edgeType: defs.EdgeType.Includes,
           })
-          const key = `getNFTsForCollections_${chainId}_${ethers.utils.getAddress(collectionAddress)}_${count}`
+          const key = `NFTsForCollections_${chainId}_${ethers.utils.getAddress(collectionAddress)}_${count}`
           const cachedData = await cache.get(key)
           let nfts = []
 
