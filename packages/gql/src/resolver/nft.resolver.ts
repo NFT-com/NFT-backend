@@ -1242,6 +1242,7 @@ export const getNFTsForCollections = async (
                 const nft = await repositories.nft.findById(edge.thatEntityId)
                 if (nft) nfts.push(nft)
               }
+              logger.info(`${nfts.length} NFTs for collection ${collectionAddresses[i]}`)
             }
             await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
