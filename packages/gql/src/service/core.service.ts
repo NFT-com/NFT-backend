@@ -258,6 +258,13 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
             repositories.nft.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
             repositories.nft.findOne({ where: { id: edge.thatEntityId } })
               .then(fp.thruIfNotEmpty((entry: entity.NFT) => {
+                // fix (short-term) : trait value
+                if (entry.metadata.traits && entry.metadata.traits?.length) {
+                  for (let i = 0; i < entry.metadata.traits.length; i++) {
+                    if (entry.metadata.traits[i].value)
+                      entry.metadata.traits[i].value = JSON.stringify(entry.metadata.traits[i].value)
+                  }
+                }
                 return repositories.collection.findOne({ where: {
                   contract: entry.contract,
                   isSpam: false,

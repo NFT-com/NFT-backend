@@ -458,7 +458,7 @@ const getNFTMetaData = async (
       nftMetadata?.metadata?.attributes.map((trait) => {
         traits.push(({
           type: trait?.trait_type,
-          value: trait?.value || trait?.trait_value,
+          value: JSON.stringify(trait?.value || trait?.trait_value),
         }))
       })
     } else {
@@ -466,7 +466,7 @@ const getNFTMetaData = async (
         Object.keys(nftMetadata?.metadata?.attributes).map(keys => {
           traits.push(({
             type: keys,
-            value: nftMetadata?.metadata?.attributes?.[keys],
+            value: JSON.stringify(nftMetadata?.metadata?.attributes?.[keys]),
           }))
         })
       }
