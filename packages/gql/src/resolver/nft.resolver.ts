@@ -1223,6 +1223,7 @@ export const getNFTsForCollections = async (
           const key = `getNFTsForCollections_${chainId}_${address}_${count}`
           const cachedData = await cache.get(key)
           let nfts = []
+
           if (cachedData) {
             nfts = JSON.parse(cachedData) as entity.NFT[]
           } else {
@@ -1233,7 +1234,7 @@ export const getNFTsForCollections = async (
                 thatEntityType: defs.EntityType.NFT,
                 edgeType: defs.EdgeType.Includes,
               },
-              take: count,
+              take: Math.min(count, 100),
             })
             if (edges.length) {
               await Promise.allSettled(
@@ -1245,6 +1246,7 @@ export const getNFTsForCollections = async (
             }
             await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
+
           const length = Math.min(nfts.length, count)
           result.push({
             collectionAddress: address,
