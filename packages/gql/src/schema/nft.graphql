@@ -32,7 +32,7 @@ type NFT {
   contract: Address
   tokenId: Uint256!
   isOwnedByMe: Boolean
-  metadata: NFTMetadata!
+  metadata: NFTMetadata
   price: Uint256
   profileId: String
   preferredProfile: Profile

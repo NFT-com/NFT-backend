@@ -1207,10 +1207,11 @@ export const getNFTsForCollections = async (
   try {
     const { collectionAddresses, count } = helper.safeObject(args?.input)
     const result: gql.CollectionNFT[] = []
-    await Promise.allSettled(
-      collectionAddresses.map(async (address) => {
+
+    for (let i = 0; i < collectionAddresses.length; i++) {
+      try {
         const collection = await repositories.collection.findByContractAddress(
-          ethers.utils.getAddress(address),
+          ethers.utils.getAddress(collectionAddresses[i]),
           chainId,
         )
         if (collection) {
@@ -1220,7 +1221,7 @@ export const getNFTsForCollections = async (
             thatEntityType: defs.EntityType.NFT,
             edgeType: defs.EdgeType.Includes,
           })
-          const key = `getNFTsForCollections_${chainId}_${address}_${count}`
+          const key = `getNFTsForCollections_${chainId}_${ethers.utils.getAddress(collectionAddresses[i])}_${count}`
           const cachedData = await cache.get(key)
           let nfts = []
 
@@ -1234,36 +1235,39 @@ export const getNFTsForCollections = async (
                 thatEntityType: defs.EntityType.NFT,
                 edgeType: defs.EdgeType.Includes,
               },
-              take: Math.min(count, 100),
+              take: Math.min(count, 100), // prevent showing more than 100 NFTs
             })
             if (edges.length) {
-              await Promise.allSettled(
-                edges.map(async (edge) => {
-                  const nft = await repositories.nft.findById(edge.thatEntityId)
-                  if (nft) nfts.push(nft)
-                }),
-              )
+              for (const edge of edges) {
+                const nft = await repositories.nft.findById(edge.thatEntityId)
+                if (nft) nfts.push(nft)
+              }
+              logger.info(`${nfts.length} NFTs for collection ${collectionAddresses[i]}`)
             }
             await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
 
           const length = Math.min(nfts.length, count)
           result.push({
-            collectionAddress: address,
-            nfts: nfts.slice(0, Math.min(length, 100)), // prevent showing more than 100 NFTs
+            collectionAddress: ethers.utils.getAddress(collectionAddresses[i]),
+            nfts: nfts.slice(0, length),
             actualNumberOfNFTs: actualNFTCount,
           })
         } else {
           result.push({
-            collectionAddress: address,
+            collectionAddress: ethers.utils.getAddress(collectionAddresses[i]),
             nfts: [],
             actualNumberOfNFTs: 0,
           })
         }
-      }),
-    )
+      } catch (err) {
+        logger.error(`Error in getNFTsForCollections: ${err}`)
+        Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
+      }
+    }
     return result
   } catch (err) {
+    logger.error(`Error in getNFTsForCollections: ${err}`)
     Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
     return err
   }
