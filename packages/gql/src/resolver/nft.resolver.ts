@@ -282,13 +282,6 @@ const getMyNFTs = async (
 
   joi.validateSchema(schema, input)
 
-  // prevent showing more than 100 NFTs
-  if (pageInput.first) {
-    pageInput.first = Math.min(pageInput.first, 100)
-  } else if (pageInput.last) {
-    pageInput.last = Math.min(pageInput.last, 100)
-  }
-
   const { profileId } = helper.safeObject(args?.input)
 
   // ensure profileId is owned by user.id
@@ -354,12 +347,6 @@ const getCollectionNFTs = (
   const chainId = args?.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  // prevent showing more than 100 NFTs
-  if (pageInput.first) {
-    pageInput.first = Math.min(pageInput.first, 100)
-  } else if (pageInput.last) {
-    pageInput.last = Math.min(pageInput.last, 100)
-  }
   return repositories.collection.findByContractAddress(
     utils.getAddress(collectionAddress),
     chainId,
@@ -713,12 +700,7 @@ const updateNFTsForProfile = (
 
     const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
-    // prevent showing more than 100 NFTs
-    if (pageInput.first) {
-      pageInput.first = Math.min(pageInput.first, 100)
-    } else if (pageInput.last) {
-      pageInput.last = Math.min(pageInput.last, 100)
-    }
+
     return repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
@@ -1235,7 +1217,7 @@ export const getNFTsForCollections = async (
                 thatEntityType: defs.EntityType.NFT,
                 edgeType: defs.EdgeType.Includes,
               },
-              take: Math.min(count, 100), // prevent showing more than 100 NFTs
+              take: count,
             })
             if (edges.length) {
               for (const edge of edges) {
