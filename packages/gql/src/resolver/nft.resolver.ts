@@ -1208,10 +1208,10 @@ export const getNFTsForCollections = async (
     const { collectionAddresses, count } = helper.safeObject(args?.input)
     const result: gql.CollectionNFT[] = []
 
-    for (let i = 0; i < collectionAddresses.length; i++) {
+    for (const collectionAddress of collectionAddresses) {
       try {
         const collection = await repositories.collection.findByContractAddress(
-          ethers.utils.getAddress(collectionAddresses[i]),
+          ethers.utils.getAddress(collectionAddress),
           chainId,
         )
         if (collection) {
@@ -1221,7 +1221,7 @@ export const getNFTsForCollections = async (
             thatEntityType: defs.EntityType.NFT,
             edgeType: defs.EdgeType.Includes,
           })
-          const key = `getNFTsForCollections_${chainId}_${ethers.utils.getAddress(collectionAddresses[i])}_${count}`
+          const key = `getNFTsForCollections_${chainId}_${ethers.utils.getAddress(collectionAddress)}_${count}`
           const cachedData = await cache.get(key)
           let nfts = []
 
@@ -1240,22 +1240,32 @@ export const getNFTsForCollections = async (
             if (edges.length) {
               for (const edge of edges) {
                 const nft = await repositories.nft.findById(edge.thatEntityId)
-                if (nft) nfts.push(nft)
+                if (nft) {
+                  if (nft.metadata.traits && nft.metadata.traits?.length) {
+                    // convert value of trait to string format
+                    for ( let i = 0; i < nft.metadata.traits.length; i ++) {
+                      if (nft.metadata.traits[i].value) {
+                        nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
+                      }
+                    }
+                  }
+                  nfts.push(nft)
+                }
               }
-              logger.info(`${nfts.length} NFTs for collection ${collectionAddresses[i]}`)
+              logger.info(`${nfts.length} NFTs for collection ${collectionAddress}`)
             }
             await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
 
           const length = Math.min(nfts.length, count)
           result.push({
-            collectionAddress: ethers.utils.getAddress(collectionAddresses[i]),
+            collectionAddress: ethers.utils.getAddress(collectionAddress),
             nfts: nfts.slice(0, length),
             actualNumberOfNFTs: actualNFTCount,
           })
         } else {
           result.push({
-            collectionAddress: ethers.utils.getAddress(collectionAddresses[i]),
+            collectionAddress: ethers.utils.getAddress(collectionAddress),
             nfts: [],
             actualNumberOfNFTs: 0,
           })
