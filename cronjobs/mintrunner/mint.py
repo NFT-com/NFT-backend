@@ -11,8 +11,17 @@ today = date.today()
 node_url = os.getenv('ETH_NODE_URL')
 web3 = Web3(Web3.HTTPProvider(node_url))
 
+if os.getenv('ENV') == 'local':
+    genesisKeyABI = 'GenesisKey.json'
+    profileAuctionABI = 'ProfileAuction.json'
+else:
+    # for dockerfile
+    genesisKeyABI = '/app/GenesisKey.json'
+    profileAuctionABI = '/app/ProfileAuction.json'
+
+
 ## first get number of gk's in circulation 
-with open("/app/GenesisKey.json") as file:
+with open(genesisKeyABI) as file:
     gkAbi = json.load(file)
 
 gkAddress = '0x8fb5a7894ab461a59acdfab8918335768e411414'
@@ -34,7 +43,7 @@ gkInCirculation = 10000 - gkOwned - treasuryOwned - insiderOwned
 totalGks = 10000 - gkOwned - treasuryOwned
 
 # call profileAuction contract for profiles remaining per gk 
-with open("/app/ProfileAuction.json") as file:
+with open(profileAuctionABI) as file:
     profileAbi = json.load(file)
 
 mintedProfiles = 0
@@ -56,6 +65,6 @@ unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - minted
 # update database 
 dbConn = psycopg2.connect(database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'))
 dbCur = dbConn.cursor()
-dbCur.execute("INSERT into mints (date,freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s,%s)",(today,unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
+dbCur.execute("INSERT into %s (date,freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s,%s)",(os.getenv('MINT_TABLE_NAME'),today,unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
 dbConn.commit()
 dbConn.close()

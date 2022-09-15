@@ -18,9 +18,9 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
           logDriver: 'awslogs',
           options: {
             'awslogs-create-group': 'True',
-            'awslogs-group': `/ecs/${process.env.STAGE}-job-mintrunner`,
+            'awslogs-group': `/cronjobs/${process.env.STAGE}-mintrunner`,
             'awslogs-region': 'us-east-1',
-            'awslogs-stream-prefix': 'ecs',
+            'awslogs-stream-prefix': 'cronjobs',
           },
         },
         entryPoint: [],
@@ -63,6 +63,10 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
           {
             Name: 'PROFILE_PER_GK',
             Value: process.env.PROFILE_PER_GK,
+          },
+          {
+            Name: 'MINT_TABLE_NAME',
+            Value: process.env.MINT_TABLE_NAME,
           },
         ],
         volumesFrom: [],

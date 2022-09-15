@@ -1,15 +1,13 @@
 import * as aws from '@pulumi/aws'
 
-import { getResourceName } from '../../helper'
-
 export const createAnalyticsDatabase = (): aws.rds.Instance => {
-  const resourceName = getResourceName('mintrunner')
+  const resourceName = 'mintrunner' // static name to allow each env to share the same db
 
   return new aws.rds.Instance('postgres', {
     allocatedStorage: 20,
     backupWindow: '04:30-05:00',
     caCertIdentifier: 'rds-ca-2019',
-    dbSubnetGroupName: `${process.env.STAGE}-aurora`,
+    dbSubnetGroupName: 'dev-aurora',  //public subnets via dev-gql vpc, use in all envs
     engine: 'postgres',
     engineVersion: '14.2',
     identifier: resourceName,
