@@ -27,7 +27,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { BaseCoin } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
+import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -124,14 +124,7 @@ const getNFT = (
   return repositories.nft.findById(args.id)
     .then((nft: entity.NFT) => {
       // fix (short-term) : trait value
-      if (nft.metadata.traits && nft.metadata.traits?.length) {
-        for ( let i = 0; i < nft.metadata.traits.length; i ++) {
-          if (nft.metadata.traits[i].value) {
-            nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
-          }
-        }
-      }
-      return nft
+      return stringifyTraits(nft)
     })
 }
 
@@ -153,7 +146,7 @@ const getContractNFT = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     initiateWeb3(chainId)
 
-    const nft = await repositories.nft.findOne({
+    let nft = await repositories.nft.findOne({
       where: {
         contract: utils.getAddress(args.contract),
         tokenId: ethers.BigNumber.from(args.id).toHexString(),
@@ -162,13 +155,7 @@ const getContractNFT = async (
     })
     if (nft) {
       // fix (short-term) : trait value
-      if (nft.metadata.traits && nft.metadata.traits?.length) {
-        for ( let i = 0; i < nft.metadata.traits.length; i ++) {
-          if (nft.metadata.traits[i].value) {
-            nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
-          }
-        }
-      }
+      nft = stringifyTraits(nft)
       const now = helper.toUTCDate()
       let duration
       if (nft.lastRefreshed) {
@@ -178,16 +165,16 @@ const getContractNFT = async (
         (duration && duration > NFT_REFRESH_DURATION)
       ) {
         repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
-          .then((nft) => {
+          .then((Nft) => {
             const obj = {
               contract: {
-                address: nft.contract,
+                address: Nft.contract,
               },
               id: {
-                tokenId: nft.tokenId,
+                tokenId: Nft.tokenId,
               },
             }
-            getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+            getUserWalletFromNFT(Nft.contract, Nft.tokenId, chainId)
               .then((wallet) => {
                 if (!wallet) {
                   logger.error('Failed to create new user and wallet for NFT ownership')
@@ -198,7 +185,7 @@ const getContractNFT = async (
                     wallet.id,
                     chainId,
                   ).then(() => {
-                    logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
+                    logger.info(`Updated NFT ownership and metadata for contract ${Nft.contract} and tokenId ${Nft.tokenId}`)
                   })
                 }
               })
@@ -398,14 +385,7 @@ const getCollectionNFTs = (
             },
           }).then((nft) => {
             // fix (short-term) : trait value
-            if (nft.metadata.traits && nft.metadata.traits?.length) {
-              for ( let i = 0; i < nft.metadata.traits.length; i ++) {
-                if (nft.metadata.traits[i].value) {
-                  nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
-                }
-              }
-            }
-            return nft
+            return stringifyTraits(nft)
           })
         }),
       ),
@@ -1084,7 +1064,7 @@ export const refreshNft = async (
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
-      const nft = await repositories.nft.findOne({
+      let nft = await repositories.nft.findOne({
         where: {
           id: args?.id,
           chainId,
@@ -1093,13 +1073,7 @@ export const refreshNft = async (
 
       if (nft) {
         // fix (short-term) : trait value
-        if (nft.metadata.traits && nft.metadata.traits?.length) {
-          for ( let i = 0; i < nft.metadata.traits.length; i ++) {
-            if (nft.metadata.traits[i].value) {
-              nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
-            }
-          }
-        }
+        nft = stringifyTraits(nft)
 
         const obj = {
           contract: {
@@ -1212,14 +1186,7 @@ export const updateNFTMemo = async (
     }
     nft = await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
     // fix (short-term) : trait value
-    if (nft.metadata.traits && nft.metadata.traits?.length) {
-      for ( let i = 0; i < nft.metadata.traits.length; i ++) {
-        if (nft.metadata.traits[i].value) {
-          nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
-        }
-      }
-    }
-    return nft
+    return stringifyTraits(nft)
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
     return err
@@ -1270,16 +1237,10 @@ export const getNFTsForCollections = async (
             })
             if (edges.length) {
               for (const edge of edges) {
-                const nft = await repositories.nft.findById(edge.thatEntityId)
+                let nft = await repositories.nft.findById(edge.thatEntityId)
                 if (nft) {
                   // fix (short-term) : trait value
-                  if (nft.metadata.traits && nft.metadata.traits?.length) {
-                    for ( let i = 0; i < nft.metadata.traits.length; i ++) {
-                      if (nft.metadata.traits[i].value) {
-                        nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
-                      }
-                    }
-                  }
+                  nft = stringifyTraits(nft)
                   nfts.push(nft)
                 }
               }
@@ -1357,14 +1318,7 @@ export const updateNFTProfileId =
       profileId: profile.id,
     })
     // fix (short-term) : trait value
-    if (updatedNFT.metadata.traits && updatedNFT.metadata.traits?.length) {
-      for ( let i = 0; i < updatedNFT.metadata.traits.length; i ++) {
-        if (updatedNFT.metadata.traits[i].value) {
-          updatedNFT.metadata.traits[i].value = JSON.stringify(updatedNFT.metadata.traits[i].value)
-        }
-      }
-    }
-    return updatedNFT
+    return stringifyTraits(updatedNFT)
   }
 
 export const listNFTSeaport = async (
