@@ -1214,12 +1214,15 @@ export const getNFTsForCollections = async (
           chainId,
         )
         if (collection) {
-          const edges = await repositories.edge.find({ where: {
-            thisEntityType: defs.EntityType.Collection,
-            thisEntityId: collection.id,
-            thatEntityType: defs.EntityType.NFT,
-            edgeType: defs.EdgeType.Includes,
-          } })
+          const edges = await repositories.edge.find({
+            where: {
+              thisEntityType: defs.EntityType.Collection,
+              thisEntityId: collection.id,
+              thatEntityType: defs.EntityType.NFT,
+              edgeType: defs.EdgeType.Includes,
+            },
+            take: count,
+          })
           if (edges.length) {
             const nfts: entity.NFT[] = []
             await Promise.allSettled(
