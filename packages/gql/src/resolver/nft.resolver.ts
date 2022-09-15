@@ -1221,7 +1221,7 @@ export const getNFTsForCollections = async (
               thatEntityType: defs.EntityType.NFT,
               edgeType: defs.EdgeType.Includes,
             },
-            take: count,
+            take: Math.min(count, 100),
           })
           if (edges.length) {
             const nfts: entity.NFT[] = []
@@ -1231,10 +1231,9 @@ export const getNFTsForCollections = async (
                 if (nft) nfts.push(nft)
               }),
             )
-            const length = nfts.length > count ? count: nfts.length
             result.push({
               collectionAddress: address,
-              nfts: nfts.slice(0, Math.min(length, 100)), // prevent showing more than 100 NFTs
+              nfts: nfts,
               actualNumberOfNFTs: nfts.length,
             })
           } else {
