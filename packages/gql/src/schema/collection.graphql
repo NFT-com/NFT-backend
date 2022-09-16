@@ -139,6 +139,10 @@ type UpdateCollectionImageUrlsOutput {
   message: String
 }
 
+type UpdateCollectionNameOutput {
+  message: String
+}
+
 type SyncCollectionsWithNFTsOutput {
   message: String
 }
@@ -171,5 +175,6 @@ extend type Mutation {
   syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
   fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!
   updateCollectionImageUrls(count: Int!): UpdateCollectionImageUrlsOutput!
+  updateCollectionName(count: Int!): UpdateCollectionNameOutput!
   updateSpamStatus(contracts: [Address!]!, isSpam: Boolean!): UpdateSpamStatusOutput!
 }

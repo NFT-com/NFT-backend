@@ -4,6 +4,8 @@ import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
 
 import { NullTypesenseClient } from '../__nulls__/NullTypesenseClient'
 
+jest.mock('@nftcom/gql/service/nft.service')
+
 describe('search engine service', () => {
   describe('indexNFT', () => {
     let nft, repos

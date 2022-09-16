@@ -1,7 +1,7 @@
 import {  In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityFilters, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
+import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -76,6 +76,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .getMany()
   }
 
+  // activities for filters - pageable result
   public findActivities = (query: PageableQuery<TxActivity>)
   : Promise<PageableResult<TxActivity>> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository()
@@ -107,11 +108,35 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
       .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
         'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
-      .cache(true)
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',
         'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
       .cache(true)
       .getManyAndCount()
+  }
+
+  // activities for NFT
+  public findActivitiesForNFT = (
+    contract: string,
+    tokenId: string,
+    activityType: ActivityType,
+  ): Promise<TxActivity[]> => {
+    const nftId = `ethereum/${contract}/${tokenId}`
+
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository()
+      .createQueryBuilder('activity')
+
+    return queryBuilder
+      .where({
+        nftContract: contract,
+        activityType,
+        status: ActivityStatus.Valid,
+      })
+      .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
+      .orderBy({ 'activity.updatedAt': 'DESC' })
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .cache(true)
+      .getMany()
   }
 
   public updateActivities = (

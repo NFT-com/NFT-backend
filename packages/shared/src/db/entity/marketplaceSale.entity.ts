@@ -8,7 +8,7 @@ export class MarketplaceSale extends BaseEntity {
   @Column( { nullable: false })
   date: Date
 
-  @Column( { nullable: false, type: 'numeric' })
+  @Column( { nullable: true, type: 'numeric' })
   priceUSD: number
 
   @Column( { nullable: false })

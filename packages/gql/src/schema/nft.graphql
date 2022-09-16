@@ -14,15 +14,15 @@ enum NFTSize {
 }
 
 type NFTTrait {
-  type: String!
-  value: String!
+  type: String
+  value: String
 }
 
 type NFTMetadata {
   name: String
   description: String
   imageURL: String
-  traits: [NFTTrait!]!
+  traits: [NFTTrait]
 #  txHash: String!
 }
 
@@ -32,7 +32,7 @@ type NFT {
   contract: Address
   tokenId: Uint256!
   isOwnedByMe: Boolean
-  metadata: NFTMetadata!
+  metadata: NFTMetadata
   price: Uint256
   profileId: String
   preferredProfile: Profile
@@ -229,7 +229,6 @@ extend type Mutation {
   listNFTSeaport(input: ListNFTSeaportInput!): Boolean!
   listNFTLooksrare(input: ListNFTLooksrareInput!): Boolean!
   refreshNft(id: ID!, chainId: String): NFT!
-  updateNFT(input: UpdateNFTInput): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!, ttl: DateTime, force: Boolean): String!
   "AUTHENTICATED"

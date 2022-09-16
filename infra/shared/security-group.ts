@@ -90,6 +90,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
           buildIngressRule(5432, 'tcp', [web.id]),
           buildIngressRule(5432, 'tcp', [webEcs.id]),
           buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
+          buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bd5dceea498f0356')]), // Prod Stream ECS Cluster 
         ]
         : [buildIngressRule(5432)],
     egress: [

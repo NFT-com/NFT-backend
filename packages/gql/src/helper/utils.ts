@@ -15,3 +15,16 @@ export const getRandomFloat = (min, max, decimals): number => {
 
   return parseFloat(str)
 }
+
+export const chainFromId = (chainId: string): string | undefined => {
+  switch(chainId) {
+  case '1':
+    return 'ethereum'
+  case '4':
+    return 'rinkeby'
+  case '137':
+    return 'polygon'
+  default:
+    return undefined
+  }
+}

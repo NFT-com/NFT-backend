@@ -1,15 +1,12 @@
 import { BigNumber } from 'ethers'
-
-import { mockUpdateProfileInput, testMockProfiles, testMockUser, testMockWallet } from '../util/constants'
-
-const sharedLibs = jest.requireActual('@nftcom/shared')
-const { core } = jest.requireActual('@nftcom/gql/service')
-
+// const sharedLibs = jest.requireActual('@nftcom/shared')
+// const sharedLibs = jest.requireActual('@nftcom/gql/service')
 import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared/'
 
+import { mockUpdateProfileInput, testMockProfiles, testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
@@ -27,16 +24,18 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   createCacheConnection: jest.fn(),
 }))
 
+jest.mock('@nftcom/gql/helper/websocketProvider')
+
 jest.mock('@nftcom/gql/service', () => {
   return {
     core: {
-      ...core,
+      ...jest.requireActual('@nftcom/gql/service').core,
       createProfileFromEvent: () => {
         return {
           id: 'testId',
           createdAt: 0,
-          displayType: sharedLibs.defs.ProfileDisplayType.Collection,
-          layoutType: sharedLibs.defs.ProfileLayoutType.Mosaic,
+          displayType: jest.requireActual('@nftcom/shared').defs.ProfileDisplayType.Collection,
+          layoutType: jest.requireActual('@nftcom/shared').defs.ProfileLayoutType.Mosaic,
           url: 'test',
           chainId: '1',
         }
@@ -46,7 +45,7 @@ jest.mock('@nftcom/gql/service', () => {
 })
 jest.mock('@nftcom/shared', () => {
   return {
-    ...sharedLibs,
+    ...jest.requireActual('@nftcom/shared'),
     typechain: {
       NftProfile__factory: {
         connect: () => {
