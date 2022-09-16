@@ -1,0 +1,9 @@
+ignore:
+  - "packages/gql/src/job/marketplace.job.ts"
+  - "packages/gql/src/resolver/curation.resolver.ts"
+  - "packages/gql/src/resolver/curation.resolver.ts"
+  - "packages/gql/src/resolver/marketAsk.resolver.ts"
+  - "packages/gql/src/resolver/marketSwap.resolver.ts"
+  - "packages/gql/src/resolver/marketBid.resolver.ts"
+  - "packages/gql/src/resolver/marketBid.resolver.ts"
+  - "packages/gql/src/resolver/watchlist.resolver.ts"
