@@ -218,7 +218,7 @@ service:
             options: {
               Name: 'grafana-loki',
               Url: 'http://loki.leonardo.nft.prv/loki/api/v1/push',
-              Labels: '{job="firelens"}',
+              Labels: '{job="gql"}',
               RemoveKeys: 'container_id,ecs_task_arn',
               LabelKeys: 'container_name,ecs_task_definition,source,ecs_cluster',
               LineFormat: 'json',
