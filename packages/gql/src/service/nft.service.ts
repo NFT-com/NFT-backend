@@ -456,17 +456,21 @@ const getNFTMetaData = async (
 
     if (Array.isArray(nftMetadata?.metadata?.attributes)) {
       nftMetadata?.metadata?.attributes.map((trait) => {
+        let value = trait?.value || trait?.trait_value
+        value = typeof value === 'string' ? value : JSON.stringify(value)
         traits.push(({
           type: trait?.trait_type,
-          value: trait?.value || trait?.trait_value,
+          value,
         }))
       })
     } else {
       if (nftMetadata?.metadata?.attributes) {
         Object.keys(nftMetadata?.metadata?.attributes).map(keys => {
+          let value = nftMetadata?.metadata?.attributes?.[keys]
+          value = typeof value === 'string' ? value : JSON.stringify(value)
           traits.push(({
             type: keys,
-            value: nftMetadata?.metadata?.attributes?.[keys],
+            value,
           }))
         })
       }
