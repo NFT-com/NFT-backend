@@ -274,47 +274,73 @@ const getMyNFTs = async (
   args: gql.QueryNFTsArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
-  const { user, chain } = ctx
+  const { user, chain, wallet, repositories } = ctx
   logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
   const schema = Joi.object().keys({
-    profileId: Joi.string().required(),
+    profileId: Joi.string().optional(),
+    filter: Joi.boolean().optional(),
+    chainId: Joi.string().optional(),
     pageInput: Joi.any(),
   })
   const { input } = args
 
   joi.validateSchema(schema, input)
 
-  const { profileId } = helper.safeObject(args?.input)
-
-  // ensure profileId is owned by user.id
-  const profile = await ctx.repositories.profile.findById(profileId)
-  if (profile.ownerUserId != user.id) {
-    return Promise.reject(appError.buildNotFound(
-      nftError.buildProfileNotOwnedMsg(profile?.url || profileId, user.id),
-      nftError.ErrorType.NFTNotOwned,
-    ))
+  if ((args?.input?.filter && args?.input?.profileId) ||
+    (!args?.input?.filter && args?.input?.profileId)
+  ) {
+    const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.ownerUserId !== user.id || profile.ownerWalletId !== wallet.id) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildProfileNotOwnedMsg(profile?.url || profile?.id, user.id),
+        nftError.ErrorType.NFTNotOwned,
+      ))
+    }
+    const filter: Partial<entity.Edge> = helper.removeEmpty({
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: args?.input?.profileId,
+      thatEntityType: defs.EntityType.NFT,
+      edgeType: defs.EdgeType.Displays,
+    })
+    return core.paginatedThatEntitiesOfEdgesBy(
+      ctx,
+      ctx.repositories.nft,
+      filter,
+      pageInput,
+      'weight',
+      'ASC',
+      chainId,
+      'NFT',
+    )
+  } else if (args?.input?.filter && !args?.input?.profileId ) {
+    const filters: Partial<entity.NFT> = {
+      walletId: wallet.id,
+      userId: user.id ,
+      chainId,
+    }
+    return core.paginatedEntitiesBy(
+      repositories.nft,
+      pageInput,
+      [filters],
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
   }
-
-  const filter: Partial<entity.Edge> = helper.removeEmpty({
-    thisEntityType: defs.EntityType.Profile,
-    thisEntityId: profileId,
-    thatEntityType: defs.EntityType.NFT,
-    edgeType: defs.EdgeType.Displays,
-  })
-  return core.paginatedThatEntitiesOfEdgesBy(
-    ctx,
-    ctx.repositories.nft,
-    filter,
-    pageInput,
-    'weight',
-    'ASC',
-    chainId,
-    'NFT',
-  )
+  // else {
+  //
+  // }
 }
 
 const getCurationNFTs = (

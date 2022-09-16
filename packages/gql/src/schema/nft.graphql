@@ -50,6 +50,7 @@ input NFTsInput {
   types: [NFTType!]
   profileId: ID
   chainId: String
+  filter: Boolean
 }
 
 input CurationInput {
