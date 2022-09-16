@@ -233,7 +233,7 @@ export const thatEntitiesOfEdges = <T>(ctx: Context) => {
 export const stringifyTraits = (
   nft: entity.NFT,
 ): entity.NFT => {
-  if (nft.metadata.traits && nft.metadata.traits?.length) {
+  if (nft.metadata && nft.metadata?.traits && nft.metadata.traits?.length) {
     for ( let i = 0; i < nft.metadata.traits.length; i ++) {
       if (nft.metadata.traits[i].value) {
         if (typeof nft.metadata.traits[i].value !== 'string')
