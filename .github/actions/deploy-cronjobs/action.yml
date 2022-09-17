@@ -53,6 +53,7 @@ runs:
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
         GIT_SHA: ${{ github.sha }}
+        ENV: ${{ fromJSON(inputs.secrets).ENV }}
         ANALYTICS_DB_HOST: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_HOST }}
         ANALYTICS_DB_PORT: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_PORT }}
         ANALYTICS_DB_NAME: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_NAME }}

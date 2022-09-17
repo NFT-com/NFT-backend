@@ -68,6 +68,10 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
             Name: 'MINT_TABLE_NAME',
             Value: process.env.MINT_TABLE_NAME,
           },
+          {
+            Name: 'ENV',
+            Value: process.env.ENV,
+          },
         ],
         volumesFrom: [],
       }]),
