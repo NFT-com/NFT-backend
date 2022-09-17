@@ -11,13 +11,13 @@ today = date.today()
 node_url = os.getenv('ETH_NODE_URL')
 web3 = Web3(Web3.HTTPProvider(node_url))
 
-if os.getenv('ENV') == 'local':
-    genesisKeyABI = 'GenesisKey.json'
-    profileAuctionABI = 'ProfileAuction.json'
+if os.getenv('ENV') == "local":
+    genesisKeyABI = "GenesisKey.json"
+    profileAuctionABI = "ProfileAuction.json"
 else:
     # for dockerfile
-    genesisKeyABI = '/app/GenesisKey.json'
-    profileAuctionABI = '/app/ProfileAuction.json'
+    genesisKeyABI = "/app/GenesisKey.json"
+    profileAuctionABI = "/app/ProfileAuction.json"
 
 
 ## first get number of gk's in circulation 
@@ -55,6 +55,7 @@ profileContract = web3.eth.contract(address = profileCheckSumAddress, abi = prof
 #for x in range(1,gkInCirculation+1):
 for x in range(1,totalGks+1):
     y = profileContract.functions.genesisKeyClaimNumber(x).call()
+    print("TokenID: " + str(x) + " - result: " + str(y)) # for debugging 
     mintedProfiles += y
 
 unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - mintedProfiles
