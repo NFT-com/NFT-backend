@@ -9,7 +9,7 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     caCertIdentifier: 'rds-ca-2019',
     dbSubnetGroupName: 'dev-aurora',  //public subnets via dev-gql vpc, use in all envs
     engine: 'postgres',
-    engineVersion: '14.2',
+    engineVersion: '14.3',
     identifier: resourceName,
     instanceClass: 'db.t4g.small',
     licenseModel: 'postgresql-license',
