@@ -1,7 +1,7 @@
 import * as aws from '@pulumi/aws'
 
 export const createAnalyticsDatabase = (): aws.rds.Instance => {
-  const resourceName = 'mintrunner' // static name to allow each env to share the same db
+  const resourceName = 'internal-analytics-db' // static name to allow each env to share the same db
 
   return new aws.rds.Instance('postgres', {
     allocatedStorage: 20,
