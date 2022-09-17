@@ -108,19 +108,16 @@ type UploadedImage = {
 
 export const initiateWeb3 = (chainId?: string): void => {
   chainId = chainId || process.env.CHAIN_ID // attach default value
-  const alchemy_api_url = chainId === '1' ? ALCHEMY_API_URL :
-    (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
-  web3 = createAlchemyWeb3(alchemy_api_url)
-  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL :
-    Number(chainId) == 5 ? process.env.ALCHEMY_API_URL_GOERLI :
-      Number(chainId) == 4 ? process.env.ALCHEMY_API_URL_RINKEBY : ''
+  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL :
+    (Number(chainId) == 5 ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
+  web3 = createAlchemyWeb3(alchemyUrl)
 }
 
-export const initiateWeb3PreviewLink = (chainId?: string): void => {
+export const initiateWeb3PreviewLink = (chainId?: string): AlchemyWeb3 => {
   chainId = chainId || process.env.CHAIN_ID // attach default value
   alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
     Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
-  web3 = createAlchemyWeb3(alchemyUrl)
+  return createAlchemyWeb3(alchemyUrl)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -288,9 +285,10 @@ export const filterNFTsWithAlchemy = async (
 const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
+  optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
-    const response = await web3.alchemy.getNftMetadata({
+    const response = await (optionalWeb3 || web3)?.alchemy.getNftMetadata({
       contractAddress: contractAddress,
       tokenId: tokenId,
     })
@@ -620,8 +618,8 @@ export const saveNFTMetadataImageToS3 = async (
           uploadedImage = JSON.parse(cachedContract)
         }
       } else {
-        initiateWeb3PreviewLink(nft.chainId)
-        const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId)
+        const newWeb3 = initiateWeb3PreviewLink(nft.chainId)
+        const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId, newWeb3)
         if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
           const filename = nftAlchemyResult.metadata.image.split('/').pop()
           uploadedImage = await uploadImageToS3(
