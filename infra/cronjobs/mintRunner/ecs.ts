@@ -85,7 +85,7 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
 }
 
 export const createEcsCluster = (): aws.ecs.Cluster => {
-  const resourceName = 'mintrunner' // static name to allow each env to share the same ecs cluster
+  const resourceName = 'cronjob-mintrunner' // static name to allow each env to share the same ecs cluster
   const cluster = new aws.ecs.Cluster('mintRunner-cluster',
     {
       name: resourceName,
