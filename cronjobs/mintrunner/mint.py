@@ -54,8 +54,11 @@ profileContract = web3.eth.contract(address = profileCheckSumAddress, abi = prof
 # determine mints available 
 #for x in range(1,gkInCirculation+1):
 for x in range(1,totalGks+1):
-    y = profileContract.functions.genesisKeyClaimNumber(x).call()
-    print("TokenID: " + str(x) + " - result: " + str(y)) # for debugging 
+    try:
+        y = profileContract.functions.genesisKeyClaimNumber(x).call()
+    except:
+        print("exception, tokenid: " + str(x) + ", output: " + str(y))
+    #print("TokenID: " + str(x) + " - result: " + str(y)) # for debugging 
     mintedProfiles += y
 
 unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - mintedProfiles
@@ -63,9 +66,10 @@ unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - minted
 #print("Total Mints Remaining on GKs in Circulation: " + str(unmintedProfiles))
 #print("Total Mints Spent on GKs in Circulation: " + str(mintedProfiles))
 
-# update database 
+# update database
+tableName = os.getenv('MINT_TABLE_NAME') # using 1 db, so diff table name per env
 dbConn = psycopg2.connect(database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'))
 dbCur = dbConn.cursor()
-dbCur.execute("INSERT into %s (date,freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s,%s)",(os.getenv('MINT_TABLE_NAME'),today,unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
+dbCur.execute("INSERT into " + tableName + " (date,freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s,%s)",(today,unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
 dbConn.commit()
 dbConn.close()
