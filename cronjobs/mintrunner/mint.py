@@ -59,7 +59,8 @@ for x in range(1,totalGks+1):
     except:
         print("exception, tokenid: " + str(x) + ", output: " + str(y))
     #print("TokenID: " + str(x) + " - result: " + str(y)) # for debugging 
-    mintedProfiles += y
+    finally:
+        mintedProfiles += y
 
 unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - mintedProfiles
 #print("Total GKs in Circulation: " + str(gkInCirculation))
