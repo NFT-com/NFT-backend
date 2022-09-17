@@ -42,7 +42,7 @@ gkInCirculation = 10000 - gkOwned - treasuryOwned - insiderOwned
 # totalGKs is the tokenRange we need to query to determine proper mints
 totalGks = 10000 - gkOwned - treasuryOwned
 
-# call profileAuction contract for profiles remaining per gk 
+# call profileAuction contract for profiles remaining per gk
 with open(profileAuctionABI) as file:
     profileAbi = json.load(file)
 
