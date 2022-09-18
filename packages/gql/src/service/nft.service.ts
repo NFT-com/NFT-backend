@@ -120,13 +120,6 @@ export const initiateWeb3PreviewLink = (chainId?: string): AlchemyWeb3 => {
   return createAlchemyWeb3(alchemyUrl)
 }
 
-export const initiateWeb3PreviewLink = (chainId?: string): void => {
-  chainId = chainId || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
-    Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
-  web3 = createAlchemyWeb3(alchemyUrl)
-}
-
 export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
