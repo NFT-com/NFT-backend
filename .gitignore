@@ -14,7 +14,6 @@ packages/*/.env
 infra/package-lock.json
 docs/*
 packages/gql/coverage/*
-cronjobs/*/.env
 
 # logs
 log-debug
