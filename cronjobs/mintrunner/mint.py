@@ -58,8 +58,8 @@ for x in range(1,totalGks+1):
         y = profileContract.functions.genesisKeyClaimNumber(x).call()
     except:
         print("exception, tokenid: " + str(x) + ", output: " + str(y))
-    #print("TokenID: " + str(x) + " - result: " + str(y)) # for debugging 
     finally:
+        #print("TokenID: " + str(x) + " - result: " + str(y)) # for debugging
         mintedProfiles += y
 
 unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - mintedProfiles
