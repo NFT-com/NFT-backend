@@ -39,7 +39,29 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-cronjobs
-        name: Deploy cronjobs
+        name: Deploy cronjobs [dev]
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
+  deploy-staging-cronjobs:
+    if: ${{ github.ref_name == 'main' }} # to do: find way to seperate gql/cronjob staging deployment
+    runs-on: ubuntu-latest
+    environment: nftcom_staging_cronjobs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy cronjobs [staging]
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: staging
+  deploy-prod-cronjobs:
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'relJob') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_prod_cronjobs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy cronjobs [prod]
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: prod
