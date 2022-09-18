@@ -1,6 +1,10 @@
 import * as aws from '@pulumi/aws'
 
-import { getResourceName } from '../../helper'
+import { getResourceName, getTags } from '../../helper'
+
+const tags = {
+    cronjob: 'mintrunner',
+}  
 
 const execRole = 'arn:aws:iam::016437323894:role/ecsTaskExecutionRole'
 const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
@@ -85,6 +89,7 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
       operatingSystemFamily: 'LINUX',
     },
     taskRoleArn: taskRole,
+    tags: getTags(tags),
   })
 }
 
@@ -107,6 +112,7 @@ export const createEcsCluster = (): aws.ecs.Cluster => {
           logging: 'DEFAULT',
         },
       },
+      tags: getTags(tags),
       defaultCapacityProviderStrategies: [{
         capacityProvider: 'FARGATE',
         weight: 1,

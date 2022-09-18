@@ -1,12 +1,17 @@
 import * as aws from '@pulumi/aws'
 
-import { getResourceName } from '../../helper'
+import { getResourceName, getTags } from '../../helper'
+
+const tags = {
+  cronjob: 'mintrunner',
+}  
 
 const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('mintRunner-eventRule')
   return new aws.cloudwatch.EventRule('mintRunner-eventRule', {
     name: resourceName,
     scheduleExpression: 'cron(05 09 * * ? *)',  // run daily at 09:05 UTC
+    tags: getTags(tags),
   })
 }
 
@@ -36,5 +41,6 @@ export const createEventBridgeTarget = (
     // hardcoded iam role for eventbridge to trigger ecs
     roleArn: 'arn:aws:iam::016437323894:role/service-role/Amazon_EventBridge_Invoke_ECS_306739191',
     rule: rule.name,
+    tags: getTags(tags),
   })
 }

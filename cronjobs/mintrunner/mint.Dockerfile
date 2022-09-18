@@ -6,6 +6,6 @@ ADD cronjobs/mintrunner/mint.py .
 ADD cronjobs/mintrunner/ProfileAuction.json .
 ADD cronjobs/mintrunner/GenesisKey.json .
 
-RUN pip3 install python-dotenv datetime psycopg2 web3
+RUN pip3 install python-dotenv psycopg2 web3
 
 CMD [ "python" , "./mint.py" ]

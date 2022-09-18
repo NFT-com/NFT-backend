@@ -2,12 +2,10 @@ import psycopg2
 import json
 import os
 from web3 import Web3
-from datetime import date
 from dotenv import load_dotenv
 
 load_dotenv()
 
-today = date.today()
 node_url = os.getenv('ETH_NODE_URL')
 web3 = Web3(Web3.HTTPProvider(node_url))
 
@@ -71,6 +69,6 @@ unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - minted
 tableName = os.getenv('MINT_TABLE_NAME') # using 1 db, so diff table name per env
 dbConn = psycopg2.connect(database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'))
 dbCur = dbConn.cursor()
-dbCur.execute("INSERT into " + tableName + " (date,freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s,%s)",(today,unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
+dbCur.execute("INSERT into " + tableName + " (freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s)",(unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
 dbConn.commit()
 dbConn.close()
