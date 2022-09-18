@@ -41,6 +41,5 @@ export const createEventBridgeTarget = (
     // hardcoded iam role for eventbridge to trigger ecs
     roleArn: 'arn:aws:iam::016437323894:role/service-role/Amazon_EventBridge_Invoke_ECS_306739191',
     rule: rule.name,
-    tags: getTags(tags),
   })
 }
