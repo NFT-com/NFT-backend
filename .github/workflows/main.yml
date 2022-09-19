@@ -1,30 +1,41 @@
 name: NFT.com github actions
 on: [push]
 jobs:
+  paths-filter:
+    runs-on: ubuntu-latest
+    outputs:
+      gql-changed: ${{ steps.filter.outputs.gql }}
+      gql-infra-changed: ${{ steps.filter.outputs.gql-infra }}
+      cronjobs-changed: ${{ steps.filter.outputs.cronjobs }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        working-directory: NFT-backend
+        filters: |
+          gql:
+            - 'packages/**'
+            - 'perftest/**'
+            - 'package**'
+            - 'gql**'
+          gql-infra:
+            - 'infra/gql/**'
+            - 'infra/shared/**'
+            - 'infra/defs/**'
+            - 'infra/helper/**'
+          cronjobs:
+            - 'cronjobs/**'
+            - 'infra/cronjobs/**'
   deploy-dev:
-    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
+    needs: paths-filter
+    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }} && (needs.paths-filter.outputs.gql-changed == 'true' || needs.paths-filter.outputs.gql-infra-changed == 'true')
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
       - uses: actions/checkout@v2
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          working-directory: NFT-backend
-          filters: |
-            gql:
-             - 'packages/**'
-             - 'perftest/**'
-             - 'package**'
-             - 'gql**'
-            infra:
-             - 'infra/gql/**'
-             - 'infra/shared/**'
-             - 'infra/defs/**'
-             - 'infra/helper/**'
-      - name: Deploy GQL Env [Dev] 
-        if: ${{ steps.filter.outputs.gql == 'true' || steps.filter.outputs.infra == 'true' }}
-        uses: ./.github/actions/deploy-env
+      - uses: ./.github/actions/deploy-env
+        name: Deploy GQL Env [Dev] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
@@ -35,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
+        name: Deploy GQL Env [Staging] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
@@ -45,26 +57,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
+        name: Deploy GQL Env [Prod] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
   deploy-dev-cronjobs:
-    if: ${{ startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob') }}
+    needs: paths-filter
+    if: ${{ startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob') }}  && needs.paths-filter.outputs.cronjobs-changed == 'true'
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
       - uses: actions/checkout@v2
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          working-directory: NFT-backend
-          filters: |
-            cronjobs:
-              - 'cronjobs/**'
-              - 'infra/cronjobs/**'
-      - name: Deploy Cronjobs [Dev] 
-        if: ${{ steps.filter.outputs.cronjobs == 'true' }}
-        uses: ./.github/actions/deploy-cronjobs
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy Cronjobs [Dev] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
