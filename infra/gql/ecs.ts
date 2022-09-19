@@ -249,7 +249,7 @@ service:
             options: {
               'enable-ecs-log-metadata': 'true',
               'config-file-type': 'file',
-              'config-file-value': `fluentbit.${process.env.STAGE}.conf`,
+              'config-file-value': `/fluentbit.${process.env.STAGE}.conf`,
             },
           },
           logConfiguration: {
