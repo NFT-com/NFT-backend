@@ -24,7 +24,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 import { differenceInMilliseconds } from 'date-fns'
 
-import { BaseCoin } from '@nftcom/gql/defs/gql'
+import { BaseCoin, PageInput } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
@@ -269,6 +269,30 @@ const getNFTs = (
   })
 }
 
+const returnProfileNFTs = async (
+  profileId: string,
+  ctx: Context,
+  pageInput: PageInput,
+  chainId: string,
+): Promise<any> => {
+  const filter: Partial<entity.Edge> = helper.removeEmpty({
+    thisEntityType: defs.EntityType.Profile,
+    thisEntityId: profileId,
+    thatEntityType: defs.EntityType.NFT,
+    edgeType: defs.EdgeType.Displays,
+  })
+  return core.paginatedThatEntitiesOfEdgesBy(
+    ctx,
+    ctx.repositories.nft,
+    filter,
+    pageInput,
+    'weight',
+    'ASC',
+    chainId,
+    'NFT',
+  )
+}
+
 const getMyNFTs = async (
   _: unknown,
   args: gql.QueryNFTsArgs,
@@ -296,9 +320,7 @@ const getMyNFTs = async (
     chainId,
   }
 
-  if ((args?.input?.filter && args?.input?.profileId) ||
-    (!args?.input?.filter && args?.input?.profileId)
-  ) {
+  if (args?.input?.filter && args?.input?.profileId) {
     const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
     if (!profile) {
       return Promise.reject(appError.buildNotFound(
@@ -312,22 +334,16 @@ const getMyNFTs = async (
         nftError.ErrorType.NFTNotOwned,
       ))
     }
-    const filter: Partial<entity.Edge> = helper.removeEmpty({
-      thisEntityType: defs.EntityType.Profile,
-      thisEntityId: args?.input?.profileId,
-      thatEntityType: defs.EntityType.NFT,
-      edgeType: defs.EdgeType.Displays,
-    })
-    return core.paginatedThatEntitiesOfEdgesBy(
-      ctx,
-      ctx.repositories.nft,
-      filter,
-      pageInput,
-      'weight',
-      'ASC',
-      chainId,
-      'NFT',
-    )
+    return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
+  } else if (!args?.input?.filter && args?.input?.profileId) {
+    const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
   } else if (args?.input?.filter && !args?.input?.profileId ) {
     return core.paginatedEntitiesBy(
       repositories.nft,
@@ -357,22 +373,7 @@ const getMyNFTs = async (
       )
         .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
     } else {
-      const filter: Partial<entity.Edge> = helper.removeEmpty({
-        thisEntityType: defs.EntityType.Profile,
-        thisEntityId: defaultProfile.id,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-      })
-      return core.paginatedThatEntitiesOfEdgesBy(
-        ctx,
-        ctx.repositories.nft,
-        filter,
-        pageInput,
-        'weight',
-        'ASC',
-        chainId,
-        'NFT',
-      )
+      return await returnProfileNFTs(defaultProfile.id, ctx, pageInput, chainId)
     }
   }
 }
