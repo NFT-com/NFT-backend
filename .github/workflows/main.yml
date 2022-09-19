@@ -28,7 +28,7 @@ jobs:
             - 'infra/cronjobs/**'
   deploy-dev:
     needs: paths-filter
-    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }} && (needs.paths-filter.outputs.gql-changed == 'true' || needs.paths-filter.outputs.gql-infra-changed == 'true')
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && (needs.paths-filter.outputs.gql-changed == 'true' || needs.paths-filter.outputs.gql-infra-changed == 'true') }}
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
@@ -62,7 +62,7 @@ jobs:
           stage: prod
   deploy-dev-cronjobs:
     needs: paths-filter
-    if: ${{ startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob') }}  && needs.paths-filter.outputs.cronjobs-changed == 'true'
+    if: ${{ (startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob'))  && needs.paths-filter.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
