@@ -290,6 +290,12 @@ const getMyNFTs = async (
 
   joi.validateSchema(schema, input)
 
+  const filters: Partial<entity.NFT> = {
+    walletId: wallet.id,
+    userId: user.id ,
+    chainId,
+  }
+
   if ((args?.input?.filter && args?.input?.profileId) ||
     (!args?.input?.filter && args?.input?.profileId)
   ) {
@@ -323,11 +329,6 @@ const getMyNFTs = async (
       'NFT',
     )
   } else if (args?.input?.filter && !args?.input?.profileId ) {
-    const filters: Partial<entity.NFT> = {
-      walletId: wallet.id,
-      userId: user.id ,
-      chainId,
-    }
     return core.paginatedEntitiesBy(
       repositories.nft,
       pageInput,
@@ -337,10 +338,43 @@ const getMyNFTs = async (
       'DESC',
     )
       .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  } else {
+    const defaultProfile = await repositories.profile.findOne({
+      where: {
+        ownerUserId: user.id,
+        ownerWalletId: wallet.id,
+        chainId,
+      },
+    })
+    if (!defaultProfile) {
+      return core.paginatedEntitiesBy(
+        repositories.nft,
+        pageInput,
+        [filters],
+        [],
+        'updatedAt',
+        'DESC',
+      )
+        .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+    } else {
+      const filter: Partial<entity.Edge> = helper.removeEmpty({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: defaultProfile.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+      })
+      return core.paginatedThatEntitiesOfEdgesBy(
+        ctx,
+        ctx.repositories.nft,
+        filter,
+        pageInput,
+        'weight',
+        'ASC',
+        chainId,
+        'NFT',
+      )
+    }
   }
-  // else {
-  //
-  // }
 }
 
 const getCurationNFTs = (
