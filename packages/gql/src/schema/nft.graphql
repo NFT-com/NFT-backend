@@ -43,6 +43,7 @@ type NFT {
   createdAt: DateTime!
   memo: String
   previewLink: String
+  listings: String
 }
 
 input NFTsInput {

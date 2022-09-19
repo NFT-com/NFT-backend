@@ -1459,5 +1459,6 @@ export default {
       defs.EntityType.NFT,
       defs.EntityType.Profile,
     ),
+    listings: () => console.log('NFT LISTINGS YO'),
   },
 }
