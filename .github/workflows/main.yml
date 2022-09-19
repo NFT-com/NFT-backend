@@ -23,6 +23,8 @@ jobs:
             - 'infra/shared/**'
             - 'infra/defs/**'
             - 'infra/helper/**'
+            - 'infra/index**'
+            - 'infra/package**'
           cronjobs:
             - 'cronjobs/**'
             - 'infra/cronjobs/**'
