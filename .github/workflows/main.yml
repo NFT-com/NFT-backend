@@ -23,7 +23,7 @@ jobs:
              - 'infra/defs/**'
              - 'infra/helper/**'
       - name: Deploy GQL Env [Dev] 
-        if: ${{ steps.filter.outputs.gql == 'false' || steps.filter.outputs.infra == 'false' }}
+        if: ${{ steps.filter.outputs.gql == 'true' || steps.filter.outputs.infra == 'true' }}
         uses: ./.github/actions/deploy-env
         with:
           secrets: ${{ toJSON(secrets) }}
@@ -63,7 +63,7 @@ jobs:
               - 'cronjobs/**'
               - 'infra/cronjobs/**'
       - name: Deploy Cronjobs [Dev] 
-        if: ${{ steps.filter.outputs.cronjobs == 'false' }}
+        if: ${{ steps.filter.outputs.cronjobs == 'true' }}
         uses: ./.github/actions/deploy-cronjobs
         with:
           secrets: ${{ toJSON(secrets) }}
