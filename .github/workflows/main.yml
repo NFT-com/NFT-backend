@@ -12,7 +12,6 @@ jobs:
     - uses: dorny/paths-filter@v2
       id: filter
       with:
-        working-directory: NFT-backend
         filters: |
           gql:
             - 'packages/**'
