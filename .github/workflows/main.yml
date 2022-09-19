@@ -2,27 +2,28 @@ name: NFT.com github actions
 on: [push]
 jobs:
   deploy-dev:
-    - uses: dorny/paths-filter@v2
-    id: filter
-    with:
-      working-directory: NFT-backend
-      filters: |
-        gql:
-          - 'packages/**'
-          - 'infra/gql/**'
-          - 'infra/shared/**'
-          - 'infra/helper/**'
-          - 'infra/defs/**'
-          - 'perftest/**'
-          - 'package**'
-          - 'gql**'
-    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }} && ${{ steps.filter.outputs.gql == 'true' }}
+    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/deploy-env
-        name: Deploy env
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            gql:
+             - 'packages/**'
+             - 'perftest/**'
+             - 'package**'
+             - 'gql**'
+            infra:
+             - 'infra/gql/**'
+             - 'infra/shared/**'
+             - 'infra/defs/**'
+             - 'infra/helper/**'
+      - name: Deploy GQL Env [Dev] 
+        if: ${{ steps.filter.outputs.gql == 'true' || steps.filter.outputs.infra == 'true' }}
+        uses: ./.github/actions/deploy-env
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
@@ -47,21 +48,21 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
   deploy-dev-cronjobs:
-    - uses: dorny/paths-filter@v2
-    id: filter
-    with:
-      working-directory: NFT-backend
-      filters: |
-        cronjobs:
-          - 'cronjobs/**'
-          - 'infra/cronjobs/**'
-    if: ${{ startsWith(github.ref_name, 'fixJob') || startsWith(github.ref_name, 'featJob') }} && ${{ steps.filter.outputs.cronjobs == 'true' }}
+    if: ${{ startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob') }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/deploy-cronjobs
-        name: Deploy cronjobs [dev]
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            cronjobs:
+              - 'cronjobs/**'
+              - 'infra/cronjobs/**'
+      - name: Deploy Cronjobs [Dev] 
+        if: ${{ steps.filter.outputs.cronjobs == 'true' }}
+        uses: ./.github/actions/deploy-cronjobs
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
