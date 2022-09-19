@@ -213,28 +213,9 @@ service:
         {
           essential: true,
           image: ecrImage,
-          // TODO: delete when we don't need logs in datadog
           logConfiguration: {
-            logDriver: 'awslogs',
-            options: {
-              'awslogs-create-group': 'True',
-              'awslogs-group': `/ecs/${resourceName}`,
-              'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'gql',
-            },
+            logDriver: 'awsfirelens',
           },
-          // TODO: enable when we don't need logs in datadog
-          // logConfiguration: {
-          //   logDriver: 'awsfirelens',
-          //   options: {
-          //     Name: 'grafana-loki',
-          //     Url: 'http://loki.leonardo.nft.prv/loki/api/v1/push',
-          //     Labels: `{app="gql",env="${process.env.STAGE}"}`,
-          //     RemoveKeys: 'container_id,ecs_task_arn',
-          //     LabelKeys: 'container_name,ecs_task_definition,source,ecs_cluster',
-          //     LineFormat: 'json',
-          //   },
-          // },
           memoryReservation: config.requireNumber('ecsTaskMemory') - (otelMemory + loggerMemory),
           name: resourceName,
           portMappings: [
@@ -259,19 +240,20 @@ service:
             },
           ],
         },
-        // TODO: enable when we don't need logs in datadog
-        // {
-        //   name: getResourceName('log-router'),
-        //   image: 'grafana/fluent-bit-plugin-loki:2.6.1-amd64',
-        //   essential: true,
-        //   firelensConfiguration: {
-        //     type: 'fluentbit',
-        //     options: {
-        //       'enable-ecs-log-metadata': 'true',
-        //     },
-        //   },
-        //   memoryReservation: loggerMemory,
-        // },
+        {
+          name: getResourceName('log-router'),
+          image: '016437323894.dkr.ecr.us-east-1.amazonaws.com/aws-for-fluentbit:stable',
+          essential: true,
+          firelensConfiguration: {
+            type: 'fluentbit',
+            options: {
+              'enable-ecs-log-metadata': 'true',
+              'config-file-type': 'file',
+              'config-file-value': `fluentbit.${process.env.STAGE}.conf`,
+            },
+          },
+          memoryReservation: loggerMemory,
+        },
       ]),
       cpu: config.require('ecsTaskCpu'),
       memory: config.require('ecsTaskMemory'),
