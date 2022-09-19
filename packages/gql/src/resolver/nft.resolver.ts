@@ -306,7 +306,7 @@ const getMyNFTs = async (
 
   const schema = Joi.object().keys({
     profileId: Joi.string().optional(),
-    filter: Joi.boolean().optional(),
+    ownedByWallet: Joi.boolean().optional(),
     chainId: Joi.string().optional(),
     pageInput: Joi.any(),
   })
@@ -320,7 +320,7 @@ const getMyNFTs = async (
     chainId,
   }
 
-  if (args?.input?.filter && args?.input?.profileId) {
+  if (args?.input?.ownedByWallet && args?.input?.profileId) {
     const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
     if (!profile) {
       return Promise.reject(appError.buildNotFound(
@@ -335,7 +335,7 @@ const getMyNFTs = async (
       ))
     }
     return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
-  } else if (!args?.input?.filter && args?.input?.profileId) {
+  } else if (!args?.input?.ownedByWallet && args?.input?.profileId) {
     const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
     if (!profile) {
       return Promise.reject(appError.buildNotFound(
@@ -344,7 +344,7 @@ const getMyNFTs = async (
       ))
     }
     return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
-  } else if (args?.input?.filter && !args?.input?.profileId ) {
+  } else if (args?.input?.ownedByWallet && !args?.input?.profileId ) {
     return core.paginatedEntitiesBy(
       repositories.nft,
       pageInput,

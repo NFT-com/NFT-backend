@@ -612,7 +612,7 @@ describe('nft resolver', () => {
         query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
         variables: {
           input: {
-            filter: true,
+            ownedByWallet: true,
             profileId: profileA.id,
             pageInput: {
               first: 100,
@@ -647,7 +647,7 @@ describe('nft resolver', () => {
         query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
         variables: {
           input: {
-            filter: true,
+            ownedByWallet: true,
             pageInput: {
               first: 1000,
             },

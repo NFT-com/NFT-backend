@@ -50,7 +50,7 @@ input NFTsInput {
   types: [NFTType!]
   profileId: ID
   chainId: String
-  filter: Boolean
+  ownedByWallet: Boolean
 }
 
 input CurationInput {
@@ -66,8 +66,8 @@ input CollectionNFTsInput {
 }
 
 type TokenUri {
-    raw: String!
-    gateway: String!
+  raw: String!
+  gateway: String!
 }
 
 type NftMedia {
