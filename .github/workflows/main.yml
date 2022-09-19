@@ -1,7 +1,7 @@
 name: NFT.com github actions
 on: [push]
 jobs:
-  paths-filter:
+  deployment-triggers:
     runs-on: ubuntu-latest
     outputs:
       gql-changed: ${{ steps.filter.outputs.gql }}
@@ -29,8 +29,8 @@ jobs:
             - 'cronjobs/**'
             - 'infra/cronjobs/**'
   deploy-dev:
-    needs: paths-filter
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && (needs.paths-filter.outputs.gql-changed == 'true' || needs.paths-filter.outputs.gql-infra-changed == 'true') }}
+    needs: deployment-triggers
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && (needs.deployment-triggers.outputs.gql-changed == 'true' || needs.deployment-triggers.outputs.gql-infra-changed == 'true') }}
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
@@ -41,7 +41,8 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
   deploy-staging:
-    if: ${{ github.ref_name == 'main' }}
+    needs: deployment-triggers
+    if: ${{ github.ref_name == 'main' && (needs.deployment-triggers.outputs.gql-changed == 'true' || needs.deployment-triggers.outputs.gql-infra-changed == 'true') }}  # not clear if this will work / need to test after merge
     runs-on: ubuntu-latest
     environment: nftcom_staging
     steps:
@@ -52,6 +53,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
   deploy-prod:
+    needs: deployment-triggers
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
     runs-on: ubuntu-latest
     environment: nftcom_prod
@@ -63,8 +65,8 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
   deploy-dev-cronjobs:
-    needs: paths-filter
-    if: ${{ (startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob'))  && needs.paths-filter.outputs.cronjobs-changed == 'true' }}
+    needs: deployment-triggers
+    if: ${{ (startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob')) && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
@@ -75,7 +77,8 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
   deploy-staging-cronjobs:
-    if: ${{ github.ref_name == 'main' }} # to do: find way to seperate gql/cronjob staging deployment
+    needs: deployment-triggers
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }} # to do: find way to seperate gql/cronjob staging deployment
     runs-on: ubuntu-latest
     environment: nftcom_staging_cronjobs
     steps:
