@@ -2,7 +2,21 @@ name: NFT.com github actions
 on: [push]
 jobs:
   deploy-dev:
-    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
+    - uses: dorny/paths-filter@v2
+    id: filter
+    with:
+      working-directory: NFT-backend
+      filters: |
+        gql:
+          - 'packages/**'
+          - 'infra/gql/**'
+          - 'infra/shared/**'
+          - 'infra/helper/**'
+          - 'infra/defs/**'
+          - 'perftest/**'
+          - 'package**'
+          - 'gql**'
+    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }} && ${{ steps.filter.outputs.gql == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
@@ -33,7 +47,15 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
   deploy-dev-cronjobs:
-    if: ${{ startsWith(github.ref_name, 'fixJob') || startsWith(github.ref_name, 'featJob') }}
+    - uses: dorny/paths-filter@v2
+    id: filter
+    with:
+      working-directory: NFT-backend
+      filters: |
+        cronjobs:
+          - 'cronjobs/**'
+          - 'infra/cronjobs/**'
+    if: ${{ startsWith(github.ref_name, 'fixJob') || startsWith(github.ref_name, 'featJob') }} && ${{ steps.filter.outputs.cronjobs == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
