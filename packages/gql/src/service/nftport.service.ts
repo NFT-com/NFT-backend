@@ -1,12 +1,11 @@
-import axios, { AxiosError, AxiosInstance } from 'axios'
-import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { ethers } from 'ethers'
 
+import { getNFTPortInterceptor } from '@nftcom/gql/adapter'
+import { chainFromId } from '@nftcom/gql/helper/utils'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-const NFTPORT_API_KEY = process.env.NFTPORT_KEY
 const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
 
 const logger = _logger.Factory(_logger.Context.NFTPort)
@@ -28,52 +27,6 @@ export interface NFTPortNFT {
     }
   }
   status_message?: string
-}
-const  getNFTPortInterceptor = (
-  baseURL: string,
-): AxiosInstance => {
-  const instance = axios.create({
-    baseURL,
-    headers: {
-      Authorization: NFTPORT_API_KEY,
-      'Content-Type': 'application/json',
-    },
-  })
-
-  // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
-    retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
-    },
-    retryDelay: (retryCount: number, err: AxiosError<any>) => {
-      if (err.response) {
-        const retry_after = err.response.headers['retry-after']
-        if (retry_after) {
-          return retry_after
-        }
-      }
-      return axiosRetry.exponentialDelay(retryCount)
-    },
-  }
-  axiosRetry(instance,  retryOptions)
-
-  return instance
-}
-
-const chainFromId = (chainId: string): string | undefined => {
-  switch(chainId) {
-  case '1':
-    return 'ethereum'
-  case '4':
-    return 'rinkeby'
-  case '137':
-    return 'polygon'
-  default:
-    return undefined
-  }
 }
 
 export const retrieveNFTDetailsNFTPort = async (

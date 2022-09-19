@@ -1,6 +1,5 @@
-import axios from 'axios'
 import crypto from 'crypto'
-import { minTime, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
 import { utils } from 'ethers'
@@ -14,15 +13,15 @@ import { db } from '@nftcom/shared'
 import { _logger } from '@nftcom/shared'
 import { MarketplaceSale } from '@nftcom/shared/db/entity'
 
+import { getNFTPortInterceptor } from '../adapter'
 import { appError } from '../error'
 
-const NFTPORT_KEY = process.env.NFTPORT_KEY || ''
-
+const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
 const NFTPORT_ENDPOINTS = {
-  nfts: 'https://api.nftport.xyz/v0/nfts/%s/%s',
-  stats: 'https://api.nftport.xyz/v0/transactions/stats/%s',
-  txByContract: 'https://api.nftport.xyz/v0/transactions/nfts/%s',
-  txByNFT: 'https://api.nftport.xyz/v0/transactions/nfts/%s/%s',
+  nfts: '/nfts/%s/%s',
+  stats: '/transactions/stats/%s',
+  txByContract: '/transactions/nfts/%s',
+  txByNFT: '/transactions/nfts/%s/%s',
 }
 
 const logger = _logger.Factory('ContractDataService', _logger.Context.GraphQL)
@@ -34,8 +33,9 @@ const getCacheKey = (endpoint: string, args: string[], continuation?: string, pa
 }
 
 const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Promise<any> => {
+  const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
   try {
-    return await axios.get(url, {
+    return await nftInterceptor.get(url, {
       params: {
         chain: 'ethereum',
         ...queryParams,
@@ -43,11 +43,7 @@ const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Pr
       paramsSerializer: function (params) {
         return stringify(params, { arrayFormat: 'repeat' })
       },
-      headers: {
-        Authorization: NFTPORT_KEY,
-        'Content-Type': 'application/json',
-        ...extraHeaders,
-      },
+      headers: extraHeaders,
     })
   } catch (error) {
     if (error.response) {
@@ -66,6 +62,11 @@ const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Pr
         throw appError.buildInvalid(data.error.message, 'BAD_REQUEST')
       }
     } else if (error.request) {
+      if (error.response.status === 404) {
+        return { data: {
+          response: 'OK',
+        } }
+      }
       logger.error(error.request, `Request failed to ${url}`)
     } else {
       logger.error(`Error: ${error.message}`, `Request failed to ${url}`)
@@ -103,6 +104,7 @@ export const fetchData = async (
 
 const durationMap = {
   y: 'years',
+  m: 'months',
   d: 'days',
   h: 'hours',
 }
@@ -136,14 +138,14 @@ const transformTxns = (txns: any[]): any => {
 export const getSalesData = async (
   contractAddress: string,
   dateRange = 'all',
-  tokenId: string,
+  tokenId: string = undefined,
 ): Promise<MarketplaceSale[]> => {
   const endpoint = tokenId ? 'txByNFT' : 'txByContract'
   const args = [contractAddress, tokenId].filter((x) => !!x) // not falsey
   let continuation: string
   let oldestTransactionDate =
     dateRange === 'all'
-      ? new Date(minTime)
+      ? new Date('2015-07-30T00:00:00') // ETH release date
       : sub(new Date(), parseDateRangeForDateFns(dateRange))
   let salesData = { transactions: [] } as any,
     filteredTxns = [],
@@ -174,25 +176,27 @@ export const getSalesData = async (
   let getMoreSalesData = true
   while (getMoreSalesData) {
     salesData = await fetchData(endpoint, args, {}, { chain: 'ethereum', type: 'sale', continuation })
-    if (
-      !isBefore(
-        parseISO(salesData.transactions[salesData.transactions.length - 1].transaction_date),
-        oldestTransactionDate,
-      )
-    ) {
-      filteredTxns = salesData.transactions.filter((tx) => tx.type === 'sale')
-    } else {
-      filteredTxns = salesData.transactions.filter((tx) => {
-        return tx.type === 'sale' && !isBefore(parseISO(tx.transaction_date), oldestTransactionDate)
-      })
-      getMoreSalesData = false
+    if (salesData.transactions && salesData.transactions.length) {
+      if (
+        !isBefore(
+          parseISO(salesData.transactions[salesData.transactions.length - 1].transaction_date),
+          oldestTransactionDate,
+        )
+      ) {
+        filteredTxns = salesData.transactions.filter((tx) => tx.type === 'sale')
+      } else {
+        filteredTxns = salesData.transactions.filter((tx) => {
+          return tx.type === 'sale' && !isBefore(parseISO(tx.transaction_date), oldestTransactionDate)
+        })
+        getMoreSalesData = false
+      }
+      result = result.concat(differenceBy(transformTxns(filteredTxns), savedSales, 'id') as any[])
     }
-    result = result.concat(differenceBy(transformTxns(filteredTxns), savedSales, 'id') as any[])
     continuation = salesData.continuation
     if (!continuation) getMoreSalesData = false
   }
 
-  await repositories.marketplaceSale.saveMany(result)
+  await repositories.marketplaceSale.saveMany(result, { chunk: 4000 })
 
   result = [
     ...result,

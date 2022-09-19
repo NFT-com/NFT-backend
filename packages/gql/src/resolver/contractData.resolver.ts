@@ -88,7 +88,7 @@ export const getTxByNFT = async (
 export const getSales = async (_: any, args: gql.QueryGetSalesArgs, _ctx: any): Promise<any> => {
   const schema = Joi.object().keys({
     contractAddress: Joi.string().required(),
-    dateRange: Joi.string().valid('24h', '7d', '30d', '1y', 'all').optional(),
+    dateRange: Joi.string().valid('24h', '7d', '30d', '90d', '6m', '1y', 'all').optional(),
     tokenId: Joi.string().optional(),
   })
   joi.validateSchema(schema, args.input)
