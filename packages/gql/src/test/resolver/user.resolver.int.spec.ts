@@ -11,7 +11,7 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
 }))
 
 jest.mock('@nftcom/gql/service/sendgrid.service', () => ({
-  sendConfirmEmail: jest.fn(),
+  sendConfirmEmail: jest.fn().mockResolvedValue(true),
 }))
 
 let connection
@@ -63,6 +63,40 @@ describe('user resolver', () => {
 
       expect(result.data.signUp.id).toBeDefined()
       expect(result.data.signUp.username).toEqual('test-user')
+    })
+  })
+
+  describe('updateEmail', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update email', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateEmail($input: UpdateEmailInput!) { updateEmail(input: $input) { id username email } }',
+        variables: {
+          input: {
+            email: 'jason@nft.com',
+          },
+        },
+      })
+
+      expect(result.data.updateEmail.id).toBeDefined()
+      expect(result.data.updateEmail.email).toEqual('jason@nft.com')
     })
   })
 
