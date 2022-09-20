@@ -431,7 +431,7 @@ describe('nft resolver', () => {
       expect(edges.length).toEqual(0)
     })
 
-    it.only('should update NFT metadata with traits', async () => {
+    it('should update NFT metadata with traits', async () => {
       const nft = {
         contract: {
           address: '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
