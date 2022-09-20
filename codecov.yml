@@ -10,3 +10,4 @@ ignore:
   - "packages/gql/src/resolver/marketBid.resolver.ts"
   - "packages/gql/src/resolver/watchlist.resolver.ts"
   - "packages/gql/src/helper/websocketProvider.ts"
+  - "packages/gql/src/defs/misc.ts"
