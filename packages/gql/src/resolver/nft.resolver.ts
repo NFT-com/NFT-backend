@@ -701,7 +701,7 @@ const updateCollectionForAssociatedContract = async (
       if (!associatedContract.chainAddr) {
         return `No associated contract of ${profile.url}`
       }
-      contract = associatedContract.chainAddr
+      contract = ethers.utils.getAddress(associatedContract.chainAddr)
       await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
       // update associated contract with the latest updates
       await repositories.profile.updateOneById(profile.id, { associatedContract: contract })

@@ -1411,7 +1411,7 @@ export const getCollectionInfo = async (
       return JSON.parse(cachedData)
     } else {
       let collection = await repositories.collection.findByContractAddress(
-        contract,
+        ethers.utils.getAddress(contract),
         chainId,
       )
       let nftPortResults = undefined
