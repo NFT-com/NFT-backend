@@ -632,8 +632,8 @@ describe('nft resolver', () => {
   })
 
   describe('myNFTs', () => {
-    let profileA
-    let nftA, nftB
+    let profileA, profileB
+    let nftA, nftB, nftC, nftD
 
     beforeAll(async () => {
       testMockUser.chainId = '5'
@@ -656,10 +656,26 @@ describe('nft resolver', () => {
         name: 'NFT.com Genesis Key',
         chainId: '5',
       })
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x657732980685C29A51053894542D7cb97de144Fe'),
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
 
       profileA = await repositories.profile.save({
         url: 'test-profile-url',
         ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+      })
+      profileB = await repositories.profile.save({
+        url: 'test-profile-url-1',
+        ownerUserId: 'test-user-id-1',
+        ownerWalletId: 'test-wallet-id-1',
       })
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -687,6 +703,32 @@ describe('nft resolver', () => {
         walletId: 'test-wallet-id',
         chainId: '5',
       })
+      nftC = await repositories.nft.save({
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x0927b2',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id-1',
+        walletId: 'test-wallet-id-1',
+        chainId: '5',
+      })
+      nftD = await repositories.nft.save({
+        contract: '0x657732980685C29A51053894542D7cb97de144Fe',
+        tokenId: '0x0d',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id-1',
+        walletId: 'test-wallet-id-1',
+        chainId: '5',
+      })
       await repositories.edge.save({
         thisEntityId: profileA.id,
         thisEntityType: defs.EntityType.Profile,
@@ -705,6 +747,24 @@ describe('nft resolver', () => {
         weight: 'aaab',
         hide: true,
       })
+      await repositories.edge.save({
+        thisEntityId: profileB.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftC.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaaa',
+        hide: false,
+      })
+      await repositories.edge.save({
+        thisEntityId: profileB.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftD.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        weight: 'aaab',
+        hide: true,
+      })
     })
 
     afterAll(async () => {
@@ -712,11 +772,12 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it('should return NFTs of profile', async () => {
+    it('should return NFTs of profile owned by user', async () => {
       const result = await testServer.executeOperation({
         query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
         variables: {
           input: {
+            ownedByWallet: true,
             profileId: profileA.id,
             pageInput: {
               first: 100,
@@ -729,12 +790,29 @@ describe('nft resolver', () => {
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
 
-    it('should return lessn than 100 NFTs of profile', async () => {
+    it('should return NFTs of profile not owned by wallet', async () => {
       const result = await testServer.executeOperation({
         query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
         variables: {
           input: {
-            profileId: profileA.id,
+            profileId: profileB.id,
+            pageInput: {
+              first: 100,
+            },
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toEqual(2)
+    })
+
+    it('should return owned NFTs by wallet with only filter', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            ownedByWallet: true,
             pageInput: {
               first: 1000,
             },
@@ -743,7 +821,23 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.myNFTs).toBeDefined()
-      expect(result.data.myNFTs.items.length).toBeLessThanOrEqual(100)
+      expect(result.data.myNFTs.items.length).toEqual(2)
+    })
+
+    it('should return owned NFTs by wallet without filter and profileId', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            pageInput: {
+              first: 1000,
+            },
+          },
+        },
+      })
+
+      expect(result.data.myNFTs).toBeDefined()
+      expect(result.data.myNFTs.items.length).toEqual(2)
     })
   })
 

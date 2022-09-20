@@ -24,7 +24,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 import { differenceInMilliseconds } from 'date-fns'
 
-import { BaseCoin } from '@nftcom/gql/defs/gql'
+import { BaseCoin, PageInput } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
@@ -270,36 +270,12 @@ const getNFTs = (
   })
 }
 
-const getMyNFTs = async (
-  _: unknown,
-  args: gql.QueryNFTsArgs,
+const returnProfileNFTs = async (
+  profileId: string,
   ctx: Context,
-): Promise<gql.NFTsOutput> => {
-  const { user, chain } = ctx
-  logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-
-  const schema = Joi.object().keys({
-    profileId: Joi.string().required(),
-    pageInput: Joi.any(),
-  })
-  const { input } = args
-
-  joi.validateSchema(schema, input)
-
-  const { profileId } = helper.safeObject(args?.input)
-
-  // ensure profileId is owned by user.id
-  const profile = await ctx.repositories.profile.findById(profileId)
-  if (profile.ownerUserId != user.id) {
-    return Promise.reject(appError.buildNotFound(
-      nftError.buildProfileNotOwnedMsg(profile?.url || profileId, user.id),
-      nftError.ErrorType.NFTNotOwned,
-    ))
-  }
-
+  pageInput: PageInput,
+  chainId: string,
+): Promise<any> => {
   const filter: Partial<entity.Edge> = helper.removeEmpty({
     thisEntityType: defs.EntityType.Profile,
     thisEntityId: profileId,
@@ -316,6 +292,91 @@ const getMyNFTs = async (
     chainId,
     'NFT',
   )
+}
+
+const getMyNFTs = async (
+  _: unknown,
+  args: gql.QueryNFTsArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  const { user, chain, wallet, repositories } = ctx
+  logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
+  const pageInput = args?.input?.pageInput
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+  const schema = Joi.object().keys({
+    profileId: Joi.string().optional(),
+    ownedByWallet: Joi.boolean().optional(),
+    chainId: Joi.string().optional(),
+    pageInput: Joi.any(),
+  })
+  const { input } = args
+
+  joi.validateSchema(schema, input)
+
+  const filters: Partial<entity.NFT> = {
+    walletId: wallet.id,
+    userId: user.id ,
+    chainId,
+  }
+
+  if (args?.input?.ownedByWallet && args?.input?.profileId) {
+    const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.ownerUserId !== user.id || profile.ownerWalletId !== wallet.id) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildProfileNotOwnedMsg(profile?.url || profile?.id, user.id),
+        nftError.ErrorType.NFTNotOwned,
+      ))
+    }
+    return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
+  } else if (!args?.input?.ownedByWallet && args?.input?.profileId) {
+    const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
+  } else if (args?.input?.ownedByWallet && !args?.input?.profileId ) {
+    return core.paginatedEntitiesBy(
+      repositories.nft,
+      pageInput,
+      [filters],
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  } else {
+    const defaultProfile = await repositories.profile.findOne({
+      where: {
+        ownerUserId: user.id,
+        ownerWalletId: wallet.id,
+        chainId,
+      },
+    })
+    if (!defaultProfile) {
+      return core.paginatedEntitiesBy(
+        repositories.nft,
+        pageInput,
+        [filters],
+        [],
+        'updatedAt',
+        'DESC',
+      )
+        .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+    } else {
+      return await returnProfileNFTs(defaultProfile.id, ctx, pageInput, chainId)
+    }
+  }
 }
 
 const getCurationNFTs = (
@@ -641,7 +702,7 @@ const updateCollectionForAssociatedContract = async (
       if (!associatedContract.chainAddr) {
         return `No associated contract of ${profile.url}`
       }
-      contract = associatedContract.chainAddr
+      contract = ethers.utils.getAddress(associatedContract.chainAddr)
       await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
       // update associated contract with the latest updates
       await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
