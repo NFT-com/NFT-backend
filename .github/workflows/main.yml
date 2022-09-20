@@ -51,7 +51,6 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
   deploy-prod:
-    needs: deployment-triggers
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
     runs-on: ubuntu-latest
     environment: nftcom_prod
