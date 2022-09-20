@@ -348,6 +348,17 @@ export const cancelEntityBuilder = async (
   }
 }
 
+/**
+ * paginatedActivitiesBy
+ * @param repo - activity repo
+ * @param pageInput
+ * @param filters
+ * @param relations
+ * @param orderKey
+ * @param orderDirection
+ * @param distinctOn
+ */
+
 export const paginatedActivitiesBy = (
   repo: repository.TxActivityRepository,
   pageInput: gql.PageInput,
