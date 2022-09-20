@@ -5,6 +5,12 @@ import { getContractSalesStatistics, getNFTDetails, getTxByContract, getTxByNFT 
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
+jest.mock('@nftcom/gql/adapter/nftport', () => ({
+  getNFTPortInterceptor: (_baseURL: string) => {
+    return mockedAxios
+  },
+}))
+
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
     get: jest.fn(),

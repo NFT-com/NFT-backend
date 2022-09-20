@@ -31,7 +31,7 @@ type Log = {
 const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI())
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 
-const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
+export const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
   const startBlock = chainId == 4 ? 10540040 :
     chainId == 5 ? 7128515 :
       chainId == 1 ? 14675454 :
@@ -51,11 +51,11 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
   }
 }
 
-const chainIdToCacheKeyProfile = (chainId: number): string => {
+export const chainIdToCacheKeyProfile = (chainId: number): string => {
   return `minted_profile_cached_block_${chainId}`
 }
 
-const chainIdToCacheKeyResolverAssociate = (chainId: number): string => {
+export const chainIdToCacheKeyResolverAssociate = (chainId: number): string => {
   return `resolver_associate_cached_block_${chainId}`
 }
 

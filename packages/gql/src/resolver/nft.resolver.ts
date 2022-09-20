@@ -24,10 +24,10 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 import { differenceInMilliseconds } from 'date-fns'
 
-import { BaseCoin } from '@nftcom/gql/defs/gql'
+import { BaseCoin, PageInput } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import { saveUsersForAssociatedAddress } from '@nftcom/gql/service/core.service'
+import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
@@ -122,6 +122,10 @@ const getNFT = (
   })
   joi.validateSchema(schema, args)
   return repositories.nft.findById(args.id)
+    .then((nft: entity.NFT) => {
+      // fix (short-term) : trait value
+      return stringifyTraits(nft)
+    })
 }
 
 const getContractNFT = async (
@@ -142,7 +146,7 @@ const getContractNFT = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     initiateWeb3(chainId)
 
-    const nft = await repositories.nft.findOne({
+    let nft = await repositories.nft.findOne({
       where: {
         contract: utils.getAddress(args.contract),
         tokenId: ethers.BigNumber.from(args.id).toHexString(),
@@ -150,6 +154,8 @@ const getContractNFT = async (
       },
     })
     if (nft) {
+      // fix (short-term) : trait value
+      nft = stringifyTraits(nft)
       const now = helper.toUTCDate()
       let duration
       if (nft.lastRefreshed) {
@@ -159,16 +165,16 @@ const getContractNFT = async (
         (duration && duration > NFT_REFRESH_DURATION)
       ) {
         repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
-          .then((nft) => {
+          .then((Nft) => {
             const obj = {
               contract: {
-                address: nft.contract,
+                address: Nft.contract,
               },
               id: {
-                tokenId: nft.tokenId,
+                tokenId: Nft.tokenId,
               },
             }
-            getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+            getUserWalletFromNFT(Nft.contract, Nft.tokenId, chainId)
               .then((wallet) => {
                 if (!wallet) {
                   logger.error('Failed to create new user and wallet for NFT ownership')
@@ -179,7 +185,7 @@ const getContractNFT = async (
                     wallet.id,
                     chainId,
                   ).then(() => {
-                    logger.info(`Updated NFT ownership and metadata for contract ${nft.contract} and tokenId ${nft.tokenId}`)
+                    logger.info(`Updated NFT ownership and metadata for contract ${Nft.contract} and tokenId ${Nft.tokenId}`)
                   })
                 }
               })
@@ -263,43 +269,12 @@ const getNFTs = (
   })
 }
 
-const getMyNFTs = async (
-  _: unknown,
-  args: gql.QueryNFTsArgs,
+const returnProfileNFTs = async (
+  profileId: string,
   ctx: Context,
-): Promise<gql.NFTsOutput> => {
-  const { user, chain } = ctx
-  logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
-  const pageInput = args?.input?.pageInput
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-
-  const schema = Joi.object().keys({
-    profileId: Joi.string().required(),
-    pageInput: Joi.any(),
-  })
-  const { input } = args
-
-  joi.validateSchema(schema, input)
-
-  // prevent showing more than 100 NFTs
-  if (pageInput.first) {
-    pageInput.first = Math.min(pageInput.first, 100)
-  } else if (pageInput.last) {
-    pageInput.last = Math.min(pageInput.last, 100)
-  }
-
-  const { profileId } = helper.safeObject(args?.input)
-
-  // ensure profileId is owned by user.id
-  const profile = await ctx.repositories.profile.findById(profileId)
-  if (profile.ownerUserId != user.id) {
-    return Promise.reject(appError.buildNotFound(
-      nftError.buildProfileNotOwnedMsg(profile?.url || profileId, user.id),
-      nftError.ErrorType.NFTNotOwned,
-    ))
-  }
-
+  pageInput: PageInput,
+  chainId: string,
+): Promise<any> => {
   const filter: Partial<entity.Edge> = helper.removeEmpty({
     thisEntityType: defs.EntityType.Profile,
     thisEntityId: profileId,
@@ -316,6 +291,91 @@ const getMyNFTs = async (
     chainId,
     'NFT',
   )
+}
+
+const getMyNFTs = async (
+  _: unknown,
+  args: gql.QueryNFTsArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  const { user, chain, wallet, repositories } = ctx
+  logger.debug('getMyNFTs', { loggedInUserId: user.id, input: args?.input })
+  const pageInput = args?.input?.pageInput
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+  const schema = Joi.object().keys({
+    profileId: Joi.string().optional(),
+    ownedByWallet: Joi.boolean().optional(),
+    chainId: Joi.string().optional(),
+    pageInput: Joi.any(),
+  })
+  const { input } = args
+
+  joi.validateSchema(schema, input)
+
+  const filters: Partial<entity.NFT> = {
+    walletId: wallet.id,
+    userId: user.id ,
+    chainId,
+  }
+
+  if (args?.input?.ownedByWallet && args?.input?.profileId) {
+    const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.ownerUserId !== user.id || profile.ownerWalletId !== wallet.id) {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildProfileNotOwnedMsg(profile?.url || profile?.id, user.id),
+        nftError.ErrorType.NFTNotOwned,
+      ))
+    }
+    return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
+  } else if (!args?.input?.ownedByWallet && args?.input?.profileId) {
+    const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotFoundMsg(args?.input?.profileId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId)
+  } else if (args?.input?.ownedByWallet && !args?.input?.profileId ) {
+    return core.paginatedEntitiesBy(
+      repositories.nft,
+      pageInput,
+      [filters],
+      [],
+      'updatedAt',
+      'DESC',
+    )
+      .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+  } else {
+    const defaultProfile = await repositories.profile.findOne({
+      where: {
+        ownerUserId: user.id,
+        ownerWalletId: wallet.id,
+        chainId,
+      },
+    })
+    if (!defaultProfile) {
+      return core.paginatedEntitiesBy(
+        repositories.nft,
+        pageInput,
+        [filters],
+        [],
+        'updatedAt',
+        'DESC',
+      )
+        .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+    } else {
+      return await returnProfileNFTs(defaultProfile.id, ctx, pageInput, chainId)
+    }
+  }
 }
 
 const getCurationNFTs = (
@@ -354,12 +414,6 @@ const getCollectionNFTs = (
   const chainId = args?.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  // prevent showing more than 100 NFTs
-  if (pageInput.first) {
-    pageInput.first = Math.min(pageInput.first, 100)
-  } else if (pageInput.last) {
-    pageInput.last = Math.min(pageInput.last, 100)
-  }
   return repositories.collection.findByContractAddress(
     utils.getAddress(collectionAddress),
     chainId,
@@ -384,12 +438,17 @@ const getCollectionNFTs = (
     .then(pagination.toPageable(pageInput))
     .then((resultEdges: Pageable<entity.Edge>) => Promise.all([
       Promise.all(
-        resultEdges.items.map((edge: entity.Edge) => repositories.nft.findOne({
-          where: {
-            id: edge.thatEntityId,
-            chainId: chainId,
-          },
-        })),
+        resultEdges.items.map((edge: entity.Edge) => {
+          return repositories.nft.findOne({
+            where: {
+              id: edge.thatEntityId,
+              chainId: chainId,
+            },
+          }).then((nft) => {
+            // fix (short-term) : trait value
+            return stringifyTraits(nft)
+          })
+        }),
       ),
       Promise.resolve(resultEdges.pageInfo),
       Promise.resolve(resultEdges.totalItems),
@@ -642,7 +701,7 @@ const updateCollectionForAssociatedContract = async (
       if (!associatedContract.chainAddr) {
         return `No associated contract of ${profile.url}`
       }
-      contract = associatedContract.chainAddr
+      contract = ethers.utils.getAddress(associatedContract.chainAddr)
       await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
       // update associated contract with the latest updates
       await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
@@ -713,12 +772,7 @@ const updateNFTsForProfile = (
 
     const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
-    // prevent showing more than 100 NFTs
-    if (pageInput.first) {
-      pageInput.first = Math.min(pageInput.first, 100)
-    } else if (pageInput.last) {
-      pageInput.last = Math.min(pageInput.last, 100)
-    }
+
     return repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
@@ -1071,7 +1125,7 @@ export const refreshNft = async (
     if (cachedData) {
       return JSON.parse(cachedData)
     } else {
-      const nft = await repositories.nft.findOne({
+      let nft = await repositories.nft.findOne({
         where: {
           id: args?.id,
           chainId,
@@ -1079,6 +1133,9 @@ export const refreshNft = async (
       })
 
       if (nft) {
+        // fix (short-term) : trait value
+        nft = stringifyTraits(nft)
+
         const obj = {
           contract: {
             address: nft.contract,
@@ -1174,7 +1231,7 @@ export const updateNFTMemo = async (
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   try {
-    const nft = await repositories.nft.findById(args?.nftId)
+    let nft = await repositories.nft.findById(args?.nftId)
     if (!nft) {
       return Promise.reject(appError.buildNotFound(
         nftError.buildNFTNotFoundMsg('NFT: ' + args?.nftId),
@@ -1188,7 +1245,9 @@ export const updateNFTMemo = async (
         nftError.ErrorType.MemoTooLong,
       ))
     }
-    return await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
+    nft = await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
+    // fix (short-term) : trait value
+    return stringifyTraits(nft)
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
     return err
@@ -1207,51 +1266,71 @@ export const getNFTsForCollections = async (
   try {
     const { collectionAddresses, count } = helper.safeObject(args?.input)
     const result: gql.CollectionNFT[] = []
-    await Promise.allSettled(
-      collectionAddresses.map(async (address) => {
+
+    for (const collectionAddress of collectionAddresses) {
+      try {
         const collection = await repositories.collection.findByContractAddress(
-          ethers.utils.getAddress(address),
+          ethers.utils.getAddress(collectionAddress),
           chainId,
         )
         if (collection) {
-          const edges = await repositories.edge.find({ where: {
+          const actualNFTCount = await repositories.edge.count({
             thisEntityType: defs.EntityType.Collection,
             thisEntityId: collection.id,
             thatEntityType: defs.EntityType.NFT,
             edgeType: defs.EdgeType.Includes,
-          } })
-          if (edges.length) {
-            const nfts: entity.NFT[] = []
-            await Promise.allSettled(
-              edges.map(async (edge) => {
-                const nft = await repositories.nft.findById(edge.thatEntityId)
-                if (nft) nfts.push(nft)
-              }),
-            )
-            const length = nfts.length > count ? count: nfts.length
-            result.push({
-              collectionAddress: address,
-              nfts: nfts.slice(0, Math.min(length, 100)), // prevent showing more than 100 NFTs
-              actualNumberOfNFTs: nfts.length,
-            })
+          })
+          const key = `NFTsForCollections_${chainId}_${ethers.utils.getAddress(collectionAddress)}_${count}`
+          const cachedData = await cache.get(key)
+          let nfts = []
+
+          if (cachedData) {
+            nfts = JSON.parse(cachedData) as entity.NFT[]
           } else {
-            result.push({
-              collectionAddress: address,
-              nfts: [],
-              actualNumberOfNFTs: 0,
+            const edges = await repositories.edge.find({
+              where: {
+                thisEntityType: defs.EntityType.Collection,
+                thisEntityId: collection.id,
+                thatEntityType: defs.EntityType.NFT,
+                edgeType: defs.EdgeType.Includes,
+              },
+              take: count,
             })
+            if (edges.length) {
+              for (const edge of edges) {
+                let nft = await repositories.nft.findById(edge.thatEntityId)
+                if (nft) {
+                  // fix (short-term) : trait value
+                  nft = stringifyTraits(nft)
+                  nfts.push(nft)
+                }
+              }
+              logger.info(`${nfts.length} NFTs for collection ${collectionAddress}`)
+            }
+            await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 30)
           }
+
+          const length = Math.min(nfts.length, count)
+          result.push({
+            collectionAddress: ethers.utils.getAddress(collectionAddress),
+            nfts: nfts.slice(0, length),
+            actualNumberOfNFTs: actualNFTCount,
+          })
         } else {
           result.push({
-            collectionAddress: address,
+            collectionAddress: ethers.utils.getAddress(collectionAddress),
             nfts: [],
             actualNumberOfNFTs: 0,
           })
         }
-      }),
-    )
+      } catch (err) {
+        logger.error(`Error in getNFTsForCollections: ${err}`)
+        Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
+      }
+    }
     return result
   } catch (err) {
+    logger.error(`Error in getNFTsForCollections: ${err}`)
     Sentry.captureMessage(`Error in getNFTsForCollections: ${err}`)
     return err
   }
@@ -1296,9 +1375,11 @@ export const updateNFTProfileId =
       )
     }
 
-    return await repositories.nft.updateOneById(nft.id, {
+    const updatedNFT =  await repositories.nft.updateOneById(nft.id, {
       profileId: profile.id,
     })
+    // fix (short-term) : trait value
+    return stringifyTraits(updatedNFT)
   }
 
 export const listNFTSeaport = async (

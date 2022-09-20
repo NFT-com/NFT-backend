@@ -230,6 +230,20 @@ export const thatEntitiesOfEdges = <T>(ctx: Context) => {
   }
 }
 
+export const stringifyTraits = (
+  nft: entity.NFT,
+): entity.NFT => {
+  if (nft.metadata && nft.metadata?.traits && nft.metadata.traits?.length) {
+    for ( let i = 0; i < nft.metadata.traits.length; i ++) {
+      if (nft.metadata.traits[i].value) {
+        if (typeof nft.metadata.traits[i].value !== 'string')
+          nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
+      }
+    }
+  }
+  return nft
+}
+
 export const paginatedThatEntitiesOfEdgesBy = <T>(
   ctx: Context,
   repo: repository.BaseRepository<T>,
@@ -258,12 +272,14 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
             repositories.nft.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
             repositories.nft.findOne({ where: { id: edge.thatEntityId } })
               .then(fp.thruIfNotEmpty((entry: entity.NFT) => {
+                // fix (short-term) : trait value
+                const updatedEntry = stringifyTraits(entry)
                 return repositories.collection.findOne({ where: {
                   contract: entry.contract,
                   isSpam: false,
                   chainId,
                 } })
-                  .then(fp.thruIfNotEmpty(() => entry))
+                  .then(fp.thruIfNotEmpty(() => updatedEntry))
               } ))
         }),
       ).then((entries: T[]) => {
