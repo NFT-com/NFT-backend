@@ -10,6 +10,10 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   createCacheConnection: jest.fn(),
 }))
 
+jest.mock('@nftcom/gql/service/sendgrid.service', () => ({
+  sendConfirmEmail: jest.fn(),
+}))
+
 let connection
 let testServer
 let event
@@ -26,6 +30,40 @@ describe('user resolver', () => {
   afterAll(async () => {
     if (!connection) return
     await connection.close()
+  })
+
+  describe('sign up', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should sign up user', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation SignUp($input: SignUpInput!) { signUp(input: $input) { id username } }',
+        variables: {
+          input: {
+            email: 'user@nft.com',
+            username: 'test-user',
+            wallet: {
+              address: '0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
+              chainId: '4',
+              network: 'ethereum',
+            },
+          },
+        },
+      })
+
+      expect(result.data.signUp.id).toBeDefined()
+      expect(result.data.signUp.username).toEqual('test-user')
+    })
   })
 
   describe('me authenticated call', () => {
