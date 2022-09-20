@@ -101,7 +101,7 @@ export const createEcsCluster = (): aws.ecs.Cluster => {
       settings: [
         {
           name: 'containerInsights',
-          value: 'enabled',
+          value: 'disabled',
         }],
       capacityProviders: [
         'FARGATE_SPOT',
