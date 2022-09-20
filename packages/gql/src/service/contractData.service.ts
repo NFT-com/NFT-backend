@@ -127,7 +127,7 @@ const getSymbolForContract = async (contractAddress: string): Promise<string> =>
       contractAddress,
       typechain.ERC20Metadata__factory.abi,
       provider.provider(),
-    ) as typechain.ERC20Metadata
+    ) as unknown as typechain.ERC20Metadata
     symbol = await contract.symbol()
     cache.set(key, symbol)
   }
