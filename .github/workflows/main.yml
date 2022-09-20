@@ -63,7 +63,7 @@ jobs:
           stage: prod
   deploy-dev-cronjobs:
     needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'featJob') || startsWith(github.ref_name, 'fixJob')) && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
@@ -86,7 +86,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
   deploy-prod-cronjobs:
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'relJob') }}
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'cronjob-rel') }}
     runs-on: ubuntu-latest
     environment: nftcom_prod_cronjobs
     steps:
