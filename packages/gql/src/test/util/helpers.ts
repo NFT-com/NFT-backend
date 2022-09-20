@@ -31,6 +31,16 @@ export const clearDB = async (repositories: db.Repository): Promise<void> => {
   if (walletIds.length) await repositories.wallet.hardDeleteByIds(walletIds)
   if (eventIds.length) await repositories.event.hardDeleteByIds(eventIds)
 
+  const activities = await repositories.txActivity.findAll()
+
+  if (activities.length) {
+    const activityIds = activities.map((activity) => activity.id)
+    // just orders for now
+    const activityTypeIds = activities.map((activity) => activity.activityTypeId)
+    if (activityTypeIds.length) await repositories.txOrder.hardDeleteByIds(activityTypeIds)
+    if (activityIds) await repositories.txActivity.hardDeleteByIds(activityIds)
+  }
+
   users = await repositories.user.findAll()
   wallets = await repositories.wallet.findAll()
   profiles = await repositories.profile.findAll()

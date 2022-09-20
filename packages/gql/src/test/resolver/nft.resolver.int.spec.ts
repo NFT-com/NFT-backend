@@ -6,6 +6,7 @@ import { delay } from '@nftcom/gql/service/core.service'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import { defs, typechain } from '@nftcom/shared/'
 import { db } from '@nftcom/shared/db'
+import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
 import {
@@ -126,6 +127,67 @@ describe('nft resolver', () => {
         userId: testMockUser.id,
         walletId: testMockWallet.id,
       })
+
+      // nft listing
+
+      // active activity
+      let activity = new TxActivity()
+      activity.activityType = defs.ActivityType.Listing
+      activity.activityTypeId = '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df'
+      activity.status = defs.ActivityStatus.Valid
+      activity.timestamp = new Date()
+      const currentDate: Date = new Date()
+      currentDate.setDate(currentDate.getDate() + 1)
+      activity.expiration = currentDate
+      activity.walletAddress = testMockWallet.address
+      activity.nftContract ='0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
+      activity.nftId = ['ethereum/0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b/0x0d5415']
+      activity.chainId = '5'
+
+      // active order
+      let activityType = new TxOrder()
+      activityType.id = '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df'
+      activityType.activity = activity
+      activityType.exchange = defs.ExchangeType.OpenSea
+      activityType.orderHash = '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df'
+      activityType.orderType = defs.ActivityType.Listing
+      activityType.makerAddress = ''
+      activityType.protocol = defs.ProtocolType.Seaport
+      activityType.protocolData = {}
+      activityType.chainId = '5'
+
+      activity = await repositories.txActivity.save(activity)
+      activityType.activity = activity
+      activityType = await repositories.txOrder.save(activityType)
+
+      // expired activity
+      let expiredActivity = new TxActivity()
+      expiredActivity.activityType = defs.ActivityType.Listing
+      expiredActivity.activityTypeId = '0xe74f6be6cbed136453eaf2e9656838eb9eb727fc53955eda22411bef3826ce13'
+      expiredActivity.status = defs.ActivityStatus.Valid
+      expiredActivity.timestamp = new Date()
+      currentDate.setDate(currentDate.getDate() - 3)
+      expiredActivity.expiration = currentDate
+      expiredActivity.walletAddress = testMockWallet.address
+      expiredActivity.nftContract ='0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
+      expiredActivity.nftId = ['ethereum/0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b/0x0d5415']
+      expiredActivity.chainId = '5'
+
+      // expired order
+      let expiredActivityType = new TxOrder()
+      expiredActivityType.id = '0xe74f6be6cbed136453eaf2e9656838eb9eb727fc53955eda22411bef3826ce13'
+      expiredActivityType.activity = expiredActivity
+      expiredActivityType.exchange = defs.ExchangeType.OpenSea
+      expiredActivityType.orderHash = '0xe74f6be6cbed136453eaf2e9656838eb9eb727fc53955eda22411bef3826ce13'
+      expiredActivityType.orderType = defs.ActivityType.Listing
+      expiredActivityType.makerAddress = ''
+      expiredActivityType.protocol = defs.ProtocolType.Seaport
+      expiredActivityType.protocolData = {}
+      expiredActivityType.chainId = '5'
+
+      expiredActivity = await repositories.txActivity.save(expiredActivity)
+      expiredActivityType.activity = expiredActivity
+      expiredActivityType = await repositories.txOrder.save(expiredActivityType)
     })
 
     afterAll(async () => {
@@ -248,6 +310,109 @@ describe('nft resolver', () => {
       })
       expect(nft.lastRefreshed).toEqual(lastUpdated)
     })
+
+    it('should return NFT listing when listing is included', async () => {
+      const result = await testServer.executeOperation({
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
+                  contract
+                  tokenId
+                  chainId
+                  listings(listingsPageInput: $listingsPageInput) {
+                    items {
+                      id
+                      order {
+                        id
+                      }
+                    }
+                  }
+                }
+              }`,
+        variables: {
+          contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+          nftId: '0x0d5415',
+          chainId: '5',
+          listingsPageInput: {
+            first: 2,
+          },
+        },
+      })
+
+      expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+      expect(result.data.nft.tokenId).toBe( '0x0d5415')
+      expect(result.data.nft.chainId).toBe('5')
+      expect(result.data.nft.listings.items).toHaveLength(1)
+      expect(result.data.nft.listings.items[0]?.order.id).toBe('0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df')
+    })
+
+    it('should return both NFT listing when listing is included and listing expiration type is both', async () => {
+      const result = await testServer.executeOperation({
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsExpirationType: ActivityExpiration) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
+                  contract
+                  tokenId
+                  chainId
+                  listings(listingsPageInput: $listingsPageInput, listingsExpirationType: $listingsExpirationType) {
+                    items {
+                      id
+                      order {
+                        id
+                      }
+                    }
+                  }
+                }
+              }`,
+        variables: {
+          contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+          nftId: '0x0d5415',
+          chainId: '5',
+          listingsPageInput: {
+            first: 2,
+          },
+          listingsExpirationType: 'Both',
+        },
+      })
+  
+      expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+      expect(result.data.nft.tokenId).toBe( '0x0d5415')
+      expect(result.data.nft.chainId).toBe('5')
+      expect(result.data.nft.listings.items).toHaveLength(2)
+    })
+
+    it('should return expired NFT listing when listing is included and listing expiration type is Expired', async () => {
+      const result = await testServer.executeOperation({
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsExpirationType: ActivityExpiration) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
+                  contract
+                  tokenId
+                  chainId
+                  listings(listingsPageInput: $listingsPageInput, listingsExpirationType: $listingsExpirationType) {
+                    items {
+                      id
+                      order {
+                        id
+                      }
+                    }
+                  }
+                }
+              }`,
+        variables: {
+          contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+          nftId: '0x0d5415',
+          chainId: '5',
+          listingsPageInput: {
+            first: 2,
+          },
+          listingsExpirationType: 'Expired',
+        },
+      })
+  
+      expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+      expect(result.data.nft.tokenId).toBe( '0x0d5415')
+      expect(result.data.nft.chainId).toBe('5')
+      expect(result.data.nft.listings.items).toHaveLength(1)
+      expect(result.data.nft.listings.items[0]?.order.id).toBe('0xe74f6be6cbed136453eaf2e9656838eb9eb727fc53955eda22411bef3826ce13')
+    })
   })
 
   describe('get NFT By Id', () => {
@@ -366,7 +531,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('updateAssociatedContract', () => {
+  describe('updateAssociatedContract', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'

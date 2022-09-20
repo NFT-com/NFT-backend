@@ -32,6 +32,7 @@ import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/ser
 import {
   checkNFTContractAddresses,
   getCollectionNameFromContract,
+  getNFTActivities,
   getOwnersOfGenesisKeys, getUserWalletFromNFT,
   initiateWeb3,
   removeEdgesForNonassociatedAddresses, saveNewNFT, saveNFTMetadataImageToS3,
@@ -1479,6 +1480,8 @@ export default {
       defs.EntityType.NFT,
       defs.EntityType.Profile,
     ),
-    listings: () => console.log('NFT LISTINGS YO'),
+    listings: getNFTActivities(
+      defs.ActivityType.Listing,
+    ),
   },
 }

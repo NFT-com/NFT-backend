@@ -7,6 +7,9 @@ import * as typeorm from 'typeorm'
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { assetBucket } from '@nftcom/gql/config'
+import { gql, Pageable } from '@nftcom/gql/defs'
+import { Context } from '@nftcom/gql/defs'
+import { pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
@@ -24,7 +27,9 @@ import {
 } from '@nftcom/gql/service/core.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
+import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
+import { ActivityFilters } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -1626,5 +1631,50 @@ export const saveNewNFT = async (
   } catch (err) {
     logger.debug(`Error in saveNewNFT: ${err}`)
     Sentry.captureMessage(`Error in saveNewNFT: ${err}`)
+  }
+}
+
+/**
+ * getNFTActivities
+ * @param activityType
+ */
+
+export const getNFTActivities = <T>(
+  activityType: defs.ActivityType,
+) => {
+  return (parent: T, args: unknown, ctx: Context): Promise<Pageable<entity.TxActivity> | null> => {
+    let pageInput = args?.['listingsPageInput']
+    const expirationType = args?.['listingsExpirationType']
+
+    if (!pageInput) {
+      pageInput = {
+        'first': 50,
+      }
+    }
+    const contract = parent?.['contract']
+    const tokenId = parent?.['tokenId']
+    const chainId = parent?.['chainId'] || process.env.chainId
+
+    if (contract && tokenId) {
+      const checksumContract = helper.checkSum(contract)
+      const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
+      let filters: ActivityFilters = { nftContract: checksumContract, nftId, activityType, chainId }
+      // by default active items are included
+      if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
+        filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
+      } else if (expirationType === gql.ActivityExpiration.Expired){
+        filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
+      }
+      const safefilters = [helper.inputT2SafeK(filters)]
+      return paginatedActivitiesBy(
+        ctx.repositories.txActivity,
+        pageInput,
+        safefilters,
+        [],
+        'createdAt',
+        'DESC',
+      )
+        .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+    }
   }
 }
