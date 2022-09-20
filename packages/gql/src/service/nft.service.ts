@@ -445,9 +445,11 @@ const getNFTMetaData = async (
     const contractMetadata: ContractMetaDataResponse =
       await getContractMetaDataFromAlchemy(contract)
 
+    const metadata = nftMetadata?.metadata as any
     const name = nftMetadata?.title || `${contractMetadata.contractMetadata.name} #${Number(tokenId).toString()}`
-    const description = nftMetadata?.description
-    const image = nftMetadata?.metadata?.image
+    // For CryptoKitties, their metadata response format is different from original one
+    const description = nftMetadata?.description || metadata?.bio
+    const image = metadata?.image || metadata?.image_url_cdn
     if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
     } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
@@ -456,12 +458,21 @@ const getNFTMetaData = async (
       type = defs.NFTType.UNKNOWN
     }
 
-    if (Array.isArray(nftMetadata?.metadata?.attributes)) {
-      nftMetadata?.metadata?.attributes.map((trait) => {
+    if (Array.isArray(metadata?.attributes)) {
+      metadata?.attributes.map((trait) => {
         let value = trait?.value || trait?.trait_value
         value = typeof value === 'string' ? value : JSON.stringify(value)
         traits.push(({
           type: trait?.trait_type,
+          value,
+        }))
+      })
+    } else if (Array.isArray(metadata?.enhanced_cattributes)) {
+      metadata?.enhanced_cattributes.map((trait) => {
+        let value = trait?.description
+        value = typeof value === 'string' ? value : JSON.stringify(value)
+        traits.push(({
+          type: trait?.type,
           value,
         }))
       })
