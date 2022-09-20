@@ -29,7 +29,6 @@ import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
-import { ActivityFilters } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
@@ -1658,7 +1657,7 @@ export const getNFTActivities = <T>(
     if (contract && tokenId) {
       const checksumContract = helper.checkSum(contract)
       const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
-      let filters: ActivityFilters = { nftContract: checksumContract, nftId, activityType, chainId }
+      let filters: defs.ActivityFilters = { nftContract: checksumContract, nftId, activityType, chainId }
       // by default active items are included
       if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
         filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
