@@ -394,6 +394,20 @@ describe('nft resolver', () => {
         chainName: 'goerli',
         userId: user.id,
       })
+
+      nftB = await repositories.nft.save({
+        contract: '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
+        tokenId: '0x024a39',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
     })
 
     afterAll(async () => {
@@ -415,6 +429,23 @@ describe('nft resolver', () => {
       // Previous edges should be removed
       const edges = await repositories.edge.findAll()
       expect(edges.length).toEqual(0)
+    })
+
+    it.only('should update NFT metadata with traits', async () => {
+      const nft = {
+        contract: {
+          address: '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
+        },
+        id: {
+          tokenId: '0x024a39',
+        },
+      }
+      nftService.initiateWeb3('1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '1')
+
+      const updatedNFT = await repositories.nft.findById(nftB.id)
+      expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
+      expect(updatedNFT.metadata.traits.length).toBeGreaterThan(0)
     })
   })
 
