@@ -5,7 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       gql-changed: ${{ steps.filter.outputs.gql }}
-      gql-infra-changed: ${{ steps.filter.outputs.gql-infra }}
       cronjobs-changed: ${{ steps.filter.outputs.cronjobs }}
     steps:
     - uses: actions/checkout@v2
@@ -18,7 +17,6 @@ jobs:
             - 'perftest/**'
             - 'package**'
             - 'gql**'
-          gql-infra:
             - 'infra/gql/**'
             - 'infra/shared/**'
             - 'infra/defs/**'
@@ -30,7 +28,7 @@ jobs:
             - 'infra/cronjobs/**'
   deploy-dev:
     needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && (needs.deployment-triggers.outputs.gql-changed == 'true' || needs.deployment-triggers.outputs.gql-infra-changed == 'true') }}
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
@@ -42,7 +40,7 @@ jobs:
           stage: dev
   deploy-staging:
     needs: deployment-triggers
-    if: ${{ github.ref_name == 'main' && (needs.deployment-triggers.outputs.gql-changed == 'true' || needs.deployment-triggers.outputs.gql-infra-changed == 'true') }}  # not clear if this will work / need to test after merge
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.gql-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_staging
     steps:
@@ -78,7 +76,7 @@ jobs:
           stage: dev
   deploy-staging-cronjobs:
     needs: deployment-triggers
-    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }} # to do: find way to seperate gql/cronjob staging deployment
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_staging_cronjobs
     steps:

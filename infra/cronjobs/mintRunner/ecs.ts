@@ -11,7 +11,7 @@ const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
 
 export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
   const resourceName = getResourceName('mintRunner')
-  const ecrImage = `${process.env.ECR_REGISTRY}/${process.env.STAGE}-mintrunner:${process.env.GIT_SHA || 'latest'}`
+  const ecrImage = `${process.env.ECR_REGISTRY}/mintrunner:${process.env.STAGE}-${process.env.GIT_SHA || 'latest'}`
     
   return new aws.ecs.TaskDefinition('mintRunner-td', {
     containerDefinitions: JSON.stringify([

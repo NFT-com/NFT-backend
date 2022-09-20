@@ -32,15 +32,14 @@ runs:
       working-directory: infra
       shell: bash
       run: npm install
-    # Start Cronjob:MintRunner Infra Deployment 
     - name: Build and Push MintRunner Images
       shell: bash
       env:
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ inputs.stage }}-mintrunner  #for simplicity, ecr repo created outside pulumi stack
+        ECR_REPOSITORY: mintrunner  #for simplicity, ecr repo created outside pulumi stack
       run: |
         export DOCKER_BUILDKIT=1
-        docker build . -f cronjobs/mintrunner/mint.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+        docker build . -f cronjobs/mintrunner/mint.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
     - name: Deploy Cronjob Infra
@@ -63,4 +62,3 @@ runs:
         PROFILE_PER_GK: ${{ fromJSON(inputs.secrets).PROFILE_PER_GK }}
         MINT_TABLE_NAME: ${{ fromJSON(inputs.secrets).MINT_TABLE_NAME }}
       run: npm run deploy:cronjobs
-    # End Cronjob:MintRunner Infra Deployment 
