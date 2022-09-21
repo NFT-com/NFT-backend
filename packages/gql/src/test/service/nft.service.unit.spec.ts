@@ -223,7 +223,7 @@ describe('nft resolver', () => {
     afterAll(async () => {
       await clearDB(repositories)
     })
-    it.only('should skip svg format since it is not available', async () => {
+    it('should skip svg format since it is not available', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
       expect(cdnPath).toBeUndefined()
     })
