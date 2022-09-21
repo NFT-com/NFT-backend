@@ -1,0 +1,64 @@
+name: Deploy MintRunner Cronjob 
+description: Deploys the infrastrcuture and apps to an environment
+inputs:
+  stage:
+    description: Environment to deploy on
+    required: true
+    default: dev
+  secrets:
+    description: Secrets
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ fromJSON(inputs.secrets).AWS_ACCESS_KEY_ID }}
+        aws-region: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+        aws-secret-access-key: ${{ fromJSON(inputs.secrets).AWS_SECRET_ACCESS_KEY }}
+    - name: Login to AWS ECR
+      id: login_ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Install pulumi
+      uses: pulumi/setup-pulumi@v2
+    - name: Login to Pulumi backend
+      shell: bash
+      run: pulumi login s3://nftcom-pulumi-state
+    - name: Install Infra Deps
+      working-directory: infra
+      shell: bash
+      run: npm install
+    - name: Build and Push MintRunner Images
+      shell: bash
+      env:
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        ECR_REPOSITORY: mintrunner  #for simplicity, ecr repo created outside pulumi stack
+      run: |
+        export DOCKER_BUILDKIT=1
+        docker build . -f cronjobs/mintrunner/mint.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+    - name: Deploy Cronjob Infra
+      shell: bash
+      working-directory: infra
+      env:
+        STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        GIT_SHA: ${{ github.sha }}
+        ENV: ${{ fromJSON(inputs.secrets).ENV }}
+        ANALYTICS_DB_HOST: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_HOST }}
+        ANALYTICS_DB_PORT: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_PORT }}
+        ANALYTICS_DB_NAME: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_NAME }}
+        ANALYTICS_DB_USER: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_USER }}
+        ANALYTICS_DB_PASS: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_PASS }}
+        ETH_NODE_URL: ${{ fromJSON(inputs.secrets).ETH_NODE_URL }}
+        PROFILE_PER_GK: ${{ fromJSON(inputs.secrets).PROFILE_PER_GK }}
+        MINT_TABLE_NAME: ${{ fromJSON(inputs.secrets).MINT_TABLE_NAME }}
+      run: npm run deploy:cronjobs

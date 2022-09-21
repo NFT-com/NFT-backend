@@ -11,6 +11,12 @@ export class MarketplaceSale extends BaseEntity {
   @Column( { nullable: true, type: 'numeric' })
   priceUSD: number
 
+  @Column( { nullable: true, type: 'numeric' })
+  price: number
+
+  @Column( { nullable: false, default: '' })
+  symbol: string
+
   @Column( { nullable: false })
   contractAddress: string
 
