@@ -536,7 +536,7 @@ const uploadImageToS3 = async (
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
         }
       } else {
-        if (ext === 'mp4' || ext === 'gif' || ext === 'svg') {
+        if (ext === 'mp4' || ext === 'gif' || ext === 'svg' || ext === 'mp3') {
           return Promise.reject(new Error('File format is unacceptable'))
         } else {
           imageKey = uploadPath + Date.now() + '-' + filename
