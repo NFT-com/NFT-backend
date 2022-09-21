@@ -3,6 +3,7 @@
 /* eslint-disable */
 export type { CryptoKittyTransferProxy } from "./CryptoKittyTransferProxy";
 export type { ERC1155 } from "./ERC1155";
+export type { ERC20Metadata } from "./ERC20Metadata";
 export type { ERC20TransferProxy } from "./ERC20TransferProxy";
 export type { ERC721 } from "./ERC721";
 export type { GenesisKey } from "./GenesisKey";
@@ -25,6 +26,7 @@ export type { Whitelist } from "./Whitelist";
 
 export { CryptoKittyTransferProxy__factory } from "./factories/CryptoKittyTransferProxy__factory";
 export { ERC1155__factory } from "./factories/ERC1155__factory";
+export { ERC20Metadata__factory } from "./factories/ERC20Metadata__factory";
 export { ERC20TransferProxy__factory } from "./factories/ERC20TransferProxy__factory";
 export { ERC721__factory } from "./factories/ERC721__factory";
 export { GenesisKey__factory } from "./factories/GenesisKey__factory";
