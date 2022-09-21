@@ -86,7 +86,6 @@ describe('sendgrid service', () => {
 
       const testSendResponse = await sendgridService
         .sendBidConfirmEmail(bid as entity.Bid, testUser as entity.User, profileUrl)
-      console.log(testSendResponse)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
@@ -109,7 +108,6 @@ describe('sendgrid service', () => {
 
       const testSendResponse = await sendgridService
         .sendOutbidEmail(testUser as entity.User, profileUrl)
-      console.log(testSendResponse)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
@@ -134,7 +132,6 @@ describe('sendgrid service', () => {
       const profileUrl = 'test-profile'
       const testSendResponse = await sendgridService
         .sendWinEmail(topBid as entity.Bid, testUser as entity.User, profileUrl)
-      console.log(testSendResponse)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
@@ -158,7 +155,6 @@ describe('sendgrid service', () => {
 
       const testSendResponse = await sendgridService
         .sendMarketplaceBidConfirmEmail(bid as entity.MarketBid, testUser as entity.User)
-      console.log(testSendResponse)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
