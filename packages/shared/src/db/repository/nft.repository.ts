@@ -32,4 +32,11 @@ export class NFTRepository extends BaseRepository<NFT> {
       .getRawMany()
   }
 
+  findNFTsWithPreviewLinks(): Promise<NFT[]> {
+    return this.getRepository()
+      .createQueryBuilder('nft')
+      .where('nft.previewLink is not null')
+      .getMany()
+  }
+
 }

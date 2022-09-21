@@ -15,8 +15,7 @@ import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
   extensionFromFilename,
-  fetchWithTimeout,
-  generateSVGFromBase64String,
+  fetchWithTimeout, generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -103,11 +102,6 @@ type NFTMetaData = {
   description: string
   image: string
   traits: defs.Trait[]
-}
-
-type UploadedImage = {
-  cdnPath: string
-  isRaw: boolean
 }
 
 export const initiateWeb3 = (chainId?: string): void => {
@@ -449,7 +443,7 @@ const getNFTMetaData = async (
     const name = nftMetadata?.title || `${contractMetadata.contractMetadata.name} #${Number(tokenId).toString()}`
     // For CryptoKitties, their metadata response format is different from original one
     const description = nftMetadata?.description || metadata?.bio
-    const image = metadata?.image || metadata?.image_url_cdn
+    const image = metadata?.image || metadata?.image_url_cdn || generateSVGFromBase64String(metadata?.image_data)
     if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
     } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
@@ -517,49 +511,44 @@ const uploadImageToS3 = async (
   chainId: string,
   contract: string,
   uploadPath: string,
-): Promise<UploadedImage | undefined> => {
+): Promise<string | undefined> => {
   try {
     let buffer
     let ext
     let imageKey
     if (!imageUrl) return undefined
-    let isRaw = false
+    // We skip previewLink generation for SVG, GIF, MP4 and MP3
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
-      isRaw = true
-      buffer = generateSVGFromBase64String(imageUrl)
-      ext = 'svg'
-      imageKey = uploadPath + Date.now() + '-' + contract + '.svg'
+      return Promise.reject(new Error('File format is unacceptable'))
     } else {
       imageUrl = processIPFSURL(imageUrl)
-
-      // get buffer from imageURL, timeout is set to 60 seconds
-      const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 60 })
-      buffer = await res.buffer()
-
-      if (!buffer) return undefined
       ext = extensionFromFilename(filename)
 
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
-          ext = 'svg'
-          imageKey = uploadPath + Date.now() + '-' + filename + '.svg'
+          // this image is svg so we skip it
+          return Promise.reject(new Error('File format is unacceptable'))
         } else if (imageUrl.includes('https://arweave.net/')) {
-          // Size of augmented reality images are huge, so we keep them as raw data
-          isRaw = true
-          ext = 'mp4'
-          imageKey = uploadPath + Date.now() + '-' + filename + '.mp4'
+          // AR images are mp4 format, so we don't save as preview link
+          return Promise.reject(new Error('File format is unacceptable'))
         } else {
           ext = 'png'
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
         }
       } else {
-        if (ext === 'mp4') {
-          // we keep mp4 files as raw data
-          isRaw = true
+        if (ext === 'mp4' || ext === 'gif' || ext === 'svg' || ext === 'mp3') {
+          return Promise.reject(new Error('File format is unacceptable'))
+        } else {
+          imageKey = uploadPath + Date.now() + '-' + filename
         }
-        imageKey = uploadPath + Date.now() + '-' + filename
       }
+
+      // get buffer from imageURL, timeout is set to 60 seconds
+      const res = await fetchWithTimeout(imageUrl, { timeout: 1000 * 60 })
+      buffer = await res.buffer()
     }
+
+    if (!buffer) return undefined
 
     const contentType = contentTypeFromExt(ext)
     if (!contentType) return undefined
@@ -576,11 +565,7 @@ const uploadImageToS3 = async (
     await upload.done()
 
     logger.info(`finished uploading in uploadImageToS3: ${imageUrl}`)
-    const cdnPath = s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-    return {
-      cdnPath,
-      isRaw,
-    }
+    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
@@ -613,25 +598,6 @@ export const saveNFTMetadataImageToS3 = async (
           nft.contract,
           uploadPath,
         )
-      } else if (nftPortResult && nftPortResult.contract &&
-        nftPortResult.contract?.metadata &&
-        nftPortResult.contract?.metadata?.cached_thumbnail_url
-      ) {
-        const cachedContract = await cache.get(`nftport_contract_${nft.contract}`)
-
-        if (!cachedContract) {
-          const filename = `${nftPortResult.contract.name}_${nftPortResult.nft.token_id}`
-          uploadedImage = await uploadImageToS3(
-            nftPortResult.nft.cached_file_url,
-            filename,
-            nft.chainId,
-            nft.contract,
-            uploadPath,
-          )
-          await cache.set(`nftport_contract_${nft.contract}`, JSON.stringify(uploadedImage))
-        } else {
-          uploadedImage = JSON.parse(cachedContract)
-        }
       } else {
         const newWeb3 = initiateWeb3PreviewLink(nft.chainId)
         const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId, newWeb3)
@@ -661,9 +627,9 @@ export const saveNFTMetadataImageToS3 = async (
       if (!uploadedImage) return undefined
       logger.info(`previewLink for NFT ${ nft.id } was generated`,
         {
-          previewLink: uploadedImage.isRaw ? uploadedImage.cdnPath : uploadedImage.cdnPath + '?width=600',
+          previewLink: uploadedImage + '?width=600',
         })
-      return uploadedImage.isRaw ? uploadedImage.cdnPath : uploadedImage.cdnPath + '?width=600'
+      return uploadedImage + '?width=600'
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
@@ -1481,7 +1447,7 @@ export const getCollectionInfo = async (
               contract,
               uploadPath,
             )
-            bannerUrl = banner ? banner.cdnPath : bannerUrl
+            bannerUrl = banner ? banner : bannerUrl
           }
           if (details.contract.metadata?.cached_thumbnail_url &&
             details.contract.metadata?.cached_thumbnail_url?.length
@@ -1494,7 +1460,7 @@ export const getCollectionInfo = async (
               contract,
               uploadPath,
             )
-            logoUrl = logo ? logo.cdnPath : logoUrl
+            logoUrl = logo ? logo : logoUrl
           }
           if (details.contract.metadata?.description) {
             description = details.contract.metadata?.description?.length ?

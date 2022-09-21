@@ -11,6 +11,7 @@ import {
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 // const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
@@ -235,6 +236,22 @@ const listenToJobs = async (): Promise<void> => {
     default:
       queue.process(getEthereumEvents)
     }
+  }
+}
+
+export const obliterateQueue = async (queueName: string): Promise<string> => {
+  try {
+    const queue = new Bull(
+      queueName, {
+        prefix: queuePrefix,
+        redis,
+      })
+    await queue.obliterate({ force: true })
+    return 'Job is obliterated.'
+  } catch (err) {
+    logger.error(`Error in obliterateQueue: ${err}`)
+    Sentry.captureMessage(`Error in obliterateQueue: ${err}`)
+    throw err
   }
 }
 
