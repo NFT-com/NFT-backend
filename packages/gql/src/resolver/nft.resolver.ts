@@ -49,7 +49,6 @@ import { SearchEngineService } from '../service/searchEngine.service'
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 const NFT_REFRESH_DURATION = Number(process.env.NFT_REFRESH_DURATION)
-const MAX_SAVE_COUNTS = 500
 
 const baseCoins = [
   {
@@ -1510,15 +1509,14 @@ const clearPreviewLinks = async (
     })
     const count = Math.min(Number(args?.count), filteredNFTs.length)
     const slicedNFTs = filteredNFTs.slice(0, count)
-    const updated = []
-    for (const nft of slicedNFTs) {
-      updated.push({
-        id: nft.id,
-        previewLink: null,
-        previewLinkError: 'File format is unacceptable',
-      })
-    }
-    await repositories.nft.saveMany(updated, { chunk: MAX_SAVE_COUNTS })
+    await Promise.allSettled(
+      slicedNFTs.map(async (nft) => {
+        await repositories.nft.updateOneById(nft.id, {
+          previewLink: null,
+          previewLinkError: 'File format is unacceptable',
+        })
+      }),
+    )
     logger.info('Wrong preview link of NFTs are reset', { counts: slicedNFTs.length })
     return {
       message: `Reset preview link for ${slicedNFTs.length} NFTs`,
@@ -1526,6 +1524,48 @@ const clearPreviewLinks = async (
   } catch (err) {
     console.log(err)
     Sentry.captureMessage(`Error in clearPreviewLinks: ${err}`)
+    return err
+  }
+}
+
+const fixUpdatedAt = async (
+  _: any,
+  args: gql.MutationFixUpdatedAtArgs,
+  ctx: Context,
+): Promise<gql.FixUpdatedAtOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('fixUpdatedAt', { count: args?.count })
+  try {
+    const nfts = await repositories.nft.find({
+      where: [
+        {
+          previewLink: null,
+          previewLinkError: 'File format is unacceptable',
+        },
+        {
+          previewLink: null,
+          previewLinkError: '{}',
+        },
+      ],
+    })
+    const count = Math.min(Number(args?.count), nfts.length)
+    const slicedNFTs = nfts.slice(0, count)
+    await Promise.allSettled(
+      slicedNFTs.map(async (nft) => {
+        await repositories.nft.updateOneById(nft.id, {
+          previewLinkError: 'File format is unacceptable',
+        })
+      }),
+    )
+    logger.info('updatedAt fields are updated', { counts: slicedNFTs.length })
+    return {
+      message: `updatedAt fields are updated for ${slicedNFTs.length} NFTs`,
+    }
+  } catch (err) {
+    console.log(err)
+    Sentry.captureMessage(`Error in fixUpdatedAt: ${err}`)
     return err
   }
 }
@@ -1554,6 +1594,7 @@ export default {
     uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
     updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
     clearPreviewLinks: combineResolvers(auth.isAuthenticated, clearPreviewLinks),
+    fixUpdatedAt: combineResolvers(auth.isAuthenticated, fixUpdatedAt),
     listNFTSeaport,
     listNFTLooksrare,
 

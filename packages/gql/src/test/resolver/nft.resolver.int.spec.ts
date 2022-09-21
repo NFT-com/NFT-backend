@@ -491,7 +491,7 @@ describe('nft resolver', () => {
           listingsOwner: testMockWallet.address,
         },
       })
-     
+
       expect(result.data.nft.listings.items).toHaveLength(1)
       expect(result.data.nft.listings.items[0]?.walletAddress).toBe(testMockWallet.address)
       expect(result.data.nft.listings.items[0]?.status).toBe(defs.ActivityStatus.Valid)
@@ -509,7 +509,7 @@ describe('nft resolver', () => {
         wallet.chainName = 'goerli'
         wallet.chainId = '5'
         await repositories.wallet.save(wallet)
-       
+
         const result = await testServer.executeOperation({
           query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsExpirationType: ActivityExpiration, $listingsOwner: Address) {
                   nft(contract: $contract, id: $nftId, chainId: $chainId) {
@@ -539,7 +539,7 @@ describe('nft resolver', () => {
             listingsStatus: defs.ActivityStatus.Valid,
           },
         })
-      
+
         expect(result.data.nft.listings.items).toHaveLength(1)
         expect(result.data.nft.listings.items[0]?.walletAddress).toBe(wallet.address)
         expect(result.data.nft.listings.items[0]?.status).toBe(defs.ActivityStatus.Valid)
@@ -1587,6 +1587,98 @@ describe('nft resolver', () => {
       expect(result.data.clearPreviewLinks.message).toEqual('Reset preview link for 3 NFTs')
       const nfts = await repositories.nft.findNFTsWithPreviewLinks()
       expect(nfts.length).toEqual(1)
+    })
+  })
+
+  describe('fixUpdatedAt', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0390',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLinkError: 'File format is unacceptable',
+      })
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0391',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLinkError: 'File format is unacceptable',
+      })
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0392',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLinkError: '{}',
+      })
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01cf',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+      process.env = env
+    })
+
+    it('should reset updatedAt field', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation FixUpdatedAt($count: Int!) { fixUpdatedAt(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.fixUpdatedAt.message).toEqual('updatedAt fields are updated for 3 NFTs')
+      const nfts = await repositories.nft.find({ where: { previewLinkError: 'File format is unacceptable' } })
+      expect(nfts.length).toEqual(3)
     })
   })
 })
