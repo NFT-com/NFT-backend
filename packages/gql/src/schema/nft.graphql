@@ -207,6 +207,10 @@ type ClearPreviewLinksOutput {
   message: String
 }
 
+type FixUpdatedAtOutput {
+  message: String
+}
+
 input UpdateNFTInput {
   contract: String!
   tokenId: String!
@@ -245,6 +249,8 @@ extend type Mutation {
   uploadMetadataImagesToS3(count: Int!): UploadMetadataImagesToS3Output!
   "AUTHENTICATED"
   clearPreviewLinks(count: Int!): ClearPreviewLinksOutput!
+  "AUTHENTICATED"
+  fixUpdatedAt(count: Int!): FixUpdatedAtOutput!
   "AUTHENTICATED"
   updateENSNFTMetadata(count: Int!): updateENSNFTMetadataOutput!
 }

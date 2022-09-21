@@ -1528,6 +1528,48 @@ const clearPreviewLinks = async (
   }
 }
 
+const fixUpdatedAt = async (
+  _: any,
+  args: gql.MutationFixUpdatedAtArgs,
+  ctx: Context,
+): Promise<gql.FixUpdatedAtOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('fixUpdatedAt', { count: args?.count })
+  try {
+    const nfts = await repositories.nft.find({
+      where: [
+        {
+          previewLink: null,
+          previewLinkError: 'File format is unacceptable',
+        },
+        {
+          previewLink: null,
+          previewLinkError: '{}',
+        },
+      ],
+    })
+    const count = Math.min(Number(args?.count), nfts.length)
+    const slicedNFTs = nfts.slice(0, count)
+    await Promise.allSettled(
+      slicedNFTs.map(async (nft) => {
+        await repositories.nft.updateOneById(nft.id, {
+          previewLinkError: 'File format is unacceptable',
+        })
+      }),
+    )
+    logger.info('updatedAt fields are updated', { counts: slicedNFTs.length })
+    return {
+      message: `updatedAt fields are updated for ${slicedNFTs.length} NFTs`,
+    }
+  } catch (err) {
+    console.log(err)
+    Sentry.captureMessage(`Error in fixUpdatedAt: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1552,6 +1594,7 @@ export default {
     uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
     updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
     clearPreviewLinks: combineResolvers(auth.isAuthenticated, clearPreviewLinks),
+    fixUpdatedAt: combineResolvers(auth.isAuthenticated, fixUpdatedAt),
     listNFTSeaport,
     listNFTLooksrare,
 
