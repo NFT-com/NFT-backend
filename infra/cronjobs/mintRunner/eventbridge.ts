@@ -4,7 +4,7 @@ import { getResourceName, getTags, isProduction } from '../../helper'
 
 const tags = {
   cronjob: 'mintrunner',
-}  
+}
 
 const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('mintRunner-eventRule')

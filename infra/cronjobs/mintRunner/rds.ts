@@ -23,7 +23,7 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     username: process.env.ANALYTICS_DB_USER,
     password: process.env.ANALYTICS_DB_PASS,
     tags: {
-      cronjob: "mintrunner",
+      cronjob: 'mintrunner',
     },
   })
 }

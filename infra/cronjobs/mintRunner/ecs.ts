@@ -3,8 +3,8 @@ import * as aws from '@pulumi/aws'
 import { getResourceName, getTags } from '../../helper'
 
 const tags = {
-    cronjob: 'mintrunner',
-}  
+  cronjob: 'mintrunner',
+}
 
 const execRole = 'arn:aws:iam::016437323894:role/ecsTaskExecutionRole'
 const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
