@@ -449,7 +449,7 @@ const getNFTMetaData = async (
     const name = nftMetadata?.title || `${contractMetadata.contractMetadata.name} #${Number(tokenId).toString()}`
     // For CryptoKitties, their metadata response format is different from original one
     const description = nftMetadata?.description || metadata?.bio
-    const image = metadata?.image || metadata?.image_url_cdn
+    const image = metadata?.image || metadata?.image_url_cdn || metadata?.image_data
     if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
     } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
