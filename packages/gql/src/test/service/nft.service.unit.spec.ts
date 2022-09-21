@@ -223,9 +223,9 @@ describe('nft resolver', () => {
     afterAll(async () => {
       await clearDB(repositories)
     })
-    it('should return valid SVG path uploaded to S3', async () => {
+    it.only('should skip svg format since it is not available', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
-      expect(cdnPath).toBeDefined()
+      expect(cdnPath).toBeUndefined()
     })
     it('should skip mp4 format since it is not available', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftB, repositories)
