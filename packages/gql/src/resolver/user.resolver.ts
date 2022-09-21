@@ -8,6 +8,7 @@ import Joi from 'joi'
 import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, userError, walletError } from '@nftcom/gql/error'
 import { auth, joi } from '@nftcom/gql/helper'
+import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
@@ -690,6 +691,28 @@ export const updateCache = async (
   }
 }
 
+export const clearQueue = async (
+  _: any,
+  args: gql.MutationClearQueueArgs,
+  ctx: Context,
+): Promise<gql.ClearQueueOutput> => {
+  try {
+    const { chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('clearQueue', { queue: args?.queue })
+
+    const msg = await obliterateQueue(args?.queue)
+
+    return {
+      message: msg,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateCache: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
@@ -712,6 +735,7 @@ export default {
     updateHidden: combineResolvers(auth.isAuthenticated, updateHidden),
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
     updateCache: combineResolvers(auth.isAuthenticated, updateCache),
+    clearQueue: combineResolvers(auth.isAuthenticated, clearQueue),
   },
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),
