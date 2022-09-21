@@ -5,6 +5,7 @@ import * as upath from 'upath'
 
 import * as pulumi from '@pulumi/pulumi'
 
+import { createCronJobs } from './cronjobs'
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer, updateGQLEnvFile } from './gql'
 import { createSharedInfra } from './shared'
@@ -41,6 +42,7 @@ const main = async (): Promise<any> => {
   const deployShared = args?.[0] === 'deploy:shared' || false
   const deployGQL = args?.[0] === 'deploy:gql' || false
   const buildGQLEnv = args?.[0] === 'gql:env' || false
+  const deployCronjobs = args?.[0] === 'deploy:cronjobs' || false
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 
@@ -57,6 +59,10 @@ const main = async (): Promise<any> => {
   if (deployGQL) {
     return createGQLServer()
   }
+
+  if (deployCronjobs) {
+    return createCronJobs()
+  }
 }
 
 main()
@@ -64,4 +70,3 @@ main()
     console.error(err)
     process.exit(1)
   })
-

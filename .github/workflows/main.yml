@@ -1,24 +1,52 @@
 name: NFT.com github actions
 on: [push]
 jobs:
+  deployment-triggers:
+    runs-on: ubuntu-latest
+    outputs:
+      gql-changed: ${{ steps.filter.outputs.gql }}
+      cronjobs-changed: ${{ steps.filter.outputs.cronjobs }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          gql:
+            - 'packages/**'
+            - 'perftest/**'
+            - 'package**'
+            - 'gql**'
+            - 'infra/gql/**'
+            - 'infra/shared/**'
+            - 'infra/defs/**'
+            - 'infra/helper/**'
+            - 'infra/index**'
+            - 'infra/package**'
+          cronjobs:
+            - 'cronjobs/**'
+            - 'infra/cronjobs/**'
   deploy-dev:
-    if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') }}
+    needs: deployment-triggers
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
-        name: Deploy env
+        name: Deploy GQL Env [Dev] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
   deploy-staging:
-    if: ${{ github.ref_name == 'main' }}
+    needs: deployment-triggers
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.gql-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_staging
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
+        name: Deploy GQL Env [Staging] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
@@ -29,6 +57,42 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/deploy-env
+        name: Deploy GQL Env [Prod] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: prod
+  deploy-dev-cronjobs:
+    needs: deployment-triggers
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_dev_cronjobs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy Cronjobs [Dev] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: dev
+  deploy-staging-cronjobs:
+    needs: deployment-triggers
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_staging_cronjobs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy cronjobs [staging]
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: staging
+  deploy-prod-cronjobs:
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'cronjob-rel') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_prod_cronjobs
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/deploy-cronjobs
+        name: Deploy cronjobs [prod]
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
