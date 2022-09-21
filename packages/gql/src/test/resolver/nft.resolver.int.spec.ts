@@ -372,7 +372,7 @@ describe('nft resolver', () => {
           listingsExpirationType: 'Both',
         },
       })
-  
+
       expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
       expect(result.data.nft.tokenId).toBe( '0x0d5415')
       expect(result.data.nft.chainId).toBe('5')
@@ -406,7 +406,7 @@ describe('nft resolver', () => {
           listingsExpirationType: 'Expired',
         },
       })
-  
+
       expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
       expect(result.data.nft.tokenId).toBe( '0x0d5415')
       expect(result.data.nft.chainId).toBe('5')
@@ -1360,6 +1360,99 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.updateENSNFTMetadata.message).toEqual('Updated image urls of metadata for 0 ENS NFTs')
+    })
+  })
+
+  describe('clearPreviewLinks', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0390',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.svg',
+      })
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0391',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.gif',
+      })
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x0392',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.png',
+      })
+
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01cf',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.gif',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+      process.env = env
+    })
+
+    it('should reset preview link of NFTs', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation ClearPreviewLinks($count: Int!) { clearPreviewLinks(count:$count) {  message } }',
+        variables: {
+          count: 100,
+        },
+      })
+
+      expect(result.data.clearPreviewLinks.message).toEqual('Reset preview link for 3 NFTs')
+      const nfts = await repositories.nft.findNFTsWithPreviewLinks()
+      expect(nfts.length).toEqual(1)
     })
   })
 })
