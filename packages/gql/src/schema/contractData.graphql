@@ -182,8 +182,11 @@ type NFTPortTxByNFT {
 }
 
 type TransactionSales {
-  transactionHash: String,
+  contractAddress: String,
+  tokenId: String,
   priceUSD: Float,
+  price: Float,
+  symbol: String,
   date: DateTime,
   transaction: TransactionSalesTx
 }

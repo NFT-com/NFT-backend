@@ -2,19 +2,18 @@ import crypto from 'crypto'
 import { parseISO } from 'date-fns'
 import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
-import { utils } from 'ethers'
+import { Contract, utils } from 'ethers'
 import { differenceBy,snakeCase } from 'lodash'
 import { stringify } from 'qs'
 import { MoreThanOrEqual } from 'typeorm'
 import { format } from 'util'
 
+import { getNFTPortInterceptor } from '@nftcom/gql/adapter'
+import { appError } from '@nftcom/gql/error'
 import { cache } from '@nftcom/gql/service/cache.service'
-import { db } from '@nftcom/shared'
+import { db, provider, typechain } from '@nftcom/shared'
 import { _logger } from '@nftcom/shared'
 import { MarketplaceSale } from '@nftcom/shared/db/entity'
-
-import { getNFTPortInterceptor } from '../adapter'
-import { appError } from '../error'
 
 const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
 const NFTPORT_ENDPOINTS = {
@@ -114,18 +113,38 @@ const parseDateRangeForDateFns = (dateRange: string): { [duration: string]: numb
   }
 }
 
-const getTxId = (tx):string => {
+const getTxId = (tx): string => {
   const hmac = crypto.createHmac('sha256', 'contractData')
   return hmac
     .update(`${tx.transaction_hash}-${tx.buyer_address}-${tx.seller_address}-${tx.nft.token_id}`)
     .digest('hex')
 }
-const transformTxns = (txns: any[]): any => {
+const getSymbolForContract = async (contractAddress: string): Promise<string> => {
+  const key = `ERC20_SYMBOL_${contractAddress}`
+  let symbol = await cache.get(key)
+  if (!symbol) {
+    const contract = new Contract(
+      contractAddress,
+      typechain.ERC20Metadata__factory.abi,
+      provider.provider(),
+    ) as unknown as typechain.ERC20Metadata
+    symbol = await contract.symbol()
+    cache.set(key, symbol)
+  }
+  return symbol
+}
+const getSymbol = async (tx): Promise<string> => {
+  const assetType = tx.price_details.asset_type
+  return assetType === 'ETH' ? assetType : await getSymbolForContract(tx.price_details.contract_address)
+}
+const transformTxns = async (txns: any[]): Promise<any> => {
   const transformed = []
   for (const tx of txns) {
     transformed.push({
       id: getTxId(tx),
       priceUSD: tx.price_details.price_usd,
+      price: tx.price_details.price,
+      symbol: await getSymbol(tx),
       date: parseISO(tx.transaction_date),
       contractAddress: utils.getAddress(tx.nft.contract_address),
       tokenId: tx.nft.token_id,
@@ -190,7 +209,7 @@ export const getSalesData = async (
         })
         getMoreSalesData = false
       }
-      result = result.concat(differenceBy(transformTxns(filteredTxns), savedSales, 'id') as any[])
+      result = result.concat(differenceBy(await transformTxns(filteredTxns), savedSales, 'id') as any[])
     }
     continuation = salesData.continuation
     if (!continuation) getMoreSalesData = false
