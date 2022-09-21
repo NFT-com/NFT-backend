@@ -3,7 +3,7 @@ import * as upath from 'upath'
 
 import * as pulumi from '@pulumi/pulumi'
 
-import { deployInfra, getStage, pulumiOutToValue } from '../helper'
+import { deployInfra, getStage, isProduction, pulumiOutToValue } from '../helper'
 import { createEcsCluster,createMintRunnerTaskDefinition } from './mintRunner/ecs'
 import { createEventBridgeTarget } from './mintRunner/eventbridge'
 import { createAnalyticsDatabase } from './mintRunner/rds'
@@ -22,7 +22,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const subnetVal: string[] = await pulumiOutToValue(subnets)
 
   // START: CRONJOB - MINTRUNNER
-  createAnalyticsDatabase()
+  if (isProduction()) {
+    createAnalyticsDatabase()  // only create in prod, dont need db per env
+  }
   const task = createMintRunnerTaskDefinition()
   const cluster = createEcsCluster()
   createEventBridgeTarget(task,subnetVal,cluster)
