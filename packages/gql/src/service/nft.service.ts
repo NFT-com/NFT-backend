@@ -1618,9 +1618,16 @@ export const saveNewNFT = async (
 export const getNFTActivities = <T>(
   activityType: defs.ActivityType,
 ) => {
-  return (parent: T, args: unknown, ctx: Context): Promise<Pageable<entity.TxActivity> | null> => {
-    let pageInput = args?.['listingsPageInput']
-    const expirationType = args?.['listingsExpirationType']
+  return async (parent: T, args: unknown, ctx: Context): Promise<Pageable<entity.TxActivity> | null> => {
+    let pageInput: gql.PageInput = args?.['listingsPageInput']
+    const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
+    const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
+    let listingsOwnerAddress: string = args?.['listingsOwner']
+    if (!listingsOwnerAddress) {
+      const walletId = parent?.['walletId']
+      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+      listingsOwnerAddress = wallet?.address
+    }
 
     if (!pageInput) {
       pageInput = {
@@ -1634,7 +1641,14 @@ export const getNFTActivities = <T>(
     if (contract && tokenId) {
       const checksumContract = helper.checkSum(contract)
       const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
-      let filters: defs.ActivityFilters = { nftContract: checksumContract, nftId, activityType, chainId }
+      let filters: defs.ActivityFilters = {
+        nftContract: checksumContract,
+        nftId,
+        activityType,
+        status: listingsStatus,
+        walletAddress: helper.checkSum(listingsOwnerAddress),
+        chainId,
+      }
       // by default active items are included
       if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
         filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
