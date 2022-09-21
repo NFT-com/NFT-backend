@@ -49,6 +49,7 @@ import { SearchEngineService } from '../service/searchEngine.service'
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 const NFT_REFRESH_DURATION = Number(process.env.NFT_REFRESH_DURATION)
+const MAX_SAVE_COUNTS = 500
 
 const baseCoins = [
   {
@@ -1493,6 +1494,42 @@ const updateENSNFTMetadata = async (
   }
 }
 
+const clearPreviewLinks = async (
+  _: any,
+  args: gql.MutationClearPreviewLinksArgs,
+  ctx: Context,
+): Promise<gql.ClearPreviewLinksOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('clearPreviewLinks', { count: args?.count })
+  try {
+    const nfts = await repositories.nft.findNFTsWithPreviewLinks()
+    const filteredNFTs = nfts.filter((nft) => {
+      return nft.previewLink.includes('.gif') || nft.previewLink.includes('.mp4') || nft.previewLink.includes('.svg')
+    })
+    const count = Math.min(Number(args?.count), filteredNFTs.length)
+    const slicedNFTs = filteredNFTs.slice(0, count)
+    const updated = []
+    for (const nft of slicedNFTs) {
+      updated.push({
+        id: nft.id,
+        previewLink: null,
+        previewLinkError: 'File format is unacceptable',
+      })
+    }
+    await repositories.nft.saveMany(updated, { chunk: MAX_SAVE_COUNTS })
+    logger.info('Wrong preview link of NFTs are reset', { counts: slicedNFTs.length })
+    return {
+      message: `Reset preview link for ${slicedNFTs.length} NFTs`,
+    }
+  } catch (err) {
+    console.log(err)
+    Sentry.captureMessage(`Error in clearPreviewLinks: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1516,6 +1553,7 @@ export default {
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
     uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
     updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
+    clearPreviewLinks: combineResolvers(auth.isAuthenticated, clearPreviewLinks),
     listNFTSeaport,
     listNFTLooksrare,
 

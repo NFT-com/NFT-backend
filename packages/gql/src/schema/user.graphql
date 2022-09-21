@@ -139,6 +139,10 @@ type UpdateCacheOutput {
   message: String
 }
 
+type ClearQueueOutput {
+  message: String
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -172,4 +176,6 @@ extend type Mutation {
   resendEmailConfirm: User!
   "AUTHENTICATED"
   updateCache(input: UpdateCacheInput!): UpdateCacheOutput!
+  "AUTHENTICATED"
+  clearQueue(queue: String!): ClearQueueOutput!
 }
