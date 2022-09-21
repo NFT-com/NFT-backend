@@ -49,7 +49,6 @@ import { SearchEngineService } from '../service/searchEngine.service'
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 const NFT_REFRESH_DURATION = Number(process.env.NFT_REFRESH_DURATION)
-const MAX_SAVE_COUNTS = 500
 
 const baseCoins = [
   {
@@ -1510,15 +1509,14 @@ const clearPreviewLinks = async (
     })
     const count = Math.min(Number(args?.count), filteredNFTs.length)
     const slicedNFTs = filteredNFTs.slice(0, count)
-    const updated = []
-    for (const nft of slicedNFTs) {
-      updated.push({
-        id: nft.id,
-        previewLink: null,
-        previewLinkError: 'File format is unacceptable',
-      })
-    }
-    await repositories.nft.saveMany(updated, { chunk: MAX_SAVE_COUNTS })
+    await Promise.allSettled(
+      slicedNFTs.map(async (nft) => {
+        await repositories.nft.updateOneById(nft.id, {
+          previewLink: null,
+          previewLinkError: 'File format is unacceptable',
+        })
+      }),
+    )
     logger.info('Wrong preview link of NFTs are reset', { counts: slicedNFTs.length })
     return {
       message: `Reset preview link for ${slicedNFTs.length} NFTs`,
