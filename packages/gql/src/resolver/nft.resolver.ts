@@ -1,4 +1,3 @@
-import { BigNumber as BN } from 'bignumber.js'
 import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
@@ -24,11 +23,11 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 import { differenceInMilliseconds } from 'date-fns'
 
-import { BaseCoin, PageInput } from '@nftcom/gql/defs/gql'
+import { PageInput } from '@nftcom/gql/defs/gql'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
-import { createLooksrareListing, retrieveOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
+import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   getCollectionNameFromContract,
@@ -41,7 +40,7 @@ import {
   updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
-import { createSeaportListing, retrieveOrdersOpensea } from '@nftcom/gql/service/opensea.service'
+import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineService } from '../service/searchEngine.service'
@@ -50,64 +49,65 @@ const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURA
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 const NFT_REFRESH_DURATION = Number(process.env.NFT_REFRESH_DURATION)
 
-const baseCoins = [
-  {
-    symbol: 'ETH',
-    logoURI: 'https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg',
-    address: '0x0000000000000000000000000000000000000000',
-    decimals: 18,
-    chainId: 1,
-  },
-  {
-    symbol: 'ETH',
-    logoURI: 'https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg',
-    address: '0x0000000000000000000000000000000000000000',
-    decimals: 18,
-    chainId: 4,
-  },
-  {
-    symbol: 'WETH',
-    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
-    address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-    decimals: 18,
-    chainId: 1,
-  },
-  {
-    symbol: 'WETH',
-    logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
-    address: '0xc778417e063141139fce010982780140aa0cd5ab',
-    decimals: 18,
-    chainId: 4,
-  },
-  {
-    symbol: 'USDC',
-    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
-    address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-    decimals: 6,
-    chainId: 1,
-  },
-  {
-    symbol: 'USDC',
-    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
-    address: '0x4dbcdf9b62e891a7cec5a2568c3f4faf9e8abe2b',
-    decimals: 6,
-    chainId: 4,
-  },
-  {
-    symbol: 'DAI',
-    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
-    address: '0x6b175474e89094c44da98b954eedeac495271d0f',
-    decimals: 18,
-    chainId: 1,
-  },
-  {
-    symbol: 'DAI',
-    logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
-    address: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
-    decimals: 18,
-    chainId: 4,
-  },
-]
+// commented for future reference
+// const baseCoins = [
+//   {
+//     symbol: 'ETH',
+//     logoURI: 'https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg',
+//     address: '0x0000000000000000000000000000000000000000',
+//     decimals: 18,
+//     chainId: 1,
+//   },
+//   {
+//     symbol: 'ETH',
+//     logoURI: 'https://openseauserdata.com/files/6f8e2979d428180222796ff4a33ab929.svg',
+//     address: '0x0000000000000000000000000000000000000000',
+//     decimals: 18,
+//     chainId: 4,
+//   },
+//   {
+//     symbol: 'WETH',
+//     logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+//     address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+//     decimals: 18,
+//     chainId: 1,
+//   },
+//   {
+//     symbol: 'WETH',
+//     logoURI: 'https://openseauserdata.com/files/accae6b6fb3888cbff27a013729c22dc.svg',
+//     address: '0xc778417e063141139fce010982780140aa0cd5ab',
+//     decimals: 18,
+//     chainId: 4,
+//   },
+//   {
+//     symbol: 'USDC',
+//     logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+//     address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+//     decimals: 6,
+//     chainId: 1,
+//   },
+//   {
+//     symbol: 'USDC',
+//     logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+//     address: '0x4dbcdf9b62e891a7cec5a2568c3f4faf9e8abe2b',
+//     decimals: 6,
+//     chainId: 4,
+//   },
+//   {
+//     symbol: 'DAI',
+//     logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
+//     address: '0x6b175474e89094c44da98b954eedeac495271d0f',
+//     decimals: 18,
+//     chainId: 1,
+//   },
+//   {
+//     symbol: 'DAI',
+//     logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
+//     address: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
+//     decimals: 18,
+//     chainId: 4,
+//   },
+// ]
 
 const seService = new SearchEngineService()
 
@@ -972,142 +972,6 @@ const updateAssociatedContract = async (
   }
 }
 
-const getExternalListings = async (
-  _: any,
-  args: gql.QueryExternalListingsArgs,
-  ctx: Context,
-): Promise<gql.ExternalListingsOutput> => {
-  logger.debug('getExternalListings', {
-    contract: args?.contract,
-    id: args?.tokenId,
-    chainId: args?.chainId,
-    caller: ctx.user?.id,
-  })
-  try {
-    const chainId = args?.chainId || process.env.CHAIN_ID
-    auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const key = `${args?.contract?.toLowerCase()}-${args?.tokenId}-${chainId}`
-    const cachedData = await cache.get(key)
-    if (process.env.ACTIVITY_ENDPOINTS_ENABLED === 'false') {
-      return { listings: [] }
-    } else if (cachedData) {
-      return JSON.parse(cachedData)
-    } else {
-      // 1. Opensea
-      // get selling & buying orders...
-      const allOrder = await retrieveOrdersOpensea(args?.contract, args?.tokenId, chainId)
-      if (allOrder) logger.info('========== allOrder: ', JSON.stringify(allOrder, null, 2))
-      let bestOffer = undefined
-      if (allOrder?.offers?.seaport?.length) {
-        bestOffer = allOrder.offers?.seaport?.[0]
-        for (let i = 1; i < allOrder.offers?.seaport?.length; i++) {
-          const price0 = new BN(bestOffer.current_price)
-            .shiftedBy(-bestOffer.maker_asset_bundle.assets?.[0].decimals)
-          const price1 = new BN(allOrder.offers?.seaport?.[i].current_price)
-            .shiftedBy(-allOrder.offers?.seaport?.[i].maker_asset_bundle?.[0].decimals)
-          if (price0.lt(price1))
-            bestOffer = allOrder.offers?.seaport?.[0]
-        }
-      } else if (allOrder?.offers?.v1?.length) {
-        bestOffer = allOrder?.offers?.v1?.[0]
-        for (let i = 1; i < allOrder?.offers?.v1?.length; i++) {
-          const usdPrice0 = new BN(bestOffer.current_price)
-            .shiftedBy(-bestOffer.payment_token_contract.decimals)
-            .multipliedBy(bestOffer.payment_token_contract.usd_price)
-          const usdPrice1 = new BN(allOrder?.offers?.v1?.[i].current_price)
-            .shiftedBy(-allOrder?.offers?.v1?.[i].payment_token_contract.decimals)
-            .multipliedBy(allOrder?.offers?.v1?.[i].payment_token_contract.usd_price)
-          if (usdPrice0.lt(usdPrice1))
-            bestOffer = allOrder?.offers?.v1?.[i]
-        }
-      }
-
-      let createdDate, expiration, baseCoin
-      if (allOrder?.listings?.seaport?.length) {
-        const seaportListing = allOrder.listings?.seaport?.[0]
-        createdDate = new Date(seaportListing?.created_date)
-        expiration = new Date(seaportListing?.expiration_time * 1000)
-        baseCoin = {
-          symbol:
-            seaportListing?.taker_asset_bundle.assets?.[0]?.asset_contract?.symbol ??
-            seaportListing?.taker_asset_bundle.assets?.[0]?.asset_contract.name,
-          logoURI: seaportListing?.taker_asset_bundle?.assets?.[0]?.image_url,
-          address:
-            seaportListing?.taker_asset_bundle?.assets?.[0]?.asset_contract.address,
-          decimals: seaportListing?.taker_asset_bundle?.assets?.[0]?.decimals,
-        } as BaseCoin
-      } else if (allOrder?.listings?.v1?.length) {
-        createdDate = new Date(allOrder?.listings?.v1?.[0].created_date)
-        expiration = new Date(allOrder?.listings?.v1?.[0].expiration_time * 1000)
-        baseCoin = {
-          symbol: allOrder?.listings?.v1?.[0].payment_token_contract.symbol,
-          logoURI: allOrder?.listings?.v1?.[0].payment_token_contract.image_url,
-          address: allOrder?.listings?.v1?.[0].payment_token_contract.address,
-          decimals: allOrder?.listings?.v1?.[0].payment_token_contract.decimals,
-        } as BaseCoin
-      }
-
-      const opensea = {
-        url: (allOrder?.listings?.seaport?.length) ?
-          allOrder.listings?.seaport?.[0]?.maker_asset_bundle.assets?.[0]?.permalink :
-          allOrder?.listings?.v1?.length ?
-            `https://opensea.io/assets/ethereum/${args?.contract}/${args?.tokenId}`
-            : null,
-        exchange: gql.SupportedExternalExchange.Opensea,
-        price: allOrder?.listings?.seaport?.length ?
-          allOrder.listings?.seaport?.[0]?.current_price :
-          allOrder?.listings?.v1?.length ?
-            allOrder?.listings?.v1?.[0]?.current_price :
-            null,
-        highestOffer: bestOffer ? bestOffer?.current_price : null,
-        expiration: expiration ?? null,
-        creation:  createdDate?? null,
-        baseCoin: baseCoin ?? null,
-      }
-
-      // 2. Looksrare
-      const looksrareSellOrders = await retrieveOrdersLooksrare(
-        args?.contract,
-        args?.tokenId,
-        args?.chainId,
-        true,
-        'VALID',
-      )
-      const url = chainId === '4' ? `https://rinkeby.looksrare.org/collections/${args?.contract}/${args?.tokenId}` :
-        (chainId === '1' ? `https://looksrare.org/collections/${args?.contract}/${args?.tokenId}` : null)
-      let looksrareCreatedDate, looksrareExpiration, looksrareBaseCoin
-      if (looksrareSellOrders && looksrareSellOrders.length) {
-        looksrareCreatedDate = new Date(looksrareSellOrders[0].startTime * 1000)
-        looksrareExpiration = new Date(looksrareSellOrders[0].endTime * 1000)
-        looksrareBaseCoin = baseCoins.find((coin) =>
-          coin.address === looksrareSellOrders[0].currencyAddress.toLowerCase(),
-        )
-      }
-      const looksrare = {
-        url: looksrareSellOrders && looksrareSellOrders.length ? url : null,
-        exchange: gql.SupportedExternalExchange.Looksrare,
-        price: looksrareSellOrders && looksrareSellOrders.length ?
-          looksrareSellOrders[0].price : null,
-        highestOffer: null,
-        expiration: looksrareExpiration ?? null,
-        creation: looksrareCreatedDate ?? null,
-        baseCoin: looksrareBaseCoin ?? null,
-      }
-
-      const finalData = process.env.ACTIVITY_ENDPOINTS_ENABLED !== 'false' ?
-        { listings: [opensea, looksrare] } :
-        { listings: [] }
-
-      await cache.set(key, JSON.stringify(finalData), 'EX', 60 * 30)
-
-      return finalData
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in getExternalListings: ${err}`)
-    return err
-  }
-}
-
 export const refreshNft = async (
   _: any,
   args: gql.MutationRefreshNFTArgs,
@@ -1502,7 +1366,6 @@ export default {
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
     collectionNFTs: getCollectionNFTs,
-    externalListings: getExternalListings,
     nftsForCollections: getNFTsForCollections,
   },
   Mutation: {

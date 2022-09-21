@@ -212,7 +212,6 @@ input UpdateNFTInput {
 extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
-  externalListings(contract: Address!, tokenId: String!, chainId: String): ExternalListingsOutput
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
   "AUTHETICATED"
