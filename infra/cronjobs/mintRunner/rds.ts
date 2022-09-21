@@ -1,7 +1,8 @@
 import * as aws from '@pulumi/aws'
 
+// below resource only configured to be setup in prod
 export const createAnalyticsDatabase = (): aws.rds.Instance => {
-  const resourceName = 'internal-analytics-db' // static name to allow each env to share the same db
+  const resourceName = 'internal-analytics-db' // static name
 
   return new aws.rds.Instance('postgres', {
     allocatedStorage: 20,
