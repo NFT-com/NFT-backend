@@ -455,7 +455,7 @@ const updateOfficialCollections = async (
       // convert createReadStream to string
       const result = await getStream.default(listStream)
       // parse contracts array from string
-      const contracts = result.split('\r\n')
+      const contracts = result.split(/\r?\n/)
       if (contracts.length) {
         const updatedList = []
         await Promise.allSettled(
