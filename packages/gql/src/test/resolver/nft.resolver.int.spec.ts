@@ -1676,7 +1676,7 @@ describe('nft resolver', () => {
         },
       })
 
-      expect(result.data.fixUpdatedAt.message).toEqual('updatedAt fields are updated for 3 NFTs')
+      expect(result.data.fixUpdatedAt.message).toEqual('updatedAt fields are updated for 1 NFTs')
       const nfts = await repositories.nft.find({ where: { previewLinkError: 'File format is unacceptable' } })
       expect(nfts.length).toEqual(3)
     })
