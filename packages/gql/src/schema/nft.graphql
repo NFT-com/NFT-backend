@@ -207,6 +207,10 @@ type ClearPreviewLinksOutput {
   message: String
 }
 
+type FixUpdatedAtOutput {
+  message: String
+}
+
 input UpdateNFTInput {
   contract: String!
   tokenId: String!
@@ -216,7 +220,6 @@ input UpdateNFTInput {
 extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
-  externalListings(contract: Address!, tokenId: String!, chainId: String): ExternalListingsOutput
   nftById(id: ID!): NFT!
   nfts(input: NFTsInput!): CurationNFTsOutput!
   "AUTHETICATED"
@@ -245,6 +248,8 @@ extend type Mutation {
   uploadMetadataImagesToS3(count: Int!): UploadMetadataImagesToS3Output!
   "AUTHENTICATED"
   clearPreviewLinks(count: Int!): ClearPreviewLinksOutput!
+  "AUTHENTICATED"
+  fixUpdatedAt(count: Int!): FixUpdatedAtOutput!
   "AUTHENTICATED"
   updateENSNFTMetadata(count: Int!): updateENSNFTMetadataOutput!
 }
