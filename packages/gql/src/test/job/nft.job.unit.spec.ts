@@ -1,9 +1,14 @@
 import { Job } from 'bull'
+import { DeepPartial } from 'typeorm'
 
-import { nftExternalOrdersOnDemand } from '@nftcom/gql/job/nft.job'
+import { generateNFTsPreviewLink, nftExternalOrdersOnDemand, repositories } from '@nftcom/gql/job/nft.job'
 import * as cacheService from '@nftcom/gql/service/cache.service'
 import * as looksrareService from '@nftcom/gql/service/looksare.service'
+import * as nftService from '@nftcom/gql/service/nft.service'
 import * as openseaService from '@nftcom/gql/service/opensea.service'
+import { entity } from '@nftcom/shared/db'
+
+import { nftAMockDataNullPreview, nftBMockDataNullPreview } from '../util/constants'
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
@@ -11,8 +16,8 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
     zscore: jest.fn().mockReturnValue(0),
   },
   CacheKeys: {
-    REFRESH_NFT_ORDERS_EXT: 'refresh_nft_orders_ext',
-    REFRESHED_NFT_ORDERS_EXT: 'refreshed_nft_orders_ext',
+    REFRESH_NFT_ORDERS_EXT: 'refresh_nft_orders_ext_test',
+    REFRESHED_NFT_ORDERS_EXT: 'refreshed_nft_orders_ext_test',
   },
   createCacheConnection: jest.fn(),
   removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(
@@ -21,7 +26,21 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
     
 }))
 
-const  FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND'
+jest.mock('@nftcom/gql/job/profile.job', () => {
+  return {
+    repositories: {
+      nft: {
+        find: () => {
+          return Promise.resolve()},
+        updateOneById: (id: string, nft: DeepPartial<entity.NFT>) =>{
+          return Promise.resolve({ id, ...nft })},
+      },
+    },
+  }
+})
+
+const FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND'
+const GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK_FOR_NFTS'
 
 describe('nft job', () => {
   afterAll(() => {
@@ -51,6 +70,32 @@ describe('nft job', () => {
       expect(cacheExpSpy).toHaveBeenCalledTimes(1)
       expect(osOrdersSpy).toHaveBeenCalledTimes(1)
       expect(lrSpy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('generateNFTsPreviewLink', () => {
+    it('executes generateNFTsPreviewLink', async () => {
+      const findSpy = jest.spyOn(repositories.nft, 'find')
+        .mockImplementationOnce(
+          () => Promise.resolve([nftAMockDataNullPreview as entity.NFT, nftBMockDataNullPreview as entity.NFT]),
+        )
+      const saveToS3Spy = jest.spyOn(nftService, 'saveNFTMetadataImageToS3')
+        .mockImplementationOnce(
+          () => Promise.resolve('preview link'),
+        )
+
+      const updateSpy = jest.spyOn(repositories.nft, 'updateOneById')
+        .mockImplementation(
+          (id: string, nft: DeepPartial<entity.NFT>) =>
+            Promise.resolve({ id, ...nft as any }),
+        )
+     
+      await generateNFTsPreviewLink({ id: 'test-job-id', data: { GENERATE_NFTS_PREVIEW_LINK,
+        chainId: process.env.CHAIN_ID } } as Job)
+    
+      expect(findSpy).toHaveBeenCalledTimes(1)
+      expect(saveToS3Spy).toHaveBeenCalled()
+      expect(updateSpy).toHaveBeenCalled()
     })
   })
 })
