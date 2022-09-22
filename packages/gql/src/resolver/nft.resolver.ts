@@ -1309,7 +1309,7 @@ const uploadMetadataImagesToS3 = async (
       slidedNFTs.map(async (nft) => {
         const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
         if (previewLink) {
-          await repositories.nft.updateOneById(nft.id, { previewLink })
+          await repositories.nft.updateOneById(nft.id, { previewLink, previewLinkError: null })
         }
       }),
     )
@@ -1403,16 +1403,10 @@ const fixUpdatedAt = async (
   logger.debug('fixUpdatedAt', { count: args?.count })
   try {
     const nfts = await repositories.nft.find({
-      where: [
-        {
-          previewLink: null,
-          previewLinkError: 'File format is unacceptable',
-        },
-        {
-          previewLink: null,
-          previewLinkError: '{}',
-        },
-      ],
+      where: {
+        previewLink: null,
+        previewLinkError: '{}',
+      },
     })
     const count = Math.min(Number(args?.count), nfts.length)
     const slicedNFTs = nfts.slice(0, count)
