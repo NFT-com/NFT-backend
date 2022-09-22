@@ -1445,7 +1445,7 @@ const uploadMetadataImagesToS3 = async (
       slidedNFTs.map(async (nft) => {
         const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
         if (previewLink) {
-          await repositories.nft.updateOneById(nft.id, { previewLink })
+          await repositories.nft.updateOneById(nft.id, { previewLink, previewLinkError: null })
         }
       }),
     )
