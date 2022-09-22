@@ -3,8 +3,8 @@ import * as aws from '@pulumi/aws'
 import { getResourceName, getTags } from '../../helper'
 
 const tags = {
-    cronjob: 'mintrunner',
-}  
+  cronjob: 'mintrunner',
+}
 
 const execRole = 'arn:aws:iam::016437323894:role/ecsTaskExecutionRole'
 const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
@@ -12,7 +12,7 @@ const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
 export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
   const resourceName = getResourceName('mintRunner')
   const ecrImage = `${process.env.ECR_REGISTRY}/mintrunner:${process.env.STAGE}-${process.env.GIT_SHA || 'latest'}`
-    
+
   return new aws.ecs.TaskDefinition('mintRunner-td', {
     containerDefinitions: JSON.stringify([
       {

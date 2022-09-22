@@ -43,7 +43,7 @@ type NFT {
   createdAt: DateTime!
   memo: String
   previewLink: String
-  listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration): TxActivitiesOutput
+  listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address): TxActivitiesOutput
 }
 
 input NFTsInput {
@@ -203,6 +203,10 @@ type updateENSNFTMetadataOutput {
   message: String
 }
 
+type ClearPreviewLinksOutput {
+  message: String
+}
+
 input UpdateNFTInput {
   contract: String!
   tokenId: String!
@@ -239,6 +243,8 @@ extend type Mutation {
   updateNFTProfileId(nftId: ID!, profileId: ID!): NFT!
   "AUTHENTICATED"
   uploadMetadataImagesToS3(count: Int!): UploadMetadataImagesToS3Output!
+  "AUTHENTICATED"
+  clearPreviewLinks(count: Int!): ClearPreviewLinksOutput!
   "AUTHENTICATED"
   updateENSNFTMetadata(count: Int!): updateENSNFTMetadataOutput!
 }

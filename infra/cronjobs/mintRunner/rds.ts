@@ -1,12 +1,8 @@
 import * as aws from '@pulumi/aws'
-import { getTags } from '../../helper'
 
-const tags = {
-  cronjob: 'mintrunner',
-}
-
+// below resource only configured to be setup in prod
 export const createAnalyticsDatabase = (): aws.rds.Instance => {
-  const resourceName = 'internal-analytics-db' // static name to allow each env to share the same db
+  const resourceName = 'internal-analytics-db' // static name
 
   return new aws.rds.Instance('postgres', {
     allocatedStorage: 20,
@@ -26,6 +22,8 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     name: process.env.ANALYTICS_DB_NAME,
     username: process.env.ANALYTICS_DB_USER,
     password: process.env.ANALYTICS_DB_PASS,
-    tags: getTags(tags),
+    tags: {
+      cronjob: 'mintrunner',
+    },
   })
 }

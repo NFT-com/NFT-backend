@@ -223,13 +223,13 @@ describe('nft resolver', () => {
     afterAll(async () => {
       await clearDB(repositories)
     })
-    it('should return valid SVG path uploaded to S3', async () => {
+    it('should skip svg format since it is not available', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
-      expect(cdnPath).toBeDefined()
+      expect(cdnPath).toBeUndefined()
     })
-    it.skip('should return valid mp4 path uploaded to S3', async () => {
+    it('should skip mp4 format since it is not available', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftB, repositories)
-      expect(cdnPath).toBeDefined()
+      expect(cdnPath).toBeUndefined()
     })
     it('should return valid image path uploaded to S3', async () => {
       const cdnPath = await saveNFTMetadataImageToS3(nftC, repositories)
@@ -408,6 +408,20 @@ describe('nft resolver', () => {
         userId: testMockUser.id,
         walletId: testMockWallet.id,
       })
+
+      nftC = await repositories.nft.save({
+        contract: '0xe21EBCD28d37A67757B9Bc7b290f4C4928A430b1',
+        tokenId: '0x12fe',
+        chainId: '1',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
     })
 
     afterAll(async () => {
@@ -446,6 +460,22 @@ describe('nft resolver', () => {
       const updatedNFT = await repositories.nft.findById(nftB.id)
       expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
       expect(updatedNFT.metadata.traits.length).toBeGreaterThan(0)
+    })
+
+    it('should update NFT imageURL of metadata with base64 string', async () => {
+      const nft = {
+        contract: {
+          address: '0xe21EBCD28d37A67757B9Bc7b290f4C4928A430b1',
+        },
+        id: {
+          tokenId: '0x12fe',
+        },
+      }
+      nftService.initiateWeb3('1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '1')
+
+      const updatedNFT = await repositories.nft.findById(nftC.id)
+      expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
     })
   })
 
