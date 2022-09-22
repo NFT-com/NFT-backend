@@ -171,7 +171,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         const nftSplit: Array<string> = nft.split(':')
         const contract: string = nftSplit?.[0]
         const tokenId: string = helper.bigNumber(nftSplit?.[1]).toString()
-   
+
         return {
           contract,
           tokenId,
@@ -291,9 +291,9 @@ export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
       if (previewLink) {
         logger.info(`SAVED nft job: ${i + 1} / ${slicedNFTs.length}`)
         processed += 1
-        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink })
+        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink, previewLinkError: null })
       } else {
-        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLinkError: 'undefined previewLink' })
+        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink: null, previewLinkError: 'undefined previewLink' })
       }
     }
     const end = Date.now()
