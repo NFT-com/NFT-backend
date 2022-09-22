@@ -112,7 +112,9 @@ export const createEcsCluster = (): aws.ecs.Cluster => {
           logging: 'DEFAULT',
         },
       },
-      tags: getTags(tags),
+      tags: {
+        cronjob: 'mintrunner',
+      },
       defaultCapacityProviderStrategies: [{
         capacityProvider: 'FARGATE',
         weight: 1,
