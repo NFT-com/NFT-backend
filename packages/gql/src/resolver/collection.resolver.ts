@@ -449,9 +449,12 @@ const updateOfficialCollections = async (
     let listResponse
     let listStream: FileUpload['createReadStream']
     if (list) {
+      // we read collection list as FileUpload createReadStream
       listResponse = await list
       listStream = listResponse.createReadStream()
+      // convert createReadStream to string
       const result = await getStream.default(listStream)
+      // parse contracts array from string
       const contracts = result.split('\r\n')
       if (contracts.length) {
         const updatedList = []
