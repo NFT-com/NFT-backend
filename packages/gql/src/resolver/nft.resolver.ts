@@ -1403,16 +1403,10 @@ const fixUpdatedAt = async (
   logger.debug('fixUpdatedAt', { count: args?.count })
   try {
     const nfts = await repositories.nft.find({
-      where: [
-        {
-          previewLink: null,
-          previewLinkError: 'File format is unacceptable',
-        },
-        {
-          previewLink: null,
-          previewLinkError: '{}',
-        },
-      ],
+      where: {
+        previewLink: null,
+        previewLinkError: '{}',
+      },
     })
     const count = Math.min(Number(args?.count), nfts.length)
     const slicedNFTs = nfts.slice(0, count)
