@@ -3,6 +3,7 @@
 .DS_Store
 Thumbs.db
 .vscode
+.dccache
 
 # compiled / dependencies
 node_modules
