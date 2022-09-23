@@ -3,6 +3,7 @@ import { DeepPartial } from 'typeorm'
 import { ActivityStatus, NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, ProtocolData, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
+import { entity } from '@nftcom/shared'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 export const testMockUser: User = {
@@ -104,6 +105,53 @@ export const nftTestErrorMockData: NFT = {
   createdAt: 'test-timestamp',
 }
 
+export const nftAMockDataNullPreview: Partial<entity.NFT> = {
+  id: 'test-nft-id-A',
+  chainId: '4',
+  contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2x',
+  tokenId: '0x091f1x',
+  type: NFTType.ERC721,
+  metadata: {
+    name: '',
+    imageURL: '',
+    description: '',
+    traits: [],
+  },
+  price: '1',
+  memo: '',
+  lastRefreshed: new Date('2022-09-21 19:09:44.102746+00'),
+  updatedAt: new Date('2022-09-21 19:09:44.102746+00'),
+  createdAt: new Date('2022-09-21 19:09:44.102746+00'),
+  userId: testMockUser.id,
+  walletId: testMockWallet.id,
+  profileId: testMockProfiles.id,
+  previewLink: null,
+  previewLinkError: null,
+}
+
+export const nftBMockDataNullPreview: Partial<entity.NFT> = {
+  id: 'test-nft-id-B',
+  chainId: '4',
+  contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+  tokenId: '0x091f1d',
+  type: NFTType.ERC721,
+  metadata: {
+    name: '',
+    imageURL: '',
+    description: '',
+    traits: [],
+  },
+  price: '1',
+  memo: '',
+  lastRefreshed: new Date('2022-09-21 19:09:44.102746+00'),
+  updatedAt: new Date('2022-09-21 19:09:44.102746+00'),
+  createdAt: new Date('2022-09-21 19:09:44.102746+00'),
+  userId: testMockUser.id,
+  walletId: testMockWallet.id,
+  profileId: testMockProfiles.id,
+  previewLink: null,
+  previewLinkError: null,
+}
 export const whitelistedAddress = '0x00518e394761e3b165d3e1809833e3f9b7adb895'
 
 export const nonWhitelistedAddress = '0xDEA2c39552A5bc259c520F64320e2D1008010d44'

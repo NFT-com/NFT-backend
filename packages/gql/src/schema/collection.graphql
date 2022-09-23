@@ -157,6 +157,10 @@ type AssociatedAddressesForContractOutput {
   deployerIsAssociated: Boolean
 }
 
+type UpdateOfficialCollectionsOutput {
+  message: String
+}
+
 type UpdateSpamStatusOutput {
   message: String
 }
@@ -177,4 +181,5 @@ extend type Mutation {
   updateCollectionImageUrls(count: Int!): UpdateCollectionImageUrlsOutput!
   updateCollectionName(count: Int!): UpdateCollectionNameOutput!
   updateSpamStatus(contracts: [Address!]!, isSpam: Boolean!): UpdateSpamStatusOutput!
+  updateOfficialCollections(list: Upload!): UpdateOfficialCollectionsOutput!
 }

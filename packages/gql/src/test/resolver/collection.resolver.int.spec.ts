@@ -3,6 +3,10 @@ import { Connection } from 'typeorm'
 const sharedLibs = jest.requireActual('@nftcom/shared')
 
 import { ethers } from 'ethers'
+import * as fs from 'fs'
+import { resolve } from 'path'
+
+import Upload = require('graphql-upload/public/Upload.js')
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'
@@ -589,6 +593,62 @@ describe('collection resolver', () => {
       })
 
       expect(result.data.numberOfNFTs).toEqual(2)
+    })
+  })
+
+  describe('updateOfficialCollections', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0x9Ef7A34dcCc32065802B1358129a226B228daB4E'),
+        name: 'NFT.com Genesis Key',
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+    it('should update collections as official', async () => {
+      const filename = 'test_collections.csv'
+      const file = fs.createReadStream(resolve(`./src/test/resource/${filename}`))
+      // const file = Readable.from(Buffer.from('hello upload', 'utf-8'))
+      const upload = new Upload()
+      upload.promise = new Promise((resolve) =>
+        resolve({
+          createReadStream: () => file,
+          filename: filename,
+          mimetype: 'text/plain',
+        }),
+      )
+      const result = await testServer.executeOperation({
+        query: `
+        mutation UpdateOfficialCollections($list: Upload!) {
+          updateOfficialCollections(list: $list) {
+            message
+          }
+        }
+        `,
+        variables: {
+          list: upload,
+        },
+      })
+
+      expect(result.data.updateOfficialCollections.message).toEqual('2 collections are updated as official')
     })
   })
 })

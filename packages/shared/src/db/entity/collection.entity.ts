@@ -34,4 +34,7 @@ export class Collection extends BaseEntity {
   @Column( { default: false })
   isSpam: boolean
 
+  @Column( { default: false })
+  isOfficial: boolean
+
 }
