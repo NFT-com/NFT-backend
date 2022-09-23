@@ -301,7 +301,7 @@ describe('nft resolver', () => {
       expect(edge).toBeDefined()
     })
 
-    it('should not update NFT twice in NFT_REFRESH_DURATION period ', async () => {
+    it('should not update NFT twice in REFRESH_NFT_DURATION period ', async () => {
       await testServer.executeOperation({
         query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!) {
                 nft(contract: $contract, id: $nftId, chainId: $chainId) {
