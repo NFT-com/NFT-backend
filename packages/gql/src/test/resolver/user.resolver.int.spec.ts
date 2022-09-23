@@ -132,6 +132,75 @@ describe('user resolver', () => {
     })
   })
 
+  describe('updateMe', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update email, avatarURL and preferences of user', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateMe($input: UpdateUserInput!) { updateMe(input: $input) { id } }',
+        variables: {
+          input: {
+            email: 'update@nft.com',
+            avatarURL: 'https://test-server/test.png',
+            preferences: {
+              bidActivityNotifications: true,
+              priceChangeNotifications: true,
+              outbidNotifications: true,
+              purchaseSuccessNotifications: true,
+              promotionalNotifications: true,
+            },
+          },
+        },
+      })
+
+      expect(result.data.updateMe.id).toBeDefined()
+    })
+  })
+
+  describe('resendEmailConfirm', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return confirmEmailToken', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation ResendEmailConfirm { resendEmailConfirm { id } }',
+      })
+
+      expect(result.data.resendEmailConfirm.id).toBeDefined()
+    })
+  })
+
   describe('me authenticated call', () => {
     beforeAll(async () => {
       testServer = getTestApolloServer({
