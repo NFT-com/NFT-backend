@@ -100,6 +100,38 @@ describe('user resolver', () => {
     })
   })
 
+  describe('confirmEmail', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+        confirmEmailToken: 'test-token',
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should throw error while confirming email', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation ConfirmEmail($token: String!) { confirmEmail(token: $token) }',
+        variables: {
+          token: 'test-token',
+        },
+      })
+
+      expect(result.errors.length).toEqual(1)
+    })
+  })
+
   describe('me authenticated call', () => {
     beforeAll(async () => {
       testServer = getTestApolloServer({
