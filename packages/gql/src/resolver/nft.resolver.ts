@@ -47,7 +47,7 @@ import { SearchEngineService } from '../service/searchEngine.service'
 
 const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
-const NFT_REFRESH_DURATION = Number(process.env.NFT_REFRESH_DURATION)
+const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
 
 // commented for future reference
 // const baseCoins = [
@@ -163,7 +163,7 @@ const getContractNFT = async (
         duration = differenceInMilliseconds(now, nft.lastRefreshed)
       }
       if (!nft.lastRefreshed  ||
-        (duration && duration > NFT_REFRESH_DURATION)
+        (duration && duration > REFRESH_NFT_DURATION)
       ) {
         repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
           .then((Nft) => {
