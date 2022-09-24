@@ -12,7 +12,6 @@ import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
 import { appError, profileError } from '@nftcom/gql/error'
 import { cache } from '@nftcom/gql/service/cache.service'
-import { extensionOptions, generateProxyUrl, gravityOptions, resizeOptions } from '@nftcom/gql/service/imageProxy.service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
@@ -172,24 +171,6 @@ export const start = async (): Promise<void> => {
           }
         })
     }
-  })
-
-  app.get('/proxy/:url', function (req, res) {
-    const { url } = req.params
-    const { width, height } = req.query
-
-    return res.send(generateProxyUrl({
-      url,
-      resize: resizeOptions.fit,
-      width: Number(width) || 1000,
-      height: Number(height) || 1000,
-      gravity: gravityOptions.no,
-      enlarge: false,
-      extension: extensionOptions.webp,
-      key: '353e4bff2b6af6d5603e008fd40d2ad0',
-      salt: '555bb754e392e028077675159494ed47',
-      proxyUrl: 'https://seedn.nft.com',
-    }))
   })
 
   app.get('/gk/:key', function (req, res) {
