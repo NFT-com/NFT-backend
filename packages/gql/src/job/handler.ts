@@ -93,7 +93,7 @@ export const getResolverEvents = async (
   }
 }
 
-const getMintedProfileEvents = async (
+export const getMintedProfileEvents = async (
   topics: any[],
   chainId: number,
   provider: ethers.providers.BaseProvider,

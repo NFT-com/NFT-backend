@@ -2,8 +2,10 @@ import { provider } from '@nftcom/gql/helper'
 import {
   chainIdToCacheKeyProfile,
   chainIdToCacheKeyResolverAssociate,
-  getCachedBlock, getResolverEvents,
+  getCachedBlock, getMintedProfileEvents, getResolverEvents,
 } from '@nftcom/gql/job/handler'
+
+jest.setTimeout(500000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: jest.fn(),
@@ -44,6 +46,19 @@ describe('handler', () => {
       const address = '0x8db6e7c90b4cd8a0d26047908cc0a5f0cb0f1a096f1a5093d9334c7225df1720'
       const chainProvider = provider.provider(5)
       const result = await getResolverEvents([topics], 5, chainProvider, address)
+      expect(result).toBeDefined()
+      expect(result.logs.length).toEqual(0)
+    })
+  })
+
+  describe('getMintedProfileEvents', () => {
+    it('should return minted profile events', async () => {
+      const topics = [
+        '0xfdbd996e3e72e8c7d34fc2f374c3c85c80a530bd1cdaa4a748d34e32103c5cc3',
+      ]
+      const address = '0x1338A9ec2Ef9906B57082dB0F67ED9E6E661F4A7'
+      const chainProvider = provider.provider(5)
+      const result = await getMintedProfileEvents([topics], 5, chainProvider, address)
       expect(result).toBeDefined()
       expect(result.logs.length).toEqual(0)
     })
