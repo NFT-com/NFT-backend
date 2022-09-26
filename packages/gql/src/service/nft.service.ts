@@ -239,8 +239,8 @@ export const filterNFTsWithAlchemy = async (
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
-          await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: defs.EdgeType.Displays } )
           try {
+            await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: defs.EdgeType.Displays } )
             const owners = await getOwnersForNFT(dbNFT)
             if (owners.length) {
               if (owners.length > 1) {
