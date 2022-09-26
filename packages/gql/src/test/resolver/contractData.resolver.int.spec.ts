@@ -9,6 +9,9 @@ import { getTestApolloServer } from '../util/testApolloServer'
 
 let testServer, connection
 
+jest.setTimeout(300000)
+jest.retryTimes(2)
+
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
@@ -38,7 +41,6 @@ describe('contract data resolver', () => {
   describe('getSales', () => {
     beforeAll(async () => {
       connection = await db.connectTestDB(testDBConfig)
-      
       testServer = getTestApolloServer({
         marketplaceSale: {
           saveMany: (entities) => Promise.resolve(entities),
@@ -47,7 +49,6 @@ describe('contract data resolver', () => {
       },
       )
     })
-      
     afterAll(async () => {
       await testServer.stop()
       if (!connection) return

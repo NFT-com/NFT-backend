@@ -16,7 +16,7 @@ jest.mock('@nftcom/gql/service/sendgrid.service', () => ({
 
 let connection
 let testServer
-let event
+let event, eventA
 const repositories = db.newRepositories()
 
 jest.setTimeout(300000)
@@ -97,6 +97,150 @@ describe('user resolver', () => {
 
       expect(result.data.updateEmail.id).toBeDefined()
       expect(result.data.updateEmail.email).toEqual('jason@nft.com')
+    })
+  })
+
+  describe('confirmEmail', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+        confirmEmailToken: 'test-token',
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should throw error while confirming email', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation ConfirmEmail($token: String!) { confirmEmail(token: $token) }',
+        variables: {
+          token: 'test-token',
+        },
+      })
+
+      expect(result.errors.length).toEqual(1)
+    })
+  })
+
+  describe('updateMe', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should update email, avatarURL and preferences of user', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation UpdateMe($input: UpdateUserInput!) { updateMe(input: $input) { id } }',
+        variables: {
+          input: {
+            email: 'update@nft.com',
+            avatarURL: 'https://test-server/test.png',
+            preferences: {
+              bidActivityNotifications: true,
+              priceChangeNotifications: true,
+              outbidNotifications: true,
+              purchaseSuccessNotifications: true,
+              promotionalNotifications: true,
+            },
+          },
+        },
+      })
+
+      expect(result.data.updateMe.id).toBeDefined()
+    })
+  })
+
+  describe('resendEmailConfirm', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return confirmEmailToken', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation ResendEmailConfirm { resendEmailConfirm { id } }',
+      })
+
+      expect(result.data.resendEmailConfirm.id).toBeDefined()
+    })
+  })
+
+  describe('ignoreAssociations', () => {
+    beforeAll(async () => {
+      event = await repositories.event.save({
+        chainId: 5,
+        contract: '0x1338A9ec2Ef9906B57082dB0F67ED9E6E661F4A7',
+        eventName: 'MintedProfile',
+        txHash: '0x62fe7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
+        profileUrl: 'test-profile-url',
+        destinationAddress: testMockWallet.address,
+      })
+      eventA = await repositories.event.save({
+        chainId: 5,
+        contract: '0x1338A9ec2Ef9906B57082dB0F67ED9E6E661F4A7',
+        eventName: 'MintedProfile',
+        txHash: '0x3cb67f753de1816b852aea30cf9bf2919a63105b4b2c391d71517100a87f5328',
+        profileUrl: 'test-profile-url-1',
+        destinationAddress: testMockWallet.address,
+      })
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should ignoreAssociations', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation IgnoreAssociations($eventIdArray: [String]!) { ignoreAssociations(eventIdArray: $eventIdArray) { ignore } }',
+        variables: {
+          eventIdArray: [event.id, eventA.id],
+        },
+      })
+
+      expect(result.data.ignoreAssociations.length).toEqual(2)
+      expect(result.data.ignoreAssociations[0].ignore).toEqual(true)
+      expect(result.data.ignoreAssociations[1].ignore).toEqual(true)
     })
   })
 

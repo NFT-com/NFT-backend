@@ -1,5 +1,7 @@
 import { ethers } from 'ethers'
+import * as getStream from 'get-stream'
 import { combineResolvers } from 'graphql-resolvers'
+import { FileUpload } from 'graphql-upload'
 import { In } from 'typeorm/find-options/operator/In'
 
 import { Context, gql } from '@nftcom/gql/defs'
@@ -434,6 +436,55 @@ const getNumberOfNFTs = async (
   }
 }
 
+const updateOfficialCollections = async (
+  _: any,
+  args: gql.MutationUpdateOfficialCollectionsArgs,
+  ctx: Context,
+): Promise<gql.UpdateOfficialCollectionsOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const list = args?.list
+    let listResponse
+    let listStream: FileUpload['createReadStream']
+    if (list) {
+      // we read collection list as FileUpload createReadStream
+      listResponse = await list
+      listStream = listResponse.createReadStream()
+      // convert createReadStream to string
+      const result = await getStream.default(listStream)
+      // parse contracts array from string
+      const contracts = result.split(/\r?\n/)
+      if (contracts.length) {
+        const updatedList = []
+        await Promise.allSettled(
+          contracts.map(async (contract) => {
+            try {
+              const collection = await repositories.collection.findByContractAddress(
+                ethers.utils.getAddress(contract),
+                chainId,
+              )
+              if (collection && !collection?.isOfficial) {
+                const updated = await repositories.collection.updateOneById(collection.id, { isOfficial: true })
+                updatedList.push(updated)
+              }
+            } catch (err) {
+              logger.error(`Error in updateOfficialCollections ${err}`)
+            }
+          }),
+        )
+        return { message: `${updatedList.length} collections are updated as official` }
+      } else {
+        return { message: 'Something is wrong with your CSV file' }
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateOfficialCollections: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
@@ -449,5 +500,6 @@ export default {
     updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),
     updateCollectionName: combineResolvers(auth.isAuthenticated, updateCollectionName),
     updateSpamStatus: combineResolvers(auth.isTeamAuthenticated, updateSpamStatus),
+    updateOfficialCollections: combineResolvers(auth.isAuthenticated, updateOfficialCollections),
   },
 }
