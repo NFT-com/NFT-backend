@@ -616,15 +616,33 @@ export const saveNFTMetadataImageToS3 = async (
             uploadedImage = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, uploadPath)
           } else {
             const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
-            if (!imageUrl) return undefined
+            if (!imageUrl) {
+              await repositories.nft.updateOneById(nft.id, {
+                previewLink: null,
+                previewLinkError: 'undefined previewLink',
+              })
+              return undefined
+            }
             const filename = nft.metadata.imageURL.split('/').pop()
-            if (!filename) return undefined
+            if (!filename) {
+              await repositories.nft.updateOneById(nft.id, {
+                previewLink: null,
+                previewLinkError: 'undefined previewLink',
+              })
+              return undefined
+            }
             uploadedImage = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, uploadPath)
           }
         }
       }
 
-      if (!uploadedImage) return undefined
+      if (!uploadedImage) {
+        await repositories.nft.updateOneById(nft.id, {
+          previewLink: null,
+          previewLinkError: 'undefined previewLink',
+        })
+        return undefined
+      }
       logger.info(`previewLink for NFT ${ nft.id } was generated`,
         {
           previewLink: uploadedImage + '?width=600',
@@ -633,8 +651,10 @@ export const saveNFTMetadataImageToS3 = async (
     }
   } catch (err) {
     await repositories.nft.updateOneById(nft.id, {
-      previewLinkError: JSON.stringify(err),
+      previewLink: null,
+      previewLinkError: typeof err.message === 'string' ? err.message : 'undefined previewLink',
     })
+
     logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
     Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
     return undefined
@@ -688,7 +708,7 @@ export const updateNFTOwnershipAndMetadata = async (
       // save previewLink of NFT metadata image if it's from IPFS
       const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
       if (previewLink) {
-        await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+        await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
       }
       return savedNFT
     } else {
@@ -751,7 +771,7 @@ export const updateNFTOwnershipAndMetadata = async (
             // update previewLink of NFT metadata image if it's from IPFS
             const previewLink = await saveNFTMetadataImageToS3(updatedNFT, repositories)
             if (previewLink) {
-              await repositories.nft.updateOneById(updatedNFT.id, { previewLink })
+              await repositories.nft.updateOneById(updatedNFT.id, { previewLink, previewLinkError: null })
             }
           }
           return updatedNFT
@@ -1599,7 +1619,7 @@ export const saveNewNFT = async (
     // save previewLink of NFT metadata image if it's from IPFS
     const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
     if (previewLink) {
-      await repositories.nft.updateOneById(savedNFT.id, { previewLink })
+      await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
     }
     await seService.indexNFTs([savedNFT])
     await updateCollectionForNFTs([savedNFT])

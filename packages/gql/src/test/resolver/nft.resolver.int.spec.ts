@@ -301,7 +301,7 @@ describe('nft resolver', () => {
       expect(edge).toBeDefined()
     })
 
-    it('should not update NFT twice in NFT_REFRESH_DURATION period ', async () => {
+    it('should not update NFT twice in REFRESH_NFT_DURATION period ', async () => {
       await testServer.executeOperation({
         query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!) {
                 nft(contract: $contract, id: $nftId, chainId: $chainId) {
@@ -1676,7 +1676,7 @@ describe('nft resolver', () => {
         },
       })
 
-      expect(result.data.fixUpdatedAt.message).toEqual('updatedAt fields are updated for 3 NFTs')
+      expect(result.data.fixUpdatedAt.message).toEqual('updatedAt fields are updated for 1 NFTs')
       const nfts = await repositories.nft.find({ where: { previewLinkError: 'File format is unacceptable' } })
       expect(nfts.length).toEqual(3)
     })
