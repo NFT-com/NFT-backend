@@ -37,6 +37,8 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
     get: jest.fn(),
     set: jest.fn(),
+    zscore: jest.fn().mockReturnValue(0),
+    zadd: jest.fn(),
   },
   CacheKeys: {
     ASSOCIATED_ADDRESSES: 'associated_addresses',
@@ -920,6 +922,7 @@ describe('nft resolver', () => {
         },
       })
 
+      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -937,6 +940,7 @@ describe('nft resolver', () => {
         },
       })
 
+      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -970,6 +974,7 @@ describe('nft resolver', () => {
         },
       })
 
+      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
