@@ -59,7 +59,7 @@ export const chainIdToCacheKeyResolverAssociate = (chainId: number): string => {
   return `resolver_associate_cached_block_${chainId}`
 }
 
-const getResolverEvents = async (
+export const getResolverEvents = async (
   topics: any[],
   chainId: number,
   provider: ethers.providers.BaseProvider,
