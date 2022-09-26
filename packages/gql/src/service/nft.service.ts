@@ -240,36 +240,41 @@ export const filterNFTsWithAlchemy = async (
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
           await repositories.edge.hardDelete({ thatEntityId: dbNFT.id, edgeType: defs.EdgeType.Displays } )
-          const owners = await getOwnersForNFT(dbNFT)
-          if (owners.length) {
-            if (owners.length > 1) {
-              // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+          try {
+            const owners = await getOwnersForNFT(dbNFT)
+            if (owners.length) {
+              if (owners.length > 1) {
+                // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+                await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
+                  .then(() => repositories.nft.hardDelete({
+                    id: dbNFT.id,
+                  }))
+                await seService.deleteNFT(dbNFT.id)
+              } else {
+                const newOwner = owners[0]
+                // save User, Wallet for new owner addresses if it's not in our DB ...
+                const wallet = await saveUsersForAssociatedAddress(dbNFT.chainId, newOwner, repositories)
+                const user = await repositories.user.findOne({
+                  where: {
+                    username: 'ethereum-' + ethers.utils.getAddress(newOwner),
+                  },
+                })
+                await repositories.nft.updateOneById(dbNFT.id, {
+                  userId: user.id,
+                  walletId: wallet.id,
+                })
+              }
+            } else {
+              // if there is no owner from api, then we just delete it from our DB
               await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
                 .then(() => repositories.nft.hardDelete({
                   id: dbNFT.id,
                 }))
               await seService.deleteNFT(dbNFT.id)
-            } else {
-              const newOwner = owners[0]
-              // save User, Wallet for new owner addresses if it's not in our DB ...
-              const wallet = await saveUsersForAssociatedAddress(dbNFT.chainId, newOwner, repositories)
-              const user = await repositories.user.findOne({
-                where: {
-                  username: 'ethereum-' + ethers.utils.getAddress(newOwner),
-                },
-              })
-              await repositories.nft.updateOneById(dbNFT.id, {
-                userId: user.id,
-                walletId: wallet.id,
-              })
             }
-          } else {
-            // if there is no owner from api, then we just delete it from our DB
-            await repositories.edge.hardDelete({ thatEntityId: dbNFT.id } )
-              .then(() => repositories.nft.hardDelete({
-                id: dbNFT.id,
-              }))
-            await seService.deleteNFT(dbNFT.id)
+          } catch (err) {
+            logger.error(`Error in filterNFTsWithAlchemy: ${err}`)
+            Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
           }
         }
       }),
