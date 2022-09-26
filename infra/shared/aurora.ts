@@ -86,7 +86,7 @@ const createMain = (
       dbSubnetGroupName: subnetGroup.name,
       availabilityZone: zones[0],
       autoMinorVersionUpgrade: true,
-      publiclyAccessible: true, //TODO: Lock down production and limit query/monitoring tools to within AWS VPC
+      publiclyAccessible: true, //access controlled via security groups
     }))
   }
 
