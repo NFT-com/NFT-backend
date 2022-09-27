@@ -12,7 +12,7 @@ import HederaConsensusService from '../service/hedera.service'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
-const repositories = db.newRepositories()
+export const repositories = db.newRepositories()
 
 enum EventName {
   AssociateEvmUser = 'AssociateEvmUser',
