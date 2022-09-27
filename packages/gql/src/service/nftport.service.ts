@@ -50,7 +50,7 @@ export const retrieveNFTDetailsNFTPort = async (
         chain: chain,
       },
     })
-    if (res && res.data && res.data) {
+    if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
       return res.data as NFTPortNFT
     } else return undefined
