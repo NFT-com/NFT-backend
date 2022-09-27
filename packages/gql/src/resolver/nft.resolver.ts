@@ -41,6 +41,7 @@ import {
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
+import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineService } from '../service/searchEngine.service'
@@ -292,6 +293,13 @@ const returnProfileNFTs = async (
     chainId,
     'NFT',
   )
+    .then((result) => {
+      if (result?.items.length) {
+      // refresh order queue trigger
+        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+          .then(() => Promise.resolve(result))
+      }
+    })
 }
 
 const getMyNFTs = async (
@@ -312,7 +320,6 @@ const getMyNFTs = async (
     pageInput: Joi.any(),
   })
   const { input } = args
-
   joi.validateSchema(schema, input)
 
   const filters: Partial<entity.NFT> = {
@@ -355,6 +362,11 @@ const getMyNFTs = async (
       'DESC',
     )
       .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+      .then(result => {
+        // refresh order queue trigger
+        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+          .then(() => Promise.resolve(result))
+      })
   } else {
     const defaultProfile = await repositories.profile.findOne({
       where: {
@@ -373,6 +385,11 @@ const getMyNFTs = async (
         'DESC',
       )
         .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+        .then(result => {
+        // refresh order queue trigger
+          return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+            .then(() => Promise.resolve(result))
+        })
     } else {
       return await returnProfileNFTs(defaultProfile.id, ctx, pageInput, chainId)
     }
@@ -454,11 +471,16 @@ const getCollectionNFTs = (
       Promise.resolve(resultEdges.pageInfo),
       Promise.resolve(resultEdges.totalItems),
     ]))
-    .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => Promise.resolve({
-      items: nfts ?? [],
-      pageInfo,
-      totalItems: count,
-    }))
+    .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => {
+      // refresh order queue trigger
+      return Promise.resolve(triggerNFTOrderRefreshQueue(nfts, chainId))
+        .then(() => Promise.resolve({
+          items: nfts ?? [],
+          pageInfo,
+          totalItems: count,
+        }),
+        )
+    })
 }
 
 const refreshMyNFTs = (
@@ -904,7 +926,11 @@ const updateNFTsForProfile = (
             'ASC',
             chainId,
             'NFT',
-          )
+          ).then(result => {
+            // refresh order queue trigger
+            return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+              .then(() => Promise.resolve(result))
+          })
         }
       })
   } catch (err) {
@@ -1181,9 +1207,13 @@ export const getNFTsForCollections = async (
           }
 
           const length = Math.min(nfts.length, count)
+          const slicedNfts: entity.NFT[] = nfts.slice(0, length)
+          
+          // refresh order queue trigger
+          await triggerNFTOrderRefreshQueue(slicedNfts, chainId)
           result.push({
             collectionAddress: ethers.utils.getAddress(collectionAddress),
-            nfts: nfts.slice(0, length),
+            nfts: slicedNfts,
             actualNumberOfNFTs: actualNFTCount,
           })
         } else {

@@ -91,6 +91,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['NFTPORT_KEY'] = process.env.NFTPORT_KEY || parsedFile['NFTPORT_KEY']
   parsedFile['REFRESH_NFT_DURATION'] = process.env.REFRESH_NFT_DURATION || parsedFile['REFRESH_NFT_DURATION']
   parsedFile['IPFS_WEB_GATEWAY'] = process.env.IPFS_WEB_GATEWAY || parsedFile['IPFS_WEB_GATEWAY']
+  parsedFile['DEFAULT_TTL_MINS'] = process.env.DEFAULT_TTL_MINS || parsedFile['DEFAULT_TTL_MINS']
 
   console.log(JSON.stringify(parsedFile))
 
