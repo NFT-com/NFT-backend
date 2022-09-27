@@ -719,24 +719,38 @@ export const updateNFTOwnershipAndMetadata = async (
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
-        // we remove edge of previous profile
-        await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
         // if this NFT is a profile NFT...
         if (ethers.utils.getAddress(existingNFT.contract) ==
           ethers.utils.getAddress(contracts.nftProfileAddress(chainId))) {
           const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
-          const profile = await repositories.profile.findOne({ where: {
-            tokenId: BigNumber.from(existingNFT.tokenId).toString(),
-            walletId: previousWallet.id,
-            userId: previousWallet.userId,
-          } })
-          // if this NFT was previous owner's preferred profile...
-          if (profile.id === previousWallet.profileId) {
-            await repositories.wallet.updateOneById(previousWallet.id, {
-              profileId: null,
+
+          if (previousWallet) {
+            const profile = await repositories.profile.findOne({ where: {
+              tokenId: BigNumber.from(existingNFT.tokenId).toString(),
+              walletId: previousWallet.id,
+              userId: previousWallet.userId,
+            } })
+            // if this NFT was previous owner's preferred profile...
+            if (profile.id === previousWallet.profileId) {
+              await repositories.wallet.updateOneById(previousWallet.id, {
+                profileId: null,
+              })
+            }
+
+            // we remove edge of previous profile
+            await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
+          } else { // edge case due to import; we update existingNFT walletId and userId to current set
+            await repositories.nft.updateOneById(existingNFT.id, {
+              userId,
+              walletId,
             })
+            logger.info('*** updated existing nft userId and walletId bc previous walletId was null')
           }
+        } else {
+          // we remove edge of previous profile
+          await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
         }
+        
         return await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
