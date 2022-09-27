@@ -3,7 +3,7 @@ import Redis from 'ioredis'
 import { redisConfig } from '@nftcom/gql/config'
 
 let redis: Redis
-const DEFAULT_TTL_MINS = 30 // 30 mins
+const DEFAULT_TTL_MINS = Number(process.env.DEFAULT_TTL_MINS) || 15 // 15 mins
 
 export enum CacheKeys {
   REFRESH_NFT_ORDERS_EXT = 'refresh_nft_orders_ext',
