@@ -739,12 +739,8 @@ export const updateNFTOwnershipAndMetadata = async (
                 profileId: null,
               })
             }
-          } else { // edge case due to import; we update existingNFT walletId and userId to current set
-            await repositories.nft.updateOneById(existingNFT.id, {
-              userId,
-              walletId,
-            })
-            logger.info('*** updated existing nft userId and walletId bc previous walletId was null')
+          } else {
+            logger.info(`previous wallet for existing NFT ${existingNFT.id} is undefined`)
           }
         }
 
