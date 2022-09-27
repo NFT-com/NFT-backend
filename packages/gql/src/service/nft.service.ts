@@ -198,11 +198,11 @@ export const getOwnersForNFT = async (
       const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
       const response = await axios.get(baseUrl)
 
-      if (response.data && response.data.owners) {
+      if (response && response?.data && response.data?.owners) {
         await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
         return response.data.owners as string[]
       } else {
-        return []
+        return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
       }
     }
   } catch (err) {
@@ -316,10 +316,12 @@ export const getContractMetaDataFromAlchemy = async (
       const baseUrl = `${alchemyUrl}/getContractMetadata/?contractAddress=${contractAddress}`
       const response = await axios.get(baseUrl)
 
-      if (response.data) {
+      if (response && response?.data) {
         await cache.set(key, JSON.stringify(response.data), 'EX', 60 * 60) // 1 hour
+        return response.data
+      } else {
+        return undefined
       }
-      return response.data
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getContractMetaDataFromAlchemy: ${err}`)
@@ -606,7 +608,9 @@ export const saveNFTMetadataImageToS3 = async (
       } else {
         const newWeb3 = initiateWeb3PreviewLink(nft.chainId)
         const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId, newWeb3)
-        if (nftAlchemyResult && nftAlchemyResult.metadata.image && nftAlchemyResult.metadata.image.length) {
+        if (nftAlchemyResult && nftAlchemyResult?.metadata &&
+          nftAlchemyResult?.metadata?.image && nftAlchemyResult?.metadata?.image.length
+        ) {
           const filename = nftAlchemyResult.metadata.image.split('/').pop()
           uploadedImage = await uploadImageToS3(
             nftAlchemyResult.metadata.image,
@@ -929,16 +933,17 @@ export const getOwnersOfGenesisKeys = async (
     // TODO: remove in future
     const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
-    if (res && res.data && res.data.ownerAddresses) {
+    if (res && res?.data && res.data?.ownerAddresses) {
       const gkOwners = res.data.ownerAddresses as string[]
       await cache.set(key, JSON.stringify(gkOwners), 'EX', 60)
       return gkOwners
     } else {
-      return []
+      return Promise.reject(`No owner found for genesis key on chain ${chainId}`)
     }
   } catch (err) {
+    logger.error(`Error in getOwnersOfGenesisKeys: ${err}`)
     Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
-    return []
+    throw err
   }
 }
 
