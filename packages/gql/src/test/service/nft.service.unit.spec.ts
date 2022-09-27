@@ -489,4 +489,15 @@ describe('nft resolver', () => {
       expect(name).not.toEqual('Unknown name')
     })
   })
+
+  describe('getUserWalletFromNFT', () => {
+    it('should return undefined when getOwnersForNFT throws error', async () => {
+      // wrong contract
+      const contract = '0x76BE3b62873462d2142405439777e971754E8E76'
+      const tokenId = '0x284b'
+      const chainId = '1'
+      const wallet = await nftService.getUserWalletFromNFT(contract, tokenId, chainId)
+      expect(wallet).toBeUndefined()
+    })
+  })
 })

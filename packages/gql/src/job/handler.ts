@@ -12,7 +12,7 @@ import HederaConsensusService from '../service/hedera.service'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
-const repositories = db.newRepositories()
+export const repositories = db.newRepositories()
 
 enum EventName {
   AssociateEvmUser = 'AssociateEvmUser',
@@ -59,7 +59,7 @@ export const chainIdToCacheKeyResolverAssociate = (chainId: number): string => {
   return `resolver_associate_cached_block_${chainId}`
 }
 
-const getResolverEvents = async (
+export const getResolverEvents = async (
   topics: any[],
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -93,7 +93,7 @@ const getResolverEvents = async (
   }
 }
 
-const getMintedProfileEvents = async (
+export const getMintedProfileEvents = async (
   topics: any[],
   chainId: number,
   provider: ethers.providers.BaseProvider,
@@ -125,6 +125,14 @@ const getMintedProfileEvents = async (
       latestBlockNumber: latestBlock.number,
     }
   }
+}
+
+export const nftResolverParseLog = (log: any): any => {
+  return nftResolverInterface.parseLog(log)
+}
+
+export const profileAuctionParseLog = (log: any): any => {
+  return profileAuctionInterface.parseLog(log)
 }
 
 export const getEthereumEvents = async (job: Job): Promise<any> => {
@@ -163,7 +171,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     log2.logs.map(async (unparsedEvent) => {
       let evt
       try {
-        evt = nftResolverInterface.parseLog(unparsedEvent)
+        evt = nftResolverParseLog(unparsedEvent)
         logger.info(evt.args, `Found event ${evt.name} with chainId: ${chainId}`)
 
         if (evt.name === EventName.AssociateEvmUser) {
@@ -329,7 +337,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
 
     log.logs.map(async (unparsedEvent) => {
       try {
-        const evt = profileAuctionInterface.parseLog(unparsedEvent)
+        const evt = profileAuctionParseLog(unparsedEvent)
         logger.info(evt.args, `Found event MintedProfile with chainId: ${chainId}`)
         const [owner,profileUrl,tokenId,,] = evt.args
 

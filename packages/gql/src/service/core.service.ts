@@ -1061,6 +1061,8 @@ export const processIPFSURL = (image: string): string => {
     return prefix + image.slice(7)
   } else if (image.indexOf('https://ipfs.io/ipfs/') === 0) {
     return prefix + image.slice(21)
+  } else if (image.indexOf('https://ipfs.infura.io/ipfs/') === 0) {
+    return prefix + image.slice(28)
   } else if (image.indexOf('https://infura-ipfs.io/ipfs/') === 0) {
     return prefix + image.slice(28)
   } else if (image.indexOf('pinata.cloud/ipfs/') !== -1) {

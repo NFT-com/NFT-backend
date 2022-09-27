@@ -1,5 +1,6 @@
 ignore:
   - "packages/gql/src/tracer.ts"
+  - "packages/gql/src/job/job.ts"
   - "packages/gql/src/job/marketplace.job.ts"
   - "packages/gql/src/resolver/bid.resolver.ts"
   - "packages/gql/src/resolver/curation.resolver.ts"
@@ -13,3 +14,4 @@ ignore:
   - "packages/gql/src/resolver/validation.ts"
   - "packages/gql/src/helper/websocketProvider.ts"
   - "packages/gql/src/defs/misc.ts"
+  - "packages/gql/src/server.ts"
