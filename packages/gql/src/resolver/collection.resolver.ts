@@ -285,7 +285,12 @@ const updateCollectionImageUrls = async (
     const toUpdate = collections.slice(0, length)
     await Promise.allSettled(
       toUpdate.map(async (collection) => {
-        await getCollectionInfo(collection.contract, chainId, repositories)
+        try {
+          await getCollectionInfo(collection.contract, chainId, repositories)
+        } catch (err) {
+          logger.error(`Error in updateCollectionImageUrls: ${err}`)
+          Sentry.captureMessage(`Error in updateCollectionImageUrls: ${err}`)
+        }
       }),
     )
 

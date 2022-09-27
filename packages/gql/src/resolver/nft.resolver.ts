@@ -667,7 +667,12 @@ const updateNFTsForAssociatedAddresses = async (
     // refresh NFTs for associated addresses...
     await Promise.allSettled(
       wallets.map(async (wallet) => {
-        await updateNFTsForAssociatedWallet(profile.id, wallet)
+        try {
+          await updateNFTsForAssociatedWallet(profile.id, wallet)
+        } catch (err) {
+          logger.error(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+          Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+        }
       }),
     )
     await syncEdgesWithNFTs(profile.id)

@@ -221,7 +221,7 @@ export const getOwnersForNFT = async (
 export const filterNFTsWithAlchemy = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
-): Promise<any[]> => {
+): Promise<void> => {
   const contracts = []
   nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
     contracts.push(nft.contract)
@@ -230,7 +230,7 @@ export const filterNFTsWithAlchemy = async (
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
     const checksum = ethers.utils.getAddress
 
-    return await Promise.allSettled(
+    await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
           checksum(ownedNFT.contract.address) === checksum(dbNFT.contract) &&
@@ -281,7 +281,7 @@ export const filterNFTsWithAlchemy = async (
     )
   } catch (err) {
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
-    return []
+    throw err
   }
 }
 
@@ -441,11 +441,10 @@ const getNFTMetaData = async (
 
     if (!nftMetadata) return
 
-    const contractMetadata: ContractMetaDataResponse =
-      await getContractMetaDataFromAlchemy(contract)
+    const contractMetadata = await getContractMetaDataFromAlchemy(contract)
 
     const metadata = nftMetadata?.metadata as any
-    const name = nftMetadata?.title || `${contractMetadata.contractMetadata.name} #${Number(tokenId).toString()}`
+    const name = nftMetadata?.title || `${contractMetadata?.contractMetadata?.name} #${Number(tokenId).toString()}`
     // For CryptoKitties, their metadata response format is different from original one
     const description = nftMetadata?.description || metadata?.bio
     const image = metadata?.image || metadata?.image_url_cdn || generateSVGFromBase64String(metadata?.image_data)
@@ -496,8 +495,9 @@ const getNFTMetaData = async (
       traits,
     }
   } catch (err) {
+    logger.error(`Error in getNFTMetaData: ${err}`)
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -750,7 +750,7 @@ export const updateNFTOwnershipAndMetadata = async (
           // we remove edge of previous profile
           await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
         }
-        
+
         return await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
@@ -816,7 +816,7 @@ export const checkNFTContractAddresses = async (
   walletId: string,
   walletAddress: string,
   chainId: string,
-): Promise<void[]> => {
+): Promise<void> => {
   try {
     const nfts = await repositories.nft.find({ where: {
       userId: userId,
@@ -824,7 +824,7 @@ export const checkNFTContractAddresses = async (
       chainId: chainId,
     } })
     if (!nfts.length) {
-      return []
+      return
     }
     const nftsChunks: entity.NFT[][] = Lodash.chunk(
       nfts,
@@ -832,12 +832,18 @@ export const checkNFTContractAddresses = async (
     )
     await Promise.allSettled(
       nftsChunks.map(async (nftChunk: entity.NFT[]) => {
-        await filterNFTsWithAlchemy(nftChunk, walletAddress)
+        try {
+          await filterNFTsWithAlchemy(nftChunk, walletAddress)
+        } catch (err) {
+          logger.error(`Error in checkNFTContractAddresses: ${err}`)
+          Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
+        }
       }),
     )
   } catch (err) {
+    logger.error(`Error in checkNFTContractAddresses: ${err}`)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
-    return []
+    return
   }
 }
 
@@ -881,6 +887,10 @@ export const refreshNFTMetadata = async (
       nft.contract,
       BigNumber.from(nft.tokenId).toString(),
     )
+    if (!metadata) {
+      logger.debug(`No metadata found for contract ${nft.contract} and tokenId ${nft.tokenId}`)
+      return nft
+    }
     const { type, name, description, image, traits } = metadata
     const isTraitSame = (nft.metadata.traits.length == traits.length) &&
       nft.metadata.traits.every(function(element, index) {
@@ -905,8 +915,9 @@ export const refreshNFTMetadata = async (
     }
     return nft
   } catch (err) {
+    logger.error(`Error in refreshNFTMetadata: ${err}`)
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -942,22 +953,28 @@ const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<void> => {
-  const edges = await repositories.edge.find({ where: {
-    thisEntityType: defs.EntityType.Profile,
-    thisEntityId: profileId,
-    edgeType: defs.EdgeType.Displays,
-    thatEntityType: defs.EntityType.NFT,
-    hide: false,
-  } })
-  if (edges.length) {
-    const updatedEdges = []
-    for (let i = 0; i < edges.length; i++) {
-      updatedEdges.push({
-        id: edges[i].id,
-        hide: true,
-      })
+  try {
+    const edges = await repositories.edge.find({ where: {
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: profileId,
+      edgeType: defs.EdgeType.Displays,
+      thatEntityType: defs.EntityType.NFT,
+      hide: false,
+    } })
+    if (edges.length) {
+      const updatedEdges = []
+      for (let i = 0; i < edges.length; i++) {
+        updatedEdges.push({
+          id: edges[i].id,
+          hide: true,
+        })
+      }
+      await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
     }
-    await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
+  } catch (err) {
+    logger.error(`Error in hideAllNFTs: ${err}`)
+    Sentry.captureMessage(`Error in hideAllNFTs: ${err}`)
+    throw err
   }
 }
 const saveEdgesWithWeight = async (
@@ -1001,8 +1018,9 @@ const saveEdgesWithWeight = async (
     // save nfts to edge...
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
   } catch (err) {
+    logger.error(`Error in saveEdgesWithWeight: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesWithWeight: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -1012,29 +1030,35 @@ const showAllNFTs = async (
   profileId: string,
   chainId: string,
 ): Promise<void> => {
-  const nfts = await repositories.nft.find({ where: { walletId, chainId } })
-  if (nfts.length) {
-    await saveEdgesWithWeight(nfts, profileId, false)
-    // change hide column to false which ones are true...
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        edgeType: defs.EdgeType.Displays,
-        hide: true,
-      },
-    })
-    if (edges.length) {
-      const updatedEdges = []
-      for (let i = 0; i < edges.length; i++) {
-        updatedEdges.push({
-          id: edges[i].id,
-          hide: false,
-        })
+  try {
+    const nfts = await repositories.nft.find({ where: { walletId, chainId } })
+    if (nfts.length) {
+      await saveEdgesWithWeight(nfts, profileId, false)
+      // change hide column to false which ones are true...
+      const edges = await repositories.edge.find({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          edgeType: defs.EdgeType.Displays,
+          hide: true,
+        },
+      })
+      if (edges.length) {
+        const updatedEdges = []
+        for (let i = 0; i < edges.length; i++) {
+          updatedEdges.push({
+            id: edges[i].id,
+            hide: false,
+          })
+        }
+        await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
       }
-      await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
     }
+  } catch (err) {
+    logger.error(`Error in showAllNFTs: ${err}`)
+    Sentry.captureMessage(`Error in showAllNFTs: ${err}`)
+    throw err
   }
 }
 
@@ -1043,31 +1067,37 @@ const showNFTs = async (
   profileId: string,
   chainId: string,
 ): Promise<void> => {
-  const nfts = []
-  await Promise.allSettled(
-    showNFTIds.map(async (id) => {
-      const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
-      if (existingNFT) nfts.push(existingNFT)
-    }),
-  )
-  if (nfts.length) {
-    await saveEdgesWithWeight(nfts, profileId, false)
-    // change hide column to false which ones are true...
+  try {
+    const nfts = []
     await Promise.allSettled(
-      nfts.map(async (nft: entity.NFT) => {
-        const displayEdge = await repositories.edge.findOne({
-          where: {
-            thisEntityType: defs.EntityType.Profile,
-            thatEntityType: defs.EntityType.NFT,
-            thisEntityId: profileId,
-            thatEntityId: nft.id,
-            edgeType: defs.EdgeType.Displays,
-            hide: true,
-          },
-        })
-        if (displayEdge) await repositories.edge.updateOneById(displayEdge.id, { hide: false })
+      showNFTIds.map(async (id) => {
+        const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
+        if (existingNFT) nfts.push(existingNFT)
       }),
     )
+    if (nfts.length) {
+      await saveEdgesWithWeight(nfts, profileId, false)
+      // change hide column to false which ones are true...
+      await Promise.allSettled(
+        nfts.map(async (nft: entity.NFT) => {
+          const displayEdge = await repositories.edge.findOne({
+            where: {
+              thisEntityType: defs.EntityType.Profile,
+              thatEntityType: defs.EntityType.NFT,
+              thisEntityId: profileId,
+              thatEntityId: nft.id,
+              edgeType: defs.EdgeType.Displays,
+              hide: true,
+            },
+          })
+          if (displayEdge) await repositories.edge.updateOneById(displayEdge.id, { hide: false })
+        }),
+      )
+    }
+  } catch (err) {
+    logger.error(`Error in showNFTs: ${err}`)
+    Sentry.captureMessage(`Error in showNFTs: ${err}`)
+    throw err
   }
 }
 
@@ -1128,8 +1158,9 @@ export const changeNFTsVisibility = async (
       }
     }
   } catch (err) {
+    logger.error(`Error in changeNFTsVisibility: ${err}`)
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -1198,8 +1229,9 @@ export const updateNFTsOrder = async (
       }
     }
   } catch (err) {
+    logger.error(`Error in updateNFTsOrder: ${err}`)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -1237,8 +1269,9 @@ export const updateEdgesWeightForProfile = async (
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
+    logger.error(`Error in updateEdgesWeightForProfile: ${err}`)
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -1284,8 +1317,9 @@ export const syncEdgesWithNFTs = async (
     )
     await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
+    logger.error(`Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -1293,32 +1327,38 @@ export const updateNFTsForAssociatedWallet = async (
   profileId: string,
   wallet: entity.Wallet,
 ): Promise<void> => {
-  const cacheKey = `${CacheKeys.UPDATE_NFT_FOR_ASSOCIATED_WALLET}_${wallet.chainId}_${wallet.id}_${wallet.userId}`
-  const cachedData = await cache.get(cacheKey)
-  if (!cachedData) {
-    await checkNFTContractAddresses(
-      wallet.userId,
-      wallet.id,
-      wallet.address,
-      wallet.chainId,
-    )
-    await updateWalletNFTs(
-      wallet.userId,
-      wallet.id,
-      wallet.address,
-      wallet.chainId,
-    )
-    // save NFT edges for profile...
-    await updateEdgesWeightForProfile(profileId, wallet.id)
-    const nfts = await repositories.nft.find({
-      where: {
-        userId: wallet.userId,
-        walletId: wallet.id,
-        chainId: wallet.chainId,
-      },
-    })
-    await cache.set(cacheKey, nfts.length.toString(), 'EX', 60 * 10)
-  } else return
+  try {
+    const cacheKey = `${CacheKeys.UPDATE_NFT_FOR_ASSOCIATED_WALLET}_${wallet.chainId}_${wallet.id}_${wallet.userId}`
+    const cachedData = await cache.get(cacheKey)
+    if (!cachedData) {
+      await checkNFTContractAddresses(
+        wallet.userId,
+        wallet.id,
+        wallet.address,
+        wallet.chainId,
+      )
+      await updateWalletNFTs(
+        wallet.userId,
+        wallet.id,
+        wallet.address,
+        wallet.chainId,
+      )
+      // save NFT edges for profile...
+      await updateEdgesWeightForProfile(profileId, wallet.id)
+      const nfts = await repositories.nft.find({
+        where: {
+          userId: wallet.userId,
+          walletId: wallet.id,
+          chainId: wallet.chainId,
+        },
+      })
+      await cache.set(cacheKey, nfts.length.toString(), 'EX', 60 * 10)
+    } else return
+  } catch (err) {
+    logger.error(`Error in updateNFTsForAssociatedWallet: ${err}`)
+    Sentry.captureMessage(`Error in updateNFTsForAssociatedWallet: ${err}`)
+    throw err
+  }
 }
 
 export const removeEdgesForNonassociatedAddresses = async (
@@ -1327,49 +1367,55 @@ export const removeEdgesForNonassociatedAddresses = async (
   newAddresses: string[],
   chainId: string,
 ): Promise<void> => {
-  const toRemove: string[] = []
-  // find previous associated addresses to be filtered
-  const seen = {}
-  newAddresses.map((address) => {
-    seen[address] = true
-  })
-  prevAddresses.map((address) => {
-    if (!seen[address]) toRemove.push(address)
-  })
-  if (!toRemove.length) return
-  await Promise.allSettled(
-    toRemove.map(async (address) => {
-      const wallet = await repositories.wallet.findByChainAddress(
-        chainId,
-        ethers.utils.getAddress(address),
-      )
-      if (wallet) {
-        const nfts = await repositories.nft.find({ where: { walletId: wallet.id } })
-        if (nfts.length) {
-          const toRemoveEdges = []
-          await Promise.allSettled(
-            nfts.map(async (nft) => {
-              const edge = await repositories.edge.findOne({
-                where: {
-                  thisEntityType: defs.EntityType.Profile,
-                  thisEntityId: profileId,
-                  thatEntityType: defs.EntityType.NFT,
-                  thatEntityId: nft.id,
-                  edgeType: defs.EdgeType.Displays,
-                },
-              })
-              if (edge) {
-                toRemoveEdges.push(edge.id)
-                await repositories.nft.updateOneById(nft.id, { profileId: null })
-              }
-            }),
-          )
-          if (toRemoveEdges.length)
-            await repositories.edge.hardDeleteByIds(toRemoveEdges)
+  try {
+    const toRemove: string[] = []
+    // find previous associated addresses to be filtered
+    const seen = {}
+    newAddresses.map((address) => {
+      seen[address] = true
+    })
+    prevAddresses.map((address) => {
+      if (!seen[address]) toRemove.push(address)
+    })
+    if (!toRemove.length) return
+    await Promise.allSettled(
+      toRemove.map(async (address) => {
+        const wallet = await repositories.wallet.findByChainAddress(
+          chainId,
+          ethers.utils.getAddress(address),
+        )
+        if (wallet) {
+          const nfts = await repositories.nft.find({ where: { walletId: wallet.id } })
+          if (nfts.length) {
+            const toRemoveEdges = []
+            await Promise.allSettled(
+              nfts.map(async (nft) => {
+                const edge = await repositories.edge.findOne({
+                  where: {
+                    thisEntityType: defs.EntityType.Profile,
+                    thisEntityId: profileId,
+                    thatEntityType: defs.EntityType.NFT,
+                    thatEntityId: nft.id,
+                    edgeType: defs.EdgeType.Displays,
+                  },
+                })
+                if (edge) {
+                  toRemoveEdges.push(edge.id)
+                  await repositories.nft.updateOneById(nft.id, { profileId: null })
+                }
+              }),
+            )
+            if (toRemoveEdges.length)
+              await repositories.edge.hardDeleteByIds(toRemoveEdges)
+          }
         }
-      }
-    }),
-  )
+      }),
+    )
+  } catch (err) {
+    logger.error(`Error in removeEdgesForNonassociatedAddresses: ${err}`)
+    Sentry.captureMessage(`Error in removeEdgesForNonassociatedAddresses: ${err}`)
+    throw err
+  }
 }
 
 export const downloadImageFromUbiquity = async (
@@ -1379,6 +1425,7 @@ export const downloadImageFromUbiquity = async (
     const res = await fetch(url + `?apiKey=${process.env.UBIQUITY_API_KEY}`)
     return await res.buffer()
   } catch (err) {
+    logger.error(`Error in downloadImageFromUbiquity: ${err}`)
     Sentry.captureMessage(`Error in downloadImageFromUbiquity: ${err}`)
     return undefined
   }
@@ -1413,6 +1460,7 @@ export const downloadAndUploadImageToS3 = async (
       return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
     } else return undefined
   } catch (err) {
+    logger.error(`Error in downloadAndUploadImageToS3: ${err}`)
     Sentry.captureMessage(`Error in downloadAndUploadImageToS3: ${err}`)
     return undefined
   }
@@ -1548,8 +1596,9 @@ export const getCollectionInfo = async (
       return returnObject
     }
   } catch (err) {
+    logger.error(`Error in getCollectionInfo: ${err}`)
     Sentry.captureMessage(`Error in getCollectionInfo: ${err}`)
-    return err
+    throw err
   }
 }
 
@@ -1572,7 +1621,7 @@ export const updateNFTMetadata = async (
       },
     })
   } catch (err) {
-    logger.debug(`Error in updateNFTMedata: ${err}`)
+    logger.error(`Error in updateNFTMedata: ${err}`)
     Sentry.captureMessage(`Error in updateNFTMedata: ${err}`)
   }
 }
@@ -1644,8 +1693,9 @@ export const saveNewNFT = async (
     await updateCollectionForNFTs([savedNFT])
     return savedNFT
   } catch (err) {
-    logger.debug(`Error in saveNewNFT: ${err}`)
+    logger.error(`Error in saveNewNFT: ${err}`)
     Sentry.captureMessage(`Error in saveNewNFT: ${err}`)
+    throw err
   }
 }
 
