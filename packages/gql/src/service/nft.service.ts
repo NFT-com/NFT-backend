@@ -727,11 +727,11 @@ export const updateNFTOwnershipAndMetadata = async (
           if (previousWallet) {
             const profile = await repositories.profile.findOne({ where: {
               tokenId: BigNumber.from(existingNFT.tokenId).toString(),
-              walletId: previousWallet.id,
-              userId: previousWallet.userId,
+              ownerWalletId: previousWallet.id,
+              ownerUserId: previousWallet.userId,
             } })
             // if this NFT was previous owner's preferred profile...
-            if (profile.id === previousWallet.profileId) {
+            if (profile && profile?.id === previousWallet.profileId) {
               await repositories.wallet.updateOneById(previousWallet.id, {
                 profileId: null,
               })
@@ -1315,7 +1315,8 @@ export const syncEdgesWithNFTs = async (
         }
       }),
     )
-    await repositories.edge.hardDeleteByIds(duplicatedIds)
+    if (duplicatedIds.length)
+      await repositories.edge.hardDeleteByIds(duplicatedIds)
   } catch (err) {
     logger.error(`Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)

@@ -349,11 +349,24 @@ describe('nft resolver', () => {
 
   describe('updateNFTOwnershipAndMetadata', () => {
     beforeAll(async () => {
+      const testUser = await repositories.user.save({
+        username: 'ethereum-0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        referralId: 'test.referral.id',
+      })
+
+      const testWallet = await repositories.wallet.save({
+        address: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        network: 'ethereum',
+        chainId: '5',
+        chainName: 'goerli',
+        userId: testUser.id,
+      })
+
       const profile = await repositories.profile.save({
         url: 'testprofile1',
-        ownerUserId: testMockUser.id,
-        ownerWalletId: testMockWallet.id,
-        tokenId: '0',
+        ownerUserId: testUser.id,
+        ownerWalletId: testWallet.id,
+        tokenId: '34',
         status: defs.ProfileStatus.Owned,
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
@@ -370,8 +383,8 @@ describe('nft resolver', () => {
           traits: [],
         },
         type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
+        userId: testUser.id,
+        walletId: testWallet.id,
       })
 
       await repositories.edge.save({
