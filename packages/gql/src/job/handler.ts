@@ -127,6 +127,14 @@ export const getMintedProfileEvents = async (
   }
 }
 
+export const nftResolverParseLog = (log: any): any => {
+  return nftResolverInterface.parseLog(log)
+}
+
+export const profileAuctionParseLog = (log: any): any => {
+  return profileAuctionInterface.parseLog(log)
+}
+
 export const getEthereumEvents = async (job: Job): Promise<any> => {
   try {
     const { chainId } = job.data
@@ -163,7 +171,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
     log2.logs.map(async (unparsedEvent) => {
       let evt
       try {
-        evt = nftResolverInterface.parseLog(unparsedEvent)
+        evt = nftResolverParseLog(unparsedEvent)
         logger.info(`Found event ${evt.name} with chainId: ${chainId}, ${JSON.stringify(evt.args, null, 2)}`)
 
         if (evt.name === EventName.AssociateEvmUser) {
@@ -329,7 +337,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
 
     log.logs.map(async (unparsedEvent) => {
       try {
-        const evt = profileAuctionInterface.parseLog(unparsedEvent)
+        const evt = profileAuctionParseLog(unparsedEvent)
         logger.info(`Found event MintedProfile with chainId: ${chainId}, ${evt.args}`)
         const [owner,profileUrl,tokenId,,] = evt.args
 

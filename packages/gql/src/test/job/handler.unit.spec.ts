@@ -1,17 +1,23 @@
 import { Job } from 'bull'
+import { DeepPartial } from 'typeorm'
 
 import { provider } from '@nftcom/gql/helper'
 import {
   chainIdToCacheKeyProfile,
   chainIdToCacheKeyResolverAssociate,
   getCachedBlock, getEthereumEvents, getMintedProfileEvents, getResolverEvents,
+  repositories,
 } from '@nftcom/gql/job/handler'
 import * as handler from '@nftcom/gql/job/handler'
+import { entity } from '@nftcom/shared'
 
 jest.setTimeout(500000)
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
-  cache: jest.fn(),
+  cache: {
+    get: jest.fn(),
+    set: jest.fn(),
+  },
   createCacheConnection: jest.fn(),
 }))
 
@@ -26,6 +32,20 @@ const topicsA = [
   '0xabf787efbb4a8e7ac5d6bd79dd177a56b08a1dad80907dac3ddff8e953df3d2c',
   '0x8db6e7c90b4cd8a0d26047908cc0a5f0cb0f1a096f1a5093d9334c7225df1720',
 ]
+
+let mintedProfileEventsSpy
+let resolverEventsSpy
+let findOneEventSpy
+let saveEventSpy
+let existsEventSpy
+
+const checkSpies = (parseLogSpy: any): void => {
+  expect(mintedProfileEventsSpy).toHaveBeenCalled()
+  expect(resolverEventsSpy).toHaveBeenCalled()
+  expect(parseLogSpy).toHaveBeenCalled()
+  expect(findOneEventSpy).toHaveBeenCalled()
+  expect(saveEventSpy).toHaveBeenCalled()
+}
 
 describe('handler', () => {
   describe('getCachedBlock', () => {
@@ -70,26 +90,197 @@ describe('handler', () => {
   })
 
   describe('getEthereumEvents', () => {
-    it('executes getEthereumEvents', async () => {
-      const mintedProfileEventsSpy = jest.spyOn(handler, 'getMintedProfileEvents')
+    beforeAll(() => {
+      mintedProfileEventsSpy = jest.spyOn(handler, 'getMintedProfileEvents')
         .mockImplementation(
           () => Promise.resolve({
-            logs: [],
-            latestBlockNumber: 7128515,
+            logs: [
+              {
+                blockNumber: 7128515,
+                blockHash: 'test-block-hash',
+                transactionIndex: 0,
+                removed: false,
+                address: 'test-address',
+                data: 'test-data',
+                topics,
+                transactionHash: '0x62fe7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
+                logIndex: 0,
+              },
+            ],
+            latestBlockNumber: 8128515,
           }),
         )
-      const resolverEventsSpy = jest.spyOn(handler, 'getResolverEvents')
+      resolverEventsSpy = jest.spyOn(handler, 'getResolverEvents')
         .mockImplementation(
           () => Promise.resolve({
-            logs: [],
-            latestBlockNumber: 7128515,
+            logs: [
+              {
+                blockNumber: 7128515,
+                blockHash: 'test-block-hash',
+                transactionIndex: 0,
+                removed: false,
+                address: 'test-address',
+                data: 'test-data',
+                topics: topicsA,
+                transactionHash: '0x62fe7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
+                logIndex: 0,
+              },
+            ],
+            latestBlockNumber: 8128515,
           }),
+        )
+
+      findOneEventSpy = jest.spyOn(repositories.event, 'findOne')
+        .mockImplementation(
+          () => Promise.resolve(undefined),
+        )
+
+      existsEventSpy = jest.spyOn(repositories.event, 'exists')
+        .mockImplementation(
+          () => Promise.resolve(undefined),
+        )
+
+      saveEventSpy = jest.spyOn(repositories.event, 'save')
+        .mockImplementation(
+          (event: DeepPartial<entity.Event>) =>
+            Promise.resolve({ ...event as any }),
+        )
+    })
+
+    it('save event for AssociateEvmUser', async () => {
+      const parseLogSpy = jest.spyOn(handler, 'nftResolverParseLog')
+        .mockImplementation(
+          () => {
+            return {
+              eventFragment: null,
+              name: 'AssociateEvmUser',
+              signature: 'test-signature',
+              topic: 'test-topic',
+              args: [
+                '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B',
+                'goerli',
+                '0x78D1795681A4D914a3600a041063E5E42cc557f1',
+              ],
+            }
+          },
         )
 
       await getEthereumEvents({ id: 'test-job-id', data: { chainId: '5' } } as Job)
+      checkSpies(parseLogSpy)
+    })
 
+    it('save event for CancelledEvmAssociation', async () => {
+      const parseLogSpy = jest.spyOn(handler, 'nftResolverParseLog')
+        .mockImplementation(
+          () => {
+            return {
+              eventFragment: null,
+              name: 'CancelledEvmAssociation',
+              signature: 'test-signature',
+              topic: 'test-topic',
+              args: [
+                '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B',
+                'goerli',
+                '0x78D1795681A4D914a3600a041063E5E42cc557f1',
+              ],
+            }
+          },
+        )
+
+      await getEthereumEvents({ id: 'test-job-id', data: { chainId: '5' } } as Job)
+      checkSpies(parseLogSpy)
+    })
+
+    it('save event for ClearAllAssociatedAddresses', async () => {
+      const parseLogSpy = jest.spyOn(handler, 'nftResolverParseLog')
+        .mockImplementation(
+          () => {
+            return {
+              eventFragment: null,
+              name: 'ClearAllAssociatedAddresses',
+              signature: 'test-signature',
+              topic: 'test-topic',
+              args: [
+                '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B',
+                'goerli',
+                '0x78D1795681A4D914a3600a041063E5E42cc557f1',
+              ],
+            }
+          },
+        )
+
+      await getEthereumEvents({ id: 'test-job-id', data: { chainId: '5' } } as Job)
+      checkSpies(parseLogSpy)
+    })
+
+    it('save event for AssociateSelfWithUser', async () => {
+      const parseLogSpy = jest.spyOn(handler, 'nftResolverParseLog')
+        .mockImplementation(
+          () => {
+            return {
+              eventFragment: null,
+              name: 'AssociateSelfWithUser',
+              signature: 'test-signature',
+              topic: 'test-topic',
+              args: [
+                '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B',
+                'goerli',
+                '0x78D1795681A4D914a3600a041063E5E42cc557f1',
+              ],
+            }
+          },
+        )
+
+      await getEthereumEvents({ id: 'test-job-id', data: { chainId: '5' } } as Job)
+      checkSpies(parseLogSpy)
+    })
+
+    it('save event for SetAssociatedContract', async () => {
+      const parseLogSpy = jest.spyOn(handler, 'nftResolverParseLog')
+        .mockImplementation(
+          () => {
+            return {
+              eventFragment: null,
+              name: 'SetAssociatedContract',
+              signature: 'test-signature',
+              topic: 'test-topic',
+              args: [
+                '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B',
+                'goerli',
+                '0x78D1795681A4D914a3600a041063E5E42cc557f1',
+              ],
+            }
+          },
+        )
+
+      await getEthereumEvents({ id: 'test-job-id', data: { chainId: '5' } } as Job)
+      checkSpies(parseLogSpy)
+    })
+
+    it('save event for MintedProfile', async () => {
+      const parseLogSpy = jest.spyOn(handler, 'profileAuctionParseLog')
+        .mockImplementation(
+          () => {
+            return {
+              eventFragment: null,
+              name: 'MintedProfile',
+              signature: 'test-signature',
+              topic: 'test-topic',
+              args: [
+                '0xBD3Feab37Eb7533B03bf77381D699aD8bA64A30B',
+                'goerli',
+                '0x22',
+              ],
+            }
+          },
+        )
+
+      await getEthereumEvents({ id: 'test-job-id', data: { chainId: '5' } } as Job)
       expect(mintedProfileEventsSpy).toHaveBeenCalled()
       expect(resolverEventsSpy).toHaveBeenCalled()
+      expect(parseLogSpy).toHaveBeenCalled()
+      expect(existsEventSpy).toHaveBeenCalled()
+      expect(saveEventSpy).toHaveBeenCalled()
     })
   })
 })
