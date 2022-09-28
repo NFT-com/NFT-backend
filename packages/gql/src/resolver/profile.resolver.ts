@@ -416,6 +416,8 @@ const updateProfile = (
           p.chainId,
         ).then(() => {
           return repositories.profile.save(p)
+        }).catch((err) => {
+          return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
         })
       }
     })
