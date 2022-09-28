@@ -1061,7 +1061,7 @@ export const showAllNFTs = async (
   }
 }
 
-const showNFTs = async (
+export const showNFTs = async (
   showNFTIds: string[],
   profileId: string,
   chainId: string,

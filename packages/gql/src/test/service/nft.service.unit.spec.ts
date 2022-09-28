@@ -650,4 +650,149 @@ describe('nft resolver', () => {
       expect(count).toEqual(3)
     })
   })
+
+  describe('showNFTs', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftA.id,
+        hide: true,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should show NFTs for specific IDs', async () => {
+      await nftService.showNFTs([nftA.id], 'test-profile', '5')
+      const count = await repositories.edge.count({ hide: false } )
+      expect(count).toEqual(1)
+    })
+  })
+
+  describe('changeNFTsVisibility', () => {
+    beforeEach(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftA.id,
+        hide: false,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftB.id,
+        hide: false,
+      })
+    })
+
+    afterEach(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should show all NFTs', async () => {
+      await nftService.changeNFTsVisibility(
+        repositories,
+        testMockWallet.id,
+        'test-profile',
+        true,
+        false,
+        null,
+        null,
+        '5',
+      )
+      const count = await repositories.edge.count({ hide: false } )
+      expect(count).toEqual(2)
+    })
+
+    it('should hide all NFTs', async () => {
+      await nftService.changeNFTsVisibility(
+        repositories,
+        testMockWallet.id,
+        'test-profile',
+        false,
+        true,
+        null,
+        null,
+        '5',
+      )
+      const count = await repositories.edge.count({ hide: true } )
+      expect(count).toEqual(2)
+    })
+
+    it('should hide NFTs for specific IDs', async () => {
+      await nftService.changeNFTsVisibility(
+        repositories,
+        testMockWallet.id,
+        'test-profile',
+        false,
+        false,
+        null,
+        [nftB.id],
+        '5',
+      )
+      const count = await repositories.edge.count({ hide: true } )
+      expect(count).toEqual(1)
+    })
+  })
 })
