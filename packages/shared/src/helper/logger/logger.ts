@@ -7,6 +7,7 @@ import { context, trace } from '@opentelemetry/api'
 import { LoggerContext, LogLevel } from './types'
 
 export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({
+  enabled: false,
   level:  (process.env.LOG_LEVEL || LogLevel.Info).toLowerCase(),
   formatters: {
     level: (label) => {
