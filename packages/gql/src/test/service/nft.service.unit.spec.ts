@@ -493,13 +493,30 @@ describe('nft resolver', () => {
   })
 
   describe('getCollectionNameFromContract', () => {
-    it('should return correct collection name from contract', async () => {
+    it('should return correct collection name from ERC721 contract', async () => {
       const contractAddress = '0x23581767a106ae21c074b2276D25e5C3e136a68b'
       const chainId = '1'
       const type = defs.NFTType.ERC721
       const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
       expect(name).toBeDefined()
-      expect(name).not.toEqual('Unknown name')
+      expect(name).not.toEqual('Unknown Name')
+    })
+
+    it('should return correct collection name from ERC1155 contract', async () => {
+      const contractAddress = '0xdDd6754c22ffAC44980342173fa956Bc7DDa018e'
+      const chainId = '1'
+      const type = defs.NFTType.ERC1155
+      const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown Name')
+    })
+
+    it('should return unknown name for wrong type', async () => {
+      const contractAddress = '0x5D42e55014d20E97A25bC726D7eDF5FE9d95d70f'
+      const chainId = '1'
+      const type = defs.NFTType.GenesisKey
+      const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
+      expect(name).toEqual('Unknown Name')
     })
   })
 
@@ -511,6 +528,15 @@ describe('nft resolver', () => {
       const chainId = '1'
       const wallet = await nftService.getUserWalletFromNFT(contract, tokenId, chainId)
       expect(wallet).toBeUndefined()
+    })
+  })
+
+  describe('getNFTsFromAlchemy', () => {
+    it('should return NFTs from alchemy', async () => {
+      const owner = '0x59495589849423692778a8c5aaca62ca80f875a4'
+      nftService.initiateWeb3('5')
+      const nfts = await nftService.getNFTsFromAlchemy(owner)
+      expect(nfts.length).toBeGreaterThan(0)
     })
   })
 })
