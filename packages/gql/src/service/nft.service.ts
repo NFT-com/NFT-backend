@@ -1431,41 +1431,6 @@ export const downloadImageFromUbiquity = async (
   }
 }
 
-export const downloadAndUploadImageToS3 = async (
-  chainId: string,
-  url: string,
-  fileName: string,
-  uploadPath: string,
-): Promise<string | undefined> => {
-  try {
-    const ext = extensionFromFilename(url)
-    const fullName = ext ? fileName + '.' + ext : fileName
-    const imageKey = uploadPath + Date.now() + '-' + fullName
-    const contentType = contentTypeFromExt(ext)
-    if (!contentType) return undefined
-    const buffer = await downloadImageFromUbiquity(url)
-    if (buffer) {
-      const s3config = await getAWSConfig()
-      const upload = new Upload({
-        client: s3config,
-        params: {
-          Bucket: assetBucket.name,
-          Key: imageKey,
-          Body: buffer,
-          ContentType: contentType,
-        },
-      })
-      await upload.done()
-
-      return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${imageKey}`)
-    } else return undefined
-  } catch (err) {
-    logger.error(`Error in downloadAndUploadImageToS3: ${err}`)
-    Sentry.captureMessage(`Error in downloadAndUploadImageToS3: ${err}`)
-    return undefined
-  }
-}
-
 export const getCollectionInfo = async (
   contract: string,
   chainId: string,
