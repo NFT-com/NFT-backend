@@ -349,11 +349,24 @@ describe('nft resolver', () => {
 
   describe('updateNFTOwnershipAndMetadata', () => {
     beforeAll(async () => {
+      const testUser = await repositories.user.save({
+        username: 'ethereum-0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        referralId: 'test.referral.id',
+      })
+
+      const testWallet = await repositories.wallet.save({
+        address: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        network: 'ethereum',
+        chainId: '5',
+        chainName: 'goerli',
+        userId: testUser.id,
+      })
+
       const profile = await repositories.profile.save({
         url: 'testprofile1',
-        ownerUserId: testMockUser.id,
-        ownerWalletId: testMockWallet.id,
-        tokenId: '0',
+        ownerUserId: testUser.id,
+        ownerWalletId: testWallet.id,
+        tokenId: '34',
         status: defs.ProfileStatus.Owned,
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
@@ -370,8 +383,8 @@ describe('nft resolver', () => {
           traits: [],
         },
         type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
+        userId: testUser.id,
+        walletId: testWallet.id,
       })
 
       await repositories.edge.save({
@@ -480,13 +493,30 @@ describe('nft resolver', () => {
   })
 
   describe('getCollectionNameFromContract', () => {
-    it('should return correct collection name from contract', async () => {
+    it('should return correct collection name from ERC721 contract', async () => {
       const contractAddress = '0x23581767a106ae21c074b2276D25e5C3e136a68b'
       const chainId = '1'
       const type = defs.NFTType.ERC721
       const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
       expect(name).toBeDefined()
-      expect(name).not.toEqual('Unknown name')
+      expect(name).not.toEqual('Unknown Name')
+    })
+
+    it('should return correct collection name from ERC1155 contract', async () => {
+      const contractAddress = '0xdDd6754c22ffAC44980342173fa956Bc7DDa018e'
+      const chainId = '1'
+      const type = defs.NFTType.ERC1155
+      const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown Name')
+    })
+
+    it('should return unknown name for wrong type', async () => {
+      const contractAddress = '0x5D42e55014d20E97A25bC726D7eDF5FE9d95d70f'
+      const chainId = '1'
+      const type = defs.NFTType.GenesisKey
+      const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
+      expect(name).toEqual('Unknown Name')
     })
   })
 
@@ -498,6 +528,425 @@ describe('nft resolver', () => {
       const chainId = '1'
       const wallet = await nftService.getUserWalletFromNFT(contract, tokenId, chainId)
       expect(wallet).toBeUndefined()
+    })
+  })
+
+  describe('getNFTsFromAlchemy', () => {
+    it('should return NFTs from alchemy', async () => {
+      const owner = '0x59495589849423692778a8c5aaca62ca80f875a4'
+      nftService.initiateWeb3('5')
+      const nfts = await nftService.getNFTsFromAlchemy(owner)
+      expect(nfts.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('refreshNFTMetadata', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should refresh NFT metadata', async () => {
+      nftService.initiateWeb3('5')
+      const nftUpdated = await nftService.refreshNFTMetadata(nftA)
+      expect(nftUpdated).toBeDefined()
+      expect(nftUpdated.metadata.name.length).toBeGreaterThan(0)
+      expect(nftUpdated.metadata.description.length).toBeGreaterThan(0)
+      expect(nftUpdated.metadata.traits.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('hideAllNFTs', () => {
+    beforeAll(async () => {
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: 'test-nft',
+        hide: false,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: 'test-nft-1',
+        hide: false,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should hide all NFTs', async () => {
+      await nftService.hideAllNFTs(repositories, 'test-profile')
+      const count = await repositories.edge.count({ hide: true } )
+      expect(count).toEqual(2)
+    })
+  })
+
+  describe('showAllNFTs', () => {
+    beforeAll(async () => {
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: 'test-nft-id',
+        hide: true,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should show all NFTs', async () => {
+      await nftService.showAllNFTs(repositories, testMockWallet.id, 'test-profile', '5')
+      const count = await repositories.edge.count({ hide: false } )
+      expect(count).toEqual(3)
+    })
+  })
+
+  describe('showNFTs', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftA.id,
+        hide: true,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should show NFTs for specific IDs', async () => {
+      await nftService.showNFTs([nftA.id], 'test-profile', '5')
+      const count = await repositories.edge.count({ hide: false } )
+      expect(count).toEqual(1)
+    })
+  })
+
+  describe('changeNFTsVisibility', () => {
+    beforeEach(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftA.id,
+        hide: false,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftB.id,
+        hide: false,
+      })
+    })
+
+    afterEach(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should show all NFTs', async () => {
+      await nftService.changeNFTsVisibility(
+        repositories,
+        testMockWallet.id,
+        'test-profile',
+        true,
+        false,
+        null,
+        null,
+        '5',
+      )
+      const count = await repositories.edge.count({ hide: false } )
+      expect(count).toEqual(2)
+    })
+
+    it('should hide all NFTs', async () => {
+      await nftService.changeNFTsVisibility(
+        repositories,
+        testMockWallet.id,
+        'test-profile',
+        false,
+        true,
+        null,
+        null,
+        '5',
+      )
+      const count = await repositories.edge.count({ hide: true } )
+      expect(count).toEqual(2)
+    })
+
+    it('should hide NFTs for specific IDs', async () => {
+      await nftService.changeNFTsVisibility(
+        repositories,
+        testMockWallet.id,
+        'test-profile',
+        false,
+        false,
+        null,
+        [nftB.id],
+        '5',
+      )
+      const count = await repositories.edge.count({ hide: true } )
+      expect(count).toEqual(1)
+    })
+  })
+
+  describe('updateNFTsOrder', () => {
+    beforeEach(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftA.id,
+        hide: false,
+        weight: 'aaaa',
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftB.id,
+        hide: false,
+        weight: 'aaab',
+      })
+    })
+
+    afterEach(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should updateNFTs order to beginning', async () => {
+      await nftService.updateNFTsOrder(
+        'test-profile',
+        [
+          {
+            nftId: nftB.id,
+            newIndex: 0,
+          },
+        ],
+      )
+      const edge = await repositories.edge.findOne({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: 'test-profile',
+          thatEntityId: nftB.id,
+          edgeType: defs.EdgeType.Displays,
+        },
+      })
+      expect(edge.weight).toEqual('aaaa')
+    })
+
+    it('should updateNFTs order to end', async () => {
+      await nftService.updateNFTsOrder(
+        'test-profile',
+        [
+          {
+            nftId: nftA.id,
+            newIndex: 3,
+          },
+        ],
+      )
+      const edge = await repositories.edge.findOne({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: 'test-profile',
+          thatEntityId: nftA.id,
+          edgeType: defs.EdgeType.Displays,
+        },
+      })
+      expect(edge.weight).toEqual('aaac')
+    })
+  })
+
+  describe('updateEdgesWeightForProfile', () => {
+    beforeAll(async () => {
+      nftA = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x01f3',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      nftB = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x02ea',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftA.id,
+      })
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: 'test-profile',
+        edgeType: defs.EdgeType.Displays,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nftB.id,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should update edges with weight', async () => {
+      await nftService.updateEdgesWeightForProfile('test-profile', testMockWallet.id)
+      const edges = await repositories.edge.findAll()
+      for(const edge of edges) {
+        expect(edge.weight).not.toBeNull()
+      }
     })
   })
 })
