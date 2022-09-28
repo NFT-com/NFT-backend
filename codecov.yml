@@ -1,4 +1,5 @@
 ignore:
+  - "packages/gql/src/tracer.ts"
   - "packages/gql/src/job/job.ts"
   - "packages/gql/src/job/marketplace.job.ts"
   - "packages/gql/src/resolver/bid.resolver.ts"

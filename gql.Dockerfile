@@ -2,18 +2,18 @@ FROM node:16-alpine as deps
 
 WORKDIR /app
 
-COPY package.json .
+COPY package*.json ./
 COPY .npmrc .
 COPY tsconfig.json .
-COPY packages/shared/package.json ./packages/shared/package.json
-COPY packages/gql/package.json ./packages/gql/package.json
+COPY packages/shared/package*.json ./packages/shared/
+COPY packages/gql/package*.json ./packages/gql/
 
 # add tools for native dependencies (node-gpy)
 RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm set progress=false \
-    && npm install --omit=dev \
+    && npm ci --omit=dev \
     && cp -R node_modules prod_node_modules \
-    && npm install \
+    && npm ci \
     && apk del .gyp
 
 

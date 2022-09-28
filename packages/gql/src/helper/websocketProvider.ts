@@ -77,7 +77,7 @@ const keepAlive = ({
     const nftResolverAddress = helper.checkSum(
       contracts.nftResolverAddress(Number(chainId).toString()),
     )
-    logger.debug(`nftResolverAddress: ${nftResolverAddress}, chainId: ${chainId}`)
+    logger.debug({ nftResolverAddress, chainId })
 
     const filter = {
       address: utils.getAddress(nftResolverAddress),
@@ -86,7 +86,7 @@ const keepAlive = ({
 
     provider.on(filter, async (e) => {
       const evt = nftResolverInterface.parseLog(e)
-      logger.debug('******** wss parsed event: ', evt)
+      logger.debug(evt, '******** wss parsed event' )
 
       if (evt.name === EventName.AssociateEvmUser) {
         const [owner,profileUrl,destinationAddress] = evt.args
@@ -205,7 +205,7 @@ const keepAlive = ({
         }
       } else {
         // not relevant in our search space
-        logger.error('topic hash not covered: ', e.transactionHash)
+        logger.error({ txnHash: e.transactionHash }, 'topic hash not covered')
       }
     })
 
@@ -661,21 +661,23 @@ const keepAlive = ({
 export const start = (
   chainId: providers.Networkish = 1, //mainnet default
 ): Promise<void> => {
-  logger.debug(`---------> 🎬 starting websocket on chainId: ${Number(chainId)}`)
+  if (!process.env.DISABLE_WEBSOCKET) {
+    logger.debug(`---------> 🎬 starting websocket on chainId: ${Number(chainId)}`)
 
-  const provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
-    chainId,
-    process.env.ALCHEMY_API_KEY,
-  )
+    const provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
+      chainId,
+      process.env.ALCHEMY_API_KEY,
+    )
 
-  keepAlive({
-    provider,
-    chainId,
-    onDisconnect: (err) => {
-      start(chainId)
-      logger.error('The ws connection was closed', JSON.stringify(err, null, 2))
-    },
-  })
+    keepAlive({
+      provider,
+      chainId,
+      onDisconnect: (err) => {
+        start(chainId)
+        logger.error(err, 'The ws connection was closed')
+      },
+    })
+  }
 
   return Promise.resolve()
 }
