@@ -658,15 +658,18 @@ const keepAlive = ({
   return Promise.resolve()
 }
 
+let provider: ethers.providers.AlchemyWebSocketProvider
 export const start = (
   chainId: providers.Networkish = 1, //mainnet default
 ): Promise<void> => {
   logger.debug(`---------> 🎬 starting websocket on chainId: ${Number(chainId)}`)
 
-  const provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
-    chainId,
-    process.env.ALCHEMY_API_KEY,
-  )
+  if (!provider) {
+    provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
+      chainId,
+      process.env.ALCHEMY_API_KEY,
+    )
+  }
 
   keepAlive({
     provider,
