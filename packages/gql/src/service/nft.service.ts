@@ -947,7 +947,7 @@ export const getOwnersOfGenesisKeys = async (
   }
 }
 
-const hideAllNFTs = async (
+export const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<void> => {
@@ -975,6 +975,7 @@ const hideAllNFTs = async (
     throw err
   }
 }
+
 const saveEdgesWithWeight = async (
   nfts: entity.NFT[],
   profileId: string,
@@ -1022,7 +1023,7 @@ const saveEdgesWithWeight = async (
   }
 }
 
-const showAllNFTs = async (
+export const showAllNFTs = async (
   repositories: db.Repository,
   walletId: string,
   profileId: string,
