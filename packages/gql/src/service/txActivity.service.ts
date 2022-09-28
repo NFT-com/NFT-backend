@@ -2,6 +2,7 @@ import { BigNumber } from 'ethers'
 
 import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
+import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
@@ -403,4 +404,37 @@ export const paginatedActivitiesBy = (
     }).then(pagination.reverseResult),
   })
 }
-  
+
+/**
+ * triggerNFTOrderRefreshQueue
+ * @param nft
+ * @param chainId
+ * @param forced
+ */
+export const triggerNFTOrderRefreshQueue = async (
+  nfts: entity.NFT[],
+  chainId: string,
+  forced?: boolean,
+): Promise<number> => {
+  if(!nfts.length) {
+    return Promise.resolve(0)
+  }
+  const nftRefreshKeys: string[] = []
+  // O(N)
+  for (const nft of nfts) {
+    const nftKey = `${nft.contract}:${nft.tokenId}`
+    // O(1)
+    if (forced) {
+      nftRefreshKeys.push(...['1', nftKey])
+    } else {
+      const itemPresentInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, nftKey)
+      if (!itemPresentInRefreshedCache) {
+        nftRefreshKeys.push(...['1', nftKey])
+      }
+    }
+  }
+  if(!nftRefreshKeys.length) {
+    return Promise.resolve(0)
+  }
+  return Promise.resolve(cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, ...nftRefreshKeys))
+}

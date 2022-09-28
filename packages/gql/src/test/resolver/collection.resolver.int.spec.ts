@@ -34,6 +34,12 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
     get: jest.fn(),
     set: jest.fn(),
+    zscore: jest.fn().mockReturnValue(0),
+    zadd: jest.fn(),
+  },
+  CacheKeys: {
+    REFRESH_NFT_ORDERS_EXT: 'refresh_nft_orders_ext_test',
+    REFRESHED_NFT_ORDERS_EXT: 'refreshed_nft_orders_ext_test',
   },
   createCacheConnection: jest.fn(),
 }))
