@@ -17,6 +17,8 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
     get: jest.fn(),
     set: jest.fn(),
+    zscore: jest.fn().mockReturnValue(0),
+    zadd: jest.fn(),
   },
   CacheKeys: {
     GENESIS_KEY_OWNERS: 'genesis_key_owners',

@@ -90,6 +90,7 @@ jobs:
         envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         envkey_REFRESH_NFT_DURATION: ${{ secrets.REFRESH_NFT_DURATION }}
         envkey_IPFS_WEB_GATEWAY: ${{ secrets.IPFS_WEB_GATEWAY }}
+        envkey_DEFAULT_TTL_MINS: ${{ secrets.DEFAULT_TTL_MINS }}
         file_name: packages/gql/.env
         fail_on_empty: false
 

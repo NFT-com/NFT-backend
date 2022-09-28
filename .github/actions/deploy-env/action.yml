@@ -93,6 +93,7 @@ runs:
         NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY}}
         REFRESH_NFT_DURATION: ${{ fromJSON(inputs.secrets).REFRESH_NFT_DURATION}}
         IPFS_WEB_GATEWAY: ${{ fromJSON(inputs.secrets).IPFS_WEB_GATEWAY }}
+        DEFAULT_TTL_MINS: ${{ fromJSON(inputs.secrets).DEFAULT_TTL_MINS }}
       run: npm run build:gql:env
     - name: Build and Push GQL Image
       shell: bash
