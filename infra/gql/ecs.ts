@@ -184,7 +184,7 @@ const createEcsTaskDefinition = (
               log_key: 'log',
               log_group_name: `/ecs/${resourceName}`,
               log_stream_prefix: 'gql/',
-              auto_create_group: true,
+              auto_create_group: 'true',
             },
           },
           memoryReservation: config.requireNumber('ecsTaskMemory') - loggerMemory,
