@@ -1418,19 +1418,6 @@ export const removeEdgesForNonassociatedAddresses = async (
   }
 }
 
-export const downloadImageFromUbiquity = async (
-  url: string,
-): Promise<Buffer | undefined> => {
-  try {
-    const res = await fetch(url + `?apiKey=${process.env.UBIQUITY_API_KEY}`)
-    return await res.buffer()
-  } catch (err) {
-    logger.error(`Error in downloadImageFromUbiquity: ${err}`)
-    Sentry.captureMessage(`Error in downloadImageFromUbiquity: ${err}`)
-    return undefined
-  }
-}
-
 export const getCollectionInfo = async (
   contract: string,
   chainId: string,
