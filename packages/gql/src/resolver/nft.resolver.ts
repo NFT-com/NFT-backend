@@ -15,8 +15,6 @@ import {
   entity,
   fp,
   helper,
-  provider,
-  typechain,
 } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
@@ -24,17 +22,15 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { PageInput } from '@nftcom/gql/defs/gql'
-import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  getCollectionNameFromContract,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
-  saveNewNFT, saveNFTMetadataImageToS3,
+  saveNewNFT, saveNFTMetadataImageToS3, updateCollectionForAssociatedContract,
   updateNFTMetadata, updateNFTOwnershipAndMetadata, updateNFTsForAssociatedAddresses,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -643,88 +639,6 @@ export const saveVisibleNFTsForProfile = async (
 //     return err
 //   }
 // }
-
-const updateCollectionForAssociatedContract = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-  chainId: string,
-  walletAddress: string,
-): Promise<string> => {
-  try {
-    const cacheKey = `${CacheKeys.ASSOCIATED_CONTRACT}_${chainId}_${profile.url}`
-    const cachedData = await cache.get(cacheKey)
-    let contract
-    if (cachedData) {
-      contract = JSON.parse(cachedData)
-    } else {
-      const nftResolverContract = typechain.NftResolver__factory.connect(
-        contracts.nftResolverAddress(chainId),
-        provider.provider(Number(chainId)),
-      )
-      const associatedContract = await nftResolverContract.associatedContract(profile.url)
-      if (!associatedContract) {
-        return `No associated contract of ${profile.url}`
-      }
-      if (!associatedContract.chainAddr) {
-        return `No associated contract of ${profile.url}`
-      }
-      contract = ethers.utils.getAddress(associatedContract.chainAddr)
-      await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
-      // update associated contract with the latest updates
-      await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
-    }
-    // get collection info
-    let collectionName = await getCollectionNameFromContract(
-      contract,
-      chainId,
-      defs.NFTType.ERC721,
-    )
-    if (collectionName === 'Unknown Name') {
-      collectionName = await getCollectionNameFromContract(
-        contract,
-        chainId,
-        defs.NFTType.ERC1155,
-      )
-    }
-    // check if deployer of associated contract is in associated addresses
-    const deployer = await getCollectionDeployer(contract, chainId)
-    if (!deployer) {
-      if (profile.profileView === defs.ProfileViewType.Collection) {
-        await repositories.profile.updateOneById(profile.id,
-          {
-            profileView: defs.ProfileViewType.Gallery,
-          },
-        )
-      }
-      return `Updated associated contract for ${profile.url}`
-    } else {
-      const collection = await repositories.collection.findByContractAddress(contract, chainId)
-      if (!collection) {
-        const savedCollection = await repositories.collection.save({
-          contract,
-          name: collectionName,
-          chainId,
-          deployer,
-        })
-        await seService.indexCollections([savedCollection])
-      }
-      const checkedDeployer =  ethers.utils.getAddress(deployer)
-      const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
-        checkedDeployer === walletAddress
-      if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
-        await repositories.profile.updateOneById(profile.id,
-          {
-            profileView: defs.ProfileViewType.Gallery,
-          },
-        )
-      }
-      return `Updated associated contract for ${profile.url}`
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in updateCollectionForAssociatedContract: ${err}`)
-    return `error while updating associated contract of ${profile.url}`
-  }
-}
 
 const updateNFTsForProfile = async (
   _: any,

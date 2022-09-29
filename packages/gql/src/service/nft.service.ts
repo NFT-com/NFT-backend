@@ -1477,6 +1477,88 @@ export const updateNFTsForAssociatedAddresses = async (
   }
 }
 
+export const updateCollectionForAssociatedContract = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+  walletAddress: string,
+): Promise<string> => {
+  try {
+    const cacheKey = `${CacheKeys.ASSOCIATED_CONTRACT}_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let contract
+    if (cachedData) {
+      contract = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedContract = await nftResolverContract.associatedContract(profile.url)
+      if (!associatedContract) {
+        return `No associated contract of ${profile.url}`
+      }
+      if (!associatedContract.chainAddr) {
+        return `No associated contract of ${profile.url}`
+      }
+      contract = ethers.utils.getAddress(associatedContract.chainAddr)
+      await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
+      // update associated contract with the latest updates
+      await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
+    }
+    // get collection info
+    let collectionName = await getCollectionNameFromContract(
+      contract,
+      chainId,
+      defs.NFTType.ERC721,
+    )
+    if (collectionName === 'Unknown Name') {
+      collectionName = await getCollectionNameFromContract(
+        contract,
+        chainId,
+        defs.NFTType.ERC1155,
+      )
+    }
+    // check if deployer of associated contract is in associated addresses
+    const deployer = await getCollectionDeployer(contract, chainId)
+    if (!deployer) {
+      if (profile.profileView === defs.ProfileViewType.Collection) {
+        await repositories.profile.updateOneById(profile.id,
+          {
+            profileView: defs.ProfileViewType.Gallery,
+          },
+        )
+      }
+      return `Updated associated contract for ${profile.url}`
+    } else {
+      const collection = await repositories.collection.findByContractAddress(contract, chainId)
+      if (!collection) {
+        const savedCollection = await repositories.collection.save({
+          contract,
+          name: collectionName,
+          chainId,
+          deployer,
+        })
+        await seService.indexCollections([savedCollection])
+      }
+      const checkedDeployer =  ethers.utils.getAddress(deployer)
+      const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
+        checkedDeployer === walletAddress
+      if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
+        await repositories.profile.updateOneById(profile.id,
+          {
+            profileView: defs.ProfileViewType.Gallery,
+          },
+        )
+      }
+      return `Updated associated contract for ${profile.url}`
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateCollectionForAssociatedContract: ${err}`)
+    return `error while updating associated contract of ${profile.url}`
+  }
+}
+
 export const downloadImageFromUbiquity = async (
   url: string,
 ): Promise<Buffer | undefined> => {
