@@ -170,9 +170,10 @@ const createEcsTaskDefinition = (
   const otelName = getResourceName('aws-otel-collector')
   const otelMemory = 80
   const loggerMemory = 50
+  const otelSsmParamName = getResourceName('otel-collector-config')
 
   const otelConfig = new aws.ssm.Parameter('otel-collector-config', {
-    name: 'otel-collector-config',
+    name: otelSsmParamName,
     type: 'String',
     dataType: 'text',
     value:
@@ -236,7 +237,7 @@ service:
           secrets: [
             {
               name: 'AOT_CONFIG_CONTENT',
-              valueFrom: 'otel-collector-config',
+              valueFrom: otelSsmParamName,
             },
           ],
         },
