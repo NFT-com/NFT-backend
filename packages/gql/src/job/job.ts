@@ -46,7 +46,7 @@ const networks = new Map()
 networkList.map(network => {
   const chainId = network.replace('ethereum:', '').split(':')[0]
   websocketProvider.start(Number(chainId))
-    .then(() => logger.log('Alchemy websocket connected'))
+    .then(() => logger.log(`Alchemy websocket connected for chainId: ${chainId}`))
     .catch(err => logger.error('Alchemy websocket provider error', err))
 
   return networks.set(
