@@ -203,14 +203,6 @@ type updateENSNFTMetadataOutput {
   message: String
 }
 
-type ClearPreviewLinksOutput {
-  message: String
-}
-
-type FixUpdatedAtOutput {
-  message: String
-}
-
 input UpdateNFTInput {
   contract: String!
   tokenId: String!
@@ -244,10 +236,6 @@ extend type Mutation {
   updateNFTMemo(nftId: ID!, memo: String!): NFT!
   "AUTHENTICATED"
   updateNFTProfileId(nftId: ID!, profileId: ID!): NFT!
-  "AUTHENTICATED"
-  clearPreviewLinks(count: Int!): ClearPreviewLinksOutput!
-  "AUTHENTICATED"
-  fixUpdatedAt(count: Int!): FixUpdatedAtOutput!
   "AUTHENTICATED"
   updateENSNFTMetadata(count: Int!): updateENSNFTMetadataOutput!
 }
