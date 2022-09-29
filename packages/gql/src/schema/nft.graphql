@@ -245,8 +245,6 @@ extend type Mutation {
   "AUTHENTICATED"
   updateNFTProfileId(nftId: ID!, profileId: ID!): NFT!
   "AUTHENTICATED"
-  uploadMetadataImagesToS3(count: Int!): UploadMetadataImagesToS3Output!
-  "AUTHENTICATED"
   clearPreviewLinks(count: Int!): ClearPreviewLinksOutput!
   "AUTHENTICATED"
   fixUpdatedAt(count: Int!): FixUpdatedAtOutput!

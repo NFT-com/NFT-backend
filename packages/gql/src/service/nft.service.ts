@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
-import fetch from 'node-fetch'
 import * as typeorm from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
@@ -534,10 +533,10 @@ const uploadImageToS3 = async (
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           // this image is svg so we skip it
-          return Promise.reject(new Error('File format is unacceptable'))
+          return Promise.reject(new Error('ENS file format is unacceptable'))
         } else if (imageUrl.includes('https://arweave.net/')) {
           // AR images are mp4 format, so we don't save as preview link
-          return Promise.reject(new Error('File format is unacceptable'))
+          return Promise.reject(new Error('Arweave file format is unacceptable'))
         } else {
           ext = 'png'
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
@@ -714,11 +713,7 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-      // save previewLink of NFT metadata image if it's from IPFS
-      const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-      if (previewLink) {
-        await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
-      }
+
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -783,13 +778,6 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
-          if (existingNFT.metadata.imageURL !== image) {
-            // update previewLink of NFT metadata image if it's from IPFS
-            const previewLink = await saveNFTMetadataImageToS3(updatedNFT, repositories)
-            if (previewLink) {
-              await repositories.nft.updateOneById(updatedNFT.id, { previewLink, previewLinkError: null })
-            }
-          }
           return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
