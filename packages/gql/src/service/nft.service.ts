@@ -110,13 +110,6 @@ export const initiateWeb3 = (chainId?: string): void => {
   web3 = createAlchemyWeb3(alchemyUrl)
 }
 
-export const initiateWeb3PreviewLink = (chainId?: string): AlchemyWeb3 => {
-  chainId = chainId || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
-    Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
-  return createAlchemyWeb3(alchemyUrl)
-}
-
 export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
@@ -533,10 +526,10 @@ const uploadImageToS3 = async (
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           // this image is svg so we skip it
-          return Promise.reject(new Error('File format is unacceptable'))
+          return Promise.reject(new Error('ENS file format is unacceptable'))
         } else if (imageUrl.includes('https://arweave.net/')) {
           // AR images are mp4 format, so we don't save as preview link
-          return Promise.reject(new Error('File format is unacceptable'))
+          return Promise.reject(new Error('Arweave file format is unacceptable'))
         } else {
           ext = 'png'
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
@@ -576,96 +569,6 @@ const uploadImageToS3 = async (
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
     throw err
-  }
-}
-
-export const saveNFTMetadataImageToS3 = async (
-  nft: entity.NFT,
-  repositories: db.Repository,
-): Promise<string | undefined> => {
-  try {
-    if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.startsWith('https://cdn.nft.com')) {
-      await repositories.nft.updateOneById(nft.id, {
-        previewLink: nft.metadata.imageURL + '?width=600',
-      })
-      return nft.metadata.imageURL + '?width=600'
-    } else {
-      let uploadedImage
-      const uploadPath = `nfts/${nft.chainId}/`
-
-      const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
-      // if image url from NFTPortResult is valid
-      if (nftPortResult && nftPortResult?.nft.cached_file_url && nftPortResult?.nft.cached_file_url.length) {
-        const filename = nftPortResult.nft.cached_file_url.split('/').pop()
-        uploadedImage = await uploadImageToS3(
-          nftPortResult.nft.cached_file_url,
-          filename,
-          nft.chainId,
-          nft.contract,
-          uploadPath,
-        )
-      } else {
-        const newWeb3 = initiateWeb3PreviewLink(nft.chainId)
-        const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId, newWeb3)
-        if (nftAlchemyResult && nftAlchemyResult?.metadata &&
-          nftAlchemyResult?.metadata?.image && nftAlchemyResult?.metadata?.image.length
-        ) {
-          const filename = nftAlchemyResult.metadata.image.split('/').pop()
-          uploadedImage = await uploadImageToS3(
-            nftAlchemyResult.metadata.image,
-            filename,
-            nft.chainId,
-            nft.contract,
-            uploadPath,
-          )
-        } else {
-          // we try to get url from metadata
-          if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.indexOf('data:image/svg+xml') === 0) {
-            uploadedImage = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, uploadPath)
-          } else {
-            const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
-            if (!imageUrl) {
-              await repositories.nft.updateOneById(nft.id, {
-                previewLink: null,
-                previewLinkError: 'undefined previewLink',
-              })
-              return undefined
-            }
-            const filename = nft.metadata.imageURL.split('/').pop()
-            if (!filename) {
-              await repositories.nft.updateOneById(nft.id, {
-                previewLink: null,
-                previewLinkError: 'undefined previewLink',
-              })
-              return undefined
-            }
-            uploadedImage = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, uploadPath)
-          }
-        }
-      }
-
-      if (!uploadedImage) {
-        await repositories.nft.updateOneById(nft.id, {
-          previewLink: null,
-          previewLinkError: 'undefined previewLink',
-        })
-        return undefined
-      }
-      logger.info(`previewLink for NFT ${ nft.id } was generated`,
-        {
-          previewLink: uploadedImage + '?width=600',
-        })
-      return uploadedImage + '?width=600'
-    }
-  } catch (err) {
-    await repositories.nft.updateOneById(nft.id, {
-      previewLink: null,
-      previewLinkError: typeof err.message === 'string' ? err.message : 'undefined previewLink',
-    })
-
-    logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
-    Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
-    return undefined
   }
 }
 
@@ -713,11 +616,7 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-      // save previewLink of NFT metadata image if it's from IPFS
-      const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-      if (previewLink) {
-        await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
-      }
+
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -782,13 +681,6 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
-          if (existingNFT.metadata.imageURL !== image) {
-            // update previewLink of NFT metadata image if it's from IPFS
-            const previewLink = await saveNFTMetadataImageToS3(updatedNFT, repositories)
-            if (previewLink) {
-              await repositories.nft.updateOneById(updatedNFT.id, { previewLink, previewLinkError: null })
-            }
-          }
           return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
@@ -1635,11 +1527,7 @@ export const saveNewNFT = async (
         traits: traits,
       },
     })
-    // save previewLink of NFT metadata image if it's from IPFS
-    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-    if (previewLink) {
-      await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
-    }
+
     await seService.indexNFTs([savedNFT])
     await updateCollectionForNFTs([savedNFT])
     return savedNFT

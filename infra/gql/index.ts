@@ -64,8 +64,6 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['ZMOK_API_URL'] = process.env.ZMOK_API_URL || parsedFile['ZMOK_API_URL']
   parsedFile['CHAIN_ID'] = process.env.CHAIN_ID || parsedFile['CHAIN_ID']
   parsedFile['ALCHEMY_API_KEY'] = process.env.ALCHEMY_API_KEY || parsedFile['ALCHEMY_API_KEY']
-  parsedFile['ALCHEMY_API_KEY_PREVIEWLINK'] = process.env.ALCHEMY_API_KEY_PREVIEWLINK || parsedFile['ALCHEMY_API_KEY_PREVIEWLINK']
-  parsedFile['ALCHEMY_API_KEY_PREVIEWLINK_GOERLI'] = process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI || parsedFile['ALCHEMY_API_KEY_PREVIEWLINK_GOERLI']
   parsedFile['ALCHEMY_API_URL'] = process.env.ALCHEMY_API_URL || parsedFile['ALCHEMY_API_URL']
   parsedFile['ALCHEMY_API_URL_RINKEBY'] = process.env.ALCHEMY_API_URL_RINKEBY || parsedFile['ALCHEMY_API_URL_RINKEBY']
   parsedFile['ALCHEMY_API_URL_GOERLI'] = process.env.ALCHEMY_API_URL_GOERLI || parsedFile['ALCHEMY_API_URL_GOERLI']
