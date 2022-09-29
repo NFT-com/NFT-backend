@@ -32,7 +32,7 @@ export const getNFTPortInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(instance,  retryOptions)
+  axiosRetry(instance as any,  retryOptions)
 
   return instance
 }
