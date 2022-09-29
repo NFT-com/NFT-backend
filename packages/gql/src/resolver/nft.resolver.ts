@@ -32,11 +32,11 @@ import {
   checkNFTContractAddresses,
   getCollectionNameFromContract,
   getNFTActivities,
-  getOwnersOfGenesisKeys, getUserWalletFromNFT,
+  getUserWalletFromNFT,
   initiateWeb3,
   removeEdgesForNonassociatedAddresses, saveNewNFT, saveNFTMetadataImageToS3,
   syncEdgesWithNFTs,
-  updateEdgesWeightForProfile, updateNFTMetadata, updateNFTOwnershipAndMetadata,
+  updateNFTMetadata, updateNFTOwnershipAndMetadata,
   updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
@@ -46,7 +46,7 @@ import * as Sentry from '@sentry/node'
 
 import { SearchEngineService } from '../service/searchEngine.service'
 
-const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
+// const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
 
@@ -626,25 +626,25 @@ export const saveVisibleNFTsForProfile = async (
   }
 }
 
-const updateGKIconVisibleStatus = async (
-  repositories: db.Repository,
-  chainId: string,
-  profile: entity.Profile,
-): Promise<void> => {
-  try {
-    const gkOwners = await getOwnersOfGenesisKeys(chainId)
-    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
-    if (index === -1) {
-      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
-    } else {
-      return
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
-    return err
-  }
-}
+// const updateGKIconVisibleStatus = async (
+//   repositories: db.Repository,
+//   chainId: string,
+//   profile: entity.Profile,
+// ): Promise<void> => {
+//   try {
+//     const gkOwners = await getOwnersOfGenesisKeys(chainId)
+//     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+//     const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
+//     if (index === -1) {
+//       await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
+//     } else {
+//       return
+//     }
+//   } catch (err) {
+//     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+//     return err
+//   }
+// }
 
 const updateNFTsForAssociatedAddresses = async (
   repositories: db.Repository,
@@ -787,7 +787,7 @@ const updateCollectionForAssociatedContract = async (
   }
 }
 
-const updateNFTsForProfile = (
+const updateNFTsForProfile = async (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
   ctx: Context,
@@ -801,138 +801,195 @@ const updateNFTsForProfile = (
     const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
 
-    return repositories.profile.findOne({
+    const profile = await repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
         chainId,
       },
     })
-      .then((profile: entity.Profile | undefined) => {
-        if (!profile) {
-          return Promise.resolve({ items: [] })
-        } else {
-          const filter: Partial<entity.Edge> = helper.removeEmpty({
-            thisEntityType: defs.EntityType.Profile,
-            thisEntityId: profile.id,
-            thatEntityType: defs.EntityType.NFT,
-            edgeType: defs.EdgeType.Displays,
-          })
-          const now = helper.toUTCDate()
-          let duration
-          if (profile.nftsLastUpdated) {
-            duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
-          }
 
-          // if there is no profile NFT or NFTs are expired and need to be updated...
-          if (!profile.nftsLastUpdated  ||
-            (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
-          ) {
-            const updateBegin = Date.now()
-            repositories.profile.updateOneById(profile.id, {
-              nftsLastUpdated: now,
-            }).then(() => repositories.wallet.findOne({
-              where: {
-                id: profile.ownerWalletId,
-                chainId,
-              },
-            })
-              .then((wallet: entity.Wallet) => {
-                return checkNFTContractAddresses(
-                  profile.ownerUserId,
-                  wallet.id,
-                  wallet.address,
-                  chainId,
-                )
-                  .then(() => {
-                    logger.debug('checked NFT contract addresses in updateNFTsForProfile', profile.id)
-                    return updateWalletNFTs(
-                      profile.ownerUserId,
-                      wallet.id,
-                      wallet.address,
-                      chainId,
-                    ).then(() => {
-                      logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
-                      return updateEdgesWeightForProfile(profile.id, profile.ownerWalletId)
-                        .then(() => {
-                          logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
-                          return syncEdgesWithNFTs(profile.id)
-                            .then(() => {
-                              logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
-                              // save visible NFT amount of profile
-                              return saveVisibleNFTsForProfile(profile.id, repositories)
-                                .then(() => {
-                                  logger.debug('saved amount of visible NFTs to profile', profile.id)
-                                  // refresh NFTs for associated addresses
-                                  return updateNFTsForAssociatedAddresses(
-                                    repositories,
-                                    profile,
-                                    chainId,
-                                  ).then((msg) => {
-                                    logger.debug(msg)
-                                    // update associated contract
-                                    return updateCollectionForAssociatedContract(
-                                      repositories,
-                                      profile,
-                                      chainId,
-                                      wallet.address,
-                                    ).then((msg) => {
-                                      logger.debug(msg)
-                                      // if gkIconVisible is true, we check if this profile owner still owns genesis key,
-                                      if (profile.gkIconVisible) {
-                                        return updateGKIconVisibleStatus(
-                                          repositories,
-                                          chainId,
-                                          profile,
-                                        ).then(() => {
-                                          logger.debug(`gkIconVisible updated for profile ${profile.id}`)
-                                          const updateEnd = Date.now()
-                                          logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                        })
-                                      } else {
-                                        const updateEnd = Date.now()
-                                        logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                      }
-                                    })
-                                  })
-                                })
-                            })
-                        })
-                    })
-                  })
-              }))
-          }
+    if (!profile) {
+      return Promise.resolve({ items: [] })
+    }
 
-          let scoreDuration
-          if (profile.lastScored) {
-            scoreDuration = differenceInMilliseconds(now, profile.lastScored)
-          }
-          // if there is profile score is not calculated yet or should be updated,
-          if (!profile.lastScored ||
-            (scoreDuration && scoreDuration > PROFILE_SCORE_EXPIRE_DURATION)
-          ) {
-            repositories.profile.updateOneById(profile.id, {
-              lastScored: now,
-            }).then(() => {
-              return saveProfileScore(repositories, profile)
-            })
-          }
+    const now = helper.toUTCDate()
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, `${profile.id}`)
+    if (!recentlyRefreshed) {
+      // add to cache list
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, `${profile.id}`)
+    }
 
-          return core.paginatedThatEntitiesOfEdgesBy(
-            ctx,
-            repositories.nft,
-            { ...filter, hide: false },
-            pageInput,
-            'weight',
-            'ASC',
-            chainId,
-            'NFT',
-          ).then(result => {
-            // refresh order queue trigger
-            return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-              .then(() => Promise.resolve(result))
-          })
-        }
+    let scoreDuration
+    if (profile.lastScored) {
+      scoreDuration = differenceInMilliseconds(now, profile.lastScored)
+    }
+
+    // if there is profile score is not calculated yet or should be updated,
+    if (!profile.lastScored ||
+      (scoreDuration && scoreDuration > PROFILE_SCORE_EXPIRE_DURATION)
+    ) {
+      repositories.profile.updateOneById(profile.id, {
+        lastScored: now,
+      }).then(() => {
+        return saveProfileScore(repositories, profile)
       })
+    }
+
+    const filter: Partial<entity.Edge> = helper.removeEmpty({
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: profile.id,
+      thatEntityType: defs.EntityType.NFT,
+      edgeType: defs.EdgeType.Displays,
+    })
+
+    return core.paginatedThatEntitiesOfEdgesBy(
+      ctx,
+      repositories.nft,
+      { ...filter, hide: false },
+      pageInput,
+      'weight',
+      'ASC',
+      chainId,
+      'NFT',
+    ).then(result => {
+      // refresh order queue trigger
+      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+        .then(() => Promise.resolve(result))
+    })
+
+    // return repositories.profile.findOne({
+    //   where: {
+    //     id: args?.input.profileId,
+    //     chainId,
+    //   },
+    // })
+    //   .then((profile: entity.Profile | undefined) => {
+    //     if (!profile) {
+    //       return Promise.resolve({ items: [] })
+    //     } else {
+    //       const filter: Partial<entity.Edge> = helper.removeEmpty({
+    //         thisEntityType: defs.EntityType.Profile,
+    //         thisEntityId: profile.id,
+    //         thatEntityType: defs.EntityType.NFT,
+    //         edgeType: defs.EdgeType.Displays,
+    //       })
+    //
+    //       const now = helper.toUTCDate()
+    //       let duration
+    //       if (profile.nftsLastUpdated) {
+    //         duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
+    //       }
+    //
+    //       // if there is no profile NFT or NFTs are expired and need to be updated...
+    //       if (!profile.nftsLastUpdated  ||
+    //         (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
+    //       ) {
+    //         const updateBegin = Date.now()
+    //         repositories.profile.updateOneById(profile.id, {
+    //           nftsLastUpdated: now,
+    //         }).then(() => repositories.wallet.findOne({
+    //           where: {
+    //             id: profile.ownerWalletId,
+    //             chainId,
+    //           },
+    //         })
+    //           .then((wallet: entity.Wallet) => {
+    //             return checkNFTContractAddresses(
+    //               profile.ownerUserId,
+    //               wallet.id,
+    //               wallet.address,
+    //               chainId,
+    //             )
+    //               .then(() => {
+    //                 logger.debug('checked NFT contract addresses in updateNFTsForProfile', profile.id)
+    //                 return updateWalletNFTs(
+    //                   profile.ownerUserId,
+    //                   wallet.id,
+    //                   wallet.address,
+    //                   chainId,
+    //                 ).then(() => {
+    //                   logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
+    //                   return updateEdgesWeightForProfile(profile.id, profile.ownerWalletId)
+    //                     .then(() => {
+    //                       logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
+    //                       return syncEdgesWithNFTs(profile.id)
+    //                         .then(() => {
+    //                           logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
+    //                           // save visible NFT amount of profile
+    //                           return saveVisibleNFTsForProfile(profile.id, repositories)
+    //                             .then(() => {
+    //                               logger.debug('saved amount of visible NFTs to profile', profile.id)
+    //                               // refresh NFTs for associated addresses
+    //                               return updateNFTsForAssociatedAddresses(
+    //                                 repositories,
+    //                                 profile,
+    //                                 chainId,
+    //                               ).then((msg) => {
+    //                                 logger.debug(msg)
+    //                                 // update associated contract
+    //                                 return updateCollectionForAssociatedContract(
+    //                                   repositories,
+    //                                   profile,
+    //                                   chainId,
+    //                                   wallet.address,
+    //                                 ).then((msg) => {
+    //                                   logger.debug(msg)
+    //                                   // if gkIconVisible is true, we check if this profile owner still owns genesis key,
+    //                                   if (profile.gkIconVisible) {
+    //                                     return updateGKIconVisibleStatus(
+    //                                       repositories,
+    //                                       chainId,
+    //                                       profile,
+    //                                     ).then(() => {
+    //                                       logger.debug(`gkIconVisible updated for profile ${profile.id}`)
+    //                                       const updateEnd = Date.now()
+    //                                       logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+    //                                     })
+    //                                   } else {
+    //                                     const updateEnd = Date.now()
+    //                                     logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
+    //                                   }
+    //                                 })
+    //                               })
+    //                             })
+    //                         })
+    //                     })
+    //                 })
+    //               })
+    //           }))
+    //       }
+    //
+    //       let scoreDuration
+    //       if (profile.lastScored) {
+    //         scoreDuration = differenceInMilliseconds(now, profile.lastScored)
+    //       }
+    //       // if there is profile score is not calculated yet or should be updated,
+    //       if (!profile.lastScored ||
+    //         (scoreDuration && scoreDuration > PROFILE_SCORE_EXPIRE_DURATION)
+    //       ) {
+    //         repositories.profile.updateOneById(profile.id, {
+    //           lastScored: now,
+    //         }).then(() => {
+    //           return saveProfileScore(repositories, profile)
+    //         })
+    //       }
+    //
+    //       return core.paginatedThatEntitiesOfEdgesBy(
+    //         ctx,
+    //         repositories.nft,
+    //         { ...filter, hide: false },
+    //         pageInput,
+    //         'weight',
+    //         'ASC',
+    //         chainId,
+    //         'NFT',
+    //       ).then(result => {
+    //         // refresh order queue trigger
+    //         return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+    //           .then(() => Promise.resolve(result))
+    //       })
+    //     }
+    //   })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
     return err
@@ -1208,7 +1265,7 @@ export const getNFTsForCollections = async (
 
           const length = Math.min(nfts.length, count)
           const slicedNfts: entity.NFT[] = nfts.slice(0, length)
-          
+
           // refresh order queue trigger
           await triggerNFTOrderRefreshQueue(slicedNfts, chainId)
           result.push({
