@@ -189,7 +189,7 @@ receivers:
 processors:
   batch/traces:
     timeout: 10s
-    send_batch_size: 512
+    send_batch_size: 100
   batch/metrics:
     timeout: 60s
 
@@ -232,8 +232,8 @@ service:
         {
           name: otelName,
           image: 'amazon/aws-otel-collector',
-          essential: true,
-          memory: otelMemory,
+          essential: false,
+          memoryReservation: otelMemory,
           secrets: [
             {
               name: 'AOT_CONFIG_CONTENT',
