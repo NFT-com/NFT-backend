@@ -167,44 +167,7 @@ const createEcsTaskDefinition = (
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
-  const otelName = getResourceName('aws-otel-collector')
-  const otelMemory = 80
   const loggerMemory = 50
-
-  const otelConfig = new aws.ssm.Parameter('otel-collector-config', {
-    name: 'otel-collector-config',
-    type: 'String',
-    dataType: 'text',
-    value:
-`extensions:
-  health_check:
-
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  batch/traces:
-    timeout: 10s
-    send_batch_size: 512
-  batch/metrics:
-    timeout: 60s
-
-exporters:
-  otlphttp:
-    endpoint: "http://tempo.leonardo.nft.prv"
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch/traces]
-      exporters: [otlphttp]
-
-  extensions: [health_check]`,
-  })
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
@@ -215,29 +178,19 @@ service:
           image: ecrImage,
           logConfiguration: {
             logDriver: 'awsfirelens',
+            options: {
+              Name: 'cloudwatch_logs',
+              region: 'us-east-1',
+              log_key: 'log',
+              log_group_name: `/ecs/${resourceName}`,
+              log_stream_prefix: 'gql/',
+              auto_create_group: 'true',
+            },
           },
-          memoryReservation: config.requireNumber('ecsTaskMemory') - (otelMemory + loggerMemory),
+          memoryReservation: config.requireNumber('ecsTaskMemory') - loggerMemory,
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
-          ],
-          dependsOn: [
-            {
-              condition: 'START',
-              containerName: otelName,
-            },
-          ],
-        },
-        {
-          name: otelName,
-          image: 'amazon/aws-otel-collector',
-          essential: true,
-          memory: otelMemory,
-          secrets: [
-            {
-              name: 'AOT_CONFIG_CONTENT',
-              valueFrom: 'otel-collector-config',
-            },
           ],
         },
         {
@@ -247,9 +200,7 @@ service:
           firelensConfiguration: {
             type: 'fluentbit',
             options: {
-              'enable-ecs-log-metadata': 'true',
-              'config-file-type': 'file',
-              'config-file-value': `/fluentbit.${process.env.STAGE}.conf`,
+              'enable-ecs-log-metadata': 'false',
             },
           },
           memoryReservation: loggerMemory,
@@ -268,7 +219,7 @@ service:
       tags: getTags(tags),
     },
     {
-      dependsOn: [pulumi.output(role), otelConfig],
+      dependsOn: [pulumi.output(role)],
     },
   )
 }

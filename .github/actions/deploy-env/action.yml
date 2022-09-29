@@ -60,7 +60,6 @@ runs:
         HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
         HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
         ZMOK_API_URL: ${{ fromJSON(inputs.secrets).ZMOK_API_URL }}
-        UBIQUITY_API_KEY: ${{ fromJSON(inputs.secrets).UBIQUITY_API_KEY }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
         ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
         ALCHEMY_API_KEY_PREVIEWLINK: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY_PREVIEWLINK }}

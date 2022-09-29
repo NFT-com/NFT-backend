@@ -655,6 +655,9 @@ const keepAlive = ({
     if (pingTimeout) clearInterval(pingTimeout)
   })
 
+  // ws error
+  provider._websocket.on('error', (err) => logger.error('Alchemy provider error', err))
+
   return Promise.resolve()
 }
 
@@ -664,19 +667,22 @@ export const start = (
   if (!process.env.DISABLE_WEBSOCKET) {
     logger.debug(`---------> 🎬 starting websocket on chainId: ${Number(chainId)}`)
 
-    const provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
-      chainId,
-      process.env.ALCHEMY_API_KEY,
-    )
-
-    keepAlive({
-      provider,
-      chainId,
-      onDisconnect: (err) => {
-        start(chainId)
-        logger.error(err, 'The ws connection was closed')
-      },
-    })
+    try {
+      const provider = ethers.providers.AlchemyProvider.getWebSocketProvider(
+        chainId,
+        process.env.ALCHEMY_API_KEY,
+      )
+      keepAlive({
+        provider,
+        chainId,
+        onDisconnect: (err) => {
+          start(chainId)
+          logger.error(err, 'The ws connection was closed')
+        },
+      })
+    } catch (err) {
+      logger.error('WS Error', err)
+    }
   }
 
   return Promise.resolve()

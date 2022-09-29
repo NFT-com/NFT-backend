@@ -7,6 +7,11 @@ import { db, defs } from '@nftcom/shared'
 import { Collection as CollectionEntity, NFT as NFTEntity, Wallet as WalletEntity } from '@nftcom/shared/db/entity'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
+const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
+  '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' : '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D'
+
+const GK_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
+  '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
 
 export class SearchEngineService {
 
@@ -71,6 +76,11 @@ export class SearchEngineService {
     return this._client.removeDocument('nfts', nftId)
   }
 
+  private _calculateCollectionScore = (collection: CollectionEntity): number => {
+    const officialVal = collection.isOfficial ? 1 : 0
+    const nftcomVal = [PROFILE_CONTRACT, GK_CONTRACT].includes(collection.contract) ? 1000000 : 0
+    return officialVal + nftcomVal
+  }
   indexCollections = async (collections: CollectionEntity[]): Promise<boolean> => {
     const collectionsToIndex = await Promise.all(
       collections
@@ -92,6 +102,7 @@ export class SearchEngineService {
             description: '',
             floor: 0.0,
             nftType: nft.type || '',
+            score: this._calculateCollectionScore(collection),
           }
         }),
     )
