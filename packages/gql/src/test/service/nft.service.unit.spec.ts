@@ -3,7 +3,6 @@ import { ethers } from 'ethers'
 import { testDBConfig } from '@nftcom/gql/config'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import {
-  downloadImageFromUbiquity,
   getCollectionInfo,
   getOwnersForNFT,
   saveNFTMetadataImageToS3,
@@ -101,14 +100,6 @@ describe('nft resolver', () => {
 
       expect(result.errors).toHaveLength(1)
       expect(spy).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('downloadImageFromUbiquity', () => {
-    it('should download image', async () => {
-      const url = 'https://ubiquity.api.blockdaemon.com/v1/nft/media/ethereum/mainnet/collection/1aa147e7-d4bd-5bc1-9ee0-520e88910381/banner.png'
-      const data = await downloadImageFromUbiquity(url)
-      expect(data).toBeDefined()
     })
   })
 
