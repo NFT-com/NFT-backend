@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
-import fetch from 'node-fetch'
 import * as typeorm from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'

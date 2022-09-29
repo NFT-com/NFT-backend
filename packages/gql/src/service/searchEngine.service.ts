@@ -46,26 +46,32 @@ export class SearchEngineService {
       )(nft, null, ctx)
     
       const tokenId = BigNumber.from(nft.tokenId).toString()
-      const traits = []
-      const profileContract = TYPESENSE_HOST.startsWith('dev') ?
-        '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' : '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D'
+      let traits = []
+      if (nft.metadata.traits.length < 100) {
+        traits = nft.metadata.traits.map((trait) => {
+          return {
+            type: trait.type,
+            value: `${trait.value}`,
+          }
+        })
+      }
       return {
         id: nft.id,
-        nftName: nft.metadata?.name || `${collection?.name + ' '|| ''}#${tokenId}`,
+        nftName: nft.metadata?.name || `#${tokenId}`,
         nftType: nft.type,
         tokenId,
         traits,
         imageURL: nft.metadata?.imageURL,
-        ownerAddr: wallet.address,
-        chain: wallet.chainName,
-        contractName: collection?.name || '',
-        contractAddr: nft.contract,
-        marketplace: TYPESENSE_HOST === 'prod-typesense.nft.com' ? '' : 'OpenSea',
+        ownerAddr: wallet ? wallet.address : '',
+        chain: wallet ? wallet.chainName : '',
+        contractName: collection ? collection.name : '',
+        contractAddr: nft.contract || '',
+        marketplace: TYPESENSE_HOST.startsWith('prod') ? '' : 'OpenSea',
         listingType: '',
-        listedPx: TYPESENSE_HOST === 'prod-typesense.nft.com' ? 0.0 : getRandomFloat(0.3, 2, 2),
-        currency: TYPESENSE_HOST === 'prod-typesense.nft.com' ? '' : 'ETH',
+        listedPx: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
+        currency: TYPESENSE_HOST.startsWith('prod') ? '' : 'ETH',
         status: '',
-        isProfile: nft.contract === profileContract,
+        isProfile: nft.contract === PROFILE_CONTRACT,
       }
     }))
   
@@ -99,9 +105,9 @@ export class SearchEngineService {
             contractAddr: collection.contract,
             contractName: collection.name,
             chain: collection.chainId,
-            description: '',
+            description: collection.description || '',
             floor: 0.0,
-            nftType: nft.type || '',
+            nftType: nft ? nft.type : '',
             score: this._calculateCollectionScore(collection),
           }
         }),
