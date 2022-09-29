@@ -319,14 +319,6 @@ export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<
 }
 
 // global object for blacklist profiles
-export const blacklistProfiles = {
-  'nike': true,
-  'first': true,
-  'second': true,
-  'damn': true,
-  'dyke': true,
-  'fuck': true,
-}
 
 export const blacklistProfilePatterns = [
   // final ban list:
@@ -469,6 +461,8 @@ export const blacklistProfilePatterns = [
   /^garyv$/,
   /^veefriends$/,
   /^loreal$/,
+  /^supernormal$/,
+  /^andrewchoi$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
