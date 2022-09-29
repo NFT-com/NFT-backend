@@ -1418,6 +1418,65 @@ export const removeEdgesForNonassociatedAddresses = async (
   }
 }
 
+export const updateNFTsForAssociatedAddresses = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+): Promise<string> => {
+  try {
+    const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let addresses: string[]
+    if (cachedData) {
+      addresses = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+      addresses = associatedAddresses.map((item) => item.chainAddr)
+      logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
+      // remove NFT edges for non-associated addresses
+      await removeEdgesForNonassociatedAddresses(
+        profile.id,
+        profile.associatedAddresses,
+        addresses,
+        chainId,
+      )
+      if (!addresses.length) {
+        return `No associated addresses of ${profile.url}`
+      }
+      await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
+      // update associated addresses with the latest updates
+      await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
+    }
+    // save User, Wallet for associated addresses...
+    const wallets: entity.Wallet[] = []
+    await Promise.allSettled(
+      addresses.map(async (address) => {
+        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+      }),
+    )
+    // refresh NFTs for associated addresses...
+    await Promise.allSettled(
+      wallets.map(async (wallet) => {
+        try {
+          await updateNFTsForAssociatedWallet(profile.id, wallet)
+        } catch (err) {
+          logger.error(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+          Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+        }
+      }),
+    )
+    await syncEdgesWithNFTs(profile.id)
+    return `refreshed NFTs for associated addresses of ${profile.url}`
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+    return `error while refreshing NFTs for associated addresses of ${profile.url}`
+  }
+}
+
 export const downloadImageFromUbiquity = async (
   url: string,
 ): Promise<Buffer | undefined> => {
