@@ -1,14 +1,11 @@
 import { Job } from 'bull'
 import { DeepPartial } from 'typeorm'
 
-import { nftExternalOrdersOnDemand, repositories } from '@nftcom/gql/job/nft.job'
+import { nftExternalOrdersOnDemand } from '@nftcom/gql/job/nft.job'
 import * as cacheService from '@nftcom/gql/service/cache.service'
 import * as looksrareService from '@nftcom/gql/service/looksare.service'
-import * as nftService from '@nftcom/gql/service/nft.service'
 import * as openseaService from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared/db'
-
-import { nftAMockDataNullPreview, nftBMockDataNullPreview } from '../util/constants'
 
 jest.mock('@nftcom/gql/service/cache.service', () => ({
   cache: {
@@ -40,7 +37,7 @@ jest.mock('@nftcom/gql/job/profile.job', () => {
 })
 
 const FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND'
-const GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK_FOR_NFTS'
+// const GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK_FOR_NFTS'
 
 describe('nft job', () => {
   afterAll(() => {

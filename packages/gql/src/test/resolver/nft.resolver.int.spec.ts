@@ -55,8 +55,6 @@ let connection: Connection
 let profile
 let nft
 
-const env = Object.assign({}, process.env)
-
 const mockTestServer = (): any => {
   const mockArgs ={
     contract: nftTestMockData.contract,
