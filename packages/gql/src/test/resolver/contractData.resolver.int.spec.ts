@@ -30,6 +30,8 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
       return null
     }),
     set: jest.fn(),
+    zscore: jest.fn().mockReturnValue(0),
+    zadd: jest.fn(),
   },
 }))
 

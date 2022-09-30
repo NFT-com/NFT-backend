@@ -1,13 +1,31 @@
 import { Connection } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
+import { cache } from '@nftcom/gql/service/cache.service'
 import * as testActivityService from '@nftcom/gql/service/txActivity.service'
-import { db, entity } from '@nftcom/shared'
+import { db, defs, entity } from '@nftcom/shared'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { testLooksrareExistingOrder, testLooksrareOrder,testSeaportOrder } from '../util/constants'
 
 jest.setTimeout(30000)
+jest.mock('@nftcom/gql/service/cache.service', () => ({
+  cache: {
+    zrevrangebyscore: jest.fn().mockReturnValue(['contract:1']),
+    zscore: jest.fn().mockReturnValue(0),
+    zadd: jest.fn(),
+  },
+  CacheKeys: {
+    REFRESH_NFT_ORDERS_EXT: 'refresh_nft_orders_ext_test',
+    REFRESHED_NFT_ORDERS_EXT: 'refreshed_nft_orders_ext_test',
+  },
+  createCacheConnection: jest.fn(),
+  removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(
+    () => Promise.resolve(null),
+  ),
+    
+}))
+
 let connection: Connection
 const repositories = db.newRepositories()
 
@@ -182,6 +200,90 @@ describe('txActivity service', () => {
 
       expect(cancel.activity.id).toBe(savedActivity.id)
       await repositories.txActivity.hardDeleteByIds([savedActivity.id])
+    })
+  })
+
+  describe('triggerNFTOrderRefreshQueue', () => {
+    it('it triggers nft order refresh queue correctly', async () => {
+      const nftA: Partial<entity.NFT> = {
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x0927b2',
+        metadata: {
+          name: 'Test A',
+          description: 'Test Desc A',
+          traits: [],
+          imageURL: '',
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id-1',
+        walletId: 'test-wallet-id-1',
+        chainId: '5',
+      }
+      
+      const nftB: Partial<entity.NFT> = {
+        contract: '0x657732980685C29A51053894542D7cb97de144Fe',
+        tokenId: '0x0d',
+        metadata: {
+          name: 'Test B',
+          description: 'Test Desc B',
+          traits: [],
+          imageURL: '',
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id-1',
+        walletId: 'test-wallet-id-1',
+        chainId: '5',
+      }
+
+      const nfts: entity.NFT[] = [nftA as entity.NFT, nftB as entity.NFT]
+      const chainId = '5'
+
+      const cacheZscoreSpy = jest.spyOn(cache, 'zscore')
+      const cacheZaddSpy = jest.spyOn(cache, 'zadd')
+      await testActivityService.triggerNFTOrderRefreshQueue(nfts, chainId)
+      expect(cacheZscoreSpy).toHaveBeenCalled() // 2 calls for this test
+      expect(cacheZaddSpy).toHaveBeenCalled()
+    })
+
+    it('it does not zscore when forced', async () => {
+      const nftA: Partial<entity.NFT> = {
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2c',
+        tokenId: '0x0927b1',
+        metadata: {
+          name: 'Test A',
+          description: 'Test Desc A',
+          traits: [],
+          imageURL: '',
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id-1',
+        walletId: 'test-wallet-id-1',
+        chainId: '5',
+      }
+      
+      const nftB: Partial<entity.NFT> = {
+        contract: '0x657732980685C29A51053894542D7cb97de144Fd',
+        tokenId: '0x0e',
+        metadata: {
+          name: 'Test B',
+          description: 'Test Desc B',
+          traits: [],
+          imageURL: '',
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id-1',
+        walletId: 'test-wallet-id-1',
+        chainId: '5',
+      }
+
+      const nfts: entity.NFT[] = [nftA as entity.NFT, nftB as entity.NFT]
+      const chainId = '5'
+
+      const cacheZscoreSpy = jest.spyOn(cache, 'zscore')
+      const cacheZaddSpy = jest.spyOn(cache, 'zadd')
+      await testActivityService.triggerNFTOrderRefreshQueue(nfts, chainId, true)
+      expect(cacheZscoreSpy).toHaveBeenCalledTimes(2) // no additional calls for this test
+      expect(cacheZaddSpy).toHaveBeenCalled()
     })
   })
 })

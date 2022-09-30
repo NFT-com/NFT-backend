@@ -167,6 +167,7 @@ const createEcsTaskDefinition = (
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
+  const loggerMemory = 50
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
@@ -176,19 +177,33 @@ const createEcsTaskDefinition = (
           essential: true,
           image: ecrImage,
           logConfiguration: {
-            logDriver: 'awslogs',
+            logDriver: 'awsfirelens',
             options: {
-              'awslogs-create-group': 'True',
-              'awslogs-group': `/ecs/${resourceName}`,
-              'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'gql',
+              Name: 'cloudwatch_logs',
+              region: 'us-east-1',
+              log_key: 'log',
+              log_group_name: `/ecs/${resourceName}`,
+              log_stream_prefix: 'gql/',
+              auto_create_group: 'true',
             },
           },
-          memoryReservation: config.requireNumber('ecsTaskMemory'),
+          memoryReservation: config.requireNumber('ecsTaskMemory') - loggerMemory,
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
+        },
+        {
+          name: getResourceName('log-router'),
+          image: '016437323894.dkr.ecr.us-east-1.amazonaws.com/aws-for-fluentbit:stable',
+          essential: true,
+          firelensConfiguration: {
+            type: 'fluentbit',
+            options: {
+              'enable-ecs-log-metadata': 'false',
+            },
+          },
+          memoryReservation: loggerMemory,
         },
       ]),
       cpu: config.require('ecsTaskCpu'),
@@ -256,7 +271,7 @@ export const createEcsService = (
     enableEcsManagedTags: true,
     enableExecuteCommand: true,
     forceNewDeployment: true,
-    healthCheckGracePeriodSeconds: 20,
+    healthCheckGracePeriodSeconds: 40,
     launchType: 'FARGATE',
     loadBalancers: [
       {

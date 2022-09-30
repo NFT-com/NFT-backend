@@ -8,6 +8,11 @@ import { dbConfig, serverPort, verifyConfiguration } from './config'
 import { job } from './job'
 import * as server from './server'
 import HederaConsensusService from './service/hedera.service'
+import { setupTracing } from './tracer'
+
+if (['development','staging','production'].includes(process.env.NODE_ENV)) {
+  setupTracing(`${process.env.NODE_ENV}-gql`)
+}
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
@@ -24,10 +29,10 @@ const execShellCommand = (
         return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
       }
       if (helper.isNotEmpty(err) && swallowError) {
-        logger.error('SWALLOWING ERROR', err)
+        logger.error(err, 'SWALLOWING ERROR')
         return Promise.resolve()
       }
-      logger.info(description, stdout.replace('\n', '').trim())
+      logger.info({ description, stdout: stdout.replace('\n', '').trim() })
       return Promise.resolve()
     })
 }

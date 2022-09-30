@@ -57,12 +57,9 @@ jobs:
         envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
         envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
-        envkey_UBIQUITY_API_KEY: ${{ secrets.UBIQUITY_API_KEY }}
         envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
         envkey_CHAIN_ID: ${{ secrets.CHAIN_ID }}
         envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-        envkey_ALCHEMY_API_KEY_PREVIEWLINK: ${{ secrets.ALCHEMY_API_KEY_PREVIEWLINK }}
-        envkey_ALCHEMY_API_KEY_PREVIEWLINK_GOERLI: ${{ secrets.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI }}
         envkey_ACTIVITY_ENDPOINTS_ENABLED: ${{ secrets.ACTIVITY_ENDPOINTS_ENABLED }}
         envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
         envkey_ALCHEMY_API_URL_RINKEBY: ${{ secrets.ALCHEMY_API_URL_RINKEBY }}
@@ -90,6 +87,7 @@ jobs:
         envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         envkey_REFRESH_NFT_DURATION: ${{ secrets.REFRESH_NFT_DURATION }}
         envkey_IPFS_WEB_GATEWAY: ${{ secrets.IPFS_WEB_GATEWAY }}
+        envkey_DEFAULT_TTL_MINS: ${{ secrets.DEFAULT_TTL_MINS }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
@@ -128,6 +126,9 @@ jobs:
     - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
     - run: cd packages/gql && npm run test -- --coverage --runInBand --forceExit
+      env:
+        DISABLE_LOGGER: true
+        DISABLE_WEBSOCKET: true
     - name: ✅ Upload coverage to Codecov
       uses: codecov/codecov-action@v3.1.0
       with:

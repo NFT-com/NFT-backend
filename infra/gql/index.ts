@@ -40,7 +40,7 @@ export const updateGQLEnvFile = (): void => {
   let { parsedFile } = env
   parsedFile = omit(parsedFile, 'PORT', 'DB_PORT', 'REDIS_PORT')
   parsedFile['NODE_ENV'] = stackConfig['nftcom:nodeEnv']
-  parsedFile['DB_HOST'] = infraOutput.dbHost
+  parsedFile['DB_HOST'] = process.env.DB_HOST || ''
   parsedFile['DB_PASSWORD'] = process.env.DB_PASSWORD || ''
   parsedFile['DB_USE_SSL'] = 'true'
   parsedFile['REDIS_HOST'] = infraOutput.redisHost
@@ -62,11 +62,8 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['SERVER_CONFIG'] = process.env.SERVER_CONFIG || ''
   parsedFile['SENTRY_DSN'] = process.env.SENTRY_DSN || parsedFile['SENTRY_DSN']
   parsedFile['ZMOK_API_URL'] = process.env.ZMOK_API_URL || parsedFile['ZMOK_API_URL']
-  parsedFile['UBIQUITY_API_KEY'] = process.env.UBIQUITY_API_KEY || parsedFile['UBIQUITY_API_KEY']
   parsedFile['CHAIN_ID'] = process.env.CHAIN_ID || parsedFile['CHAIN_ID']
   parsedFile['ALCHEMY_API_KEY'] = process.env.ALCHEMY_API_KEY || parsedFile['ALCHEMY_API_KEY']
-  parsedFile['ALCHEMY_API_KEY_PREVIEWLINK'] = process.env.ALCHEMY_API_KEY_PREVIEWLINK || parsedFile['ALCHEMY_API_KEY_PREVIEWLINK']
-  parsedFile['ALCHEMY_API_KEY_PREVIEWLINK_GOERLI'] = process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI || parsedFile['ALCHEMY_API_KEY_PREVIEWLINK_GOERLI']
   parsedFile['ALCHEMY_API_URL'] = process.env.ALCHEMY_API_URL || parsedFile['ALCHEMY_API_URL']
   parsedFile['ALCHEMY_API_URL_RINKEBY'] = process.env.ALCHEMY_API_URL_RINKEBY || parsedFile['ALCHEMY_API_URL_RINKEBY']
   parsedFile['ALCHEMY_API_URL_GOERLI'] = process.env.ALCHEMY_API_URL_GOERLI || parsedFile['ALCHEMY_API_URL_GOERLI']
@@ -91,6 +88,7 @@ export const updateGQLEnvFile = (): void => {
   parsedFile['NFTPORT_KEY'] = process.env.NFTPORT_KEY || parsedFile['NFTPORT_KEY']
   parsedFile['REFRESH_NFT_DURATION'] = process.env.REFRESH_NFT_DURATION || parsedFile['REFRESH_NFT_DURATION']
   parsedFile['IPFS_WEB_GATEWAY'] = process.env.IPFS_WEB_GATEWAY || parsedFile['IPFS_WEB_GATEWAY']
+  parsedFile['DEFAULT_TTL_MINS'] = process.env.DEFAULT_TTL_MINS || parsedFile['DEFAULT_TTL_MINS']
 
   console.log(JSON.stringify(parsedFile))
 

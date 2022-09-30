@@ -34,13 +34,14 @@ import {
   getNFTActivities,
   getOwnersOfGenesisKeys, getUserWalletFromNFT,
   initiateWeb3,
-  removeEdgesForNonassociatedAddresses, saveNewNFT, saveNFTMetadataImageToS3,
+  removeEdgesForNonassociatedAddresses, saveNewNFT,
   syncEdgesWithNFTs,
   updateEdgesWeightForProfile, updateNFTMetadata, updateNFTOwnershipAndMetadata,
   updateNFTsForAssociatedWallet,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
+import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineService } from '../service/searchEngine.service'
@@ -292,6 +293,13 @@ const returnProfileNFTs = async (
     chainId,
     'NFT',
   )
+    .then((result) => {
+      if (result?.items.length) {
+      // refresh order queue trigger
+        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+          .then(() => Promise.resolve(result))
+      }
+    })
 }
 
 const getMyNFTs = async (
@@ -312,7 +320,6 @@ const getMyNFTs = async (
     pageInput: Joi.any(),
   })
   const { input } = args
-
   joi.validateSchema(schema, input)
 
   const filters: Partial<entity.NFT> = {
@@ -355,6 +362,11 @@ const getMyNFTs = async (
       'DESC',
     )
       .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+      .then(result => {
+        // refresh order queue trigger
+        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+          .then(() => Promise.resolve(result))
+      })
   } else {
     const defaultProfile = await repositories.profile.findOne({
       where: {
@@ -373,6 +385,11 @@ const getMyNFTs = async (
         'DESC',
       )
         .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
+        .then(result => {
+        // refresh order queue trigger
+          return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+            .then(() => Promise.resolve(result))
+        })
     } else {
       return await returnProfileNFTs(defaultProfile.id, ctx, pageInput, chainId)
     }
@@ -454,11 +471,16 @@ const getCollectionNFTs = (
       Promise.resolve(resultEdges.pageInfo),
       Promise.resolve(resultEdges.totalItems),
     ]))
-    .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => Promise.resolve({
-      items: nfts ?? [],
-      pageInfo,
-      totalItems: count,
-    }))
+    .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => {
+      // refresh order queue trigger
+      return Promise.resolve(triggerNFTOrderRefreshQueue(nfts, chainId))
+        .then(() => Promise.resolve({
+          items: nfts ?? [],
+          pageInfo,
+          totalItems: count,
+        }),
+        )
+    })
 }
 
 const refreshMyNFTs = (
@@ -667,7 +689,12 @@ const updateNFTsForAssociatedAddresses = async (
     // refresh NFTs for associated addresses...
     await Promise.allSettled(
       wallets.map(async (wallet) => {
-        await updateNFTsForAssociatedWallet(profile.id, wallet)
+        try {
+          await updateNFTsForAssociatedWallet(profile.id, wallet)
+        } catch (err) {
+          logger.error(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+          Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+        }
       }),
     )
     await syncEdgesWithNFTs(profile.id)
@@ -899,7 +926,11 @@ const updateNFTsForProfile = (
             'ASC',
             chainId,
             'NFT',
-          )
+          ).then(result => {
+            // refresh order queue trigger
+            return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+              .then(() => Promise.resolve(result))
+          })
         }
       })
   } catch (err) {
@@ -1176,9 +1207,13 @@ export const getNFTsForCollections = async (
           }
 
           const length = Math.min(nfts.length, count)
+          const slicedNfts: entity.NFT[] = nfts.slice(0, length)
+          
+          // refresh order queue trigger
+          await triggerNFTOrderRefreshQueue(slicedNfts, chainId)
           result.push({
             collectionAddress: ethers.utils.getAddress(collectionAddress),
-            nfts: nfts.slice(0, length),
+            nfts: slicedNfts,
             actualNumberOfNFTs: actualNFTCount,
           })
         } else {
@@ -1291,39 +1326,6 @@ export const listNFTLooksrare = async (
     ))
 }
 
-const uploadMetadataImagesToS3 = async (
-  _: any,
-  args: gql.MutationUploadMetadataImagesToS3Args,
-  ctx: Context,
-): Promise<gql.UploadMetadataImagesToS3Output> => {
-  const { repositories, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  logger.debug('uploadMetadataImagesToS3', { count: args?.count })
-  try {
-    const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null, chainId } })
-    const filteredNFTs = nfts.filter((nft) => nft.metadata.imageURL && nft.metadata.imageURL.length)
-    const count = Math.min(Number(args?.count), filteredNFTs.length)
-    const slidedNFTs = filteredNFTs.slice(0, count)
-    await Promise.allSettled(
-      slidedNFTs.map(async (nft) => {
-        const previewLink = await saveNFTMetadataImageToS3(nft, repositories)
-        if (previewLink) {
-          await repositories.nft.updateOneById(nft.id, { previewLink, previewLinkError: null })
-        }
-      }),
-    )
-    logger.debug('Preview link of metadata image for NFTs are saved', { counts: slidedNFTs.length })
-    return {
-      message: `Saved preview link of metadata image for ${slidedNFTs.length} NFTs`,
-    }
-  } catch (err) {
-    console.log(err)
-    Sentry.captureMessage(`Error in uploadMetadataImagesToS3: ${err}`)
-    return err
-  }
-}
-
 const updateENSNFTMetadata = async (
   _: any,
   args: gql.MutationUpdateEnsnftMetadataArgs,
@@ -1357,77 +1359,6 @@ const updateENSNFTMetadata = async (
   }
 }
 
-const clearPreviewLinks = async (
-  _: any,
-  args: gql.MutationClearPreviewLinksArgs,
-  ctx: Context,
-): Promise<gql.ClearPreviewLinksOutput> => {
-  const { repositories, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  logger.debug('clearPreviewLinks', { count: args?.count })
-  try {
-    const nfts = await repositories.nft.findNFTsWithPreviewLinks()
-    const filteredNFTs = nfts.filter((nft) => {
-      return nft.previewLink.includes('.gif') || nft.previewLink.includes('.mp4') || nft.previewLink.includes('.svg')
-    })
-    const count = Math.min(Number(args?.count), filteredNFTs.length)
-    const slicedNFTs = filteredNFTs.slice(0, count)
-    await Promise.allSettled(
-      slicedNFTs.map(async (nft) => {
-        await repositories.nft.updateOneById(nft.id, {
-          previewLink: null,
-          previewLinkError: 'File format is unacceptable',
-        })
-      }),
-    )
-    logger.info('Wrong preview link of NFTs are reset', { counts: slicedNFTs.length })
-    return {
-      message: `Reset preview link for ${slicedNFTs.length} NFTs`,
-    }
-  } catch (err) {
-    console.log(err)
-    Sentry.captureMessage(`Error in clearPreviewLinks: ${err}`)
-    return err
-  }
-}
-
-const fixUpdatedAt = async (
-  _: any,
-  args: gql.MutationFixUpdatedAtArgs,
-  ctx: Context,
-): Promise<gql.FixUpdatedAtOutput> => {
-  const { repositories, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  logger.debug('fixUpdatedAt', { count: args?.count })
-  try {
-    const nfts = await repositories.nft.find({
-      where: {
-        previewLink: null,
-        previewLinkError: '{}',
-      },
-    })
-    const count = Math.min(Number(args?.count), nfts.length)
-    const slicedNFTs = nfts.slice(0, count)
-    await Promise.allSettled(
-      slicedNFTs.map(async (nft) => {
-        await repositories.nft.updateOneById(nft.id, {
-          previewLinkError: 'File format is unacceptable',
-        })
-      }),
-    )
-    logger.info('updatedAt fields are updated', { counts: slicedNFTs.length })
-    return {
-      message: `updatedAt fields are updated for ${slicedNFTs.length} NFTs`,
-    }
-  } catch (err) {
-    console.log(err)
-    Sentry.captureMessage(`Error in fixUpdatedAt: ${err}`)
-    return err
-  }
-}
-
 export default {
   Query: {
     gkNFTs: getGkNFTs,
@@ -1448,10 +1379,7 @@ export default {
     refreshNFTOrder: combineResolvers(auth.isAuthenticated, refreshNFTOrder),
     updateNFTMemo: combineResolvers(auth.isAuthenticated, updateNFTMemo),
     updateNFTProfileId: combineResolvers(auth.isAuthenticated, updateNFTProfileId),
-    uploadMetadataImagesToS3: combineResolvers(auth.isAuthenticated, uploadMetadataImagesToS3),
     updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
-    clearPreviewLinks: combineResolvers(auth.isAuthenticated, clearPreviewLinks),
-    fixUpdatedAt: combineResolvers(auth.isAuthenticated, fixUpdatedAt),
     listNFTSeaport,
     listNFTLooksrare,
 
