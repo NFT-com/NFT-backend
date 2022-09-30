@@ -10,7 +10,6 @@ import { core } from '@nftcom/gql/service'
 import {
   _logger,
   contracts,
-  db,
   defs,
   entity,
   fp,
@@ -547,98 +546,6 @@ const getGkNFTs = async (
     }
   }
 }
-
-export const saveProfileScore = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-): Promise<void> => {
-  try {
-    const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
-    // get genesis key numbers
-    const gkNFTs = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
-    })
-    // get collections
-    const nfts = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, chainId: profile.chainId },
-    })
-
-    const collections: Array<string> = []
-    await Promise.allSettled(
-      nfts.map(async (nft) => {
-        const collection = await repositories.collection.findOne({
-          where: { contract: nft.contract, chainId: profile.chainId },
-        })
-        if (collection) {
-          const isExisting = collections.find((existingCollection) =>
-            existingCollection === collection.contract,
-          )
-          if (!isExisting) collections.push(collection.contract)
-        }
-      }),
-    )
-    // get visible items
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityId: profile.id,
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-        hide: false,
-      },
-    })
-    const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
-    const paddedCollections = collections.length.toString().padStart(5, '0')
-    const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
-    await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
-  } catch (err) {
-    Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
-    return err
-  }
-}
-
-export const saveVisibleNFTsForProfile = async (
-  profileId: string,
-  repositories: db.Repository,
-): Promise<void> => {
-  try {
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityId: profileId,
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-        hide: false,
-      },
-    })
-    if (edges.length) {
-      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
-    return err
-  }
-}
-
-// const updateGKIconVisibleStatus = async (
-//   repositories: db.Repository,
-//   chainId: string,
-//   profile: entity.Profile,
-// ): Promise<void> => {
-//   try {
-//     const gkOwners = await getOwnersOfGenesisKeys(chainId)
-//     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-//     const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
-//     if (index === -1) {
-//       await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
-//     } else {
-//       return
-//     }
-//   } catch (err) {
-//     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
-//     return err
-//   }
-// }
 
 const updateNFTsForProfile = async (
   _: any,

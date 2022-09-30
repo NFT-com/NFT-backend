@@ -14,7 +14,6 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, nftError,profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
-import { saveProfileScore, saveVisibleNFTsForProfile } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
@@ -26,7 +25,7 @@ import {
 } from '@nftcom/gql/service/core.service'
 import {
   changeNFTsVisibility, getCollectionInfo,
-  getOwnersOfGenesisKeys,
+  getOwnersOfGenesisKeys, saveProfileScore, saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
