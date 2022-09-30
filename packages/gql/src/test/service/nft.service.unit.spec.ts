@@ -5,7 +5,6 @@ import * as nftService from '@nftcom/gql/service/nft.service'
 import {
   getCollectionInfo,
   getOwnersForNFT,
-  saveNFTMetadataImageToS3,
   updateNFTMetadata,
 } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
@@ -162,69 +161,6 @@ describe('nft resolver', () => {
       expect(collectionInfo.collection.bannerUrl).not.toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).not.toEqual('https://cdn.nft.com/profile-image-default.svg')
       expect(collectionInfo.collection.description).not.toEqual('placeholder collection description text')
-    })
-  })
-
-  describe('saveNFTMetadataImageToS3', () => {
-    beforeAll(async () => {
-      nftA = await repositories.nft.save({
-        contract: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
-        tokenId: '0x039ea3',
-        chainId: '1',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InJlZCIvPjwvc3ZnPg==',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
-
-      nftB = await repositories.nft.save({
-        contract: '0x71276AFD922f48721035b2B112413215a2627F6E',
-        tokenId: '0xf7',
-        chainId: '1',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'ar://y47vMQxxY00-r5TYLyOuvwPXxsO-AdvOlGAyNmOtRzw',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
-
-      nftC = await repositories.nft.save({
-        contract: '0x0E3A2A1f2146d86A604adc220b4967A898D7Fe07',
-        tokenId: '0x08b8693d',
-        chainId: '1',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
-    })
-    afterAll(async () => {
-      await clearDB(repositories)
-    })
-    it('should skip svg format since it is not available', async () => {
-      const cdnPath = await saveNFTMetadataImageToS3(nftA, repositories)
-      expect(cdnPath).toBeUndefined()
-    })
-    it('should skip mp4 format since it is not available', async () => {
-      const cdnPath = await saveNFTMetadataImageToS3(nftB, repositories)
-      expect(cdnPath).toBeUndefined()
-    })
-    it('should return valid image path uploaded to S3', async () => {
-      const cdnPath = await saveNFTMetadataImageToS3(nftC, repositories)
-      expect(cdnPath).toBeDefined()
     })
   })
 

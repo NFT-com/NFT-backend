@@ -48,6 +48,7 @@ export class SearchEngineClient {
     try {
       response = await this._client.collections(collection).documents().import(documents, { action: 'upsert' })
     } catch (e) {
+      logger.error(documents, 'Error in document importing to Typesense')
       logger.error(e, 'Error importing to Typesense')
     }
     return this.isFullySuccessful(response)
