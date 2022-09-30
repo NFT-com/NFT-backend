@@ -4,6 +4,9 @@
   "description": "NFT.com's GraphQL server",
   "main": "dist/index",
   "types": "dist/index",
+  "exports": {
+    "./service": "./dist/service/index.js"
+  },
   "scripts": {
     "prebuild": "npm run gql:gen",
     "build": "npm run clean && npm run compile && npm run copy:schema",

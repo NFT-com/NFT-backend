@@ -92,7 +92,7 @@ export const fetchData = async (
       key,
       JSON.stringify(data),
       'EX',
-      60 * 60, // 60 minutes
+      60 * 60 * 72, // 60 minutes
     )
   } else {
     logger.error(data, `Unsuccessful response from ${url}`)
@@ -128,7 +128,11 @@ const getSymbolForContract = async (contractAddress: string): Promise<string> =>
       typechain.ERC20Metadata__factory.abi,
       provider.provider(),
     ) as unknown as typechain.ERC20Metadata
-    symbol = await contract.symbol()
+    try {
+      symbol = await contract.symbol()
+    } catch (e) {
+      symbol = 'UNKNOWN'
+    }
     cache.set(key, symbol)
   }
   return symbol
@@ -193,6 +197,7 @@ export const getSalesData = async (
   }
 
   let getMoreSalesData = true
+  const txnsFilterCount = new Map() // count txnIds because NFTPort data can be bad
   while (getMoreSalesData) {
     salesData = await fetchData(endpoint, args, {}, { chain: 'ethereum', type: 'sale', continuation })
     if (salesData.transactions && salesData.transactions.length) {
@@ -209,12 +214,18 @@ export const getSalesData = async (
         })
         getMoreSalesData = false
       }
-      result = result.concat(differenceBy(await transformTxns(filteredTxns), savedSales, 'id') as any[])
+      const mpSales = await transformTxns(filteredTxns)
+      for (const txn of mpSales) {
+        const count = (txnsFilterCount.get(txn.id) || 0) + 1
+        txnsFilterCount.set(txn.id, count)
+      }
+      result = result.concat(differenceBy(mpSales, savedSales, 'id') as any[])
     }
     continuation = salesData.continuation
     if (!continuation) getMoreSalesData = false
   }
 
+  result = result.filter(ms => txnsFilterCount.get(ms.id) === 1)
   await repositories.marketplaceSale.saveMany(result, { chunk: 4000 })
 
   result = [

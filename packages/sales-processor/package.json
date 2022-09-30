@@ -1,0 +1,11 @@
+{
+  "name": "@nftcom/sales-processor",
+  "version": "0.0.1",
+  "description": "Keep sales data up to date in NFT.com database",
+  "main": "dist/index",
+  "types": "dist/index",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
