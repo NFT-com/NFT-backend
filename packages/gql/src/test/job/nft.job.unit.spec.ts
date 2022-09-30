@@ -37,6 +37,7 @@ jest.mock('@nftcom/gql/job/profile.job', () => {
 })
 
 const FETCH_EXTERNAL_ORDERS_ON_DEMAND = 'FETCH_EXTERNAL_ORDERS_ON_DEMAND'
+// const GENERATE_NFTS_PREVIEW_LINK = 'GENERATE_PREVIEW_LINK_FOR_NFTS'
 
 describe('nft job', () => {
   afterAll(() => {
