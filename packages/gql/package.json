@@ -100,5 +100,10 @@
   },
   "exports": {
     "./service": "./dist/service/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "service": [ "dist/service/index.ts" ]
+    }
   }
 }
