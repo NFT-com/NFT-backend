@@ -1482,8 +1482,9 @@ export const updateGKIconVisibleStatus = async (
       return
     }
   } catch (err) {
+    logger.error(`Error in updateGKIconVisibleStatus: ${err}`)
     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
-    return err
+    throw err
   }
 }
 
