@@ -1467,6 +1467,26 @@ export const updateCollectionForAssociatedContract = async (
   }
 }
 
+export const updateGKIconVisibleStatus = async (
+  repositories: db.Repository,
+  chainId: string,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
+    if (index === -1) {
+      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
+    } else {
+      return
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+    return err
+  }
+}
+
 export const saveVisibleNFTsForProfile = async (
   profileId: string,
   repositories: db.Repository,
