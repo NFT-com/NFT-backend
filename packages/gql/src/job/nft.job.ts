@@ -2,7 +2,6 @@
 import { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
-import { saveNFTMetadataImageToS3 } from '@nftcom/gql/service/nft.service'
 import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'
@@ -271,35 +270,5 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
   } catch (err) {
     logger.error(`Error in nftExternalOrdersOnDemand Job: ${err}`)
     Sentry.captureMessage(`Error in nftExternalOrdersOnDemand Job: ${err}`)
-  }
-}
-
-export const generateNFTsPreviewLink = async (job: Job): Promise<any> => {
-  try {
-    const begin = Date.now()
-    logger.info('generate preview links', job.data)
-
-    const MAX_NFT_COUNTS = 15
-    const nfts = await repositories.nft.find({ where: { previewLink: null, previewLinkError: null } })
-    const length = Math.min(MAX_NFT_COUNTS, nfts.length)
-    const slicedNFTs = nfts.slice(0, length)
-    
-    let processed = 0
-    for (let i = 0; i < slicedNFTs.length; i++) {
-      logger.info(`nft job: ${i + 1} / ${slicedNFTs.length}`)
-      const previewLink = await saveNFTMetadataImageToS3(slicedNFTs[i], repositories)
-      if (previewLink) {
-        logger.info(`SAVED nft job: ${i + 1} / ${slicedNFTs.length}`)
-        processed += 1
-        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink, previewLinkError: null })
-      } else {
-        await repositories.nft.updateOneById(slicedNFTs[i].id, { previewLink: null, previewLinkError: 'undefined previewLink' })
-      }
-    }
-    const end = Date.now()
-    logger.info(`generated previewLink for ${processed} NFTs`, { duration: `${(end - begin) / 1000} seconds` })
-  } catch (err) {
-    logger.error(`Error in generatePreviewLink Job: ${err}`)
-    Sentry.captureMessage(`Error in generatePreviewLink Job: ${err}`)
   }
 }
