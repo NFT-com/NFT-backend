@@ -857,16 +857,33 @@ export const updateWalletNFTs = async (
   walletAddress: string,
   chainId: string,
 ): Promise<void> => {
-  const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
-  const savedNFTs: entity.NFT[] = []
-  await Promise.allSettled(
-    ownedNFTs.map(async (nft: OwnedNFT) => {
-      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
-      if (savedNFT) savedNFTs.push(savedNFT)
-    }),
-  )
-  await seService.indexNFTs(savedNFTs)
-  await updateCollectionForNFTs(savedNFTs)
+  try {
+    const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
+    const chunks: OwnedNFT[][] = Lodash.chunk(
+      ownedNFTs,
+      20,
+    )
+    const savedNFTs: entity.NFT[] = []
+    await Promise.allSettled(
+      chunks.map(async (chunk: OwnedNFT[]) => {
+        try {
+          await Promise.allSettled(
+            chunk.map(async (nft) => {
+              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
+              if (savedNFT) savedNFTs.push(savedNFT)
+            }),
+          )
+        } catch (err) {
+          logger.error(`Error in updateWalletNFTs: ${err}`)
+          Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+        }
+      }))
+    await seService.indexNFTs(savedNFTs)
+    await updateCollectionForNFTs(savedNFTs)
+  } catch (err) {
+    logger.error(`Error in updateWalletNFTs: ${err}`)
+    Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+  }
 }
 
 export const refreshNFTMetadata = async (
