@@ -92,7 +92,7 @@ export const fetchData = async (
       key,
       JSON.stringify(data),
       'EX',
-      60 * 60 * 72, // 60 minutes
+      60 * 60, // 60 minutes
     )
   } else {
     logger.error(data, `Unsuccessful response from ${url}`)

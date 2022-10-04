@@ -3,7 +3,7 @@ import 'dotenv/config'
 import { getRepository } from 'typeorm'
 
 import { contractData } from '@nftcom/gql/service'
-import { _logger,entity } from '@nftcom/shared'
+import { _logger, entity } from '@nftcom/shared'
 
 import { getConnection } from './data-source'
 

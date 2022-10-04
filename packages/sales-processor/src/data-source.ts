@@ -1,6 +1,8 @@
 import { Connection, ConnectionOptions, createConnection } from 'typeorm'
 
-import { entity } from '@nftcom/shared'
+import { _logger, entity } from '@nftcom/shared'
+
+const logger = _logger.Factory('sales-processor', _logger.Context.MarketplaceSale)
 
 const dbConfig: ConnectionOptions = {
   type: 'postgres',
@@ -23,7 +25,7 @@ export const getConnection = async (): Promise<Connection> => {
   try {
     return await createConnection(dbConfig)
   } catch (err) {
-    console.log(err)
+    logger.error(err)
     process.exit(1)
   }
 }
