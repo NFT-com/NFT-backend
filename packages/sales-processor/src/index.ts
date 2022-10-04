@@ -1,3 +1,5 @@
+import 'dotenv/config'
+
 import { getRepository } from 'typeorm'
 
 import { contractData } from '@nftcom/gql/service'
