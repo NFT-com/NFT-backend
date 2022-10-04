@@ -448,6 +448,10 @@ const getNFTMetaData = async (
       type = defs.NFTType.ERC1155
     } else if (nftMetadata?.title.endsWith('.eth')) { // if token is ENS token...
       type = defs.NFTType.UNKNOWN
+    } else {
+      // If it's missing NFT token type, we should throw error
+      logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
+      return Promise.reject(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
     }
 
     if (Array.isArray(metadata?.attributes)) {
