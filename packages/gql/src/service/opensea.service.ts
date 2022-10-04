@@ -192,7 +192,7 @@ const getOpenseaInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(openseaInstance,  retryOptions)
+  axiosRetry(openseaInstance as any,  retryOptions)
 
   return openseaInstance
 }

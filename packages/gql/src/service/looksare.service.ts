@@ -85,7 +85,7 @@ const getLooksRareInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(looksrareInstance,  retryOptions)
+  axiosRetry(looksrareInstance as any,  retryOptions)
   return looksrareInstance
 }
 

@@ -10,13 +10,10 @@ import { core } from '@nftcom/gql/service'
 import {
   _logger,
   contracts,
-  db,
   defs,
   entity,
   fp,
   helper,
-  provider,
-  typechain,
 } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
@@ -24,20 +21,16 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 import { differenceInMilliseconds } from 'date-fns'
 
 import { PageInput } from '@nftcom/gql/defs/gql'
-import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
-import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
+import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  getCollectionNameFromContract,
   getNFTActivities,
-  getOwnersOfGenesisKeys, getUserWalletFromNFT,
+  getUserWalletFromNFT,
   initiateWeb3,
-  removeEdgesForNonassociatedAddresses, saveNewNFT,
-  syncEdgesWithNFTs,
-  updateEdgesWeightForProfile, updateNFTMetadata, updateNFTOwnershipAndMetadata,
-  updateNFTsForAssociatedWallet,
+  saveNewNFT, updateCollectionForAssociatedContract,
+  updateNFTMetadata, updateNFTOwnershipAndMetadata, updateNFTsForAssociatedAddresses,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
@@ -46,8 +39,8 @@ import * as Sentry from '@sentry/node'
 
 import { SearchEngineService } from '../service/searchEngine.service'
 
-const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
-const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
+// const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
+// const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
 const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
 
 // commented for future reference
@@ -554,240 +547,7 @@ const getGkNFTs = async (
   }
 }
 
-export const saveProfileScore = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-): Promise<void> => {
-  try {
-    const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
-    // get genesis key numbers
-    const gkNFTs = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
-    })
-    // get collections
-    const nfts = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, chainId: profile.chainId },
-    })
-
-    const collections: Array<string> = []
-    await Promise.allSettled(
-      nfts.map(async (nft) => {
-        const collection = await repositories.collection.findOne({
-          where: { contract: nft.contract, chainId: profile.chainId },
-        })
-        if (collection) {
-          const isExisting = collections.find((existingCollection) =>
-            existingCollection === collection.contract,
-          )
-          if (!isExisting) collections.push(collection.contract)
-        }
-      }),
-    )
-    // get visible items
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityId: profile.id,
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-        hide: false,
-      },
-    })
-    const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
-    const paddedCollections = collections.length.toString().padStart(5, '0')
-    const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
-    await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
-  } catch (err) {
-    Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
-    return err
-  }
-}
-
-export const saveVisibleNFTsForProfile = async (
-  profileId: string,
-  repositories: db.Repository,
-): Promise<void> => {
-  try {
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityId: profileId,
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-        hide: false,
-      },
-    })
-    if (edges.length) {
-      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
-    return err
-  }
-}
-
-const updateGKIconVisibleStatus = async (
-  repositories: db.Repository,
-  chainId: string,
-  profile: entity.Profile,
-): Promise<void> => {
-  try {
-    const gkOwners = await getOwnersOfGenesisKeys(chainId)
-    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
-    if (index === -1) {
-      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
-    } else {
-      return
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
-    return err
-  }
-}
-
-const updateNFTsForAssociatedAddresses = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-  chainId: string,
-): Promise<string> => {
-  try {
-    const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
-    const cachedData = await cache.get(cacheKey)
-    let addresses: string[]
-    if (cachedData) {
-      addresses = JSON.parse(cachedData)
-    } else {
-      const nftResolverContract = typechain.NftResolver__factory.connect(
-        contracts.nftResolverAddress(chainId),
-        provider.provider(Number(chainId)),
-      )
-      const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
-      addresses = associatedAddresses.map((item) => item.chainAddr)
-      logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
-      // remove NFT edges for non-associated addresses
-      await removeEdgesForNonassociatedAddresses(
-        profile.id,
-        profile.associatedAddresses,
-        addresses,
-        chainId,
-      )
-      if (!addresses.length) {
-        return `No associated addresses of ${profile.url}`
-      }
-      await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
-      // update associated addresses with the latest updates
-      await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
-    }
-    // save User, Wallet for associated addresses...
-    const wallets: entity.Wallet[] = []
-    await Promise.allSettled(
-      addresses.map(async (address) => {
-        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
-      }),
-    )
-    // refresh NFTs for associated addresses...
-    await Promise.allSettled(
-      wallets.map(async (wallet) => {
-        try {
-          await updateNFTsForAssociatedWallet(profile.id, wallet)
-        } catch (err) {
-          logger.error(`Error in updateNFTsForAssociatedAddresses: ${err}`)
-          Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
-        }
-      }),
-    )
-    await syncEdgesWithNFTs(profile.id)
-    return `refreshed NFTs for associated addresses of ${profile.url}`
-  } catch (err) {
-    Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
-    return `error while refreshing NFTs for associated addresses of ${profile.url}`
-  }
-}
-
-const updateCollectionForAssociatedContract = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-  chainId: string,
-  walletAddress: string,
-): Promise<string> => {
-  try {
-    const cacheKey = `${CacheKeys.ASSOCIATED_CONTRACT}_${chainId}_${profile.url}`
-    const cachedData = await cache.get(cacheKey)
-    let contract
-    if (cachedData) {
-      contract = JSON.parse(cachedData)
-    } else {
-      const nftResolverContract = typechain.NftResolver__factory.connect(
-        contracts.nftResolverAddress(chainId),
-        provider.provider(Number(chainId)),
-      )
-      const associatedContract = await nftResolverContract.associatedContract(profile.url)
-      if (!associatedContract) {
-        return `No associated contract of ${profile.url}`
-      }
-      if (!associatedContract.chainAddr) {
-        return `No associated contract of ${profile.url}`
-      }
-      contract = ethers.utils.getAddress(associatedContract.chainAddr)
-      await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
-      // update associated contract with the latest updates
-      await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
-    }
-    // get collection info
-    let collectionName = await getCollectionNameFromContract(
-      contract,
-      chainId,
-      defs.NFTType.ERC721,
-    )
-    if (collectionName === 'Unknown Name') {
-      collectionName = await getCollectionNameFromContract(
-        contract,
-        chainId,
-        defs.NFTType.ERC1155,
-      )
-    }
-    // check if deployer of associated contract is in associated addresses
-    const deployer = await getCollectionDeployer(contract, chainId)
-    if (!deployer) {
-      if (profile.profileView === defs.ProfileViewType.Collection) {
-        await repositories.profile.updateOneById(profile.id,
-          {
-            profileView: defs.ProfileViewType.Gallery,
-          },
-        )
-      }
-      return `Updated associated contract for ${profile.url}`
-    } else {
-      const collection = await repositories.collection.findByContractAddress(contract, chainId)
-      if (!collection) {
-        const savedCollection = await repositories.collection.save({
-          contract,
-          name: collectionName,
-          chainId,
-          deployer,
-        })
-        await seService.indexCollections([savedCollection])
-      }
-      const checkedDeployer =  ethers.utils.getAddress(deployer)
-      const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
-        checkedDeployer === walletAddress
-      if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
-        await repositories.profile.updateOneById(profile.id,
-          {
-            profileView: defs.ProfileViewType.Gallery,
-          },
-        )
-      }
-      return `Updated associated contract for ${profile.url}`
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in updateCollectionForAssociatedContract: ${err}`)
-    return `error while updating associated contract of ${profile.url}`
-  }
-}
-
-const updateNFTsForProfile = (
+const updateNFTsForProfile = async (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
   ctx: Context,
@@ -801,138 +561,44 @@ const updateNFTsForProfile = (
     const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
 
-    return repositories.profile.findOne({
+    const profile = await repositories.profile.findOne({
       where: {
         id: args?.input.profileId,
         chainId,
       },
     })
-      .then((profile: entity.Profile | undefined) => {
-        if (!profile) {
-          return Promise.resolve({ items: [] })
-        } else {
-          const filter: Partial<entity.Edge> = helper.removeEmpty({
-            thisEntityType: defs.EntityType.Profile,
-            thisEntityId: profile.id,
-            thatEntityType: defs.EntityType.NFT,
-            edgeType: defs.EdgeType.Displays,
-          })
-          const now = helper.toUTCDate()
-          let duration
-          if (profile.nftsLastUpdated) {
-            duration = differenceInMilliseconds(now, profile.nftsLastUpdated)
-          }
 
-          // if there is no profile NFT or NFTs are expired and need to be updated...
-          if (!profile.nftsLastUpdated  ||
-            (duration && duration > PROFILE_NFTS_EXPIRE_DURATION)
-          ) {
-            const updateBegin = Date.now()
-            repositories.profile.updateOneById(profile.id, {
-              nftsLastUpdated: now,
-            }).then(() => repositories.wallet.findOne({
-              where: {
-                id: profile.ownerWalletId,
-                chainId,
-              },
-            })
-              .then((wallet: entity.Wallet) => {
-                return checkNFTContractAddresses(
-                  profile.ownerUserId,
-                  wallet.id,
-                  wallet.address,
-                  chainId,
-                )
-                  .then(() => {
-                    logger.debug('checked NFT contract addresses in updateNFTsForProfile', profile.id)
-                    return updateWalletNFTs(
-                      profile.ownerUserId,
-                      wallet.id,
-                      wallet.address,
-                      chainId,
-                    ).then(() => {
-                      logger.debug('updated wallet NFTs in updateNFTsForProfile', profile.id)
-                      return updateEdgesWeightForProfile(profile.id, profile.ownerWalletId)
-                        .then(() => {
-                          logger.debug('updated edges with weight in updateNFTsForProfile', profile.id)
-                          return syncEdgesWithNFTs(profile.id)
-                            .then(() => {
-                              logger.debug('synced edges with NFTs in updateNFTsForProfile', profile.id)
-                              // save visible NFT amount of profile
-                              return saveVisibleNFTsForProfile(profile.id, repositories)
-                                .then(() => {
-                                  logger.debug('saved amount of visible NFTs to profile', profile.id)
-                                  // refresh NFTs for associated addresses
-                                  return updateNFTsForAssociatedAddresses(
-                                    repositories,
-                                    profile,
-                                    chainId,
-                                  ).then((msg) => {
-                                    logger.debug(msg)
-                                    // update associated contract
-                                    return updateCollectionForAssociatedContract(
-                                      repositories,
-                                      profile,
-                                      chainId,
-                                      wallet.address,
-                                    ).then((msg) => {
-                                      logger.debug(msg)
-                                      // if gkIconVisible is true, we check if this profile owner still owns genesis key,
-                                      if (profile.gkIconVisible) {
-                                        return updateGKIconVisibleStatus(
-                                          repositories,
-                                          chainId,
-                                          profile,
-                                        ).then(() => {
-                                          logger.debug(`gkIconVisible updated for profile ${profile.id}`)
-                                          const updateEnd = Date.now()
-                                          logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                        })
-                                      } else {
-                                        const updateEnd = Date.now()
-                                        logger.debug(`updateNFTsForProfile took ${(updateEnd - updateBegin) / 1000} seconds to update NFTs`)
-                                      }
-                                    })
-                                  })
-                                })
-                            })
-                        })
-                    })
-                  })
-              }))
-          }
+    if (!profile) {
+      return Promise.resolve({ items: [] })
+    }
 
-          let scoreDuration
-          if (profile.lastScored) {
-            scoreDuration = differenceInMilliseconds(now, profile.lastScored)
-          }
-          // if there is profile score is not calculated yet or should be updated,
-          if (!profile.lastScored ||
-            (scoreDuration && scoreDuration > PROFILE_SCORE_EXPIRE_DURATION)
-          ) {
-            repositories.profile.updateOneById(profile.id, {
-              lastScored: now,
-            }).then(() => {
-              return saveProfileScore(repositories, profile)
-            })
-          }
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
+    if (!recentlyRefreshed) {
+      // add to cache list
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+    }
 
-          return core.paginatedThatEntitiesOfEdgesBy(
-            ctx,
-            repositories.nft,
-            { ...filter, hide: false },
-            pageInput,
-            'weight',
-            'ASC',
-            chainId,
-            'NFT',
-          ).then(result => {
-            // refresh order queue trigger
-            return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-              .then(() => Promise.resolve(result))
-          })
-        }
-      })
+    const filter: Partial<entity.Edge> = helper.removeEmpty({
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: profile.id,
+      thatEntityType: defs.EntityType.NFT,
+      edgeType: defs.EdgeType.Displays,
+    })
+
+    return core.paginatedThatEntitiesOfEdgesBy(
+      ctx,
+      repositories.nft,
+      { ...filter, hide: false },
+      pageInput,
+      'weight',
+      'ASC',
+      chainId,
+      'NFT',
+    ).then(result => {
+      // refresh order queue trigger
+      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+        .then(() => Promise.resolve(result))
+    })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
     return err
@@ -1208,7 +874,7 @@ export const getNFTsForCollections = async (
 
           const length = Math.min(nfts.length, count)
           const slicedNfts: entity.NFT[] = nfts.slice(0, length)
-          
+
           // refresh order queue trigger
           await triggerNFTOrderRefreshQueue(slicedNfts, chainId)
           result.push({
