@@ -6,8 +6,8 @@
     "rootDir": "./src"
   },
   "references": [
-    { "path": "../shared" },
-    { "path": "../gql" },
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/gql" },
   ],
   "include": [
     "src/**/*.ts",
