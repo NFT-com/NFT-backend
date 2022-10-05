@@ -52,10 +52,11 @@ export const retrieveNFTDetailsNFTPort = async (
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
     const tokenIdInteger = ethers.BigNumber.from(tokenId).toString()
-    const url = `/nfts/${contract}/${tokenIdInteger}${refreshMetadata ? '&refresh_metadata=true' : ''}`
+    const url = `/nfts/${contract}/${tokenIdInteger}`
     const res = await nftInterceptor.get(url, {
       params: {
         chain: chain,
+        refresh_metadata: refreshMetadata || undefined,
       },
     })
     if (res && res?.data) {
