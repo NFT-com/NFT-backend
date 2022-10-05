@@ -56,6 +56,12 @@ interface ContractMetaDataResponse {
     symbol: string
     totalSupply: string
     tokenType: string
+    openSea: {
+      floorPrice: number
+      collectionName: string
+      imageUrl: string
+      safelistRequestStatus: string
+    }
   }
 }
 
@@ -280,7 +286,7 @@ export const filterNFTsWithAlchemy = async (
 const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
-  optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
+  optionalWeb3: (AlchemyWeb3 | undefined) = undefined
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
     const response = await (optionalWeb3 || web3)?.alchemy.getNftMetadata({
@@ -423,6 +429,7 @@ const updateCollectionForNFTs = async (
 const getNFTMetaData = async (
   contract: string,
   tokenId: string,
+  refreshMetadata = false,
 ): Promise<NFTMetaData | undefined> => {
   try {
     let type: defs.NFTType
@@ -433,15 +440,17 @@ const getNFTMetaData = async (
       tokenId,
     )
 
-    if (!nftMetadata) return
+    const nftPortDetails = await retrieveNFTDetailsNFTPort(contract, tokenId, process.env.CHAIN_ID, refreshMetadata)
+
+    if (!nftMetadata || !nftPortDetails) return
 
     const contractMetadata = await getContractMetaDataFromAlchemy(contract)
 
     const metadata = nftMetadata?.metadata as any
-    const name = nftMetadata?.title || `${contractMetadata?.contractMetadata?.name} #${Number(tokenId).toString()}`
+    const name = nftMetadata?.title || nftPortDetails.nft.metadata.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
     // For CryptoKitties, their metadata response format is different from original one
     const description = nftMetadata?.description || metadata?.bio
-    const image = metadata?.image || metadata?.image_url_cdn || generateSVGFromBase64String(metadata?.image_data)
+    const image = metadata?.image || nftPortDetails.nft.cached_file_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway || metadata?.tokenUri?.raw || (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
     if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
       type = defs.NFTType.ERC721
     } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
@@ -463,12 +472,30 @@ const getNFTMetaData = async (
           value,
         }))
       })
+    } else if (Array.isArray(metadata?.message?.attributes)) { // edge case for alchemy
+      metadata?.message?.attributes.map((trait) => {
+        let value = trait?.value || trait?.trait_value
+        value = typeof value === 'string' ? value : JSON.stringify(value)
+        traits.push(({
+          type: trait?.trait_type,
+          value,
+        }))
+      })
     } else if (Array.isArray(metadata?.enhanced_cattributes)) {
       metadata?.enhanced_cattributes.map((trait) => {
         let value = trait?.description
         value = typeof value === 'string' ? value : JSON.stringify(value)
         traits.push(({
           type: trait?.type,
+          value,
+        }))
+      })
+    } else if (Array.isArray(nftPortDetails?.nft?.metadata?.attributes)) { // nftport fallback
+      nftPortDetails?.nft?.metadata?.attributes.map((trait) => {
+        let value = trait?.value || trait?.trait_value
+        value = typeof value === 'string' ? value : JSON.stringify(value)
+        traits.push(({
+          type: trait?.trait_type,
           value,
         }))
       })

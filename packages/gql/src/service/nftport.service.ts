@@ -15,6 +15,13 @@ export interface NFTPortNFT {
     token_id?: string
     metadata_url?: string
     cached_file_url?: string
+    metadata: {
+      attributes: any
+      name: string
+      description: string
+      image: string
+      image_url: string
+    }
   }
   contract: {
     name?: string
@@ -33,6 +40,7 @@ export const retrieveNFTDetailsNFTPort = async (
   contract: string,
   tokenId: string,
   chainId: string,
+  refreshMetadata = false,
 ): Promise<NFTPortNFT | undefined> => {
   try {
     logger.debug(`starting retrieveNFTDetailsNFTPort: ${contract} ${tokenId} ${chainId}`)
@@ -44,7 +52,7 @@ export const retrieveNFTDetailsNFTPort = async (
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
     const tokenIdInteger = ethers.BigNumber.from(tokenId).toString()
-    const url = `/nfts/${contract}/${tokenIdInteger}`
+    const url = `/nfts/${contract}/${tokenIdInteger}${refreshMetadata ? '&refresh_metadata=true' : ''}`
     const res = await nftInterceptor.get(url, {
       params: {
         chain: chain,
