@@ -398,7 +398,7 @@ describe('collection resolver', () => {
     })
   })
 
-  fdescribe('updateSpamStatus', () => {
+  describe('updateSpamStatus', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
@@ -486,7 +486,7 @@ describe('collection resolver', () => {
       await testServer.stop()
     })
 
-    fit('should update spam status', async () => {
+    it('should update spam status', async () => {
       // check NFTs before setting spam collection
       let result = await testServer.executeOperation({
         query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',

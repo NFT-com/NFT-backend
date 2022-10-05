@@ -355,7 +355,7 @@ describe('nft resolver', () => {
       expect(nft.lastRefreshed).toEqual(lastUpdated)
     })
 
-    fit('should return NFT listing when listing is included', async () => {
+    it('should return NFT listing when listing is included', async () => {
       const result = await testServer.executeOperation({
         query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsOwner: Address) {
                 nft(contract: $contract, id: $nftId, chainId: $chainId) {
