@@ -12,7 +12,7 @@ describe('opensea', () => {
     it('should retrieve empty listings and offers', async () => {
       const contract = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13f'
       const tokenId = '2815'
-      const chainId = '4'
+      const chainId = '5'
       const openseaOrderReq: OpenseaOrderRequest[] = [{
         contract,
         tokenId,

@@ -54,7 +54,7 @@ describe('user resolver', () => {
             username: 'test-user',
             wallet: {
               address: '0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
-              chainId: '4',
+              chainId: '5',
               network: 'ethereum',
             },
           },
