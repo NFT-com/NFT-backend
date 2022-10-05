@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers'
 // const sharedLibs = jest.requireActual('@nftcom/shared')
 // const sharedLibs = jest.requireActual('@nftcom/gql/service')
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared/'
@@ -60,7 +60,7 @@ jest.mock('@nftcom/shared', () => {
 })
 
 const repositories = db.newRepositories()
-let connection : Connection
+let connection : DataSource
 let testServer
 let walletA, walletB
 let profileA, profileB
@@ -72,7 +72,7 @@ describe('profile resolver', () => {
 
   afterAll(async () => {
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   // profileByURL

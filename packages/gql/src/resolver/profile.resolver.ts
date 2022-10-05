@@ -6,6 +6,7 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
 import stream from 'stream'
+import { IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -127,7 +128,7 @@ const createFollowEdge = (ctx: Context) => {
       edgeType: defs.EdgeType.Follows,
       thatEntityId: profile.id,
       thatEntityType: defs.EntityType.Profile,
-      deletedAt: null,
+      deletedAt: IsNull(),
     })
       .then(fp.thruIfFalse(() => core.createEdge(ctx,  {
         collectionId: user.id,
@@ -184,7 +185,7 @@ const unfollowProfile = (
         edgeType: defs.EdgeType.Follows,
         thatEntityId: profile.id,
         thatEntityType: defs.EntityType.Profile,
-        deletedAt: null,
+        deletedAt: IsNull(),
       })
     }))
 }
@@ -947,7 +948,7 @@ const saveScoreForProfiles = async (
     const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
     const profiles = await repositories.profile.find(args?.input.nullOnly ? {
       where: {
-        lastScored: null,
+        lastScored: IsNull(),
       },
     } : {
       order: {

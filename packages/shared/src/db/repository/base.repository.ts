@@ -1,5 +1,7 @@
 import * as typeorm from 'typeorm'
+import { FindManyOptions, FindOneOptions, FindOptionsWhere, IsNull } from 'typeorm'
 
+import { db } from '@nftcom/shared/db'
 import { PageableQuery, PageableResult } from '@nftcom/shared/defs'
 import { helper } from '@nftcom/shared/helper'
 
@@ -20,20 +22,20 @@ export class BaseRepository<T> {
     this.entity = entity
   }
 
-  protected getRepository = (): typeorm.Repository<T> => {
+  protected getRepository = (): typeorm.Repository<any> => {
     if (this.repository) {
       return this.repository
     }
-    this.repository = typeorm.getConnection().getRepository(this.entity)
+    this.repository = db.getDataSource().getRepository(this.entity)
     return this.repository
   }
 
-  public delete = (opts: typeorm.FindConditions<T>): Promise<boolean> => {
-    return this.getRepository().softDelete(opts)
+  public delete = (opts: FindOptionsWhere<T>): Promise<boolean> => {
+    return this.getRepository().softDelete({ where: { ...opts } } as FindOneOptions<Partial<T>>)
       .then((r) => r.affected > 0)
   }
 
-  public hardDelete = (opts: typeorm.FindConditions<T>): Promise<boolean> => {
+  public hardDelete = (opts: typeorm.FindOptionsWhere<Partial<T>>): Promise<boolean> => {
     return this.getRepository().delete(opts)
       .then((r) => r.affected > 0)
   }
@@ -48,7 +50,7 @@ export class BaseRepository<T> {
       .then((r) => r.affected === 1)
   }
 
-  public find = (opts: typeorm.FindManyOptions<T>): Promise<T[]> => {
+  public find = (opts: typeorm.FindManyOptions<any>): Promise<T[]> => {
     return this.getRepository().find(opts)
   }
 
@@ -56,12 +58,20 @@ export class BaseRepository<T> {
     return this.getRepository().find()
   }
 
-  public findPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
+  public findPageable = (query: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
+    [query.where].flat().map((where) => {
+      Object
+        .entries(where)
+        .reduce((obj, [key, val]) => {
+          if (val === null) val = IsNull()
+          return { ...obj, [key]: val }
+        }, {})
+    })
     return this.getRepository()
       .findAndCount({
         relations: query.relations,
-        where: query.filters,
-        order: query.orderBy,
+        where: query.where,
+        order: query.order,
         take: query.take,
         cache: true,
       })
@@ -91,13 +101,13 @@ export class BaseRepository<T> {
       .getManyAndCount()
   }
 
-  public findOne = (opts: typeorm.FindOneOptions<T>): Promise<T | undefined> => {
+  public findOne = (opts: typeorm.FindOneOptions<Partial<T>>): Promise<T | undefined> => {
     return this.getRepository().findOne(opts)
     // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
   public findById = (id: string): Promise<T | undefined> => {
-    return this.getRepository().findOne(id)
+    return this.getRepository().findOne({ where: { id } })
     // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
@@ -125,7 +135,7 @@ export class BaseRepository<T> {
   }
 
   public update = (
-    opts: typeorm.FindConditions<T>,
+    opts: typeorm.FindOptionsWhere<T>,
     entity: typeorm.DeepPartial<T>,
   ): Promise<typeorm.UpdateResult> => {
     return this.getRepository().update(opts, entity as any)
@@ -147,12 +157,12 @@ export class BaseRepository<T> {
     return this.getRepository().upsert(entities as any, opts)
   }
 
-  public exists = (opts: Partial<T>): Promise<boolean> => {
-    return this.findOne({ where: { ...opts } }).then(helper.isNotEmpty)
+  public exists = (opts: FindOptionsWhere<T>): Promise<boolean> => {
+    return this.findOne({ where: opts } as FindOneOptions<Partial<T>>).then(helper.isNotEmpty)
   }
 
-  public count = (opts: Partial<T>): Promise<number> => {
-    return this.getRepository().count(opts)
+  public count = (opts: FindOptionsWhere<T>): Promise<number> => {
+    return this.getRepository().count({ where: opts })
   }
 
 }

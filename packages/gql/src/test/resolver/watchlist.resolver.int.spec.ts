@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'
@@ -17,7 +17,7 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
 }))
 
 let testServer
-let connection: Connection
+let connection: DataSource
 
 const repositories = db.newRepositories()
 
@@ -37,7 +37,7 @@ describe('watchlist resolver', () => {
     await testServer.stop()
 
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('add to watchlist', () => {

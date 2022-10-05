@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db } from '@nftcom/shared'
@@ -20,7 +20,7 @@ const repositories = db.newRepositories()
 
 let testServer
 let testData
-let connection: Connection
+let connection: DataSource
 
 describe('transaction activity resolver', () => {
   beforeAll(async () => {
@@ -77,7 +77,7 @@ describe('transaction activity resolver', () => {
     }
     await testServer.stop()
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('transaction activity byType, byWalletAddress, and byWalletAddressAndType', () => {

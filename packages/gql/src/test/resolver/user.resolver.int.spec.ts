@@ -29,7 +29,7 @@ describe('user resolver', () => {
 
   afterAll(async () => {
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('sign up', () => {

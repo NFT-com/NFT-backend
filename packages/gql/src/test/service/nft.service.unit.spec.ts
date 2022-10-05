@@ -49,7 +49,7 @@ describe('nft resolver', () => {
 
   afterAll(async () => {
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('refresh nft endpoint', () => {
