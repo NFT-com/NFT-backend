@@ -15,6 +15,13 @@ export interface NFTPortNFT {
     token_id?: string
     metadata_url?: string
     cached_file_url?: string
+    metadata: {
+      attributes: any
+      name: string
+      description: string
+      image: string
+      image_url: string
+    }
   }
   contract: {
     name?: string
@@ -33,6 +40,7 @@ export const retrieveNFTDetailsNFTPort = async (
   contract: string,
   tokenId: string,
   chainId: string,
+  refreshMetadata = false,
 ): Promise<NFTPortNFT | undefined> => {
   try {
     logger.debug(`starting retrieveNFTDetailsNFTPort: ${contract} ${tokenId} ${chainId}`)
@@ -48,6 +56,7 @@ export const retrieveNFTDetailsNFTPort = async (
     const res = await nftInterceptor.get(url, {
       params: {
         chain: chain,
+        refresh_metadata: refreshMetadata || undefined,
       },
     })
     if (res && res?.data) {
