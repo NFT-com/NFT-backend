@@ -358,7 +358,7 @@ export const getCollectionNameFromContract = (
   }
 }
 
-const updateCollectionForNFTs = async (
+export const updateCollectionForNFTs = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
   try {
@@ -806,6 +806,18 @@ export const updateWalletNFTs = async (
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
     Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+  }
+}
+
+export const indexNFTsOnSearchEngine = async (
+  nfts: Array<entity.NFT>,
+): Promise<void> => {
+  try {
+    await seService.indexNFTs(nfts)
+  } catch (err) {
+    logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
+    Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
+    throw err
   }
 }
 
