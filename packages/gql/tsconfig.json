@@ -12,5 +12,10 @@
   ],
   "include": [
     "src/**/*.ts",
+  ],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/__nulls__/*",
+    "**/test/*"
   ]
 }

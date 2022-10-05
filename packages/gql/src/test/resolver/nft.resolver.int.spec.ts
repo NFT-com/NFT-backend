@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { delay } from '@nftcom/gql/service/core.service'
@@ -51,7 +51,7 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
 
 let testServer
 const repositories = db.newRepositories()
-let connection: Connection
+let connection: DataSource
 let profile
 let nft
 
@@ -102,7 +102,7 @@ describe('nft resolver', () => {
 
   afterAll(async () => {
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('get NFT', () => {
@@ -922,7 +922,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -940,7 +939,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -974,7 +972,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })

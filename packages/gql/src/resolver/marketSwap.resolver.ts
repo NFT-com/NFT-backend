@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import { FindOptionsWhere, IsNull } from 'typeorm'
 
 import { Context, gql } from '@nftcom/gql/defs'
 import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
@@ -218,8 +219,8 @@ const swapNFT = (
             where: {
               txHash: args?.input.txHash,
               marketAsk: ask,
-              marketBid: bid ? bid : null,
-            } })
+              marketBid: bid ? bid : IsNull(),
+            } as FindOptionsWhere<entity.MarketSwap> })
             .then(fp.rejectIfNotEmpty(appError.buildExists(
               marketSwapError.buildMarketSwapExistingMsg(),
               marketSwapError.ErrorType.MarketSwapExisting,

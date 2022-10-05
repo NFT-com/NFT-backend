@@ -1,6 +1,7 @@
 import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import { FindOneOptions } from 'typeorm'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
@@ -253,7 +254,7 @@ const getNFTs = (
         // TODO: return array of Curations once we support multiple
         Promise.resolve(curations[0].items),
         Promise.all(curations[0].items.map(item =>
-          repositories.nft.findOne({ where: { id: item.id, ...filter } }))),
+          repositories.nft.findOne({ where: { id: item.id, ...filter } } as FindOneOptions<entity.NFT>))),
       ]).then(([items, nfts]) => nfts
         .filter((nft) => nft !== null)
         .map((nft, index) => ({ nft: nft, size: items[index].size })))

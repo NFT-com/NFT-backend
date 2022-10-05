@@ -1,4 +1,5 @@
 import { Job } from 'bull'
+import { IsNull } from 'typeorm'
 
 import {
   DEFAULT_NFT_IMAGE,
@@ -18,7 +19,7 @@ export const generateCompositeImages = async (job: Job): Promise<any> => {
     const MAX_PROFILE_COUNTS = 200
     const profiles = await repositories.profile.find({
       where: {
-        photoURL: null,
+        photoURL: IsNull(),
       },
     })
     const slicedProfiles = profiles.slice(0, MAX_PROFILE_COUNTS)

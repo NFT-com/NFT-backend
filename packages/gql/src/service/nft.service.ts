@@ -2,6 +2,7 @@ import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
+import { IsNull } from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -720,7 +721,7 @@ export const updateNFTOwnershipAndMetadata = async (
       }
     }
   } catch (err) {
-    console.log(err)
+    logger.log(err)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     return undefined
   }
@@ -1198,7 +1199,7 @@ export const updateEdgesWeightForProfile = async (
         thatEntityType: defs.EntityType.NFT,
         thisEntityId: profileId,
         edgeType: defs.EdgeType.Displays,
-        weight: null,
+        weight: IsNull(),
       },
     })
     if (nullEdges.length) {

@@ -1,16 +1,22 @@
 import * as fs from 'fs'
-import { Connection, createConnection } from 'typeorm'
+import { DataSource } from 'typeorm'
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
 
-import { DBConfig } from '@nftcom/shared/defs'
-
-import { _logger } from '../helper'
+import { _logger, helper } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
 const logger = _logger.Factory(_logger.Context.General)
 
-let connection: Connection
-export const connect = async (dbConfig: DBConfig): Promise<void> => {
+let connection: DataSource
+export const getDataSource = (): DataSource => {
+  if (!connection) {
+    throw new Error('No database connection')
+  }
+  return connection
+}
+
+export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Promise<void> => {
   if (connection) {
     return
   }
@@ -36,15 +42,15 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     entity.Wallet,
   ]
 
-  const ssl = dbConfig.useSSL
+  const ssl = helper.parseBoolean(process.env.DB_USE_SSL)
     ? { ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString() }
     : null
 
-  return createConnection({
+  return new DataSource({
     type: 'postgres',
     host: dbConfig.host,
     port: dbConfig.port,
-    username: dbConfig.user,
+    username: dbConfig.username,
     password: dbConfig.password,
     database: dbConfig.database,
     synchronize: false,
@@ -56,19 +62,19 @@ export const connect = async (dbConfig: DBConfig): Promise<void> => {
     ],
     ssl,
     entities,
-  })
+  }).initialize()
     .then((con) => {
       connection = con
       logger.info('Connected to database :)!!')
     })
 }
 
-export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
-  return createConnection({
+export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>): Promise<DataSource> => {
+  return new DataSource({
     type: 'postgres',
     host: dbConfig.host,
     port: dbConfig.port,
-    username: dbConfig.user,
+    username: dbConfig.username,
     password: dbConfig.password,
     database: dbConfig.database,
     logging: dbConfig.logging,
@@ -78,20 +84,21 @@ export const connectTestDB = async (dbConfig: any): Promise<Connection> => {
       `${__dirname}/migration/*.ts`,
       `${__dirname}/migration/*.js`,
     ],
-    cli: {
-      migrationsDir: `${__dirname}/migration`,
-    },
-    ssl: dbConfig.useSSL,
+    ssl: helper.parseBoolean(process.env.DB_USE_SSL),
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
-  })
+  }).initialize()
+    .then((con) => {
+      connection = con
+      return con
+    })
 }
 
 export const disconnect = async (): Promise<void> => {
   if (!connection) {
     return
   }
-  return connection.close()
+  return connection.destroy()
 }
 
 export type Repository = {

@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 const sharedLibs = jest.requireActual('@nftcom/shared')
 
@@ -51,7 +51,7 @@ jest.mock('@nftcom/shared', () => {
 })
 
 let testServer
-let connection: Connection
+let connection: DataSource
 
 const userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
 const walletId = '9qE9dsueMEQuhtdzQ8J2p'
@@ -78,7 +78,7 @@ describe('collection resolver', () => {
     await testServer.stop()
 
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('removeDuplicates', () => {
