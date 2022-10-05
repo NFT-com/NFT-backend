@@ -1,9 +1,6 @@
 import Bull from 'bull'
 
 import { redisConfig } from '@nftcom/gql/config'
-import {
-  websocketProvider,
-} from '@nftcom/gql/helper'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
   nftExternalOrdersOnDemand,
@@ -43,11 +40,6 @@ export const nftCronSubqueue: Bull.Queue = null
 const networkList = process.env.SUPPORTED_NETWORKS.split('|')
 const networks = new Map()
 networkList.map(network => {
-  const chainId = network.replace('ethereum:', '').split(':')[0]
-  websocketProvider.start(Number(chainId))
-    .then(() => logger.log(`Alchemy websocket connected on chainId: ${chainId}`))
-    .catch(err => logger.error('Alchemy websocket provider error', err))
-
   return networks.set(
     network.replace('ethereum:', '').split(':')[0], // chain id
     network.replace('ethereum:', '').split(':')[1], // human readable network name

@@ -20,7 +20,7 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
   removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(
     () => Promise.resolve(null),
   ),
-    
+
 }))
 
 jest.mock('@nftcom/gql/job/profile.job', () => {
@@ -46,7 +46,7 @@ describe('nft job', () => {
   describe('external order on demand', () => {
     it('executes retrieveMulitpleOpenseaOrders and retrieveLooksrareMultipleOrders', async () => {
       const cacheExpSpy = jest.spyOn(cacheService, 'removeExpiredTimestampedZsetMembers')
-        
+
       const osOrdersSpy = jest.spyOn(openseaService, 'retrieveMultipleOrdersOpensea')
         .mockImplementationOnce(
           () => Promise.resolve({
@@ -63,7 +63,7 @@ describe('nft job', () => {
         )
       await nftExternalOrdersOnDemand({ id: 'test-job-id', data: { FETCH_EXTERNAL_ORDERS_ON_DEMAND,
         chainId: process.env.CHAIN_ID } } as Job)
-    
+
       expect(cacheExpSpy).toHaveBeenCalledTimes(1)
       expect(osOrdersSpy).toHaveBeenCalledTimes(1)
       expect(lrSpy).toHaveBeenCalledTimes(1)
