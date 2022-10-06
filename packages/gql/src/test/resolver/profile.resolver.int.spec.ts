@@ -691,4 +691,62 @@ describe('profile resolver', () => {
       expect(result.data.latestProfiles.pageInfo.lastCursor).toEqual('2')
     })
   })
+
+  describe('profilesMintedWithGK', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      const profile = await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '0',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      const nft = await repositories.nft.save({
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+        tokenId: '0x1c8b',
+        metadata: {
+          name: 'NFT.com Genesis Key #7307',
+          imageURL: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: 'test-user-id',
+        walletId: 'test-wallet-id',
+      })
+
+      await repositories.edge.save({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: profile.id,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nft.id,
+        edgeType: defs.EdgeType.Displays,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return profiles with minted GK', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query ProfilesMintedWithGK($tokenId: String!, $chainId: String) { profilesMintedWithGK(tokenId:$tokenId, chainId:$chainId) { url } }',
+        variables: {
+          tokenId: '7307',
+        },
+      })
+
+      expect(result.data.profilesMintedWithGK.length).toEqual(1)
+      expect(result.data.profilesMintedWithGK[0].url).toEqual('testprofile')
+    })
+  })
 })
