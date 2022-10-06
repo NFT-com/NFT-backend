@@ -37,7 +37,7 @@ jest.mock('@nftcom/gql/service', () => {
           displayType: jest.requireActual('@nftcom/shared').defs.ProfileDisplayType.Collection,
           layoutType: jest.requireActual('@nftcom/shared').defs.ProfileLayoutType.Mosaic,
           url: 'test',
-          chainId: '1',
+          chainId: '5',
         }
       },
     },
@@ -441,6 +441,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
+        visibleNFTs: 1,
       })
 
       await repositories.profile.save({
@@ -452,6 +453,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
+        visibleNFTs: 1,
       })
     })
 

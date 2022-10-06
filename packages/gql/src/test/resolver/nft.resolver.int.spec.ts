@@ -250,7 +250,7 @@ describe('nft resolver', () => {
               }`,
         variables: {
           contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-          nftId: '0x07',
+          nftId: '0x186a1',
           chainId: '5',
         },
       })
@@ -1352,7 +1352,7 @@ describe('nft resolver', () => {
 
       await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-        tokenId: '0x619d963496e1a4f0ab751506faf4e39481d7c5c7d88bbab459b0ba26d66ee136',
+        tokenId: '0xd29ed6005bb7617a915b12cc03fbe7f5a2a9b1eaad86be52293436ed3b6379a5',
         chainId: '5',
         metadata: {
           name: '',
