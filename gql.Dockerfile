@@ -32,7 +32,6 @@ FROM node:16-alpine as release
 
 WORKDIR /app
 
-
 COPY --from=deps /app/prod_node_modules ./node_modules
 
 COPY --from=build /app/packages/shared/package.json /app/packages/shared/package.json

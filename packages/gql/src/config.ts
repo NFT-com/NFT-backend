@@ -1,6 +1,7 @@
 import 'dotenv/config'
 
 import { isString } from 'lodash'
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
 
 import { _logger, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -51,22 +52,20 @@ export const redisConfig = {
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,
-  user: process.env.DB_USERNAME || 'app',
+  username: process.env.DB_USERNAME || 'app',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'app',
   logging: helper.parseBoolean(process.env.DB_LOGGING) || false,
-  useSSL: helper.parseBoolean(process.env.DB_USE_SSL),
 }
 
-export const testDBConfig = {
+export const testDBConfig: Partial<PostgresConnectionOptions> = {
   type: 'postgres',
   host: process.env.TEST_DB_HOST,
   port: parseInt(process.env.TEST_DB_PORT),
-  user: process.env.TEST_DB_USERNAME,
+  username: process.env.TEST_DB_USERNAME,
   password: process.env.TEST_DB_PASSWORD,
   database: process.env.TEST_DB_DATABASE,
   logging: false,
-  useSSL: helper.parseBoolean(process.env.TEST_DB_USE_SSL),
   dropSchema: true,
   synchronize: false,
 }

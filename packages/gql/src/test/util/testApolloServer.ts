@@ -18,7 +18,7 @@ export function getTestApolloServer(
     context: () => {
       return {
         network: 'ethereum',
-        chain: chain ?? { id: '4', name: 'rinkeby' },
+        chain: chain ?? { id: '5', name: 'goerli' },
         user: user ?? null,
         wallet: wallet ?? null,
         repositories: testDB,

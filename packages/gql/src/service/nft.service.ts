@@ -2,6 +2,7 @@ import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
+import { IsNull } from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -286,7 +287,7 @@ export const filterNFTsWithAlchemy = async (
 const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
-  optionalWeb3: (AlchemyWeb3 | undefined) = undefined
+  optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
     const response = await (optionalWeb3 || web3)?.alchemy.getNftMetadata({
@@ -429,6 +430,7 @@ export const updateCollectionForNFTs = async (
 const getNFTMetaData = async (
   contract: string,
   tokenId: string,
+  chainId: string,
   refreshMetadata = false,
 ): Promise<NFTMetaData | undefined> => {
   try {
@@ -440,22 +442,27 @@ const getNFTMetaData = async (
       tokenId,
     )
 
-    const nftPortDetails = await retrieveNFTDetailsNFTPort(contract, tokenId, process.env.CHAIN_ID, refreshMetadata)
+    const nftPortDetails = await retrieveNFTDetailsNFTPort(
+      contract,
+      tokenId,
+      chainId || process.env.CHAIN_ID,
+      refreshMetadata,
+    )
 
-    if (!nftMetadata || !nftPortDetails) return
+    if (!nftMetadata) return
 
     const contractMetadata = await getContractMetaDataFromAlchemy(contract)
 
     const metadata = nftMetadata?.metadata as any
     const name = nftMetadata?.title || nftPortDetails?.nft?.metadata.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
     // For CryptoKitties, their metadata response format is different from original one
-    const description = nftMetadata?.description || metadata?.bio
+    const description = nftMetadata?.description || metadata?.bio || nftPortDetails?.nft?.metadata?.description
     const image = metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url : metadata?.image || nftPortDetails?.nft?.cached_file_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway || metadata?.tokenUri?.raw || (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
-    if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
+    if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
       type = defs.NFTType.ERC721
-    } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
+    } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
       type = defs.NFTType.ERC1155
-    } else if (nftMetadata?.title.endsWith('.eth')) { // if token is ENS token...
+    } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
       type = defs.NFTType.UNKNOWN
     } else {
       // If it's missing NFT token type, we should throw error
@@ -626,7 +633,7 @@ export const updateNFTOwnershipAndMetadata = async (
       walletChainId = wallet.chainId
     }
 
-    const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+    const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
 
     if (!metadata) return undefined
 
@@ -720,7 +727,7 @@ export const updateNFTOwnershipAndMetadata = async (
       }
     }
   } catch (err) {
-    console.log(err)
+    logger.log(err)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     return undefined
   }
@@ -834,6 +841,7 @@ export const refreshNFTMetadata = async (
     const metadata = await getNFTMetaData(
       nft.contract,
       BigNumber.from(nft.tokenId).toString(),
+      nft.chainId || process.env.CHAIN_ID,
     )
     if (!metadata) {
       logger.debug(`No metadata found for contract ${nft.contract} and tokenId ${nft.tokenId}`)
@@ -1198,7 +1206,7 @@ export const updateEdgesWeightForProfile = async (
         thatEntityType: defs.EntityType.NFT,
         thisEntityId: profileId,
         edgeType: defs.EdgeType.Displays,
-        weight: null,
+        weight: IsNull(),
       },
     })
     if (nullEdges.length) {
@@ -1747,7 +1755,7 @@ export const updateNFTMetadata = async (
 ): Promise<void> => {
   try {
     initiateWeb3(nft.chainId)
-    const metadata = await getNFTMetaData(nft.contract, nft.tokenId)
+    const metadata = await getNFTMetaData(nft.contract, nft.tokenId, nft.chainId || process.env.CHAIN_ID)
     if (!metadata) return
     const { type, name, description, image, traits } = metadata
     await repositories.nft.updateOneById(nft.id, {
@@ -1805,7 +1813,7 @@ export const saveNewNFT = async (
     if (!wallet) {
       return undefined
     }
-    const metadata = await getNFTMetaData(contract, tokenId)
+    const metadata = await getNFTMetaData(contract, tokenId, chainId)
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata

@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db } from '@nftcom/shared'
@@ -20,7 +20,7 @@ const repositories = db.newRepositories()
 
 let testServer
 let testData
-let connection: Connection
+let connection: DataSource
 
 describe('transaction activity resolver', () => {
   beforeAll(async () => {
@@ -40,7 +40,7 @@ describe('transaction activity resolver', () => {
       activity.walletAddress = testMockWallet.address
       activity.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.nftId = ['ethereum/test-nft-contract/test-token-id']
-      activity.chainId = '4'
+      activity.chainId = '5'
 
       let activityType
       switch (table) {
@@ -55,7 +55,7 @@ describe('transaction activity resolver', () => {
         activityType.makerAddress = ''
         activityType.protocol = ProtocolType.Seaport
         activityType.protocolData = {}
-        activityType.chainId = '4'
+        activityType.chainId = '5'
   
         activity = await repositories.txActivity.save(activity)
         activityType.activity = activity
@@ -77,7 +77,7 @@ describe('transaction activity resolver', () => {
     }
     await testServer.stop()
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('transaction activity byType, byWalletAddress, and byWalletAddressAndType', () => {
@@ -94,7 +94,7 @@ describe('transaction activity resolver', () => {
             chainId
           }
         }`,
-        variables: { activityType: 'Listing', chainId: '4' },
+        variables: { activityType: 'Listing', chainId: '5' },
       })
     
       const orderData = testData.filter(data => data?.table === 'txOrder')
@@ -123,7 +123,7 @@ describe('transaction activity resolver', () => {
             }
           } 
         }`,
-        variables: { walletAddress: testData[0].activity.walletAddress, chainId: '4' },
+        variables: { walletAddress: testData[0].activity.walletAddress, chainId: '5' },
       })
   
       const testDataIds = testData.map(td => td && td.activity.id)
@@ -155,7 +155,7 @@ describe('transaction activity resolver', () => {
             }
           } 
         }`,
-        variables: { input: { walletAddress: testData[0].activity.walletAddress, activityType: 'Listing', chainId: '4' } },
+        variables: { input: { walletAddress: testData[0].activity.walletAddress, activityType: 'Listing', chainId: '5' } },
       })
       const listData = testData.filter(data => data?.table === 'txOrder')
       const listIds = listData.map(ld => ld.activityType.id)
@@ -194,7 +194,7 @@ describe('transaction activity resolver', () => {
             first: 0,
             last: null,
           },
-          chainId: '4',
+          chainId: '5',
           expirationType: 'Both',
         } },
       })
@@ -229,7 +229,7 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           skipRelations: true,
-          chainId: '4',
+          chainId: '5',
           expirationType: 'Both',
         } },
       })
@@ -260,7 +260,7 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           skipRelations: true,
-          chainId: '4',
+          chainId: '5',
           expirationType: 'Active',
         } },
       })
@@ -290,7 +290,7 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           skipRelations: true,
-          chainId: '4',
+          chainId: '5',
           expirationType: 'Expired',
         } },
       })
@@ -320,7 +320,7 @@ describe('transaction activity resolver', () => {
             last: null,
           },
           skipRelations: true,
-          chainId: '4',
+          chainId: '5',
           expirationType: 'Both',
         } },
       })
