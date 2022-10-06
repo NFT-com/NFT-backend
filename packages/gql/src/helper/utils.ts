@@ -22,6 +22,8 @@ export const chainFromId = (chainId: string): string | undefined => {
     return 'ethereum'
   case '4':
     return 'rinkeby'
+  case '5':
+    return 'goerli'
   case '137':
     return 'polygon'
   default:

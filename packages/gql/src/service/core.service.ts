@@ -1,7 +1,9 @@
 import cryptoRandomString from 'crypto-random-string'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
+import { isNil } from 'lodash'
 import fetch from 'node-fetch'
+import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
@@ -123,20 +125,20 @@ export const resolveEdgeOwnership = <T>(ctxKey: string, edgeType: defs.EdgeType)
       edgeType,
       thisEntityId: ctxObj?.['id'],
       thatEntityId: parent?.['id'],
-      deletedAt: null,
+      deletedAt: IsNull(),
     })
   }
 }
 
 export const entitiesBy = <T>(
   // ctx: Context,
-  repo: repository.BaseRepository<T>,
+  repo: repository.BaseRepository<any>,
   filter: Partial<T>,
-  orderBy: defs.OrderBy = { createdAt: 'DESC' },
+  orderBy: FindOptionsOrder<any> = { createdAt: 'DESC' },
 ): Promise<T[]> => {
   // const { user } = ctx
   // logger.debug('entitiesBy', { loggedInUserId: user.id })
-  return repo.find({ where: { ...filter, deletedAt: null }, order: orderBy })
+  return repo.find({ where: { ...filter, deletedAt: IsNull() }, order: orderBy })
 }
 
 /**
@@ -154,42 +156,37 @@ export const paginatedEntitiesBy = <T>(
   relations: string[],
   orderKey= 'createdAt',
   orderDirection = 'DESC',
-  distinctOn?: defs.DistinctOn<T>,
 ): Promise<defs.PageableResult<T>> => {
   const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
-  const orderBy = <defs.OrderBy>{ [orderKey]: orderDirection }
+  const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
   const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
-  const reveredOrderBy = <defs.OrderBy>{ [orderKey]: reversedOrderDirection }
+  const reversedOrderBy = <FindOptionsOrder<any>>{ [orderKey]: reversedOrderDirection }
 
   return pagination.resolvePage<T>(pageInput, {
     firstAfter: () => repo.findPageable({
-      filters: pageableFilters,
+      where: pageableFilters,
       relations: relations,
-      orderBy,
+      order: orderBy,
       take: pageInput.first,
-      distinctOn,
-    }),
+    } as FindManyOptions<T>),
     firstBefore: () => repo.findPageable({
-      filters: pageableFilters,
+      where: pageableFilters,
       relations: relations,
-      orderBy,
+      order: orderBy,
       take: pageInput.first,
-      distinctOn,
-    }),
+    } as FindManyOptions<T>),
     lastAfter: () => repo.findPageable({
-      filters: pageableFilters,
+      where: pageableFilters,
       relations: relations,
-      orderBy: reveredOrderBy,
+      order: reversedOrderBy,
       take: pageInput.last,
-      distinctOn,
-    }).then(pagination.reverseResult),
+    } as FindManyOptions<T>).then(pagination.reverseResult),
     lastBefore: () => repo.findPageable({
-      filters: pageableFilters,
+      where: pageableFilters,
       relations: relations,
-      orderBy: reveredOrderBy,
+      order: reversedOrderBy,
       take: pageInput.last,
-      distinctOn,
-    }).then(pagination.reverseResult),
+    } as FindManyOptions<T>).then(pagination.reverseResult),
   })
 }
 
@@ -246,7 +243,7 @@ export const stringifyTraits = (
 
 export const paginatedThatEntitiesOfEdgesBy = <T>(
   ctx: Context,
-  repo: repository.BaseRepository<T>,
+  repo: repository.BaseRepository<any>,
   filter: Partial<entity.Edge>,
   pageInput: gql.PageInput,
   orderKey= 'createdAt',
@@ -283,7 +280,7 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
               } ))
         }),
       ).then((entries: T[]) => {
-        const filteredEntries = entries.filter((entry) => entry !== undefined)
+        const filteredEntries = entries.filter((entry) => !isNil(entry))
         return [filteredEntries, filteredEntries.length]
       }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
     } else {
@@ -313,9 +310,9 @@ export const thatEntitiesOfEdgesBy = <T>(
 }
 // TODO use EdgeStats table
 
-export const countEdges = (ctx: Context, filter: Partial<entity.Edge>): Promise<number> => {
+export const countEdges = (ctx: Context, filter: Partial<any>): Promise<number> => {
   const { repositories } = ctx
-  return repositories.edge.count({ ...filter, deletedAt: null })
+  return repositories.edge.count({ ...filter, deletedAt: IsNull() })
 }
 
 // global object for blacklist profiles

@@ -6,7 +6,7 @@ import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { _logger, defs,entity } from '@nftcom/shared'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
-const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-rinkeby.looksrare.org/api/v1'
+const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-goerli.looksrare.org/api/v1'
 const LOOKSRARE_LISTING_BATCH_SIZE = 4
 const LOOKSRARE_API_KEY = process.env.LOOKSRARE_API_KEY
 
@@ -103,7 +103,7 @@ const retrieveLooksRareOrdersInBatches = async (
   const listings: any[] = []
   const offers: any[] = []
   let queryUrl
-  const listingBaseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
+  const listingBaseUrl = chainId === '5' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
   const listingInterceptorLooksrare = getLooksRareInterceptor(
     listingBaseUrl,
     chainId,

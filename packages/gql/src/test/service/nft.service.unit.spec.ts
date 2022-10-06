@@ -49,7 +49,7 @@ describe('nft resolver', () => {
 
   afterAll(async () => {
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('refresh nft endpoint', () => {
@@ -168,8 +168,8 @@ describe('nft resolver', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-        tokenId: '0x3f183afce162dcff1453495c6932401729f4cc3832aa5807293967ee9efa53db',
-        chainId: '1',
+        tokenId: '0xd29ed6005bb7617a915b12cc03fbe7f5a2a9b1eaad86be52293436ed3b6379a5',
+        chainId: '5',
         metadata: {
           name: '',
           description: '',
