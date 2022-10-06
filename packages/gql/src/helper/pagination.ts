@@ -1,4 +1,5 @@
 import * as _ from 'lodash'
+import { IsNull } from 'typeorm'
 
 import { gql, Pageable } from '@nftcom/gql/defs'
 import { appError } from '@nftcom/gql/error'
@@ -126,7 +127,7 @@ export const toPageableFilters = <T>(
       ? helper.lessThan(safePageInput.afterCursor)
       : helper.moreThan(safePageInput.beforeCursor)
   }
-  return filters.map((filter) => ({ ...filter, deletedAt: null, [orderKey]: cursorValue }))
+  return filters.map((filter) => ({ ...filter, deletedAt: IsNull(), [orderKey]: cursorValue }))
 }
 
 const parseCursorValue = (v: Date | string | number): string => {

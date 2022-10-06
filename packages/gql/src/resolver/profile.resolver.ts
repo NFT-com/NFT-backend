@@ -6,6 +6,7 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
 import stream from 'stream'
+import { IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -14,7 +15,6 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { appError, mintError, nftError,profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
-import { saveProfileScore, saveVisibleNFTsForProfile } from '@nftcom/gql/resolver/nft.resolver'
 import { core } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
@@ -26,7 +26,7 @@ import {
 } from '@nftcom/gql/service/core.service'
 import {
   changeNFTsVisibility, getCollectionInfo,
-  getOwnersOfGenesisKeys,
+  getOwnersOfGenesisKeys, saveProfileScore, saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
@@ -128,7 +128,7 @@ const createFollowEdge = (ctx: Context) => {
       edgeType: defs.EdgeType.Follows,
       thatEntityId: profile.id,
       thatEntityType: defs.EntityType.Profile,
-      deletedAt: null,
+      deletedAt: IsNull(),
     })
       .then(fp.thruIfFalse(() => core.createEdge(ctx,  {
         collectionId: user.id,
@@ -185,7 +185,7 @@ const unfollowProfile = (
         edgeType: defs.EdgeType.Follows,
         thatEntityId: profile.id,
         thatEntityType: defs.EntityType.Profile,
-        deletedAt: null,
+        deletedAt: IsNull(),
       })
     }))
 }
@@ -948,7 +948,7 @@ const saveScoreForProfiles = async (
     const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
     const profiles = await repositories.profile.find(args?.input.nullOnly ? {
       where: {
-        lastScored: null,
+        lastScored: IsNull(),
       },
     } : {
       order: {

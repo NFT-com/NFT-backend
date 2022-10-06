@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db } from '@nftcom/shared/db'
@@ -17,7 +17,7 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
 
 let testServer
 const repositories = db.newRepositories()
-let connection: Connection
+let connection: DataSource
 describe('wallet resolver', () => {
   describe('isAddressWhiteListed', () => {
     beforeAll(async () => {
@@ -71,7 +71,7 @@ describe('wallet resolver', () => {
     afterAll(async () => {
       await testServer.stop()
       if (!connection) return
-      await connection.close()
+      await connection.destroy()
     })
 
     beforeEach(async () => {

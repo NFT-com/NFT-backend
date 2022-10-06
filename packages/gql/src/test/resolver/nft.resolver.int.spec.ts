@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { delay } from '@nftcom/gql/service/core.service'
@@ -51,11 +51,9 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
 
 let testServer
 const repositories = db.newRepositories()
-let connection: Connection
+let connection: DataSource
 let profile
 let nft
-
-const env = Object.assign({}, process.env)
 
 const mockTestServer = (): any => {
   const mockArgs ={
@@ -104,7 +102,7 @@ describe('nft resolver', () => {
 
   afterAll(async () => {
     if (!connection) return
-    await connection.close()
+    await connection.destroy()
   })
 
   describe('get NFT', () => {
@@ -251,8 +249,8 @@ describe('nft resolver', () => {
                 }
               }`,
         variables: {
-          contract: '0x657732980685C29A51053894542D7cb97de144Fe',
-          nftId: '0x07',
+          contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+          nftId: '0x186a1',
           chainId: '5',
         },
       })
@@ -799,11 +797,6 @@ describe('nft resolver', () => {
         name: 'NFT.com Profile',
         chainId: '5',
       })
-      await repositories.collection.save({
-        contract: ethers.utils.getAddress('0x657732980685C29A51053894542D7cb97de144Fe'),
-        name: 'NFT.com Genesis Key',
-        chainId: '5',
-      })
 
       profileA = await repositories.profile.save({
         url: 'test-profile-url',
@@ -855,7 +848,7 @@ describe('nft resolver', () => {
         chainId: '5',
       })
       nftD = await repositories.nft.save({
-        contract: '0x657732980685C29A51053894542D7cb97de144Fe',
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
         tokenId: '0x0d',
         metadata: {
           name: '',
@@ -924,7 +917,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -942,7 +934,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -976,7 +967,6 @@ describe('nft resolver', () => {
         },
       })
 
-      console.log('result', result)
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
     })
@@ -1344,123 +1334,6 @@ describe('nft resolver', () => {
     })
   })
 
-  describe('uploadMetadataImagesToS3', () => {
-    beforeEach(async () => {
-      testMockUser.chainId = '5'
-      testMockWallet.chainId = '5'
-      testMockWallet.chainName = 'goerli'
-
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0390',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'ipfs://QmNivD575CW7sxP5wJJiw1jbDdQTScuCcwxnjwKLEZTSqo',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x01cf',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          imageURL: 'ipfs://Qmf4gLHJkjEmfzQyhxDpeQZeeEZdfAdh8FAEtdcLxAu3bi',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
-    })
-
-    afterEach(async () => {
-      await clearDB(repositories)
-      await testServer.stop()
-      process.env = env
-    })
-
-    it('should update previewLink of NFTs', async () => {
-      const result = await testServer.executeOperation({
-        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
-        variables: {
-          count: 100,
-        },
-      })
-
-      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
-      const nfts = await repositories.nft.findAll()
-      expect(nfts.length).toEqual(2)
-      for (nft of nfts) {
-        expect(nft.previewLink).not.toBeNull()
-      }
-    })
-
-    it('should update previewLink of NFTs when there is no IPFS gateway defined', async () => {
-      process.env.IPFS_WEB_GATEWAY = ''
-      const result = await testServer.executeOperation({
-        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
-        variables: {
-          count: 100,
-        },
-      })
-
-      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
-      const nfts = await repositories.nft.findAll()
-      expect(nfts.length).toEqual(2)
-      for (nft of nfts) {
-        expect(nft.previewLink).not.toBeNull()
-      }
-    })
-
-    it('should update previewLink of NFTs when there is one IPFS gateway defined', async () => {
-      process.env.IPFS_WEB_GATEWAY = 'https://ipns.co/ipfs/'
-      const result = await testServer.executeOperation({
-        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
-        variables: {
-          count: 100,
-        },
-      })
-
-      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
-      const nfts = await repositories.nft.findAll()
-      expect(nfts.length).toEqual(2)
-      for (nft of nfts) {
-        expect(nft.previewLink).not.toBeNull()
-      }
-    })
-
-    it('should update previewLink of NFTs when there are multiple IPFS gateways defined', async () => {
-      process.env.IPFS_WEB_GATEWAY = 'https://ipns.co/ipfs/,https://dweb.link/ipfs/,https://cf-ipfs.com/ipfs/'
-      const result = await testServer.executeOperation({
-        query: 'mutation UploadMetadataImagesToS3($count: Int!) { uploadMetadataImagesToS3(count:$count) {  message } }',
-        variables: {
-          count: 100,
-        },
-      })
-
-      expect(result.data.uploadMetadataImagesToS3.message).toEqual('Saved preview link of metadata image for 2 NFTs')
-      const nfts = await repositories.nft.findAll()
-      expect(nfts.length).toEqual(2)
-      for (nft of nfts) {
-        expect(nft.previewLink).not.toBeNull()
-      }
-    })
-  })
-
   describe('updateENSNFTMetadata', () => {
     beforeAll(async () => {
       testMockUser.chainId = '5'
@@ -1474,8 +1347,8 @@ describe('nft resolver', () => {
 
       await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-        tokenId: '0x3f183afce162dcff1453495c6932401729f4cc3832aa5807293967ee9efa53db',
-        chainId: '4',
+        tokenId: '0xd29ed6005bb7617a915b12cc03fbe7f5a2a9b1eaad86be52293436ed3b6379a5',
+        chainId: '5',
         metadata: {
           name: '',
           description: '',
@@ -1501,191 +1374,6 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.updateENSNFTMetadata.message).toEqual('Updated image urls of metadata for 0 ENS NFTs')
-    })
-  })
-
-  describe('clearPreviewLinks', () => {
-    beforeAll(async () => {
-      testMockUser.chainId = '5'
-      testMockWallet.chainId = '5'
-      testMockWallet.chainName = 'goerli'
-
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0390',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.svg',
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0391',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.gif',
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0392',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.png',
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x01cf',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLink: 'https://cdn.nft.com/dev/nfts/1/1662485400284-test.gif',
-      })
-    })
-
-    afterAll(async () => {
-      await clearDB(repositories)
-      await testServer.stop()
-      process.env = env
-    })
-
-    it('should reset preview link of NFTs', async () => {
-      const result = await testServer.executeOperation({
-        query: 'mutation ClearPreviewLinks($count: Int!) { clearPreviewLinks(count:$count) {  message } }',
-        variables: {
-          count: 100,
-        },
-      })
-
-      expect(result.data.clearPreviewLinks.message).toEqual('Reset preview link for 3 NFTs')
-      const nfts = await repositories.nft.findNFTsWithPreviewLinks()
-      expect(nfts.length).toEqual(1)
-    })
-  })
-
-  describe('fixUpdatedAt', () => {
-    beforeAll(async () => {
-      testMockUser.chainId = '5'
-      testMockWallet.chainId = '5'
-      testMockWallet.chainName = 'goerli'
-
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0390',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLinkError: 'File format is unacceptable',
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0391',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLinkError: 'File format is unacceptable',
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x0392',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-        previewLinkError: '{}',
-      })
-
-      await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x01cf',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet.id,
-      })
-    })
-
-    afterAll(async () => {
-      await clearDB(repositories)
-      await testServer.stop()
-      process.env = env
-    })
-
-    it('should reset updatedAt field', async () => {
-      const result = await testServer.executeOperation({
-        query: 'mutation FixUpdatedAt($count: Int!) { fixUpdatedAt(count:$count) {  message } }',
-        variables: {
-          count: 100,
-        },
-      })
-
-      expect(result.data.fixUpdatedAt.message).toEqual('updatedAt fields are updated for 1 NFTs')
-      const nfts = await repositories.nft.find({ where: { previewLinkError: 'File format is unacceptable' } })
-      expect(nfts.length).toEqual(3)
     })
   })
 })

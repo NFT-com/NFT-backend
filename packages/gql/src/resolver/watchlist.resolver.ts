@@ -1,3 +1,5 @@
+import { FindOptionsWhere, IsNull } from 'typeorm'
+
 import { Context, gql } from '@nftcom/gql/defs'
 import { core } from '@nftcom/gql/service'
 import { defs, entity, fp } from '@nftcom/shared'
@@ -60,18 +62,21 @@ const createWatchEdge = (
 ): Promise<boolean> => {
   const { repositories } = ctx
   const { userId, itemId, itemType } = args.input
-  const watchEdge: Partial<entity.Edge> = {
+  const watchEdge: FindOptionsWhere<entity.Edge> = {
     thisEntityId: userId, // replace with user.id from context when auth is added
     thisEntityType: defs.EntityType.User,
     edgeType: defs.EdgeType.Watches,
     thatEntityId: itemId,
     thatEntityType: defs.EntityType[itemType],
-    deletedAt: null,
+    deletedAt: IsNull(),
   }
 
   return repositories.edge
     .exists(watchEdge)
-    .then(fp.thruIfFalse(() => repositories.edge.save(watchEdge)))
+    .then(fp.thruIfFalse(() => {
+      const watchEdgeEntity = { ...watchEdge, deletedAt: null } as entity.Edge
+      return repositories.edge.save(watchEdgeEntity)
+    }))
     .then(() => true)
 }
 
@@ -96,13 +101,13 @@ const deleteFromWatchlist = (
   // place back when auth is added
   // logger.debug('deleteFromWatchlist', { loggedInUserId: user.id, input: args })
   const { userId, itemId, itemType } = args.input
-  const watchEdge: Partial<entity.Edge> = {
+  const watchEdge: FindOptionsWhere<entity.Edge> = {
     thisEntityId: userId, // replace with user.id from context when auth is added
     thisEntityType: defs.EntityType.User,
     edgeType: defs.EdgeType.Watches,
     thatEntityId: itemId,
     thatEntityType: defs.EntityType[itemType],
-    deletedAt: null,
+    deletedAt: IsNull(),
   }
 
   return repositories.edge

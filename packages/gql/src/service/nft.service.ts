@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
-import fetch from 'node-fetch'
 import * as typeorm from 'typeorm'
+import { IsNull } from 'typeorm'
 
 import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -57,6 +57,12 @@ interface ContractMetaDataResponse {
     symbol: string
     totalSupply: string
     tokenType: string
+    openSea: {
+      floorPrice: number
+      collectionName: string
+      imageUrl: string
+      safelistRequestStatus: string
+    }
   }
 }
 
@@ -109,13 +115,6 @@ export const initiateWeb3 = (chainId?: string): void => {
   alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL :
     (Number(chainId) == 5 ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
   web3 = createAlchemyWeb3(alchemyUrl)
-}
-
-export const initiateWeb3PreviewLink = (chainId?: string): AlchemyWeb3 => {
-  chainId = chainId || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK :
-    Number(chainId) == 5 ? process.env.ALCHEMY_API_KEY_PREVIEWLINK_GOERLI : ''
-  return createAlchemyWeb3(alchemyUrl)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -359,7 +358,7 @@ export const getCollectionNameFromContract = (
   }
 }
 
-const updateCollectionForNFTs = async (
+export const updateCollectionForNFTs = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
   try {
@@ -431,6 +430,8 @@ const updateCollectionForNFTs = async (
 const getNFTMetaData = async (
   contract: string,
   tokenId: string,
+  chainId: string,
+  refreshMetadata = false,
 ): Promise<NFTMetaData | undefined> => {
   try {
     let type: defs.NFTType
@@ -441,25 +442,45 @@ const getNFTMetaData = async (
       tokenId,
     )
 
+    const nftPortDetails = await retrieveNFTDetailsNFTPort(
+      contract,
+      tokenId,
+      chainId || process.env.CHAIN_ID,
+      refreshMetadata,
+    )
+
     if (!nftMetadata) return
 
     const contractMetadata = await getContractMetaDataFromAlchemy(contract)
 
     const metadata = nftMetadata?.metadata as any
-    const name = nftMetadata?.title || `${contractMetadata?.contractMetadata?.name} #${Number(tokenId).toString()}`
+    const name = nftMetadata?.title || nftPortDetails?.nft?.metadata.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
     // For CryptoKitties, their metadata response format is different from original one
-    const description = nftMetadata?.description || metadata?.bio
-    const image = metadata?.image || metadata?.image_url_cdn || generateSVGFromBase64String(metadata?.image_data)
-    if (nftMetadata?.id?.tokenMetadata.tokenType === 'ERC721') {
+    const description = nftMetadata?.description || metadata?.bio || nftPortDetails?.nft?.metadata?.description
+    const image = metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url : metadata?.image || nftPortDetails?.nft?.cached_file_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway || metadata?.tokenUri?.raw || (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
+    if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
       type = defs.NFTType.ERC721
-    } else if (nftMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
+    } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
       type = defs.NFTType.ERC1155
-    } else if (nftMetadata?.title.endsWith('.eth')) { // if token is ENS token...
+    } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
       type = defs.NFTType.UNKNOWN
+    } else {
+      // If it's missing NFT token type, we should throw error
+      logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
+      return Promise.reject(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
     }
 
     if (Array.isArray(metadata?.attributes)) {
       metadata?.attributes.map((trait) => {
+        let value = trait?.value || trait?.trait_value
+        value = typeof value === 'string' ? value : JSON.stringify(value)
+        traits.push(({
+          type: trait?.trait_type,
+          value,
+        }))
+      })
+    } else if (Array.isArray(metadata?.message?.attributes)) { // edge case for alchemy
+      metadata?.message?.attributes.map((trait) => {
         let value = trait?.value || trait?.trait_value
         value = typeof value === 'string' ? value : JSON.stringify(value)
         traits.push(({
@@ -473,6 +494,15 @@ const getNFTMetaData = async (
         value = typeof value === 'string' ? value : JSON.stringify(value)
         traits.push(({
           type: trait?.type,
+          value,
+        }))
+      })
+    } else if (Array.isArray(nftPortDetails?.nft?.metadata?.attributes)) { // nftport fallback
+      nftPortDetails?.nft?.metadata?.attributes.map((trait) => {
+        let value = trait?.value || trait?.trait_value
+        value = typeof value === 'string' ? value : JSON.stringify(value)
+        traits.push(({
+          type: trait?.trait_type,
           value,
         }))
       })
@@ -534,10 +564,10 @@ const uploadImageToS3 = async (
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           // this image is svg so we skip it
-          return Promise.reject(new Error('File format is unacceptable'))
+          return Promise.reject(new Error('ENS file format is unacceptable'))
         } else if (imageUrl.includes('https://arweave.net/')) {
           // AR images are mp4 format, so we don't save as preview link
-          return Promise.reject(new Error('File format is unacceptable'))
+          return Promise.reject(new Error('Arweave file format is unacceptable'))
         } else {
           ext = 'png'
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
@@ -580,96 +610,6 @@ const uploadImageToS3 = async (
   }
 }
 
-export const saveNFTMetadataImageToS3 = async (
-  nft: entity.NFT,
-  repositories: db.Repository,
-): Promise<string | undefined> => {
-  try {
-    if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.startsWith('https://cdn.nft.com')) {
-      await repositories.nft.updateOneById(nft.id, {
-        previewLink: nft.metadata.imageURL + '?width=600',
-      })
-      return nft.metadata.imageURL + '?width=600'
-    } else {
-      let uploadedImage
-      const uploadPath = `nfts/${nft.chainId}/`
-
-      const nftPortResult = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
-      // if image url from NFTPortResult is valid
-      if (nftPortResult && nftPortResult?.nft.cached_file_url && nftPortResult?.nft.cached_file_url.length) {
-        const filename = nftPortResult.nft.cached_file_url.split('/').pop()
-        uploadedImage = await uploadImageToS3(
-          nftPortResult.nft.cached_file_url,
-          filename,
-          nft.chainId,
-          nft.contract,
-          uploadPath,
-        )
-      } else {
-        const newWeb3 = initiateWeb3PreviewLink(nft.chainId)
-        const nftAlchemyResult = await getNFTMetaDataFromAlchemy(nft.contract, nft.tokenId, newWeb3)
-        if (nftAlchemyResult && nftAlchemyResult?.metadata &&
-          nftAlchemyResult?.metadata?.image && nftAlchemyResult?.metadata?.image.length
-        ) {
-          const filename = nftAlchemyResult.metadata.image.split('/').pop()
-          uploadedImage = await uploadImageToS3(
-            nftAlchemyResult.metadata.image,
-            filename,
-            nft.chainId,
-            nft.contract,
-            uploadPath,
-          )
-        } else {
-          // we try to get url from metadata
-          if (nft?.metadata?.imageURL && nft?.metadata?.imageURL.indexOf('data:image/svg+xml') === 0) {
-            uploadedImage = await uploadImageToS3(nft.metadata.imageURL, `${nft.contract}.svg`, nft.chainId, nft.contract, uploadPath)
-          } else {
-            const imageUrl = processIPFSURL(nft?.metadata?.imageURL)
-            if (!imageUrl) {
-              await repositories.nft.updateOneById(nft.id, {
-                previewLink: null,
-                previewLinkError: 'undefined previewLink',
-              })
-              return undefined
-            }
-            const filename = nft.metadata.imageURL.split('/').pop()
-            if (!filename) {
-              await repositories.nft.updateOneById(nft.id, {
-                previewLink: null,
-                previewLinkError: 'undefined previewLink',
-              })
-              return undefined
-            }
-            uploadedImage = await uploadImageToS3(imageUrl, filename, nft.chainId, nft.contract, uploadPath)
-          }
-        }
-      }
-
-      if (!uploadedImage) {
-        await repositories.nft.updateOneById(nft.id, {
-          previewLink: null,
-          previewLinkError: 'undefined previewLink',
-        })
-        return undefined
-      }
-      logger.info(`previewLink for NFT ${ nft.id } was generated`,
-        {
-          previewLink: uploadedImage + '?width=600',
-        })
-      return uploadedImage + '?width=600'
-    }
-  } catch (err) {
-    await repositories.nft.updateOneById(nft.id, {
-      previewLink: null,
-      previewLinkError: typeof err.message === 'string' ? err.message : 'undefined previewLink',
-    })
-
-    logger.error(`Error in saveNFTMetadataImageToS3: ${err}`)
-    Sentry.captureMessage(`Error in saveNFTMetadataImageToS3: ${err}`)
-    return undefined
-  }
-}
-
 export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
@@ -693,7 +633,7 @@ export const updateNFTOwnershipAndMetadata = async (
       walletChainId = wallet.chainId
     }
 
-    const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId)
+    const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
 
     if (!metadata) return undefined
 
@@ -714,11 +654,7 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-      // save previewLink of NFT metadata image if it's from IPFS
-      const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-      if (previewLink) {
-        await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
-      }
+
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -783,13 +719,6 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
-          if (existingNFT.metadata.imageURL !== image) {
-            // update previewLink of NFT metadata image if it's from IPFS
-            const previewLink = await saveNFTMetadataImageToS3(updatedNFT, repositories)
-            if (previewLink) {
-              await repositories.nft.updateOneById(updatedNFT.id, { previewLink, previewLinkError: null })
-            }
-          }
           return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
@@ -798,7 +727,7 @@ export const updateNFTOwnershipAndMetadata = async (
       }
     }
   } catch (err) {
-    console.log(err)
+    logger.log(err)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     return undefined
   }
@@ -857,16 +786,45 @@ export const updateWalletNFTs = async (
   walletAddress: string,
   chainId: string,
 ): Promise<void> => {
-  const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
-  const savedNFTs: entity.NFT[] = []
-  await Promise.allSettled(
-    ownedNFTs.map(async (nft: OwnedNFT) => {
-      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
-      if (savedNFT) savedNFTs.push(savedNFT)
-    }),
-  )
-  await seService.indexNFTs(savedNFTs)
-  await updateCollectionForNFTs(savedNFTs)
+  try {
+    const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
+    const chunks: OwnedNFT[][] = Lodash.chunk(
+      ownedNFTs,
+      20,
+    )
+    const savedNFTs: entity.NFT[] = []
+    await Promise.allSettled(
+      chunks.map(async (chunk: OwnedNFT[]) => {
+        try {
+          await Promise.allSettled(
+            chunk.map(async (nft) => {
+              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
+              if (savedNFT) savedNFTs.push(savedNFT)
+            }),
+          )
+        } catch (err) {
+          logger.error(`Error in updateWalletNFTs: ${err}`)
+          Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+        }
+      }))
+    await seService.indexNFTs(savedNFTs)
+    await updateCollectionForNFTs(savedNFTs)
+  } catch (err) {
+    logger.error(`Error in updateWalletNFTs: ${err}`)
+    Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+  }
+}
+
+export const indexNFTsOnSearchEngine = async (
+  nfts: Array<entity.NFT>,
+): Promise<void> => {
+  try {
+    await seService.indexNFTs(nfts)
+  } catch (err) {
+    logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
+    Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
+    throw err
+  }
 }
 
 export const refreshNFTMetadata = async (
@@ -883,6 +841,7 @@ export const refreshNFTMetadata = async (
     const metadata = await getNFTMetaData(
       nft.contract,
       BigNumber.from(nft.tokenId).toString(),
+      nft.chainId || process.env.CHAIN_ID,
     )
     if (!metadata) {
       logger.debug(`No metadata found for contract ${nft.contract} and tokenId ${nft.tokenId}`)
@@ -1247,7 +1206,7 @@ export const updateEdgesWeightForProfile = async (
         thatEntityType: defs.EntityType.NFT,
         thisEntityId: profileId,
         edgeType: defs.EdgeType.Displays,
-        weight: null,
+        weight: IsNull(),
       },
     })
     if (nullEdges.length) {
@@ -1418,16 +1377,239 @@ export const removeEdgesForNonassociatedAddresses = async (
   }
 }
 
-export const downloadImageFromUbiquity = async (
-  url: string,
-): Promise<Buffer | undefined> => {
+export const updateNFTsForAssociatedAddresses = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+): Promise<string> => {
   try {
-    const res = await fetch(url + `?apiKey=${process.env.UBIQUITY_API_KEY}`)
-    return await res.buffer()
+    const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let addresses: string[]
+    if (cachedData) {
+      addresses = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
+      addresses = associatedAddresses.map((item) => item.chainAddr)
+      logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
+      // remove NFT edges for non-associated addresses
+      await removeEdgesForNonassociatedAddresses(
+        profile.id,
+        profile.associatedAddresses,
+        addresses,
+        chainId,
+      )
+      if (!addresses.length) {
+        return `No associated addresses of ${profile.url}`
+      }
+      await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
+      // update associated addresses with the latest updates
+      await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
+    }
+    // save User, Wallet for associated addresses...
+    const wallets: entity.Wallet[] = []
+    await Promise.allSettled(
+      addresses.map(async (address) => {
+        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+      }),
+    )
+    // refresh NFTs for associated addresses...
+    await Promise.allSettled(
+      wallets.map(async (wallet) => {
+        try {
+          await updateNFTsForAssociatedWallet(profile.id, wallet)
+        } catch (err) {
+          logger.error(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+          Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+        }
+      }),
+    )
+    await syncEdgesWithNFTs(profile.id)
+    return `refreshed NFTs for associated addresses of ${profile.url}`
   } catch (err) {
-    logger.error(`Error in downloadImageFromUbiquity: ${err}`)
-    Sentry.captureMessage(`Error in downloadImageFromUbiquity: ${err}`)
-    return undefined
+    Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
+    return `error while refreshing NFTs for associated addresses of ${profile.url}`
+  }
+}
+
+export const updateCollectionForAssociatedContract = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  chainId: string,
+  walletAddress: string,
+): Promise<string> => {
+  try {
+    const cacheKey = `${CacheKeys.ASSOCIATED_CONTRACT}_${chainId}_${profile.url}`
+    const cachedData = await cache.get(cacheKey)
+    let contract
+    if (cachedData) {
+      contract = JSON.parse(cachedData)
+    } else {
+      const nftResolverContract = typechain.NftResolver__factory.connect(
+        contracts.nftResolverAddress(chainId),
+        provider.provider(Number(chainId)),
+      )
+      const associatedContract = await nftResolverContract.associatedContract(profile.url)
+      if (!associatedContract) {
+        return `No associated contract of ${profile.url}`
+      }
+      if (!associatedContract.chainAddr) {
+        return `No associated contract of ${profile.url}`
+      }
+      contract = ethers.utils.getAddress(associatedContract.chainAddr)
+      await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
+      // update associated contract with the latest updates
+      await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
+    }
+    // get collection info
+    let collectionName = await getCollectionNameFromContract(
+      contract,
+      chainId,
+      defs.NFTType.ERC721,
+    )
+    if (collectionName === 'Unknown Name') {
+      collectionName = await getCollectionNameFromContract(
+        contract,
+        chainId,
+        defs.NFTType.ERC1155,
+      )
+    }
+    // check if deployer of associated contract is in associated addresses
+    const deployer = await getCollectionDeployer(contract, chainId)
+    if (!deployer) {
+      if (profile.profileView === defs.ProfileViewType.Collection) {
+        await repositories.profile.updateOneById(profile.id,
+          {
+            profileView: defs.ProfileViewType.Gallery,
+          },
+        )
+      }
+      return `Updated associated contract for ${profile.url}`
+    } else {
+      const collection = await repositories.collection.findByContractAddress(contract, chainId)
+      if (!collection) {
+        const savedCollection = await repositories.collection.save({
+          contract,
+          name: collectionName,
+          chainId,
+          deployer,
+        })
+        await seService.indexCollections([savedCollection])
+      }
+      const checkedDeployer =  ethers.utils.getAddress(deployer)
+      const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
+        checkedDeployer === walletAddress
+      if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
+        await repositories.profile.updateOneById(profile.id,
+          {
+            profileView: defs.ProfileViewType.Gallery,
+          },
+        )
+      }
+      return `Updated associated contract for ${profile.url}`
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateCollectionForAssociatedContract: ${err}`)
+    return `error while updating associated contract of ${profile.url}`
+  }
+}
+
+export const updateGKIconVisibleStatus = async (
+  repositories: db.Repository,
+  chainId: string,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    const wallet = await repositories.wallet.findById(profile.ownerWalletId)
+    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
+    if (index === -1) {
+      await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
+    } else {
+      return
+    }
+  } catch (err) {
+    logger.error(`Error in updateGKIconVisibleStatus: ${err}`)
+    Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
+    throw err
+  }
+}
+
+export const saveVisibleNFTsForProfile = async (
+  profileId: string,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profileId,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    if (edges.length) {
+      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
+    }
+  } catch (err) {
+    logger.error(`Error in saveVisibleNFTsForProfile: ${err}`)
+    Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
+    throw err
+  }
+}
+
+export const saveProfileScore = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
+    // get genesis key numbers
+    const gkNFTs = await repositories.nft.find({
+      where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
+    })
+    // get collections
+    const nfts = await repositories.nft.find({
+      where: { userId: profile.ownerUserId, chainId: profile.chainId },
+    })
+
+    const collections: Array<string> = []
+    await Promise.allSettled(
+      nfts.map(async (nft) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: nft.contract, chainId: profile.chainId },
+        })
+        if (collection) {
+          const isExisting = collections.find((existingCollection) =>
+            existingCollection === collection.contract,
+          )
+          if (!isExisting) collections.push(collection.contract)
+        }
+      }),
+    )
+    // get visible items
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
+    const paddedCollections = collections.length.toString().padStart(5, '0')
+    const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
+    await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
+  } catch (err) {
+    logger.error(`Error in saveProfileScore: ${err}`)
+    Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
+    throw err
   }
 }
 
@@ -1573,7 +1755,7 @@ export const updateNFTMetadata = async (
 ): Promise<void> => {
   try {
     initiateWeb3(nft.chainId)
-    const metadata = await getNFTMetaData(nft.contract, nft.tokenId)
+    const metadata = await getNFTMetaData(nft.contract, nft.tokenId, nft.chainId || process.env.CHAIN_ID)
     if (!metadata) return
     const { type, name, description, image, traits } = metadata
     await repositories.nft.updateOneById(nft.id, {
@@ -1631,7 +1813,7 @@ export const saveNewNFT = async (
     if (!wallet) {
       return undefined
     }
-    const metadata = await getNFTMetaData(contract, tokenId)
+    const metadata = await getNFTMetaData(contract, tokenId, chainId)
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata
@@ -1649,11 +1831,7 @@ export const saveNewNFT = async (
         traits: traits,
       },
     })
-    // save previewLink of NFT metadata image if it's from IPFS
-    const previewLink = await saveNFTMetadataImageToS3(savedNFT, repositories)
-    if (previewLink) {
-      await repositories.nft.updateOneById(savedNFT.id, { previewLink, previewLinkError: null })
-    }
+
     await seService.indexNFTs([savedNFT])
     await updateCollectionForNFTs([savedNFT])
     return savedNFT

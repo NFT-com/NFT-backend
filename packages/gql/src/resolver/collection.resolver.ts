@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import * as getStream from 'get-stream'
 import { combineResolvers } from 'graphql-resolvers'
 import { FileUpload } from 'graphql-upload'
+import { IsNull } from 'typeorm'
 import { In } from 'typeorm/find-options/operator/In'
 
 import { Context, gql } from '@nftcom/gql/defs'
@@ -280,8 +281,8 @@ const updateCollectionImageUrls = async (
     const collections = await repositories.collection.find({
       where: {
         chainId,
-        bannerUrl: null,
-        logoUrl: null,
+        bannerUrl: IsNull(),
+        logoUrl: IsNull(),
       },
     })
     const length = collections.length > count ? count : collections.length

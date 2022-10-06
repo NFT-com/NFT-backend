@@ -7,8 +7,8 @@
   "scripts": {
     "prebuild": "npm run gql:gen",
     "build": "npm run clean && npm run compile && npm run copy:schema",
-    "clean": "rimraf dist tsconfig.tsbuildinfo",
-    "compile": "tsc && tsc-alias",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
+    "compile": "tsc -p tsconfig.build.json && tsc-alias",
     "copy:schema": "cp -r ./src/schema/*.graphql ./dist/schema/",
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon | pino-pretty\"",
     "test:local": "LOG_LEVEL=silent doppler run --preserve-env -- jest --runInBand --detectOpenHandles",
@@ -71,7 +71,7 @@
     "path": "^0.12.7",
     "pino-http": "8.2.0",
     "source-map-support": "^0.5.21",
-    "typeorm": "0.2.41",
+    "typeorm": "^0.3.10",
     "typesense": "^1.2.1",
     "web3": "^1.7.3"
   },
@@ -97,5 +97,13 @@
     "tsc-alias": "^1.4.1",
     "tsconfig-paths": "^3.11.0",
     "typescript": "^4.4.4"
+  },
+  "exports": {
+    "./service": "./dist/service/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "service": [ "dist/service/index.ts" ]
+    }
   }
 }

@@ -42,7 +42,7 @@ const walletInputSuccess: WalletInput = {
 const walletInputFailure: WalletInput = {
   address: 'test-address-failure',
   network: 'ethereum',
-  chainId: '4',
+  chainId: '5',
 }
 
 const walletFailureResponse = 'Please signup or add this address before using'

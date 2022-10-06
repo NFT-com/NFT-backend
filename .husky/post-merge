@@ -1,0 +1,16 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+function changed {
+  git diff --name-only HEAD@{1} HEAD | grep "^$1" > /dev/null 2>&1
+}
+
+if changed 'package-lock.json'; then
+  echo
+  printf  '*%.0s' {1..62}
+  echo
+  echo "📦\tpackage-lock.json changed."
+  echo "📦\tRun npm install to bring your dependencies up to date."
+  printf  '*%.0s' {1..62}
+  echo
+fi

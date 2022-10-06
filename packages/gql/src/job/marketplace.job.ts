@@ -2,7 +2,7 @@ import { Job } from 'bull'
 import { BigNumber, utils } from 'ethers'
 import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
-import { LessThan } from 'typeorm'
+import { IsNull, LessThan } from 'typeorm'
 
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
 import { provider } from '@nftcom/gql/helper'
@@ -147,8 +147,8 @@ const listenApprovalEvents = async (
         where: {
           structHash: structHash,
           makerAddress: utils.getAddress(makerAddress),
-          approvalTxHash: null,
-          cancelTxHash: null,
+          approvalTxHash: IsNull(),
+          cancelTxHash: IsNull(),
         },
       })
       if (marketAsk) {
@@ -160,8 +160,8 @@ const listenApprovalEvents = async (
           where: {
             structHash: structHash,
             makerAddress: utils.getAddress(makerAddress),
-            approvalTxHash: null,
-            cancelTxHash: null,
+            approvalTxHash: IsNull(),
+            cancelTxHash: IsNull(),
           },
         })
         if (marketBid) {
@@ -212,9 +212,9 @@ const listenNonceIncrementedEvents = async (
         where: {
           makerAddress: utils.getAddress(makerAddress),
           nonce: LessThan(nonce),
-          marketSwapId: null,
-          approvalTxHash: null,
-          cancelTxHash: null,
+          marketSwapId: IsNull(),
+          approvalTxHash: IsNull(),
+          cancelTxHash: IsNull(),
         },
       })
       const filteredAsks = marketAsks.filter((ask) => ask.nonce < nonce)
@@ -229,9 +229,9 @@ const listenNonceIncrementedEvents = async (
           where: {
             makerAddress: utils.getAddress(makerAddress),
             nonce: LessThan(nonce),
-            marketSwapId: null,
-            approvalTxHash: null,
-            cancelTxHash: null,
+            marketSwapId: IsNull(),
+            approvalTxHash: IsNull(),
+            cancelTxHash: IsNull(),
           },
         })
         const filteredBids = marketBids.filter((bid) => bid.nonce < nonce)
@@ -283,8 +283,8 @@ const listenCancelEvents = async (
         where: {
           structHash: structHash,
           makerAddress: utils.getAddress(makerAddress),
-          approvalTxHash: null,
-          cancelTxHash: null,
+          approvalTxHash: IsNull(),
+          cancelTxHash: IsNull(),
         },
       })
       if (marketAsk) {
@@ -297,8 +297,8 @@ const listenCancelEvents = async (
           where: {
             structHash: structHash,
             makerAddress: utils.getAddress(makerAddress),
-            approvalTxHash: null,
-            cancelTxHash: null,
+            approvalTxHash: IsNull(),
+            cancelTxHash: IsNull(),
           },
         })
         if (marketBid) {
@@ -472,7 +472,7 @@ const listenMatchEvents = async (
         let marketSwap = await repositories.marketSwap.findOne({
           where: {
             marketAsk: marketAsk,
-            marketBid: marketBid ? marketBid : null,
+            marketBid: marketBid ? marketBid : IsNull(),
             txHash: log.transactionHash,
           },
         })
