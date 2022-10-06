@@ -7,8 +7,8 @@
   "scripts": {
     "prebuild": "npm run gql:gen",
     "build": "npm run clean && npm run compile && npm run copy:schema",
-    "clean": "rimraf dist tsconfig.tsbuildinfo",
-    "compile": "tsc && tsc-alias",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
+    "compile": "tsc -p tsconfig.build.json",
     "copy:schema": "cp -r ./src/schema/*.graphql ./dist/schema/",
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon | pino-pretty\"",
     "test:local": "LOG_LEVEL=silent doppler run --preserve-env -- jest --runInBand --detectOpenHandles",
