@@ -55,7 +55,7 @@ let connection: DataSource
 
 const userId = 'PGclc8YIzPCQzs8n_4gcb-3lbQXXb'
 const walletId = '9qE9dsueMEQuhtdzQ8J2p'
-const chainId = '4'
+const chainId = '5'
 let nftA, nftB, nftC
 let cA, cB
 let profile
@@ -111,7 +111,7 @@ describe('collection resolver', () => {
         userId,
         walletId,
         chainId,
-        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         tokenId: '0x05',
         type: defs.NFTType.ERC721,
         metadata: {
@@ -126,7 +126,7 @@ describe('collection resolver', () => {
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
       })
       const collectionB = await repositories.collection.save({
-        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         name: 'tinyMusktweetz',
         chainId,
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
@@ -165,7 +165,7 @@ describe('collection resolver', () => {
       let result = await testServer.executeOperation({
         query: 'mutation removeDuplicates($contracts: [Address!]!) { removeDuplicates(contracts: $contracts) { message } }',
         variables: {
-          contracts: ['0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b', '0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'],
+          contracts: ['0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b', '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
         },
       })
 
@@ -182,7 +182,7 @@ describe('collection resolver', () => {
             pageInput: {
               first: 5,
             },
-            chainId: '4',
+            chainId: '5',
           },
         },
       })
@@ -230,7 +230,7 @@ describe('collection resolver', () => {
         userId,
         walletId,
         chainId,
-        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         tokenId: '0x05',
         type: defs.NFTType.ERC721,
         metadata: {
@@ -273,7 +273,7 @@ describe('collection resolver', () => {
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
       })
       cB = await repositories.collection.save({
-        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         name: 'tinyMusktweetz',
         chainId,
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
@@ -294,7 +294,7 @@ describe('collection resolver', () => {
       })
 
       await repositories.nft.save({
-        contract: '0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77',
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
         tokenId: '0x01',
         metadata: {
           name: 'chunks',
@@ -332,9 +332,14 @@ describe('collection resolver', () => {
 
   describe('updateCollectionName', () => {
     beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
+        { id: '5', name: 'goerli' },
       )
       cA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
@@ -343,7 +348,7 @@ describe('collection resolver', () => {
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
       })
       cB = await repositories.collection.save({
-        contract: ethers.utils.getAddress('0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77'),
+        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         name: 'Unknown Name',
         chainId,
         deployer: '0x59495589849423692778a8c5aaCA62CA80f875a4',
@@ -364,7 +369,7 @@ describe('collection resolver', () => {
       })
 
       await repositories.nft.save({
-        contract: '0x91BEB9f3576F8932722153017EDa8aEf9A0B4A77',
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
         tokenId: '0x01',
         metadata: {
           name: 'chunks',

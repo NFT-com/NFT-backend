@@ -62,7 +62,9 @@ export const retrieveNFTDetailsNFTPort = async (
     if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
       return res.data as NFTPortNFT
-    } else return undefined
+    } else {
+      return undefined
+    }
   } catch (err) {
     logger.error(`Error in retrieveNFTDetailsNFTPort: ${err}`)
     Sentry.captureMessage(`Error in retrieveNFTDetailsNFTPort: ${err}`)

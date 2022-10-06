@@ -37,7 +37,7 @@ jest.mock('@nftcom/gql/service', () => {
           displayType: jest.requireActual('@nftcom/shared').defs.ProfileDisplayType.Collection,
           layoutType: jest.requireActual('@nftcom/shared').defs.ProfileLayoutType.Mosaic,
           url: 'test',
-          chainId: '1',
+          chainId: '5',
         }
       },
     },
@@ -103,7 +103,7 @@ describe('profile resolver', () => {
             layoutType 
           } 
         }`,
-        variables: { url: 'test', chainId: '4' },
+        variables: { url: 'test', chainId: '5' },
       })
       expect(result.errors).toBeUndefined()
     })
@@ -122,7 +122,7 @@ describe('profile resolver', () => {
             url
           }
         }`,
-        variables: { url: testMockProfiles.url, chainId: '4' },
+        variables: { url: testMockProfiles.url, chainId: '5' },
       })
       expect(result?.data?.profilePassive?.url).toBe(testMockProfiles.url)
     })
@@ -337,7 +337,7 @@ describe('profile resolver', () => {
         status: defs.ProfileStatus.Owned,
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
-        chainId: '4',
+        chainId: '5',
         profileView: defs.ProfileViewType.Gallery,
       })
     })
@@ -441,6 +441,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
+        visibleNFTs: 1,
       })
 
       await repositories.profile.save({
@@ -452,6 +453,7 @@ describe('profile resolver', () => {
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
+        visibleNFTs: 1,
       })
     })
 

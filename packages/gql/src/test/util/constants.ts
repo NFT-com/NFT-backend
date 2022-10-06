@@ -8,7 +8,7 @@ import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 export const testMockUser: User = {
   id: 'test-user-id',
-  chainId: '4',
+  chainId: '5',
   email: 'rohan@immutableholdings.com',
   isEmailConfirmed: false,
   preferences: {
@@ -39,8 +39,8 @@ export const testMockWatchlistUser: User = {
 export const testMockWallet: Wallet = {
   id: 'test-wallet-id',
   address: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
-  chainId: '4',
-  chainName: 'rinkeby',
+  chainId: '5',
+  chainName: 'goerli',
   network: 'ethereum',
   createdAt: 'test-timestamp',
 }
@@ -62,8 +62,8 @@ export const testMockProfiles: Profile = {
   owner: {
     id: 'test-user-id',
     address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-    chainId: '4',
-    chainName: 'rinkeby',
+    chainId: '5',
+    chainName: 'goerli',
     network: 'ethereum',
     createdAt: '2022-07-10T15:19:57.290Z',
   },
@@ -83,7 +83,7 @@ export const mockUpdateProfileInput: UpdateProfileInput =
 
 export const nftTestMockData: NFT = {
   id: 'test-nft-id',
-  chainId: '4',
+  chainId: '5',
   contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
   tokenId: '0x091f1d',
   type: NFTType.ERC721,
@@ -107,7 +107,7 @@ export const nftTestErrorMockData: NFT = {
 
 export const nftAMockDataNullPreview: Partial<entity.NFT> = {
   id: 'test-nft-id-A',
-  chainId: '4',
+  chainId: '5',
   contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2x',
   tokenId: '0x091f1x',
   type: NFTType.ERC721,
@@ -131,7 +131,7 @@ export const nftAMockDataNullPreview: Partial<entity.NFT> = {
 
 export const nftBMockDataNullPreview: Partial<entity.NFT> = {
   id: 'test-nft-id-B',
-  chainId: '4',
+  chainId: '5',
   contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
   tokenId: '0x091f1d',
   type: NFTType.ERC721,

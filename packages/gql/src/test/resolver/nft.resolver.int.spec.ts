@@ -249,8 +249,8 @@ describe('nft resolver', () => {
                 }
               }`,
         variables: {
-          contract: '0x657732980685C29A51053894542D7cb97de144Fe',
-          nftId: '0x07',
+          contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
+          nftId: '0x186a1',
           chainId: '5',
         },
       })
@@ -797,11 +797,6 @@ describe('nft resolver', () => {
         name: 'NFT.com Profile',
         chainId: '5',
       })
-      await repositories.collection.save({
-        contract: ethers.utils.getAddress('0x657732980685C29A51053894542D7cb97de144Fe'),
-        name: 'NFT.com Genesis Key',
-        chainId: '5',
-      })
 
       profileA = await repositories.profile.save({
         url: 'test-profile-url',
@@ -853,7 +848,7 @@ describe('nft resolver', () => {
         chainId: '5',
       })
       nftD = await repositories.nft.save({
-        contract: '0x657732980685C29A51053894542D7cb97de144Fe',
+        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
         tokenId: '0x0d',
         metadata: {
           name: '',
@@ -1352,8 +1347,8 @@ describe('nft resolver', () => {
 
       await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-        tokenId: '0x3f183afce162dcff1453495c6932401729f4cc3832aa5807293967ee9efa53db',
-        chainId: '4',
+        tokenId: '0xd29ed6005bb7617a915b12cc03fbe7f5a2a9b1eaad86be52293436ed3b6379a5',
+        chainId: '5',
         metadata: {
           name: '',
           description: '',
