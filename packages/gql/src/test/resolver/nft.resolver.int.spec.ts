@@ -797,11 +797,6 @@ describe('nft resolver', () => {
         name: 'NFT.com Profile',
         chainId: '5',
       })
-      await repositories.collection.save({
-        contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
-        name: 'NFT.com Genesis Key',
-        chainId: '5',
-      })
 
       profileA = await repositories.profile.save({
         url: 'test-profile-url',
