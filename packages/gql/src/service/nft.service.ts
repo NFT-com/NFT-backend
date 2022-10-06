@@ -286,7 +286,7 @@ export const filterNFTsWithAlchemy = async (
 const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
-  optionalWeb3: (AlchemyWeb3 | undefined) = undefined
+  optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
     const response = await (optionalWeb3 || web3)?.alchemy.getNftMetadata({
