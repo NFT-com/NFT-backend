@@ -23,7 +23,7 @@
     "node-fetch": "^2.6.6",
     "pg": "^8.7.1",
     "pino": "^8.4.2",
-    "typeorm": "0.2.41"
+    "typeorm": "^0.3.10"
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^9.0.0",

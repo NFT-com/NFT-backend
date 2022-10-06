@@ -9,6 +9,7 @@ Thumbs.db
 node_modules
 dist
 tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
 !.env
 packages/*/.env
 .eslintcache

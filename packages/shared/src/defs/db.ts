@@ -1,6 +1,4 @@
 import { FindOperator } from 'typeorm'
-import { EntityFieldsNames } from 'typeorm/common/EntityFieldsNames'
-import { OrderByCondition } from 'typeorm/find-options/OrderByCondition'
 
 export enum EntityType {
   Approval = 'Approval',
@@ -178,7 +176,7 @@ export interface ActivityFilters {
   expiration?: FindOperator<Date>
 }
 
-export type OrderBy = { [P in EntityFieldsNames]?: 'ASC' | 'DESC' | 1 | -1 } & OrderByCondition
+export type OrderBy = { [x: string]: 'ASC' | 'DESC' | { order: 'ASC' | 'DESC'; nulls?: 'NULLS FIRST' | 'NULLS LAST' } }
 
 export type DBConfig = {
   host: string

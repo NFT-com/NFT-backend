@@ -6,7 +6,7 @@ describe('looksrare', () => {
       const contract = '0x32D74aeab8C07ca66ebE1D441aAd01C688B952cB'
       const tokenId = '1'
 
-      const chainId = '4'
+      const chainId = '5'
 
       const looksrareOrderReq: LooksRareOrderRequest[] = [
         {
