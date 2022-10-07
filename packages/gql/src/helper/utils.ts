@@ -20,8 +20,6 @@ export const chainFromId = (chainId: string): string | undefined => {
   switch(chainId) {
   case '1':
     return 'ethereum'
-  case '4':
-    return 'rinkeby'
   case '5':
     return 'goerli'
   case '137':
