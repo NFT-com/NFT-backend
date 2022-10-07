@@ -429,7 +429,7 @@ const getNFTMetaData = async (
   contract: string,
   tokenId: string,
   chainId: string,
-  refreshMetadata = false,
+  refreshMetadata = true,
 ): Promise<NFTMetaData | undefined> => {
   try {
     let type: defs.NFTType
@@ -455,7 +455,10 @@ const getNFTMetaData = async (
     const name = nftMetadata?.title || nftPortDetails?.nft?.metadata.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
     // For CryptoKitties, their metadata response format is different from original one
     const description = nftMetadata?.description || metadata?.bio || nftPortDetails?.nft?.metadata?.description
-    const image = metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url : metadata?.image || nftPortDetails?.nft?.cached_file_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway || metadata?.tokenUri?.raw || (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
+    const image = metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url :
+      metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
+        metadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
+          (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
     if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
       type = defs.NFTType.ERC721
     } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
