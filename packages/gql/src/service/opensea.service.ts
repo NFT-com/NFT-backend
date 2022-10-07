@@ -434,7 +434,7 @@ export const createSeaportListing = async (
   }
   try {
     const res = await getOpenseaInterceptor(baseUrlV2, chainId, OPENSEA_ORDERS_API_KEY).post(
-      `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/listings`,
+      `/orders/${chainId === '1' ? 'ethereum': 'goerli'}/seaport/listings`,
       {
         signature,
         parameters: JSON.parse(parameters),

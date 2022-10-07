@@ -1,6 +1,7 @@
 docs/*
 old-code
 gql-naming-fn.js
+cronjobs/*/dist
 packages/*/dist
 packages/gql/src/defs/gql.ts
 perftest/**/*.js

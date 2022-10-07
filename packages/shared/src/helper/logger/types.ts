@@ -26,6 +26,7 @@ export enum LoggerContext {
   TxActivity = 'txActivity',
   WebsocketProvider = 'websocketProvider',
   NFTPort = 'nftport',
+  MarketplaceSale = 'marketplaceSales'
 }
 
 export enum LogLevel {

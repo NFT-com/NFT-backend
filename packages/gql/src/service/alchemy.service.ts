@@ -4,7 +4,6 @@ import { ethers } from 'ethers'
 import * as Sentry from '@sentry/node'
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
-const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 
 export const getLatestBlockNumber = (url: string): Promise<string> => {
@@ -100,8 +99,7 @@ export const getCollectionDeployer = async (
 ): Promise<string | null> => {
   try {
     chainId = chainId ?? process.env.CHAIN_ID
-    const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL :
-      (chainId === '5' ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
+    const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
     const lastBlock = await getLatestBlockNumber(REQUEST_URL)
 
     const deployedBlockNumber = await binarySearch(
