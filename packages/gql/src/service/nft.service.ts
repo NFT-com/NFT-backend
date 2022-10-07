@@ -35,7 +35,6 @@ const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = new SearchEngineService()
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
-const ALCHEMY_API_URL_RINKEBY = process.env.ALCHEMY_API_URL_RINKEBY
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
@@ -112,8 +111,7 @@ type NFTMetaData = {
 
 export const initiateWeb3 = (chainId?: string): void => {
   chainId = chainId || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL :
-    (Number(chainId) == 5 ? ALCHEMY_API_URL_GOERLI : ALCHEMY_API_URL_RINKEBY)
+  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
   web3 = createAlchemyWeb3(alchemyUrl)
 }
 
@@ -834,8 +832,7 @@ export const refreshNFTMetadata = async (
     // hard refresh for now
     // until Alchemy SDK incorporates this
     // TODO: remove in future
-    const alchemy_api_url = nft.chainId === '1' ? process.env.ALCHEMY_API_URL :
-      (nft.chainId === '5' ? process.env.ALCHEMY_API_URL_GOERLI : process.env.ALCHEMY_API_URL_RINKEBY)
+    const alchemy_api_url = nft.chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
     await axios.get(`${alchemy_api_url}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(nft.tokenId).toString()}&tokenType=${nft.type == defs.NFTType.ERC1155 ? 'erc1155' : 'erc721'}&refreshCache=true`)
 
     const metadata = await getNFTMetaData(

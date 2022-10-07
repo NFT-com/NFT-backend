@@ -11,7 +11,8 @@
     "Eddie (https://github.com/just-toby)"
   ],
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "cronjobs/sales-processor"
   ],
   "scripts": {
     "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix",
@@ -32,9 +33,9 @@
     "@commitlint/config-conventional": "^15.0.0",
     "@salesforce-ux/design-system": "^2.18.0",
     "@types/node": "^16.11.7",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
-    "eslint": "^8.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "eslint": "^8.24.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "ethers": "^5.5.1",
     "husky": "^7.0.4",

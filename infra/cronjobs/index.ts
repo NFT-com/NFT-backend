@@ -7,6 +7,8 @@ import { deployInfra, getStage, isProduction, pulumiOutToValue } from '../helper
 import { createEcsCluster,createMintRunnerTaskDefinition } from './mintRunner/ecs'
 import { createEventBridgeTarget } from './mintRunner/eventbridge'
 import { createAnalyticsDatabase } from './mintRunner/rds'
+import { createSalesProcessorTaskDefinition, createSalesProessorEcsCluster } from './salesProcessor/ecs'
+import { createSalesProessorEventBridgeTarget } from './salesProcessor/eventbridge'
 
 const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   //const config = new pulumi.Config()
@@ -28,7 +30,14 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const task = createMintRunnerTaskDefinition()
   const cluster = createEcsCluster()
   createEventBridgeTarget(task,subnetVal,cluster)
-  // END: CRONTAB - MINTRUNNER
+  // END: CRONJOB - MINTRUNNER
+  // START: CRONJOB - SALES PROCESSOR
+  if (isProduction()) {
+    const spTask = createSalesProcessorTaskDefinition()
+    const spCluster = createSalesProessorEcsCluster()
+    createSalesProessorEventBridgeTarget(spTask,spCluster,cluster)
+  }
+  // END: CRONJOB - SALES PROCESSOR
 }
 
 export const createCronJobs = (

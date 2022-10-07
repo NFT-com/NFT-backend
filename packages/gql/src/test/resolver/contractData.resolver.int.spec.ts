@@ -43,7 +43,6 @@ describe('contract data resolver', () => {
   describe('getSales', () => {
     beforeAll(async () => {
       connection = await db.connectTestDB(testDBConfig)
-
       testServer = getTestApolloServer({
         marketplaceSale: {
           saveMany: (entities) => Promise.resolve(entities),
@@ -52,7 +51,6 @@ describe('contract data resolver', () => {
       },
       )
     })
-
     afterAll(async () => {
       await testServer.stop()
       if (!connection) return
