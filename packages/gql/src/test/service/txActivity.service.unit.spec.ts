@@ -1,4 +1,4 @@
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { cache } from '@nftcom/gql/service/cache.service'
@@ -26,7 +26,7 @@ jest.mock('@nftcom/gql/service/cache.service', () => ({
     
 }))
 
-let connection: Connection
+let connection: DataSource
 const repositories = db.newRepositories()
 
 describe('txActivity service', () => {
@@ -35,7 +35,7 @@ describe('txActivity service', () => {
   })
   afterAll(async () => {
     if (connection) {
-      await connection.close()
+      await connection.destroy()
     }
   })
   describe('orderEntityBuilder', () => {

@@ -318,7 +318,7 @@ const retrieveOffersInBatches = async (
           }
 
           const response: AxiosResponse = await offerInterceptor(
-            `/orders/${chainId === '1' ? 'ethereum': 'rinkeby'}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
+            `/orders/${chainId === '1' ? 'ethereum': chainId === '5' ? 'goerli' : 'goerli'}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
       
           if (response?.data?.orders?.length) {

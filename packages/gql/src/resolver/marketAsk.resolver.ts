@@ -1,6 +1,7 @@
 import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import { FindOptionsWhere, IsNull } from 'typeorm'
 
 import {
   blockNumberToTimestamp,
@@ -99,7 +100,7 @@ const getNFTAsks = (
   const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
     makerAddress,
   } as Partial<entity.MarketAsk>)
-  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
+  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: IsNull() } })
     .then(fp.thruIfEmpty(() => []))
     .then(filterAsksForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
@@ -115,7 +116,7 @@ const getNFTOffers = (
   const filter: Partial<entity.MarketAsk> = helper.removeEmpty({
     makerAddress,
   } as Partial<entity.MarketAsk>)
-  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: null } })
+  return repositories.marketAsk.find({ where: { ...filter, cancelTxHash: IsNull() } })
     .then(fp.thruIfEmpty(() => []))
     .then(filterOffersForNft(nftContractAddress, BigNumber.from(nftTokenId).toNumber()))
 }
@@ -225,9 +226,9 @@ const availableToCreateAsk = async (
   const marketAsks = await repositories.marketAsk.find({
     where: {
       makerAddress: ethers.utils.getAddress(address),
-      offerAcceptedAt: null,
-      cancelTxHash: null,
-      marketSwapId: null,
+      offerAcceptedAt: IsNull(),
+      cancelTxHash: IsNull(),
+      marketSwapId: IsNull(),
     },
   })
 
@@ -508,7 +509,7 @@ const buyNow = (
                     where: {
                       txHash: args?.input.txHash,
                       marketAsk: ask,
-                    },
+                    } as FindOptionsWhere<entity.MarketAsk>,
                   })
                     .then(fp.rejectIfNotEmpty(appError.buildExists(
                       marketSwapError.buildMarketSwapExistingMsg(),

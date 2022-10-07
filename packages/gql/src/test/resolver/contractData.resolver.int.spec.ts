@@ -56,7 +56,7 @@ describe('contract data resolver', () => {
     afterAll(async () => {
       await testServer.stop()
       if (!connection) return
-      await connection.close()
+      await connection.destroy()
     })
     it('should return sales by contract address', async () => {
       const transactions = [{

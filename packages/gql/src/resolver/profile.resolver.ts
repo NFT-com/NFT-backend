@@ -6,6 +6,7 @@ import { GraphQLUpload } from 'graphql-upload'
 import { FileUpload } from 'graphql-upload'
 import Joi from 'joi'
 import stream from 'stream'
+import { IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -127,7 +128,7 @@ const createFollowEdge = (ctx: Context) => {
       edgeType: defs.EdgeType.Follows,
       thatEntityId: profile.id,
       thatEntityType: defs.EntityType.Profile,
-      deletedAt: null,
+      deletedAt: IsNull(),
     })
       .then(fp.thruIfFalse(() => core.createEdge(ctx,  {
         collectionId: user.id,
@@ -184,7 +185,7 @@ const unfollowProfile = (
         edgeType: defs.EdgeType.Follows,
         thatEntityId: profile.id,
         thatEntityType: defs.EntityType.Profile,
-        deletedAt: null,
+        deletedAt: IsNull(),
       })
     }))
 }
@@ -947,7 +948,7 @@ const saveScoreForProfiles = async (
     const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
     const profiles = await repositories.profile.find(args?.input.nullOnly ? {
       where: {
-        lastScored: null,
+        lastScored: IsNull(),
       },
     } : {
       order: {
@@ -1221,6 +1222,55 @@ const profilesByDisplayNft = async (
     }).then(toProfilesOutput)
 }
 
+const getProfilesMintedWithGK = async (
+  _: any,
+  args: gql.QueryProfilesMintedWithGkArgs,
+  ctx: Context,
+): Promise<Array<gql.Profile>> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('getProfilesMintedWithGK', { tokenId: args?.tokenId })
+    const schema = Joi.object().keys({
+      tokenId: Joi.string().required(),
+    })
+    joi.validateSchema(schema, args)
+    const nft = await repositories.nft.findOne({
+      where: {
+        contract: contracts.genesisKeyAddress(chainId),
+        tokenId: BigNumber.from(args?.tokenId).toHexString(),
+      },
+    })
+    if (!nft) {
+      return Promise.reject(new Error('Invalid tokenId for GK'))
+    }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thatEntityId: nft.id,
+        edgeType: defs.EdgeType.Displays,
+      },
+    })
+    if (!edges.length) {
+      return []
+    }
+    const profiles = []
+    await Promise.allSettled(
+      edges.map(async (edge) => {
+        const profile = await repositories.profile.findOne({ where : { id: edge.thisEntityId } })
+        if (profile) profiles.push(profile)
+      }),
+    )
+    // we return max 4 profiles
+    return profiles.slice(0, Math.min(profiles.length, 4))
+  } catch (err) {
+    Sentry.captureMessage(`Error in getProfilesMintedWithGK: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1237,6 +1287,7 @@ export default {
     associatedCollectionForProfile: getAssociatedCollectionForProfile,
     isProfileCustomized: isProfileCustomized,
     profilesByDisplayNft,
+    profilesMintedWithGK: getProfilesMintedWithGK,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
