@@ -452,7 +452,7 @@ const getNFTMetaData = async (
     const contractMetadata = await getContractMetaDataFromAlchemy(contract)
 
     const metadata = nftMetadata?.metadata as any
-    const name = nftMetadata?.title || nftPortDetails?.nft?.metadata.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
+    const name = nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
     // For CryptoKitties, their metadata response format is different from original one
     const description = nftMetadata?.description || metadata?.bio || nftPortDetails?.nft?.metadata?.description
     const image = metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url :

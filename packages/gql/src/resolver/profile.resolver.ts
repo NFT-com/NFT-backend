@@ -1236,6 +1236,11 @@ const getProfilesMintedWithGK = async (
       tokenId: Joi.string().required(),
     })
     joi.validateSchema(schema, args)
+    const cacheKey = `${CacheKeys.PROFILES_WITH_MINTED_GK}_${chainId}_${args?.tokenId}`
+    const cachedData = await cache.get(cacheKey)
+    if (cachedData) {
+      return JSON.parse(cachedData) as entity.Profile[]
+    }
     const nft = await repositories.nft.findOne({
       where: {
         contract: contracts.genesisKeyAddress(chainId),
@@ -1264,7 +1269,9 @@ const getProfilesMintedWithGK = async (
       }),
     )
     // we return max 4 profiles
-    return profiles.slice(0, Math.min(profiles.length, 4))
+    const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
+    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 30)
+    return slicedProfiles
   } catch (err) {
     Sentry.captureMessage(`Error in getProfilesMintedWithGK: ${err}`)
     return err
