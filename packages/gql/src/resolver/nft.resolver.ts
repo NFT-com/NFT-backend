@@ -575,8 +575,14 @@ const updateNFTsForProfile = async (
 
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
     if (!recentlyRefreshed) {
-      // add to cache list
+      // add to NFT cache list
       await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+    }
+
+    const scoreRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_SCORE_PROFILE}_${chainId}`, profile.id)
+    if (!scoreRefreshed) {
+      // add to score cache list
+      await cache.zadd(`${CacheKeys.UPDATE_SCORE_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
     }
 
     const filter: Partial<entity.Edge> = helper.removeEmpty({
