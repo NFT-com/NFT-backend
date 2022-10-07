@@ -35,7 +35,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   if (isProduction()) {
     const spTask = createSalesProcessorTaskDefinition()
     const spCluster = createSalesProessorEcsCluster()
-    createSalesProessorEventBridgeTarget(spTask,spCluster,cluster)
+    createSalesProessorEventBridgeTarget(spTask,subnetVal,spCluster)
   }
   // END: CRONJOB - SALES PROCESSOR
 }
