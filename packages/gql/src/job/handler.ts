@@ -32,10 +32,9 @@ const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI(
 const nftResolverInterface = new utils.Interface(contracts.NftResolverABI())
 
 export const getCachedBlock = async (chainId: number, key: string): Promise<number> => {
-  const startBlock = chainId == 4 ? 10540040 :
-    chainId == 5 ? 7128515 :
-      chainId == 1 ? 14675454 :
-        14675454
+  const startBlock = chainId == 5 ? 7128515 :
+    chainId == 1 ? 14675454 :
+      14675454
 
   try {
     const cachedBlock = await cache.get(key)
