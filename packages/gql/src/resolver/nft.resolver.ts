@@ -574,7 +574,7 @@ const updateNFTsForProfile = async (
 
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
     if (!recentlyRefreshed) {
-      // add to cache list
+      // add to NFT cache list
       await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
     }
 
