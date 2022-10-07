@@ -8,4 +8,10 @@ export class MarketplaceSaleRepository extends BaseRepository<MarketplaceSale> {
     super(MarketplaceSale)
   }
 
+  public getDistinctContractAddresses = (): Promise<any[]> => {
+    return this.getRepository().createQueryBuilder('sales')
+      .select('DISTINCT sales.contractAddress')
+      .getRawMany()
+  }
+
 }

@@ -522,8 +522,7 @@ const getGkNFTs = async (
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
-    const ALCHEMY_API_URL = chainId === '1' ? process.env.ALCHEMY_API_URL :
-      (chainId === '5' ? process.env.ALCHEMY_API_URL_GOERLI : process.env.ALCHEMY_API_URL_RINKEBY)
+    const ALCHEMY_API_URL = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
     try {
