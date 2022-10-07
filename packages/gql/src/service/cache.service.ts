@@ -10,8 +10,6 @@ export enum CacheKeys {
   REFRESHED_NFT_ORDERS_EXT = 'refreshed_nft_orders_ext',
   UPDATED_NFTS_PROFILE = 'updated_nfts_profile',
   UPDATE_NFTS_PROFILE = 'update_nfts_profile',
-  UPDATED_SCORE_PROFILE = 'updated_score_profile',
-  UPDATE_SCORE_PROFILE = 'update_score_profile',
   UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
   GENESIS_KEY_OWNERS = 'genesis_key_owners',
   ASSOCIATED_ADDRESSES = 'associated_addresses',
@@ -21,6 +19,7 @@ export enum CacheKeys {
   CACHED_GKS = 'cached_gks',
   GET_GK = 'get_gk',
   SORTED_PROFILES_BY_VISIBLE_NFTS = 'sorted_profiles_by_visible_nfts',
+  PROFILES_WITH_MINTED_GK = 'profiles_with_minted_gk',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
