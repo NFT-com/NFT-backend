@@ -17,8 +17,7 @@ RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && apk del .gyp
 
 
-COPY packages/shared ./packages/shared
-COPY packages/gql ./packages/gql
+COPY packages ./packages/
 
 FROM deps as build
 
