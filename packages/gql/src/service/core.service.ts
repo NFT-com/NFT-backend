@@ -590,6 +590,17 @@ export const reservedProfiles = {
   '0xD1ac1e553E029f5dE5732C041DfC9f8CEd937A20': ['venice', 'venicemusic'],
   '0x1598535C9e05E2130F9F239B2F23215166Bb41a7': ['scottdonnell', 'heromaker'],
   '0x54D07CFa91F05Fe3B45d8810feF05705117AFe53': ['wiseadvice', 'moneyguru'],
+  '0x367721b332F4697d440EBBe6780262411Fd03409': ['mooncatmoments'],
+  '0xb8C11BEda7142ae7986726247f548Eb0C3CDE474': ['mooncatpop'],
+  '0x09C61c41C8C5D378CAd80523044C065648Eaa654': ['mooncatpopvm'],
+  '0xc3f733ca98E0daD0386979Eb96fb1722A1A05E69': ['mooncats'],
+  '0x1e9385eE28c5C7d33F3472f732Fb08CE3ceBce1F': ['lootprintsformc'],
+  '0xECDD2F733bD20E56865750eBcE33f17Da0bEE461': ['cryptodads'],
+  '0x9A7364b902557850ed11cAb9eF4C61710fc51692': ['nftviking'],
+  '0x99654fd49C0E51b8029d2ba7DE5b99734aB7AFEC': ['cryptomoms'],
+  '0x078928DDB9AF4B363880C29F926CFd0F82E86D69': ['supernormal', 'zipcy'],
+  '0x1fFA64E82C677B550aa239Ef81Aa57A9658C691a': ['andrewchoi'],
+  '': [''],
 }
 
 export const OFAC = {
