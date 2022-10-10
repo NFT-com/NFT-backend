@@ -600,7 +600,6 @@ export const reservedProfiles = {
   '0x99654fd49C0E51b8029d2ba7DE5b99734aB7AFEC': ['cryptomoms'],
   '0x078928DDB9AF4B363880C29F926CFd0F82E86D69': ['supernormal', 'zipcy'],
   '0x1fFA64E82C677B550aa239Ef81Aa57A9658C691a': ['andrewchoi'],
-  '': [''],
 }
 
 export const OFAC = {
