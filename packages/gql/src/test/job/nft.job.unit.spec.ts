@@ -1,13 +1,13 @@
 import { Job } from 'bull'
 import { DeepPartial } from 'typeorm'
 
+import * as cacheService from '@nftcom/cache'
 import { nftExternalOrdersOnDemand } from '@nftcom/gql/job/nft.job'
-import * as cacheService from '@nftcom/gql/service/cache.service'
 import * as looksrareService from '@nftcom/gql/service/looksare.service'
 import * as openseaService from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared/db'
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
   cache: {
     zrevrangebyscore: jest.fn().mockReturnValue(['contract:1']),
     zscore: jest.fn().mockReturnValue(0),

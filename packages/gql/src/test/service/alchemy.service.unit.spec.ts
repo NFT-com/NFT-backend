@@ -8,7 +8,7 @@ import { nftProfileAddress } from '@nftcom/shared/helper/contracts'
 jest.setTimeout(50000)
 jest.retryTimes(2)
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))

@@ -1,15 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "composite": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "types": ["node", "express"]
   },
-  "references": [
-    {
-      "path": "../shared"
-    }
-  ],
   "include": [
     "src/**/*.ts",
   ]

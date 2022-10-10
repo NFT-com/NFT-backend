@@ -1,9 +1,9 @@
 import { Job } from 'bull'
 import { ethers, utils } from 'ethers'
 
+import { cache } from '@nftcom/cache'
 import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
-import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 

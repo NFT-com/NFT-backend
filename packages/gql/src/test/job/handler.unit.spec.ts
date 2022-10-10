@@ -13,7 +13,7 @@ import { entity } from '@nftcom/shared'
 
 jest.setTimeout(500000)
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
   cache: {
     get: jest.fn(),
     set: jest.fn(),

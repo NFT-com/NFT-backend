@@ -10,13 +10,13 @@ import { IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
+import { cache, CacheKeys } from '@nftcom/cache'
+import { appError, mintError, nftError,profileError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError, nftError,profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
-import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
   DEFAULT_NFT_IMAGE, extensionFromFilename,

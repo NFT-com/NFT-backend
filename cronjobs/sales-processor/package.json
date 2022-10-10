@@ -2,8 +2,8 @@
   "name": "@nftcom/sales-processor",
   "version": "0.0.1",
   "description": "Keep sales data up to date in NFT.com database",
-  "main": "dist/index",
-  "types": "dist/index",
+  "main": "dist/packages/sales-processor/src/index",
+  "types": "dist/packages/sales-processor/src/index",
   "devDependencies": {
     "rimraf": "^3.0.2",
     "tsc-alias": "^1.7.0",
@@ -13,7 +13,7 @@
     "build": "npm run clean && npm run compile",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
     "compile": "tsc && tsc-alias",
-    "start": "node ./dist/index",
+    "start": "node ./dist/packages/sales-processor/src/index",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

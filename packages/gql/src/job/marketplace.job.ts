@@ -4,9 +4,9 @@ import { ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import { IsNull, LessThan } from 'typeorm'
 
+import { cache } from '@nftcom/cache'
 import { blockNumberToTimestamp } from '@nftcom/gql/defs'
 import { provider } from '@nftcom/gql/helper'
-import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 

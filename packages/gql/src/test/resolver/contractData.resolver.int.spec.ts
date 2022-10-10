@@ -15,13 +15,13 @@ jest.retryTimes(2)
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
-jest.mock('@nftcom/gql/adapter/nftport', () => ({
+jest.mock('@nftcom/nftport-client', () => ({
   getNFTPortInterceptor: (_baseURL: string) => {
     return mockedAxios
   },
 }))
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
   cache: {
     get: jest.fn().mockImplementation((key) => {
       if (key === 'ERC20_SYMBOL_0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2') {

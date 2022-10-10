@@ -1,8 +1,8 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
+import { appError, curationError, nftError, profileError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, curationError, nftError, profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'

@@ -1,12 +1,12 @@
 import Bull from 'bull'
 
-import { redisConfig } from '@nftcom/gql/config'
+import { redisConfig } from '@nftcom/cache'
+import { cache } from '@nftcom/cache'
 import { getEthereumEvents } from '@nftcom/gql/job/handler'
 import {
   nftExternalOrdersOnDemand,
 } from '@nftcom/gql/job/nft.job'
 import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
-import { cache } from '@nftcom/gql/service/cache.service'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 

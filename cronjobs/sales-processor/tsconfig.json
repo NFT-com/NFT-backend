@@ -1,14 +1,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "composite": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "outDir": "./dist"
   },
-  "references": [
-    { "path": "../../packages/shared" },
-    { "path": "../../packages/gql" },
-  ],
   "include": [
     "src/**/*.ts",
   ]

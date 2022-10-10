@@ -4,8 +4,8 @@ import Joi from 'joi'
 import { FindOneOptions } from 'typeorm'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/error-types'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
-import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import {
@@ -21,8 +21,8 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 import { differenceInMilliseconds } from 'date-fns'
 
+import { cache, CacheKeys } from '@nftcom/cache'
 import { PageInput } from '@nftcom/gql/defs/gql'
-import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {

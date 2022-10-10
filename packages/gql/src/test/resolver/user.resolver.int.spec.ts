@@ -5,7 +5,7 @@ import { testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))
