@@ -11,7 +11,7 @@ export default {
   transform: {
     '^.+\\.[tj]s$': 'ts-jest',
   },
-  moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleFileExtensions: ['ts', 'js', 'json', 'csv'],
   coverageDirectory: '../../coverage/packages/gql',
   testTimeout: 20000,
   moduleNameMapper: {
