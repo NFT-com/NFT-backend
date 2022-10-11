@@ -1231,6 +1231,35 @@ export const updateNFTsOrder = async (
   }
 }
 
+export const updateEdgesWithNullWeight = async (
+  profileId: string,
+): Promise<void> => {
+  const nullEdges = await repositories.edge.find({
+    where: {
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      thisEntityId: profileId,
+      edgeType: defs.EdgeType.Displays,
+      weight: IsNull(),
+    },
+  })
+  if (nullEdges.length) {
+    // fill weight of edges which have null as weight...
+    let weight = await getLastWeight(repositories, profileId)
+    const edgesWithWeight: EdgeWithWeight[] = []
+    for (let i = 0; i < nullEdges.length; i++) {
+      const newWeight = generateWeight(weight)
+      edgesWithWeight.push({
+        id: nullEdges[i].id,
+        weight: newWeight,
+        hide: nullEdges[i].hide ?? false,
+      })
+      weight = newWeight
+    }
+    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+  }
+}
+
 export const updateEdgesWeightForProfile = async (
   profileId: string,
   walletId: string,
@@ -1238,30 +1267,7 @@ export const updateEdgesWeightForProfile = async (
   try {
     const nfts = await repositories.nft.find({ where: { walletId } })
     if (!nfts.length) return
-    const nullEdges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        edgeType: defs.EdgeType.Displays,
-        weight: IsNull(),
-      },
-    })
-    if (nullEdges.length) {
-      // fill weight of edges which have null as weight...
-      let weight = await getLastWeight(repositories, profileId)
-      const edgesWithWeight: EdgeWithWeight[] = []
-      for (let i = 0; i < nullEdges.length; i++) {
-        const newWeight = generateWeight(weight)
-        edgesWithWeight.push({
-          id: nullEdges[i].id,
-          weight: newWeight,
-          hide: nullEdges[i].hide ?? false,
-        })
-        weight = newWeight
-      }
-      await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
-    }
+    await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
