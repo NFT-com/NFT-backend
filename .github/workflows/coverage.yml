@@ -122,7 +122,7 @@ jobs:
 
     - run: npm i
     - run: cd packages/gql && npm run gql:gen
-    - run: nx run @nftcom/gql:test --ci --code-coverage --forceExit
+    - run: npx nx run @nftcom/gql:test --ci --code-coverage --forceExit
       env:
         DISABLE_LOGGER: true
         DISABLE_WEBSOCKET: true
