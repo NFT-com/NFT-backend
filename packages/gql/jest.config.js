@@ -25,4 +25,5 @@ module.exports = {
     }
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
+  transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/../../node_modules/'],
 }
