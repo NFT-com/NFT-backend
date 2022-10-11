@@ -46,7 +46,10 @@ interface OwnedNFT {
   }
   id: {
     tokenId: string
+    tokenMetadata?: any
   }
+  title?: string
+  metadata?: any
 }
 
 interface ContractMetaDataResponse {
@@ -71,8 +74,8 @@ interface NFTMetaDataResponse {
   }
   id: {
     tokenId: string
-    tokenMetadata: {
-      tokenType: string
+    tokenMetadata?: {
+      tokenType?: string
     }
   }
   title: string
@@ -118,6 +121,7 @@ export const initiateWeb3 = (chainId?: string): void => {
 export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
+  withMetadata = true,
 ): Promise<OwnedNFT[]> => {
   try {
     let pageKey
@@ -126,13 +130,13 @@ export const getNFTsFromAlchemy = async (
     if (contracts) {
       response = await web3.alchemy.getNfts({
         owner: owner,
-        withMetadata: false,
+        withMetadata: withMetadata,
         contractAddresses: contracts,
       })
     } else {
       response = await web3.alchemy.getNfts({
         owner: owner,
-        withMetadata: false,
+        withMetadata: withMetadata,
       })
     }
 
@@ -146,14 +150,14 @@ export const getNFTsFromAlchemy = async (
           if (contracts) {
             res = await web3.alchemy.getNfts({
               owner: owner,
-              withMetadata: false,
+              withMetadata: withMetadata,
               pageKey: pageKey,
               contractAddresses: contracts,
             })
           } else {
             res = await web3.alchemy.getNfts({
               owner: owner,
-              withMetadata: false,
+              withMetadata: withMetadata,
               pageKey: pageKey,
             })
           }
@@ -634,11 +638,45 @@ export const updateNFTOwnershipAndMetadata = async (
       walletChainId = wallet.chainId
     }
 
-    const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
+    let type, name, description, image
+    let traits = []
+    if (nft.id.tokenMetadata && nft.id.tokenMetadata?.tokenType) {
+      if (nft.id.tokenMetadata?.tokenType === 'ERC721') {
+        type = defs.NFTType.ERC721
+      } else if (nft.id.tokenMetadata?.tokenType === 'ERC1155') {
+        type = defs.NFTType.ERC1155
+      } else if (nft.title && nft.title?.endsWith('.eth')) { // if token is ENS token...
+        type = defs.NFTType.UNKNOWN
+      }
+    }
 
-    if (!metadata) return undefined
+    if (nft.metadata) {
+      if (nft.metadata?.name) name = nft.metadata?.name
+      if (nft.metadata?.image) image = nft.metadata?.image
+      if (nft.metadata?.description) description = nft.metadata?.description
+      if (nft.metadata?.attributes && Array.isArray(nft.metadata?.attributes)) {
+        nft.metadata?.attributes.map((trait) => {
+          let value = trait?.value || trait?.trait_value
+          value = typeof value === 'string' ? value : JSON.stringify(value)
+          traits.push(({
+            type: trait?.trait_type,
+            value,
+          }))
+        })
+      }
+    }
 
-    const { type, name, description, image, traits } = metadata
+    // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
+    if (!type || !name || !description || !image || !traits.length) {
+      const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
+      if (!metadata) return undefined
+      type = metadata.type
+      name = metadata.name
+      description = metadata.description
+      image = metadata.image
+      traits = metadata.traits
+    }
+
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
       const savedNFT = await repositories.nft.save({
@@ -935,7 +973,7 @@ export const hideAllNFTs = async (
   }
 }
 
-const saveEdgesWithWeight = async (
+export const saveEdgesWithWeight = async (
   nfts: entity.NFT[],
   profileId: string,
   hide: boolean,
@@ -1193,6 +1231,35 @@ export const updateNFTsOrder = async (
   }
 }
 
+export const updateEdgesWithNullWeight = async (
+  profileId: string,
+): Promise<void> => {
+  const nullEdges = await repositories.edge.find({
+    where: {
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      thisEntityId: profileId,
+      edgeType: defs.EdgeType.Displays,
+      weight: IsNull(),
+    },
+  })
+  if (nullEdges.length) {
+    // fill weight of edges which have null as weight...
+    let weight = await getLastWeight(repositories, profileId)
+    const edgesWithWeight: EdgeWithWeight[] = []
+    for (let i = 0; i < nullEdges.length; i++) {
+      const newWeight = generateWeight(weight)
+      edgesWithWeight.push({
+        id: nullEdges[i].id,
+        weight: newWeight,
+        hide: nullEdges[i].hide ?? false,
+      })
+      weight = newWeight
+    }
+    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+  }
+}
+
 export const updateEdgesWeightForProfile = async (
   profileId: string,
   walletId: string,
@@ -1200,30 +1267,7 @@ export const updateEdgesWeightForProfile = async (
   try {
     const nfts = await repositories.nft.find({ where: { walletId } })
     if (!nfts.length) return
-    const nullEdges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        edgeType: defs.EdgeType.Displays,
-        weight: IsNull(),
-      },
-    })
-    if (nullEdges.length) {
-      // fill weight of edges which have null as weight...
-      let weight = await getLastWeight(repositories, profileId)
-      const edgesWithWeight: EdgeWithWeight[] = []
-      for (let i = 0; i < nullEdges.length; i++) {
-        const newWeight = generateWeight(weight)
-        edgesWithWeight.push({
-          id: nullEdges[i].id,
-          weight: newWeight,
-          hide: nullEdges[i].hide ?? false,
-        })
-        weight = newWeight
-      }
-      await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
-    }
+    await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
     await saveEdgesWithWeight(nfts, profileId, true)
   } catch (err) {
