@@ -25,5 +25,13 @@ module.exports = {
     }
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
-  transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/../../node_modules/'],
+  transformIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/../../node_modules/'
+  ],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    'src/**/*.base64.ts',
+    '!**/node_modules/**'
+  ]
 }
