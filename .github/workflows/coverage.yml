@@ -122,7 +122,7 @@ jobs:
 
     - run: npm i
     - run: cd packages/gql && npm run gql:gen
-    - run: npx nx test gql --ci --runInBand
+    - run: npx nx test gql --ci --runInBand --coverage
       env:
         DISABLE_LOGGER: true
         DISABLE_WEBSOCKET: true
