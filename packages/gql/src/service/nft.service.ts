@@ -973,7 +973,7 @@ export const hideAllNFTs = async (
   }
 }
 
-const saveEdgesWithWeight = async (
+export const saveEdgesWithWeight = async (
   nfts: entity.NFT[],
   profileId: string,
   hide: boolean,
