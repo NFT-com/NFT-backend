@@ -31,7 +31,8 @@ module.exports = {
   ],
   collectCoverageFrom: [
     'src/**/*.ts',
-    'src/**/*.base64.ts',
+    '!src/*.ts',
+    '!src/**/*.base64.ts',
     '!**/node_modules/**'
   ]
 }
