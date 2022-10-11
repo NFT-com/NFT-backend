@@ -14,4 +14,8 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'json'],
   coverageDirectory: '../../coverage/packages/gql',
   testTimeout: 20000,
+  moduleNameMapper: {
+    '@nftcom/shared/(.*)': '<rootDir>/../shared/src/$1',
+    '@nftcom/gql/(.*)': '<rootDir>/src/$1',
+  }
 };
