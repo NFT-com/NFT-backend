@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY .npmrc .
-COPY tsconfig.json .
+COPY tsconfig.base.json .
 COPY packages/shared/package*.json ./packages/shared/
 COPY packages/gql/package*.json ./packages/gql/
 
