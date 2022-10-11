@@ -812,6 +812,18 @@ export const checkNFTContractAddresses = async (
   }
 }
 
+export const indexNFTsOnSearchEngine = async (
+  nfts: Array<entity.NFT>,
+): Promise<void> => {
+  try {
+    await seService.indexNFTs(nfts)
+  } catch (err) {
+    logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
+    Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
+    throw err
+  }
+}
+
 /**
  * update wallet NFTs using data from alchemy api
  * @param userId
@@ -846,23 +858,13 @@ export const updateWalletNFTs = async (
           Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
         }
       }))
-    await seService.indexNFTs(savedNFTs)
-    await updateCollectionForNFTs(savedNFTs)
+    if (savedNFTs.length) {
+      await indexNFTsOnSearchEngine(savedNFTs)
+      await updateCollectionForNFTs(savedNFTs)
+    }
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
     Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
-  }
-}
-
-export const indexNFTsOnSearchEngine = async (
-  nfts: Array<entity.NFT>,
-): Promise<void> => {
-  try {
-    await seService.indexNFTs(nfts)
-  } catch (err) {
-    logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
-    Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
-    throw err
   }
 }
 
