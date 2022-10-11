@@ -2,6 +2,7 @@ import * as cacheService from '@nftcom/cache'
 
 jest.mock('ioredis', () => jest.fn())
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   createCacheConnection: jest.fn(),
 }))
 

@@ -10,6 +10,7 @@ import { testLooksrareExistingOrder, testLooksrareOrder,testSeaportOrder } from 
 
 jest.setTimeout(30000)
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     zrevrangebyscore: jest.fn().mockReturnValue(['contract:1']),
     zscore: jest.fn().mockReturnValue(0),

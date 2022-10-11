@@ -9,6 +9,7 @@ jest.setTimeout(50000)
 jest.retryTimes(2)
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))

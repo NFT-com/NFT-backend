@@ -12,6 +12,7 @@ jest.mock('@nftcom/nftport-client', () => ({
 }))
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn(),
     set: jest.fn(),

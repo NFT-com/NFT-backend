@@ -22,6 +22,7 @@ jest.mock('@nftcom/nftport-client', () => ({
 }))
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn().mockImplementation((key) => {
       if (key === 'ERC20_SYMBOL_0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2') {

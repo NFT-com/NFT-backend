@@ -8,7 +8,8 @@ if (!process.env.TEAM_AUTH_TOKEN) {
 }
 
 module.exports = {
-  preset: 'ts-jest',
+  displayName: 'gql',
+  preset: '../../jest.preset.js',
   testEnvironment: 'node',
   testTimeout: 20000,
   moduleNameMapper: {
@@ -17,5 +18,11 @@ module.exports = {
   },
   coveragePathIgnorePatterns: [
     'src/tracer.ts'
-  ]
+  ],
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json',
+    }
+  },
+  moduleFileExtensions: ['ts', 'js', 'json'],
 }

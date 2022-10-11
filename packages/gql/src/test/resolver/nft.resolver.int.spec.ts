@@ -34,6 +34,7 @@ jest.mock('@nftcom/gql/service/searchEngine.service', () => {
 })
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn(),
     set: jest.fn(),

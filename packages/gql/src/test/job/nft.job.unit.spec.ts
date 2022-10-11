@@ -8,6 +8,7 @@ import * as openseaService from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared/db'
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     zrevrangebyscore: jest.fn().mockReturnValue(['contract:1']),
     zscore: jest.fn().mockReturnValue(0),

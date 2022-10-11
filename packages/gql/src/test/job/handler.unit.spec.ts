@@ -14,6 +14,7 @@ import { entity } from '@nftcom/shared'
 jest.setTimeout(500000)
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn(),
     set: jest.fn(),

@@ -8,7 +8,7 @@
     "target": "esnext",
     "module": "commonjs",
     "lib": ["esnext"],
-    "allowJs": false,
+    "allowJs": true,
     "checkJs": false,
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,

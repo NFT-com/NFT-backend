@@ -7,6 +7,7 @@ import { mockProfilesData } from '../util/constants'
 const { repositories, generateCompositeImages } = jest.requireActual('@nftcom/gql/job/profile.job')
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))

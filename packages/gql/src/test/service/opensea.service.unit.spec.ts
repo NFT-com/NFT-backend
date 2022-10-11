@@ -3,6 +3,7 @@ import { OpenseaExternalOrder, OpenseaOrderRequest, retrieveMultipleOrdersOpense
 jest.setTimeout(150000)
 
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))
