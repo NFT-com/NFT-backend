@@ -261,8 +261,8 @@ export const filterNFTsWithAlchemy = async (
                   },
                 })
                 await repositories.nft.updateOneById(dbNFT?.id, {
-                  userId: user.id,
-                  walletId: wallet.id,
+                  userId: user?.id,
+                  walletId: wallet?.id,
                 })
               }
             } else {
