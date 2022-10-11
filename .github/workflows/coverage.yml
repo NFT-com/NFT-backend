@@ -121,9 +121,6 @@ jobs:
       run: npm list
 
     - run: npm i
-    - run: cd packages/gql && npm i
-    - run: cd packages/shared && npm i
-    - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
     - run: cd packages/gql && npm run test -- --coverage --runInBand --forceExit
       env:
