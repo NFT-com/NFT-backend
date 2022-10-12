@@ -281,8 +281,8 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
         }),
       ).then((entries: T[]) => {
         const filteredEntries = entries.filter((entry) => !isNil(entry))
-        return [filteredEntries, filteredEntries.length]
-      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
+        return [filteredEntries, result[1]]
+      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1], orderKey))
     } else {
       return Promise.all(
         edges.map((edge: entity.Edge) => {
@@ -294,8 +294,8 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
         }),
       ).then((entries: T[]) => {
         const filteredEntries = entries.filter((entry) => entry !== undefined)
-        return [filteredEntries, filteredEntries.length]
-      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1]))
+        return [filteredEntries, result[1]]
+      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1], orderKey))
     }
   })
 }
