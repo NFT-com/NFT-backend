@@ -1267,7 +1267,7 @@ const getProfilesMintedWithGK = async (
     )
     // we return max 4 profiles
     const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
-    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 30)
+    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 5)
     return slicedProfiles
   } catch (err) {
     Sentry.captureMessage(`Error in getProfilesMintedWithGK: ${err}`)
