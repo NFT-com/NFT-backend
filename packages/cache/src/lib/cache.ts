@@ -43,7 +43,7 @@ export const removeExpiredTimestampedZsetMembers = (
   return Promise.resolve(0)
 }
 
-const createCacheConnection = (): void => {
+export const createCacheConnection = (): void => {
   redis = new Redis({
     host: redisConfig.host,
     port: redisConfig.port,

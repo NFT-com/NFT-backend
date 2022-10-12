@@ -1,7 +1,15 @@
-import { contractData } from './contract-data'
+import { fetchData,getSalesData } from './contract-data'
 
 describe('contractData', () => {
-  it('should work', () => {
-    expect(contractData()).toEqual('contract-data')
+  describe('getSalesData', () => {
+    it('should exist', () => {
+      expect(typeof getSalesData).toBe('function')
+    })
+  })
+
+  describe('fetchData', () => {
+    it('should exist', () => {
+      expect(typeof fetchData).toBe('function')
+    })
   })
 })
