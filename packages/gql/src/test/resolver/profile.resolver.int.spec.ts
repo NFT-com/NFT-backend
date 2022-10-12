@@ -721,6 +721,7 @@ describe('profile resolver', () => {
         type: defs.NFTType.ERC721,
         userId: 'test-user-id',
         walletId: 'test-wallet-id',
+        chainId: '5',
       })
 
       await repositories.edge.save({
@@ -742,6 +743,7 @@ describe('profile resolver', () => {
         query: 'query ProfilesMintedWithGK($tokenId: String!, $chainId: String) { profilesMintedWithGK(tokenId:$tokenId, chainId:$chainId) { url } }',
         variables: {
           tokenId: '7307',
+          chainId: '5',
         },
       })
 
