@@ -15,4 +15,3 @@ ignore:
   - "packages/gql/src/helper/websocketProvider.ts"
   - "packages/gql/src/defs/misc.ts"
   - "packages/gql/src/server.ts"
-  - "packages/error-types/src/**"
