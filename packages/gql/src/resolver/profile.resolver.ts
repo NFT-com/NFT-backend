@@ -1232,10 +1232,6 @@ const getProfilesMintedWithGK = async (
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('getProfilesMintedWithGK', { tokenId: args?.tokenId })
-    const schema = Joi.object().keys({
-      tokenId: Joi.string().required(),
-    })
-    joi.validateSchema(schema, args)
     const cacheKey = `${CacheKeys.PROFILES_WITH_MINTED_GK}_${chainId}_${args?.tokenId}`
     const cachedData = await cache.get(cacheKey)
     if (cachedData) {
@@ -1245,6 +1241,7 @@ const getProfilesMintedWithGK = async (
       where: {
         contract: contracts.genesisKeyAddress(chainId),
         tokenId: BigNumber.from(args?.tokenId).toHexString(),
+        chainId,
       },
     })
     if (!nft) {
