@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.ref }}
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
@@ -129,7 +129,8 @@ jobs:
         key: cache-nx-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
         restore-keys: |
             cache-nx-${{ hashFiles('package-lock.json') }}-
-    - run: npx nx affected --base=origin/main --target=test --ci --runInBand --coverage
+    - run: git fetch --no-tags --prune --depth=1 origin main
+    - run: npx nx affected --base=origin/main --target=test --ci --runInBand --coverage --forceExit
       env:
         DISABLE_LOGGER: true
         DISABLE_WEBSOCKET: true
