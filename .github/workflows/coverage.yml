@@ -129,7 +129,7 @@ jobs:
         key: cache-nx-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
         restore-keys: |
             cache-nx-${{ hashFiles('package-lock.json') }}-
-    - run: npx nx affected --target=test --ci --runInBand --coverage
+    - run: npx nx affected --base=origin/main --target=test --ci --runInBand --coverage
       env:
         DISABLE_LOGGER: true
         DISABLE_WEBSOCKET: true
