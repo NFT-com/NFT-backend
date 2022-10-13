@@ -1085,6 +1085,66 @@ const saveNFTVisibility = async (
   }
 }
 
+const fullFillEventTokenIds = async (
+  _: any,
+  args: gql.MutationFullFillEventTokenIdsArgs,
+  ctx: Context,
+): Promise<gql.FullFillEventTokenIdsOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('fullFillEventTokenIds', { count: args?.count })
+  try {
+    const events = await repositories.event.find({
+      where: {
+        contract: contracts.profileAuctionAddress(chainId),
+        eventName: 'MintedProfile',
+        tokenId: IsNull(),
+        chainId,
+      },
+    })
+    const length = Math.min(args?.count, events.length)
+    await Promise.allSettled(
+      events.map(async (event) => {
+        try {
+          const chainProvider = provider.provider(Number(chainId))
+          const tx = await chainProvider.getTransaction(event.txHash)
+          const claimFace = new ethers.utils.Interface(['function genesisKeyClaimProfile(string,uint256,address,bytes32,bytes)'])
+          const batchClaimFace = new ethers.utils.Interface(['function genesisKeyBatchClaimProfile((string,uint256,address,bytes32,bytes)[])'])
+          let tokenId
+          try {
+            const res = claimFace.decodeFunctionData('genesisKeyClaimProfile', tx.data)
+            tokenId = res[1]
+          } catch (err) {
+            const res = batchClaimFace.decodeFunctionData('genesisKeyBatchClaimProfile', tx.data)
+            if (Array.isArray(res[0])) {
+              for (const r of res[0]) {
+                if (r[0] === event.profileUrl) {
+                  tokenId = r[1]
+                  break
+                }
+              }
+            }
+          }
+          if (tokenId) {
+            await repositories.event.updateOneById(event.id, {
+              tokenId: BigNumber.from(tokenId).toHexString(),
+            })
+          }
+        } catch (err) {
+          logger.error(`Error in fullFillEventTokenIds: ${err}`)
+        }
+      }),
+    )
+    return {
+      message: `Full filled tokenId for ${length} events`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in fullFillEventTokenIds: ${err}`)
+    return err
+  }
+}
+
 const getIgnoredEvents = async (
   _: any,
   args: gql.QueryIgnoredEventsArgs,
@@ -1222,52 +1282,40 @@ const profilesByDisplayNft = async (
     }).then(toProfilesOutput)
 }
 
-const getProfilesMintedWithGK = async (
+const getProfilesMintedByGK = async (
   _: any,
-  args: gql.QueryProfilesMintedWithGkArgs,
+  args: gql.QueryProfilesMintedByGkArgs,
   ctx: Context,
 ): Promise<Array<gql.Profile>> => {
   try {
     const { repositories } = ctx
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    logger.debug('getProfilesMintedWithGK', { tokenId: args?.tokenId })
-    const cacheKey = `${CacheKeys.PROFILES_WITH_MINTED_GK}_${chainId}_${args?.tokenId}`
+    logger.debug('getProfilesMintedByGK', { tokenId: args?.tokenId })
+    const cacheKey = `${CacheKeys.PROFILES_MINTED_BY_GK}_${chainId}_${args?.tokenId}`
     const cachedData = await cache.get(cacheKey)
     if (cachedData) {
       return JSON.parse(cachedData) as entity.Profile[]
     }
-    const nft = await repositories.nft.findOne({
+    const events = await repositories.event.find({
       where: {
-        contract: contracts.genesisKeyAddress(chainId),
+        contract: contracts.profileAuctionAddress(chainId),
+        eventName: 'MintedProfile',
         tokenId: BigNumber.from(args?.tokenId).toHexString(),
         chainId,
       },
     })
-    if (!nft) {
-      return Promise.reject(new Error('Invalid tokenId for GK'))
-    }
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Displays,
-      },
-    })
-    if (!edges.length) {
-      return []
-    }
+    if (!events.length) return []
     const profiles = []
     await Promise.allSettled(
-      edges.map(async (edge) => {
-        const profile = await repositories.profile.findOne({ where : { id: edge.thisEntityId } })
+      events.map(async (event) => {
+        const profile = await repositories.profile.findByURL(event.profileUrl, chainId)
         if (profile) profiles.push(profile)
       }),
     )
     // we return max 4 profiles
     const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
-    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 30)
+    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 5)
     return slicedProfiles
   } catch (err) {
     Sentry.captureMessage(`Error in getProfilesMintedWithGK: ${err}`)
@@ -1291,7 +1339,7 @@ export default {
     associatedCollectionForProfile: getAssociatedCollectionForProfile,
     isProfileCustomized: isProfileCustomized,
     profilesByDisplayNft,
-    profilesMintedWithGK: getProfilesMintedWithGK,
+    profilesMintedByGK: getProfilesMintedByGK,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
@@ -1305,6 +1353,7 @@ export default {
     clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
     updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
     saveNFTVisibilityForProfiles: combineResolvers(auth.isAuthenticated, saveNFTVisibility),
+    fullFillEventTokenIds: combineResolvers(auth.isAuthenticated, fullFillEventTokenIds),
   },
   Profile: {
     followersCount: getFollowersCount,

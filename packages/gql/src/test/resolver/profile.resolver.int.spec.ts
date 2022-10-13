@@ -692,44 +692,29 @@ describe('profile resolver', () => {
     })
   })
 
-  describe('profilesMintedWithGK', () => {
+  describe('profilesMintedByGK', () => {
     beforeAll(async () => {
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
       )
 
-      const profile = await repositories.profile.save({
+      await repositories.event.save({
+        contract: '0x40023d97Ca437B966C8f669C91a9740C639E21C3',
+        chainId: 5,
+        eventName: 'MintedProfile',
+        tokenId: '0x1c8b',
+        txHash: '0x6b20b23744709269207706557bbcc234e9374347ae944aa20bc7d84259c21096',
+      })
+      await repositories.profile.save({
         url: 'testprofile',
         ownerUserId: 'test-user-id',
         ownerWalletId: 'test-wallet-id',
-        tokenId: '0',
+        tokenId: '7307',
         status: defs.ProfileStatus.Owned,
         gkIconVisible: true,
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
-      })
-
-      const nft = await repositories.nft.save({
-        contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
-        tokenId: '0x1c8b',
-        metadata: {
-          name: 'NFT.com Genesis Key #7307',
-          imageURL: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: 'test-user-id',
-        walletId: 'test-wallet-id',
-        chainId: '5',
-      })
-
-      await repositories.edge.save({
-        thisEntityType: defs.EntityType.Profile,
-        thisEntityId: profile.id,
-        thatEntityType: defs.EntityType.NFT,
-        thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Displays,
       })
     })
 
@@ -738,17 +723,65 @@ describe('profile resolver', () => {
       await testServer.stop()
     })
 
-    it('should return profiles with minted GK', async () => {
+    it('should return profiles minted by GK', async () => {
       const result = await testServer.executeOperation({
-        query: 'query ProfilesMintedWithGK($tokenId: String!, $chainId: String) { profilesMintedWithGK(tokenId:$tokenId, chainId:$chainId) { url } }',
+        query: 'query ProfilesMintedByGK($tokenId: String!, $chainId: String) { profilesMintedByGK(tokenId:$tokenId, chainId:$chainId) { url } }',
         variables: {
           tokenId: '7307',
           chainId: '5',
         },
       })
 
-      expect(result.data.profilesMintedWithGK.length).toEqual(1)
-      expect(result.data.profilesMintedWithGK[0].url).toEqual('testprofile')
+      expect(result.data.profilesMintedByGK.length).toEqual(1)
+      expect(result.data.profilesMintedByGK[0].url).toEqual('testprofile')
+    })
+  })
+
+  describe('fullFillEventTokenIds', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      await repositories.event.save({
+        contract: '0x40023d97Ca437B966C8f669C91a9740C639E21C3',
+        chainId: 5,
+        eventName: 'MintedProfile',
+        txHash: '0x840a62c5b30963f0244cb4a0a7ef85a9ba6f3ee8d1c4624a6e2e42520237f829',
+        profileUrl: 'testjason',
+      })
+
+      await repositories.event.save({
+        contract: '0x40023d97Ca437B966C8f669C91a9740C639E21C3',
+        chainId: 5,
+        eventName: 'MintedProfile',
+        txHash: '0xed2baae211ff1c100239bbafcb7e16585265317c9e6f7644d7f92a819cac9a76',
+        profileUrl: '1',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should full fill GK tokenId of events', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation FullFillEventTokenIds($count: Int!) { fullFillEventTokenIds(count:$count) {  message } }',
+        variables: {
+          count: 2,
+        },
+      })
+
+      expect(result.data.fullFillEventTokenIds.message).toEqual('Full filled tokenId for 2 events')
+      const events = await repositories.event.findAll()
+      for (const event of events) {
+        expect(event.tokenId).not.toBeNull()
+      }
     })
   })
 })

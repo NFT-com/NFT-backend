@@ -1,5 +1,5 @@
 import { Job } from 'bull'
-import { ethers, utils } from 'ethers'
+import { BigNumber, ethers, utils } from 'ethers'
 
 import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
@@ -341,6 +341,24 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
         const [owner,profileUrl,tokenId,,] = evt.args
 
         if (evt.name === 'MintedProfile') {
+          const tx = await chainProvider.getTransaction(unparsedEvent.transactionHash)
+          const claimFace = new ethers.utils.Interface(['function genesisKeyClaimProfile(string,uint256,address,bytes32,bytes)'])
+          const batchClaimFace = new ethers.utils.Interface(['function genesisKeyBatchClaimProfile((string,uint256,address,bytes32,bytes)[])'])
+          let gkTokenId
+          try {
+            const res = claimFace.decodeFunctionData('genesisKeyClaimProfile', tx.data)
+            gkTokenId = res[1]
+          } catch (err) {
+            const res = batchClaimFace.decodeFunctionData('genesisKeyBatchClaimProfile', tx.data)
+            if (Array.isArray(res[0])) {
+              for (const r of res[0]) {
+                if (r[0] === profileUrl) {
+                  gkTokenId = r[1]
+                  break
+                }
+              }
+            }
+          }
           const existsBool = await repositories.event.exists({
             chainId,
             contract: helper.checkSum(contracts.profileAuctionAddress(chainId)),
@@ -358,6 +376,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 txHash: unparsedEvent.transactionHash,
                 ownerAddress: owner,
                 profileUrl: profileUrl,
+                tokenId: gkTokenId ? BigNumber.from(gkTokenId).toHexString() : null,
               },
             )
             // find and mark profile status as minted
