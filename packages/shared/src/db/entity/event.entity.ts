@@ -41,4 +41,7 @@ export class Event extends BaseEntity {
   @Column({ default: false })
   hidden: boolean
 
+  @Column({ nullable: true })
+  tokenId: string
+
 }
