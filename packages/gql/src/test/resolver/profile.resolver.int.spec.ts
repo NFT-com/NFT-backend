@@ -751,8 +751,8 @@ describe('profile resolver', () => {
         contract: '0x40023d97Ca437B966C8f669C91a9740C639E21C3',
         chainId: 5,
         eventName: 'MintedProfile',
-        txHash: '0xc5ed3ed9adb037474b1aa038b3b2dee5ff2af15a5456458b7966ecaa25649475',
-        profileUrl: 'joey',
+        txHash: '0x840a62c5b30963f0244cb4a0a7ef85a9ba6f3ee8d1c4624a6e2e42520237f829',
+        profileUrl: 'testjason',
       })
 
       await repositories.event.save({
@@ -769,7 +769,7 @@ describe('profile resolver', () => {
       await testServer.stop()
     })
 
-    it('should full fill tokenId of events', async () => {
+    it('should full fill GK tokenId of events', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation FullFillEventTokenIds($count: Int!) { fullFillEventTokenIds(count:$count) {  message } }',
         variables: {

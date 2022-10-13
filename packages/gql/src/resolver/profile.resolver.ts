@@ -1106,25 +1106,33 @@ const fullFillEventTokenIds = async (
     const length = Math.min(args?.count, events.length)
     await Promise.allSettled(
       events.map(async (event) => {
-        const chainProvider = provider.provider(Number(chainId))
-        const txReceipt = await chainProvider.getTransactionReceipt(event.txHash)
-        const topics = helper.id('MintedProfile(address,string,uint256,uint256,uint256)')
-        let tokenId
-        for (const log of txReceipt.logs) {
-          const index = log.topics.findIndex((topic) => topic === topics)
-          if (index >= 0) {
-            const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI())
-            const evt = profileAuctionInterface.parseLog(log)
-            if (evt.name === 'MintedProfile' && evt.args.length >= 3) {
-              tokenId = evt.args[2]
-              break
+        try {
+          const chainProvider = provider.provider(Number(chainId))
+          const tx = await chainProvider.getTransaction(event.txHash)
+          const claimFace = new ethers.utils.Interface(['function genesisKeyClaimProfile(string,uint256,address,bytes32,bytes)'])
+          const batchClaimFace = new ethers.utils.Interface(['function genesisKeyBatchClaimProfile((string,uint256,address,bytes32,bytes)[])'])
+          let tokenId
+          try {
+            const res = claimFace.decodeFunctionData('genesisKeyClaimProfile', tx.data)
+            tokenId = res[1]
+          } catch (err) {
+            const res = batchClaimFace.decodeFunctionData('genesisKeyBatchClaimProfile', tx.data)
+            if (Array.isArray(res[0])) {
+              for (const r of res[0]) {
+                if (r[0] === event.profileUrl) {
+                  tokenId = r[1]
+                  break
+                }
+              }
             }
           }
-        }
-        if (tokenId) {
-          await repositories.event.updateOneById(event.id, {
-            tokenId: BigNumber.from(tokenId).toHexString(),
-          })
+          if (tokenId) {
+            await repositories.event.updateOneById(event.id, {
+              tokenId: BigNumber.from(tokenId).toHexString(),
+            })
+          }
+        } catch (err) {
+          logger.error(`Error in fullFillEventTokenIds: ${err}`)
         }
       }),
     )
