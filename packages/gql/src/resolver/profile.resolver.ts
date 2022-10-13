@@ -1104,8 +1104,9 @@ const fullFillEventTokenIds = async (
       },
     })
     const length = Math.min(args?.count, events.length)
+    const slicedEvents = events.slice(0, length)
     await Promise.allSettled(
-      events.map(async (event) => {
+      slicedEvents.map(async (event) => {
         try {
           const chainProvider = provider.provider(Number(chainId))
           const tx = await chainProvider.getTransaction(event.txHash)
