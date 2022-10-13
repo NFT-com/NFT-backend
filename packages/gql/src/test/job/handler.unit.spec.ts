@@ -134,11 +134,6 @@ describe('handler', () => {
           () => Promise.resolve(undefined),
         )
 
-      existsEventSpy = jest.spyOn(repositories.event, 'exists')
-        .mockImplementation(
-          () => Promise.resolve(undefined),
-        )
-
       saveEventSpy = jest.spyOn(repositories.event, 'save')
         .mockImplementation(
           (event: DeepPartial<entity.Event>) =>
