@@ -366,7 +366,6 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
             txHash: unparsedEvent.transactionHash,
             ownerAddress: owner,
             profileUrl: profileUrl,
-            tokenId: BigNumber.from(gkTokenId).toHexString(),
           })
           if (!existsBool) {
             await repositories.event.save(
@@ -377,7 +376,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 txHash: unparsedEvent.transactionHash,
                 ownerAddress: owner,
                 profileUrl: profileUrl,
-                tokenId: BigNumber.from(gkTokenId).toHexString(),
+                tokenId: gkTokenId ? BigNumber.from(gkTokenId).toHexString() : null,
               },
             )
             // find and mark profile status as minted
