@@ -178,6 +178,10 @@ type SaveNFTVisibilityForProfilesOutput {
   message: String
 }
 
+type FullFillEventTokenIdsOutput {
+  message: String
+}
+
 input IgnoredEventsInput {
   profileUrl: String!
   walletAddress: Address!
@@ -235,4 +239,6 @@ extend type Mutation {
   updateProfileView(input: UpdateProfileViewInput): Profile!
   "AUTHENTICATED"
   saveNFTVisibilityForProfiles(count: Int!): SaveNFTVisibilityForProfilesOutput!
+  "AUTHENTICATED"
+  fullFillEventTokenIds(count: Int!): FullFillEventTokenIdsOutput!
 }

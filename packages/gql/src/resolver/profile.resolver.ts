@@ -1085,6 +1085,58 @@ const saveNFTVisibility = async (
   }
 }
 
+const fullFillEventTokenIds = async (
+  _: any,
+  args: gql.MutationFullFillEventTokenIdsArgs,
+  ctx: Context,
+): Promise<gql.FullFillEventTokenIdsOutput> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('fullFillEventTokenIds', { count: args?.count })
+  try {
+    const events = await repositories.event.find({
+      where: {
+        contract: contracts.profileAuctionAddress(chainId),
+        eventName: 'MintedProfile',
+        tokenId: IsNull(),
+        chainId,
+      },
+    })
+    const length = Math.min(args?.count, events.length)
+    await Promise.allSettled(
+      events.map(async (event) => {
+        const chainProvider = provider.provider(Number(chainId))
+        const txReceipt = await chainProvider.getTransactionReceipt(event.txHash)
+        const topics = helper.id('MintedProfile(address,string,uint256,uint256,uint256)')
+        let tokenId
+        for (const log of txReceipt.logs) {
+          const index = log.topics.findIndex((topic) => topic === topics)
+          if (index >= 0) {
+            const profileAuctionInterface = new utils.Interface(contracts.profileAuctionABI())
+            const evt = profileAuctionInterface.parseLog(log)
+            if (evt.name === 'MintedProfile' && evt.args.length >= 3) {
+              tokenId = evt.args[2]
+              break
+            }
+          }
+        }
+        if (tokenId) {
+          await repositories.event.updateOneById(event.id, {
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          })
+        }
+      }),
+    )
+    return {
+      message: `Full filled tokenId for ${length} events`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in fullFillEventTokenIds: ${err}`)
+    return err
+  }
+}
+
 const getIgnoredEvents = async (
   _: any,
   args: gql.QueryIgnoredEventsArgs,
@@ -1245,21 +1297,18 @@ const getProfilesMintedByGK = async (
         chainId,
       },
     })
-    if (events.length) {
-      const profiles = []
-      await Promise.allSettled(
-        events.map(async (event) => {
-          const profile = await repositories.profile.findByURL(event.profileUrl, chainId)
-          if (profile) profiles.push(profile)
-        }),
-      )
-      // we return max 4 profiles
-      const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
-      await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 5)
-      return slicedProfiles
-    } else {
-      return []
-    }
+    if (!events.length) return []
+    const profiles = []
+    await Promise.allSettled(
+      events.map(async (event) => {
+        const profile = await repositories.profile.findByURL(event.profileUrl, chainId)
+        if (profile) profiles.push(profile)
+      }),
+    )
+    // we return max 4 profiles
+    const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
+    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 5)
+    return slicedProfiles
   } catch (err) {
     Sentry.captureMessage(`Error in getProfilesMintedWithGK: ${err}`)
     return err
@@ -1296,6 +1345,7 @@ export default {
     clearGKIconVisible: combineResolvers(auth.isAuthenticated, clearGKIconVisible),
     updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
     saveNFTVisibilityForProfiles: combineResolvers(auth.isAuthenticated, saveNFTVisibility),
+    fullFillEventTokenIds: combineResolvers(auth.isAuthenticated, fullFillEventTokenIds),
   },
   Profile: {
     followersCount: getFollowersCount,

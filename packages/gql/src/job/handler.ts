@@ -1,5 +1,5 @@
 import { Job } from 'bull'
-import { ethers, utils } from 'ethers'
+import { BigNumber, ethers, utils } from 'ethers'
 
 import { provider } from '@nftcom/gql/helper'
 import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
@@ -348,6 +348,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
             txHash: unparsedEvent.transactionHash,
             ownerAddress: owner,
             profileUrl: profileUrl,
+            tokenId: BigNumber.from(tokenId).toHexString(),
           })
           if (!existsBool) {
             await repositories.event.save(
@@ -358,6 +359,7 @@ export const getEthereumEvents = async (job: Job): Promise<any> => {
                 txHash: unparsedEvent.transactionHash,
                 ownerAddress: owner,
                 profileUrl: profileUrl,
+                tokenId: BigNumber.from(tokenId).toHexString(),
               },
             )
             // find and mark profile status as minted
