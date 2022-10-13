@@ -1222,53 +1222,44 @@ const profilesByDisplayNft = async (
     }).then(toProfilesOutput)
 }
 
-const getProfilesMintedWithGK = async (
+const getProfilesMintedByGK = async (
   _: any,
-  args: gql.QueryProfilesMintedWithGkArgs,
+  args: gql.QueryProfilesMintedByGkArgs,
   ctx: Context,
 ): Promise<Array<gql.Profile>> => {
   try {
     const { repositories } = ctx
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    logger.debug('getProfilesMintedWithGK', { tokenId: args?.tokenId })
-    const cacheKey = `${CacheKeys.PROFILES_WITH_MINTED_GK}_${chainId}_${args?.tokenId}`
+    logger.debug('getProfilesMintedByGK', { tokenId: args?.tokenId })
+    const cacheKey = `${CacheKeys.PROFILES_MINTED_BY_GK}_${chainId}_${args?.tokenId}`
     const cachedData = await cache.get(cacheKey)
     if (cachedData) {
       return JSON.parse(cachedData) as entity.Profile[]
     }
-    const nft = await repositories.nft.findOne({
+    const events = await repositories.event.find({
       where: {
-        contract: contracts.genesisKeyAddress(chainId),
+        contract: contracts.profileAuctionAddress(chainId),
+        eventName: 'MintedProfile',
         tokenId: BigNumber.from(args?.tokenId).toHexString(),
         chainId,
       },
     })
-    if (!nft) {
-      return Promise.reject(new Error('Invalid tokenId for GK'))
-    }
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thatEntityId: nft.id,
-        edgeType: defs.EdgeType.Displays,
-      },
-    })
-    if (!edges.length) {
+    if (events.length) {
+      const profiles = []
+      await Promise.allSettled(
+        events.map(async (event) => {
+          const profile = await repositories.profile.findByURL(event.profileUrl, chainId)
+          if (profile) profiles.push(profile)
+        }),
+      )
+      // we return max 4 profiles
+      const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
+      await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 5)
+      return slicedProfiles
+    } else {
       return []
     }
-    const profiles = []
-    await Promise.allSettled(
-      edges.map(async (edge) => {
-        const profile = await repositories.profile.findOne({ where : { id: edge.thisEntityId } })
-        if (profile) profiles.push(profile)
-      }),
-    )
-    // we return max 4 profiles
-    const slicedProfiles = profiles.slice(0, Math.min(profiles.length, 4))
-    await cache.set(cacheKey, JSON.stringify(slicedProfiles), 'EX', 60 * 5)
-    return slicedProfiles
   } catch (err) {
     Sentry.captureMessage(`Error in getProfilesMintedWithGK: ${err}`)
     return err
@@ -1291,7 +1282,7 @@ export default {
     associatedCollectionForProfile: getAssociatedCollectionForProfile,
     isProfileCustomized: isProfileCustomized,
     profilesByDisplayNft,
-    profilesMintedWithGK: getProfilesMintedWithGK,
+    profilesMintedByGK: getProfilesMintedByGK,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

@@ -19,7 +19,7 @@ export enum CacheKeys {
   CACHED_GKS = 'cached_gks',
   GET_GK = 'get_gk',
   SORTED_PROFILES_BY_VISIBLE_NFTS = 'sorted_profiles_by_visible_nfts',
-  PROFILES_WITH_MINTED_GK = 'profiles_with_minted_gk',
+  PROFILES_MINTED_BY_GK = 'profiles_minted_by_gk',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {

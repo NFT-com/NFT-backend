@@ -208,7 +208,7 @@ extend type Query {
   associatedCollectionForProfile(url: String!, chainId: String): CollectionInfo!
   isProfileCustomized(url: String!, chainId: String): Boolean!
   profilesByDisplayNft(input: ProfilesByDisplayNftInput!): ProfilesOutput!
-  profilesMintedWithGK(tokenId: String!, chainId: String): [Profile!]!
+  profilesMintedByGK(tokenId: String!, chainId: String): [Profile!]!
 }
 
 extend type Mutation {
