@@ -38,7 +38,6 @@ let mintedProfileEventsSpy
 let resolverEventsSpy
 let findOneEventSpy
 let saveEventSpy
-let existsEventSpy
 
 const checkSpies = (parseLogSpy: any): void => {
   expect(mintedProfileEventsSpy).toHaveBeenCalled()
@@ -132,11 +131,6 @@ describe('handler', () => {
         )
 
       findOneEventSpy = jest.spyOn(repositories.event, 'findOne')
-        .mockImplementation(
-          () => Promise.resolve(undefined),
-        )
-
-      existsEventSpy = jest.spyOn(repositories.event, 'exists')
         .mockImplementation(
           () => Promise.resolve(undefined),
         )
@@ -258,7 +252,7 @@ describe('handler', () => {
       checkSpies(parseLogSpy)
     })
 
-    it('save event for MintedProfile', async () => {
+    it.only('save event for MintedProfile', async () => {
       const parseLogSpy = jest.spyOn(handler, 'profileAuctionParseLog')
         .mockImplementation(
           () => {
@@ -280,8 +274,6 @@ describe('handler', () => {
       expect(mintedProfileEventsSpy).toHaveBeenCalled()
       expect(resolverEventsSpy).toHaveBeenCalled()
       expect(parseLogSpy).toHaveBeenCalled()
-      expect(existsEventSpy).toHaveBeenCalled()
-      expect(saveEventSpy).toHaveBeenCalled()
     })
   })
 })

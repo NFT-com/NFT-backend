@@ -178,6 +178,10 @@ type SaveNFTVisibilityForProfilesOutput {
   message: String
 }
 
+type FullFillEventTokenIdsOutput {
+  message: String
+}
+
 input IgnoredEventsInput {
   profileUrl: String!
   walletAddress: Address!
@@ -208,7 +212,7 @@ extend type Query {
   associatedCollectionForProfile(url: String!, chainId: String): CollectionInfo!
   isProfileCustomized(url: String!, chainId: String): Boolean!
   profilesByDisplayNft(input: ProfilesByDisplayNftInput!): ProfilesOutput!
-  profilesMintedWithGK(tokenId: String!, chainId: String): [Profile!]!
+  profilesMintedByGK(tokenId: String!, chainId: String): [Profile!]!
 }
 
 extend type Mutation {
@@ -235,4 +239,6 @@ extend type Mutation {
   updateProfileView(input: UpdateProfileViewInput): Profile!
   "AUTHENTICATED"
   saveNFTVisibilityForProfiles(count: Int!): SaveNFTVisibilityForProfilesOutput!
+  "AUTHENTICATED"
+  fullFillEventTokenIds(count: Int!): FullFillEventTokenIdsOutput!
 }
