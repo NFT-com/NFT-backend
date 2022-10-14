@@ -385,6 +385,14 @@ const createEcsTaskDefinition = (
               Name: 'DEFAULT_TTL_MINS',
               Value: process.env.DEFAULT_TTL_MINS,
             },
+            {
+              Name: 'ASSET_BUCKET',
+              Value: process.env.ASSET_BUCKET,
+            },
+            {
+              Name: 'ASSET_BUCKET_ROLE',
+              Value: process.env.ASSET_BUCKET_ROLE,
+            },
           ],
         },
         {
