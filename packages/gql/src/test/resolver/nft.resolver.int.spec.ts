@@ -518,6 +518,10 @@ describe('nft resolver', () => {
                     contract
                     tokenId
                     chainId
+                    collection {
+                      contract
+                      name
+                    }
                     listings(listingsPageInput: $listingsPageInput, listingsExpirationType: $listingsExpirationType, listingsOwner: $listingsOwner) {
                       items {
                         id
@@ -543,6 +547,8 @@ describe('nft resolver', () => {
         })
 
         expect(result.data.nft.listings.items).toHaveLength(1)
+        expect(result.data.nft.collection.contract).toBeDefined()
+        expect(result.data.nft.collection.name).toBeDefined()
         expect(result.data.nft.listings.items[0]?.walletAddress).toBe(wallet.address)
         expect(result.data.nft.listings.items[0]?.status).toBe(defs.ActivityStatus.Valid)
       } finally {
