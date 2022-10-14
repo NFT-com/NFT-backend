@@ -89,6 +89,33 @@ export const resolveEntityFromContext = <T>(key: string) => {
   }
 }
 
+export const getCollection = (
+  ctx: Context,
+  contractAddress: string,
+): Promise<any> => {
+  const { user, repositories } = ctx
+  logger.debug('getCollection', { loggedInUserId: user?.id, contractAddress })
+
+  return repositories.collection
+    .findOne({ where: { contract: contractAddress } })
+    .then(fp.rejectIfEmpty(appError.buildCustom(`collection ${contractAddress} not found`)))
+}
+
+export const resolveCollectionById = <T, K>(
+  key: string,
+  parentType: defs.EntityType,
+) => {
+  return (parent: T, args: unknown, ctx: Context): Promise<K> => {
+    return entityById(ctx, parent?.['id'], parentType)
+      .then((p) => {
+        if (helper.isEmpty(p?.[key])) {
+          return null
+        }
+        return getCollection(ctx, p?.[key])
+      })
+  }
+}
+
 export const resolveEntityById = <T, K>(
   key: string,
   parentType: defs.EntityType,
