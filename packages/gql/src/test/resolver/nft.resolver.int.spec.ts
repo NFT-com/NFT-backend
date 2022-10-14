@@ -116,6 +116,12 @@ describe('nft resolver', () => {
         { id: '5', name: 'goerli' },
       )
 
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+
       await repositories.nft.save({
         contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
         tokenId: '0x0d5415',
