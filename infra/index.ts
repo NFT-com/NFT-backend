@@ -7,7 +7,7 @@ import * as pulumi from '@pulumi/pulumi'
 
 import { createCronJobs } from './cronjobs'
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
-import { createGQLServer, updateGQLEnvFile } from './gql'
+import { createGQLServer } from './gql'
 import { createSharedInfra } from './shared'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
@@ -41,7 +41,6 @@ const main = async (): Promise<any> => {
   const args = process.argv.slice(2)
   const deployShared = args?.[0] === 'deploy:shared' || false
   const deployGQL = args?.[0] === 'deploy:gql' || false
-  const buildGQLEnv = args?.[0] === 'gql:env' || false
   const deployCronjobs = args?.[0] === 'deploy:cronjobs' || false
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
@@ -49,11 +48,6 @@ const main = async (): Promise<any> => {
   if (deployShared) {
     return createSharedInfra()
       .then(sharedOutToJSONFile)
-  }
-
-  if (buildGQLEnv) {
-    updateGQLEnvFile()
-    return
   }
 
   if (deployGQL) {
