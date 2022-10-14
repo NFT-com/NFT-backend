@@ -218,8 +218,16 @@ const createEcsTaskDefinition = (
               Value: process.env.DB_HOST,
             },
             {
+              Name: 'DB_USE_SSL',
+              Value: process.env.DB_USE_SSL,
+            },
+            {
               Name: 'DB_PASSWORD',
               Value: process.env.DB_PASSWORD,
+            },
+            {
+              Name: 'DB_PORT',
+              Value: process.env.DB_PORT,
             },
             {
               Name: 'CHAIN_ID',
@@ -392,6 +400,18 @@ const createEcsTaskDefinition = (
             {
               Name: 'ASSET_BUCKET_ROLE',
               Value: process.env.ASSET_BUCKET_ROLE,
+            },
+            {
+              Name: 'REDIS_HOST',
+              Value: process.env.REDIS_HOST,
+            },
+            {
+              Name: 'REDIS_PORT',
+              Value: process.env.REDIS_PORT,
+            },
+            {
+              Name: 'PORT',
+              Value: process.env.PORT,
             },
           ],
         },

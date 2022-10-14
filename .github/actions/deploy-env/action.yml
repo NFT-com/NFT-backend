@@ -67,7 +67,12 @@ runs:
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
         GIT_SHA: ${{ github.sha }}
         DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
+        DB_USE_SSL: ${{ fromJSON(inputs.secrets).DB_USE_SSL }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+        DB_PORT: ${{ fromJSON(inputs.secrets).DB_PORT }}
+        PORT: ${{ fromJSON(inputs.secrets).PORT }}
+        REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
+        REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         CHAIN_ID: ${{ fromJSON(inputs.secrets).CHAIN_ID }}
         AUTH_MESSAGE: ${{ fromJSON(inputs.secrets).AUTH_MESSAGE }}
         SG_API_KEY: ${{ fromJSON(inputs.secrets).SG_API_KEY }}
