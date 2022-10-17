@@ -57,7 +57,6 @@ export const entityById = (
   entityType: defs.EntityType,
 ): Promise<any> => {
   const { repositories, user, wallet } = ctx
-  //logger.debug('entityById', { loggedInUserId: user?.id, id, entityType })
 
   switch (entityType) {
   case defs.EntityType.Approval:
@@ -86,6 +85,33 @@ export const entityById = (
 export const resolveEntityFromContext = <T>(key: string) => {
   return (parent: unknown, _: unknown, ctx: Context): Promise<T> => {
     return ctx?.[key]
+  }
+}
+
+export const getCollection = (
+  ctx: Context,
+  contractAddress: string,
+): Promise<any> => {
+  const { user, repositories } = ctx
+  logger.debug('getCollection', { loggedInUserId: user?.id, contractAddress })
+
+  return repositories.collection
+    .findOne({ where: { contract: contractAddress } })
+    .then(fp.rejectIfEmpty(appError.buildCustom(`collection ${contractAddress} not found`)))
+}
+
+export const resolveCollectionById = <T, K>(
+  key: string,
+  parentType: defs.EntityType,
+) => {
+  return (parent: T, args: unknown, ctx: Context): Promise<K> => {
+    return entityById(ctx, parent?.['id'], parentType)
+      .then((p) => {
+        if (helper.isEmpty(p?.[key])) {
+          return null
+        }
+        return getCollection(ctx, p?.[key])
+      })
   }
 }
 

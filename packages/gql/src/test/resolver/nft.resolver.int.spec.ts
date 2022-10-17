@@ -117,6 +117,12 @@ describe('nft resolver', () => {
         { id: '5', name: 'goerli' },
       )
 
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+
       await repositories.nft.save({
         contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
         tokenId: '0x0d5415',
@@ -519,6 +525,10 @@ describe('nft resolver', () => {
                     contract
                     tokenId
                     chainId
+                    collection {
+                      contract
+                      name
+                    }
                     listings(listingsPageInput: $listingsPageInput, listingsExpirationType: $listingsExpirationType, listingsOwner: $listingsOwner) {
                       items {
                         id
@@ -544,6 +554,8 @@ describe('nft resolver', () => {
         })
 
         expect(result.data.nft.listings.items).toHaveLength(1)
+        expect(result.data.nft.collection.contract).toBeDefined()
+        expect(result.data.nft.collection.name).toBeDefined()
         expect(result.data.nft.listings.items[0]?.walletAddress).toBe(wallet.address)
         expect(result.data.nft.listings.items[0]?.status).toBe(defs.ActivityStatus.Valid)
       } finally {
