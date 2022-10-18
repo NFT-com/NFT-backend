@@ -53,7 +53,7 @@ const checkSpies = (parseLogSpy: any): void => {
 }
 
 describe('handler', () => {
-  fdescribe('getCachedBlock', () => {
+  describe('getCachedBlock', () => {
     it('should return default block number for goerli', async () => {
       const block = await getCachedBlock(5, 'resolver_associate_cached_block_5')
       expect(block).toEqual(7128515)
