@@ -16,7 +16,6 @@ RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm ci \
     && apk del .gyp
 
-
 COPY packages/shared ./packages/shared
 COPY packages/gql ./packages/gql
 
@@ -39,7 +38,6 @@ COPY --from=build /app/packages/shared/dist /app/packages/shared/dist
 
 COPY --from=build /app/packages/gql/package.json /app/packages/gql/package.json
 COPY --from=build /app/packages/gql/dist /app/packages/gql/dist
-COPY --from=build /app/packages/gql/.env /app/packages/gql/.env
 
 WORKDIR /app/packages/gql
 
