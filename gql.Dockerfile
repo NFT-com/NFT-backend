@@ -19,6 +19,7 @@ RUN apk add --no-cache --virtual .gyp python3 make g++ \
 
 COPY packages ./packages/
 
+
 FROM deps as build
 
 WORKDIR /app/packages/shared
@@ -26,6 +27,7 @@ RUN npm run build
 
 WORKDIR /app/packages/gql
 RUN npm run build
+
 
 FROM node:16-alpine as release
 
@@ -38,7 +40,6 @@ COPY --from=build /app/packages/shared/dist /app/packages/shared/dist
 
 COPY --from=build /app/packages/gql/package.json /app/packages/gql/package.json
 COPY --from=build /app/packages/gql/dist /app/packages/gql/dist
-COPY --from=build /app/packages/gql/.env /app/packages/gql/.env
 
 WORKDIR /app/packages/gql
 
