@@ -54,7 +54,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     password: dbConfig.password,
     database: dbConfig.database,
     synchronize: false,
-    logging: dbConfig.logging,
+    logging: dbConfig.logging || true,
     migrationsRun: true,
     migrations: [
       `${__dirname}/migration/*.ts`,
