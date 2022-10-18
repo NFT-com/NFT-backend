@@ -16,7 +16,12 @@ jest.setTimeout(500000)
 jest.mock('@nftcom/cache', () => ({
   redisConfig: {},
   cache: {
-    get: jest.fn(),
+    get: jest.fn().mockImplementation((key: string) => {
+      if (key === 'resolver_associate_cached_block_mock') {
+        return 20000000
+      }
+      return undefined
+    }),
     set: jest.fn(),
   },
   createCacheConnection: jest.fn(),
@@ -48,10 +53,20 @@ const checkSpies = (parseLogSpy: any): void => {
 }
 
 describe('handler', () => {
-  describe('getCachedBlock', () => {
+  fdescribe('getCachedBlock', () => {
     it('should return default block number for goerli', async () => {
       const block = await getCachedBlock(5, 'resolver_associate_cached_block_5')
       expect(block).toEqual(7128515)
+    })
+
+    it('should return default block number for mainnet', async () => {
+      const block = await getCachedBlock(1, 'resolver_associate_cached_block_1')
+      expect(block).toEqual(14675454)
+    })
+
+    it('should return cached block number', async () => {
+      const block = await getCachedBlock(1, 'resolver_associate_cached_block_mock')
+      expect(block).toEqual(19999000)
     })
   })
 
