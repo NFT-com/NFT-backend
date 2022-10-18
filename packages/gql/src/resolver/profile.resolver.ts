@@ -236,26 +236,41 @@ const maybeUpdateProfileOwnership = (
       .then(([trueOwner, wallet]: [string, entity.Wallet]) => {
         const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
         if (ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
-          return ctx.repositories.wallet.findByChainAddress(chainId, trueOwner)
+          return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
             .then(fp.thruIfEmpty(() =>
-              ctx.repositories.user.save({
-                email: null,
+              ctx.repositories.user.findOne({ where: {
                 username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
-                referredBy: null,
-                avatarURL: null,
-                confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
-                confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
-                referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-              })
-                .then((user: entity.User) =>
-                  ctx.repositories.wallet.save({
-                    userId: user.id,
-                    network: 'ethereum',
-                    chainId,
-                    chainName: chain.name,
-                    address: trueOwner,
-                  }),
-                ),
+              } })
+                .then((existingUser: entity.User) => {
+                  if (existingUser) {
+                    return ctx.repositories.wallet.save({
+                      userId: existingUser.id,
+                      network: 'ethereum',
+                      chainId,
+                      chainName: chain.name,
+                      address: trueOwner,
+                    })
+                  } else {
+                    return ctx.repositories.user.save({
+                      email: null,
+                      username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
+                      referredBy: null,
+                      avatarURL: null,
+                      confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
+                      confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+                      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+                    })
+                      .then((user: entity.User) =>
+                        ctx.repositories.wallet.save({
+                          userId: user.id,
+                          network: 'ethereum',
+                          chainId,
+                          chainName: chain.name,
+                          address: trueOwner,
+                        }),
+                      )
+                  }
+                }),
             ))
             .then((wallet: entity.Wallet) => {
               return Promise.all([
