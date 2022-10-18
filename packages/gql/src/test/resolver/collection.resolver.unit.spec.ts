@@ -31,7 +31,7 @@ describe('collection resolver', () => {
         }  as unknown as NFTRepository,
       } as unknown as Repository
 
-      const traitSummary = await collectionResolver.Query.collectionTraits(undefined, { contract: '0x00000' }, mockCtx)
+      const traitSummary = await collectionResolver.Query.collectionTraits(undefined, { input: { contract: '0x00000' } }, mockCtx)
 
       expect(traitSummary.stats.totalCount).toBe(297)
       expect(traitSummary.traits[0].type).toBe('A Trait')
