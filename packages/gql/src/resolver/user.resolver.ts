@@ -12,6 +12,7 @@ import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
@@ -713,6 +714,41 @@ export const clearQueue = async (
   }
 }
 
+const getProfileActions = async (
+  _: any,
+  ctx: Context,
+): Promise<Array<gql.ProfileActionOutput>> => {
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('getProfileActions', { loggedInUserId: user.id, wallet: wallet.address })
+  const actions =  await repositories.incentiveAction.find({
+    where: {
+      userId: user.id,
+    },
+  })
+  return actions.map((action) => {
+    let task
+    if (action.task === ProfileTask.CREATE_NFT_PROFILE)
+      task = gql.ProfileActionType.CreateNFTProfile
+    else if (action.task === ProfileTask.CUSTOMIZE_PROFILE)
+      task = gql.ProfileActionType.CustomizeProfile
+    else if (action.task === ProfileTask.REFER_NETWORK)
+      task = gql.ProfileActionType.ReferNetwork
+    else if (action.task === ProfileTask.BUY_NFTS)
+      task = gql.ProfileActionType.BuyNFTs
+    else if (action.task === ProfileTask.LIST_NFTS)
+      task = gql.ProfileActionType.ListNFTs
+    else if (action.task === ProfileTask.ISSUE_NFTS)
+      task = gql.ProfileActionType.IssueNFTs
+    return {
+      profileUrl: action.profileUrl,
+      action: task,
+      point: action.point,
+    }
+  })
+}
+
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
@@ -724,6 +760,8 @@ export default {
       combineResolvers(auth.isAuthenticated, getRemovedAssociationsForReceiver),
     getRemovedAssociationsForSender:
       combineResolvers(auth.isAuthenticated, getRemovedAssociationsForSender),
+    getProfileActions:
+    combineResolvers(auth.isAuthenticated, getProfileActions),
   },
   Mutation: {
     signUp,

@@ -5,7 +5,7 @@ import { ProfileTask } from '@nftcom/shared/defs'
 import { BaseEntity } from '.'
 
 @Entity()
-export class IncentiveActionsEntity extends BaseEntity {
+export class IncentiveAction extends BaseEntity {
 
   @Column({ nullable: false })
   userId: string
