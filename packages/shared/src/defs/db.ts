@@ -156,6 +156,15 @@ export enum ProfileViewType {
   Gallery = 'Gallery',
 }
 
+export enum ProfileTask {
+  CREATE_NFT_PROFILE = 'CREATE_NFT_PROFILE',
+  CUSTOMIZE_PROFILE = 'CUSTOMIZE_PROFILE',
+  REFER_NETWORK = 'REFER_NETWORK',
+  BUY_NFTS = 'BUY_NFTS',
+  LIST_NFTS = 'LIST_NFTS',
+  ISSUE_NFTS = 'ISSUE_NFTS',
+}
+
 export enum ProfileTaskPoint {
   CREATE_NFT_PROFILE = 5,
   CUSTOMIZE_PROFILE = 1,
