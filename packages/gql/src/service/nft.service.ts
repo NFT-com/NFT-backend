@@ -347,24 +347,6 @@ export const getNFTsForCollection = async (
       if (response && response?.data) {
         if (response?.data?.nfts && response?.data?.nfts?.length) {
           nfts.push(...response.data.nfts)
-          if (response?.data?.nextToken) {
-            let startToken = response?.data?.nextToken
-            // eslint-disable-next-line no-constant-condition
-            while (true) {
-              const url = `${alchemyUrl}/getNFTsForCollection/?contractAddress=${contractAddress}&withMetadata=true&startToken=${startToken}`
-              const res = await axios.get(url)
-              if (res && res.data && res.data?.nfts && res.data?.nfts?.length) {
-                nfts.push(...res.data.nfts)
-                if (res.data?.nextToken) {
-                  startToken = res.data?.nextToken
-                } else {
-                  break
-                }
-              } else {
-                break
-              }
-            }
-          }
           await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 10) // 10 minutes
           return nfts
         } else {

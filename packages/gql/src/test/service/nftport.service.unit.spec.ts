@@ -40,7 +40,7 @@ describe('nftport', () => {
   })
 
   describe('retrieveContractNFTs', () => {
-    it.only('it should retrieve nfts of cryptokitty', async () => {
+    it('it should retrieve nfts of cryptokitty', async () => {
       const contract = '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d'
       const res = await retrieveContractNFTs(contract,  '1')
       validateNFTsResponse(res)
