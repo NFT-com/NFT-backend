@@ -41,7 +41,7 @@ const bootstrap = (): Promise<void> => {
   return db.connect(dbConfig)
     .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
-    .then(() => job.startAndListen())
+    //.then(() => job.startAndListen())
     // document watcher for local 
     .then(() => {
       if (process.env.NODE_ENV === 'local') {

@@ -42,13 +42,37 @@ runs:
         DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
       run: npm run deploy:shared
-    - name: Build GQL Env File
+    - name: Build and Push GQL Image
+      shell: bash
+      env:
+        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-gql
+      run: |
+        export DOCKER_BUILDKIT=1
+        docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target deps -t ${{ env.REPO }}:deps
+        docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target build --cache-from ${{ env.REPO }}:deps -t ${{ env.REPO }}:build
+        docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target release --cache-from ${{ env.REPO }}:deps --cache-from ${{ env.REPO }}:build -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
+        docker push ${{ env.REPO }}:deps
+        docker push ${{ env.REPO }}:build
+        docker push ${{ env.REPO }}:latest
+        docker push ${{ env.REPO }}:${{ github.sha }}
+    - name: Deploy GQL Infra
       shell: bash
       working-directory: infra
       env:
         STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        ASSET_BUCKET: ${{ fromJSON(inputs.secrets).ASSET_BUCKET }}
+        ASSET_BUCKET_ROLE: ${{ fromJSON(inputs.secrets).ASSET_BUCKET_ROLE }}
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        GIT_SHA: ${{ github.sha }}
         DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
+        DB_USE_SSL: ${{ fromJSON(inputs.secrets).DB_USE_SSL }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+        DB_PORT: ${{ fromJSON(inputs.secrets).DB_PORT }}
+        PORT: ${{ fromJSON(inputs.secrets).PORT }}
+        REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
+        REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         CHAIN_ID: ${{ fromJSON(inputs.secrets).CHAIN_ID }}
         AUTH_MESSAGE: ${{ fromJSON(inputs.secrets).AUTH_MESSAGE }}
         SG_API_KEY: ${{ fromJSON(inputs.secrets).SG_API_KEY }}
@@ -91,27 +115,4 @@ runs:
         REFRESH_NFT_DURATION: ${{ fromJSON(inputs.secrets).REFRESH_NFT_DURATION}}
         IPFS_WEB_GATEWAY: ${{ fromJSON(inputs.secrets).IPFS_WEB_GATEWAY }}
         DEFAULT_TTL_MINS: ${{ fromJSON(inputs.secrets).DEFAULT_TTL_MINS }}
-      run: npm run build:gql:env
-    - name: Build and Push GQL Image
-      shell: bash
-      env:
-        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-gql
-      run: |
-        export DOCKER_BUILDKIT=1
-        docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target deps -t ${{ env.REPO }}:deps
-        docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target build --cache-from ${{ env.REPO }}:deps -t ${{ env.REPO }}:build
-        docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target release --cache-from ${{ env.REPO }}:deps --cache-from ${{ env.REPO }}:build -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
-        docker push ${{ env.REPO }}:deps
-        docker push ${{ env.REPO }}:build
-        docker push ${{ env.REPO }}:latest
-        docker push ${{ env.REPO }}:${{ github.sha }}
-    - name: Deploy GQL Infra
-      shell: bash
-      working-directory: infra
-      env:
-        STAGE: ${{ inputs.stage }}
-        PULUMI_CONFIG_PASSPHRASE: ""
-        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
-        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
-        GIT_SHA: ${{ github.sha }}
       run: npm run deploy:gql
