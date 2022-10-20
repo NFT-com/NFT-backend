@@ -1,10 +1,11 @@
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, Unique } from 'typeorm'
 
 import { ProfileTask } from '@nftcom/shared/defs'
 
 import { BaseEntity } from '.'
 
 @Entity()
+@Unique(['userId', 'profileUrl', 'task'])
 export class IncentiveAction extends BaseEntity {
 
   @Column({ nullable: false })
