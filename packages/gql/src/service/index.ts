@@ -1,4 +1,3 @@
-export * as alchemyService from './alchemy.service'
 export * as contractData from './contractData.service'
 export * as core from './core.service'
 export * as HederaConsensusService from './hedera.service'
