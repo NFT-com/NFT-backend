@@ -736,7 +736,7 @@ const getProfileActions = async (
   })
 }
 
-const getProfilesActions = async (
+const getProfilesActionsWithPoints = async (
   _: any,
   parent: gql.User,
   args: unknown,
@@ -800,6 +800,6 @@ export default {
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),
     myApprovals: combineResolvers(auth.isAuthenticated, getMyApprovals),
-    profilesActions: getProfilesActions,
+    profilesActionsWithPoints: getProfilesActionsWithPoints,
   },
 }

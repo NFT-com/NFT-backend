@@ -1339,7 +1339,7 @@ const getProfilesMintedByGK = async (
   }
 }
 
-const getUsersActions = async (
+const getUsersActionsWithPoints = async (
   _: any,
   parent: gql.Profile,
   args: unknown,
@@ -1423,6 +1423,6 @@ export default {
       defs.EdgeType.Follows,
     ),
     winningBid: getWinningBid,
-    usersActions: getUsersActions,
+    usersActionsWithPoints: getUsersActionsWithPoints,
   },
 }

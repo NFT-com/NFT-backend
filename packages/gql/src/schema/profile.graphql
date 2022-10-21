@@ -62,7 +62,7 @@ type Profile {
   winningBid: Bid
   profileView: ProfileViewType
   visibleNFTs: Int
-  usersActions(profileUrl: String!): [UsersActionOutput]
+  usersActionsWithPoints(profileUrl: String!): [UsersActionOutput]
 }
 
 type UsersActionOutput {
