@@ -716,6 +716,7 @@ export const clearQueue = async (
 
 const getProfileActions = async (
   _: any,
+  args: any,
   ctx: Context,
 ): Promise<Array<gql.ProfileActionOutput>> => {
   const { user, repositories, wallet, chain } = ctx
@@ -737,17 +738,16 @@ const getProfileActions = async (
 }
 
 const getProfilesActionsWithPoints = async (
-  _: any,
   parent: gql.User,
-  args: unknown,
+  _: unknown,
   ctx: Context,
 ): Promise<Array<gql.UsersActionOutput>> => {
-  const { repositories, chain } = ctx
+  const { user, repositories, chain } = ctx
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   const actions =  await repositories.incentiveAction.find({
     where: {
-      userId: args?.['userId'],
+      userId: user.id,
     },
   })
   const seen = {}
@@ -759,8 +759,8 @@ const getProfilesActionsWithPoints = async (
         action: [profileActionType(action)],
         totalPoints: action.point,
       })
-    } else {
       seen[action.profileUrl] = true
+    } else {
       const index = profilesActions.findIndex((profileAction) => profileAction.url === action.profileUrl)
       if (index !== -1) {
         profilesActions[index].action.push(profileActionType(action))
@@ -800,6 +800,6 @@ export default {
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),
     myApprovals: combineResolvers(auth.isAuthenticated, getMyApprovals),
-    profilesActionsWithPoints: getProfilesActionsWithPoints,
+    profilesActionsWithPoints: combineResolvers(auth.isAuthenticated, getProfilesActionsWithPoints),
   },
 }
