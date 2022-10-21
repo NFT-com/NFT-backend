@@ -2,6 +2,7 @@ docs/*
 old-code
 gql-naming-fn.js
 cronjobs/*/dist
+dist/*
 packages/*/dist
 packages/gql/src/defs/gql.ts
 perftest/**/*.js
@@ -9,3 +10,4 @@ perftest/**/*.js
 *.config.ts
 *.test.js
 *.test.ts
+*.preset.js

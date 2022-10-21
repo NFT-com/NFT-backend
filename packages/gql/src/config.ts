@@ -44,11 +44,6 @@ export const isProduction = (): boolean => {
   return process.env.NODE_ENV === 'production'
 }
 
-export const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT) || 6379,
-}
-
 export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,

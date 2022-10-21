@@ -1,8 +1,8 @@
 import { BigNumber } from 'ethers'
 
+import { cache, CacheKeys } from '@nftcom/cache'
 import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
-import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'

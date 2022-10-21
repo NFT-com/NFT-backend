@@ -1,8 +1,8 @@
 import Joi from 'joi'
 
+import { fetchData, getSalesData } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
 import { joi } from '@nftcom/gql/helper'
-import { fetchData, getSalesData } from '@nftcom/gql/service/contractData.service'
 
 export const getNFTDetails = async (
   _: any,

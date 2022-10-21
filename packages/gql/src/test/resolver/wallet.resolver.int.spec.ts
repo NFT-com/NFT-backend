@@ -10,7 +10,8 @@ import { getTestApolloServer } from '../util/testApolloServer'
 jest.retryTimes(2)
 jest.setTimeout(300000)
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))

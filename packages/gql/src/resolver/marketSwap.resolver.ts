@@ -3,11 +3,11 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 import { FindOptionsWhere, IsNull } from 'typeorm'
 
+import { appError, marketAskError, marketBidError, marketSwapError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { appError, marketAskError, marketBidError, marketSwapError } from '../error'
 import { auth, joi, pagination } from '../helper'
 import { core } from '../service'
 

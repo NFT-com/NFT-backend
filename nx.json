@@ -1,0 +1,45 @@
+{
+  "extends": "nx/presets/npm.json",
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        "cacheableOperations": [
+          "build",
+          "clean",
+          "compile",
+          "test",
+          "build:gql:env",
+          "deploy:shared",
+          "deploy:gql",
+          "deploy:cronjobs",
+          "prebuild",
+          "copy:schema",
+          "dev",
+          "test:local",
+          "test:openhandles",
+          "gql:gen",
+          "signature:gen",
+          "gqldoc",
+          "gqldoc-old",
+          "copy:cert",
+          "typeorm:cli",
+          "typeorm:gen",
+          "typeorm:revert",
+          "typechain"
+        ]
+      }
+    }
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"]
+    }
+  },
+  "affected": {
+    "defaultBase": "main"
+  }
+}

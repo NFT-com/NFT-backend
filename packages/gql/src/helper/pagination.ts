@@ -1,8 +1,8 @@
 import * as _ from 'lodash'
 import { IsNull } from 'typeorm'
 
+import { appError } from '@nftcom/error-types'
 import { gql, Pageable } from '@nftcom/gql/defs'
-import { appError } from '@nftcom/gql/error'
 import { _logger, defs, helper } from '@nftcom/shared'
 
 type PageResolvers<T> = {

@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers'
 import Joi from 'joi'
 
-import { appError } from '@nftcom/gql/error'
+import { appError } from '@nftcom/error-types'
 import { helper } from '@nftcom/shared'
 
 export const validateSchema = (schema: Joi.ObjectSchema, input: unknown): void => {

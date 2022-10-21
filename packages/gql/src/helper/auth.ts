@@ -1,8 +1,8 @@
 import { skip } from 'graphql-resolvers'
 
+import { appError, userError, walletError } from '@nftcom/error-types'
 import { getChain, isNetworkSupported, teamPassword } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
-import { appError, userError, walletError } from '@nftcom/gql/error'
 import { defs, helper } from '@nftcom/shared'
 
 export const isAuthenticated = (_: any, args: any, ctx: Context): any => {

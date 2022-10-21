@@ -2,7 +2,7 @@ import { BigNumber, utils } from 'ethers'
 import { GraphQLScalarType, GraphQLScalarTypeConfig, Kind } from 'graphql'
 import { DateResolver, DateTimeResolver } from 'graphql-scalars'
 
-import { appError } from '@nftcom/gql/error'
+import { appError } from '@nftcom/error-types'
 import { helper } from '@nftcom/shared'
 
 const invalidAddressError = appError.buildInvalid(
