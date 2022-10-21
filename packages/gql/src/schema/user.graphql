@@ -20,7 +20,7 @@ type User {
   preferences: UserPreferences!
   referredBy: String
   referralId: String!
-  profilesActionsWithPoints(userId: String!): [ProfilesActionsOutput]
+  profilesActionsWithPoints: [ProfilesActionsOutput]
 }
 
 type ProfilesActionsOutput {

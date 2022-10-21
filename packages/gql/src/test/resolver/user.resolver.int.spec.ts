@@ -563,22 +563,22 @@ describe('user resolver', () => {
       await repositories.incentiveAction.save({
         profileUrl: 'test-profile',
         userId: testMockUser.id,
-        task: defs.ProfileTask.CREATE_NFT_PROFILE,
-        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
       })
 
       await repositories.incentiveAction.save({
         profileUrl: 'test-profile',
         userId: testMockUser.id,
-        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
-        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+        task: defs.ProfileTask.ISSUE_NFTS,
+        point: defs.ProfileTaskPoint.ISSUE_NFTS,
       })
 
       await repositories.incentiveAction.save({
         profileUrl: 'test-profile-1',
         userId: testMockUser.id,
-        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
-        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
       })
     })
 
@@ -636,10 +636,7 @@ describe('user resolver', () => {
 
     it('should return incentive profile actions with total points', async () => {
       const result = await testServer.executeOperation({
-        query: 'query Me($userId: String!) { me { profilesActionsWithPoints(userId: $userId) { url action totalPoints } } }',
-        variables: {
-          userId: testMockUser.id,
-        },
+        query: 'query Me { me { profilesActionsWithPoints { url action totalPoints } } }',
       })
       expect(result.data.me.profilesActionsWithPoints.length).toEqual(2)
       expect(result.data.me.profilesActionsWithPoints[0].totalPoints).toEqual(6)
