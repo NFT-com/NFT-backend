@@ -71,3 +71,37 @@ export const retrieveNFTDetailsNFTPort = async (
     return undefined
   }
 }
+
+export const retrieveContractNFTs = async (
+  contract: string,
+  chainId: string,
+  refreshMetadata = false,
+): Promise<any> => {
+  try {
+    logger.debug(`starting retrieveContractNFTs: ${contract} ${chainId}`)
+    const key = `NFTPORT_CONTRACT_NFTS_${chainId}_${contract}`
+    const cachedData = await cache.get(key)
+    if (cachedData)
+      return JSON.parse(cachedData)
+    const chain = chainFromId(chainId)
+    if (!chain) return
+    const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
+    const url = `/nfts/${contract}`
+    const res = await nftInterceptor.get(url, {
+      params: {
+        chain: chain,
+        refresh_metadata: refreshMetadata || undefined,
+      },
+    })
+    if (res && res?.data) {
+      await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
+      return res.data
+    } else {
+      return undefined
+    }
+  } catch (err) {
+    logger.error(`Error in retrieveContractNFTs: ${err}`)
+    Sentry.captureMessage(`Error in retrieveContractNFTs: ${err}`)
+    return undefined
+  }
+}

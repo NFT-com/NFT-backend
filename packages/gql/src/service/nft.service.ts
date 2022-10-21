@@ -330,6 +330,36 @@ export const getContractMetaDataFromAlchemy = async (
   }
 }
 
+export const getNFTsForCollection = async (
+  contractAddress: string,
+): Promise<any> => {
+  try {
+    const key = `getNFTsForCollection${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
+    const cachedContractMetadata: string = await cache.get(key)
+
+    const nfts = []
+    if (cachedContractMetadata) {
+      return JSON.parse(cachedContractMetadata)
+    } else {
+      const baseUrl = `${alchemyUrl}/getNFTsForCollection/?contractAddress=${contractAddress}&withMetadata=true`
+      const response = await axios.get(baseUrl)
+
+      if (response && response?.data) {
+        if (response?.data?.nfts && response?.data?.nfts?.length) {
+          nfts.push(...response.data.nfts)
+          await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 10) // 10 minutes
+          return nfts
+        } else {
+          return undefined
+        }
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getNFTsForCollection: ${err}`)
+    return undefined
+  }
+}
+
 export const getCollectionNameFromContract = (
   contractAddress: string,
   chainId: string,

@@ -28,10 +28,10 @@ export class NFT extends BaseEntity {
   @Column({ type: 'enum', enum: NFTType, nullable: false })
   type: NFTType
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   userId: string
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   walletId: string
 
   @Column({ nullable: true })

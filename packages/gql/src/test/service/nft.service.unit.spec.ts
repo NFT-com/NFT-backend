@@ -877,4 +877,60 @@ describe('nft resolver', () => {
       }
     })
   })
+
+  describe('getNFTsForCollection', () => {
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should get NFTs for cryptokitty', async () => {
+      nftService.initiateWeb3('1')
+      const nfts = await nftService.getNFTsForCollection('0x06012c8cf97BEaD5deAe237070F9587f8E7A266d')
+      expect(nfts).toBeDefined()
+      expect(nfts.length).toBeGreaterThan(0)
+      for (const nft of nfts) {
+        expect(nft.id.tokenId).toBeDefined()
+      }
+    })
+
+    it('should get NFTs for cryptopunks', async () => {
+      nftService.initiateWeb3('1')
+      const nfts = await nftService.getNFTsForCollection('0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB')
+      expect(nfts).toBeDefined()
+      expect(nfts.length).toBeGreaterThan(0)
+      for (const nft of nfts) {
+        expect(nft.id.tokenId).toBeDefined()
+      }
+    })
+
+    it('should get NFTs for mooncat', async () => {
+      nftService.initiateWeb3('1')
+      const nfts = await nftService.getNFTsForCollection('0xc3f733ca98E0daD0386979Eb96fb1722A1A05E69')
+      expect(nfts).toBeDefined()
+      expect(nfts.length).toBeGreaterThan(0)
+      for (const nft of nfts) {
+        expect(nft.id.tokenId).toBeDefined()
+      }
+    })
+
+    it('should get NFTs for rare pepe', async () => {
+      nftService.initiateWeb3('1')
+      const nfts = await nftService.getNFTsForCollection('0x937a2cd137FE77dB397c51975b0CaAaa29559CF7')
+      expect(nfts).toBeDefined()
+      expect(nfts.length).toBeGreaterThan(0)
+      for (const nft of nfts) {
+        expect(nft.id.tokenId).toBeDefined()
+      }
+    })
+
+    it('should get NFTs for ether rock', async () => {
+      nftService.initiateWeb3('1')
+      const nfts = await nftService.getNFTsForCollection('0xA3F5998047579334607c47a6a2889BF87A17Fc02')
+      expect(nfts).toBeDefined()
+      expect(nfts.length).toBeGreaterThan(0)
+      for (const nft of nfts) {
+        expect(nft.id.tokenId).toBeDefined()
+      }
+    })
+  })
 })
