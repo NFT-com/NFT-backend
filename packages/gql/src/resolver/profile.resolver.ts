@@ -1366,7 +1366,7 @@ const getUsersActionsWithPoints = async (
       const index = usersActions.findIndex((userAction) => userAction.userId === action.userId)
       if (index !== -1) {
         usersActions[index].action.push(profileActionType(action))
-        usersActions[index].totalPoints = usersActions[index].totalPoints + action.point
+        usersActions[index].totalPoints += action.point
       }
     }
   }
