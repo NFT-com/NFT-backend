@@ -1,7 +1,8 @@
-import * as cacheService from '@nftcom/gql/service/cache.service'
+import * as cacheService from '@nftcom/cache'
 
 jest.mock('ioredis', () => jest.fn())
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   createCacheConnection: jest.fn(),
 }))
 
@@ -15,7 +16,7 @@ describe('cache service', () => {
     it('creates only one connection', async () => {
       const cacheSpy = jest.spyOn(cacheService as any, 'createCacheConnection')
 
-      require('@nftcom/gql/service/cache.service')
+      require('@nftcom/cache')
 
       expect(cacheSpy).not.toHaveBeenCalled()
       expect(cacheService.cache).not.toBeNull()

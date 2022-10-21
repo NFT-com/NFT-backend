@@ -1,8 +1,8 @@
 import { ethers } from 'ethers'
 
-import { getNFTPortInterceptor } from '@nftcom/gql/adapter'
+import { cache } from '@nftcom/cache'
 import { chainFromId } from '@nftcom/gql/helper/utils'
-import { cache } from '@nftcom/gql/service/cache.service'
+import { getNFTPortInterceptor } from '@nftcom/nftport-client'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 

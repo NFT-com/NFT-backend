@@ -3,6 +3,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 import { FindOptionsWhere, IsNull } from 'typeorm'
 
+import { appError, marketAskError, marketSwapError } from '@nftcom/error-types'
 import {
   blockNumberToTimestamp,
   Context,
@@ -10,7 +11,6 @@ import {
   getAssetList,
   gql,
 } from '@nftcom/gql/defs'
-import { appError, marketAskError, marketSwapError } from '@nftcom/gql/error'
 import { AskOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
   _logger,

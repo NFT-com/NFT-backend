@@ -10,6 +10,8 @@ NFT.com platform's GraphQL server and worker to sync blockchain data
 
 1. Node.js version >=16
 2. Docker
+3. Nx cli (or prepend nx commands with npx if you prefer)
+    - [Nx Notion](https://www.notion.so/immutableholdings/NX-Tools-c06f08c3a3c343eb889de4c15e69f823)
 
 ### 2. Start Docker and Install Workspaces
 

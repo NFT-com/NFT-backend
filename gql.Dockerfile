@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY .npmrc .
-COPY tsconfig.json .
+COPY tsconfig.base.json .
 COPY packages/shared/package*.json ./packages/shared/
 COPY packages/gql/package*.json ./packages/gql/
 
@@ -16,8 +16,9 @@ RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm ci \
     && apk del .gyp
 
-COPY packages/shared ./packages/shared
-COPY packages/gql ./packages/gql
+
+COPY packages ./packages/
+
 
 FROM deps as build
 
@@ -26,6 +27,7 @@ RUN npm run build
 
 WORKDIR /app/packages/gql
 RUN npm run build
+
 
 FROM node:16-alpine as release
 

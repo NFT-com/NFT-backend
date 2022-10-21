@@ -1,7 +1,7 @@
 
 import { Job } from 'bull'
 
-import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/gql/service/cache.service'
+import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/cache'
 import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
 import { _logger, db, entity } from '@nftcom/shared'
 import { helper } from '@nftcom/shared'

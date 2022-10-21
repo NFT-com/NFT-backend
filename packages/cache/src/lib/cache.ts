@@ -1,6 +1,6 @@
 import Redis from 'ioredis'
 
-import { redisConfig } from '@nftcom/gql/config'
+import { redisConfig } from './config'
 
 let redis: Redis
 const DEFAULT_TTL_MINS = Number(process.env.DEFAULT_TTL_MINS) || 15 // 15 mins
@@ -43,7 +43,7 @@ export const removeExpiredTimestampedZsetMembers = (
   return Promise.resolve(0)
 }
 
-const createCacheConnection = (): void => {
+export const createCacheConnection = (): void => {
   redis = new Redis({
     host: redisConfig.host,
     port: redisConfig.port,

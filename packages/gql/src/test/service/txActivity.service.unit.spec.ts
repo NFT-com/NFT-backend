@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm'
 
+import { cache } from '@nftcom/cache'
 import { testDBConfig } from '@nftcom/gql/config'
-import { cache } from '@nftcom/gql/service/cache.service'
 import * as testActivityService from '@nftcom/gql/service/txActivity.service'
 import { db, defs, entity } from '@nftcom/shared'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
@@ -9,7 +9,8 @@ import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftco
 import { testLooksrareExistingOrder, testLooksrareOrder,testSeaportOrder } from '../util/constants'
 
 jest.setTimeout(30000)
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     zrevrangebyscore: jest.fn().mockReturnValue(['contract:1']),
     zscore: jest.fn().mockReturnValue(0),

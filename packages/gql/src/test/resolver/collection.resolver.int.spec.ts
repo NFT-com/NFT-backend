@@ -4,7 +4,7 @@ const sharedLibs = jest.requireActual('@nftcom/shared')
 
 import { ethers } from 'ethers'
 import * as fs from 'fs'
-import { resolve } from 'path'
+import { join } from 'path'
 
 import Upload = require('graphql-upload/public/Upload.js')
 
@@ -30,7 +30,8 @@ jest.mock('@nftcom/gql/service/searchEngine.service', () => {
   }
 })
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn(),
     set: jest.fn(),
@@ -636,7 +637,7 @@ describe('collection resolver', () => {
     })
     it('should update collections as official', async () => {
       const filename = 'test_collections.csv'
-      const file = fs.createReadStream(resolve(`./src/test/resource/${filename}`))
+      const file = fs.createReadStream(join(__dirname, '..', 'resource', filename))
       // const file = Readable.from(Buffer.from('hello upload', 'utf-8'))
       const upload = new Upload()
       upload.promise = new Promise((resolve) =>
