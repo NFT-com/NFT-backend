@@ -11,8 +11,8 @@ import { auth, joi } from '@nftcom/gql/helper'
 import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
+import { profileActionType } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
@@ -728,25 +728,47 @@ const getProfileActions = async (
     },
   })
   return actions.map((action) => {
-    let task
-    if (action.task === ProfileTask.CREATE_NFT_PROFILE)
-      task = gql.ProfileActionType.CreateNFTProfile
-    else if (action.task === ProfileTask.CUSTOMIZE_PROFILE)
-      task = gql.ProfileActionType.CustomizeProfile
-    else if (action.task === ProfileTask.REFER_NETWORK)
-      task = gql.ProfileActionType.ReferNetwork
-    else if (action.task === ProfileTask.BUY_NFTS)
-      task = gql.ProfileActionType.BuyNFTs
-    else if (action.task === ProfileTask.LIST_NFTS)
-      task = gql.ProfileActionType.ListNFTs
-    else if (action.task === ProfileTask.ISSUE_NFTS)
-      task = gql.ProfileActionType.IssueNFTs
     return {
       profileUrl: action.profileUrl,
-      action: task,
+      action: profileActionType(action),
       point: action.point,
     }
   })
+}
+
+const getProfilesActions = async (
+  _: any,
+  parent: gql.User,
+  args: unknown,
+  ctx: Context,
+): Promise<Array<gql.UsersActionOutput>> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  const actions =  await repositories.incentiveAction.find({
+    where: {
+      userId: args?.['userId'],
+    },
+  })
+  const seen = {}
+  const profilesActions: gql.ProfilesActionsOutput[] = []
+  for (const action of actions) {
+    if (!seen[action.profileUrl]) {
+      profilesActions.push({
+        url: action.profileUrl,
+        action: [profileActionType(action)],
+        totalPoints: action.point,
+      })
+    } else {
+      seen[action.profileUrl] = true
+      const index = profilesActions.findIndex((profileAction) => profileAction.url === action.profileUrl)
+      if (index !== -1) {
+        profilesActions[index].action.push(profileActionType(action))
+        profilesActions[index].totalPoints = profilesActions[index].totalPoints + action.point
+      }
+    }
+  }
+  return profilesActions
 }
 
 export default {
@@ -778,5 +800,6 @@ export default {
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),
     myApprovals: combineResolvers(auth.isAuthenticated, getMyApprovals),
+    profilesActions: getProfilesActions,
   },
 }

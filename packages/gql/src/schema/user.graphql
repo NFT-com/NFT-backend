@@ -20,6 +20,13 @@ type User {
   preferences: UserPreferences!
   referredBy: String
   referralId: String!
+  profilesActions(userId: String!): [ProfilesActionsOutput]
+}
+
+type ProfilesActionsOutput {
+  url: String
+  action: [ProfileActionType]
+  totalPoints: Int
 }
 
 type Event {
