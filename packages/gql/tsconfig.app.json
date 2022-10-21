@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "module": "commonjs",
+    "composite": true,
     "types":  ["node", "express"]
   },
   "exclude": ["jest.config.ts", "**/*.spec.ts", "**/*.test.ts", "src/test/*"],
