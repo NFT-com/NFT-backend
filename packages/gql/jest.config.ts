@@ -5,12 +5,16 @@ export default {
   globals: {
     'ts-jest': {
       tsconfig: '<rootDir>/tsconfig.spec.json',
-      isolatedModules: true
     },
   },
   testEnvironment: 'node',
   transform: {
-    '^.+\\.[tj]s$': 'ts-jest',
+    '^.+\\.[tj]s$': [
+      'ts-jest',
+      {
+        isolatedModules: true,
+      },
+    ]
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   coverageDirectory: '../../coverage/packages/gql',
