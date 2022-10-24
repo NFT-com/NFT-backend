@@ -16,7 +16,7 @@
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "declaration": true,
+    "declaration": false,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
