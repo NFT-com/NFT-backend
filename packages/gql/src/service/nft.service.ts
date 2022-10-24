@@ -519,7 +519,7 @@ export const getNftName = (
   nftMetadata: any,
   nftPortDetails: any = undefined,
   contractMetadata: any = undefined,
-  tokenId: string,
+  tokenId: string = undefined,
 ): string => {
   return nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
 }
