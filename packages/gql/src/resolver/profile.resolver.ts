@@ -21,7 +21,7 @@ import {
   contentTypeFromExt,
   DEFAULT_NFT_IMAGE, extensionFromFilename,
   generateCompositeImage,
-  getAWSConfig,
+  getAWSConfig, profileActionType,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
@@ -1339,6 +1339,40 @@ const getProfilesMintedByGK = async (
   }
 }
 
+const getUsersActionsWithPoints = async (
+  parent: gql.Profile,
+  _: unknown,
+  ctx: Context,
+): Promise<Array<gql.UsersActionOutput>> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  const actions =  await repositories.incentiveAction.find({
+    where: {
+      profileUrl: parent.url,
+    },
+  })
+  const seen = {}
+  const usersActions: gql.UsersActionOutput[] = []
+  for (const action of actions) {
+    if (!seen[action.userId]) {
+      usersActions.push({
+        userId: action.userId,
+        action: [profileActionType(action)],
+        totalPoints: action.point,
+      })
+      seen[action.userId] = true
+    } else {
+      const index = usersActions.findIndex((userAction) => userAction.userId === action.userId)
+      if (index !== -1) {
+        usersActions[index].action.push(profileActionType(action))
+        usersActions[index].totalPoints += action.point
+      }
+    }
+  }
+  return usersActions
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1388,5 +1422,6 @@ export default {
       defs.EdgeType.Follows,
     ),
     winningBid: getWinningBid,
+    usersActionsWithPoints: getUsersActionsWithPoints,
   },
 }

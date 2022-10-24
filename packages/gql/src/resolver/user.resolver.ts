@@ -11,6 +11,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi } from '@nftcom/gql/helper'
 import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
+import { profileActionType } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -713,6 +714,63 @@ export const clearQueue = async (
   }
 }
 
+const getProfileActions = async (
+  _: any,
+  args: any,
+  ctx: Context,
+): Promise<Array<gql.ProfileActionOutput>> => {
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('getProfileActions', { loggedInUserId: user.id, wallet: wallet.address })
+  const actions =  await repositories.incentiveAction.find({
+    where: {
+      userId: user.id,
+    },
+  })
+  return actions.map((action) => {
+    return {
+      profileUrl: action.profileUrl,
+      action: profileActionType(action),
+      point: action.point,
+    }
+  })
+}
+
+const getProfilesActionsWithPoints = async (
+  parent: gql.User,
+  _: unknown,
+  ctx: Context,
+): Promise<Array<gql.UsersActionOutput>> => {
+  const { user, repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  const actions =  await repositories.incentiveAction.find({
+    where: {
+      userId: user.id,
+    },
+  })
+  const seen = {}
+  const profilesActions: gql.ProfilesActionsOutput[] = []
+  for (const action of actions) {
+    if (!seen[action.profileUrl]) {
+      profilesActions.push({
+        url: action.profileUrl,
+        action: [profileActionType(action)],
+        totalPoints: action.point,
+      })
+      seen[action.profileUrl] = true
+    } else {
+      const index = profilesActions.findIndex((profileAction) => profileAction.url === action.profileUrl)
+      if (index !== -1) {
+        profilesActions[index].action.push(profileActionType(action))
+        profilesActions[index].totalPoints += action.point
+      }
+    }
+  }
+  return profilesActions
+}
+
 export default {
   Query: {
     me: combineResolvers(auth.isAuthenticated, core.resolveEntityFromContext('user')),
@@ -724,6 +782,8 @@ export default {
       combineResolvers(auth.isAuthenticated, getRemovedAssociationsForReceiver),
     getRemovedAssociationsForSender:
       combineResolvers(auth.isAuthenticated, getRemovedAssociationsForSender),
+    getProfileActions:
+    combineResolvers(auth.isAuthenticated, getProfileActions),
   },
   Mutation: {
     signUp,
@@ -740,5 +800,6 @@ export default {
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),
     myApprovals: combineResolvers(auth.isAuthenticated, getMyApprovals),
+    profilesActionsWithPoints: combineResolvers(auth.isAuthenticated, getProfilesActionsWithPoints),
   },
 }
