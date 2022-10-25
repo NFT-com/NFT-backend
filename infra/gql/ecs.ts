@@ -242,6 +242,10 @@ const createEcsTaskDefinition = (
               Value: process.env.SG_API_KEY,
             },
             {
+              Name: 'CONFIRM_EMAIL_URL',
+              Value: process.env.CONFIRM_EMAIL_URL,
+            },
+            {
               Name: 'ETH_GAS_STATION_API_KEY',
               Value: process.env.ETH_GAS_STATION_API_KEY,
             },
