@@ -363,6 +363,48 @@ const getWinningBid = (
   return repositories.bid.findTopBidByProfile(parent.id)
 }
 
+const addCustomizeIncentiveAction = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+): Promise<void> => {
+  try {
+    if (profile.ownerUserId && profile.description && profile.photoURL) {
+      // if description and photo are valid, we check about NFT visibilities
+      const edges = await repositories.edge.find({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thisEntityId: profile.id,
+          thatEntityType: defs.EntityType.NFT,
+          edgeType: defs.EdgeType.Displays,
+          hide: false,
+        },
+      })
+      if (edges.length) {
+        const existingAction = await repositories.incentiveAction.findOne({
+          where: {
+            userId: profile.ownerUserId,
+            profileUrl: profile.url,
+            task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+          },
+        })
+        if (!existingAction) {
+          await repositories.incentiveAction.save({
+            userId: profile.ownerUserId,
+            profileUrl: profile.url,
+            task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+            point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+          })
+        }
+      }
+    } else {
+      return
+    }
+  } catch (err) {
+    logger.error(`Error in addCustomizeIncentiveAction: ${err}`)
+    throw err
+  }
+}
+
 const updateProfile = (
   _: any,
   args: gql.MutationUpdateProfileArgs,
@@ -431,6 +473,13 @@ const updateProfile = (
           p.chainId,
         ).then(() => {
           return repositories.profile.save(p)
+            .then((profile: entity.Profile) => {
+              return addCustomizeIncentiveAction(repositories, profile)
+                .then(() => profile)
+                .catch((err) => {
+                  return Promise.reject(new Error(`Something went wrong to save incentive action. Error: ${err}`))
+                })
+            })
         }).catch((err) => {
           return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
         })
