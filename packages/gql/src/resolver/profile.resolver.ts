@@ -256,7 +256,7 @@ const maybeUpdateProfileOwnership = (
                       username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
                       referredBy: null,
                       avatarURL: null,
-                      confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
+                      confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
                       confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
                       referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
                     })

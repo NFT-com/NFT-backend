@@ -160,7 +160,7 @@ export const start = async (): Promise<void> => {
         username: `marketing-${email?.toLowerCase()}`,
         referredBy: null,
         avatarURL: null,
-        confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
+        confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
         confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
         referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
       })
