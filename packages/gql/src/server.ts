@@ -152,7 +152,7 @@ export const start = async (): Promise<void> => {
     })
 
     if (foundUser?.isEmailConfirmed) {
-      return res.status(400).json({ message: 'user already exists' })
+      return res.status(400).json({ message: 'User already exists' })
     } else {
       return repositories.user.save({
         ...foundUser,
@@ -177,14 +177,18 @@ export const start = async (): Promise<void> => {
       {
         email: email?.toLowerCase(),
         confirmEmailToken: token,
-        isEmailConfirmed: false,
       },
     }).then(user => {
       if (!user) {
         return res.status(400).json({
-          message: 'invalid request',
+          message: 'Invalid email token pair',
         })
       } else {
+        if (user?.isEmailConfirmed) {
+          return res.status(400).json({
+            message: 'User already verified',
+          })
+        }
         return repositories.user.save({
           ...user,
           isEmailConfirmed: true,
