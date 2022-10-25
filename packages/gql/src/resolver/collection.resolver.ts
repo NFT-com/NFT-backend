@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import * as getStream from 'get-stream'
 import { combineResolvers } from 'graphql-resolvers'
-import { FileUpload } from 'graphql-upload'
+import type { FileUpload } from 'graphql-upload/processRequest.js'
 import { IsNull } from 'typeorm'
 import { In } from 'typeorm/find-options/operator/In'
 

@@ -57,10 +57,10 @@
     "express": "^4.17.2",
     "get-stream": "^6.0.1",
     "graphql": "^16.6.0",
-    "graphql-rate-limit-directive": "2.0.0",
+    "graphql-rate-limit-directive": "^2.0.2",
     "graphql-resolvers": "^0.4.2",
     "graphql-scalars": "^1.13.1",
-    "graphql-upload": "^16.0.2",
+    "graphql-upload": "^15.0.2",
     "image-to-base64": "^2.2.0",
     "ioredis": "^5.0.6",
     "joi": "^17.4.2",
@@ -111,8 +111,13 @@
   },
   "typesVersions": {
     "*": {
-      "dist/packages/gql/src/index.d.ts": ["dist/packages/gql/src/index.d.ts"],
-      "*": ["dist/packages/gql/src/*", "dist/packages/gql/src/*/index.d.ts"]
+      "dist/packages/gql/src/index.d.ts": [
+        "dist/packages/gql/src/index.d.ts"
+      ],
+      "*": [
+        "dist/packages/gql/src/*",
+        "dist/packages/gql/src/*/index.d.ts"
+      ]
     }
   }
 }
