@@ -61,7 +61,7 @@ export const sendSuccessSubscribeEmail = (email: string): Promise<boolean> => {
       https://twitter.com/nftcomofficial
       \n\n
       Welcome to the community!
-      \n\n
+      \n
       The NFT.com Team`,
     })
       .then(() => true)
