@@ -1,4 +1,5 @@
 import { utils } from 'ethers'
+import fetch from 'isomorphic-unfetch'
 
 import { sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp, helper } from '@nftcom/shared'
@@ -119,6 +120,29 @@ export const sendWinEmail = (
       },
       templateId: templates.winbid,
     }).then(() => true)
+  }
+}
+
+export const addEmailToList = async (
+  email: string,
+  list_ids: string[] = ['0b66c181-cc06-4ebd-9d8d-6a7ec7b3d3c3'], // Hompage V2 Subscribe
+): Promise<boolean> => {
+  try {
+    await fetch('https://api.sendgrid.com/v3/marketing/contacts', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sgAPIKey}`,
+      },
+      body: JSON.stringify({
+        list_ids,
+        contacts: [{ 'email': email?.toLowerCase() }],
+      }),
+    })
+
+    return true
+  } catch (err) {
+    return false
   }
 }
 
