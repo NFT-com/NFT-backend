@@ -50,19 +50,7 @@ export const sendSuccessSubscribeEmail = (email: string): Promise<boolean> => {
       from,
       to: { email },
       subject: 'Welcome to the NFT.com community!',
-      text: `Hi,\n\nThanks for joining the NFT.com community. Our mission is to build the social NFT marketplace and we can't do that without you!
-      \n\nYou’ll be updated with the latest news and announcements from across the NFT space directly into your inbox.
-      \n\nIn the meantime, head over to NFT.com to create your NFT Profile. The profile represents you, gives you ownership over your social presence, and helps you grow your NFT collection.
-      \n\n
-      ${baseUrl}/app/claim-profiles
-      \n\n
-      Make sure to follow us on Twitter to join in the conversation around the NFT industry.
-      \n\n
-      https://twitter.com/nftcomofficial
-      \n\n
-      Welcome to the community!
-      \n
-      The NFT.com Team`,
+      text: `Hi,\n\nThanks for joining the NFT.com community. Our mission is to build the social NFT marketplace and we can't do that without you!\n\nYou’ll be updated with the latest news and announcements from across the NFT space directly into your inbox.\n\nIn the meantime, head over to NFT.com to create your NFT Profile. The profile represents you, gives you ownership over your social presence, and helps you grow your NFT collection.\n\n${baseUrl}/app/claim-profiles\n\nMake sure to follow us on Twitter to join in the conversation around the NFT industry.\n\nhttps://twitter.com/nftcomofficial\n\nWelcome to the community!\nThe NFT.com Team`,
     })
       .then(() => true)
   }
