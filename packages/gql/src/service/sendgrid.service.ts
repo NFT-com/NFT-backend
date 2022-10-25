@@ -1,5 +1,6 @@
 import { utils } from 'ethers'
 import fetch from 'isomorphic-unfetch'
+import { encode } from 'url-encode-decode'
 
 import { confirmEmailUrl, sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp, helper } from '@nftcom/shared'
@@ -29,13 +30,13 @@ const send = (
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendConfirmEmail', { user })
-    const baseUrl = confirmEmailUrl || 'https://www.nft.com'
+    const baseUrl = confirmEmailUrl
 
     return send({
       from,
       to: { email: user.email },
       subject: 'Confirm your NFT.com Subscription',
-      text: `Hi,\n\nUse the link below to confirm your email address and get started.\n\n${baseUrl}/app/confirm-email?email=${user.email}&token=${user.confirmEmailToken}\n\nIf you get stuck you can contact us at support@nft.com.com for assistance.`,
+      text: `Hi,\n\nUse the link below to confirm your email address and get started.\n\n${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}\n\nIf you get stuck you can contact us at support@nft.com.com for assistance.`,
     })
       .then(() => true)
   }

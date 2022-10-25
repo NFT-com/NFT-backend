@@ -75,6 +75,7 @@ runs:
         REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         CHAIN_ID: ${{ fromJSON(inputs.secrets).CHAIN_ID }}
         AUTH_MESSAGE: ${{ fromJSON(inputs.secrets).AUTH_MESSAGE }}
+        CONFIRM_EMAIL_URL: ${{ fromJSON(inputs.secrets).CONFIRM_EMAIL_URL }}
         SG_API_KEY: ${{ fromJSON(inputs.secrets).SG_API_KEY }}
         ETH_GAS_STATION_API_KEY: ${{ fromJSON(inputs.secrets).ETH_GAS_STATION_API_KEY }}
         TEAM_AUTH_TOKEN: ${{ fromJSON(inputs.secrets).TEAM_AUTH_TOKEN }}
