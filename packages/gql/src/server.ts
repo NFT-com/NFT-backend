@@ -194,6 +194,7 @@ export const start = async (): Promise<void> => {
           isEmailConfirmed: true,
         })
           .then(() => sendgrid.addEmailToList(email?.toLowerCase()))
+          .then(() => sendgrid.sendSuccessSubscribeEmail(email?.toLowerCase()))
           .then(() => res.status(200).json({
             message: 'successfully verified!',
           }))
