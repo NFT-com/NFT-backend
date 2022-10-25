@@ -39,6 +39,24 @@ export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   }
 }
 
+export const sendReferralEmail = async (
+  email: string,
+  referralId: string,
+): Promise<boolean> => {
+  try {
+    await send({
+      from,
+      to: { email },
+      subject: 'NFT.com signup invitation from your acquaintance!',
+      text: `Your friend invited you to sign up at NFT.com using referral code ${referralId}. \n\nPlease sign up with above code to join NFT marketplace.`,
+    })
+    return true
+  } catch (err) {
+    logger.error(`Something went wrong with sending referral email: ${err}`)
+    return false
+  }
+}
+
 export const sendReferredBy = (user: entity.User, totalReferrals: number): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendReferredBy', { user })

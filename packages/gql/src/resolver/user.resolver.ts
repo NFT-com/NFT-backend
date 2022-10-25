@@ -714,6 +714,66 @@ export const clearQueue = async (
   }
 }
 
+export const sendReferEmail = async (
+  _: any,
+  args: gql.MutationSendReferEmailArgs,
+  ctx: Context,
+): Promise<gql.SendReferEmailOutput> => {
+  try {
+    const { repositories, user, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('sendReferEmail', { input: args?.input })
+    const profileUrl = args?.input.profileUrl
+    const emails = args?.input.emails
+    const profile = await repositories.profile.findByURL(profileUrl, chainId)
+    if (!profile) {
+      return Promise.reject(new Error(`Profile Url is invalid ${profileUrl}`))
+    }
+    const profileOwner = await repositories.user.findById(profile.ownerUserId)
+    if (profileOwner.id !== user.id) {
+      return Promise.reject(new Error(`You are not owner of this profile ${profileUrl}`))
+    }
+    let sent = 0
+    await Promise.allSettled(
+      emails.map(async (email) => {
+        const existingUser = await repositories.user.findByEmail(email)
+        // if user is not created by email
+        if (!existingUser) {
+          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId)
+          if (res) {
+            sent ++
+            const existing = await repositories.incentiveAction.findOne({
+              where: {
+                userId: profileOwner.id,
+                profileUrl: profileUrl,
+                task: defs.ProfileTask.REFER_NETWORK,
+              },
+            })
+            if (!existing) {
+              await repositories.incentiveAction.save({
+                userId: profileOwner.id,
+                profileUrl: profileUrl,
+                task: defs.ProfileTask.REFER_NETWORK,
+                point: defs.ProfileTaskPoint.REFER_NETWORK,
+              })
+            }
+          } else {
+            logger.error('Something went wrong with sending referral email')
+          }
+        }
+      }),
+    )
+
+    return {
+      message: `Referral emails are sent to ${sent} people.`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in sendReferEmail: ${err}`)
+    return err
+  }
+}
+
 const getProfileActions = async (
   _: any,
   args: any,
@@ -796,6 +856,7 @@ export default {
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
     updateCache: combineResolvers(auth.isAuthenticated, updateCache),
     clearQueue: combineResolvers(auth.isAuthenticated, clearQueue),
+    sendReferEmail: combineResolvers(auth.isAuthenticated, sendReferEmail),
   },
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),
