@@ -1,4 +1,5 @@
 import { utils } from 'ethers'
+import fetch from 'isomorphic-unfetch'
 
 import { sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp, helper } from '@nftcom/shared'
@@ -28,12 +29,13 @@ const send = (
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendConfirmEmail', { user })
+    const baseUrl = '' || 'https://www.nft.com/app/confirm-email' // TODO: use CONFIRM_EMAIL_URL later
 
     return send({
       from,
       to: { email: user.email },
-      subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
-      text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
+      subject: 'Confirm your NFT.com Subscription',
+      text: `Hi,\n\nUse the link below to confirm your email address and get started.\n\n${baseUrl}?email=${user.email}&token=${user.confirmEmailToken}\n\nIf you get stuck you can contact us at support@nft.com.com for assistance.`,
     })
       .then(() => true)
   }
@@ -119,6 +121,29 @@ export const sendWinEmail = (
       },
       templateId: templates.winbid,
     }).then(() => true)
+  }
+}
+
+export const addEmailToList = async (
+  email: string,
+  list_ids: string[] = ['0b66c181-cc06-4ebd-9d8d-6a7ec7b3d3c3'], // Hompage V2 Subscribe
+): Promise<boolean> => {
+  try {
+    await fetch('https://api.sendgrid.com/v3/marketing/contacts', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sgAPIKey}`,
+      },
+      body: JSON.stringify({
+        list_ids,
+        contacts: [{ 'email': email?.toLowerCase() }],
+      }),
+    })
+
+    return true
+  } catch (err) {
+    return false
   }
 }
 
