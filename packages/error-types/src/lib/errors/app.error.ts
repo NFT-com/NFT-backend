@@ -1,4 +1,4 @@
-import { ApolloError } from 'apollo-server-express'
+import { GraphQLError } from 'graphql'
 
 import { HTTP } from './http.code'
 
@@ -8,54 +8,82 @@ enum ErrorType {
   Forbidden = 'FORBIDDEN'
 }
 
-export const buildCustom = (message: string): ApolloError =>
-  new ApolloError(
+export const buildCustom = (message: string): GraphQLError =>
+  new GraphQLError(
     message,
-    HTTP.ServerError,
-    { errorKey: ErrorType.InternalError },
+    {
+      extensions: {
+        code: HTTP.ServerError,
+        errorKey: ErrorType.InternalError,
+      },
+    },
   )
 
-export const buildInternal = (): ApolloError =>
-  new ApolloError(
+export const buildInternal = (): GraphQLError =>
+  new GraphQLError(
     'Internal server error',
-    HTTP.ServerError,
-    { errorKey: ErrorType.InternalError },
+    {
+      extensions: {
+        code: HTTP.ServerError,
+        errorKey: ErrorType.InternalError,
+      },
+    },
   )
 
-export const buildInvalidSchema = (error: Error): ApolloError =>
-  new ApolloError(
+export const buildInvalidSchema = (error: Error): GraphQLError =>
+  new GraphQLError(
     `Invalid schema provided: ${error}`,
-    HTTP.BadRequest,
-    { errorKey: ErrorType.InvalidSchema },
+    {
+      extensions: {
+        code: HTTP.BadRequest,
+        errorKey: ErrorType.InvalidSchema,
+      },
+    },
   )
 
-export const buildNotFound = (message: string, errorKey: string): ApolloError =>
-  new ApolloError(
+export const buildNotFound = (message: string, errorKey: string): GraphQLError =>
+  new GraphQLError(
     message,
-    HTTP.NotFound,
-    { errorKey },
+    {
+      extensions: {
+        code: HTTP.NotFound,
+        errorKey,
+      },
+    },
   )
 
-export const buildExists = (message: string, errorKey: string): ApolloError =>
-  new ApolloError(
+export const buildExists = (message: string, errorKey: string): GraphQLError =>
+  new GraphQLError(
     message,
-    HTTP.Conflict,
-    { errorKey },
+    {
+      extensions: {
+        code: HTTP.Conflict,
+        errorKey,
+      },
+    },
   )
 
-export const buildInvalid = (message: string, errorKey: string): ApolloError =>
-  new ApolloError(
+export const buildInvalid = (message: string, errorKey: string): GraphQLError =>
+  new GraphQLError(
     message,
-    HTTP.BadRequest,
-    { errorKey },
+    {
+      extensions: {
+        code: HTTP.BadRequest,
+        errorKey,
+      },
+    },
   )
 
 export const buildForbidden = (
   message: string,
   errorKey: string = ErrorType.Forbidden,
-): ApolloError =>
-  new ApolloError(
+): GraphQLError =>
+  new GraphQLError(
     message,
-    HTTP.Forbidden,
-    { errorKey },
+    {
+      extensions: {
+        code: HTTP.Forbidden,
+        errorKey,
+      },
+    },
   )
