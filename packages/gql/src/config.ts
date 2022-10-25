@@ -24,7 +24,7 @@ export const serverPort = parseInt(process.env.PORT) || 8080
 export const nodeEnv = process.env.NODE_ENV
 export const authMessage = lookupEnvKeyOrThrow('AUTH_MESSAGE')
 export const sgAPIKey = lookupEnvKeyOrThrow('SG_API_KEY')
-// export const confirmEmailURL = lookupEnvKeyOrThrow('CONFIRM_EMAIL_URL')
+export const confirmEmailUrl = lookupEnvKeyOrThrow('CONFIRM_EMAIL_URL')
 export const teamPassword = lookupEnvKeyOrThrow('TEAM_AUTH_TOKEN')
 
 export const serverConfigVar = (): any => {

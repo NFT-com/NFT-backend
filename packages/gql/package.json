@@ -63,6 +63,7 @@
     "graphql-upload": "^15.0.2",
     "image-to-base64": "^2.2.0",
     "ioredis": "^5.0.6",
+    "isomorphic-unfetch": "^3.1.0",
     "joi": "^17.4.2",
     "keyv": "^4.3.0",
     "kill-port": "^1.6.1",
@@ -73,7 +74,8 @@
     "source-map-support": "^0.5.21",
     "typeorm": "^0.3.10",
     "typesense": "^1.2.1",
-    "web3": "^1.7.3"
+    "web3": "^1.7.3",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^2.2.1",
@@ -100,23 +102,12 @@
     "typescript": "^4.4.4"
   },
   "exports": {
-    ".": {
-      "require": "./dist/packages/gql/src/index.js",
-      "import": "./dist/packages/gql/src/index.mjs"
-    },
-    "./*": {
-      "require": "./dist/packages/gql/src/*.js",
-      "import": "./dist/packages/gql/src/*.mjs"
-    }
+    "./service": "./dist/packages/gql/src/service/index.js"
   },
   "typesVersions": {
     "*": {
-      "dist/packages/gql/src/index.d.ts": [
-        "dist/packages/gql/src/index.d.ts"
-      ],
-      "*": [
-        "dist/packages/gql/src/*",
-        "dist/packages/gql/src/*/index.d.ts"
+      "service": [
+        "dist/packages/gql/src/service/index.ts"
       ]
     }
   }
