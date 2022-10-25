@@ -29,12 +29,13 @@ const send = (
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendConfirmEmail', { user })
+    const baseUrl = '' || 'https://www.nft.com/app/confirmEmail' // TODO: use CONFIRM_EMAIL_URL later
 
     return send({
       from,
       to: { email: user.email },
-      subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
-      text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
+      subject: 'Confirm your NFT.com Subscription',
+      text: `Hi,\n\nUse the link below to confirm your email address and get started.\n\n${baseUrl}?email=${user.email}&token=${user.confirmEmailToken}\n\nIf you get stuck you can contact us at support@nft.com.com for assistance.`,
     })
       .then(() => true)
   }
