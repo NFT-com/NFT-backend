@@ -766,7 +766,7 @@ export const sendReferEmail = async (
     )
 
     return {
-      message: `Referral emails are sent to ${sent} people.`,
+      message: `Referral emails are sent to ${sent} addresses.`,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in sendReferEmail: ${err}`)

@@ -14,6 +14,8 @@ jest.mock('@nftcom/cache', () => ({
 
 jest.mock('@nftcom/gql/service/sendgrid.service', () => ({
   sendConfirmEmail: jest.fn().mockResolvedValue(true),
+  sendReferralEmail: jest.fn().mockResolvedValue(true),
+
 }))
 
 let connection
@@ -641,6 +643,60 @@ describe('user resolver', () => {
       })
       expect(result.data.me.profilesActionsWithPoints.length).toEqual(2)
       expect(result.data.me.profilesActionsWithPoints[0].totalPoints).toEqual(6)
+    })
+  })
+
+  describe('sendReferEmail', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+
+      await repositories.profile.save({
+        url: 'test-profile',
+        ownerUserId: user.id,
+        ownerWalletId: testMockWallet.id,
+        chainId: '5',
+      })
+
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should send refer emails', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation Mutation($input: SendReferEmailInput!) { sendReferEmail(input: $input) { message } }',
+        variables: {
+          input: {
+            emails: ['test@example.com', 'test1@example.com'],
+            profileUrl: 'test-profile',
+          },
+        },
+      })
+      expect(result.data.sendReferEmail.message).toBeDefined()
+      expect(result.data.sendReferEmail.message).toEqual('Referral emails are sent to 2 addresses.')
+      const incentiveAction = await repositories.incentiveAction.findOne({
+        where: {
+          profileUrl: 'test-profile',
+          task: defs.ProfileTask.REFER_NETWORK,
+        },
+      })
+      expect(incentiveAction).toBeDefined()
     })
   })
 })
