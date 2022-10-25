@@ -29,7 +29,7 @@ const send = (
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendConfirmEmail', { user })
-    const baseUrl = '' || 'https://www.nft.com/app/confirmEmail' // TODO: use CONFIRM_EMAIL_URL later
+    const baseUrl = '' || 'https://www.nft.com/app/confirm-email' // TODO: use CONFIRM_EMAIL_URL later
 
     return send({
       from,
