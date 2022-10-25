@@ -153,6 +153,28 @@ describe('profile resolver', () => {
             return null
           },
         },
+        edge: {
+          find: (filter) => {
+            if (filter?.where?.thisEntityId === testMockProfiles.id) {
+              return Promise.resolve([])
+            }
+            return []
+          },
+        },
+        incentiveAction: {
+          findOne: (filter) => {
+            if (filter?.where?.profileUrl === testMockProfiles.url) {
+              return Promise.resolve(undefined)
+            }
+            return undefined
+          },
+          save: (data) => {
+            if (data.profileUrl === testMockProfiles.url) {
+              return Promise.resolve(data)
+            }
+            return null
+          },
+        },
       },
       testMockUser,
       testMockWallet,
