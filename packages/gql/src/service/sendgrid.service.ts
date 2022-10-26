@@ -61,6 +61,7 @@ export const sendReferralEmail = async (
   referralId: string,
   profileUrl: string,
 ): Promise<boolean> => {
+  // TODO: text should be replaced with HTML template
   const text = `Hey there,\n\nYour friend ${profileUrl} has invited you to create your NFT Profile at NFT.com!` +
     '\n\nNFT.com is the social NFT marketplace. We’re bringing artists, collectors, creators and fans\n\n together, ' +
     'providing them the tools they need to buy, sell, display, and engage with NFTs.' +
