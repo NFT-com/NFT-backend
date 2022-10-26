@@ -12,10 +12,32 @@ import { auth, joi } from '@nftcom/gql/helper'
 import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { profileActionType } from '@nftcom/gql/service/core.service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
+
+const addReferNetworkAction = async (
+  userId: string,
+  profileUrl: string,
+  repositories: db.Repository,
+): Promise<void> => {
+  const existingAction = await repositories.incentiveAction.findOne({
+    where: {
+      userId,
+      profileUrl,
+      task: defs.ProfileTask.REFER_NETWORK,
+    },
+  })
+  if (!existingAction) {
+    await repositories.incentiveAction.save({
+      userId,
+      profileUrl,
+      task: defs.ProfileTask.REFER_NETWORK,
+      point: defs.ProfileTaskPoint.REFER_NETWORK,
+    })
+  }
+}
 
 const signUp = (
   _: any,
@@ -34,7 +56,7 @@ const signUp = (
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, username, avatarURL, referredBy = '', wallet } = args.input
+  const { email, username, avatarURL, referredBy = '', wallet, referredUrl } = args.input
   const { address, network, chainId } = wallet
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
@@ -86,6 +108,14 @@ const signUp = (
       }),
       sendgrid.sendConfirmEmail(user),
     ])))
+    .then((user: entity.User) => {
+      if (referredUrl && referredUrl.length && referredBy && referredUrl.length) {
+        return addReferNetworkAction(referredBy, referredUrl, repositories)
+          .then(() => user)
+      } else {
+        return user
+      }
+    })
 }
 
 const updateEmail = (
