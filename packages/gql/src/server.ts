@@ -144,17 +144,29 @@ export const start = async (): Promise<void> => {
   app.post('/subscribe/:email', validate.validate(validate.emailSchema), async function (req, res) {
     const { email } = req.params
 
-    return repositories.user.save({
-      email: email?.toLowerCase(),
-      username: `marketing-${email?.toLowerCase()}`,
-      referredBy: null,
-      avatarURL: null,
-      confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
-      confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
-      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+    const foundUser = await repositories.user.findOne({
+      where: {
+        email: email?.toLowerCase(),
+        username: `marketing-${email?.toLowerCase()}`,
+      },
     })
-      .then(user => sendgrid.sendConfirmEmail(user))
-      .then(() => res.status(200).json({ message: 'success' }))
+
+    if (foundUser?.isEmailConfirmed) {
+      return res.status(400).json({ message: 'User already exists' })
+    } else {
+      return repositories.user.save({
+        ...foundUser,
+        email: email?.toLowerCase(),
+        username: `marketing-${email?.toLowerCase()}`,
+        referredBy: null,
+        avatarURL: null,
+        confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
+        confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+      })
+        .then(user => sendgrid.sendConfirmEmail(user))
+        .then(() => res.status(200).json({ message: 'success' }))
+    }
   })
 
   // verify new email and add to homepage v2 sendgrid marketing list
@@ -165,19 +177,24 @@ export const start = async (): Promise<void> => {
       {
         email: email?.toLowerCase(),
         confirmEmailToken: token,
-        isEmailConfirmed: false,
       },
     }).then(user => {
       if (!user) {
         return res.status(400).json({
-          message: 'invalid request',
+          message: 'Invalid email token pair',
         })
       } else {
+        if (user?.isEmailConfirmed) {
+          return res.status(400).json({
+            message: 'User already verified',
+          })
+        }
         return repositories.user.save({
-          isEmailConfirmed: true,
           ...user,
+          isEmailConfirmed: true,
         })
           .then(() => sendgrid.addEmailToList(email?.toLowerCase()))
+          .then(() => sendgrid.sendSuccessSubscribeEmail(email?.toLowerCase()))
           .then(() => res.status(200).json({
             message: 'successfully verified!',
           }))

@@ -74,6 +74,7 @@
     "source-map-support": "^0.5.21",
     "typeorm": "^0.3.10",
     "typesense": "^1.2.1",
+    "url-encode-decode": "^1.0.0",
     "web3": "^1.7.3",
     "zod": "^3.19.1"
   },
