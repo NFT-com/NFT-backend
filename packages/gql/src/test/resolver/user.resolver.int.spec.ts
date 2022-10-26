@@ -690,13 +690,6 @@ describe('user resolver', () => {
       })
       expect(result.data.sendReferEmail.message).toBeDefined()
       expect(result.data.sendReferEmail.message).toEqual('Referral emails are sent to 2 addresses.')
-      const incentiveAction = await repositories.incentiveAction.findOne({
-        where: {
-          profileUrl: 'test-profile',
-          task: defs.ProfileTask.REFER_NETWORK,
-        },
-      })
-      expect(incentiveAction).toBeDefined()
     })
   })
 })
