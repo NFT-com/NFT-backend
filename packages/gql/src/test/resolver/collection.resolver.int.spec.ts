@@ -6,7 +6,7 @@ import { ethers } from 'ethers'
 import * as fs from 'fs'
 import { join } from 'path'
 
-import Upload = require('graphql-upload/public/Upload.js')
+import Upload = require('graphql-upload/Upload.js')
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'

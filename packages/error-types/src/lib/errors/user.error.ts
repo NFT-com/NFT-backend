@@ -1,4 +1,4 @@
-import { GraphQLError } from 'graphql'
+import { ApolloError } from 'apollo-server-express'
 
 import { HTTP } from './http.code'
 
@@ -13,15 +13,11 @@ export enum ErrorType {
   EventAction = 'EVENT_NOT_FOUND',
 }
 
-export const buildAuth = (): GraphQLError =>
-  new GraphQLError(
+export const buildAuth = (): ApolloError =>
+  new ApolloError(
     'You must be signed in',
-    {
-      extensions: {
-        code: HTTP.Unauthorized,
-        errorKey: ErrorType.AuthenticationRequired,
-      },
-    },
+    HTTP.Unauthorized,
+    { errorKey: ErrorType.AuthenticationRequired },
   )
 
 export const buildUserNotFoundMsg = (id: string): string => `User ${id} not found`

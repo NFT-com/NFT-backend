@@ -1,4 +1,4 @@
-import { GraphQLError } from 'graphql'
+import { ApolloError } from 'apollo-server-express'
 
 import { defs } from '@nftcom/shared'
 
@@ -14,25 +14,17 @@ export enum ErrorType {
 export const buildInvalidChainId = (
   network: string | null,
   chainId: string | null,
-): GraphQLError => new GraphQLError(
+): ApolloError => new ApolloError(
   `Chain id ${chainId} is not supported for network ${network}`,
-  {
-    extensions: {
-      code: HTTP.BadRequest,
-      errorKey: ErrorType.InvalidChainId,
-    },
-  },
+  HTTP.BadRequest,
+  { errorKey: ErrorType.InvalidChainId },
 )
 
-export const buildInvalidNetwork = (network: string | null): GraphQLError =>
-  new GraphQLError(
+export const buildInvalidNetwork = (network: string | null): ApolloError =>
+  new ApolloError(
     `Network ${network} is not supported`,
-    {
-      extensions: {
-        code: HTTP.BadRequest,
-        errorKey: ErrorType.InvalidNetwork,
-      },
-    },
+    HTTP.BadRequest,
+    { errorKey: ErrorType.InvalidNetwork },
   )
 
 export const buildAddressExistsMsg = (
