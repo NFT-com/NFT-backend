@@ -740,24 +740,9 @@ export const sendReferEmail = async (
         const existingUser = await repositories.user.findByEmail(email)
         // if user is not created by email
         if (!existingUser) {
-          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId)
+          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl)
           if (res) {
             sent ++
-            const existing = await repositories.incentiveAction.findOne({
-              where: {
-                userId: profileOwner.id,
-                profileUrl: profileUrl,
-                task: defs.ProfileTask.REFER_NETWORK,
-              },
-            })
-            if (!existing) {
-              await repositories.incentiveAction.save({
-                userId: profileOwner.id,
-                profileUrl: profileUrl,
-                task: defs.ProfileTask.REFER_NETWORK,
-                point: defs.ProfileTaskPoint.REFER_NETWORK,
-              })
-            }
           } else {
             logger.error('Something went wrong with sending referral email')
           }
