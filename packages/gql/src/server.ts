@@ -1,6 +1,8 @@
 import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisabled } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
 import cors from 'cors'
+import cryptoRandomString from 'crypto-random-string'
+import { addDays } from 'date-fns'
 import { utils } from 'ethers'
 import express from 'express'
 import { GraphQLError } from 'graphql'
@@ -13,6 +15,7 @@ import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
 import { cache } from '@nftcom/cache'
 import { appError, profileError } from '@nftcom/error-types'
+import { sendgrid } from '@nftcom/gql/service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
@@ -20,7 +23,7 @@ import * as Tracing from '@sentry/tracing'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { authMessage, serverPort } from './config'
 import { Context } from './defs'
-import { auth } from './helper'
+import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -133,8 +136,71 @@ export const start = async (): Promise<void> => {
       },
     },
   }))
+
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
+
+  // subscribe new email
+  app.post('/subscribe/:email', validate.validate(validate.emailSchema), async function (req, res) {
+    const { email } = req.params
+
+    const foundUser = await repositories.user.findOne({
+      where: {
+        email: email?.toLowerCase(),
+        username: `marketing-${email?.toLowerCase()}`,
+      },
+    })
+
+    if (foundUser?.isEmailConfirmed) {
+      return res.status(400).json({ message: 'User already exists' })
+    } else {
+      return repositories.user.save({
+        ...foundUser,
+        email: email?.toLowerCase(),
+        username: `marketing-${email?.toLowerCase()}`,
+        referredBy: null,
+        avatarURL: null,
+        confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
+        confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+      })
+        .then(user => sendgrid.sendConfirmEmail(user))
+        .then(() => res.status(200).json({ message: 'success' }))
+    }
+  })
+
+  // verify new email and add to homepage v2 sendgrid marketing list
+  app.get('/verify/:email/:token', validate.validate(validate.verifySchema), async function (req, res) {
+    const { email, token } = req.params
+    
+    return repositories.user.findOne({ where:
+      {
+        email: email?.toLowerCase(),
+        confirmEmailToken: token,
+      },
+    }).then(user => {
+      if (!user) {
+        return res.status(400).json({
+          message: 'Invalid email token pair',
+        })
+      } else {
+        if (user?.isEmailConfirmed) {
+          return res.status(400).json({
+            message: 'User already verified',
+          })
+        }
+        return repositories.user.save({
+          ...user,
+          isEmailConfirmed: true,
+        })
+          .then(() => sendgrid.addEmailToList(email?.toLowerCase()))
+          .then(() => sendgrid.sendSuccessSubscribeEmail(email?.toLowerCase()))
+          .then(() => res.status(200).json({
+            message: 'successfully verified!',
+          }))
+      }
+    })
+  })
 
   app.get('/uri/:username', async function (req, res) {
     const { username } = req.params

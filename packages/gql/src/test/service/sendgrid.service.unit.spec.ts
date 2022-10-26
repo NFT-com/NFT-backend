@@ -50,7 +50,7 @@ describe('sendgrid service', () => {
       expect(sendgrid.send).toBeCalled()
     })
 
-    it('sends reffered by email', async () => {
+    it('sends referred by email', async () => {
       (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
         .mockResolvedValueOnce(mailerFailureResponse)
       const testUser: Partial<entity.User> = {

@@ -62,7 +62,7 @@ const signUp = (
         .then((user) => user?.id)
     }))
     .then((referredUserId: string) => {
-      const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+      const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
       const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
 
@@ -103,7 +103,7 @@ const updateEmail = (
 
   const { email } = args.input
 
-  const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+  const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
   const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
   return repositories.user.save({
     ...user,
@@ -209,7 +209,7 @@ const resendEmailConfirm = (
 ): Promise<entity.User> => {
   const { user, repositories } = ctx
   logger.debug('resendEmailConfirm', { loggedInUserId: user.id })
-  const confirmEmailToken = cryptoRandomString({ length: 6, type: 'numeric' })
+  const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
   const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
   return repositories.user.save({
     ...user,
