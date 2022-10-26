@@ -109,7 +109,7 @@ const signUp = (
       sendgrid.sendConfirmEmail(user),
     ])))
     .then((user: entity.User) => {
-      if (referredUrl && referredUrl.length && referredBy && referredUrl.length) {
+      if (referredBy && referredBy.length && referredUrl && referredUrl.length) {
         return addReferNetworkAction(referredBy, referredUrl, repositories)
           .then(() => user)
       } else {
