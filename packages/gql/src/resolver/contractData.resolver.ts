@@ -1,8 +1,9 @@
 import Joi from 'joi'
 
-import { fetchData, getSalesData } from '@nftcom/contract-data'
+import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
 import { joi } from '@nftcom/gql/helper'
+import { fetchData } from '@nftcom/nftport-client'
 
 export const getNFTDetails = async (
   _: any,
@@ -94,7 +95,7 @@ export const getSales = async (_: any, args: gql.QueryGetSalesArgs, _ctx: any): 
   joi.validateSchema(schema, args.input)
   const { contractAddress, dateRange, tokenId } = args.input
   
-  return await getSalesData(contractAddress, dateRange, tokenId)
+  return await getContractSales(contractAddress, dateRange, tokenId)
 }
 
 export default {

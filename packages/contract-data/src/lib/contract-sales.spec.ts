@@ -5,7 +5,7 @@ import Sinon from 'sinon'
 
 import { db, provider } from '@nftcom/shared'
 
-import { getSalesData } from './contract-data'
+import { getContractSales } from './contract-sales'
 jest.setTimeout(20000)
 
 jest.mock('axios')
@@ -50,7 +50,7 @@ describe('contractData', () => {
     })
     
     it('should exist', () => {
-      expect(typeof getSalesData).toBe('function')
+      expect(typeof getContractSales).toBe('function')
     })
     it('should return sales by contract address', async () => {
       const transactions = [{
@@ -110,7 +110,7 @@ describe('contractData', () => {
         .mockResolvedValueOnce(Promise.resolve({ data: transactions[0] }))
         .mockResolvedValueOnce(Promise.resolve({ data: transactions[1] }))
 
-      const salesData =  await getSalesData('0x60e4d786628fea6478f785a6d7e704777c86a7c6')
+      const salesData =  await getContractSales('0x60e4d786628fea6478f785a6d7e704777c86a7c6')
 
       const tx1 = transactions[0].transactions[0]
       const tx2 = transactions[1].transactions[0]

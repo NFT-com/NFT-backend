@@ -109,7 +109,7 @@ const determineOldestTransactionDateForCollectionUpdate =
   return yesterday
 }
 
-export const getSalesData = async (
+export const getContractSales = async (
   contractAddress: string,
   dateRange = 'all',
   tokenId: string = undefined,
