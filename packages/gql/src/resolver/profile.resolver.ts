@@ -10,18 +10,18 @@ import { IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
+import { cache, CacheKeys } from '@nftcom/cache'
+import { appError, mintError, nftError,profileError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, mintError, nftError,profileError } from '@nftcom/gql/error'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
-import { cache, CacheKeys } from '@nftcom/gql/service/cache.service'
 import {
   contentTypeFromExt,
   DEFAULT_NFT_IMAGE, extensionFromFilename,
   generateCompositeImage,
-  getAWSConfig,
+  getAWSConfig, profileActionType,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
@@ -256,7 +256,7 @@ const maybeUpdateProfileOwnership = (
                       username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
                       referredBy: null,
                       avatarURL: null,
-                      confirmEmailToken: cryptoRandomString({ length: 6, type: 'numeric' }),
+                      confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
                       confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
                       referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
                     })
@@ -1339,6 +1339,40 @@ const getProfilesMintedByGK = async (
   }
 }
 
+const getUsersActionsWithPoints = async (
+  parent: gql.Profile,
+  _: unknown,
+  ctx: Context,
+): Promise<Array<gql.UsersActionOutput>> => {
+  const { repositories, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  const actions =  await repositories.incentiveAction.find({
+    where: {
+      profileUrl: parent.url,
+    },
+  })
+  const seen = {}
+  const usersActions: gql.UsersActionOutput[] = []
+  for (const action of actions) {
+    if (!seen[action.userId]) {
+      usersActions.push({
+        userId: action.userId,
+        action: [profileActionType(action)],
+        totalPoints: action.point,
+      })
+      seen[action.userId] = true
+    } else {
+      const index = usersActions.findIndex((userAction) => userAction.userId === action.userId)
+      if (index !== -1) {
+        usersActions[index].action.push(profileActionType(action))
+        usersActions[index].totalPoints += action.point
+      }
+    }
+  }
+  return usersActions
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1388,5 +1422,6 @@ export default {
       defs.EdgeType.Follows,
     ),
     winningBid: getWinningBid,
+    usersActionsWithPoints: getUsersActionsWithPoints,
   },
 }

@@ -1,11 +1,13 @@
 import { testDBConfig } from '@nftcom/gql/config'
+import { defs } from '@nftcom/shared'
 import { db } from '@nftcom/shared/db'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: jest.fn(),
   createCacheConnection: jest.fn(),
 }))
@@ -544,6 +546,101 @@ describe('user resolver', () => {
       })
       expect(result.data.getRemovedAssociationsForSender.length).toBeGreaterThan(0)
       expect(result.data.getRemovedAssociationsForSender[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+    })
+  })
+
+  describe('getProfileActions', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.ISSUE_NFTS,
+        point: defs.ProfileTaskPoint.ISSUE_NFTS,
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile-1',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return incentive actions for user', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query GetProfileActions { getProfileActions { profileUrl action point } }',
+      })
+      expect(result.data.getProfileActions.length).toEqual(3)
+    })
+  })
+
+  describe('profilesActionsWithPoints', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile-1',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return incentive profile actions with total points', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query Me { me { profilesActionsWithPoints { url action totalPoints } } }',
+      })
+      expect(result.data.me.profilesActionsWithPoints.length).toEqual(2)
+      expect(result.data.me.profilesActionsWithPoints[0].totalPoints).toEqual(6)
     })
   })
 })

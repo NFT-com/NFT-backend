@@ -5,7 +5,8 @@ import {
 
 jest.setTimeout(150000)
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn(),
     set: jest.fn(),

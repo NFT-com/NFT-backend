@@ -62,6 +62,13 @@ type Profile {
   winningBid: Bid
   profileView: ProfileViewType
   visibleNFTs: Int
+  usersActionsWithPoints: [UsersActionOutput]
+}
+
+type UsersActionOutput {
+  userId: String
+  action: [ProfileActionType]
+  totalPoints: Int
 }
 
 type LeaderboardProfile {

@@ -1,16 +1,16 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "declaration": true
   },
+  "files": [],
+  "include": [],
   "references": [
     {
-      "path": "../shared"
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
     }
-  ],
-  "include": [
-    "src/**/*.ts",
   ]
 }

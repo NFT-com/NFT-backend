@@ -120,6 +120,7 @@ export type Repository = {
   txOrder: repo.TxOrderRepository
   txTransaction: repo.TxTransactionRepository
   wallet: repo.WalletRepository
+  incentiveAction: repo.IncentiveActionRepository
 }
 
 export const newRepositories = (): Repository => ({
@@ -141,4 +142,5 @@ export const newRepositories = (): Repository => ({
   txOrder: new repo.TxOrderRepository(),
   txTransaction: new repo.TxTransactionRepository(),
   wallet: new repo.WalletRepository(),
+  incentiveAction: new repo.IncentiveActionRepository(),
 })

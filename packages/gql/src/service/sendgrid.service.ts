@@ -1,6 +1,8 @@
 import { utils } from 'ethers'
+import fetch from 'isomorphic-unfetch'
+import { encode } from 'url-encode-decode'
 
-import { sgAPIKey } from '@nftcom/gql/config'
+import { confirmEmailUrl, sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp, helper } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
 
@@ -28,12 +30,27 @@ const send = (
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendConfirmEmail', { user })
+    const baseUrl = confirmEmailUrl
 
     return send({
       from,
       to: { email: user.email },
-      subject: `Your NFT.com email confirm code is ${user.confirmEmailToken}`,
-      text: `Your NFT.com email confirm code is ${user.confirmEmailToken}. \n\n[${new Date().toUTCString()}] \n\nThis code expires in 24 hours.`,
+      subject: 'Confirm your email for NFT.com',
+      text: `Hi,\n\nPlease click this link in order to confirm your email sign up with NFT.com. Once confirmed, you’ll receive the latest news and updates in the NFT space.\n\n${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}\n\nThanks,\nThe NFT.com Team`,
+    })
+      .then(() => true)
+  }
+}
+
+export const sendSuccessSubscribeEmail = (email: string): Promise<boolean> => {
+  if (email) {
+    const baseUrl = confirmEmailUrl
+
+    return send({
+      from,
+      to: { email },
+      subject: 'Welcome to the NFT.com community!',
+      text: `Hi,\n\nThanks for joining the NFT.com community. Our mission is to build the social NFT marketplace and we can't do that without you!\n\nYou’ll be updated with the latest news and announcements from across the NFT space directly into your inbox.\n\nIn the meantime, head over to NFT.com to create your NFT Profile. The profile represents you, gives you ownership over your social presence, and helps you grow your NFT collection.\n\n${baseUrl}/app/claim-profiles\n\nMake sure to follow us on Twitter to join in the conversation around the NFT industry.\n\nhttps://twitter.com/nftcomofficial\n\nWelcome to the community!\nThe NFT.com Team`,
     })
       .then(() => true)
   }
@@ -119,6 +136,29 @@ export const sendWinEmail = (
       },
       templateId: templates.winbid,
     }).then(() => true)
+  }
+}
+
+export const addEmailToList = async (
+  email: string,
+  list_ids: string[] = ['0b66c181-cc06-4ebd-9d8d-6a7ec7b3d3c3'], // Hompage V2 Subscribe
+): Promise<boolean> => {
+  try {
+    await fetch('https://api.sendgrid.com/v3/marketing/contacts', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sgAPIKey}`,
+      },
+      body: JSON.stringify({
+        list_ids,
+        contacts: [{ 'email': email?.toLowerCase() }],
+      }),
+    })
+
+    return true
+  } catch (err) {
+    return false
   }
 }
 

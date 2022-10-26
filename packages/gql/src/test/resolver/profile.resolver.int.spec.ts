@@ -13,7 +13,8 @@ import { getTestApolloServer } from '../util/testApolloServer'
 jest.setTimeout(300000)
 jest.retryTimes(2)
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   cache: {
     get: jest.fn(),
     set: jest.fn(),
@@ -782,6 +783,77 @@ describe('profile resolver', () => {
       for (const event of events) {
         expect(event.tokenId).not.toBeNull()
       }
+    })
+  })
+
+  describe('usersActionsWithPoints', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+
+      walletA = await repositories.wallet.save({
+        userId: testMockUser.id,
+        chainId: '5',
+        chainName: 'goerli',
+        network: 'ethereum',
+        address: '0x59495589849423692778a8c5aaCA62CA80f875a4',
+      })
+
+      await repositories.profile.save({
+        url: 'gk',
+        ownerUserId: testMockUser.id,
+        ownerWalletId: walletA.id,
+        tokenId: '4',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'gk',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'gk',
+        userId: testMockUser.id,
+        task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+        point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+      })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'gk',
+        userId: 'test-user-id-1',
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return incentive users actions with total points', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query Profile($url: String!, $chainId: String) { profile(url: $url, chainId: $chainId) { usersActionsWithPoints { userId action totalPoints } } }',
+        variables: {
+          url: 'gk',
+        },
+      })
+      expect(result.data.profile.usersActionsWithPoints.length).toEqual(2)
+      expect(result.data.profile.usersActionsWithPoints[0].totalPoints).toEqual(6)
+      expect(result.data.profile.usersActionsWithPoints[1].totalPoints).toEqual(5)
     })
   })
 })

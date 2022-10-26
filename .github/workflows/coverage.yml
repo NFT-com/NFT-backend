@@ -32,6 +32,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         ref: ${{ github.event.pull_request.head.ref }}
+        fetch-depth: 0
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
@@ -46,7 +47,7 @@ jobs:
         envkey_DB_PORT: '5432'
         envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
         envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
-        envkey_CONFIRM_EMAIL_URL: "tbd"
+        envkey_CONFIRM_EMAIL_URL: ${{ secrets.CONFIRM_EMAIL_URL }}
         envkey_ASSET_BUCKET: ${{ secrets.ASSET_BUCKET }}
         envkey_ASSET_BUCKET_ROLE: ${{ secrets.ASSET_BUCKET_ROLE }}
         envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
@@ -121,11 +122,15 @@ jobs:
       run: npm list
 
     - run: npm i
-    - run: cd packages/gql && npm i
-    - run: cd packages/shared && npm i
-    - run: cd packages/shared && npm run compile
     - run: cd packages/gql && npm run gql:gen
-    - run: cd packages/gql && npm run test -- --coverage --runInBand --forceExit
+    - name: cache nx
+      uses: actions/cache@v3
+      with:
+        path: node_modules/.cache/nx
+        key: cache-nx-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+        restore-keys: |
+            cache-nx-${{ hashFiles('package-lock.json') }}-
+    - run: npx nx affected --base=origin/main --target=test --ci --runInBand --coverage --forceExit
       env:
         DISABLE_LOGGER: true
         DISABLE_WEBSOCKET: true
@@ -133,3 +138,4 @@ jobs:
       uses: codecov/codecov-action@v3.1.0
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./coverage

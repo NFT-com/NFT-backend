@@ -8,13 +8,14 @@ import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
+import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import { appError, profileError, walletError } from '@nftcom/gql/error'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -1129,4 +1130,21 @@ export const generateSVGFromBase64String = (
   xmlns="http://www.w3.org/2000/svg">
   <image xmlns="http://www.w3.org/2000/svg" href="${base64String}" width="600" height="600"/>
 </svg>`
+}
+
+export const profileActionType = (
+  action: entity.IncentiveAction,
+): gql.ProfileActionType => {
+  if (action.task === ProfileTask.CREATE_NFT_PROFILE)
+    return gql.ProfileActionType.CreateNFTProfile
+  else if (action.task === ProfileTask.CUSTOMIZE_PROFILE)
+    return gql.ProfileActionType.CustomizeProfile
+  else if (action.task === ProfileTask.REFER_NETWORK)
+    return gql.ProfileActionType.ReferNetwork
+  else if (action.task === ProfileTask.BUY_NFTS)
+    return gql.ProfileActionType.BuyNFTs
+  else if (action.task === ProfileTask.LIST_NFTS)
+    return gql.ProfileActionType.ListNFTs
+  else if (action.task === ProfileTask.ISSUE_NFTS)
+    return gql.ProfileActionType.IssueNFTs
 }
