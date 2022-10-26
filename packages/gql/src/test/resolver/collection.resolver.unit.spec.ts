@@ -3,7 +3,7 @@ import { default as collectionResolver } from '@nftcom/gql/resolver/collection.r
 import { Repository } from '@nftcom/shared/db/db'
 import { NFTRepository } from '@nftcom/shared/db/repository'
 
-jest.mock('@nftcom/gql/service/cache.service', () => ({
+jest.mock('@nftcom/cache', () => ({
   createCacheConnection: jest.fn(),
 }))
 
