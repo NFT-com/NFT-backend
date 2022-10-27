@@ -10,7 +10,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('salesProcessor-eventRule')
   return new aws.cloudwatch.EventRule('salesProcessor-eventRule', {
     name: resourceName,
-    scheduleExpression: isProduction() ? 'cron(00 04 * * ? *)' : 'cron(00 04 1 * ? *)',  // if prod, run daily at 04:00 UTC, otherwise 1x monthly
+    scheduleExpression: isProduction() ? 'cron(00 05 * * ? *)' : 'cron(00 05 1 * ? *)',  // if prod, run daily at 05:00 UTC, otherwise 1x monthly
     tags: getTags(tags),
   })
 }
