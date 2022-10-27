@@ -94,11 +94,13 @@ const getLooksRareInterceptor = (
  * @param listingQueryParams
  * @param chainId
  * @param batchSize
+ * @param createdInternally
  */
 const retrieveLooksRareOrdersInBatches = async (
   listingQueryParams: string[],
   chainId: string,
   batchSize: number,
+  createdInternally: boolean,
 ): Promise<LooksrareExternalOrder> => {
   const listings: any[] = []
   const offers: any[] = []
@@ -117,7 +119,7 @@ const retrieveLooksRareOrdersInBatches = async (
     const response: AxiosResponse = await listingInterceptorLooksrare(
       `/orders?${queryUrl}`,
     )
-    
+
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
@@ -129,6 +131,7 @@ const retrieveLooksRareOrdersInBatches = async (
             orders[0],
             chainId,
             orders[0]?.collectionAddress,
+            createdInternally,
           ),
         )
       }
@@ -140,6 +143,7 @@ const retrieveLooksRareOrdersInBatches = async (
             orders?.[0],
             chainId,
             orders[0]?.collectionAddress,
+            createdInternally,
           ),
         )
       }
@@ -162,11 +166,13 @@ const retrieveLooksRareOrdersInBatches = async (
  * @param looksrareMultiOrderRequest
  * @param chainId
  * @param includeOffers
+ * @param createdInternally
  */
 export const retrieveMultipleOrdersLooksrare = async (
   looksrareMultiOrderRequest: Array<LooksRareOrderRequest>,
   chainId: string,
   includeOffers: boolean,
+  createdInternally: boolean,
 ): Promise<LooksrareExternalOrder> => {
   let responseAggregator: LooksrareExternalOrder = {
     listings: [],
@@ -187,6 +193,7 @@ export const retrieveMultipleOrdersLooksrare = async (
           orderQueries,
           chainId,
           LOOKSRARE_LISTING_BATCH_SIZE,
+          createdInternally,
         )
       }
     }
@@ -200,11 +207,13 @@ export const retrieveMultipleOrdersLooksrare = async (
 /**
  * Returns true if the listing succeeded, false otherwise.
  * @param order  stringified JSON matching the LooksRareOrder type
- * @param chainId 
+ * @param chainId
+ * @param createdInternally
  */
 export const createLooksrareListing = async (
   order: string,
   chainId: string,
+  createdInternally: boolean,
 ): Promise<Partial<entity.TxOrder> | null | Error> => {
   let looksrareOrder: Partial<entity.TxOrder>
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
@@ -222,6 +231,7 @@ export const createLooksrareListing = async (
         res.data.data,
         chainId,
         res.data.data.collectionAddress,
+        createdInternally,
       )
       return looksrareOrder
     }

@@ -100,7 +100,7 @@ export interface SeaportOffer {
   identifierOrCriteria: string
   startAmount: string
   endAmount: string
-  
+
 }
 
 export interface SeaportConsideration extends SeaportOffer {
@@ -202,11 +202,13 @@ const getOpenseaInterceptor = (
  * @param listingQueryParams
  * @param chainId
  * @param batchSize
+ * @param createdInternally
  */
 const retrieveListingsInBatches = async (
   listingQueryParams: string[],
   chainId: string,
   batchSize: number,
+  createdInternally: boolean,
 ): Promise<any[]> => {
   const listings: any[] = []
   let batch: string[], queryUrl: string
@@ -252,6 +254,7 @@ const retrieveListingsInBatches = async (
                 seaportOrders?.[0],
                 chainId,
                 contract,
+                createdInternally,
               ),
             )
           }
@@ -265,7 +268,7 @@ const retrieveListingsInBatches = async (
       delayCounter = 0
     }
   }
-        
+
   return await Promise.all(listings)
 }
 
@@ -274,11 +277,13 @@ const retrieveListingsInBatches = async (
  * @param offerQueryParams
  * @param chainId
  * @param batchSize
+ * @param createdInternally,
  */
 const retrieveOffersInBatches = async (
   offerQueryParams: Map<string, string[]>,
   chainId: string,
   batchSize: number,
+  createdInternally: boolean,
 ): Promise<any[]> => {
   let batch: string[], queryUrl: string
   const offers: any[] = []
@@ -320,7 +325,7 @@ const retrieveOffersInBatches = async (
           const response: AxiosResponse = await offerInterceptor(
             `/orders/${chainId === '1' ? 'ethereum': chainId === '5' ? 'goerli' : 'goerli'}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
-      
+
           if (response?.data?.orders?.length) {
             seaportOffers = response?.data?.orders
             offers.push(
@@ -330,10 +335,11 @@ const retrieveOffersInBatches = async (
                 seaportOffers?.[0],
                 chainId,
                 contract,
+                createdInternally,
               ),
             )
           }
-        
+
           tokens = [...tokens.slice(size)]
           delayCounter++
           // add delay
@@ -354,11 +360,13 @@ const retrieveOffersInBatches = async (
  * @param openseaMultiOrderRequest
  * @param chainId
  * @param includeOffers
+ * @param createdInternally
  */
 export const retrieveMultipleOrdersOpensea = async (
   openseaMultiOrderRequest: Array<OpenseaOrderRequest>,
   chainId: string,
   includeOffers: boolean,
+  createdInternally: boolean,
 ): Promise<OpenseaExternalOrder> => {
   const responseAggregator: OpenseaExternalOrder = {
     listings: [],
@@ -388,12 +396,13 @@ export const retrieveMultipleOrdersOpensea = async (
         }
       }
 
-      // listings 
+      // listings
       if (listingQueryParams.length) {
         responseAggregator.listings = await retrieveListingsInBatches(
           listingQueryParams,
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
+          createdInternally,
         )
       }
 
@@ -403,6 +412,7 @@ export const retrieveMultipleOrdersOpensea = async (
           offerQueryParams,
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
+          createdInternally,
         )
       }
     }
@@ -417,12 +427,14 @@ export const retrieveMultipleOrdersOpensea = async (
  * Returns true if the listing succeeded, false otherwise.
  * @param signature  signature of the order for these parameters
  * @param parameters stringified JSON matching the 'parameters' field in the protocol data schema
- * @param chainId 
+ * @param chainId
+ * @param createdInternally boolean to check if listing is created by NFT.com
  */
 export const createSeaportListing = async (
   signature: Maybe<string>,
   parameters: Maybe<string>,
   chainId: string,
+  createdInternally: boolean,
 ): Promise<Partial<entity.TxOrder> | null| Error> => {
   let openseaOrder: Partial<entity.TxOrder>
   const baseUrlV2 = chainId === '1' ? OPENSEA_API_BASE_URL : OPENSEA_API_TESTNET_BASE_URL
@@ -448,6 +460,7 @@ export const createSeaportListing = async (
         res.data.order,
         chainId,
         contract,
+        createdInternally,
       )
       return openseaOrder
     }

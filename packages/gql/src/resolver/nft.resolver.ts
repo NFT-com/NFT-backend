@@ -1000,9 +1000,11 @@ export const listNFTSeaport = async (
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   const profileUrl = args?.input.profileUrl
+  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
+
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return createSeaportListing(seaportSignature, seaportParams, chainId)
+  return createSeaportListing(seaportSignature, seaportParams, chainId, createdInternally)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save(order)
     }))
@@ -1022,10 +1024,11 @@ export const listNFTLooksrare = async (
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
   const profileUrl = args?.input.profileUrl
+  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return createLooksrareListing(looksrareOrder, chainId)
+  return createLooksrareListing(looksrareOrder, chainId, createdInternally)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save(order)
     }))

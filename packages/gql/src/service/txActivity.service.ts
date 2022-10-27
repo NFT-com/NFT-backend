@@ -76,9 +76,11 @@ const activityBuilder = async (
 /**
  * seaportOrderBuilder
  * @param order
+ * @param createdInternally
  */
 const seaportOrderBuilder = (
   order: SeaportOrder,
+  createdInternally: boolean,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.OpenSea,
@@ -89,17 +91,19 @@ const seaportOrderBuilder = (
     protocolData: {
       ...order.protocol_data,
     },
-    createdInternally: true,
+    createdInternally,
   }
 }
 
 /**
  * looksrareOrderBuilder
  * @param order
+ * @param createdInternally
  */
 
 const looksrareOrderBuilder = (
   order: LooksRareOrder,
+  createdInternally: boolean,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
@@ -124,7 +128,7 @@ const looksrareOrderBuilder = (
       r: order.r,
       s: order.s,
     },
-    createdInternally: true,
+    createdInternally,
   }
 }
 
@@ -135,6 +139,7 @@ const looksrareOrderBuilder = (
  * @param order
  * @param chainId
  * @param contract
+ * @param createdInternally
  */
 
 export const orderEntityBuilder = async (
@@ -143,6 +148,7 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
   contract: string,
+  createdInternally,
 ):  Promise<Partial<entity.TxOrder>> => {
   let orderHash: string,
     walletAddress: string,
@@ -166,7 +172,7 @@ export const orderEntityBuilder = async (
       tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
       return `ethereum/${checksumContract}/${tokenId}`
     })
-    orderEntity = seaportOrderBuilder(seaportOrder)
+    orderEntity = seaportOrderBuilder(seaportOrder, createdInternally)
     break
   case defs.ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
@@ -176,7 +182,7 @@ export const orderEntityBuilder = async (
     timestampFromSource = Number(looksrareOrder.startTime)
     expirationFromSource =  Number(looksrareOrder.endTime)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = looksrareOrderBuilder(looksrareOrder)
+    orderEntity = looksrareOrderBuilder(looksrareOrder, createdInternally)
     break
   default:
     break
