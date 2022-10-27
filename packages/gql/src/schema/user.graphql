@@ -102,6 +102,7 @@ input SignUpInput {
   username: String
   referredBy: String
   wallet: WalletInput!
+  referredUrl: String
 }
 
 input UpdateUserInput {
@@ -165,6 +166,15 @@ type ProfileActionOutput {
   point: Int!
 }
 
+input SendReferEmailInput {
+  profileUrl: String!
+  emails: [String!]!
+}
+
+type SendReferEmailOutput {
+  message: String
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -202,4 +212,6 @@ extend type Mutation {
   updateCache(input: UpdateCacheInput!): UpdateCacheOutput!
   "AUTHENTICATED"
   clearQueue(queue: String!): ClearQueueOutput!
+  "AUTHENTICATED"
+  sendReferEmail(input: SendReferEmailInput!): SendReferEmailOutput!
 }

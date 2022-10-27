@@ -56,6 +56,35 @@ export const sendSuccessSubscribeEmail = (email: string): Promise<boolean> => {
   }
 }
 
+export const sendReferralEmail = async (
+  email: string,
+  referralId: string,
+  profileUrl: string,
+): Promise<boolean> => {
+  // TODO: text should be replaced with HTML template
+  const text = `Hey there,\n\nYour friend ${profileUrl} has invited you to create your NFT Profile at NFT.com!` +
+    '\n\nNFT.com is the social NFT marketplace. We’re bringing artists, collectors, creators and fans\n\n together, ' +
+    'providing them the tools they need to buy, sell, display, and engage with NFTs.' +
+    '\n\nYour NFT Profile is exactly that, yours. We’ve had enough of social networks that exploit their\n\n users. ' +
+    'Creating your profile enables you to establish and own your digital identity. ' +
+    'You can collect\n\n and display new NFTs or promote your latest NFT collection.' +
+    `\n\nCreate your free NFT Profile: https://nft.com/app/signup?referralCode=${referralId}&referralUrl=${profileUrl}` +
+    '\n\nYou’ll be able to customize your NFT Profile, grow your network and collect new NFTs on NFT.com' +
+    '\n\nSee you in the metaverse,\n\nNFT.com Team'
+  try {
+    await send({
+      from,
+      to: { email },
+      subject: `${profileUrl} has invited you to join them on NFT.com.`,
+      text,
+    })
+    return true
+  } catch (err) {
+    logger.error(`Something went wrong with sending referral email: ${err}`)
+    return false
+  }
+}
+
 export const sendReferredBy = (user: entity.User, totalReferrals: number): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendReferredBy', { user })
