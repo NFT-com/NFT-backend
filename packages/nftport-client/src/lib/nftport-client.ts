@@ -66,12 +66,17 @@ const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Pr
   }
 }
 
+export type FetchDataOpts = {
+  extraHeaders?: { [key:string]: string }
+  queryParams?: any
+  cacheSeconds?: number
+}
 export const fetchData = async (
   endpoint: string,
   args: string[],
-  extraHeaders = {},
-  queryParams = {} as any,
+  opts: FetchDataOpts = {},
 ): Promise<any> => {
+  const { extraHeaders = {}, queryParams = {}, cacheSeconds } = opts
   const key = getCacheKey(endpoint, args, queryParams.continuation, queryParams.page_size)
   const cachedData = await cache.get(key)
   if (cachedData) {
@@ -84,7 +89,7 @@ export const fetchData = async (
       key,
       JSON.stringify(data),
       'EX',
-      60 * 60, // 60 minutes
+      cacheSeconds || 60 * 60, // 60 minutes
     )
   } else {
     logger.error(data, `Unsuccessful response from ${url}`)

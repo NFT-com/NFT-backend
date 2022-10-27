@@ -37,4 +37,13 @@ export class Collection extends BaseEntity {
   @Column( { default: false })
   isOfficial: boolean
 
+  @Column()
+  floorPrice
+
+  @Column()
+  totalVolume
+
+  @Column()
+  averagePrice
+
 }

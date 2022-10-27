@@ -136,7 +136,7 @@ export const getContractSales = async (
   let getMoreSalesData = true
   const saleFilterCount = new Map() // count sale IDs because NFTPort data can be bad
   while (getMoreSalesData) {
-    salesData = await fetchData(endpoint, args, {}, { chain: 'ethereum', type: 'sale', continuation })
+    salesData = await fetchData(endpoint, args, { queryParams: { chain: 'ethereum', type: 'sale', continuation } })
     if (salesData.transactions && salesData.transactions.length) {
       if (
         !isBefore(

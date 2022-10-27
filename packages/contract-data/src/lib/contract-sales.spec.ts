@@ -28,8 +28,8 @@ jest.mock('@nftcom/nftport-client', () => ({
   getNFTPortInterceptor: () => mockedAxios,
 }))
 
-describe('contractData', () => {
-  describe('getSalesData', () => {
+describe('contractSales', () => {
+  describe('getContractSales', () => {
     const sandbox = Sinon.createSandbox()
 
     beforeEach(() => {
