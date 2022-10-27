@@ -148,7 +148,7 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
   contract: string,
-  createdInternally,
+  createdInternally: boolean,
 ):  Promise<Partial<entity.TxOrder>> => {
   let orderHash: string,
     walletAddress: string,

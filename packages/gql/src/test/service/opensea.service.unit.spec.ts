@@ -23,7 +23,6 @@ describe('opensea', () => {
         openseaOrderReq,
         chainId,
         true,
-        false,
       )
       expect(orders.listings).toHaveLength(0)
       expect(orders.offers).toHaveLength(0)

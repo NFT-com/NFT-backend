@@ -24,7 +24,7 @@ jest.mock('@nftcom/cache', () => ({
   removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(
     () => Promise.resolve(null),
   ),
-    
+
 }))
 
 let connection: DataSource
@@ -47,6 +47,7 @@ describe('txActivity service', () => {
         testSeaportOrder,
         '4',
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+        false,
       )
 
       expect(order.id).toBe(testSeaportOrder.order_hash)
@@ -62,6 +63,7 @@ describe('txActivity service', () => {
         testLooksrareOrder,
         '4',
         testLooksrareOrder.collectionAddress,
+        false,
       )
       expect(order.id).toBe(testLooksrareOrder.hash)
       expect(order.activity.activityType).toBe(ActivityType.Bid)
@@ -87,6 +89,7 @@ describe('txActivity service', () => {
         testLooksrareExistingOrder,
         '4',
         testLooksrareExistingOrder.collectionAddress,
+        false,
       )
 
       expect(order.activity.id).toBe(savedActivity.id)
@@ -220,7 +223,7 @@ describe('txActivity service', () => {
         walletId: 'test-wallet-id-1',
         chainId: '5',
       }
-      
+
       const nftB: Partial<entity.NFT> = {
         contract: '0x657732980685C29A51053894542D7cb97de144Fe',
         tokenId: '0x0d',
@@ -261,7 +264,7 @@ describe('txActivity service', () => {
         walletId: 'test-wallet-id-1',
         chainId: '5',
       }
-      
+
       const nftB: Partial<entity.NFT> = {
         contract: '0x657732980685C29A51053894542D7cb97de144Fd',
         tokenId: '0x0e',

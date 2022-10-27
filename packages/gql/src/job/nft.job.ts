@@ -180,8 +180,8 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       // settlements should not depend on each other
       const [opensea, looksrare] = await Promise.allSettled([
-        retrieveMultipleOrdersOpensea(nftRequest, chainId, true, false),
-        retrieveMultipleOrdersLooksrare(nftRequest,chainId, true, false),
+        retrieveMultipleOrdersOpensea(nftRequest, chainId, true),
+        retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
       ])
 
       const listings: entity.TxOrder[] = []

@@ -202,13 +202,11 @@ const getOpenseaInterceptor = (
  * @param listingQueryParams
  * @param chainId
  * @param batchSize
- * @param createdInternally
  */
 const retrieveListingsInBatches = async (
   listingQueryParams: string[],
   chainId: string,
   batchSize: number,
-  createdInternally: boolean,
 ): Promise<any[]> => {
   const listings: any[] = []
   let batch: string[], queryUrl: string
@@ -254,7 +252,7 @@ const retrieveListingsInBatches = async (
                 seaportOrders?.[0],
                 chainId,
                 contract,
-                createdInternally,
+                false,
               ),
             )
           }
@@ -283,7 +281,6 @@ const retrieveOffersInBatches = async (
   offerQueryParams: Map<string, string[]>,
   chainId: string,
   batchSize: number,
-  createdInternally: boolean,
 ): Promise<any[]> => {
   let batch: string[], queryUrl: string
   const offers: any[] = []
@@ -335,7 +332,7 @@ const retrieveOffersInBatches = async (
                 seaportOffers?.[0],
                 chainId,
                 contract,
-                createdInternally,
+                false,
               ),
             )
           }
@@ -360,13 +357,11 @@ const retrieveOffersInBatches = async (
  * @param openseaMultiOrderRequest
  * @param chainId
  * @param includeOffers
- * @param createdInternally
  */
 export const retrieveMultipleOrdersOpensea = async (
   openseaMultiOrderRequest: Array<OpenseaOrderRequest>,
   chainId: string,
   includeOffers: boolean,
-  createdInternally: boolean,
 ): Promise<OpenseaExternalOrder> => {
   const responseAggregator: OpenseaExternalOrder = {
     listings: [],
@@ -402,7 +397,6 @@ export const retrieveMultipleOrdersOpensea = async (
           listingQueryParams,
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
-          createdInternally,
         )
       }
 
@@ -412,7 +406,6 @@ export const retrieveMultipleOrdersOpensea = async (
           offerQueryParams,
           chainId,
           OPENSEA_LISTING_BATCH_SIZE,
-          createdInternally,
         )
       }
     }

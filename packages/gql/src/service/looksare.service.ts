@@ -94,13 +94,11 @@ const getLooksRareInterceptor = (
  * @param listingQueryParams
  * @param chainId
  * @param batchSize
- * @param createdInternally
  */
 const retrieveLooksRareOrdersInBatches = async (
   listingQueryParams: string[],
   chainId: string,
   batchSize: number,
-  createdInternally: boolean,
 ): Promise<LooksrareExternalOrder> => {
   const listings: any[] = []
   const offers: any[] = []
@@ -131,7 +129,7 @@ const retrieveLooksRareOrdersInBatches = async (
             orders[0],
             chainId,
             orders[0]?.collectionAddress,
-            createdInternally,
+            false,
           ),
         )
       }
@@ -143,7 +141,7 @@ const retrieveLooksRareOrdersInBatches = async (
             orders?.[0],
             chainId,
             orders[0]?.collectionAddress,
-            createdInternally,
+            false,
           ),
         )
       }
@@ -166,13 +164,11 @@ const retrieveLooksRareOrdersInBatches = async (
  * @param looksrareMultiOrderRequest
  * @param chainId
  * @param includeOffers
- * @param createdInternally
  */
 export const retrieveMultipleOrdersLooksrare = async (
   looksrareMultiOrderRequest: Array<LooksRareOrderRequest>,
   chainId: string,
   includeOffers: boolean,
-  createdInternally: boolean,
 ): Promise<LooksrareExternalOrder> => {
   let responseAggregator: LooksrareExternalOrder = {
     listings: [],
@@ -193,7 +189,6 @@ export const retrieveMultipleOrdersLooksrare = async (
           orderQueries,
           chainId,
           LOOKSRARE_LISTING_BATCH_SIZE,
-          createdInternally,
         )
       }
     }

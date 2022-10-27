@@ -20,7 +20,6 @@ describe('looksrare', () => {
         looksrareOrderReq,
         chainId,
         true,
-        false,
       )
 
       expect(orders.listings).toHaveLength(0)
