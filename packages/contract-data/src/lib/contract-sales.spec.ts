@@ -1,15 +1,17 @@
-import axios from 'axios'
 import { parseISO } from 'date-fns'
 import { utils } from 'ethers'
 import Sinon from 'sinon'
 
+import { fetchData } from '@nftcom/nftport-client'
 import { db, provider } from '@nftcom/shared'
 
 import { getContractSales } from './contract-sales'
-jest.setTimeout(20000)
+jest.mock('@nftcom/nftport-client', () => ({
+  fetchData: jest.fn(),
+}))
+const mockFetchData = fetchData as jest.Mock
 
-jest.mock('axios')
-const mockedAxios = axios as jest.Mocked<typeof axios>
+jest.setTimeout(20000)
 
 jest.mock('@nftcom/cache', () => ({
   redisConfig: {},
@@ -22,10 +24,6 @@ jest.mock('@nftcom/cache', () => ({
     },
     set: jest.fn(),
   },
-}))
-
-jest.mock('@nftcom/nftport-client', () => ({
-  getNFTPortInterceptor: () => mockedAxios,
 }))
 
 describe('contractSales', () => {
@@ -106,9 +104,9 @@ describe('contractSales', () => {
           },
         ],
       }]
-      mockedAxios.get
-        .mockResolvedValueOnce(Promise.resolve({ data: transactions[0] }))
-        .mockResolvedValueOnce(Promise.resolve({ data: transactions[1] }))
+      mockFetchData
+        .mockResolvedValueOnce(transactions[0])
+        .mockResolvedValueOnce(transactions[1])
 
       const salesData =  await getContractSales('0x60e4d786628fea6478f785a6d7e704777c86a7c6')
 

@@ -67,7 +67,7 @@ describe('nftport-client', () => {
       mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: nftDetails }))
 
       const response = await fetchData('nfts', ['0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D', '625'], {
-        refresh_metadata: false,
+        queryParams: { refresh_metadata: false },
       })
 
       expect(mockedAxios.get).toHaveBeenCalled()

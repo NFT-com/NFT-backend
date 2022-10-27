@@ -1,9 +1,9 @@
-// import { createContractStats } from './contract-stats'
+import { updateContractStats } from './contract-stats'
 
 describe('contract-stats', () => {
-  describe('saveContractStats', () => {
+  describe('updateContractStats', () => {
     it('should save required stats', () => {
-      // const { saveContractStats } = createContractStats()
+      expect(typeof updateContractStats).toBe('function')
     })
   })
 })
