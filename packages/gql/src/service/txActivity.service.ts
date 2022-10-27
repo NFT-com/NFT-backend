@@ -27,7 +27,7 @@ type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
 const repositories = db.newRepositories()
 
 /**
- * activityBuilder 
+ * activityBuilder
  * @param activityType - type of activity
  * @param activityHash - orderHash for off-chain, txHash for on-chain
  * @param walletId - maker address
@@ -56,7 +56,7 @@ const activityBuilder = async (
       return activity
     }
   }
-  
+
   // new activity
   activity = new entity.TxActivity()
   activity.activityType = activityType
@@ -74,7 +74,7 @@ const activityBuilder = async (
 }
 
 /**
- * seaportOrderBuilder 
+ * seaportOrderBuilder
  * @param order
  */
 const seaportOrderBuilder = (
@@ -85,15 +85,16 @@ const seaportOrderBuilder = (
     makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address): null,
     takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address): null,
     nonce: order.protocol_data?.parameters?.counter, // counter is mapped to nonce for OS
-    zone: order.protocol_data?.parameters?.zone, // only mapped for OS 
+    zone: order.protocol_data?.parameters?.zone, // only mapped for OS
     protocolData: {
       ...order.protocol_data,
     },
+    createdInternally: true,
   }
 }
 
 /**
- * looksrareOrderBuilder 
+ * looksrareOrderBuilder
  * @param order
  */
 
@@ -123,11 +124,12 @@ const looksrareOrderBuilder = (
       r: order.r,
       s: order.s,
     },
+    createdInternally: true,
   }
 }
 
 /**
- * orderEntityBuilder 
+ * orderEntityBuilder
  * @param protocol
  * @param orderType
  * @param order
@@ -202,7 +204,7 @@ export const orderEntityBuilder = async (
   }
 }
 /**
- * txSeaportProcotolDataParser 
+ * txSeaportProcotolDataParser
  * @param protocolData
  */
 
@@ -235,7 +237,7 @@ export const txSeaportProcotolDataParser = (protocolData: any): TxSeaportProtoco
 }
 
 /**
- * transactionEntityBuilder 
+ * transactionEntityBuilder
  * @param txType
  * @param txHash
  * @param chainId
@@ -298,7 +300,7 @@ export const txEntityBuilder = async (
 }
 
 /**
- * cancelEntityBuilder 
+ * cancelEntityBuilder
  * @param txType
  * @param txHash
  * @param chainId
