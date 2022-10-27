@@ -31,7 +31,7 @@ export class TxOrder extends BaseEntity {
 
   @Column({ nullable: true })
   takerAddress: string
-  
+
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   orderType: ActivityType
 
@@ -51,5 +51,8 @@ export class TxOrder extends BaseEntity {
   // only required for OS
   @Column({ nullable: true })
   zone: string
+
+  @Column({ default: false })
+  createdInternally: boolean
 
 }
