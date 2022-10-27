@@ -238,7 +238,7 @@ export const createLooksrareListing = async (
     return null
   } catch (err) {
     logger.error(`Error in createLooksrareListing: ${err}`)
-    logger.log('createLooksrare payload', order)
+    logger.log(`createLooksrare payload ${order}`)
     // Sentry.captureMessage(`Error in createLooksrareListing: ${err}`)
     throw err
   }
