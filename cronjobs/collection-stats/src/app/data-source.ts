@@ -2,7 +2,7 @@ import { DataSourceOptions } from 'typeorm'
 
 import { _logger, db, entity } from '@nftcom/shared'
 
-const logger = _logger.Factory('data-source', _logger.Context.SalesProcessor)
+const logger = _logger.Factory('data-source', _logger.Context.CollectionStats)
 
 const dbConfig: DataSourceOptions = {
   type: 'postgres',
@@ -13,7 +13,7 @@ const dbConfig: DataSourceOptions = {
   database: process.env.DB_DATABASE || 'app',
   logging: process.env.DB_LOGGING === 'true',
   ssl: process.env.DB_USE_SSL === 'true',
-  entities: [entity.MarketplaceSale],
+  entities: [entity.Collection],
   extra: {
     ssl: {
       ca: process.env.AWS_CA_CERT,
