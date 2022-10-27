@@ -878,4 +878,48 @@ describe('profile resolver', () => {
       expect(result.data.profile.usersActionsWithPoints[1].totalPoints).toEqual(5)
     })
   })
+
+  describe('saveUserActionForBuyNFTs', () => {
+    beforeAll(async () => {
+      testMockUser.chainId = '5'
+      testMockWallet.chainId = '5'
+      testMockWallet.chainName = 'goerli'
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+
+      await repositories.profile.save({
+        url: 'test-profile',
+        ownerUserId: user.id,
+        ownerWalletId: testMockWallet.id,
+        chainId: '5',
+      })
+
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+        { id: '5', name: 'goerli' },
+      )
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should save incentive action for buying NFTs on profile', async () => {
+      const result = await testServer.executeOperation({
+        query: 'mutation Mutation($profileUrl: String!) { saveUserActionForBuyNFTs(profileUrl: $profileUrl) { message } }',
+        variables: {
+          profileUrl: 'test-profile',
+        },
+      })
+      expect(result.data.saveUserActionForBuyNFTs.message).toEqual('Incentive action for buying NFTs is saved. ProfileURL: test-profile')
+      const incentiveAction = await repositories.incentiveAction.findAll()
+      expect(incentiveAction.length).toEqual(1)
+    })
+  })
 })

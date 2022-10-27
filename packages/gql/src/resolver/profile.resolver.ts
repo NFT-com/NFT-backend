@@ -14,6 +14,9 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, mintError, nftError,profileError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
+import {
+  SaveUserActionForBuyNFTsOutput,
+} from '@nftcom/gql/defs/gql'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
@@ -1422,6 +1425,51 @@ const getUsersActionsWithPoints = async (
   return usersActions
 }
 
+const saveUserActionForBuyNFTs = async (
+  _: any,
+  args: gql.MutationSaveUserActionForBuyNFTsArgs,
+  ctx: Context,
+): Promise<SaveUserActionForBuyNFTsOutput> => {
+  try {
+    const { repositories, chain, user } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('updateIncentiveActionForBuyNFTs', { profileUrl: args?.profileUrl })
+    const profile = await repositories.profile.findByURL(args?.profileUrl, chainId)
+    if (!profile) {
+      return Promise.reject(new Error(`Profile URL ${args?.profileUrl} is not existing.`))
+    }
+    if (user.id !== profile.ownerUserId) {
+      return Promise.reject(new Error('Profile is not owned by user.'))
+    }
+    const existingAction = await repositories.incentiveAction.findOne({
+      where: {
+        userId: user.id,
+        profileUrl: args?.profileUrl,
+        task: defs.ProfileTask.BUY_NFTS,
+      },
+    })
+    if (!existingAction) {
+      await repositories.incentiveAction.save({
+        userId: user.id,
+        profileUrl: args?.profileUrl,
+        task: defs.ProfileTask.BUY_NFTS,
+        point: defs.ProfileTaskPoint.BUY_NFTS,
+      })
+      return {
+        message: `Incentive action for buying NFTs is saved. ProfileURL: ${args?.profileUrl}`,
+      }
+    } else {
+      return {
+        message: `Incentive action for buying NFTs is existing. ProfileURL: ${args?.profileUrl}`,
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in updateIncentiveActionForBuyNFTs: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1453,6 +1501,7 @@ export default {
     updateProfileView: combineResolvers(auth.isAuthenticated, updateProfileView),
     saveNFTVisibilityForProfiles: combineResolvers(auth.isAuthenticated, saveNFTVisibility),
     fullFillEventTokenIds: combineResolvers(auth.isAuthenticated, fullFillEventTokenIds),
+    saveUserActionForBuyNFTs: combineResolvers(auth.isAuthenticated, saveUserActionForBuyNFTs),
   },
   Profile: {
     followersCount: getFollowersCount,
