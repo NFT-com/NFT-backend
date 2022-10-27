@@ -47,7 +47,6 @@ describe('txActivity service', () => {
         testSeaportOrder,
         '4',
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-        false,
       )
 
       expect(order.id).toBe(testSeaportOrder.order_hash)
@@ -63,7 +62,6 @@ describe('txActivity service', () => {
         testLooksrareOrder,
         '4',
         testLooksrareOrder.collectionAddress,
-        false,
       )
       expect(order.id).toBe(testLooksrareOrder.hash)
       expect(order.activity.activityType).toBe(ActivityType.Bid)
@@ -89,7 +87,6 @@ describe('txActivity service', () => {
         testLooksrareExistingOrder,
         '4',
         testLooksrareExistingOrder.collectionAddress,
-        false,
       )
 
       expect(order.activity.id).toBe(savedActivity.id)

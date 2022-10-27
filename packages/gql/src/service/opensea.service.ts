@@ -252,7 +252,6 @@ const retrieveListingsInBatches = async (
                 seaportOrders?.[0],
                 chainId,
                 contract,
-                false,
               ),
             )
           }
@@ -332,7 +331,6 @@ const retrieveOffersInBatches = async (
                 seaportOffers?.[0],
                 chainId,
                 contract,
-                false,
               ),
             )
           }

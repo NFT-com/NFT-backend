@@ -129,7 +129,6 @@ const retrieveLooksRareOrdersInBatches = async (
             orders[0],
             chainId,
             orders[0]?.collectionAddress,
-            false,
           ),
         )
       }
@@ -141,7 +140,6 @@ const retrieveLooksRareOrdersInBatches = async (
             orders?.[0],
             chainId,
             orders[0]?.collectionAddress,
-            false,
           ),
         )
       }
