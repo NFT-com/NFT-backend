@@ -461,7 +461,10 @@ export const createSeaportListing = async (
     logger.log(`seaport signature ${signature}`)
     logger.log(`createSeaportListing payload ${parameters}`)
     // Sentry.captureMessage(`Error in createSeaportListing: ${err}`)
-    throw err
+    if (err?.response?.data) {
+      throw JSON.stringify(err?.response?.data)
+    }
+    throw JSON.stringify(err)
   }
 }
 
