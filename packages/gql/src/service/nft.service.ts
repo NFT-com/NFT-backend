@@ -38,7 +38,7 @@ const seService = new SearchEngineService()
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
-// let web3: AlchemyWeb3
+let web3: AlchemyWeb3
 let alchemyUrl: string
 
 interface OwnedNFT {
@@ -149,6 +149,7 @@ export const initiateWeb3 = (chainId?: string): void => {
   chainId = chainId || process.env.CHAIN_ID // attach default value
   alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
   web3 = createAlchemyWeb3(alchemyUrl)
+  logger.log(web3)
 }
 
 export const getNFTsFromAlchemy = async (
