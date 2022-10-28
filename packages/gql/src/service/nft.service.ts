@@ -199,7 +199,6 @@ export const getNFTsFromAlchemy = async (
     } else {
       return []
     }
-    return []
   } catch (err) {
     logger.error(`Error in getOwnersForNFT: ${err}`)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
