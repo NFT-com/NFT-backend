@@ -17,6 +17,8 @@ const templates = {
   confirmBid: 'd-c2ac2bc2295049c58b0eb2e1a82cd7e7',
   outbid: 'd-6e92bafc43194eb5a1c8725ecbaaba14',
   winbid: 'd-9e11556ce7f34fbeb66e42f8d3803986',
+  sendConfirmEmail: 'd-f11f18c741e84e7f9c50e93eceb7a9a2',
+  confirmedEmailSuccess: 'd-fad5182e6dfc42deaa2d1f6084feb687',
 }
 
 const send = (
@@ -35,24 +37,51 @@ export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
     return send({
       from,
       to: { email: user.email },
-      subject: 'Confirm your email for NFT.com',
-      text: `Hi,\n\nPlease click this link in order to confirm your email sign up with NFT.com. Once confirmed, you’ll receive the latest news and updates in the NFT space.\n\n${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}\n\nThanks,\nThe NFT.com Team`,
-    })
-      .then(() => true)
+      dynamicTemplateData: {
+        confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
+      },
+      templateId: templates.sendConfirmEmail,
+    }).then(() => true)
   }
 }
 
 export const sendSuccessSubscribeEmail = (email: string): Promise<boolean> => {
   if (email) {
-    const baseUrl = confirmEmailUrl
-
     return send({
       from,
+      to: { email: email },
+      dynamicTemplateData: {},
+      templateId: templates.confirmedEmailSuccess,
+    }).then(() => true)
+  }
+}
+
+export const sendReferralEmail = async (
+  email: string,
+  referralId: string,
+  profileUrl: string,
+): Promise<boolean> => {
+  // TODO: text should be replaced with HTML template
+  const text = `Hey there,\n\nYour friend ${profileUrl} has invited you to create your NFT Profile at NFT.com!` +
+    '\n\nNFT.com is the social NFT marketplace. We’re bringing artists, collectors, creators and fans\n\n together, ' +
+    'providing them the tools they need to buy, sell, display, and engage with NFTs.' +
+    '\n\nYour NFT Profile is exactly that, yours. We’ve had enough of social networks that exploit their\n\n users. ' +
+    'Creating your profile enables you to establish and own your digital identity. ' +
+    'You can collect\n\n and display new NFTs or promote your latest NFT collection.' +
+    `\n\nCreate your free NFT Profile: https://nft.com/app/signup?referralCode=${referralId}&referralUrl=${profileUrl}` +
+    '\n\nYou’ll be able to customize your NFT Profile, grow your network and collect new NFTs on NFT.com' +
+    '\n\nSee you in the metaverse,\n\nNFT.com Team'
+  try {
+    await send({
+      from,
       to: { email },
-      subject: 'Welcome to the NFT.com community!',
-      text: `Hi,\n\nThanks for joining the NFT.com community. Our mission is to build the social NFT marketplace and we can't do that without you!\n\nYou’ll be updated with the latest news and announcements from across the NFT space directly into your inbox.\n\nIn the meantime, head over to NFT.com to create your NFT Profile. The profile represents you, gives you ownership over your social presence, and helps you grow your NFT collection.\n\n${baseUrl}/app/claim-profiles\n\nMake sure to follow us on Twitter to join in the conversation around the NFT industry.\n\nhttps://twitter.com/nftcomofficial\n\nWelcome to the community!\nThe NFT.com Team`,
+      subject: `${profileUrl} has invited you to join them on NFT.com.`,
+      text,
     })
-      .then(() => true)
+    return true
+  } catch (err) {
+    logger.error(`Something went wrong with sending referral email: ${err}`)
+    return false
   }
 }
 

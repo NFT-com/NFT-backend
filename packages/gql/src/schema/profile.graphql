@@ -202,6 +202,10 @@ input ProfilesByDisplayNftInput {
   showOnlyVisibleNFTProfile: Boolean
 }
 
+type SaveUserActionForBuyNFTsOutput {
+  message: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -248,4 +252,6 @@ extend type Mutation {
   saveNFTVisibilityForProfiles(count: Int!): SaveNFTVisibilityForProfilesOutput!
   "AUTHENTICATED"
   fullFillEventTokenIds(count: Int!): FullFillEventTokenIdsOutput!
+  "AUTHENTICATED"
+  saveUserActionForBuyNFTs(profileUrl: String!): SaveUserActionForBuyNFTsOutput!
 }
