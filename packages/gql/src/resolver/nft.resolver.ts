@@ -10,7 +10,7 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import {
   _logger,
-  contracts,
+  contracts, db,
   defs,
   entity,
   fp,
@@ -20,6 +20,7 @@ import {
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 import { differenceInMilliseconds } from 'date-fns'
+import { Maybe } from 'graphql/jsutils/Maybe'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { PageInput } from '@nftcom/gql/defs/gql'
@@ -948,6 +949,47 @@ export const updateNFTProfileId =
     return stringifyTraits(updatedNFT)
   }
 
+const addListNFTsIncentiveAction = async (
+  repositories: db.Repository,
+  url: Maybe<string>,
+  chainId: string,
+  order: entity.TxOrder,
+): Promise<boolean> => {
+  try {
+    if (!url || !url.length) {
+      return !!order.id
+    } else {
+      const profile = await repositories.profile.findByURL(url, chainId)
+      if (profile) {
+        const existingAction = await repositories.incentiveAction.findOne({
+          where: {
+            userId: profile.ownerUserId,
+            profileUrl: profile.url,
+            task: defs.ProfileTask.LIST_NFTS,
+          },
+        })
+        if (!existingAction) {
+          await repositories.incentiveAction.save({
+            userId: profile.ownerUserId,
+            profileUrl: profile.url,
+            task: defs.ProfileTask.LIST_NFTS,
+            point: defs.ProfileTaskPoint.LIST_NFTS,
+          })
+        }
+        return !!order.id
+      } else {
+        return Promise.reject(appError.buildInvalid(
+          profileError.buildProfileUrlNotFoundMsg(url, chainId),
+          profileError.ErrorType.ProfileNotFound,
+        ))
+      }
+    }
+  } catch (err) {
+    logger.error(`Error in addListNFTsIncentiveAction: ${err}`)
+    throw err
+  }
+}
+
 export const listNFTSeaport = async (
   _: any,
   args: gql.MutationListNFTSeaportArgs,
@@ -957,13 +999,14 @@ export const listNFTSeaport = async (
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
+  const profileUrl = args?.input.profileUrl
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
   return createSeaportListing(seaportSignature, seaportParams, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save(order)
     }))
-    .then(order => !!order.id)
+    .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
       txActivityError.buildOpenSea(err),
       txActivityError.ErrorType.OpenSea,
@@ -978,6 +1021,7 @@ export const listNFTLooksrare = async (
   const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
+  const profileUrl = args?.input.profileUrl
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
@@ -985,7 +1029,7 @@ export const listNFTLooksrare = async (
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save(order)
     }))
-    .then(order => !!order.id)
+    .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
       txActivityError.buildLooksRare(err),
       txActivityError.ErrorType.LooksRare,

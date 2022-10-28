@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
@@ -39,6 +40,7 @@ const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 let alchemyUrl: string
+let chainId: string
 
 interface OwnedNFT {
   contract: {
@@ -112,10 +114,43 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
+export const getAlchemyInterceptor = (
+  chainId: string,
+): AxiosInstance => {
+  const alchemyInstance = axios.create({
+    baseURL: Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+  })
+  // retry logic with exponential backoff
+  const retryOptions: IAxiosRetryConfig= { retries: 3,
+    retryCondition: (err: AxiosError<any>) => {
+      return (
+        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
+          err.response.status === 429
+      )
+    },
+    retryDelay: (retryCount: number, err: AxiosError<any>) => {
+      if (err.response) {
+        const retry_after = Number(err.response.headers['retry-after'])
+        if (retry_after) {
+          return retry_after
+        }
+      }
+      return axiosRetry.exponentialDelay(retryCount)
+    },
+  }
+  axiosRetry(alchemyInstance,  retryOptions)
+  return alchemyInstance
+}
+
 export const initiateWeb3 = (chainId?: string): void => {
   chainId = chainId || process.env.CHAIN_ID // attach default value
   alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
   web3 = createAlchemyWeb3(alchemyUrl)
+  logger.log(web3)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -126,45 +161,31 @@ export const getNFTsFromAlchemy = async (
   try {
     let pageKey
     const ownedNFTs: Array<OwnedNFT> = []
-    let response
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    let queryParams = `owner=${owner}`
+   
     if (contracts) {
-      response = await web3.alchemy.getNfts({
-        owner: owner,
-        withMetadata: withMetadata,
-        contractAddresses: contracts,
-      })
-    } else {
-      response = await web3.alchemy.getNfts({
-        owner: owner,
-        withMetadata: withMetadata,
-      })
+      queryParams += `&contractAddresses[]=${contracts}`
     }
 
-    if (response.ownedNfts) {
-      ownedNFTs.push(...response.ownedNfts as OwnedNFT[])
-      if (response.pageKey) {
-        pageKey = response.pageKey
+    if (withMetadata) {
+      queryParams += `&withMetadata=${withMetadata}`
+    }
+
+    const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
+
+    if (response?.data?.ownedNfts) {
+      ownedNFTs.push(...response?.data?.ownedNfts as OwnedNFT[])
+      if (response?.data?.pageKey) {
+        pageKey = response?.data?.pageKey
         // eslint-disable-next-line no-constant-condition
         while (true) {
-          let res
-          if (contracts) {
-            res = await web3.alchemy.getNfts({
-              owner: owner,
-              withMetadata: withMetadata,
-              pageKey: pageKey,
-              contractAddresses: contracts,
-            })
-          } else {
-            res = await web3.alchemy.getNfts({
-              owner: owner,
-              withMetadata: withMetadata,
-              pageKey: pageKey,
-            })
-          }
-          if (res.ownedNfts) {
-            ownedNFTs.push(...res.ownedNfts as OwnedNFT[])
-            if (res.pageKey) {
-              pageKey = res.pageKey
+          const res: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}&pageKey=${pageKey}`)
+           
+          if (res?.data?.ownedNfts) {
+            ownedNFTs.push(...res?.data?.ownedNfts as OwnedNFT[])
+            if (res?.data?.pageKey) {
+              pageKey = res?.data?.pageKey
             } else {
               break
             }
@@ -179,8 +200,9 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
-    return []
+    throw err
   }
 }
 
@@ -289,15 +311,15 @@ export const filterNFTsWithAlchemy = async (
 const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
-  optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
+  // optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
-    const response = await (optionalWeb3 || web3)?.alchemy.getNftMetadata({
-      contractAddress: contractAddress,
-      tokenId: tokenId,
-    })
+    const chainId: string = process.env.CHAIN_ID || '5'
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    const queryParams = `contractAddress=${contractAddress}&tokenId=${tokenId}`
+    const response: AxiosResponse = await alchemyInstance.get(`/getNFTMetadata?${queryParams}`)
 
-    return response as NFTMetaDataResponse
+    return response.data as NFTMetaDataResponse
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTMetaDataFromAlchemy: ${err}`)
     return undefined

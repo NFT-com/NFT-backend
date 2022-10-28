@@ -1,9 +1,18 @@
+import { BigNumber } from 'ethers'
+
+import { testDBConfig } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
 import { WalletInput } from '@nftcom/gql/defs/gql'
-import { getWallet } from '@nftcom/gql/service/core.service'
+import { createProfileFromEvent, getWallet } from '@nftcom/gql/service/core.service'
+import { clearDB } from '@nftcom/gql/test/util/helpers'
+import { db, defs } from '@nftcom/shared'
 import { User, Wallet } from '@nftcom/shared/db/entity'
 
 import { testMockUser, testMockWallet } from '../util/constants'
+
+jest.setTimeout(500000)
+
+const repositories = db.newRepositories()
 
 const context: Context = {
   chain: {
@@ -47,7 +56,18 @@ const walletInputFailure: WalletInput = {
 
 const walletFailureResponse = 'Please signup or add this address before using'
 
+let connection
+
 describe('core service', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.destroy()
+  })
+
   describe('get Wallet', () => {
     it('gets wallet', async () => {
       const wallet = await getWallet(context, walletInputSuccess)
@@ -57,6 +77,33 @@ describe('core service', () => {
     // confirm the flow
     it('throws an error', async () => {
       await expect(getWallet(context, walletInputFailure)).rejects.toThrow(walletFailureResponse)
+    })
+  })
+
+  describe('createProfileFromEvent', () => {
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should save incentive action', async () => {
+      const profile = await createProfileFromEvent(
+        '5',
+        '0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
+        BigNumber.from('5'),
+        repositories,
+        'test-profile',
+      )
+      expect(profile).toBeDefined()
+      expect(profile.ownerUserId).not.toBeNull()
+      expect(profile.ownerWalletId).not.toBeNull()
+      const incentiveAction = await repositories.incentiveAction.findOne({
+        where: {
+          userId: profile.ownerUserId,
+          profileUrl: profile.url,
+          task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        },
+      })
+      expect(incentiveAction).toBeDefined()
     })
   })
 })

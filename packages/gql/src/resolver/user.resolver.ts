@@ -12,10 +12,32 @@ import { auth, joi } from '@nftcom/gql/helper'
 import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { profileActionType } from '@nftcom/gql/service/core.service'
-import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
+
+const addReferNetworkAction = async (
+  userId: string,
+  profileUrl: string,
+  repositories: db.Repository,
+): Promise<void> => {
+  const existingAction = await repositories.incentiveAction.findOne({
+    where: {
+      userId,
+      profileUrl,
+      task: defs.ProfileTask.REFER_NETWORK,
+    },
+  })
+  if (!existingAction) {
+    await repositories.incentiveAction.save({
+      userId,
+      profileUrl,
+      task: defs.ProfileTask.REFER_NETWORK,
+      point: defs.ProfileTaskPoint.REFER_NETWORK,
+    })
+  }
+}
 
 const signUp = (
   _: any,
@@ -34,7 +56,7 @@ const signUp = (
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, username, avatarURL, referredBy = '', wallet } = args.input
+  const { email, username, avatarURL, referredBy = '', wallet, referredUrl } = args.input
   const { address, network, chainId } = wallet
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
@@ -86,6 +108,14 @@ const signUp = (
       }),
       sendgrid.sendConfirmEmail(user),
     ])))
+    .then((user: entity.User) => {
+      if (referredBy && referredBy.length && referredUrl && referredUrl.length) {
+        return addReferNetworkAction(referredBy, referredUrl, repositories)
+          .then(() => user)
+      } else {
+        return user
+      }
+    })
 }
 
 const updateEmail = (
@@ -714,6 +744,51 @@ export const clearQueue = async (
   }
 }
 
+export const sendReferEmail = async (
+  _: any,
+  args: gql.MutationSendReferEmailArgs,
+  ctx: Context,
+): Promise<gql.SendReferEmailOutput> => {
+  try {
+    const { repositories, user, chain } = ctx
+    const chainId = chain.id || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('sendReferEmail', { input: args?.input })
+    const profileUrl = args?.input.profileUrl
+    const emails = args?.input.emails
+    const profile = await repositories.profile.findByURL(profileUrl, chainId)
+    if (!profile) {
+      return Promise.reject(new Error(`Profile Url is invalid ${profileUrl}`))
+    }
+    const profileOwner = await repositories.user.findById(profile.ownerUserId)
+    if (profileOwner.id !== user.id) {
+      return Promise.reject(new Error(`You are not owner of this profile ${profileUrl}`))
+    }
+    let sent = 0
+    await Promise.allSettled(
+      emails.map(async (email) => {
+        const existingUser = await repositories.user.findByEmail(email)
+        // if user is not created by email
+        if (!existingUser) {
+          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl)
+          if (res) {
+            sent ++
+          } else {
+            logger.error('Something went wrong with sending referral email')
+          }
+        }
+      }),
+    )
+
+    return {
+      message: `Referral emails are sent to ${sent} addresses.`,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in sendReferEmail: ${err}`)
+    return err
+  }
+}
+
 const getProfileActions = async (
   _: any,
   args: any,
@@ -796,6 +871,7 @@ export default {
     resendEmailConfirm: combineResolvers(auth.isAuthenticated, resendEmailConfirm),
     updateCache: combineResolvers(auth.isAuthenticated, updateCache),
     clearQueue: combineResolvers(auth.isAuthenticated, clearQueue),
+    sendReferEmail: combineResolvers(auth.isAuthenticated, sendReferEmail),
   },
   User: {
     myAddresses: combineResolvers(auth.isAuthenticated, getMyAddresses),

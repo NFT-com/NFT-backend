@@ -41,7 +41,7 @@ const repositories = db.newRepositories()
 let connection
 let testServer
 let nftA, nftB, nftC
-let user, wallet
+let user, wallet, wallet2
 
 describe('nft resolver', () => {
   beforeAll(async () => {
@@ -336,6 +336,14 @@ describe('nft resolver', () => {
         userId: user.id,
       })
 
+      wallet2 = await repositories.wallet.save({
+        address: '0x0d23B68cD7fBc3afA097f14ba047Ca2C1da64349',
+        network: 'ethereum',
+        chainId: '1',
+        chainName: 'mainet',
+        userId: user.id,
+      })
+
       nftB = await repositories.nft.save({
         contract: '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
         tokenId: '0x024a39',
@@ -413,7 +421,7 @@ describe('nft resolver', () => {
         },
       }
       nftService.initiateWeb3('1')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet2.id, '1')
 
       const updatedNFT = await repositories.nft.findById(nftC.id)
       expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
