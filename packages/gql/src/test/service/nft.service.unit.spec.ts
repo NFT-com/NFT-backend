@@ -464,7 +464,6 @@ describe('nft resolver', () => {
       const owner = '0x59495589849423692778a8c5aaca62ca80f875a4'
       nftService.initiateWeb3('5')
       const nfts = await nftService.getNFTsFromAlchemy(owner)
-      console.log('nfts', nfts)
       expect(nfts.length).toBeGreaterThan(0)
     })
   })
