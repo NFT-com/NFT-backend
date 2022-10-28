@@ -10,6 +10,5 @@ export const cacheStats = async (): Promise<void> => {
       isOfficial: true,
     },
   })
-  console.log('COLLECTIONS', collections)
   await updateContractStats(collections)
 }

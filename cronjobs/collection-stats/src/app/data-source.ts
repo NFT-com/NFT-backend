@@ -1,6 +1,6 @@
 import { DataSourceOptions } from 'typeorm'
 
-import { _logger, db, entity } from '@nftcom/shared'
+import { _logger, db, entity, migrations } from '@nftcom/shared'
 
 const logger = _logger.Factory('data-source', _logger.Context.CollectionStats)
 
@@ -14,6 +14,7 @@ const dbConfig: DataSourceOptions = {
   logging: process.env.DB_LOGGING === 'true',
   ssl: process.env.DB_USE_SSL === 'true',
   entities: [entity.Collection],
+  migrations,
   extra: {
     ssl: {
       ca: process.env.AWS_CA_CERT,

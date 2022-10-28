@@ -6,10 +6,14 @@ const DB_CHUNK_SIZE = 500
 
 export const updateContractStats = async (collections: entity.Collection[]): Promise<entity.Collection[]> => {
   const updatedCollections = await Promise.all(collections.map(async (collection) => {
-    const { statistics: stats } = await fetchData('stats', [collection.contract], { cacheSeconds: SECONDS_PER_DAY })
-    collection.floorPrice = stats.floor_price
-    collection.totalVolume = stats.total_volume
-    collection.averagePrice = stats.average_price
+    try {
+      const { statistics: stats } = await fetchData('stats', [collection.contract], { cacheSeconds: SECONDS_PER_DAY })
+      collection.floorPrice = stats.floor_price
+      collection.totalVolume = stats.total_volume
+      collection.averagePrice = stats.average_price
+    } catch (_e) {
+      // NFTPort doesn't have this collection, so leave as-is
+    }
     return collection
   }))
   return db.getDataSource().getRepository(entity.Collection).save(updatedCollections, { chunk: DB_CHUNK_SIZE })

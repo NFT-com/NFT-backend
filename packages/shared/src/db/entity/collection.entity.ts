@@ -37,13 +37,13 @@ export class Collection extends BaseEntity {
   @Column( { default: false })
   isOfficial: boolean
 
-  @Column({ type: 'numeric' })
+  @Column({ nullable: true, type: 'numeric' })
   floorPrice: number
 
-  @Column({ type: 'numeric' })
+  @Column({ nullable: true, type: 'numeric' })
   totalVolume: number
 
-  @Column({ type: 'numeric' })
+  @Column({ nullable: true, type: 'numeric' })
   averagePrice: number
 
 }
