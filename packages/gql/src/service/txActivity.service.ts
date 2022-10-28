@@ -27,7 +27,7 @@ type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
 const repositories = db.newRepositories()
 
 /**
- * activityBuilder 
+ * activityBuilder
  * @param activityType - type of activity
  * @param activityHash - orderHash for off-chain, txHash for on-chain
  * @param walletId - maker address
@@ -56,7 +56,7 @@ const activityBuilder = async (
       return activity
     }
   }
-  
+
   // new activity
   activity = new entity.TxActivity()
   activity.activityType = activityType
@@ -74,31 +74,36 @@ const activityBuilder = async (
 }
 
 /**
- * seaportOrderBuilder 
+ * seaportOrderBuilder
  * @param order
+ * @param createdInternally
  */
 const seaportOrderBuilder = (
   order: SeaportOrder,
+  createdInternally = false,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.OpenSea,
     makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address): null,
     takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address): null,
     nonce: order.protocol_data?.parameters?.counter, // counter is mapped to nonce for OS
-    zone: order.protocol_data?.parameters?.zone, // only mapped for OS 
+    zone: order.protocol_data?.parameters?.zone, // only mapped for OS
     protocolData: {
       ...order.protocol_data,
     },
+    createdInternally,
   }
 }
 
 /**
- * looksrareOrderBuilder 
+ * looksrareOrderBuilder
  * @param order
+ * @param createdInternally
  */
 
 const looksrareOrderBuilder = (
   order: LooksRareOrder,
+  createdInternally = false,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
@@ -123,16 +128,18 @@ const looksrareOrderBuilder = (
       r: order.r,
       s: order.s,
     },
+    createdInternally,
   }
 }
 
 /**
- * orderEntityBuilder 
+ * orderEntityBuilder
  * @param protocol
  * @param orderType
  * @param order
  * @param chainId
  * @param contract
+ * @param createdInternally
  */
 
 export const orderEntityBuilder = async (
@@ -141,7 +148,14 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
   contract: string,
+  createdInternally?: boolean,
 ):  Promise<Partial<entity.TxOrder>> => {
+  let isInternal
+  if (createdInternally) {
+    isInternal = createdInternally
+  } else {
+    isInternal = false
+  }
   let orderHash: string,
     walletAddress: string,
     tokenId: string,
@@ -164,7 +178,7 @@ export const orderEntityBuilder = async (
       tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
       return `ethereum/${checksumContract}/${tokenId}`
     })
-    orderEntity = seaportOrderBuilder(seaportOrder)
+    orderEntity = seaportOrderBuilder(seaportOrder, isInternal)
     break
   case defs.ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
@@ -174,7 +188,7 @@ export const orderEntityBuilder = async (
     timestampFromSource = Number(looksrareOrder.startTime)
     expirationFromSource =  Number(looksrareOrder.endTime)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = looksrareOrderBuilder(looksrareOrder)
+    orderEntity = looksrareOrderBuilder(looksrareOrder, isInternal)
     break
   default:
     break
@@ -202,7 +216,7 @@ export const orderEntityBuilder = async (
   }
 }
 /**
- * txSeaportProcotolDataParser 
+ * txSeaportProcotolDataParser
  * @param protocolData
  */
 
@@ -235,7 +249,7 @@ export const txSeaportProcotolDataParser = (protocolData: any): TxSeaportProtoco
 }
 
 /**
- * transactionEntityBuilder 
+ * transactionEntityBuilder
  * @param txType
  * @param txHash
  * @param chainId
@@ -298,7 +312,7 @@ export const txEntityBuilder = async (
 }
 
 /**
- * cancelEntityBuilder 
+ * cancelEntityBuilder
  * @param txType
  * @param txHash
  * @param chainId
