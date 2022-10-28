@@ -5,7 +5,7 @@ import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
 import { IsNull } from 'typeorm'
 
-import { createAlchemyWeb3 } from '@alch/alchemy-web3'
+import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
 import { assetBucket } from '@nftcom/gql/config'
