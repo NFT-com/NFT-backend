@@ -135,10 +135,33 @@ type UpdateSpamStatusOutput {
   message: String
 }
 
+input CollectionTraitsInput {
+  contract: Address!
+}
+
+type CollectionTraitsSummary {
+  stats: TraitsSummaryStats
+  traits: [TraitsSummaryData]
+}
+
+type TraitsSummaryStats {
+  totalCount: Int
+}
+
+type TraitsSummaryData {
+  type: String
+  counts: [TraitCounts]
+}
+
+type TraitCounts {
+  count: Int
+  value: String
+}
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
   collectionsByDeployer(deployer: String!): [Collection]
+  collectionTraits(input: CollectionTraitsInput!): CollectionTraitsSummary
   numberOfNFTs(contract: Address!, chainId: String): Int
   associatedAddressesForContract(contract: Address!): AssociatedAddressesForContractOutput!
 }

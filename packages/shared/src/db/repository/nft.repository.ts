@@ -1,3 +1,4 @@
+import { db } from '@nftcom/shared/db'
 import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
 
 import { BaseRepository } from './base.repository'
@@ -37,6 +38,17 @@ export class NFTRepository extends BaseRepository<NFT> {
       .createQueryBuilder('nft')
       .where('nft.previewLink is not null')
       .getMany()
+  }
+
+  fetchTraitSummaryData(collectionAddress: string): Promise<any[]> {
+    const queryRunner = db.getDataSource().createQueryRunner()
+    return queryRunner.manager.query(`
+    SELECT count(*) as count, (traits.value->>'type') as type, (traits.value->>'value') as value 
+    FROM "nft", json_array_elements(nft."metadata"->'traits') as traits 
+    WHERE "contract" = $1 
+    GROUP BY (traits.value->>'type'), (traits.value->>'value') 
+    ORDER BY type ASC, count DESC
+    `, [collectionAddress])
   }
 
 }
