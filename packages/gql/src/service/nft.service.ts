@@ -40,6 +40,7 @@ const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 let web3: AlchemyWeb3
 let alchemyUrl: string
+let chainId: string
 
 interface OwnedNFT {
   contract: {
@@ -160,7 +161,6 @@ export const getNFTsFromAlchemy = async (
   try {
     let pageKey
     const ownedNFTs: Array<OwnedNFT> = []
-    const chainId: string = process.env.CHAIN_ID || '5'
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
     let queryParams = `owner=${owner}`
    
