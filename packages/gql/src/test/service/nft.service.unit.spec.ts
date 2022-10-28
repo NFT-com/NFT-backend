@@ -53,7 +53,7 @@ describe('nft resolver', () => {
     await connection.destroy()
   })
 
-  describe.skip('refresh nft endpoint', () => {
+  describe('refresh nft endpoint', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         nft: {
@@ -103,7 +103,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('getCollectionInfo', () => {
+  describe('getCollectionInfo', () => {
     beforeAll(async () => {
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
@@ -165,7 +165,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('updateENSNFTMedata', () => {
+  describe('updateENSNFTMedata', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
@@ -191,7 +191,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('getOwnersForNFT', () => {
+  describe('getOwnersForNFT', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0xa49a0e5eF83cF89Ac8aae182f22E6464B229eFC8',
@@ -216,7 +216,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('filterNFTsWithAlchemy', () => {
+  describe('filterNFTsWithAlchemy', () => {
     beforeAll(async () => {
       const testMockWallet1 = testMockWallet
       testMockWallet1.chainId = '5'
@@ -275,7 +275,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('updateNFTOwnershipAndMetadata', () => {
+  describe('updateNFTOwnershipAndMetadata', () => {
     beforeAll(async () => {
       const testUser = await repositories.user.save({
         username: 'ethereum-0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
@@ -420,7 +420,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('getCollectionNameFromContract', () => {
+  describe('getCollectionNameFromContract', () => {
     it('should return correct collection name from ERC721 contract', async () => {
       const contractAddress = '0x23581767a106ae21c074b2276D25e5C3e136a68b'
       const chainId = '1'
@@ -448,7 +448,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('getUserWalletFromNFT', () => {
+  describe('getUserWalletFromNFT', () => {
     it('should return undefined when getOwnersForNFT throws error', async () => {
       // wrong contract
       const contract = '0x76BE3b62873462d2142405439777e971754E8E76'
@@ -469,7 +469,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('refreshNFTMetadata', () => {
+  describe('refreshNFTMetadata', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -500,7 +500,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('hideAllNFTs', () => {
+  describe('hideAllNFTs', () => {
     beforeAll(async () => {
       await repositories.edge.save({
         thisEntityType: defs.EntityType.Profile,
@@ -531,7 +531,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('showAllNFTs', () => {
+  describe('showAllNFTs', () => {
     beforeAll(async () => {
       await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -580,7 +580,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('showNFTs', () => {
+  describe('showNFTs', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -629,7 +629,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('changeNFTsVisibility', () => {
+  describe('changeNFTsVisibility', () => {
     beforeEach(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -725,7 +725,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('updateNFTsOrder', () => {
+  describe('updateNFTsOrder', () => {
     beforeEach(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -822,7 +822,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('updateEdgesWeightForProfile', () => {
+  describe('updateEdgesWeightForProfile', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -879,7 +879,7 @@ describe('nft resolver', () => {
     })
   })
 
-  describe.skip('getNFTsForCollection', () => {
+  describe('getNFTsForCollection', () => {
     afterAll(async () => {
       await clearDB(repositories)
     })
