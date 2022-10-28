@@ -2,12 +2,13 @@ import { ethers } from 'ethers'
 import * as getStream from 'get-stream'
 import { combineResolvers } from 'graphql-resolvers'
 import type { FileUpload } from 'graphql-upload/processRequest.js'
+import Joi from 'joi'
 import { IsNull } from 'typeorm'
 import { In } from 'typeorm/find-options/operator/In'
 
 import { cache } from '@nftcom/cache'
 import { Context, gql } from '@nftcom/gql/defs'
-import { auth } from '@nftcom/gql/helper'
+import { auth, joi } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
@@ -51,6 +52,46 @@ const getCollectionsByDeployer = async (
   } catch {
     Sentry.captureMessage('Error in getCollectionsByDeployer: invalid address')
     return []
+  }
+}
+
+const getCollectionTraits = async (
+  _: any,
+  args: gql.QueryCollectionTraitsArgs,
+  ctx: Context,
+): Promise<gql.CollectionTraitsSummary> => {
+  const schema = Joi.object().keys({
+    contract: Joi.string().required(),
+  })
+  const { input } = args
+  joi.validateSchema(schema, input)
+  
+  const rawTraitSummary = await ctx.repositories.nft.fetchTraitSummaryData(input.contract)
+  const totalCount = rawTraitSummary.filter(t => rawTraitSummary[0].type === t.type)
+    .reduce((sum, t) => {return sum + parseInt(t.count)}, 0)
+  const traits = []
+  for (const t of rawTraitSummary) {
+    if (traits.length && traits[traits.length - 1].type === t.type) {
+      traits[traits.length - 1].counts.push({
+        count: t.count,
+        value: t.value,
+      })
+    } else {
+      traits.push({
+        type: t.type,
+        counts: [{
+          count: t.count,
+          value: t.value,
+        }],
+      })
+    }
+  }
+  
+  return {
+    stats: {
+      totalCount,
+    },
+    traits,
   }
 }
 
@@ -498,6 +539,7 @@ export default {
   Query: {
     collection: getCollection,
     collectionsByDeployer: getCollectionsByDeployer,
+    collectionTraits: getCollectionTraits,
     associatedAddressesForContract:
       combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
     numberOfNFTs: getNumberOfNFTs,

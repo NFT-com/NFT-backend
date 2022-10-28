@@ -132,7 +132,10 @@ export const start = async (): Promise<void> => {
     logger: _logger.parent,
     autoLogging: {
       ignore: (req) => {
-        return req.url === '/.well-known/apollo/server-health'
+        return (
+          req.url === '/.well-known/apollo/server-health'
+          || req.method === 'OPTIONS'
+        )
       },
     },
   }))
