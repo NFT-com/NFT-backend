@@ -863,7 +863,7 @@ export const createProfileFromEvent = async (
     user: null,
     wallet,
   }
-  return createProfile(ctx, {
+  const profile = await createProfile(ctx, {
     status: defs.ProfileStatus.Owned,
     url: profileUrl,
     tokenId: tokenId.toString(),
@@ -871,6 +871,23 @@ export const createProfileFromEvent = async (
     ownerUserId: wallet.userId,
     chainId: chainId || process.env.CHAIN_ID,
   }, noAvatar)
+  // save incentive action
+  const existingAction = await repositories.incentiveAction.findOne({
+    where: {
+      userId: wallet.userId,
+      profileUrl,
+      task: defs.ProfileTask.CREATE_NFT_PROFILE,
+    },
+  })
+  if (!existingAction) {
+    await repositories.incentiveAction.save({
+      userId: wallet.userId,
+      profileUrl,
+      task: defs.ProfileTask.CREATE_NFT_PROFILE,
+      point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+    })
+  }
+  return profile
 }
 
 export const saveUsersForAssociatedAddress = async (
