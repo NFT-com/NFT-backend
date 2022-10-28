@@ -3,24 +3,24 @@ import * as aws from '@pulumi/aws'
 import { getResourceName, getTags } from '../../helper'
 
 const tags = {
-  cronjob: 'sales-processor',
+  cronjob: 'collection-stats',
 }
 
 const execRole = 'arn:aws:iam::016437323894:role/ecsTaskExecutionRole'
 const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
 
-export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => {
-  const resourceName = getResourceName('salesProcessor')
-  const ecrImage = `${process.env.ECR_REGISTRY}/sales-processor:${process.env.STAGE}-${process.env.GIT_SHA || 'latest'}`
+export const createCollectionStatsTaskDefinition = (): aws.ecs.TaskDefinition => {
+  const resourceName = getResourceName('collectionStats')
+  const ecrImage = `${process.env.ECR_REGISTRY}/collection-stats:${process.env.STAGE}-${process.env.GIT_SHA || 'latest'}`
 
-  return new aws.ecs.TaskDefinition('salesProcessor-td', {
+  return new aws.ecs.TaskDefinition('collectionStats-td', {
     containerDefinitions: JSON.stringify([
       {
         logConfiguration: {
           logDriver: 'awslogs',
           options: {
             'awslogs-create-group': 'True',
-            'awslogs-group': `/cronjobs/${process.env.STAGE}-sales-processor`,
+            'awslogs-group': `/cronjobs/${process.env.STAGE}-collection-stats`,
             'awslogs-region': 'us-east-1',
             'awslogs-stream-prefix': 'cronjobs',
           },
@@ -70,9 +70,9 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
   })
 }
 
-export const createSalesProcessorEcsCluster = (): aws.ecs.Cluster => {
-  const resourceName = 'cronjob-sales-processor' // static name to allow each env to share the same ecs cluster
-  const cluster = new aws.ecs.Cluster('salesProcessor-cluster',
+export const createCollectionStatsEcsCluster = (): aws.ecs.Cluster => {
+  const resourceName = 'cronjob-collection-stats' // static name to allow each env to share the same ecs cluster
+  const cluster = new aws.ecs.Cluster('collectionStats-cluster',
     {
       name: resourceName,
       settings: [
@@ -90,7 +90,7 @@ export const createSalesProcessorEcsCluster = (): aws.ecs.Cluster => {
         },
       },
       tags: {
-        cronjob: 'sales-processor',
+        cronjob: 'collection-stats',
       },
       defaultCapacityProviderStrategies: [{
         capacityProvider: 'FARGATE',
