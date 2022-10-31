@@ -871,15 +871,15 @@ export const createProfileFromEvent = async (
     ownerUserId: wallet.userId,
     chainId: chainId || process.env.CHAIN_ID,
   }, noAvatar)
-  // save incentive action
-  const existingAction = await repositories.incentiveAction.findOne({
+  // save incentive action for CREATE_NFT_PROFILE
+  const createProfileAction = await repositories.incentiveAction.findOne({
     where: {
       userId: wallet.userId,
       profileUrl,
       task: defs.ProfileTask.CREATE_NFT_PROFILE,
     },
   })
-  if (!existingAction) {
+  if (!createProfileAction) {
     await repositories.incentiveAction.save({
       userId: wallet.userId,
       profileUrl,
