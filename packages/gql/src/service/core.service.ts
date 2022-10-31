@@ -829,9 +829,10 @@ export const createProfileFromEvent = async (
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
+  let user
   if (!wallet) {
     const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    let user = await repositories.user.findOne({
+    user = await repositories.user.findOne({
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
@@ -886,6 +887,33 @@ export const createProfileFromEvent = async (
       task: defs.ProfileTask.CREATE_NFT_PROFILE,
       point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
     })
+  }
+  user = await repositories.user.findOne({
+    where: {
+      // defaults
+      username: 'ethereum-' + ethers.utils.getAddress(owner),
+    },
+  })
+  //save incentive action for REFER_NETWORK
+  if (user && user.referredBy) {
+    const userReferred = await repositories.user.findById(user.referredBy)
+    if (userReferred) {
+      const referNetworkAction = await repositories.incentiveAction.findOne({
+        where: {
+          userId: userReferred.id,
+          profileUrl,
+          task: defs.ProfileTask.REFER_NETWORK,
+        },
+      })
+      if (!referNetworkAction) {
+        await repositories.incentiveAction.save({
+          userId: userReferred.id,
+          profileUrl,
+          task: defs.ProfileTask.REFER_NETWORK,
+          point: defs.ProfileTaskPoint.REFER_NETWORK,
+        })
+      }
+    }
   }
   return profile
 }
