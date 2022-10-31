@@ -69,7 +69,7 @@ const signUp = (
 
       let referral = referredUserId
       if (referredUrl && referredUrl.length) {
-        referral = referral + ':' + referredUrl
+        referral = referral + '::' + referredUrl
       }
       return repositories.user.save({
         email,
