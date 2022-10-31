@@ -897,22 +897,26 @@ export const createProfileFromEvent = async (
   })
   //save incentive action for REFER_NETWORK
   if (user && user.referredBy) {
-    const userReferred = await repositories.user.findById(user.referredBy)
-    if (userReferred) {
-      const referNetworkAction = await repositories.incentiveAction.findOne({
-        where: {
-          userId: userReferred.id,
-          profileUrl,
-          task: defs.ProfileTask.REFER_NETWORK,
-        },
-      })
-      if (!referNetworkAction) {
-        await repositories.incentiveAction.save({
-          userId: userReferred.id,
-          profileUrl,
-          task: defs.ProfileTask.REFER_NETWORK,
-          point: defs.ProfileTaskPoint.REFER_NETWORK,
+    const referredInfo = user.referredBy.split('::')
+    if (referredInfo.length === 2) {
+      const userMadeReferral = await repositories.user.findById(referredInfo[0])
+      const referredProfileUrl = referredInfo[1]
+      if (userMadeReferral) {
+        const referNetworkAction = await repositories.incentiveAction.findOne({
+          where: {
+            userId: userMadeReferral.id,
+            profileUrl: referredProfileUrl,
+            task: defs.ProfileTask.REFER_NETWORK,
+          },
         })
+        if (!referNetworkAction) {
+          await repositories.incentiveAction.save({
+            userId: userMadeReferral.id,
+            profileUrl: referredProfileUrl,
+            task: defs.ProfileTask.REFER_NETWORK,
+            point: defs.ProfileTaskPoint.REFER_NETWORK,
+          })
+        }
       }
     }
   }

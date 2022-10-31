@@ -167,7 +167,8 @@ const confirmEmail = (
       if (helper.isEmpty(user.referredBy)) {
         return user
       }
-      return repositories.user.findById(user.referredBy)
+      const referredUserId = user.referredBy.split('::')[0]
+      return repositories.user.findById(referredUserId)
         .then(fp.tap(updateReferral(ctx)))
     })
     .then(() => true)
