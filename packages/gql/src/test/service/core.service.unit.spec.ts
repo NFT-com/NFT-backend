@@ -91,7 +91,7 @@ describe('core service', () => {
       const userB = await repositories.user.save({
         email: 'test@immutableholdings.com',
         username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
-        referredBy: userA.id,
+        referredBy: `${userA.id}::test-profile-A`,
         referralId: '',
       })
       await repositories.wallet.save({
@@ -112,7 +112,7 @@ describe('core service', () => {
         '0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
         BigNumber.from('5'),
         repositories,
-        'test-profile',
+        'test-profile-B',
       )
       expect(profile).toBeDefined()
       expect(profile.ownerUserId).not.toBeNull()
@@ -127,7 +127,7 @@ describe('core service', () => {
       expect(createProfileAction).toBeDefined()
       const referNetworkAction = await repositories.incentiveAction.findOne({
         where: {
-          profileUrl: profile.url,
+          profileUrl: 'test-profile-A',
           task: defs.ProfileTask.REFER_NETWORK,
         },
       })
