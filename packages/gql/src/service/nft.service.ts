@@ -5,7 +5,6 @@ import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
 import { IsNull } from 'typeorm'
 
-import { AlchemyWeb3, createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
 import { assetBucket } from '@nftcom/gql/config'
@@ -38,7 +37,6 @@ const seService = new SearchEngineService()
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
-let web3: AlchemyWeb3
 let alchemyUrl: string
 let chainId: string
 
@@ -114,11 +112,16 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
+export const initiateWeb3 = (cid?: string): void => {
+  chainId = cid || process.env.CHAIN_ID // attach default value
+  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
+}
+
 export const getAlchemyInterceptor = (
   chainId: string,
 ): AxiosInstance => {
   const alchemyInstance = axios.create({
-    baseURL: Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
+    baseURL: Number(chainId || process.env.CHAIN_ID) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -144,13 +147,6 @@ export const getAlchemyInterceptor = (
   }
   axiosRetry(alchemyInstance,  retryOptions)
   return alchemyInstance
-}
-
-export const initiateWeb3 = (chainId?: string): void => {
-  chainId = chainId || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
-  web3 = createAlchemyWeb3(alchemyUrl)
-  logger.log(web3)
 }
 
 export const getNFTsFromAlchemy = async (
@@ -314,7 +310,6 @@ const getNFTMetaDataFromAlchemy = async (
   // optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
-    const chainId: string = process.env.CHAIN_ID || '5'
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
     const queryParams = `contractAddress=${contractAddress}&tokenId=${tokenId}`
     const response: AxiosResponse = await alchemyInstance.get(`/getNFTMetadata?${queryParams}`)
