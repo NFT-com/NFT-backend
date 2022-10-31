@@ -101,6 +101,7 @@ input SignUpInput {
   email: String
   username: String
   referredBy: String
+  referredUrl: String
   wallet: WalletInput!
 }
 

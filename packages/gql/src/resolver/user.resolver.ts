@@ -29,12 +29,13 @@ const signUp = (
     avatarURL: Joi.string(),
     email: Joi.string().email(),
     username: Joi.string(),
-    referredBy: Joi.string(),
+    referredBy: Joi.string().optional(),
+    referredUrl: Joi.string().optional(),
     wallet: joi.buildWalletInputSchema(),
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, username, avatarURL, referredBy = '', wallet } = args.input
+  const { email, username, avatarURL, referredBy = '', wallet, referredUrl } = args.input
   const { address, network, chainId } = wallet
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
@@ -66,10 +67,14 @@ const signUp = (
       const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
       const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
 
+      let referral = referredUserId
+      if (referredUrl && referredUrl.length) {
+        referral = referral + ':' + referredUrl
+      }
       return repositories.user.save({
         email,
         username,
-        referredBy: referredUserId || null,
+        referredBy: referral || null,
         avatarURL,
         confirmEmailToken,
         confirmEmailTokenExpiresAt,
