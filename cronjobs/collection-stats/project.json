@@ -20,12 +20,7 @@
           "optimization": true,
           "extractLicenses": true,
           "inspect": false,
-          "fileReplacements": [
-            {
-              "replace": "cronjobs/collection-stats/src/environments/environment.ts",
-              "with": "cronjobs/collection-stats/src/environments/environment.prod.ts"
-            }
-          ]
+          "fileReplacements": []
         }
       }
     },
