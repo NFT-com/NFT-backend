@@ -31,7 +31,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     chainId: string,
   ): Promise<TxActivity[]> => {
     const { name, type } = this.getEntityNameAndType(activityType)
-    return this.getRepository().createQueryBuilder('activity')
+    return this.getRepository(true).createQueryBuilder('activity')
       .leftJoinAndMapOne(
         `activity.${type}`, name,
         'activityType',  'activity.id = activityType.activityId and activityType.id = activity.activityTypeId')
@@ -44,7 +44,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     walletAddress: string,
     chainId: string,
   ): Promise<TxActivity[]> => {
-    return this.getRepository().createQueryBuilder('activity')
+    return this.getRepository(true).createQueryBuilder('activity')
       .leftJoinAndMapOne('activity.order', 'TxOrder',
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',
@@ -63,7 +63,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     chainId: string,
   ): Promise<TxActivity[]> => {
     const { name, type } = this.getEntityNameAndType(activityType)
-    return this.getRepository().createQueryBuilder('activity')
+    return this.getRepository(true).createQueryBuilder('activity')
       .leftJoinAndMapOne(`activity.${type}`,
         name, 'activityType',
         'activity.id = activityType.activityId')
@@ -79,7 +79,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   // activities for filters - pageable result
   public findActivities = (query: PageableQuery<TxActivity>)
   : Promise<PageableResult<TxActivity>> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository()
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
     const { nftIds, remainingFilters } = query.filters.reduce(
       (aggregator: any, filter: TxActivity) => {
@@ -122,7 +122,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   ): Promise<TxActivity[]> => {
     const nftId = `ethereum/${contract}/${tokenId}`
 
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository()
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
 
     return queryBuilder

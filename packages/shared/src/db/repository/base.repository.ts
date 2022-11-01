@@ -17,12 +17,20 @@ export class BaseRepository<T> {
 
   private readonly entity: typeorm.EntityTarget<T>
   private repository: typeorm.Repository<T>
+  private readOnlyRepository: typeorm.Repository<T>
 
   public constructor(entity: typeorm.EntityTarget<T>) {
     this.entity = entity
   }
 
-  protected getRepository = (): typeorm.Repository<any> => {
+  protected getRepository = (isReadOnly?: boolean): typeorm.Repository<any> => {
+    if (isReadOnly) {
+      if (this.readOnlyRepository) {
+        return this.readOnlyRepository
+      }
+      this.readOnlyRepository = db.getDataSource(isReadOnly).getRepository(this.entity)
+      return this.readOnlyRepository
+    }
     if (this.repository) {
       return this.repository
     }
@@ -51,11 +59,11 @@ export class BaseRepository<T> {
   }
 
   public find = (opts: typeorm.FindManyOptions<any>): Promise<T[]> => {
-    return this.getRepository().find(opts)
+    return this.getRepository(true).find(opts)
   }
 
   public findAll = (): Promise<T[]> => {
-    return this.getRepository().find()
+    return this.getRepository(true).find()
   }
 
   public findPageable = (query: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
@@ -67,7 +75,7 @@ export class BaseRepository<T> {
           return { ...obj, [key]: val }
         }, {})
     })
-    return this.getRepository()
+    return this.getRepository(true)
       .findAndCount({
         relations: query.relations,
         where: query.where,
@@ -91,7 +99,7 @@ export class BaseRepository<T> {
         }
       }, {})
 
-    return this.getRepository()
+    return this.getRepository(true)
       .createQueryBuilder(alias)
       .where(query.filters)
       .distinctOn(distinctOn)
@@ -102,12 +110,12 @@ export class BaseRepository<T> {
   }
 
   public findOne = (opts: typeorm.FindOneOptions<Partial<T>>): Promise<T | undefined> => {
-    return this.getRepository().findOne(opts)
+    return this.getRepository(true).findOne(opts)
     // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
   public findById = (id: string): Promise<T | undefined> => {
-    return this.getRepository().findOne({ where: { id } })
+    return this.getRepository(true).findOne({ where: { id } })
     // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
@@ -162,7 +170,7 @@ export class BaseRepository<T> {
   }
 
   public count = (opts: FindOptionsWhere<T>): Promise<number> => {
-    return this.getRepository().count({ where: opts })
+    return this.getRepository(true).count({ where: opts })
   }
 
 }

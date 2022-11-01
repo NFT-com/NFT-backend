@@ -14,7 +14,7 @@ export class NFTRepository extends BaseRepository<NFT> {
   }
 
   findAllWithRelations(): Promise<NFT[]> {
-    return this.getRepository()
+    return this.getRepository(true)
       .createQueryBuilder('nft')
       .leftJoinAndMapOne('nft.collection',
         Collection, 'collection',
@@ -26,7 +26,7 @@ export class NFTRepository extends BaseRepository<NFT> {
   }
 
   findDistinctContracts(): Promise<any[]> {
-    return this.getRepository()
+    return this.getRepository(true)
       .createQueryBuilder('nft')
       .select('nft.contract')
       .distinct(true)
@@ -34,14 +34,14 @@ export class NFTRepository extends BaseRepository<NFT> {
   }
 
   findNFTsWithPreviewLinks(): Promise<NFT[]> {
-    return this.getRepository()
+    return this.getRepository(true)
       .createQueryBuilder('nft')
       .where('nft.previewLink is not null')
       .getMany()
   }
 
   fetchTraitSummaryData(collectionAddress: string): Promise<any[]> {
-    const queryRunner = db.getDataSource().createQueryRunner()
+    const queryRunner = db.getDataSource(true).createQueryRunner()
     return queryRunner.manager.query(`
     SELECT count(*) as count, (traits.value->>'type') as type, (traits.value->>'value') as value 
     FROM "nft", json_array_elements(nft."metadata"->'traits') as traits 

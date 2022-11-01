@@ -15,7 +15,7 @@ export class CollectionRepository extends BaseRepository<Collection> {
   }
 
   findAllWithAnNft(): Promise<Collection[]> {
-    return this.getRepository()
+    return this.getRepository(true)
       .createQueryBuilder('collection')
       .leftJoinAndMapOne('collection.nft', NFT,
         'nft', 'collection.contract = nft.contract')
