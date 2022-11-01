@@ -175,6 +175,12 @@ type SendReferEmailOutput {
   message: String
 }
 
+type SentReferralEmailsOutput {
+  email: String!
+  accepted: Boolean!
+  timestamp: Int!
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -192,6 +198,8 @@ extend type Query {
   getRemovedAssociationsForSender(profileUrl: String!): [RemovedAssociationsForSenderOutput]!
   "AUTHENTICATED"
   getProfileActions: [ProfileActionOutput]!
+  "AUTHENTICATED"
+  getSentReferralEmails: [SentReferralEmailsOutput]!
 }
 
 extend type Mutation {
