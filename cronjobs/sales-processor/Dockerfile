@@ -38,7 +38,7 @@ FROM node:16-alpine as builder
 ######################################################################
 WORKDIR /app
 COPY --from=dev-dependencies /app /app
-COPY cronjobs/sales-procesor cronjobs/sales-procesor
+COPY cronjobs/sales-processor cronjobs/sales-processor
 COPY packages/cache packages/cache
 COPY packages/contract-data packages/contract-data
 COPY packages/error-types packages/error-types
@@ -47,7 +47,7 @@ COPY packages/shared packages/shared
 COPY nx.json tsconfig.base.json ./
 ENV NODE_ENV production
 RUN cd packages/shared && npm run build && cd -
-RUN npx nx build ..-cronjobs-sales-procesor
+RUN npx nx build ..-cronjobs-sales-processor
 
 ######################################################################
 FROM node:16-alpine as final
@@ -59,7 +59,7 @@ COPY --from=utils /tini /sbin/tini
 WORKDIR /app
 COPY --from=prod-dependencies /app  .
 COPY --from=builder /app/packages/shared /app/packages/shared
-COPY --from=builder /app/dist/cronjobs/sales-procesor .
+COPY --from=builder /app/dist/cronjobs/sales-processor .
 
 # Perform any further action as an unprivileged user.
 USER nobody:nobody
