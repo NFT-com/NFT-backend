@@ -1,5 +1,5 @@
 ######################################################################
-FROM alpine AS utils
+FROM --platform=linux/arm64 alpine AS utils
 ######################################################################
 # ADD TINI FOR SIGNAL HANDLING, staticly linked
 # without tini ctrl-c doesn't work
@@ -13,7 +13,7 @@ RUN mkdir /user && \
   echo 'nobody:x:65534:' > /user/group
 
 ######################################################################
-FROM node:16-alpine as prod-dependencies
+FROM --platform=linux/arm64 node:16-alpine as prod-dependencies
 ######################################################################
 WORKDIR /app
 ENV NODE_ENV production
@@ -24,7 +24,7 @@ RUN apk add --no-cache --virtual .gyp python3 make g++
 RUN npm ci
 
 ######################################################################
-FROM node:16-alpine as dev-dependencies
+FROM --platform=linux/arm64 node:16-alpine as dev-dependencies
 ######################################################################
 WORKDIR /app
 COPY packages/gql/package*.json ./packages/gql/
@@ -34,7 +34,7 @@ RUN apk add --no-cache --virtual .gyp python3 make g++
 RUN npm ci
 
 ######################################################################
-FROM node:16-alpine as builder
+FROM --platform=linux/arm64 node:16-alpine as builder
 ######################################################################
 WORKDIR /app
 COPY --from=dev-dependencies /app /app
@@ -50,18 +50,15 @@ RUN cd packages/shared && npm run build && cd -
 RUN npx nx build ..-cronjobs-collection-stats
 
 ######################################################################
-# TODO: `distroless/nodejs` has an issue with `sharp` npm package
-# FROM gcr.io/distroless/nodejs as final
-FROM node:16-alpine as final
+FROM --platform=linux/arm64 node:16-alpine as final
 ######################################################################
 # Import the user and group files from the first stage.
 COPY --from=utils /user/group /user/passwd /etc/
 COPY --from=utils /tini /sbin/tini
 
-COPY --from=builder /app/packages/shared /app/packages/shared
-
 WORKDIR /app
 COPY --from=prod-dependencies /app  .
+COPY --from=builder /app/packages/shared /app/packages/shared
 COPY --from=builder /app/dist/cronjobs/collection-stats .
 
 # Perform any further action as an unprivileged user.
