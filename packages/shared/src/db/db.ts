@@ -6,10 +6,22 @@ import { _logger, helper } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
+const {
+  DB_HOST_RO,
+  DB_USE_SSL,
+} = process.env
+
 const logger = _logger.Factory(_logger.Context.General)
 
 let connection: DataSource
-export const getDataSource = (): DataSource => {
+let readOnlyConnection: DataSource
+export const getDataSource = (isReadOnly?: boolean): DataSource => {
+  if (isReadOnly) {
+    if (!readOnlyConnection) {
+      throw new Error('No read-only database connection')
+    }
+    return readOnlyConnection
+  }
   if (!connection) {
     throw new Error('No database connection')
   }
@@ -20,6 +32,10 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
   if (connection) {
     return
   }
+
+  const ssl = helper.parseBoolean(DB_USE_SSL)
+    ? { ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString() }
+    : null
 
   const entities = [
     entity.Approval,
@@ -42,11 +58,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.Wallet,
   ]
 
-  const ssl = helper.parseBoolean(process.env.DB_USE_SSL)
-    ? { ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString() }
-    : null
-
-  return new DataSource({
+  const defaultDataSource = new DataSource({
     type: 'postgres',
     host: dbConfig.host,
     port: dbConfig.port,
@@ -62,9 +74,30 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     ],
     ssl,
     entities,
-  }).initialize()
-    .then((con) => {
-      connection = con
+  })
+
+  const readOnlyDbConfig = {
+    ...dbConfig,
+    host: DB_HOST_RO || dbConfig.host,
+  }
+
+  const readOnlyDataSource = new DataSource({
+    type: 'postgres',
+    host: readOnlyDbConfig.host,
+    port: readOnlyDbConfig.port,
+    username: readOnlyDbConfig.username,
+    password: readOnlyDbConfig.password,
+    database: readOnlyDbConfig.database,
+    synchronize: false,
+    logging: readOnlyDbConfig.logging,
+    ssl,
+    entities,
+  })
+
+  return Promise.all([defaultDataSource.initialize(), readOnlyDataSource.initialize()])
+    .then(([defaultConnection, roConnection]) => {
+      connection = defaultConnection
+      readOnlyConnection = roConnection
       logger.info('Connected to database :)!!')
     })
 }
@@ -98,7 +131,7 @@ export const disconnect = async (): Promise<void> => {
   if (!connection) {
     return
   }
-  return connection.destroy()
+  await Promise.all([connection.destroy(), readOnlyConnection.destroy()])
 }
 
 export type Repository = {
