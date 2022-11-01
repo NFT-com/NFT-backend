@@ -178,7 +178,7 @@ type SendReferEmailOutput {
 type SentReferralEmailsOutput {
   email: String!
   accepted: Boolean!
-  timestamp: Int!
+  timestamp: String!
 }
 
 extend type Query {

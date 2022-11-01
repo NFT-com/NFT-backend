@@ -852,7 +852,8 @@ const getSentReferralEmails = async (
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('getSentReferralEmails', { loggedInUserId: user.id, wallet: wallet.address })
-    const emailInfo = JSON.parse(user.referralEmailInfo) as ReferralEmailInfo[]
+    const savedUser = await repositories.user.findById(user.id)
+    const emailInfo = JSON.parse(savedUser.referralEmailInfo) as ReferralEmailInfo[]
     const res = []
     if (emailInfo.length) {
       await Promise.allSettled(
