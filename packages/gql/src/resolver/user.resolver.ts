@@ -770,10 +770,28 @@ export const sendReferEmail = async (
 
     // keep emails with timestamp to user table for tracking on FE
     if (successfulEmails.length) {
-      const referralInfo = JSON.stringify(successfulEmails)
-      await repositories.user.updateOneById(user.id, {
-        referralEmailInfo: referralInfo,
-      })
+      const savedReferralInfo = JSON.parse(profileOwner.referralEmailInfo) as ReferralEmailInfo[]
+      const existing = {}
+      const toUpdate = []
+      if (savedReferralInfo.length) {
+        for (const info of savedReferralInfo) {
+          existing[info.email] = true
+          toUpdate.push(savedReferralInfo)
+        }
+        for (const info of successfulEmails) {
+          if (!existing[info.email]) {
+            toUpdate.push(info)
+            existing[info.email] = true
+          }
+        }
+        await repositories.user.updateOneById(user.id, {
+          referralEmailInfo: JSON.stringify(toUpdate),
+        })
+      } else {
+        await repositories.user.updateOneById(user.id, {
+          referralEmailInfo: JSON.stringify(successfulEmails),
+        })
+      }
     }
 
     return {
