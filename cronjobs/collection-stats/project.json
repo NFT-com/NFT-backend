@@ -1,0 +1,55 @@
+{
+  "name": "..-cronjobs-collection-stats",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "cronjobs/collection-stats/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/cronjobs/collection-stats",
+        "main": "cronjobs/collection-stats/src/main.ts",
+        "tsConfig": "cronjobs/collection-stats/tsconfig.app.json",
+        "assets": []
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": []
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "..-cronjobs-collection-stats:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "..-cronjobs-collection-stats:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["cronjobs/collection-stats/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/cronjobs/collection-stats"],
+      "options": {
+        "jestConfig": "cronjobs/collection-stats/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

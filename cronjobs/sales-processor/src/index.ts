@@ -1,6 +1,6 @@
 import 'dotenv/config'
 
-import { getSalesData } from '@nftcom/contract-data'
+import { getContractSales } from '@nftcom/contract-data'
 import { _logger, db } from '@nftcom/shared'
 
 import { getConnection } from './data-source'
@@ -16,7 +16,7 @@ const updateCollectionSales = async (): Promise<any> => {
   const rawAddressResults = await repositories.marketplaceSale.getDistinctContractAddresses()
   for (const raw of rawAddressResults) {
     try {
-      await getSalesData(raw.contractAddress, DATE_RANGE_BUFFER)
+      await getContractSales(raw.contractAddress, DATE_RANGE_BUFFER)
     } catch (err) {
       logger.error(err)
     }

@@ -53,6 +53,17 @@ runs:
         docker build . -f cronjobs/sales-processor/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+    - name: Build and Push CollectionStats Images
+      if: ${{ inputs.stage  != 'dev' }}
+      shell: bash
+      env:
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        ECR_REPOSITORY: collection-stats  #for simplicity, ecr repo created outside pulumi stack
+      run: |
+        export DOCKER_BUILDKIT=1
+        docker build . -f cronjobs/collection-stats/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
     - name: Deploy Cronjob Infra
       shell: bash
       working-directory: infra

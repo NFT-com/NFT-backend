@@ -1,8 +1,9 @@
 import Joi from 'joi'
 
-import { fetchData, getSalesData } from '@nftcom/contract-data'
+import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
 import { joi } from '@nftcom/gql/helper'
+import { fetchData } from '@nftcom/nftport-client'
 
 export const getNFTDetails = async (
   _: any,
@@ -18,7 +19,7 @@ export const getNFTDetails = async (
   const { contractAddress, tokenId, refreshMetadata } = args.input
 
   return await fetchData('nfts', [contractAddress, tokenId], {
-    refresh_metadata: !!refreshMetadata,
+    queryParams: { refresh_metadata: !!refreshMetadata },
   })
 }
 
@@ -57,7 +58,7 @@ export const getTxByContract = async (
     page_size: pageSize,
   }
 
-  return await fetchData('txByContract', [contractAddress], {}, queryParams)
+  return await fetchData('txByContract', [contractAddress], { queryParams })
 }
 
 export const getTxByNFT = async (
@@ -82,7 +83,7 @@ export const getTxByNFT = async (
     page_size: pageSize,
   }
 
-  return await fetchData('txByNFT', [contractAddress, tokenId], {}, queryParams)
+  return await fetchData('txByNFT', [contractAddress, tokenId], { queryParams })
 }
 
 export const getSales = async (_: any, args: gql.QueryGetSalesArgs, _ctx: any): Promise<any> => {
@@ -94,7 +95,7 @@ export const getSales = async (_: any, args: gql.QueryGetSalesArgs, _ctx: any): 
   joi.validateSchema(schema, args.input)
   const { contractAddress, dateRange, tokenId } = args.input
   
-  return await getSalesData(contractAddress, dateRange, tokenId)
+  return await getContractSales(contractAddress, dateRange, tokenId)
 }
 
 export default {

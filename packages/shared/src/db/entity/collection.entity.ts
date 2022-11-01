@@ -37,4 +37,13 @@ export class Collection extends BaseEntity {
   @Column( { default: false })
   isOfficial: boolean
 
+  @Column({ nullable: true, type: 'numeric' })
+  floorPrice: number
+
+  @Column({ nullable: true, type: 'numeric' })
+  totalVolume: number
+
+  @Column({ nullable: true, type: 'numeric' })
+  averagePrice: number
+
 }
