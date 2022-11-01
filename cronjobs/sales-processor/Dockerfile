@@ -1,61 +1,72 @@
-FROM --platform=linux/arm64 node:16-alpine as deps
+######################################################################
+FROM alpine AS utils
+######################################################################
+# ADD TINI FOR SIGNAL HANDLING, staticly linked
+# without tini ctrl-c doesn't work
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-static /tini
+RUN chmod +x /tini
+# Create the user and group files that will be used in the running container to
+# run the process as an unprivileged user.
+RUN mkdir /user && \
+  echo 'nobody:x:65534:65534:nobody:/:' > /user/passwd && \
+  echo 'nobody:x:65534:' > /user/group
+
+######################################################################
+FROM node:16-alpine as prod-dependencies
+######################################################################
+WORKDIR /app
+ENV NODE_ENV production
+COPY packages/gql/package*.json ./packages/gql/
+COPY packages/shared/package*.json ./packages/shared/
+COPY package*.json ./
+RUN apk add --no-cache --virtual .gyp python3 make g++
+RUN npm ci
+
+######################################################################
+FROM node:16-alpine as dev-dependencies
+######################################################################
+WORKDIR /app
+COPY packages/gql/package*.json ./packages/gql/
+COPY packages/shared/package*.json ./packages/shared/
+COPY package*.json ./
+RUN apk add --no-cache --virtual .gyp python3 make g++
+RUN npm ci
+
+######################################################################
+FROM node:16-alpine as builder
+######################################################################
+WORKDIR /app
+COPY --from=dev-dependencies /app /app
+COPY cronjobs/sales-processor cronjobs/sales-processor
+COPY packages/cache packages/cache
+COPY packages/contract-data packages/contract-data
+COPY packages/error-types packages/error-types
+COPY packages/nftport-client packages/nftport-client
+COPY packages/shared packages/shared
+COPY nx.json tsconfig.base.json ./
+ENV NODE_ENV production
+RUN cd packages/shared && npm run build && cd -
+RUN npx nx build ..-cronjobs-sales-processor
+
+######################################################################
+FROM node:16-alpine as final
+######################################################################
+# Import the user and group files from the first stage.
+COPY --from=utils /user/group /user/passwd /etc/
+COPY --from=utils /tini /sbin/tini
 
 WORKDIR /app
+COPY --from=prod-dependencies /app  .
+COPY --from=builder /app/packages/shared /app/packages/shared
+COPY --from=builder /app/dist/cronjobs/sales-processor .
 
-COPY package.json ./package.json
-COPY .npmrc ./.npmrc
-COPY tsconfig.json ./tsconfig.json
-COPY packages/sales-processor/package.json ./packages/sales-processor/package.json
-COPY packages/sales-processor/tsconfig.json ./sales-processor/tsconfig.json
-COPY packages/shared/package.json ./packages/shared/package.json
-COPY packages/gql/package.json ./packages/gql/package.json
+# Perform any further action as an unprivileged user.
+USER nobody:nobody
 
+# Set tini as entrypoint
+ENTRYPOINT ["tini", "--"]
 
-# add tools for native dependencies (node-gpy)
-RUN apk add --no-cache --virtual .gyp python3 make g++ \
-    && npm set progress=false \
-    && npm install --omit=dev \
-    && cp -R node_modules prod_node_modules \
-    && npm install \
-    && apk del .gyp
-
-COPY packages/sales-processor ./packages/sales-processor
-COPY packages/shared ./packages/shared
-COPY packages/gql ./packages/gql
-
-FROM deps as build
-
-WORKDIR /app/packages/shared
-RUN npm run build
-
-WORKDIR /app/packages/gql
-RUN npm install
-RUN npm run build
-
-WORKDIR /app/packages/sales-processor
-RUN npm run build
-
-
-
-FROM --platform=linux/arm64 node:16-alpine as release
-
-WORKDIR /app
-
-COPY --from=deps /app/prod_node_modules ./packages/sales-processor/node_modules
-COPY --from=deps /app/prod_node_modules ./node_modules
-COPY --from=build /app/packages/gql/node_modules ./packages/gql/node_modules
-
-COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
-COPY --from=build /app/packages/shared/dist ./packages/shared/dist
-
-
-COPY --from=build /app/packages/gql/package.json ./packages/gql/package.json
-COPY --from=build /app/packages/gql/dist ./packages/gql/dist
-
-COPY --from=build /app/packages/sales-processor/package.json ./packages/sales-processor/package.json
-COPY --from=build /app/packages/sales-processor/dist ./packages/sales-processor/dist
-COPY --from=build /app/packages/sales-processor/.env ./packages/sales-processor/.env
-
-WORKDIR /app/packages/sales-processor
-
-CMD ["npm", "start"]
+# Run node app under tini
+# CMD ["/nodejs/bin/node", "main.js"]
+CMD ["node", "main.js"]
