@@ -12,6 +12,7 @@ import { auth, joi } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
+import { fetchData } from '@nftcom/nftport-client'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -535,10 +536,29 @@ const updateOfficialCollections = async (
   }
 }
 
+const getCollectionLeaderboard = async (
+  _: any,
+  _args: any,
+  ctx: Context,
+): Promise<any[]> => {
+  const { repositories } = ctx
+  const collections: (entity.Collection & {stats?: any})[] = await repositories.collection.findAllOfficial()
+  for (const collection of collections) {
+    const { statistics: stats } = await fetchData('stats', [collection.contract])
+    collection.stats = stats
+  }
+  collections.sort((a, b) => (
+    b.stats.seven_day_sales - a.stats.seven_day_sales ||
+    b.stats.seven_day_volume - a.stats.seven_day_volume
+  ))
+  return collections.map(({ stats, ...props }) => props)
+}
+
 export default {
   Query: {
     collection: getCollection,
     collectionsByDeployer: getCollectionsByDeployer,
+    collectionLeaderboard: getCollectionLeaderboard,
     collectionTraits: getCollectionTraits,
     associatedAddressesForContract:
       combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
