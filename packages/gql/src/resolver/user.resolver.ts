@@ -878,11 +878,11 @@ const getSentReferralEmails = async (
         emailInfo.map(async (info) => {
           // if someone accepted email and minted profile on NFT.com, we return true as accepted or else false
           let accepted = false
-          const savedUser = await repositories.user.findByEmail(info.email)
-          if (savedUser) {
+          const existingUser = await repositories.user.findByEmail(info.email)
+          if (existingUser) {
             const profile = await repositories.profile.findOne({
               where: {
-                ownerUserId: savedUser.id,
+                ownerUserId: existingUser.id,
               },
             })
             if (profile) accepted = true
