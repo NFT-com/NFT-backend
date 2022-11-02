@@ -540,18 +540,29 @@ const getCollectionLeaderboard = async (
   _: any,
   _args: any,
   ctx: Context,
-): Promise<any[]> => {
+): Promise<entity.Collection[]> => {
   const { repositories } = ctx
   const collections: (entity.Collection & {stats?: any})[] = await repositories.collection.findAllOfficial()
   for (const collection of collections) {
-    const { statistics: stats } = await fetchData('stats', [collection.contract])
-    collection.stats = stats
+    try {
+      const { statistics: stats } = await fetchData('stats', [collection.contract])
+      collection.stats = stats
+    } catch (_e) {
+      // noop
+    }
   }
-  collections.sort((a, b) => (
-    b.stats.seven_day_sales - a.stats.seven_day_sales ||
-    b.stats.seven_day_volume - a.stats.seven_day_volume
-  ))
-  return collections.map(({ stats, ...props }) => props)
+  collections.sort((a, b) => {
+    if (a.stats && !b.stats) {
+      return -1
+    } else if (b.stats && !a.stats) {
+      return 1
+    } else if (!a.stats && !b.stats) {
+      return b.totalVolume - a.totalVolume
+    }
+    return b.stats.seven_day_sales - a.stats.seven_day_sales
+      || b.stats.seven_day_volume - a.stats.seven_day_volume
+  })
+  return collections.map(({ stats, ...props }) => props) as entity.Collection[]
 }
 
 export default {

@@ -84,5 +84,70 @@ describe('collection resolver', () => {
         { contract: '0x0000' },
       ])
     })
+
+    it('should sort collections when a collection does not have stats', async () => {
+      mockCtx.repositories = {
+        collection: {
+          findAllOfficial: jest.fn().mockResolvedValue([
+            { contract: '0x0000' },
+            { contract: '0x0001' },
+            { contract: '0x0002' },
+            { contract: '0x0003' },
+            { contract: '0x0004' },
+          ]),
+        }  as unknown as NFTRepository,
+      } as unknown as Repository
+
+      mockFetchData
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 0 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1 } })
+        .mockResolvedValueOnce({ })
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 3 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 4 } })
+
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(undefined, {}, mockCtx)
+
+      expect(leaderboard).toEqual([
+        { contract: '0x0004' },
+        { contract: '0x0003' },
+        { contract: '0x0001' },
+        { contract: '0x0000' },
+        { contract: '0x0002' },
+      ])
+    })
+
+    it('should sort collections falling back to persisted stats when needed', async () => {
+      mockCtx.repositories = {
+        collection: {
+          findAllOfficial: jest.fn().mockResolvedValue([
+            { contract: '0x0000', totalVolume: 90 },
+            { contract: '0x0001' },
+            { contract: '0x0002', totalVolume: 100 },
+            { contract: '0x0003' },
+            { contract: '0x0004' },
+          ]),
+        }  as unknown as NFTRepository,
+      } as unknown as Repository
+
+      mockFetchData
+        .mockImplementationOnce(() => { throw new Error() })
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1 } })
+        .mockImplementationOnce(() => { throw new Error() })
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 3 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_sales: 4 } })
+
+      const leaderboard = (await collectionResolver.Query.collectionLeaderboard(undefined, {}, mockCtx))
+        .map(({ totalVolume, ...rest }) => rest)
+
+      console.log(leaderboard)
+      
+      expect(leaderboard).toEqual([
+        { contract: '0x0004' },
+        { contract: '0x0003' },
+        { contract: '0x0001' },
+        { contract: '0x0002' },
+        { contract: '0x0000' },
+      ])
+    })
   })
 })
