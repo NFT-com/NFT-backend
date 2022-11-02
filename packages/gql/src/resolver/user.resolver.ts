@@ -776,7 +776,7 @@ export const sendReferEmail = async (
       if (savedReferralInfo && savedReferralInfo.length) {
         for (const info of savedReferralInfo) {
           existing[info.email] = true
-          toUpdate.push(savedReferralInfo)
+          toUpdate.push(info)
         }
         for (const info of successfulEmails) {
           if (!existing[info.email]) {
