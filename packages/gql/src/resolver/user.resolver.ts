@@ -773,7 +773,7 @@ export const sendReferEmail = async (
       const savedReferralInfo = JSON.parse(profileOwner.referralEmailInfo) as ReferralEmailInfo[]
       const existing = {}
       const toUpdate = []
-      if (savedReferralInfo.length) {
+      if (savedReferralInfo && savedReferralInfo.length) {
         for (const info of savedReferralInfo) {
           existing[info.email] = true
           toUpdate.push(savedReferralInfo)
@@ -873,7 +873,7 @@ const getSentReferralEmails = async (
     const savedUser = await repositories.user.findById(user.id)
     const emailInfo = JSON.parse(savedUser.referralEmailInfo) as ReferralEmailInfo[]
     const res = []
-    if (emailInfo.length) {
+    if (emailInfo && emailInfo.length) {
       await Promise.allSettled(
         emailInfo.map(async (info) => {
           // if someone accepted email and minted profile on NFT.com, we return true as accepted or else false

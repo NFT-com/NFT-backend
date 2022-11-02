@@ -123,6 +123,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
   }).initialize()
     .then((con) => {
       connection = con
+      readOnlyConnection = con
       return con
     })
 }
