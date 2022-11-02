@@ -68,7 +68,7 @@ export const sendReferralEmail = async (
     '\n\nYour NFT Profile is exactly that, yours. We’ve had enough of social networks that exploit their\n\n users. ' +
     'Creating your profile enables you to establish and own your digital identity. ' +
     'You can collect\n\n and display new NFTs or promote your latest NFT collection.' +
-    `\n\nCreate your free NFT Profile: https://nft.com/app/signup?referralCode=${referralId}&referralUrl=${profileUrl}` +
+    `\n\nCreate your free NFT Profile: ${confirmEmailUrl}?referralCode=${referralId}&referralUrl=${profileUrl}` +
     '\n\nYou’ll be able to customize your NFT Profile, grow your network and collect new NFTs on NFT.com' +
     '\n\nSee you in the metaverse,\n\nNFT.com Team'
   try {
