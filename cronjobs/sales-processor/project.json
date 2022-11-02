@@ -1,0 +1,55 @@
+{
+  "name": "..-cronjobs-sales-processor",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "cronjobs/sales-processor/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/cronjobs/sales-processor",
+        "main": "cronjobs/sales-processor/src/main.ts",
+        "tsConfig": "cronjobs/sales-processor/tsconfig.app.json",
+        "assets": []
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": []
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "..-cronjobs-sales-processor:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "..-cronjobs-sales-processor:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["cronjobs/sales-processor/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/cronjobs/sales-processor"],
+      "options": {
+        "jestConfig": "cronjobs/sales-processor/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

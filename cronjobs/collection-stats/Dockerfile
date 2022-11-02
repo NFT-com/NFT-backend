@@ -50,18 +50,15 @@ RUN cd packages/shared && npm run build && cd -
 RUN npx nx build ..-cronjobs-collection-stats
 
 ######################################################################
-# TODO: `distroless/nodejs` has an issue with `sharp` npm package
-# FROM gcr.io/distroless/nodejs as final
 FROM node:16-alpine as final
 ######################################################################
 # Import the user and group files from the first stage.
 COPY --from=utils /user/group /user/passwd /etc/
 COPY --from=utils /tini /sbin/tini
 
-COPY --from=builder /app/packages/shared /app/packages/shared
-
 WORKDIR /app
 COPY --from=prod-dependencies /app  .
+COPY --from=builder /app/packages/shared /app/packages/shared
 COPY --from=builder /app/dist/cronjobs/collection-stats .
 
 # Perform any further action as an unprivileged user.

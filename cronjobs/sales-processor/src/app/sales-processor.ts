@@ -11,7 +11,7 @@ const DATE_RANGE_BUFFER = process.env.DATE_RANGE_BUFFER || '3d'
 
 const repositories = db.newRepositories()
 
-const updateCollectionSales = async (): Promise<any> => {
+export const updateCollectionSales = async (): Promise<any> => {
   await getConnection()
   const rawAddressResults = await repositories.marketplaceSale.getDistinctContractAddresses()
   for (const raw of rawAddressResults) {
@@ -21,10 +21,4 @@ const updateCollectionSales = async (): Promise<any> => {
       logger.error(err)
     }
   }
-}
-
-if (require.main === module) {
-  updateCollectionSales().then(() => {
-    process.exit()
-  })
 }
