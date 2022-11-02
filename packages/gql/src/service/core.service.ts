@@ -898,7 +898,7 @@ export const createProfileFromEvent = async (
   //save incentive action for REFER_NETWORK
   if (user && user.referredBy) {
     const referredInfo = user.referredBy.split('::')
-    if (referredInfo.length === 2) {
+    if (referredInfo && referredInfo.length === 2) {
       const userMadeReferral = await repositories.user.findById(referredInfo[0])
       const referredProfileUrl = referredInfo[1]
       if (userMadeReferral) {
