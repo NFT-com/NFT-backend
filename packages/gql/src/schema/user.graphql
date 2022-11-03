@@ -101,8 +101,8 @@ input SignUpInput {
   email: String
   username: String
   referredBy: String
-  wallet: WalletInput!
   referredUrl: String
+  wallet: WalletInput!
 }
 
 input UpdateUserInput {
@@ -175,6 +175,12 @@ type SendReferEmailOutput {
   message: String
 }
 
+type SentReferralEmailsOutput {
+  email: String!
+  accepted: Boolean!
+  timestamp: String!
+}
+
 extend type Query {
   "AUTHENTICATED"
   me: User!
@@ -192,6 +198,8 @@ extend type Query {
   getRemovedAssociationsForSender(profileUrl: String!): [RemovedAssociationsForSenderOutput]!
   "AUTHENTICATED"
   getProfileActions: [ProfileActionOutput]!
+  "AUTHENTICATED"
+  getSentReferralEmails: [SentReferralEmailsOutput]!
 }
 
 extend type Mutation {

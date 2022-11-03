@@ -830,9 +830,10 @@ export const createProfileFromEvent = async (
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
+  let user
   if (!wallet) {
     const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
-    let user = await repositories.user.findOne({
+    user = await repositories.user.findOne({
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
@@ -872,21 +873,52 @@ export const createProfileFromEvent = async (
     ownerUserId: wallet.userId,
     chainId: chainId || process.env.CHAIN_ID,
   }, noAvatar)
-  // save incentive action
-  const existingAction = await repositories.incentiveAction.findOne({
+  // save incentive action for CREATE_NFT_PROFILE
+  const createProfileAction = await repositories.incentiveAction.findOne({
     where: {
       userId: wallet.userId,
       profileUrl,
       task: defs.ProfileTask.CREATE_NFT_PROFILE,
     },
   })
-  if (!existingAction) {
+  if (!createProfileAction) {
     await repositories.incentiveAction.save({
       userId: wallet.userId,
       profileUrl,
       task: defs.ProfileTask.CREATE_NFT_PROFILE,
       point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
     })
+  }
+  user = await repositories.user.findOne({
+    where: {
+      // defaults
+      username: 'ethereum-' + ethers.utils.getAddress(owner),
+    },
+  })
+  //save incentive action for REFER_NETWORK
+  if (user && user.referredBy) {
+    const referredInfo = user.referredBy.split('::')
+    if (referredInfo && referredInfo.length === 2) {
+      const userMadeReferral = await repositories.user.findById(referredInfo[0])
+      const referredProfileUrl = referredInfo[1]
+      if (userMadeReferral) {
+        const referNetworkAction = await repositories.incentiveAction.findOne({
+          where: {
+            userId: userMadeReferral.id,
+            profileUrl: referredProfileUrl,
+            task: defs.ProfileTask.REFER_NETWORK,
+          },
+        })
+        if (!referNetworkAction) {
+          await repositories.incentiveAction.save({
+            userId: userMadeReferral.id,
+            profileUrl: referredProfileUrl,
+            task: defs.ProfileTask.REFER_NETWORK,
+            point: defs.ProfileTaskPoint.REFER_NETWORK,
+          })
+        }
+      }
+    }
   }
   return profile
 }
