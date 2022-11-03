@@ -179,7 +179,7 @@ type SendReferEmailOutput {
 type SentReferralEmailsOutput {
   email: String!
   accepted: Boolean!
-  timestamp: String!
+  timestamp: DateTime!
 }
 
 extend type Query {
@@ -200,7 +200,7 @@ extend type Query {
   "AUTHENTICATED"
   getProfileActions: [ProfileActionOutput]!
   "AUTHENTICATED"
-  getSentReferralEmails: [SentReferralEmailsOutput]!
+  getSentReferralEmails(profileUrl: String!): [SentReferralEmailsOutput]!
 }
 
 extend type Mutation {
