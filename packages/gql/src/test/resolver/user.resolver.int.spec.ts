@@ -695,6 +695,10 @@ describe('user resolver', () => {
       expect(user.referralEmailInfo.length).toBeGreaterThan(0)
       const info = JSON.parse(user.referralEmailInfo) as ReferralEmailInfo[]
       expect(info.length).toEqual(2)
+      const userA = await repositories.user.findByEmail('test@example.com')
+      expect(userA).toBeDefined()
+      const userB = await repositories.user.findByEmail('test1@example.com')
+      expect(userB).toBeDefined()
     })
 
     it('should return refer emails sent before', async () => {

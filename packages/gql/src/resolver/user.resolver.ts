@@ -36,7 +36,7 @@ const signUp = (
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, username, avatarURL, referredBy = '', wallet, referredUrl } = args.input
+  const { email, username, avatarURL, referredBy = '', wallet, referredUrl, referralId } = args.input
   const { address, network, chainId } = wallet
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
@@ -66,7 +66,6 @@ const signUp = (
     .then((referredUserId: string) => {
       const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
       const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
-      const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
 
       let referredInfo
       if (!referredUserId || !referredUserId.length) {
@@ -77,16 +76,32 @@ const signUp = (
           referredInfo = referredInfo + '::' + referredUrl
         }
       }
-
-      return repositories.user.save({
-        email,
-        username,
-        referredBy: referredInfo || null,
-        avatarURL,
-        confirmEmailToken,
-        confirmEmailTokenExpiresAt,
-        referralId,
-      })
+      // if referralId is existing in variable, it means we don't need to create new user because it's referred by someone from our platform
+      if (referralId && referralId.length) {
+        return repositories.user.findByReferralId(referralId)
+          .then((existingUser) => {
+            if (existingUser) {
+              return repositories.user.updateOneById(existingUser.id, {
+                username,
+                referredBy: referredInfo || null,
+                avatarURL,
+                confirmEmailToken,
+                confirmEmailTokenExpiresAt,
+              })
+            }
+          })
+      } else {
+        const newReferralId = cryptoRandomString({ length: 10, type: 'url-safe' })
+        return repositories.user.save({
+          email,
+          username,
+          referredBy: referredInfo || null,
+          avatarURL,
+          confirmEmailToken,
+          confirmEmailTokenExpiresAt,
+          referralId: newReferralId,
+        })
+      }
     })
     .then(fp.tapWait<entity.User, unknown>((user) => Promise.all([
       repositories.wallet.save({
@@ -754,7 +769,16 @@ export const sendReferEmail = async (
         const existingUser = await repositories.user.findByEmail(email)
         // if user is not created by email
         if (!existingUser) {
-          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl)
+          const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
+          const referredBy = profileOwner.referralId + '::' + profileUrl
+          // create unverified user with this email
+          await repositories.user.save({
+            email,
+            username: `unverified_${email}_${referralId}`,
+            referralId,
+            referredBy,
+          })
+          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl, referralId)
           if (res) {
             successfulEmails.push({
               email,
@@ -879,7 +903,7 @@ const getSentReferralEmails = async (
           // if someone accepted email and minted profile on NFT.com, we return true as accepted or else false
           let accepted = false
           const existingUser = await repositories.user.findByEmail(info.email)
-          if (existingUser) {
+          if (existingUser && !existingUser.username.startsWith('unverified')) {
             const profile = await repositories.profile.findOne({
               where: {
                 ownerUserId: existingUser.id,
