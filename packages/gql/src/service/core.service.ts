@@ -1166,3 +1166,51 @@ export const profileActionType = (
   else if (action.task === ProfileTask.ISSUE_NFTS)
     return gql.ProfileActionType.IssueNFTs
 }
+
+const firstEntitiesAfter =
+async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+  const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
+  return [
+    entities.slice(index, index + pageInput.first),
+    entities.length,
+  ]
+}
+
+const firstEntitiesBefore =
+async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+  return [
+    entities.slice(0, Math.min(
+      pageInput.first,
+      entities.findIndex((e) => e[property] === pageInput.beforeCursor),
+    )),
+    entities.length,
+  ]
+}
+
+const lastEntitiesAfter =
+async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+  const index = entities.findIndex((e) => e[property]=== pageInput.afterCursor) + 1
+  return [
+    entities.slice(Math.max(index, entities.length - pageInput.last)),
+    entities.length,
+  ]
+}
+
+const lastEntitiesBefore =
+async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+  const index = entities.findIndex((e) => e[property] === pageInput.beforeCursor)
+  return [
+    entities.slice(Math.max(0, index - pageInput.last), index),
+    entities.length,
+  ]
+}
+
+export const paginateEntityArray =
+<T>(entities: T[], pageInput: gql.PageInput, cursorProp = 'id'): Promise<defs.PageableResult<T>> => {
+  return pagination.resolvePage<T>(pageInput, {
+    firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
+    firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
+    lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
+    lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
+  })
+}
