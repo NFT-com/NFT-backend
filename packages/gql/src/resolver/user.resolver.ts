@@ -64,9 +64,6 @@ const signUp = (
         .then((user) => user?.id)
     }))
     .then((referredUserId: string) => {
-      const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
-      const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
-
       let referredInfo
       if (!referredUserId || !referredUserId.length) {
         referredInfo = null
@@ -85,12 +82,13 @@ const signUp = (
                 username,
                 referredBy: referredInfo || null,
                 avatarURL,
-                confirmEmailToken,
-                confirmEmailTokenExpiresAt,
+                isEmailConfirmed: true,
               })
             }
           })
       } else {
+        const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
+        const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
         const newReferralId = cryptoRandomString({ length: 10, type: 'url-safe' })
         return repositories.user.save({
           email,
