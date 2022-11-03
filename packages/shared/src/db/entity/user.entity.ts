@@ -32,9 +32,6 @@ export class User extends BaseEntity {
   referralId: string
 
   @Column({ nullable: true })
-  referralEmailInfo: string
-
-  @Column({ nullable: true })
   referredBy: string
 
   @Column('json', { nullable: false, default: {
