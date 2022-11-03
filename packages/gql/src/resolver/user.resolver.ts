@@ -84,6 +84,11 @@ const signUp = (
                 avatarURL,
                 isEmailConfirmed: true,
               })
+            } else {
+              return Promise.reject(appError.buildInvalid(
+                userError.buildInvalidReferralId(referralId),
+                userError.ErrorType.InvalidReferralId,
+              ))
             }
           })
       } else {
