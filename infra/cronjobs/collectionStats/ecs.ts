@@ -47,6 +47,14 @@ export const createCollectionStatsTaskDefinition = (): aws.ecs.TaskDefinition =>
             Value: process.env.GQL_DB_USE_SSL,
           },
           {
+            Name: 'REDIS_HOST',
+            Value: process.env.REDIS_HOST,
+          },
+          {
+            Name: 'REDIS_PORT',
+            Value: process.env.REDIS_PORT,
+          },
+          {
             Name: 'AWS_CA_CERT',
             Value: process.env.AWS_CA_CERT,
           },
