@@ -4,11 +4,13 @@ import * as upath from 'upath'
 import * as pulumi from '@pulumi/pulumi'
 
 import { deployInfra, getStage, isProduction, pulumiOutToValue } from '../helper'
+import { createCollectionStatsEcsCluster,createCollectionStatsTaskDefinition } from './collectionStats/ecs'
+import { createCollectionStatsEventBridgeTarget } from './collectionStats/eventbridge'
 import { createEcsCluster,createMintRunnerTaskDefinition } from './mintRunner/ecs'
 import { createEventBridgeTarget } from './mintRunner/eventbridge'
 import { createAnalyticsDatabase } from './mintRunner/rds'
-import { createSalesProcessorTaskDefinition, createSalesProessorEcsCluster } from './salesProcessor/ecs'
-import { createSalesProessorEventBridgeTarget } from './salesProcessor/eventbridge'
+import { createSalesProcessorEcsCluster,createSalesProcessorTaskDefinition } from './salesProcessor/ecs'
+import { createSalesProcessorEventBridgeTarget } from './salesProcessor/eventbridge'
 
 const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   //const config = new pulumi.Config()
@@ -34,10 +36,17 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   // START: CRONJOB - SALES PROCESSOR
   if (isProduction()) {
     const spTask = createSalesProcessorTaskDefinition()
-    const spCluster = createSalesProessorEcsCluster()
-    createSalesProessorEventBridgeTarget(spTask,subnetVal,spCluster)
+    const spCluster = createSalesProcessorEcsCluster()
+    createSalesProcessorEventBridgeTarget(spTask,subnetVal,spCluster)
   }
   // END: CRONJOB - SALES PROCESSOR
+  // START: CRONJOB - COLLECTION STATS
+  if (stage !== 'dev') {
+    const csTask = createCollectionStatsTaskDefinition()
+    const csCluster = createCollectionStatsEcsCluster()
+    createCollectionStatsEventBridgeTarget(csTask,subnetVal,csCluster)
+  }
+  // END: CRONJOB - COLLECTION STATS  
 }
 
 export const createCronJobs = (

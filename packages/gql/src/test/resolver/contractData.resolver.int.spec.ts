@@ -15,11 +15,16 @@ jest.retryTimes(2)
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
-jest.mock('@nftcom/nftport-client', () => ({
-  getNFTPortInterceptor: (_baseURL: string) => {
-    return mockedAxios
-  },
-}))
+jest.mock('@nftcom/nftport-client', () => {
+  const original = jest.requireActual('@nftcom/nftport-client')
+
+  return {
+    ...original,
+    getNFTPortInterceptor: (_baseURL: string) => {
+      return mockedAxios
+    },
+  }
+})
 
 jest.mock('@nftcom/cache', () => ({
   redisConfig: {},

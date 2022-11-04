@@ -281,7 +281,7 @@ export const createX2Y2Listing = async (
   let x2y2Order: Partial<entity.TxOrder>
   const baseUrl = chainId === '1' ?  X2Y2_API_BASE_URL: X2Y2_API_TESTNET_BASE_URL
   try {
-    const res = await getX2Y2Interceptor(baseUrl, chainId).post('/api/orders/add',
+    const res = await getX2Y2Interceptor(baseUrl).post('/api/orders/add',
       JSON.parse(order),
     )
     if (res.status === 201 && res.data.data) {

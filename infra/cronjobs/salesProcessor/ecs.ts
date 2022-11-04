@@ -29,6 +29,32 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
         image: ecrImage,
         memoryReservation: 1024,
         name: resourceName,
+        environment: [
+          {
+            Name: 'DB_HOST',
+            Value: process.env.GQL_DB_HOST,
+          },
+          {
+            Name: 'DB_PORT',
+            Value: process.env.GQL_DB_PORT,
+          },
+          {
+            Name: 'DB_PASSWORD',
+            Value: process.env.GQL_DB_PASSWORD,
+          },
+          {
+            Name: 'DB_USE_SSL',
+            Value: process.env.GQL_DB_USE_SSL,
+          },
+          {
+            Name: 'AWS_CA_CERT',
+            Value: process.env.AWS_CA_CERT,
+          },
+          {
+            Name: 'NODE_ENV',
+            Value: process.env.NODE_ENV,
+          },
+        ],
       }]),
     cpu: '512',
     executionRoleArn: execRole,
@@ -44,7 +70,7 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
   })
 }
 
-export const createSalesProessorEcsCluster = (): aws.ecs.Cluster => {
+export const createSalesProcessorEcsCluster = (): aws.ecs.Cluster => {
   const resourceName = 'cronjob-sales-processor' // static name to allow each env to share the same ecs cluster
   const cluster = new aws.ecs.Cluster('salesProcessor-cluster',
     {

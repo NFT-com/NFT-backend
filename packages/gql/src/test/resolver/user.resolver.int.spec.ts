@@ -1,6 +1,5 @@
 import { testDBConfig } from '@nftcom/gql/config'
-import { defs } from '@nftcom/shared'
-import { db } from '@nftcom/shared/db'
+import { db,defs } from '@nftcom/shared'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
@@ -647,7 +646,7 @@ describe('user resolver', () => {
   })
 
   describe('sendReferEmail', () => {
-    beforeAll(async () => {
+    beforeEach(async () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
@@ -673,7 +672,7 @@ describe('user resolver', () => {
       )
     })
 
-    afterAll(async () => {
+    afterEach(async () => {
       await clearDB(repositories)
       await testServer.stop()
     })
@@ -690,6 +689,33 @@ describe('user resolver', () => {
       })
       expect(result.data.sendReferEmail.message).toBeDefined()
       expect(result.data.sendReferEmail.message).toEqual('Referral emails are sent to 2 addresses.')
+      const userA = await repositories.user.findByEmail('test@example.com')
+      expect(userA).toBeDefined()
+      const userB = await repositories.user.findByEmail('test1@example.com')
+      expect(userB).toBeDefined()
+    })
+
+    it('should return refer emails sent before', async () => {
+      await testServer.executeOperation({
+        query: 'mutation Mutation($input: SendReferEmailInput!) { sendReferEmail(input: $input) { message } }',
+        variables: {
+          input: {
+            emails: ['test@example.com', 'test1@example.com'],
+            profileUrl: 'test-profile',
+          },
+        },
+      })
+      const result = await testServer.executeOperation({
+        query: 'query GetSentReferralEmails($profileUrl: String!) { getSentReferralEmails(profileUrl: $profileUrl) { email accepted timestamp } }',
+        variables: {
+          profileUrl: 'test-profile',
+        },
+      })
+      expect(result.data.getSentReferralEmails.length).toEqual(2)
+      expect(result.data.getSentReferralEmails[0].email).toEqual('test@example.com')
+      expect(result.data.getSentReferralEmails[0].accepted).toEqual(false)
+      expect(result.data.getSentReferralEmails[1].email).toEqual('test1@example.com')
+      expect(result.data.getSentReferralEmails[1].accepted).toEqual(false)
     })
   })
 })

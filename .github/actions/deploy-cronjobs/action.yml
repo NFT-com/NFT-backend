@@ -43,7 +43,7 @@ runs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
     - name: Build and Push SalesProcessor Images
-      if: ${{ inputs.stage  == 'prod' }}
+      if: ${{ inputs.stage  != 'dev' }}
       shell: bash
       env:
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
@@ -51,6 +51,17 @@ runs:
       run: |
         export DOCKER_BUILDKIT=1
         docker build . -f cronjobs/sales-processor/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+    - name: Build and Push CollectionStats Images
+      if: ${{ inputs.stage  != 'dev' }}
+      shell: bash
+      env:
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        ECR_REPOSITORY: collection-stats  #for simplicity, ecr repo created outside pulumi stack
+      run: |
+        export DOCKER_BUILDKIT=1
+        docker build . -f cronjobs/collection-stats/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
     - name: Deploy Cronjob Infra
@@ -72,4 +83,10 @@ runs:
         ETH_NODE_URL: ${{ fromJSON(inputs.secrets).ETH_NODE_URL }}
         PROFILE_PER_GK: ${{ fromJSON(inputs.secrets).PROFILE_PER_GK }}
         MINT_TABLE_NAME: ${{ fromJSON(inputs.secrets).MINT_TABLE_NAME }}
+        AWS_CA_CERT: ${{ fromJSON(inputs.secrets).AWS_CA_CERT }}
+        GQL_DB_HOST: ${{ fromJSON(inputs.secrets).GQL_DB_HOST }}
+        GQL_DB_PORT: ${{ fromJSON(inputs.secrets).GQL_DB_PORT }}
+        GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).GQL_DB_PASSWORD }}
+        GQL_DB_USE_SSL: ${{ fromJSON(inputs.secrets).GQL_DB_USE_SSL }}
+        NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
       run: npm run deploy:cronjobs

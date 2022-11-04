@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 
 import { testDBConfig } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
@@ -81,29 +81,58 @@ describe('core service', () => {
   })
 
   describe('createProfileFromEvent', () => {
+    beforeAll(async () => {
+      const userA = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      const userB = await repositories.user.save({
+        email: 'test@immutableholdings.com',
+        username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
+        referredBy: `${userA.id}::test-profile-A`,
+        referralId: '',
+      })
+      await repositories.wallet.save({
+        address: ethers.utils.getAddress('0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005'),
+        network: 'ethereum',
+        chainId: '5',
+        chainName: 'goerli',
+        userId: userB.id,
+      })
+    })
     afterAll(async () => {
       await clearDB(repositories)
     })
 
-    it('should save incentive action', async () => {
+    it('should save incentive action for create NFT profile and refer network', async () => {
       const profile = await createProfileFromEvent(
         '5',
         '0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
         BigNumber.from('5'),
         repositories,
-        'test-profile',
+        'test-profile-B',
       )
       expect(profile).toBeDefined()
       expect(profile.ownerUserId).not.toBeNull()
       expect(profile.ownerWalletId).not.toBeNull()
-      const incentiveAction = await repositories.incentiveAction.findOne({
+      const createProfileAction = await repositories.incentiveAction.findOne({
         where: {
           userId: profile.ownerUserId,
           profileUrl: profile.url,
           task: defs.ProfileTask.CREATE_NFT_PROFILE,
         },
       })
-      expect(incentiveAction).toBeDefined()
+      expect(createProfileAction).toBeDefined()
+      const referNetworkAction = await repositories.incentiveAction.findOne({
+        where: {
+          profileUrl: 'test-profile-A',
+          task: defs.ProfileTask.REFER_NETWORK,
+        },
+      })
+      expect(referNetworkAction).toBeDefined()
+      expect(referNetworkAction.userId).toBeDefined()
     })
   })
 })
