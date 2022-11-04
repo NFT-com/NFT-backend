@@ -100,7 +100,8 @@
         "args": "after-used",
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
+        "caughtErrorsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
       }
     ],
     "sort-imports": "off",
