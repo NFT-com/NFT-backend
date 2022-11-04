@@ -59,6 +59,10 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
             Value: process.env.AWS_CA_CERT,
           },
           {
+            Name: 'NFTPORT_KEY',
+            Value: process.env.NFTPORT_KEY,
+          },
+          {
             Name: 'NODE_ENV',
             Value: process.env.NODE_ENV,
           },
