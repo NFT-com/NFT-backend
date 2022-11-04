@@ -92,4 +92,5 @@ runs:
         REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
         NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY }}
+        ALCHEMY_API_URL: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL }}
       run: npm run deploy:cronjobs

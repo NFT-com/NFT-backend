@@ -63,6 +63,10 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
             Value: process.env.NFTPORT_KEY,
           },
           {
+            Name: 'ALCHEMY_API_URL',
+            Value: process.env.ALCHEMY_API_URL,
+          },
+          {
             Name: 'NODE_ENV',
             Value: process.env.NODE_ENV,
           },
