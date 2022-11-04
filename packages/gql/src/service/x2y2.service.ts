@@ -131,7 +131,7 @@ const retrieveX2Y2ListingsInBatches = async (
   while(listingQueryParams.length>0) {
     size = batchSize
     queryUrl = listingQueryParams.pop()
-    console.log('query url', queryUrl)
+    // console.log('query url', queryUrl)
     const response: AxiosResponse = await listingInterceptorX2Y2(
       `/v1/orders?${queryUrl}`,
     )
@@ -139,7 +139,7 @@ const retrieveX2Y2ListingsInBatches = async (
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
-      console.log('orders', orders)
+      // console.log('orders', orders)
       listings.push(
         orderEntityBuilder(
           defs.ProtocolType.X2Y2,
@@ -182,7 +182,7 @@ const retrieveX2Y2OffersInBatches = async (
   while(offerQueryParams.length>0) {
     size = batchSize
     queryUrl = offerQueryParams.pop()
-    console.log('query url', queryUrl)
+    // console.log('query url', queryUrl)
     const response: AxiosResponse = await listingInterceptorX2Y2(
       `/v1/offers?${queryUrl}`,
     )
@@ -190,7 +190,7 @@ const retrieveX2Y2OffersInBatches = async (
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
-      console.log('offer', orders)
+      // console.log('offer', orders)
       offers.push(
         orderEntityBuilder(
           defs.ProtocolType.X2Y2,
@@ -254,16 +254,15 @@ export const retrieveMultipleOrdersX2Y2 = async (
       }
     }
   } catch (err) {
-    console.log('err', err)
     logger.error(`Error in retrieveMultipleOrdersX2Y2: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
-  console.log('response aggregator', responseAggregator)
+  // console.log('response aggregator', responseAggregator)
   return responseAggregator
 }
 
-retrieveMultipleOrdersX2Y2([{ contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' },
-  { contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' }], '5', false)
+// retrieveMultipleOrdersX2Y2([{ contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' },
+//   { contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' }], '5', false)
 
 export function encodeOrder(order: X2Y2OrderPayload): string {
   return ethers.utils.defaultAbiCoder.encode([orderParamType], [order])
