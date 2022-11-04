@@ -1,9 +1,9 @@
 import { cache } from '@nftcom/cache'
 import { fetchData } from '@nftcom/nftport-client'
-import { entity } from '@nftcom/shared/db'
-import { CollectionRepository } from '@nftcom/shared/db/repository'
+import { entity, repository } from '@nftcom/shared'
 
-export const getSortedLeaderboard = async (collectionRepo: CollectionRepository): Promise<entity.Collection[]> => {
+export const getSortedLeaderboard =
+async (collectionRepo: repository.CollectionRepository): Promise<entity.Collection[]> => {
   const cacheKey = 'COLLECTION_LEADERBOARD'
   const cachedResult = await cache.get(cacheKey)
   if (cachedResult) {
