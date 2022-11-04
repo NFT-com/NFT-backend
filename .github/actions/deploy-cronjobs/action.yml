@@ -91,4 +91,5 @@ runs:
         REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
         REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
+        NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY }}
       run: npm run deploy:cronjobs
