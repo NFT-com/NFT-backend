@@ -88,5 +88,7 @@ runs:
         GQL_DB_PORT: ${{ fromJSON(inputs.secrets).GQL_DB_PORT }}
         GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).GQL_DB_PASSWORD }}
         GQL_DB_USE_SSL: ${{ fromJSON(inputs.secrets).GQL_DB_USE_SSL }}
+        REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
+        REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
       run: npm run deploy:cronjobs
