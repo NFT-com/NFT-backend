@@ -11,6 +11,7 @@ export enum ErrorType {
   InvalidEmailConfirmToken = 'INVALID_EMAIL_CONFIRM_TOKEN',
   ForbiddenAction = 'FORBIDDEN_ACTION',
   EventAction = 'EVENT_NOT_FOUND',
+  InvalidReferralId = 'INVALID_REFERRAL_ID',
 }
 
 export const buildAuth = (): ApolloError =>
@@ -24,7 +25,7 @@ export const buildUserNotFoundMsg = (id: string): string => `User ${id} not foun
 
 export const buildUsernameExistsMsg = (username: string): string =>
   `User with username ${username} already exists`
-  
+
 export const buildEmailExistsMsg = (email: string): string =>
   `User with email ${email} already exists`
 
@@ -37,3 +38,6 @@ export const buildEventNotFoundMsg = (id: string): string =>
   id
 
 export const buildForbiddenActionMsg = (id = ''): string => 'You may not perform this action.' + id
+
+export const buildInvalidReferralId = (referralId: string): string =>
+  `Referral Id ${referralId} is invalid`

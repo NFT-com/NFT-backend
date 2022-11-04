@@ -13,7 +13,6 @@ import { obliterateQueue } from '@nftcom/gql/job/job'
 import { core, sendgrid } from '@nftcom/gql/service'
 import { profileActionType } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
-import { ReferralEmailInfo } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
@@ -36,7 +35,7 @@ const signUp = (
   })
   joi.validateSchema(schema, args.input)
 
-  const { email, username, avatarURL, referredBy = '', wallet, referredUrl } = args.input
+  const { email, username, avatarURL, referredBy = '', wallet, referredUrl, referralId } = args.input
   const { address, network, chainId } = wallet
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
 
@@ -64,10 +63,6 @@ const signUp = (
         .then((user) => user?.id)
     }))
     .then((referredUserId: string) => {
-      const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
-      const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
-      const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
-
       let referredInfo
       if (!referredUserId || !referredUserId.length) {
         referredInfo = null
@@ -77,16 +72,38 @@ const signUp = (
           referredInfo = referredInfo + '::' + referredUrl
         }
       }
-
-      return repositories.user.save({
-        email,
-        username,
-        referredBy: referredInfo || null,
-        avatarURL,
-        confirmEmailToken,
-        confirmEmailTokenExpiresAt,
-        referralId,
-      })
+      // if referralId is existing in variable, it means we don't need to create new user because it's referred by someone from our platform
+      if (referralId && referralId.length) {
+        return repositories.user.findByReferralId(referralId)
+          .then((existingUser) => {
+            if (existingUser) {
+              return repositories.user.updateOneById(existingUser.id, {
+                username,
+                referredBy: referredInfo || null,
+                avatarURL,
+                isEmailConfirmed: true,
+              })
+            } else {
+              return Promise.reject(appError.buildInvalid(
+                userError.buildInvalidReferralId(referralId),
+                userError.ErrorType.InvalidReferralId,
+              ))
+            }
+          })
+      } else {
+        const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
+        const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
+        const newReferralId = cryptoRandomString({ length: 10, type: 'url-safe' })
+        return repositories.user.save({
+          email,
+          username,
+          referredBy: referredInfo || null,
+          avatarURL,
+          confirmEmailToken,
+          confirmEmailTokenExpiresAt,
+          referralId: newReferralId,
+        })
+      }
     })
     .then(fp.tapWait<entity.User, unknown>((user) => Promise.all([
       repositories.wallet.save({
@@ -748,18 +765,22 @@ export const sendReferEmail = async (
       return Promise.reject(new Error(`You are not owner of this profile ${profileUrl}`))
     }
     let sent = 0
-    const successfulEmails: ReferralEmailInfo[] = []
     await Promise.allSettled(
       emails.map(async (email) => {
         const existingUser = await repositories.user.findByEmail(email)
         // if user is not created by email
         if (!existingUser) {
-          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl)
+          const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
+          const referredBy = profileOwner.referralId + '::' + profileUrl
+          // create unverified user with this email
+          await repositories.user.save({
+            email,
+            username: `unverified_${email}_${referralId}`,
+            referralId,
+            referredBy,
+          })
+          const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl, referralId)
           if (res) {
-            successfulEmails.push({
-              email,
-              timestamp: Date.now().toString(),
-            })
             sent ++
           } else {
             logger.error('Something went wrong with sending referral email')
@@ -767,32 +788,6 @@ export const sendReferEmail = async (
         }
       }),
     )
-
-    // keep emails with timestamp to user table for tracking on FE
-    if (successfulEmails.length) {
-      const savedReferralInfo = JSON.parse(profileOwner.referralEmailInfo) as ReferralEmailInfo[]
-      const existing = {}
-      const toUpdate = []
-      if (savedReferralInfo && savedReferralInfo.length) {
-        for (const info of savedReferralInfo) {
-          existing[info.email] = true
-          toUpdate.push(info)
-        }
-        for (const info of successfulEmails) {
-          if (!existing[info.email]) {
-            toUpdate.push(info)
-            existing[info.email] = true
-          }
-        }
-        await repositories.user.updateOneById(user.id, {
-          referralEmailInfo: JSON.stringify(toUpdate),
-        })
-      } else {
-        await repositories.user.updateOneById(user.id, {
-          referralEmailInfo: JSON.stringify(successfulEmails),
-        })
-      }
-    }
 
     return {
       message: `Referral emails are sent to ${sent} addresses.`,
@@ -862,7 +857,7 @@ const getProfilesActionsWithPoints = async (
 
 const getSentReferralEmails = async (
   _: any,
-  args: any,
+  args: gql.QueryGetSentReferralEmailsArgs,
   ctx: Context,
 ): Promise<Array<gql.SentReferralEmailsOutput>> => {
   try {
@@ -870,31 +865,30 @@ const getSentReferralEmails = async (
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('getSentReferralEmails', { loggedInUserId: user.id, wallet: wallet.address })
-    const savedUser = await repositories.user.findById(user.id)
-    const emailInfo = JSON.parse(savedUser.referralEmailInfo) as ReferralEmailInfo[]
+    const referredUsers = await repositories.user.find({
+      where: {
+        referredBy: `${user.referralId}::${args?.profileUrl}`,
+      },
+    })
     const res = []
-    if (emailInfo && emailInfo.length) {
-      await Promise.allSettled(
-        emailInfo.map(async (info) => {
-          // if someone accepted email and minted profile on NFT.com, we return true as accepted or else false
-          let accepted = false
-          const existingUser = await repositories.user.findByEmail(info.email)
-          if (existingUser) {
-            const profile = await repositories.profile.findOne({
-              where: {
-                ownerUserId: existingUser.id,
-              },
-            })
-            if (profile) accepted = true
-          }
-          res.push({
-            email: info.email,
-            accepted,
-            timestamp: info.timestamp,
+    await Promise.allSettled(
+      referredUsers.map(async (User) => {
+        let accepted = false
+        if (User.isEmailConfirmed) {
+          const profile = await repositories.profile.findOne({
+            where: {
+              ownerUserId: User.id,
+            },
           })
-        }),
-      )
-    }
+          if (profile) accepted = true
+        }
+        res.push({
+          email: User.email,
+          accepted,
+          timestamp: User.createdAt,
+        })
+      }),
+    )
     return res
   } catch (err) {
     Sentry.captureMessage(`Error in getSentReferralEmails: ${err}`)

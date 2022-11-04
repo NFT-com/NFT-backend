@@ -1,7 +1,5 @@
 import { testDBConfig } from '@nftcom/gql/config'
-import { defs } from '@nftcom/shared'
-import { db } from '@nftcom/shared/db'
-import { ReferralEmailInfo } from '@nftcom/shared/defs'
+import { db,defs } from '@nftcom/shared'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
@@ -691,10 +689,10 @@ describe('user resolver', () => {
       })
       expect(result.data.sendReferEmail.message).toBeDefined()
       expect(result.data.sendReferEmail.message).toEqual('Referral emails are sent to 2 addresses.')
-      const user = await repositories.user.findByEmail(testMockUser.email)
-      expect(user.referralEmailInfo.length).toBeGreaterThan(0)
-      const info = JSON.parse(user.referralEmailInfo) as ReferralEmailInfo[]
-      expect(info.length).toEqual(2)
+      const userA = await repositories.user.findByEmail('test@example.com')
+      expect(userA).toBeDefined()
+      const userB = await repositories.user.findByEmail('test1@example.com')
+      expect(userB).toBeDefined()
     })
 
     it('should return refer emails sent before', async () => {
@@ -708,7 +706,10 @@ describe('user resolver', () => {
         },
       })
       const result = await testServer.executeOperation({
-        query: 'query GetSentReferralEmails { getSentReferralEmails { email accepted timestamp } }',
+        query: 'query GetSentReferralEmails($profileUrl: String!) { getSentReferralEmails(profileUrl: $profileUrl) { email accepted timestamp } }',
+        variables: {
+          profileUrl: 'test-profile',
+        },
       })
       expect(result.data.getSentReferralEmails.length).toEqual(2)
       expect(result.data.getSentReferralEmails[0].email).toEqual('test@example.com')

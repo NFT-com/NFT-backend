@@ -125,11 +125,6 @@ export type NFTMetadata = {
   traits: Trait[]
 }
 
-export type ReferralEmailInfo = {
-  email: string
-  timestamp: string
-}
-
 export type UserPreferences = {
   bidActivityNotifications: boolean
   priceChangeNotifications: boolean

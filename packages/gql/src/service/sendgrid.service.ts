@@ -58,8 +58,9 @@ export const sendSuccessSubscribeEmail = (email: string): Promise<boolean> => {
 
 export const sendReferralEmail = async (
   email: string,
-  referralId: string,
+  makerReferralId: string,
   profileUrl: string,
+  receiverReferralId: string,
 ): Promise<boolean> => {
   // TODO: text should be replaced with HTML template
   const text = `Hey there,\n\nYour friend ${profileUrl} has invited you to create your NFT Profile at NFT.com!` +
@@ -68,7 +69,7 @@ export const sendReferralEmail = async (
     '\n\nYour NFT Profile is exactly that, yours. We’ve had enough of social networks that exploit their\n\n users. ' +
     'Creating your profile enables you to establish and own your digital identity. ' +
     'You can collect\n\n and display new NFTs or promote your latest NFT collection.' +
-    `\n\nCreate your free NFT Profile: ${confirmEmailUrl}?referralCode=${referralId}&referralUrl=${profileUrl}` +
+    `\n\nCreate your free NFT Profile: ${confirmEmailUrl}?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}` +
     '\n\nYou’ll be able to customize your NFT Profile, grow your network and collect new NFTs on NFT.com' +
     '\n\nSee you in the metaverse,\n\nNFT.com Team'
   try {
