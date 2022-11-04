@@ -55,10 +55,6 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
             Value: process.env.REDIS_PORT,
           },
           {
-            Name: 'AWS_CA_CERT',
-            Value: process.env.AWS_CA_CERT,
-          },
-          {
             Name: 'NFTPORT_KEY',
             Value: process.env.NFTPORT_KEY,
           },

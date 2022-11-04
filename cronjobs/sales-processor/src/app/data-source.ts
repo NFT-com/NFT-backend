@@ -1,24 +1,16 @@
-import { DataSourceOptions } from 'typeorm'
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
 
-import { _logger, db, entity } from '@nftcom/shared'
+import { _logger, db } from '@nftcom/shared'
 
 const logger = _logger.Factory('data-source', _logger.Context.SalesProcessor)
 
-const dbConfig: DataSourceOptions = {
-  type: 'postgres',
+const dbConfig: Partial<PostgresConnectionOptions> = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,
   username: process.env.DB_USERNAME || 'app',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'app',
   logging: process.env.DB_LOGGING === 'true',
-  ssl: process.env.DB_USE_SSL === 'true',
-  entities: [entity.MarketplaceSale],
-  extra: {
-    ssl: {
-      ca: process.env.AWS_CA_CERT,
-    },
-  },
 }
 
 export const getConnection = async (): Promise<void> => {
