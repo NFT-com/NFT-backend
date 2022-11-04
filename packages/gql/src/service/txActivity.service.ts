@@ -5,9 +5,10 @@ import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
+import { X2Y2Order } from '@nftcom/gql/service/x2y2.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
 
-type Order = SeaportOrder | LooksRareOrder
+type Order = SeaportOrder | LooksRareOrder | X2Y2Order
 
 interface TxSeaportProtocolData {
   offer: SeaportOffer[]
@@ -127,6 +128,42 @@ const looksrareOrderBuilder = (
 }
 
 /**
+ * x2y2OrderBuilder 
+ * @param order
+ */
+
+const x2y2OrderBuilder = (
+  order: X2Y2Order,
+): Partial<entity.TxOrder> => {
+  return {
+    exchange: defs.ExchangeType.X2Y2,
+    makerAddress: helper.checkSum(order.maker),
+    takerAddress: order.taker ? helper.checkSum(order.taker) : null,
+    nonce: Number(order.id),
+    protocolData: {
+      side: order.side,
+      type: order.type,
+      erc_type: order.erc_type,
+      status: order.status,
+      maker: helper.checkSum(order.maker),
+      contract: helper.checkSum(order.token.contract),
+      price: order.price,
+      amount: order.amount,
+      tokenId: order.token.token_id,
+      currencyAddress: helper.checkSum(order.currency),
+      id: order.id,
+      created_at: order.created_at,
+      updated_at: order.updated_at,
+      end_at: order.end_at,
+      royalty_fee: order.royalty_fee,
+      is_collection_offer: order.is_collection_offer,
+      is_bundle: order.is_bundle,
+      is_private: order.is_private,
+    },
+  }
+}
+
+/**
  * orderEntityBuilder 
  * @param protocol
  * @param orderType
@@ -152,6 +189,7 @@ export const orderEntityBuilder = async (
 
   let seaportOrder: SeaportOrder
   let looksrareOrder: LooksRareOrder
+  let x2y2Order: X2Y2Order
   const checksumContract: string = helper.checkSum(contract)
   switch (protocol) {
   case defs.ProtocolType.Seaport:
@@ -175,6 +213,16 @@ export const orderEntityBuilder = async (
     expirationFromSource =  Number(looksrareOrder.endTime)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
     orderEntity = looksrareOrderBuilder(looksrareOrder)
+    break
+  case defs.ProtocolType.X2Y2:
+    x2y2Order = order as X2Y2Order
+    orderHash = x2y2Order.item_hash
+    walletAddress = helper.checkSum(x2y2Order.maker)
+    tokenId = BigNumber.from(x2y2Order.token.token_id).toHexString()
+    timestampFromSource = Number(x2y2Order.created_at)
+    expirationFromSource = Number(x2y2Order.end_at)
+    nftIds = [`ethereum/${checksumContract}/${tokenId}`]
+    orderEntity = x2y2OrderBuilder(x2y2Order)
     break
   default:
     break

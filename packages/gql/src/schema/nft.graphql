@@ -193,6 +193,12 @@ input ListNFTLooksrareInput {
   chainId: String
 }
 
+input ListNFTX2Y2Input {
+  x2y2Order: String
+  profileUrl: String
+  chainId: String
+}
+
 type UpdateAssociatedContractOutput {
   message: String
 }
@@ -231,6 +237,7 @@ extend type Mutation {
   updateAssociatedContract(input: UpdateAssociatedContractInput): UpdateAssociatedContractOutput!
   listNFTSeaport(input: ListNFTSeaportInput!): Boolean!
   listNFTLooksrare(input: ListNFTLooksrareInput!): Boolean!
+  listNFTX2Y2(input: ListNFTX2Y2Input!): Boolean!
   refreshNft(id: ID!, chainId: String): NFT!
   "AUTHETICATED"
   refreshNFTOrder(id: ID!, ttl: DateTime, force: Boolean): String!

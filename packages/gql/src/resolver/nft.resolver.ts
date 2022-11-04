@@ -36,10 +36,10 @@ import {
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
+import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
+import { createX2Y2Listing } from '@nftcom/gql/service/x2y2.service'
 import * as Sentry from '@sentry/node'
-
-import { SearchEngineService } from '../service/searchEngine.service'
 
 // const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 // const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
@@ -1036,6 +1036,29 @@ export const listNFTLooksrare = async (
     ))
 }
 
+export const listNFTX2Y2 = async (
+  _: any,
+  args: gql.MutationListNFTx2Y2Args,
+  ctx: Context,
+): Promise<any> => {
+  const { repositories } = ctx
+  const chainId = args?.input?.chainId || process.env.CHAIN_ID
+  const x2y2Order = args?.input?.x2y2Order
+  const profileUrl = args?.input.profileUrl
+
+  logger.debug('listNFTX2Y2', { input: args?.input, wallet: ctx?.wallet?.id })
+
+  return createX2Y2Listing(x2y2Order, chainId)
+    .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
+      return repositories.txOrder.save(order)
+    }))
+    .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
+    .catch(err => appError.buildInvalid(
+      txActivityError.buildLooksRare(err),
+      txActivityError.ErrorType.LooksRare,
+    ))
+}
+
 const updateENSNFTMetadata = async (
   _: any,
   args: gql.MutationUpdateEnsnftMetadataArgs,
@@ -1092,7 +1115,7 @@ export default {
     updateENSNFTMetadata: combineResolvers(auth.isAuthenticated, updateENSNFTMetadata),
     listNFTSeaport,
     listNFTLooksrare,
-
+    listNFTX2Y2,
   },
   NFT: {
     collection: core.resolveCollectionById<gql.NFT, entity.Collection>(
