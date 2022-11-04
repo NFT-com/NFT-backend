@@ -8,12 +8,15 @@ import { In } from 'typeorm/find-options/operator/In'
 
 import { cache } from '@nftcom/cache'
 import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi } from '@nftcom/gql/helper'
+import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { core } from '../service'
+import { getSortedLeaderboard } from '../service/collection.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 const seService = new SearchEngineService()
@@ -535,10 +538,35 @@ const updateOfficialCollections = async (
   }
 }
 
+const getCollectionLeaderboard = async (
+  _: any,
+  args: gql.QueryCollectionLeaderboardArgs,
+  ctx: Context,
+): Promise<gql.CollectionLeaderboard> => {
+  const { pageInput } = args.input || {}
+  const { repositories } = ctx
+
+  const leaderboard = await getSortedLeaderboard(repositories.collection)
+
+  const defaultCursor = pageInput && pagination.hasLast(pageInput) ?
+    { beforeCursor: (pageInput && pageInput.beforeCursor) || '-1' } :
+    { afterCursor: (pageInput && pageInput.afterCursor) || '-1' }
+  const safePageInput = pagination.safeInput(pageInput, defaultCursor)
+  const [paginatedLeaderboard, leaderboardLength] = await core.paginateEntityArray(leaderboard, safePageInput)
+
+  return pagination.toPageable(
+    safePageInput,
+    paginatedLeaderboard[0],
+    paginatedLeaderboard[paginatedLeaderboard.length - 1],
+    'id',
+  )([paginatedLeaderboard, leaderboardLength])
+}
+
 export default {
   Query: {
     collection: getCollection,
     collectionsByDeployer: getCollectionsByDeployer,
+    collectionLeaderboard: getCollectionLeaderboard,
     collectionTraits: getCollectionTraits,
     associatedAddressesForContract:
       combineResolvers(auth.isAuthenticated, associatedAddressesForContract),

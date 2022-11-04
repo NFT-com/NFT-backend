@@ -34,7 +34,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   createEventBridgeTarget(task,subnetVal,cluster)
   // END: CRONJOB - MINTRUNNER
   // START: CRONJOB - SALES PROCESSOR
-  if (isProduction()) {
+  if (stage !== 'dev') {
     const spTask = createSalesProcessorTaskDefinition()
     const spCluster = createSalesProcessorEcsCluster()
     createSalesProcessorEventBridgeTarget(spTask,subnetVal,spCluster)
