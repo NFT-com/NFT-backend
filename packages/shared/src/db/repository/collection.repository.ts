@@ -22,4 +22,12 @@ export class CollectionRepository extends BaseRepository<Collection> {
       .getMany()
   }
 
+  findAllOfficial(): Promise<Collection[]> {
+    return this.getRepository(true).find({
+      where: {
+        isOfficial: true,
+      },
+    })
+  }
+
 }
