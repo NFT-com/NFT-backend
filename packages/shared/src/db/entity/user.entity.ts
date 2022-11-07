@@ -21,7 +21,7 @@ export class User extends BaseEntity {
   @Column({ select: false, nullable: true, unique: true })
   confirmEmailToken: string
 
-  @Column({ select: false, nullable: true })
+  @Column({ nullable: true })
   confirmEmailTokenExpiresAt: Date
 
   @Column({ nullable: true })
