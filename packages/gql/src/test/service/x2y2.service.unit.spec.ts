@@ -1,6 +1,6 @@
 import { retrieveMultipleOrdersX2Y2,X2Y2ExternalOrder, X2Y2OrderRequest } from '@nftcom/gql/service/x2y2.service'
 
-describe('looksrare', () => {
+describe('x2y2', () => {
   describe('retrieveMultipleOrdersX2Y2', () => {
     it('it should retrieve empty listing and offers', async () => {
       const contract = '0x32D74aeab8C07ca66ebE1D441aAd01C688B952cB'

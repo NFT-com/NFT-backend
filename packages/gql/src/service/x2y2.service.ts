@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
-import { BigNumberish, ethers } from 'ethers'
+import { BigNumberish } from 'ethers'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
@@ -12,8 +12,8 @@ const X2Y2_LISTING_BATCH_SIZE = 4
 const X2Y2_API_KEY = process.env.X2Y2_API_KEY
 
 // types
-const orderItemParamType = 'tuple(uint256 price, bytes data)'
-const orderParamType = `tuple(uint256 salt, address user, uint256 network, uint256 intent, uint256 delegateType, uint256 deadline, address currency, bytes dataMask, ${orderItemParamType}[] items, bytes32 r, bytes32 s, uint8 v, uint8 signVersion)`
+// const orderItemParamType = 'tuple(uint256 price, bytes data)'
+// const orderParamType = `tuple(uint256 salt, address user, uint256 network, uint256 intent, uint256 delegateType, uint256 deadline, address currency, bytes dataMask, ${orderItemParamType}[] items, bytes32 r, bytes32 s, uint8 v, uint8 signVersion)`
 
 const logger = _logger.Factory(_logger.Context.X2Y2)
 export interface X2Y2OrderRequest {
@@ -232,9 +232,12 @@ export const retrieveMultipleOrdersX2Y2 = async (
       const listingQueries: Array<string> = []
       const offerQueries: Array<string> = []
       for (const x2y2Req of x2y2MultiOrderRequest) {
-        listingQueries.push(`contract=${x2y2Req.contract}&token_id=${x2y2Req.tokenId}`)
-        if (includeOffers) {
-          offerQueries.push(`contract=${x2y2Req.contract}&token_id=${x2y2Req.tokenId}`)
+        const queryParam = `contract=${x2y2Req.contract}&token_id=${x2y2Req.tokenId}`
+        if (!listingQueries.includes(queryParam)) {
+          listingQueries.push(queryParam)
+        }
+        if (includeOffers && !offerQueries.includes(queryParam)) {
+          offerQueries.push(queryParam)
         }
       }
       if (listingQueries.length) {
@@ -264,9 +267,9 @@ export const retrieveMultipleOrdersX2Y2 = async (
 // retrieveMultipleOrdersX2Y2([{ contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' },
 //   { contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' }], '5', false)
 
-export function encodeOrder(order: X2Y2OrderPayload): string {
-  return ethers.utils.defaultAbiCoder.encode([orderParamType], [order])
-}
+// export function encodeOrder(order: X2Y2OrderPayload): string {
+//   return ethers.utils.defaultAbiCoder.encode([orderParamType], [order])
+// }
 
 /**
  * Returns true if the listing succeeded, false otherwise.

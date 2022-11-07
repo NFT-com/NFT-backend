@@ -1044,7 +1044,7 @@ export const listNFTX2Y2 = async (
   const { repositories } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const x2y2Order = args?.input?.x2y2Order
-  const profileUrl = args?.input.profileUrl
+  const profileUrl = args?.input?.profileUrl
 
   logger.debug('listNFTX2Y2', { input: args?.input, wallet: ctx?.wallet?.id })
 
@@ -1054,8 +1054,8 @@ export const listNFTX2Y2 = async (
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
-      txActivityError.buildLooksRare(err),
-      txActivityError.ErrorType.LooksRare,
+      txActivityError.buildX2Y2(err),
+      txActivityError.ErrorType.X2Y2,
     ))
 }
 
