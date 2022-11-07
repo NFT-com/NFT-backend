@@ -1046,7 +1046,7 @@ export const listNFTX2Y2 = async (
   const x2y2Order = args?.input?.x2y2Order
   const profileUrl = args?.input?.profileUrl
 
-  logger.debug('listNFTX2Y2', { input: args?.input, wallet: ctx?.wallet?.id })
+  logger.debug({ input: args?.input, wallet: ctx?.wallet?.id }, 'listNFTX2Y2')
 
   return createX2Y2Listing(x2y2Order, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
