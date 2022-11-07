@@ -298,12 +298,17 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
               .then(fp.thruIfNotEmpty((entry: entity.NFT) => {
                 // fix (short-term) : trait value
                 const updatedEntry = stringifyTraits(entry)
+                // include visibility to entry
+                const newEntry = {
+                  ...updatedEntry,
+                  isHide: edge.hide,
+                }
                 return repositories.collection.findOne({ where: {
                   contract: entry.contract,
                   isSpam: false,
                   chainId,
                 } })
-                  .then(fp.thruIfNotEmpty(() => updatedEntry))
+                  .then(fp.thruIfNotEmpty(() => newEntry))
               } ))
         }),
       ).then((entries: T[]) => {
