@@ -147,7 +147,7 @@ export const start = async (): Promise<void> => {
   // IP specific (10 req / minute)
   const subscribeLimiter = rateLimiter({
     max: 10,
-    message: 'Too many requests. Try again later.',
+    message: { message: 'Too many requests. Try again later.' },
   })
 
   // subscribe new email
