@@ -144,9 +144,9 @@ export const start = async (): Promise<void> => {
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
 
-  // IP specific (30 req / minute)
+  // IP specific (10 req / minute)
   const subscribeLimiter = rateLimiter({
-    max: 30,
+    max: 10,
     message: 'Too many requests. Try again later.',
   })
 
