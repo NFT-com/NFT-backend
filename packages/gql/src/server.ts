@@ -163,7 +163,7 @@ export const start = async (): Promise<void> => {
 
     if (foundUser?.isEmailConfirmed) {
       return res.status(400).json({ message: 'User already exists' })
-    } else if (foundUser?.confirmEmailTokenExpiresAt > new Date()) {
+    } else if (Number(new Date(foundUser?.confirmEmailTokenExpiresAt)) > new Date()) {
       return res.status(400).json({ message: 'User already exists' })
     } else {
       return repositories.user.save({
