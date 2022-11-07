@@ -918,7 +918,7 @@ describe('nft resolver', () => {
 
     it('should return NFTs of profile owned by user', async () => {
       const result = await testServer.executeOperation({
-        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id isHide } } }',
         variables: {
           input: {
             ownedByWallet: true,
@@ -936,7 +936,7 @@ describe('nft resolver', () => {
 
     it('should return NFTs of profile not owned by wallet', async () => {
       const result = await testServer.executeOperation({
-        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id } } }',
+        query: 'query MyNFTs($input: NFTsInput) { myNFTs(input: $input) { items { id isHide } } }',
         variables: {
           input: {
             profileId: profileB.id,
