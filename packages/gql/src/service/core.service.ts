@@ -829,98 +829,106 @@ export const createProfileFromEvent = async (
   profileUrl: string,
   noAvatar?: boolean,
 ): Promise<entity.Profile> => {
-  let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
-  let user
-  if (!wallet) {
-    const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
+    let user
+    if (!wallet) {
+      const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
+      user = await repositories.user.findOne({
+        where: {
+          // defaults
+          username: 'ethereum-' + ethers.utils.getAddress(owner),
+        },
+      })
+
+      if (!user) {
+        user = await repositories.user.save({
+          // defaults
+          username: 'ethereum-' + ethers.utils.getAddress(owner),
+          referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+        })
+      }
+      wallet = await repositories.wallet.save({
+        address: ethers.utils.getAddress(owner),
+        network: 'ethereum',
+        chainId: chainId,
+        chainName: chain.name,
+        userId: user.id,
+      })
+    }
+    const ctx = {
+      chain: {
+        id: wallet.chainId,
+        name: wallet.chainName,
+      },
+      network: 'Ethereum',
+      repositories: repositories,
+      user: null,
+      wallet,
+    }
+    const profile = await createProfile(ctx, {
+      status: defs.ProfileStatus.Owned,
+      url: profileUrl,
+      tokenId: tokenId.toString(),
+      ownerWalletId: wallet.id,
+      ownerUserId: wallet.userId,
+      chainId: chainId || process.env.CHAIN_ID,
+    }, noAvatar)
+    logger.info('Save incentive action for CREATE_NFT_PROFILE')
+    // save incentive action for CREATE_NFT_PROFILE
+    const createProfileAction = await repositories.incentiveAction.findOne({
+      where: {
+        userId: wallet.userId,
+        profileUrl,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+      },
+    })
+    if (!createProfileAction) {
+      await repositories.incentiveAction.save({
+        userId: wallet.userId,
+        profileUrl,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+      })
+      logger.info('Saved incentive action for CREATE_NFT_PROFILE')
+    }
     user = await repositories.user.findOne({
       where: {
         // defaults
         username: 'ethereum-' + ethers.utils.getAddress(owner),
       },
     })
-
-    if (!user) {
-      user = await repositories.user.save({
-        // defaults
-        username: 'ethereum-' + ethers.utils.getAddress(owner),
-        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-      })
-    }
-    wallet = await repositories.wallet.save({
-      address: ethers.utils.getAddress(owner),
-      network: 'ethereum',
-      chainId: chainId,
-      chainName: chain.name,
-      userId: user.id,
-    })
-  }
-  const ctx = {
-    chain: {
-      id: wallet.chainId,
-      name: wallet.chainName,
-    },
-    network: 'Ethereum',
-    repositories: repositories,
-    user: null,
-    wallet,
-  }
-  const profile = await createProfile(ctx, {
-    status: defs.ProfileStatus.Owned,
-    url: profileUrl,
-    tokenId: tokenId.toString(),
-    ownerWalletId: wallet.id,
-    ownerUserId: wallet.userId,
-    chainId: chainId || process.env.CHAIN_ID,
-  }, noAvatar)
-  // save incentive action for CREATE_NFT_PROFILE
-  const createProfileAction = await repositories.incentiveAction.findOne({
-    where: {
-      userId: wallet.userId,
-      profileUrl,
-      task: defs.ProfileTask.CREATE_NFT_PROFILE,
-    },
-  })
-  if (!createProfileAction) {
-    await repositories.incentiveAction.save({
-      userId: wallet.userId,
-      profileUrl,
-      task: defs.ProfileTask.CREATE_NFT_PROFILE,
-      point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
-    })
-  }
-  user = await repositories.user.findOne({
-    where: {
-      // defaults
-      username: 'ethereum-' + ethers.utils.getAddress(owner),
-    },
-  })
-  //save incentive action for REFER_NETWORK
-  if (user && user.referredBy) {
-    const referredInfo = user.referredBy.split('::')
-    if (referredInfo && referredInfo.length === 2) {
-      const userMadeReferral = await repositories.user.findById(referredInfo[0])
-      const referredProfileUrl = referredInfo[1]
-      if (userMadeReferral) {
-        const referNetworkAction = await repositories.incentiveAction.findOne({
-          where: {
-            userId: userMadeReferral.id,
-            profileUrl: referredProfileUrl,
-            task: defs.ProfileTask.REFER_NETWORK,
-          },
-        })
-        if (!referNetworkAction) {
-          await repositories.incentiveAction.save({
-            userId: userMadeReferral.id,
-            profileUrl: referredProfileUrl,
-            task: defs.ProfileTask.REFER_NETWORK,
-            point: defs.ProfileTaskPoint.REFER_NETWORK,
+    logger.info('Save incentive action for REFER_NETWORK')
+    //save incentive action for REFER_NETWORK
+    if (user && user.referredBy) {
+      const referredInfo = user.referredBy.split('::')
+      if (referredInfo && referredInfo.length === 2) {
+        const userMadeReferral = await repositories.user.findById(referredInfo[0])
+        const referredProfileUrl = referredInfo[1]
+        if (userMadeReferral) {
+          const referNetworkAction = await repositories.incentiveAction.findOne({
+            where: {
+              userId: userMadeReferral.id,
+              profileUrl: referredProfileUrl,
+              task: defs.ProfileTask.REFER_NETWORK,
+            },
           })
+          if (!referNetworkAction) {
+            await repositories.incentiveAction.save({
+              userId: userMadeReferral.id,
+              profileUrl: referredProfileUrl,
+              task: defs.ProfileTask.REFER_NETWORK,
+              point: defs.ProfileTaskPoint.REFER_NETWORK,
+            })
+            logger.info('Saved incentive action for REFER_NETWORK')
+          }
         }
       }
     }
+    return profile
+  } catch (err) {
+    logger.error(`Error in createProfileFromEvent: ${err}`)
   }
-  return profile
 }
 
 export const saveUsersForAssociatedAddress = async (
