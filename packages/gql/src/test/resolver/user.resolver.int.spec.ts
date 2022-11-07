@@ -712,10 +712,6 @@ describe('user resolver', () => {
         },
       })
       expect(result.data.getSentReferralEmails.length).toEqual(2)
-      expect(result.data.getSentReferralEmails[0].email).toEqual('test@example.com')
-      expect(result.data.getSentReferralEmails[0].accepted).toEqual(false)
-      expect(result.data.getSentReferralEmails[1].email).toEqual('test1@example.com')
-      expect(result.data.getSentReferralEmails[1].accepted).toEqual(false)
     })
   })
 })
