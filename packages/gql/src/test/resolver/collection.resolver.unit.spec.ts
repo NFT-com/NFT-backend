@@ -124,7 +124,7 @@ describe('collection resolver', () => {
       expect(leaderboard.totalItems).toEqual(5)
     })
 
-    it('should sort collections falling back to persisted stats when needed', async () => {
+    fit('should sort collections falling back to persisted stats when needed', async () => {
       mockCtx.repositories = {
         collection: {
           findAllOfficial: jest.fn().mockResolvedValue([
