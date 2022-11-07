@@ -5,6 +5,7 @@ import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { utils } from 'ethers'
 import express from 'express'
+import rateLimiter from 'express-rate-limit'
 import { GraphQLError } from 'graphql'
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js'
 import http from 'http'
@@ -143,8 +144,14 @@ export const start = async (): Promise<void> => {
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
 
+  // IP specific (30 req / minute)
+  const subscribeLimiter = rateLimiter({
+    max: 30,
+    message: 'Too many requests. Try again later.',
+  })
+
   // subscribe new email
-  app.post('/subscribe/:email', validate.validate(validate.emailSchema), async function (req, res) {
+  app.post('/subscribe/:email', subscribeLimiter, validate.validate(validate.emailSchema), async function (req, res) {
     const { email } = req.params
 
     const foundUser = await repositories.user.findOne({
