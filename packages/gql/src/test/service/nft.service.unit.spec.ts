@@ -43,7 +43,7 @@ let testServer
 let nftA, nftB, nftC
 let user, wallet, wallet2
 
-describe('nft resolver', () => {
+describe('nft service', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
   })

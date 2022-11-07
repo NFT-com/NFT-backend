@@ -96,11 +96,13 @@ export enum ActivityStatus {
 export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',
+  X2Y2 = 'X2Y2'
 }
 
 export enum ProtocolType {
   Seaport = 'Seaport',
   LooksRare = 'LooksRare',
+  X2Y2 = 'X2Y2'
 }
 
 export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
