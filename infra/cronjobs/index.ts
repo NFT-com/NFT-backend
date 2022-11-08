@@ -20,10 +20,12 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
   //const vpc = sharedStack.getOutput('vpcId') 
   const subnets =  sharedStack.getOutput('publicSubnetIds')
+  const internalEcsSGId = sharedStack.getOutput('internalEcsSGId')
 
   // VPC and Public Subnets to be used for all Cronjobs 
   //const vpcVal: string = await pulumiOutToValue(vpc) 
   const subnetVal: string[] = await pulumiOutToValue(subnets)
+  const internalEcsSGIdVal: string = await pulumiOutToValue(internalEcsSGId)
 
   // START: CRONJOB - MINTRUNNER
   if (isProduction()) {
@@ -37,14 +39,14 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   if (stage !== 'dev') {
     const spTask = createSalesProcessorTaskDefinition()
     const spCluster = createSalesProcessorEcsCluster()
-    createSalesProcessorEventBridgeTarget(spTask,subnetVal,spCluster)
+    createSalesProcessorEventBridgeTarget(spTask, subnetVal, internalEcsSGIdVal, spCluster)
   }
   // END: CRONJOB - SALES PROCESSOR
   // START: CRONJOB - COLLECTION STATS
   if (stage !== 'dev') {
     const csTask = createCollectionStatsTaskDefinition()
     const csCluster = createCollectionStatsEcsCluster()
-    createCollectionStatsEventBridgeTarget(csTask,subnetVal,csCluster)
+    createCollectionStatsEventBridgeTarget(csTask, subnetVal, internalEcsSGIdVal, csCluster)
   }
   // END: CRONJOB - COLLECTION STATS  
 }
