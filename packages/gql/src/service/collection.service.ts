@@ -1,10 +1,11 @@
-import { DataFrame, MinMaxScaler, toJSON } from 'danfojs-node'
+import { DataFrame, MinMaxScaler, Series } from 'danfojs-node'
 
 import { cache } from '@nftcom/cache'
 import { fetchData } from '@nftcom/nftport-client'
 import { entity, repository } from '@nftcom/shared'
 
 const createDefaultStats = (stats: any, totalVolume: number): any => {
+  // default values are required so DataFrame has consistent columns
   return {
     one_day_volume: 0.0,
     one_day_change: 0.0,
@@ -18,7 +19,6 @@ const createDefaultStats = (stats: any, totalVolume: number): any => {
     thirty_day_change: 0.0,
     thirty_day_sales: 0,
     thirty_day_average_price: 0.0,
-    total_volume: totalVolume || 0.0,
     total_sales: 0,
     total_supply: 0,
     total_minted: 0,
@@ -31,16 +31,27 @@ const createDefaultStats = (stats: any, totalVolume: number): any => {
     floor_price_historic_thirty_day: 0.0,
     updated_date: '',
     ...stats,
+    // total_volume should fall back to collection.totalVolume if available
+    total_volume: stats?.total_volume || totalVolume || 0.0,
   }
 }
 
-export const getSortedLeaderboard =
-async (collectionRepo: repository.CollectionRepository): Promise<entity.Collection[]> => {
-  const cacheKey = 'COLLECTION_LEADERBOARD'
-  const cachedResult = await cache.get(cacheKey)
-  if (cachedResult) {
-    return JSON.parse(cachedResult)
-  }
+const calculateScore = (df: DataFrame, columns: string[]): Series => {
+  return df.loc({ columns }).apply((data: number[]) => {
+    // Get coefficients so score ranges do not overlap
+    const c0 = data[0] ? 9 : 0
+    const c1 = data[1] ? 2 : 0
+    return (c0 * Math.pow(1 + data[0], 3)) + (c1 * Math.pow(1 + data[1], 2)) + data[2]
+  }) as Series
+}
+
+const parseLeaderboard = async (cachedLeaderboard: string[]): Promise<(entity.Collection & {stats?: any})[]>  => {
+  return cachedLeaderboard.map((collection) => JSON.parse(collection))
+}
+
+const createLeaderboard = async (collectionRepo: repository.CollectionRepository, cacheKey: string):
+Promise<(entity.Collection & {stats?: any})[]> => {
+  // Get official collections and add NFTPort stats
   const collections: (entity.Collection & {stats?: any})[] = await collectionRepo.findAllOfficial()
   for (const collection of collections) {
     try {
@@ -50,38 +61,53 @@ async (collectionRepo: repository.CollectionRepository): Promise<entity.Collecti
       // noop
     }
   }
+  // Create a dataframe with just the stats and contract address
   const data = collections.map((c) => {
     const { updated_date, ...stats } = createDefaultStats(c.stats, c.totalVolume)
     return { ...stats, contract: c.contract }
   })
   const df = new DataFrame(data)
   df.setIndex({ column: 'contract', drop: true, inplace: true })
-  df.loc({ columns: ['seven_day_sales', 'seven_day_volume', 'total_volume'] }).print()
-  const scaler = new MinMaxScaler()
-  scaler.fit(df.loc({ columns: ['seven_day_sales', 'seven_day_volume', 'total_volume'] }))
-  const df_enc = scaler.transform(df.loc({ columns: ['seven_day_sales', 'seven_day_volume', 'total_volume'] }))
-  df_enc.fillNa(0, { inplace: true })
-  df_enc.print()
-  const scores = df_enc.loc({ columns: ['seven_day_sales', 'seven_day_volume', 'total_volume'] }).apply((data) => {
-    console.log(data)
-    const c0 = data[0] ? 3 : 0
-    const c1 = data[1] ? 2 : 0
-    return (c0 * Math.pow(1 + data[0], 3)) + (c1 * Math.pow(1 + data[1], 2)) + data[2]
+  // Normalize stats for scoring
+  const df_enc = new MinMaxScaler().fit(df).transform(df).fillNa(0)
+  // Get scores for each timeframe
+  const scores_24h = calculateScore(df_enc, ['one_day_sales', 'one_day_volume', 'total_volume'])
+  const scores_7d = calculateScore(df_enc, ['seven_day_sales', 'seven_day_volume', 'total_volume'])
+  const scores_30d = calculateScore(df_enc, ['thirty_day_sales', 'thirty_day_volume', 'total_volume'])
+  const scores_all = calculateScore(df_enc, ['total_sales', 'total_volume', 'num_owners'])
+  // Save score to cache
+  df_enc.index.forEach(async (contract: string, index: number) => {
+    const collection = JSON.stringify(collections.find((c) => c.contract === contract))
+    const score_24h = scores_24h.values[index].toString()
+    const score_7d = scores_7d.values[index].toString()
+    const score_30d = scores_30d.values[index].toString()
+    const score_all = scores_all.values[index].toString()
+    await Promise.all([
+      cache.zadd('COLLECTION_LEADERBOARD_24h', score_24h, collection),
+      cache.zadd('COLLECTION_LEADERBOARD_7d', score_7d, collection),
+      cache.zadd('COLLECTION_LEADERBOARD_30d', score_30d, collection),
+      cache.zadd('COLLECTION_LEADERBOARD_all', score_all, collection),
+    ])
   })
-  console.log(toJSON(scores))
-  
-  collections.sort((a, b) => {
-    if (a.stats && !b.stats) {
-      return -1
-    } else if (b.stats && !a.stats) {
-      return 1
-    } else if (!a.stats && !b.stats) {
-      return b.totalVolume - a.totalVolume
-    }
-    return b.stats.seven_day_sales - a.stats.seven_day_sales
-      || b.stats.seven_day_volume - a.stats.seven_day_volume
-  })
-  const leaderboard = collections.map(({ stats, ...props }) => props) as entity.Collection[]
+  // Get requested leaderboard back from cache
+  const leaderboard = await cache.zrange(cacheKey, '-inf', '+inf', 'BYSCORE')
+  console.log('CACHED LEADERBOARD 2', leaderboard)
+  return parseLeaderboard(leaderboard)
+}
+
+export const getSortedLeaderboard =
+async (
+  collectionRepo: repository.CollectionRepository,
+  opts?: { dateRange?: '24h' | '7d' | '30d' | 'all' },
+): Promise<entity.Collection[]> => {
+  const { dateRange = '7d' } = opts || {}
+  const cacheKey = `COLLECTION_LEADERBOARD_${dateRange}`
+  const cachedLeaderboard = await cache.zrange(cacheKey, '-inf', '+inf', 'BYSCORE')
+  console.log('CACHED LEADERBOARD 1', cachedLeaderboard)
+  const leaderboard = cachedLeaderboard ?
+    await parseLeaderboard(cachedLeaderboard) :
+    // This should never be called in prod, but is here as a fall-back just incase
+    await createLeaderboard(collectionRepo, cacheKey)
 
   cache.set(
     cacheKey,
