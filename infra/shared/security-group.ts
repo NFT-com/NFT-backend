@@ -82,7 +82,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
   })
 
   const internalEcs = new awsEC2.SecurityGroup('int_ecs', {
-    description: 'ECS access to RDS',
+    description: 'ECS access to RDS, Redis, etc...',
     name: getResourceName('intEcs'),
     vpcId: vpc.id,
     egress: [
@@ -113,11 +113,14 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     name: getResourceName('redis-main'),
     description: 'Allow traffic to Elasticache (Redis) main instance',
     vpcId: vpc.id,
-    ingress: [
+    ingress:
       isProduction()
-        ? buildIngressRule(6379, 'tcp', [web.id])
-        : buildIngressRule(6379),
-    ],
+        ? [
+          buildIngressRule(6379, 'tcp', [web.id]),
+          buildIngressRule(6379, 'tcp', [internalEcs.id]),
+        ]
+        : [buildIngressRule(6379)]
+    ,
     egress: [
       buildEgressRule(6379),
     ],
