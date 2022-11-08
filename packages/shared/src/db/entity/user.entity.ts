@@ -43,4 +43,7 @@ export class User extends BaseEntity {
   } })
   preferences: UserPreferences
 
+  @Column({ nullable: false, type: 'numeric', default: Math.random() * 1000000 })
+  nonce: number
+
 }

@@ -31,6 +31,7 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
 const chainIdHeader = 'chain-id'
 const authHeader = 'authorization'
+const addressHeader = 'address'
 
 const repositories = db.newRepositories()
 
@@ -41,8 +42,8 @@ type GQLError = {
   path: Array<string | number>
 }
 
-const getAddressFromSignature = (signature: string): string =>
-  utils.verifyMessage(authMessage, signature)
+const getAddressFromSignature = (authMsg, signature: string): string =>
+  utils.verifyMessage(authMsg, signature)
 
 export const createContext = async (ctx): Promise<Context> => {
   const { req, connection } = ctx
@@ -53,16 +54,20 @@ export const createContext = async (ctx): Promise<Context> => {
   const chainId = headers[chainIdHeader] || null
   const authSignature = headers[authHeader] || null
   const xMintSignature = headers['x-mint-signature'] || null
+  const walletAddress = headers[addressHeader] || null
+  console.log(walletAddress)
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
   if (helper.isNotEmpty(authSignature)) {
     chain = auth.verifyAndGetNetworkChain(network, chainId)
-    const address = getAddressFromSignature(authSignature)
+    const address = getAddressFromSignature(authMessage, authSignature)
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)
+    const msg = `${authMessage} ${user.nonce}`
+    console.log(msg)
   }
 
   return {
@@ -184,7 +189,7 @@ export const start = async (): Promise<void> => {
   // verify new email and add to homepage v2 sendgrid marketing list
   app.get('/verify/:email/:token', validate.validate(validate.verifySchema), async function (req, res) {
     const { email, token } = req.params
-    
+
     return repositories.user.findOne({ where:
       {
         email: email?.toLowerCase(),
