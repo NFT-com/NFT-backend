@@ -108,7 +108,6 @@ Promise<(entity.Collection & {stats?: any})[]> => {
   const scores_7d = calculateScore(df_enc, ['seven_day_sales', 'seven_day_volume', 'total_volume'])
   const scores_30d = calculateScore(df_enc, ['thirty_day_sales', 'thirty_day_volume', 'total_volume'])
   const scores_all = calculateScore(df_enc, ['total_sales', 'total_volume', 'floor_price'])
-  scores_7d.print()
   // Save score to cache
   for (const [index, contract] of df_enc.index.entries()) {
     const score_24h = scores_24h.values[index].toString()
