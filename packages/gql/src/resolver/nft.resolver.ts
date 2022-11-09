@@ -548,6 +548,57 @@ const getGkNFTs = async (
   }
 }
 
+const saveIncentiveActionsForProfile = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+): Promise<void> => {
+  // save incentive action for CREATE_NFT_PROFILE
+  const createAction = await repositories.incentiveAction.findOne({
+    where: {
+      profileUrl: profile.url,
+      userId: profile.ownerUserId,
+      task: defs.ProfileTask.CREATE_NFT_PROFILE,
+    },
+  })
+  if (!createAction) {
+    await repositories.incentiveAction.save({
+      profileUrl: profile.url,
+      userId: profile.ownerUserId,
+      task: defs.ProfileTask.CREATE_NFT_PROFILE,
+      point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+    })
+  }
+  // save incentive action for CUSTOMIZE_PROFILE
+  if (profile.ownerUserId && profile.description && profile.photoURL) {
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: profile.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    if (edges.length) {
+      const customizeAction = await repositories.incentiveAction.findOne({
+        where: {
+          profileUrl: profile.url,
+          userId: profile.ownerUserId,
+          task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+        },
+      })
+      if (!customizeAction) {
+        await repositories.incentiveAction.save({
+          profileUrl: profile.url,
+          userId: profile.ownerUserId,
+          task: defs.ProfileTask.CUSTOMIZE_PROFILE,
+          point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
+        })
+      }
+    }
+  }
+}
+
 const updateNFTsForProfile = async (
   _: any,
   args: gql.MutationUpdateNFTsForProfileArgs,
@@ -572,6 +623,8 @@ const updateNFTsForProfile = async (
     if (!profile) {
       return Promise.resolve({ items: [] })
     }
+
+    await saveIncentiveActionsForProfile(repositories, profile)
 
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
     if (!recentlyRefreshed) {
