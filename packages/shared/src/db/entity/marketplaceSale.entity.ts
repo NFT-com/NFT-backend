@@ -1,10 +1,8 @@
-import { Column, Entity, Index } from 'typeorm'
+import { Column, Entity } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
 @Entity()
-@Index(['contractAddress', 'date'])
-@Index(['contractAddress', 'date', 'tokenId'])
 export class MarketplaceSale extends BaseEntity {
 
   @Column( { nullable: false })
