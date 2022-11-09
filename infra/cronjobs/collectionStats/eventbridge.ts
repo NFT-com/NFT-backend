@@ -18,6 +18,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
 export const createCollectionStatsEventBridgeTarget = (
   taskDef: aws.ecs.TaskDefinition,
   subnets: string[],
+  sgId: string,
   cluster: aws.ecs.Cluster,
 ): aws.cloudwatch.EventTarget => {
   const rule = createEventBridgeRule()
@@ -31,6 +32,7 @@ export const createCollectionStatsEventBridgeTarget = (
       networkConfiguration: {
         assignPublicIp: true,
         subnets: subnets,
+        securityGroups: [sgId],
       },
       taskDefinitionArn: taskDef.arn,
     },

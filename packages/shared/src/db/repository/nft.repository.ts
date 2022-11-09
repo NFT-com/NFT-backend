@@ -25,6 +25,21 @@ export class NFTRepository extends BaseRepository<NFT> {
       .getMany()
   }
 
+  findAllWithRelationsByContract(contract: string): Promise<NFT[]> {
+    return this.getRepository(true)
+      .createQueryBuilder('nft')
+      .where({
+        contract,
+      })
+      .leftJoinAndMapOne('nft.collection',
+        Collection, 'collection',
+        'nft.contract = collection.contract')
+      .leftJoinAndMapOne('nft.wallet',
+        Wallet, 'wallet',
+        'nft.walletId = wallet.id')
+      .getMany()
+  }
+
   findDistinctContracts(): Promise<any[]> {
     return this.getRepository(true)
       .createQueryBuilder('nft')
