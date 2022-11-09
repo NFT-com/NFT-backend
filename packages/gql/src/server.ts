@@ -15,7 +15,7 @@ import { pinoHttp } from 'pino-http'
 import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
 import { cache } from '@nftcom/cache'
-import { appError, profileError } from '@nftcom/error-types'
+import { appError, profileError, userError } from '@nftcom/error-types'
 import { sendgrid } from '@nftcom/gql/service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -31,7 +31,7 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
 const chainIdHeader = 'chain-id'
 const authHeader = 'authorization'
-const addressHeader = 'address'
+const nonceHeader = 'nonce'
 
 const repositories = db.newRepositories()
 
@@ -54,20 +54,28 @@ export const createContext = async (ctx): Promise<Context> => {
   const chainId = headers[chainIdHeader] || null
   const authSignature = headers[authHeader] || null
   const xMintSignature = headers['x-mint-signature'] || null
-  const walletAddress = headers[addressHeader] || null
-  console.log(walletAddress)
+  const nonce = headers[nonceHeader] || null
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
-  if (helper.isNotEmpty(authSignature)) {
+  if (helper.isNotEmpty(authSignature) && nonce) {
     chain = auth.verifyAndGetNetworkChain(network, chainId)
-    const address = getAddressFromSignature(authMessage, authSignature)
+    // we check signature and nonce to get wallet address
+    const msg = `${authMessage} ${nonce}`
+    const address = getAddressFromSignature(msg, authSignature)
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)
-    const msg = `${authMessage} ${user.nonce}`
-    console.log(msg)
+    if (user) {
+      // check the one-time nonce if it's expired
+      if (parseFloat(user.nonce.toString()) !== parseFloat(nonce)) {
+        await repositories.user.updateOneById(user.id, { nonce: parseFloat(nonce) })
+      }
+      else {
+        return Promise.reject(userError.buildAuthExpired())
+      }
+    }
   }
 
   return {

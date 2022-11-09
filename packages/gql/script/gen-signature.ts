@@ -9,8 +9,10 @@ const main = async (): Promise<void> => {
   if (!signer) {
     return Promise.reject(new Error('invalid private key'))
   }
-  const signature = await signer.signMessage(authMessage)
-  console.log(signature)
+  const nonce = Math.random() * 1000000
+  const signature = await signer.signMessage(`${authMessage} ${nonce}`)
+  console.log('nonce: ', nonce)
+  console.log('signature: ', signature)
 }
 
 main()

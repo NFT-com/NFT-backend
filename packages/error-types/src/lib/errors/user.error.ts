@@ -12,6 +12,7 @@ export enum ErrorType {
   ForbiddenAction = 'FORBIDDEN_ACTION',
   EventAction = 'EVENT_NOT_FOUND',
   InvalidReferralId = 'INVALID_REFERRAL_ID',
+  AuthenticationExpired = 'AUTHENTICATION_EXPIRED',
 }
 
 export const buildAuth = (): ApolloError =>
@@ -19,6 +20,13 @@ export const buildAuth = (): ApolloError =>
     'You must be signed in',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationRequired },
+  )
+
+export const buildAuthExpired = (): ApolloError =>
+  new ApolloError(
+    'One-time authentication header is expired',
+    HTTP.Unauthorized,
+    { errorKey: ErrorType.AuthenticationExpired },
   )
 
 export const buildUserNotFoundMsg = (id: string): string => `User ${id} not found`
