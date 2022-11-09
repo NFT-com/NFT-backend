@@ -131,11 +131,10 @@ const retrieveX2Y2ListingsInBatches = async (
   while(listingQueryParams.length>0) {
     size = batchSize
     queryUrl = listingQueryParams.pop()
-    // console.log('query url', queryUrl)
     const response: AxiosResponse = await listingInterceptorX2Y2(
-      `/v1/orders?${queryUrl}`,
+      `/v1/orders?${queryUrl}&sort=price&direction=asc`,
     )
-    
+
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
@@ -144,9 +143,9 @@ const retrieveX2Y2ListingsInBatches = async (
         orderEntityBuilder(
           defs.ProtocolType.X2Y2,
           defs.ActivityType.Listing,
-          orders[0],
+          orders?.[0],
           chainId,
-          orders[0]?.token?.contract,
+          orders?.[0]?.token?.contract,
         ),
       )
     }
@@ -174,7 +173,7 @@ const retrieveX2Y2OffersInBatches = async (
   const offers: any[] = []
   let queryUrl
   const offerBaseUrl = chainId === '5' ? X2Y2_API_TESTNET_BASE_URL : X2Y2_API_BASE_URL
-  const listingInterceptorX2Y2 = getX2Y2Interceptor(
+  const offerInterceptorX2Y2 = getX2Y2Interceptor(
     offerBaseUrl,
   )
   let delayCounter = 0
@@ -182,9 +181,8 @@ const retrieveX2Y2OffersInBatches = async (
   while(offerQueryParams.length>0) {
     size = batchSize
     queryUrl = offerQueryParams.pop()
-    // console.log('query url', queryUrl)
-    const response: AxiosResponse = await listingInterceptorX2Y2(
-      `/v1/offers?${queryUrl}`,
+    const response: AxiosResponse = await offerInterceptorX2Y2(
+      `/v1/offers?${queryUrl}&sort=price&direction=desc`,
     )
     
     if (response?.data?.data?.length)
@@ -195,9 +193,9 @@ const retrieveX2Y2OffersInBatches = async (
         orderEntityBuilder(
           defs.ProtocolType.X2Y2,
           defs.ActivityType.Bid,
-          orders[0],
+          orders?.[0],
           chainId,
-          orders[0]?.token?.contract,
+          orders?.[0]?.token?.contract,
         ),
       )
     }
@@ -240,6 +238,7 @@ export const retrieveMultipleOrdersX2Y2 = async (
           offerQueries.push(queryParam)
         }
       }
+
       if (listingQueries.length) {
         responseAggregator.listings = await retrieveX2Y2ListingsInBatches(
           listingQueries,
@@ -264,8 +263,7 @@ export const retrieveMultipleOrdersX2Y2 = async (
   return responseAggregator
 }
 
-// retrieveMultipleOrdersX2Y2([{ contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' },
-//   { contract: '0x8deeb5274eda0cb6f23d866e684eef57e42839b7', tokenId: '28', chainId: '5' }], '5', false)
+// retrieveMultipleOrdersX2Y2([{ contract: '0x93317e87a3a47821803caadc54ae418af80603da', tokenId: '0', chainId: '1' }], '1', false)
 
 // export function encodeOrder(order: X2Y2OrderPayload): string {
 //   return ethers.utils.defaultAbiCoder.encode([orderParamType], [order])
