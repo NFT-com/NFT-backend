@@ -765,6 +765,7 @@ export const sendReferEmail = async (
       return Promise.reject(new Error(`You are not owner of this profile ${profileUrl}`))
     }
     let sent = 0
+    const existingEmails = []
     await Promise.allSettled(
       emails.map(async (email) => {
         const existingUser = await repositories.user.findByEmail(email)
@@ -785,12 +786,16 @@ export const sendReferEmail = async (
           } else {
             logger.error('Something went wrong with sending referral email')
           }
+        } else {
+          // if user with email is existing, we keep into new array
+          existingEmails.push(email)
         }
       }),
     )
 
     return {
       message: `Referral emails are sent to ${sent} addresses.`,
+      existingEmails,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in sendReferEmail: ${err}`)
