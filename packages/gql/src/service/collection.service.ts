@@ -1,41 +1,22 @@
 import { cache } from '@nftcom/cache'
-import { fetchData } from '@nftcom/nftport-client'
-import { entity, repository } from '@nftcom/shared'
+import { hydrateCollectionLeaderboard,updateCollectionLeaderboard } from '@nftcom/leaderboard'
+import { _logger, entity, repository } from '@nftcom/shared'
+
+const logger = _logger.Factory('collection.service', _logger.Context.GraphQL)
 
 export const getSortedLeaderboard =
-async (collectionRepo: repository.CollectionRepository): Promise<entity.Collection[]> => {
-  const cacheKey = 'COLLECTION_LEADERBOARD'
-  const cachedResult = await cache.get(cacheKey)
-  if (cachedResult) {
-    return JSON.parse(cachedResult)
-  }
-  const collections: (entity.Collection & {stats?: any})[] = await collectionRepo.findAllOfficial()
-  for (const collection of collections) {
-    try {
-      const { statistics: stats } = await fetchData('stats', [collection.contract])
-      collection.stats = stats
-    } catch (_e) {
-      // noop
-    }
-  }
-  collections.sort((a, b) => {
-    if (a.stats && !b.stats) {
-      return -1
-    } else if (b.stats && !a.stats) {
-      return 1
-    } else if (!a.stats && !b.stats) {
-      return b.totalVolume - a.totalVolume
-    }
-    return b.stats.seven_day_sales - a.stats.seven_day_sales
-      || b.stats.seven_day_volume - a.stats.seven_day_volume
-  })
-  const leaderboard = collections.map(({ stats, ...props }) => props) as entity.Collection[]
+async (
+  collectionRepo: repository.CollectionRepository,
+  opts?: { dateRange?: '24h' | '7d' | '30d' | 'all' },
+): Promise<(entity.Collection & {stats?: any})[]> => {
+  const { dateRange = '7d' } = opts || {}
+  const cacheKey = `COLLECTION_LEADERBOARD_${dateRange}`
+  const cachedLeaderboard = await cache.zrange(cacheKey, '-inf', '+inf', 'BYSCORE')
+  if (!cachedLeaderboard?.length) logger.warn({ dateRange, cacheKey }, 'No cached leaderboard found')
+  const leaderboard = cachedLeaderboard && cachedLeaderboard.length ?
+    await hydrateCollectionLeaderboard(cachedLeaderboard, { collectionRepo }) :
+    // This should never be called in prod, but is here as a fall-back just incase
+    await updateCollectionLeaderboard(collectionRepo, cacheKey)
 
-  cache.set(
-    cacheKey,
-    JSON.stringify(leaderboard),
-    'EX',
-    60 * 60 * 24, // 24 hours
-  )
   return leaderboard
 }
