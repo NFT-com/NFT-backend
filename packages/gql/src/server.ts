@@ -69,8 +69,8 @@ export const createContext = async (ctx): Promise<Context> => {
     user = await repositories.user.findById(wallet?.userId)
     if (user) {
       // check the one-time nonce if it's expired
-      if (parseFloat(user.nonce.toString()) !== parseFloat(nonce)) {
-        await repositories.user.updateOneById(user.id, { nonce: parseFloat(nonce) })
+      if (Number(user.nonce.toString()) !== Number(nonce)) {
+        await repositories.user.updateOneById(user.id, { nonce: Number(nonce) })
       }
       else {
         return Promise.reject(userError.buildAuthExpired())
