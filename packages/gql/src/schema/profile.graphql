@@ -263,6 +263,4 @@ extend type Mutation {
   fullFillEventTokenIds(count: Int!): FullFillEventTokenIdsOutput!
   "AUTHENTICATED"
   saveUserActionForBuyNFTs(profileUrl: String!): SaveUserActionForBuyNFTsOutput!
-  "AUTHENTICATED"
-  fullFillIncentiveActions(input: FullFillIncentiveActionsInput!): FullFillIncentiveActionsOutput!
 }

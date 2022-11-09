@@ -1470,83 +1470,6 @@ const saveUserActionForBuyNFTs = async (
   }
 }
 
-const fullFillIncentiveActions = async (
-  _: any,
-  args: gql.MutationFullFillIncentiveActionsArgs,
-  ctx: Context,
-): Promise<gql.FullFillIncentiveActionsOutput> => {
-  const { repositories, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  logger.debug('fullFillIncentiveActions', { input: args?.input })
-  try {
-    const profiles = await repositories.profile.find({
-      skip: args?.input.skip,
-      take: args?.input.take,
-      where: {
-        chainId,
-      },
-    })
-    let count = 0
-    await Promise.allSettled(
-      profiles.map(async (profile) => {
-        // save incentive action for CREATE_NFT_PROFILE
-        const createAction = await repositories.incentiveAction.findOne({
-          where: {
-            profileUrl: profile.url,
-            userId: profile.ownerUserId,
-            task: defs.ProfileTask.CREATE_NFT_PROFILE,
-          },
-        })
-        if (!createAction) {
-          await repositories.incentiveAction.save({
-            profileUrl: profile.url,
-            userId: profile.ownerUserId,
-            task: defs.ProfileTask.CREATE_NFT_PROFILE,
-            point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
-          })
-        }
-        // save incentive action for CUSTOMIZE_PROFILE
-        if (profile.ownerUserId && profile.description && profile.photoURL) {
-          const edges = await repositories.edge.find({
-            where: {
-              thisEntityType: defs.EntityType.Profile,
-              thisEntityId: profile.id,
-              thatEntityType: defs.EntityType.NFT,
-              edgeType: defs.EdgeType.Displays,
-              hide: false,
-            },
-          })
-          if (edges.length) {
-            const customizeAction = await repositories.incentiveAction.findOne({
-              where: {
-                profileUrl: profile.url,
-                userId: profile.ownerUserId,
-                task: defs.ProfileTask.CUSTOMIZE_PROFILE,
-              },
-            })
-            if (!customizeAction) {
-              await repositories.incentiveAction.save({
-                profileUrl: profile.url,
-                userId: profile.ownerUserId,
-                task: defs.ProfileTask.CUSTOMIZE_PROFILE,
-                point: defs.ProfileTaskPoint.CUSTOMIZE_PROFILE,
-              })
-            }
-          }
-        }
-        count++
-      }),
-    )
-    return {
-      message: `Full filled incentive actions for ${count} profiles`,
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in fullFillIncentiveActions: ${err}`)
-    return err
-  }
-}
-
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1579,7 +1502,6 @@ export default {
     saveNFTVisibilityForProfiles: combineResolvers(auth.isAuthenticated, saveNFTVisibility),
     fullFillEventTokenIds: combineResolvers(auth.isAuthenticated, fullFillEventTokenIds),
     saveUserActionForBuyNFTs: combineResolvers(auth.isAuthenticated, saveUserActionForBuyNFTs),
-    fullFillIncentiveActions: combineResolvers(auth.isAuthenticated, fullFillIncentiveActions),
   },
   Profile: {
     followersCount: getFollowersCount,
