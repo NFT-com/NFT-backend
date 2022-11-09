@@ -263,7 +263,7 @@ export const retrieveMultipleOrdersX2Y2 = async (
   return responseAggregator
 }
 
-retrieveMultipleOrdersX2Y2([{ contract: '0x93317e87a3a47821803caadc54ae418af80603da', tokenId: '0', chainId: '1' }], '1', false)
+// retrieveMultipleOrdersX2Y2([{ contract: '0x93317e87a3a47821803caadc54ae418af80603da', tokenId: '0', chainId: '1' }], '1', false)
 
 // export function encodeOrder(order: X2Y2OrderPayload): string {
 //   return ethers.utils.defaultAbiCoder.encode([orderParamType], [order])
