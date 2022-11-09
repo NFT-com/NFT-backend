@@ -206,6 +206,15 @@ type SaveUserActionForBuyNFTsOutput {
   message: String
 }
 
+input FullFillIncentiveActionsInput {
+  take: Int!
+  skip: Int!
+}
+
+type FullFillIncentiveActionsOutput {
+  message: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -254,4 +263,6 @@ extend type Mutation {
   fullFillEventTokenIds(count: Int!): FullFillEventTokenIdsOutput!
   "AUTHENTICATED"
   saveUserActionForBuyNFTs(profileUrl: String!): SaveUserActionForBuyNFTsOutput!
+  "AUTHENTICATED"
+  fullFillIncentiveActions(input: FullFillIncentiveActionsInput!): FullFillIncentiveActionsOutput!
 }
