@@ -164,6 +164,7 @@ type TraitCounts {
 
 input CollectionLeaderboardInput {
   pageInput: PageInput
+  dateRange: String
 }
 
 type CollectionLeaderboard {

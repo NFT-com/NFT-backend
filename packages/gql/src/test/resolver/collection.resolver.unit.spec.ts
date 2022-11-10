@@ -76,7 +76,7 @@ describe('collection resolver', () => {
       jest.resetAllMocks()
     })
 
-    it('should paginate the top 20 by default', async () => {
+    it('should paginate the top 10 by default', async () => {
       mockCtx.repositories = {
         collection: {
           findAllOfficial: jest.fn().mockResolvedValue([
@@ -124,21 +124,12 @@ describe('collection resolver', () => {
         { id: '13', contract: '0x0013', stats: { seven_day_sales: 13 } },
         { id: '12', contract: '0x0012', stats: { seven_day_sales: 12 } },
         { id: '11', contract: '0x0011', stats: { seven_day_sales: 11 } },
-        { id: '10', contract: '0x0010', stats: { seven_day_sales: 10 } },
-        { id: '9', contract: '0x0009', stats: { seven_day_sales: 9 } },
-        { id: '8', contract: '0x0008', stats: { seven_day_sales: 8 } },
-        { id: '7', contract: '0x0007', stats: { seven_day_sales: 7 } },
-        { id: '6', contract: '0x0006', stats: { seven_day_sales: 6 } },
-        { id: '5', contract: '0x0005', stats: { seven_day_sales: 5 } },
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
+
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
         firstCursor: '20',
-        lastCursor: '1',
+        lastCursor: '11',
       })
     })
 
@@ -179,15 +170,24 @@ describe('collection resolver', () => {
 
       const leaderboard = (await collectionResolver
         .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { afterCursor: '1' } } }, mockCtx))
+        .collectionLeaderboard(undefined, { input: { pageInput: { afterCursor: '11' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 0 } },
+        { id: '10', contract: '0x0010', stats: { seven_day_sales: 10 } },
+        { id: '9', contract: '0x0009', stats: { seven_day_sales: 9 } },
+        { id: '8', contract: '0x0008', stats: { seven_day_sales: 8 } },
+        { id: '7', contract: '0x0007', stats: { seven_day_sales: 7 } },
+        { id: '6', contract: '0x0006', stats: { seven_day_sales: 6 } },
+        { id: '5', contract: '0x0005', stats: { seven_day_sales: 5 } },
+        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
+        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
+        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2 } },
+        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
-        firstCursor: '0',
-        lastCursor: '0',
+        firstCursor: '10',
+        lastCursor: '1',
       })
     })
 
