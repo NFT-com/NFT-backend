@@ -42,6 +42,17 @@ runs:
         docker build . -f cronjobs/mintrunner/mint.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+    - name: Build and Push DBSync Images
+      if: ${{ inputs.stage = 'prod' }}  # only deploy this cron to prod
+      shell: bash
+      env:
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        ECR_REPOSITORY: dbsync  #for simplicity, ecr repo created outside pulumi stack
+      run: |
+        export DOCKER_BUILDKIT=1
+        docker build . -f cronjobs/dbsync/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
     - name: Build and Push SalesProcessor Images
       if: ${{ inputs.stage  != 'dev' }}
       shell: bash
@@ -71,6 +82,8 @@ runs:
         STAGE: ${{ inputs.stage }}
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        AWS_ACCESS_KEY_ID: ${{ fromJSON(inputs.secrets).AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ fromJSON(inputs.secrets).AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
         GIT_SHA: ${{ github.sha }}
@@ -87,6 +100,10 @@ runs:
         GQL_DB_PORT: ${{ fromJSON(inputs.secrets).GQL_DB_PORT }}
         GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).GQL_DB_PASSWORD }}
         GQL_DB_USE_SSL: ${{ fromJSON(inputs.secrets).GQL_DB_USE_SSL }}
+        STG_GQL_DB_HOST: ${{ fromJSON(inputs.secrets).STG_GQL_DB_HOST }} 
+        STG_GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).STG_GQL_DB_PASSWORD }}
+        PROD_DB_BASTION_CONN: ${{ fromJSON(inputs.secrets).PROD_DB_BASTION_CONN }}
+        PROD_DB_SSH_KEY:  ${{ fromJSON(inputs.secrets).PROD_DB_SSH_KEY }}
         REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
         REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
