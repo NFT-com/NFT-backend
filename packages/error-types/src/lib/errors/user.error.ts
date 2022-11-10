@@ -24,7 +24,7 @@ export const buildAuth = (): ApolloError =>
 
 export const buildAuthExpired = (): ApolloError =>
   new ApolloError(
-    'One-time authentication header is expired',
+    'Authentication header is expired',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationExpired },
   )

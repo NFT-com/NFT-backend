@@ -60,6 +60,10 @@ export const createContext = async (ctx): Promise<Context> => {
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
   if (helper.isNotEmpty(authSignature) && nonce) {
+    const now = helper.toUTCDate().getTime() / 1000
+    if (Number(nonce) < now) {
+      return Promise.reject(userError.buildAuthExpired())
+    }
     chain = auth.verifyAndGetNetworkChain(network, chainId)
     // we check signature and nonce to get wallet address
     const msg = `${authMessage} ${nonce}`
@@ -67,15 +71,6 @@ export const createContext = async (ctx): Promise<Context> => {
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)
-    if (user) {
-      // check the one-time nonce if it's expired
-      if (Number(user.nonce.toString()) !== Number(nonce)) {
-        await repositories.user.updateOneById(user.id, { nonce: Number(nonce) })
-      }
-      else {
-        return Promise.reject(userError.buildAuthExpired())
-      }
-    }
   }
 
   return {

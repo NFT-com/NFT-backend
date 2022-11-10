@@ -1,4 +1,7 @@
+import { addDays } from 'date-fns'
 import { Wallet } from 'ethers'
+
+import { helper } from '@nftcom/shared/dist/packages/shared/src'
 
 const authMessage = 'I\'d like to sign in'
 const defaultKey = 'a2f890d2f7023d5eeba7f5c600bd50650ca59bd7e7007af8e016cd7abdc9af5d'
@@ -9,9 +12,10 @@ const main = async (): Promise<void> => {
   if (!signer) {
     return Promise.reject(new Error('invalid private key'))
   }
-  const nonce = Math.floor(Math.random() * 1000000)
-  const signature = await signer.signMessage(`${authMessage} ${nonce}`)
-  console.log('nonce: ', nonce)
+  const nonce = addDays(helper.toUTCDate(), 7)
+  const unixNonce = Math.floor(nonce.getTime() / 1000 )
+  const signature = await signer.signMessage(`${authMessage} ${unixNonce}`)
+  console.log('nonce: ', unixNonce)
   console.log('signature: ', signature)
 }
 
