@@ -29,6 +29,13 @@ export const buildAuthExpired = (): ApolloError =>
     { errorKey: ErrorType.AuthenticationExpired },
   )
 
+export const buildAuthOutOfExpireDuration = (): ApolloError =>
+  new ApolloError(
+    'Authentication header is out of expiration date',
+    HTTP.Unauthorized,
+    { errorKey: ErrorType.AuthenticationExpired },
+  )
+
 export const buildUserNotFoundMsg = (id: string): string => `User ${id} not found`
 
 export const buildUsernameExistsMsg = (username: string): string =>

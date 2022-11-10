@@ -2,7 +2,7 @@ import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisable
 import { ApolloServer } from 'apollo-server-express'
 import cors from 'cors'
 import cryptoRandomString from 'crypto-random-string'
-import { addDays } from 'date-fns'
+import { addDays, differenceInCalendarDays } from 'date-fns'
 import { utils } from 'ethers'
 import express from 'express'
 import rateLimiter from 'express-rate-limit'
@@ -22,7 +22,7 @@ import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authMessage, serverPort } from './config'
+import { authExpireDuration, authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -60,7 +60,12 @@ export const createContext = async (ctx): Promise<Context> => {
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
   if (helper.isNotEmpty(authSignature) && nonce) {
-    const now = helper.toUTCDate().getTime() / 1000
+    const nowDate = helper.toUTCDate()
+    const expireDate = new Date(Number(nonce) * 1000)
+    if (differenceInCalendarDays(nowDate, expireDate) > authExpireDuration) {
+      return Promise.reject(userError.buildAuthOutOfExpireDuration())
+    }
+    const now = nowDate.getTime() / 1000
     if (Number(nonce) < now) {
       return Promise.reject(userError.buildAuthExpired())
     }

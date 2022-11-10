@@ -26,6 +26,7 @@ export const authMessage = lookupEnvKeyOrThrow('AUTH_MESSAGE')
 export const sgAPIKey = lookupEnvKeyOrThrow('SG_API_KEY')
 export const confirmEmailUrl = lookupEnvKeyOrThrow('CONFIRM_EMAIL_URL')
 export const teamPassword = lookupEnvKeyOrThrow('TEAM_AUTH_TOKEN')
+export const authExpireDuration = parseInt(process.env.AUTH_EXPIRE_BY_DAYS) || 7
 
 export const serverConfigVar = (): any => {
   const defaultConfig = {
