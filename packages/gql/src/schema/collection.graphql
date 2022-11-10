@@ -74,6 +74,7 @@ type Collection {
   floorPrice: Float
   totalVolume: Float
   averagePrice: Float
+  stats: NFTPortStatistics
 }
 
 type NFTPortResults {
