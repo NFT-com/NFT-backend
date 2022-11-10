@@ -82,6 +82,8 @@ const signUp = (
                 referredBy: referredInfo || null,
                 avatarURL,
                 isEmailConfirmed: true,
+                confirmEmailToken: null,
+                confirmEmailTokenExpiresAt: null,
               })
             } else {
               return Promise.reject(appError.buildInvalid(
