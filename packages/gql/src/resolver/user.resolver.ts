@@ -765,37 +765,67 @@ export const sendReferEmail = async (
       return Promise.reject(new Error(`You are not owner of this profile ${profileUrl}`))
     }
     let sent = 0
-    const existingEmails = []
+    const confirmedEmails = []
+    const unconfirmedEmails = []
+    const sentEmails = []
     await Promise.allSettled(
       emails.map(async (email) => {
+        const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
+        const referredBy = profileOwner.referralId + '::' + profileUrl
+        const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
+        const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
         const existingUser = await repositories.user.findByEmail(email)
         // if user is not created by email
         if (!existingUser) {
-          const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
-          const referredBy = profileOwner.referralId + '::' + profileUrl
           // create unverified user with this email
           await repositories.user.save({
             email,
             username: `unverified_${email}_${referralId}`,
             referralId,
             referredBy,
+            confirmEmailToken,
+            confirmEmailTokenExpiresAt,
           })
           const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl, referralId)
           if (res) {
+            sentEmails.push(email)
             sent ++
           } else {
             logger.error('Something went wrong with sending referral email')
           }
         } else {
-          // if user with email is existing, we keep into new array
-          existingEmails.push(email)
+          // if user with email exists, we check confirmEmailTokenExpiresAt to if user is verified or not
+          if (existingUser.isEmailConfirmed) {
+            confirmedEmails.push(email)
+          } else {
+            if (existingUser.confirmEmailTokenExpiresAt &&
+              existingUser.confirmEmailTokenExpiresAt < new Date()
+            ) {
+              unconfirmedEmails.push(email)
+            } else {
+              // extend confirmEmailTokenExpiresAt of user one day
+              await repositories.user.updateOneById(existingUser.id, {
+                confirmEmailToken,
+                confirmEmailTokenExpiresAt,
+              })
+              const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl, referralId)
+              if (res) {
+                sentEmails.push(email)
+                sent ++
+              } else {
+                logger.error('Something went wrong with sending referral email')
+              }
+            }
+          }
         }
       }),
     )
 
     return {
       message: `Referral emails are sent to ${sent} addresses.`,
-      existingEmails,
+      confirmedEmails,
+      unconfirmedEmails,
+      sentEmails,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in sendReferEmail: ${err}`)
