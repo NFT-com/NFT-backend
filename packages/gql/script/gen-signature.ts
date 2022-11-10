@@ -12,10 +12,10 @@ const main = async (): Promise<void> => {
   if (!signer) {
     return Promise.reject(new Error('invalid private key'))
   }
-  const nonce = addDays(helper.toUTCDate(), 7)
-  const unixNonce = Math.floor(nonce.getTime() / 1000 )
-  const signature = await signer.signMessage(`${authMessage} ${unixNonce}`)
-  console.log('nonce: ', unixNonce)
+  const timestamp = addDays(helper.toUTCDate(), 7)
+  const unixTimestamp = Math.floor(timestamp.getTime() / 1000 )
+  const signature = await signer.signMessage(`${authMessage} ${unixTimestamp}`)
+  console.log('timestamp: ', unixTimestamp)
   console.log('signature: ', signature)
 }
 

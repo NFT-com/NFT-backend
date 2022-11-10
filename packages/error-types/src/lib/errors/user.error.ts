@@ -31,7 +31,7 @@ export const buildAuthExpired = (): ApolloError =>
 
 export const buildAuthOutOfExpireDuration = (): ApolloError =>
   new ApolloError(
-    'Authentication header is out of expiration date',
+    'Expire duration of Authentication is out of expiry limit',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationExpired },
   )

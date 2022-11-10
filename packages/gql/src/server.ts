@@ -31,7 +31,7 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
 const chainIdHeader = 'chain-id'
 const authHeader = 'authorization'
-const nonceHeader = 'nonce'
+const timestampHeader = 'timestamp'
 
 const repositories = db.newRepositories()
 
@@ -54,24 +54,27 @@ export const createContext = async (ctx): Promise<Context> => {
   const chainId = headers[chainIdHeader] || null
   const authSignature = headers[authHeader] || null
   const xMintSignature = headers['x-mint-signature'] || null
-  const nonce = headers[nonceHeader] || null
+  const timestamp = headers[timestampHeader] || null
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
-  if (helper.isNotEmpty(authSignature) && nonce) {
+
+  if (helper.isNotEmpty(authSignature) && timestamp) {
     const nowDate = helper.toUTCDate()
-    const expireDate = new Date(Number(nonce) * 1000)
+    const expireDate = new Date(Number(timestamp) * 1000)
+    // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
     if (differenceInCalendarDays(nowDate, expireDate) > authExpireDuration) {
       return Promise.reject(userError.buildAuthOutOfExpireDuration())
     }
+    // If auth header is out of expire duration, this request should be rejected
     const now = nowDate.getTime() / 1000
-    if (Number(nonce) < now) {
+    if (Number(timestamp) < now) {
       return Promise.reject(userError.buildAuthExpired())
     }
     chain = auth.verifyAndGetNetworkChain(network, chainId)
     // we check signature and nonce to get wallet address
-    const msg = `${authMessage} ${nonce}`
+    const msg = `${authMessage} ${timestamp}`
     const address = getAddressFromSignature(msg, authSignature)
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
