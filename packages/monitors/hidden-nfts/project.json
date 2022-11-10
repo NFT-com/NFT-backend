@@ -1,0 +1,60 @@
+{
+  "name": "monitors-hidden-nfts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/monitors/hidden-nfts/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/packages/monitors/hidden-nfts",
+        "main": "packages/monitors/hidden-nfts/src/main.ts",
+        "tsConfig": "packages/monitors/hidden-nfts/tsconfig.app.json",
+        "assets": ["packages/monitors/hidden-nfts/src/assets"]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": [
+            {
+              "replace": "packages/monitors/hidden-nfts/src/environments/environment.ts",
+              "with": "packages/monitors/hidden-nfts/src/environments/environment.prod.ts"
+            }
+          ]
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "monitors-hidden-nfts:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "monitors-hidden-nfts:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/monitors/hidden-nfts/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/monitors/hidden-nfts"],
+      "options": {
+        "jestConfig": "packages/monitors/hidden-nfts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}
