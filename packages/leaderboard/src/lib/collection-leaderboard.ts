@@ -123,7 +123,7 @@ Promise<(entity.Collection & {stats?: any})[]> => {
   }
   // Get requested leaderboard back from cache
   const leaderboardContracts = cacheKey ?
-    await cache.zrange(cacheKey, '-inf', '+inf', 'BYSCORE') :
+    await cache.zrange(cacheKey, '+inf', '-inf', 'BYSCORE', 'REV') :
     []
   return hydrateCollectionLeaderboard(leaderboardContracts, { existingCollections: collections })
 }
