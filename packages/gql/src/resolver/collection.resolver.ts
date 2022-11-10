@@ -16,7 +16,7 @@ import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftc
 import * as Sentry from '@sentry/node'
 
 import { core } from '../service'
-import { getSortedLeaderboard } from '../service/collection.service'
+import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 const seService = new SearchEngineService()
@@ -543,15 +543,30 @@ const getCollectionLeaderboard = async (
   args: gql.QueryCollectionLeaderboardArgs,
   ctx: Context,
 ): Promise<gql.CollectionLeaderboard> => {
-  const { pageInput } = args.input || {}
+  const schema = Joi.object().keys({
+    dateRange: Joi.string().valid('24h', '7d', '30d', 'all').optional(),
+    pageInput: Joi.any().optional(),
+  })
+  const input = args.input || {}
+  joi.validateSchema(schema, input)
+  const { pageInput, dateRange: dateRangeInput } = input
   const { repositories } = ctx
 
-  const leaderboard = await getSortedLeaderboard(repositories.collection)
+  const dateRange = dateRangeInput as CollectionLeaderboardDateRange || DEFAULT_COLL_LB_DATE_RANGE
+  const defaultNumItems = 10
+  const cacheKey = `COLLECTION_LEADERBOARD_${dateRange}_${pageInput?.first || pageInput?.last || defaultNumItems}`
+  const cachedLeaderboard = await cache.get(cacheKey)
+  const leaderboard = cachedLeaderboard ?
+    JSON.parse(cachedLeaderboard) :
+    await getSortedLeaderboard(repositories.collection, { dateRange })
+  if (!cachedLeaderboard && leaderboard.length) {
+    await cache.set(cacheKey, JSON.stringify(leaderboard), 'EX', 60 * 60)
+  }
 
   const defaultCursor = pageInput && pagination.hasLast(pageInput) ?
     { beforeCursor: (pageInput && pageInput.beforeCursor) || '-1' } :
     { afterCursor: (pageInput && pageInput.afterCursor) || '-1' }
-  const safePageInput = pagination.safeInput(pageInput, defaultCursor)
+  const safePageInput = pagination.safeInput(pageInput, defaultCursor, defaultNumItems)
   const [paginatedLeaderboard, leaderboardLength] = await core.paginateEntityArray(leaderboard, safePageInput)
 
   return pagination.toPageable(

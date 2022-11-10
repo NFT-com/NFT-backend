@@ -21,8 +21,6 @@ type FnResult2Pageable = <T>(result: defs.PageableResult<T>) => Pageable<T>
 
 const logger = _logger.Factory(_logger.Context.PageInput, _logger.Context.GraphQL)
 
-const defaultNumItems = 20
-
 export const hasAfter = (input: gql.PageInput): boolean => helper.isNotEmpty(input.afterCursor)
 
 export const hasBefore = (input: gql.PageInput): boolean => helper.isNotEmpty(input.beforeCursor)
@@ -74,6 +72,7 @@ export const getDefaultCursor = (orderBy: string): DefaultCursor => {
 export const safeInput = (
   input: gql.PageInput,
   cursor: DefaultCursor,
+  defaultNumItems = 20,
 ): gql.PageInput => {
   if (helper.isEmpty(input)) {
     return {

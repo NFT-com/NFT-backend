@@ -74,6 +74,7 @@ type Collection {
   floorPrice: Float
   totalVolume: Float
   averagePrice: Float
+  stats: NFTPortStatistics
 }
 
 type NFTPortResults {
@@ -163,6 +164,7 @@ type TraitCounts {
 
 input CollectionLeaderboardInput {
   pageInput: PageInput
+  dateRange: String
 }
 
 type CollectionLeaderboard {

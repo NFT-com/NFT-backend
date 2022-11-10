@@ -18,6 +18,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
 export const createCollectionStatsEventBridgeTarget = (
   taskDef: aws.ecs.TaskDefinition,
   subnets: string[],
+  sgId: string,
   cluster: aws.ecs.Cluster,
 ): aws.cloudwatch.EventTarget => {
   const rule = createEventBridgeRule()
@@ -31,6 +32,7 @@ export const createCollectionStatsEventBridgeTarget = (
       networkConfiguration: {
         assignPublicIp: true,
         subnets: subnets,
+        securityGroups: [sgId],
       },
       taskDefinitionArn: taskDef.arn,
     },
@@ -41,5 +43,7 @@ export const createCollectionStatsEventBridgeTarget = (
     // hardcoded iam role for eventbridge to trigger ecs
     roleArn: 'arn:aws:iam::016437323894:role/service-role/Amazon_EventBridge_Invoke_ECS_306739191',
     rule: rule.name,
+  }, {
+    deleteBeforeReplace: true,
   })
 }
