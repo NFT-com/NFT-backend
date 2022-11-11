@@ -1470,6 +1470,48 @@ const saveUserActionForBuyNFTs = async (
   }
 }
 
+const searchVisibleNFTsForProfile = async (
+  _: any,
+  args: gql.QuerySearchVisibleNFTsForProfileArgs,
+  ctx: Context,
+): Promise<Array<gql.NFT>> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('searchVisibleNFTsForProfile', { input: args?.input })
+    const profile = await repositories.profile.findByURL(args?.input.url, chainId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: profile.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      },
+    })
+    const nfts: entity.NFT[] = []
+    await Promise.allSettled(
+      edges.map(async (edge) => {
+        const nft = await repositories.nft.findById(edge.thatEntityId)
+        if (nft) {
+          nfts.push(nft)
+        }
+      }),
+    )
+    return nfts.filter((nft) => nft.metadata.name.toLowerCase().includes(args?.input.query.toLowerCase()))
+  } catch (err) {
+    Sentry.captureMessage(`Error in searchVisibleNFTsForProfile: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1487,6 +1529,7 @@ export default {
     isProfileCustomized: isProfileCustomized,
     profilesByDisplayNft,
     profilesMintedByGK: getProfilesMintedByGK,
+    searchVisibleNFTsForProfile: searchVisibleNFTsForProfile,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
