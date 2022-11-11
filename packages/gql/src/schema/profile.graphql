@@ -212,6 +212,12 @@ input SearchVisibleNFTsForProfileInput {
   chainId: String
 }
 
+input SearchNFTsForProfileInput {
+  url: String!
+  query: String!
+  chainId: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -231,6 +237,8 @@ extend type Query {
   profilesByDisplayNft(input: ProfilesByDisplayNftInput!): ProfilesOutput!
   profilesMintedByGK(tokenId: String!, chainId: String): [Profile!]!
   searchVisibleNFTsForProfile(input: SearchVisibleNFTsForProfileInput!): [NFT]!
+  "AUTHENTICATED"
+  searchNFTsForProfile(input: SearchNFTsForProfileInput!): [NFT]!
 }
 
 extend type Mutation {
