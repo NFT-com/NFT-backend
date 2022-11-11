@@ -43,7 +43,7 @@ runs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
     - name: Build and Push DBSync Images
-      if: ${{ inputs.stage = 'prod' }}  # only deploy this cron to prod
+      if: ${{ inputs.stage == 'prod' }}  # only deploy this cron to prod
       shell: bash
       env:
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
