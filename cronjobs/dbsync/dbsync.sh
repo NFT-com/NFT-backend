@@ -17,13 +17,23 @@ aws configure set region ${AWS_REGION}
 
 echo ""
 echo "Running a pg_dump on prod db"
-# prod access via tunnel via ssh socket 
+# Below steps required to tunnel into prod db via ssh socket 
+
+# setup/add ssh key (pull from doppler)
 eval $(ssh-agent -s) 
-ssh-add <(echo "$PROD_DB_SSH_KEY") 
+ssh-add <(echo "$PROD_DB_SSH_KEY")
+
+# create an ipv4 tunnel via the prod pastion host 
 ssh -o StrictHostKeyChecking=no -4 -M -S my-ctrl-socket -fNT -L 48841:$PROD_DB_HOST:5432 $PROD_DB_BASTION_CONN
+
+# create ssh socket over the tunnel 
 ssh -S my-ctrl-socket -O check $PROD_DB_BASTION_CONN
+
+# run the dump via tunnel/socket setup
 export PGPASSWORD=$PROD_DB_PASS
 pg_dump -U app -h localhost -p 48841 -Fc -v app -f prod-main.db.backup
+
+#close the SSH socket 
 ssh -S my-ctrl-socket -O exit $PROD_DB_BASTION_CONN
 echo "pg_dump has completed on prod db"
 

@@ -42,7 +42,7 @@ export const createDBSyncTaskDefinition = (): aws.ecs.TaskDefinition => {
         environment: [
           {
             Name: 'STAGING_DB_HOST',
-            Value: process.env.STG_GQL_DB_HOST,
+            Value: process.env.STG_GQL_DB_HOST, //need to hardcode given need access to both prod/staging for this job
           },
           {
             Name: 'STAGING_DB_PASS',
@@ -50,7 +50,7 @@ export const createDBSyncTaskDefinition = (): aws.ecs.TaskDefinition => {
           },
           {
             Name: 'PROD_DB_HOST',
-            Value: process.env.GQL_DB_HOST,
+            Value: process.env.GQL_DB_HOST, //only run on prod, so GQL_DB lines up to prod in this case
           },
           {
             Name: 'PROD_DB_PASS',
@@ -70,11 +70,11 @@ export const createDBSyncTaskDefinition = (): aws.ecs.TaskDefinition => {
           },
           {
             Name: 'PROD_DB_BASTION_CONN',
-            Value: process.env.PROD_DB_BASTION_CONN,
+            Value: process.env.PROD_DB_BASTION_CONN, // needed to connect to prod db
           },
           {
             Name: 'PROD_DB_SSH_KEY',
-            Value: process.env.PROD_DB_SSH_KEY,
+            Value: process.env.PROD_DB_SSH_KEY, // key to access bastion host to connect to prod db
           },
         ],
         volumesFrom: [],
