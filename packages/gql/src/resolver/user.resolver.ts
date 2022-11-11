@@ -802,7 +802,7 @@ export const sendReferEmail = async (
           } else {
             const now = helper.toUTCDate()
             if (existingUser.confirmEmailTokenExpiresAt &&
-              existingUser.confirmEmailTokenExpiresAt < now
+              existingUser.confirmEmailTokenExpiresAt > now
             ) {
               unconfirmedEmails.push(email)
             } else {
