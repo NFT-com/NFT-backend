@@ -29,7 +29,7 @@ import {
 } from '@nftcom/gql/service/core.service'
 import {
   changeNFTsVisibility, getCollectionInfo,
-  getOwnersOfGenesisKeys, saveProfileScore, saveVisibleNFTsForProfile,
+  getOwnersOfGenesisKeys, queryNFTsForProfile, saveProfileScore, saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
@@ -1470,34 +1470,6 @@ const saveUserActionForBuyNFTs = async (
   }
 }
 
-const queryNFTsForProfile = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-  onlyVisible: boolean,
-  query: string,
-): Promise<entity.NFT[]> => {
-  const whereQuery = {
-    thisEntityType: defs.EntityType.Profile,
-    thisEntityId: profile.id,
-    thatEntityType: defs.EntityType.NFT,
-    edgeType: defs.EdgeType.Displays,
-  }
-
-  const edges = onlyVisible ? await repositories.edge.find({
-    where: { ...whereQuery, hide: false },
-  }) : await repositories.edge.find({ where: whereQuery })
-  const nfts: entity.NFT[] = []
-  await Promise.allSettled(
-    edges.map(async (edge) => {
-      const nft = await repositories.nft.findById(edge.thatEntityId)
-      if (nft && nft.metadata.name && nft.metadata.name.toLowerCase().includes(query.toLowerCase())) {
-        nfts.push(nft)
-      }
-    }),
-  )
-  return nfts
-}
-
 const searchVisibleNFTsForProfile = async (
   _: any,
   args: gql.QuerySearchVisibleNFTsForProfileArgs,
@@ -1557,23 +1529,8 @@ const searchNFTsForProfile = async (
     if (cachedData) {
       return JSON.parse(cachedData) as gql.NFT[]
     }
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thisEntityId: profile.id,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-      },
-    })
-    const nfts: entity.NFT[] = []
-    await Promise.allSettled(
-      edges.map(async (edge) => {
-        const nft = await repositories.nft.findById(edge.thatEntityId)
-        if (nft && nft.metadata.name && nft.metadata.name.toLowerCase().includes(args?.input.query.toLowerCase())) {
-          nfts.push(nft)
-        }
-      }),
-    )
+    const nfts = await queryNFTsForProfile(repositories, profile, false, args?.input.query)
+    await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     return nfts
   } catch (err) {
