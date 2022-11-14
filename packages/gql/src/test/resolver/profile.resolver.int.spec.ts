@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 // const sharedLibs = jest.requireActual('@nftcom/shared')
 // const sharedLibs = jest.requireActual('@nftcom/gql/service')
 import { DataSource } from 'typeorm'
@@ -947,7 +947,7 @@ describe('profile resolver', () => {
       const nftB = await repositories.nft.save({
         contract: '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E',
         tokenId: '0xf2',
-        chainId: '1',
+        chainId: '5',
         metadata: {
           name: 'test-nft-2',
           description: '',
@@ -974,6 +974,7 @@ describe('profile resolver', () => {
         thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Displays,
         hide: false,
+        weight: 'aaaa',
       })
       await repositories.edge.save({
         thisEntityId: profile.id,
@@ -982,6 +983,19 @@ describe('profile resolver', () => {
         thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Displays,
         hide: false,
+        weight: 'aaab',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
+        name: 'NFT.com Profile',
+        chainId: '5',
       })
     })
 
@@ -992,17 +1006,20 @@ describe('profile resolver', () => {
 
     it('should return visible nfts with search query', async () => {
       const result = await testServer.executeOperation({
-        query: 'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { id } }',
+        query: 'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { items { id } } }',
         variables: {
           input: {
             url: 'testprofile',
             query: 'test',
             chainId: '5',
+            pageInput: {
+              first: 1,
+            },
           },
         },
       })
 
-      expect(result.data.searchVisibleNFTsForProfile.length).toEqual(2)
+      expect(result.data.searchVisibleNFTsForProfile.items.length).toEqual(1)
     })
   })
 
@@ -1036,7 +1053,7 @@ describe('profile resolver', () => {
       const nftB = await repositories.nft.save({
         contract: '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E',
         tokenId: '0xf2',
-        chainId: '1',
+        chainId: '5',
         metadata: {
           name: 'test-nft-2',
           description: '',
@@ -1063,6 +1080,7 @@ describe('profile resolver', () => {
         thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Displays,
         hide: false,
+        weight: 'aaaa',
       })
       await repositories.edge.save({
         thisEntityId: profile.id,
@@ -1071,6 +1089,19 @@ describe('profile resolver', () => {
         thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Displays,
         hide: true,
+        weight: 'aaab',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
+        name: 'NFT.com Profile',
+        chainId: '5',
       })
     })
 
@@ -1081,17 +1112,20 @@ describe('profile resolver', () => {
 
     it('should return all nfts with search query', async () => {
       const result = await testServer.executeOperation({
-        query: 'query SearchNFTsForProfile($input: SearchNFTsForProfileInput!) { searchNFTsForProfile(input: $input) { id } }',
+        query: 'query SearchNFTsForProfile($input: SearchNFTsForProfileInput!) { searchNFTsForProfile(input: $input) { items { id } } }',
         variables: {
           input: {
             url: 'testprofile',
             query: 'test',
             chainId: '5',
+            pageInput: {
+              first: 2,
+            },
           },
         },
       })
 
-      expect(result.data.searchNFTsForProfile.length).toEqual(2)
+      expect(result.data.searchNFTsForProfile.items.length).toEqual(2)
     })
   })
 })

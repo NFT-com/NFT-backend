@@ -210,12 +210,14 @@ input SearchVisibleNFTsForProfileInput {
   url: String!
   query: String!
   chainId: String
+  pageInput: PageInput
 }
 
 input SearchNFTsForProfileInput {
   url: String!
   query: String!
   chainId: String
+  pageInput: PageInput
 }
 
 extend type Query {
@@ -236,9 +238,9 @@ extend type Query {
   isProfileCustomized(url: String!, chainId: String): Boolean!
   profilesByDisplayNft(input: ProfilesByDisplayNftInput!): ProfilesOutput!
   profilesMintedByGK(tokenId: String!, chainId: String): [Profile!]!
-  searchVisibleNFTsForProfile(input: SearchVisibleNFTsForProfileInput!): [NFT]!
+  searchVisibleNFTsForProfile(input: SearchVisibleNFTsForProfileInput!): NFTsOutput!
   "AUTHENTICATED"
-  searchNFTsForProfile(input: SearchNFTsForProfileInput!): [NFT]!
+  searchNFTsForProfile(input: SearchNFTsForProfileInput!): NFTsOutput!
 }
 
 extend type Mutation {
