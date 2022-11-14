@@ -1531,7 +1531,6 @@ const searchNFTsForProfile = async (
     }
     const nfts = await queryNFTsForProfile(repositories, profile, false, args?.input.query)
     await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
-    await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     return nfts
   } catch (err) {
     Sentry.captureMessage(`Error in searchNFTsForProfile: ${err}`)
