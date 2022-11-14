@@ -80,6 +80,7 @@ export enum ActivityType {
   Cancel = 'Cancel',
   Sale = 'Sale',
   Transfer = 'Transfer',
+  Swap = 'Swap',
 }
 
 export enum ActivityHL {
