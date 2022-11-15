@@ -159,7 +159,7 @@ export const getNFTsFromAlchemy = async (
     const ownedNFTs: Array<OwnedNFT> = []
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
     let queryParams = `owner=${owner}`
-   
+
     if (contracts) {
       queryParams += `&contractAddresses[]=${contracts}`
     }
@@ -177,7 +177,7 @@ export const getNFTsFromAlchemy = async (
         // eslint-disable-next-line no-constant-condition
         while (true) {
           const res: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}&pageKey=${pageKey}`)
-           
+
           if (res?.data?.ownedNfts) {
             ownedNFTs.push(...res?.data?.ownedNfts as OwnedNFT[])
             if (res?.data?.pageKey) {
@@ -2035,4 +2035,32 @@ export const getNFTActivities = <T>(
         .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
     }
   }
+}
+
+export const queryNFTsForProfile = async (
+  repositories: db.Repository,
+  profile: entity.Profile,
+  onlyVisible: boolean,
+  query: string,
+): Promise<entity.NFT[]> => {
+  const whereQuery = {
+    thisEntityType: defs.EntityType.Profile,
+    thisEntityId: profile.id,
+    thatEntityType: defs.EntityType.NFT,
+    edgeType: defs.EdgeType.Displays,
+  }
+
+  const edges = onlyVisible ? await repositories.edge.find({
+    where: { ...whereQuery, hide: false },
+  }) : await repositories.edge.find({ where: whereQuery })
+  const nfts: entity.NFT[] = []
+  await Promise.allSettled(
+    edges.map(async (edge) => {
+      const nft = await repositories.nft.findById(edge.thatEntityId)
+      if (nft && nft.metadata.name && nft.metadata.name.toLowerCase().includes(query.toLowerCase())) {
+        nfts.push(nft)
+      }
+    }),
+  )
+  return nfts
 }
