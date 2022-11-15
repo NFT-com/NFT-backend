@@ -1497,6 +1497,7 @@ const searchVisibleNFTsForProfile = async (
       nfts = await queryNFTsForProfile(repositories, profile, true, args?.input.query)
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     }
+    if (!nfts.length) return Promise.reject(new Error('No NFT found'))
     const nftIds = nfts.map((nft) => nft.id)
     const filter: Partial<entity.Edge> = helper.removeEmpty({
       thisEntityType: defs.EntityType.Profile,
@@ -1559,6 +1560,7 @@ const searchNFTsForProfile = async (
       nfts = await queryNFTsForProfile(repositories, profile, false, args?.input.query)
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     }
+    if (!nfts.length) return Promise.reject(new Error('No NFT found'))
     const nftIds = nfts.map((nft) => nft.id)
     const filter: Partial<entity.Edge> = helper.removeEmpty({
       thisEntityType: defs.EntityType.Profile,

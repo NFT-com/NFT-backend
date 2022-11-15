@@ -1006,7 +1006,7 @@ describe('profile resolver', () => {
 
     it('should return visible nfts with search query', async () => {
       const result = await testServer.executeOperation({
-        query: 'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { items { id } } }',
+        query: 'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { items { id } pageInfo { firstCursor lastCursor } } }',
         variables: {
           input: {
             url: 'testprofile',
@@ -1020,6 +1020,7 @@ describe('profile resolver', () => {
       })
 
       expect(result.data.searchVisibleNFTsForProfile.items.length).toEqual(1)
+      expect(result.data.searchVisibleNFTsForProfile.pageInfo.firstCursor).toBeDefined()
     })
   })
 
