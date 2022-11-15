@@ -80,7 +80,8 @@ export class BaseRepository<T> {
         relations: query.relations,
         where: query.where,
         order: query.order,
-        take: query.take,
+        skip: query.skip || 0,
+        take: query.take || 5000,
         cache: true,
       })
   }

@@ -12,20 +12,12 @@
         "compiler": "tsc",
         "outputPath": "dist/packages/monitors/hidden-nfts",
         "main": "packages/monitors/hidden-nfts/src/main.ts",
-        "tsConfig": "packages/monitors/hidden-nfts/tsconfig.app.json",
-        "assets": ["packages/monitors/hidden-nfts/src/assets"]
+        "tsConfig": "packages/monitors/hidden-nfts/tsconfig.app.json"
       },
       "configurations": {
         "production": {
           "optimization": true,
-          "extractLicenses": true,
-          "inspect": false,
-          "fileReplacements": [
-            {
-              "replace": "packages/monitors/hidden-nfts/src/environments/environment.ts",
-              "with": "packages/monitors/hidden-nfts/src/environments/environment.prod.ts"
-            }
-          ]
+          "inspect": false
         }
       }
     },
@@ -53,6 +45,12 @@
       "options": {
         "jestConfig": "packages/monitors/hidden-nfts/jest.config.ts",
         "passWithNoTests": true
+      }
+    },
+    "package": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./packages/monitors/hidden-nfts/scripts/package.sh"
       }
     }
   },

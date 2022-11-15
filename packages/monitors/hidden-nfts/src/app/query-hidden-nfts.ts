@@ -1,6 +1,5 @@
 import { PutMetricDataCommand, PutMetricDataCommandOutput } from '@aws-sdk/client-cloudwatch'
-import { _logger, db } from '@nftcom/shared'
-import { EdgeType, EntityType } from '@nftcom/shared/defs'
+import { _logger, db, defs } from '@nftcom/shared'
 
 import { cwClient } from './cloudwatch-client'
 import { getConnection } from './data-source'
@@ -11,9 +10,9 @@ export const countHiddenNFTs = async (): Promise<PutMetricDataCommandOutput> => 
   await getConnection()
   const edgeRepo = db.newRepositories().edge
   const hiddenCount = await edgeRepo.count({
-    thisEntityType: EntityType.Profile,
-    thatEntityType: EntityType.NFT,
-    edgeType: EdgeType.Displays,
+    thisEntityType: defs.EntityType.Profile,
+    thatEntityType: defs.EntityType.NFT,
+    edgeType: defs.EdgeType.Displays,
     hide: true,
   })
   try {
