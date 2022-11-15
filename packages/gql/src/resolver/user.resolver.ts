@@ -31,6 +31,7 @@ const signUp = (
     username: Joi.string(),
     referredBy: Joi.string().optional(),
     referredUrl: Joi.string().optional(),
+    referralId: Joi.string().optional(),
     wallet: joi.buildWalletInputSchema(),
   })
   joi.validateSchema(schema, args.input)
