@@ -78,6 +78,7 @@ export const createContext = async (ctx): Promise<Context> => {
     const address = getAddressFromSignature(msg, authSignature)
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
+    logger.info(`wallet info: ${address} : ${wallet?.id}`)
     user = await repositories.user.findById(wallet?.userId)
   }
 
