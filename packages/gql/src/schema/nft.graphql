@@ -184,12 +184,14 @@ input UpdateAssociatedContractInput {
 input ListNFTSeaportInput {
   seaportParams: String
   seaportSignature: String
+  createdInternally: Boolean
   profileUrl: String
   chainId: String
 }
 
 input ListNFTLooksrareInput {
   looksrareOrder: String
+  createdInternally: Boolean
   profileUrl: String
   chainId: String
 }
