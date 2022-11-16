@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
-export class UpdateTxOrder1668623108 implements MigrationInterface {
+export class UpdateTxOrder1668623108109 implements MigrationInterface {
 
-  name = 'UpdateTxOrder1668623108'
+  name = 'UpdateTxOrder1668623108109'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('ALTER TABLE "tx_order" ADD "createdInternally" boolean NOT NULL DEFAULT false')
