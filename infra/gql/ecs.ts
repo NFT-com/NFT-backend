@@ -421,6 +421,10 @@ const createEcsTaskDefinition = (
               Name: 'PORT',
               Value: process.env.PORT,
             },
+            {
+              Name: 'AUTH_EXPIRE_BY_DAYS',
+              Value: process.env.AUTH_EXPIRE_BY_DAYS,
+            },
           ],
         },
         {
