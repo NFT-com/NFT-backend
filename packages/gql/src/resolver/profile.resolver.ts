@@ -1398,7 +1398,7 @@ const getUsersActionsWithPoints = async (
   ctx: Context,
 ): Promise<Array<gql.UsersActionOutput>> => {
   const { repositories, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
+  const chainId = chain?.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   const actions =  await repositories.incentiveAction.find({
     where: {
