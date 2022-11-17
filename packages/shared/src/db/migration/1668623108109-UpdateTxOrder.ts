@@ -5,7 +5,8 @@ export class UpdateTxOrder1668623108109 implements MigrationInterface {
   name = 'UpdateTxOrder1668623108109'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('ALTER TABLE "tx_order" ADD "createdInternally" boolean NOT NULL DEFAULT false')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "createdInternally"')
+    // await queryRunner.query('ALTER TABLE "tx_order" ADD "createdInternally" boolean NOT NULL DEFAULT false')
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
