@@ -6,7 +6,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.js'
 import type { FileUpload } from 'graphql-upload/processRequest.js'
 import Joi from 'joi'
 import stream from 'stream'
-import { IsNull } from 'typeorm'
+import { In, IsNull } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -29,9 +29,10 @@ import {
 } from '@nftcom/gql/service/core.service'
 import {
   changeNFTsVisibility, getCollectionInfo,
-  getOwnersOfGenesisKeys, saveProfileScore, saveVisibleNFTsForProfile,
+  getOwnersOfGenesisKeys, queryNFTsForProfile, saveProfileScore, saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
+import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -1397,7 +1398,7 @@ const getUsersActionsWithPoints = async (
   ctx: Context,
 ): Promise<Array<gql.UsersActionOutput>> => {
   const { repositories, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
+  const chainId = chain?.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   const actions =  await repositories.incentiveAction.find({
     where: {
@@ -1470,6 +1471,125 @@ const saveUserActionForBuyNFTs = async (
   }
 }
 
+const searchVisibleNFTsForProfile = async (
+  _: any,
+  args: gql.QuerySearchVisibleNFTsForProfileArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  try {
+    const { repositories } = ctx
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('searchVisibleNFTsForProfile', { input: args?.input })
+    const profile = await repositories.profile.findByURL(args?.input.url, chainId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    const cacheKey = `${CacheKeys.SEARCH_VISIBLE_NFTS_FOR_PROFILE}_${chainId}_${args?.input.url}_${args?.input.query}`
+    const cachedData = await cache.get(cacheKey)
+    let nfts: entity.NFT[]
+    if (cachedData) {
+      nfts = JSON.parse(cachedData) as entity.NFT[]
+    } else {
+      nfts = await queryNFTsForProfile(repositories, profile, true, args?.input.query)
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
+    }
+    if (!nfts.length) return Promise.reject(new Error('No NFT found'))
+    const nftIds = nfts.map((nft) => nft.id)
+    const filter: Partial<entity.Edge> = helper.removeEmpty({
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: profile.id,
+      thatEntityType: defs.EntityType.NFT,
+      thatEntityId: In(nftIds),
+      edgeType: defs.EdgeType.Displays,
+      hide: false,
+    })
+
+    return core.paginatedThatEntitiesOfEdgesBy(
+      ctx,
+      repositories.nft,
+      filter,
+      args?.input.pageInput,
+      'weight',
+      'ASC',
+      chainId,
+      'NFT',
+    ).then(result => {
+      // refresh order queue trigger
+      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+        .then(() => Promise.resolve(result))
+    })
+  } catch (err) {
+    Sentry.captureMessage(`Error in searchVisibleNFTsForProfile: ${err}`)
+    return err
+  }
+}
+
+const searchNFTsForProfile = async (
+  _: any,
+  args: gql.QuerySearchNFTsForProfileArgs,
+  ctx: Context,
+): Promise<gql.NFTsOutput> => {
+  try {
+    const { repositories, user } = ctx
+    const chainId = args?.input.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    logger.debug('searchNFTsForProfile', { input: args?.input })
+    const profile = await repositories.profile.findByURL(args?.input.url, chainId)
+    if (!profile) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
+        profileError.ErrorType.ProfileNotFound,
+      ))
+    }
+    if (profile.ownerUserId !== user.id) {
+      return Promise.reject(appError.buildNotFound(
+        profileError.buildProfileNotOwnedMsg(args?.input?.url),
+        profileError.ErrorType.ProfileNotOwned,
+      ))
+    }
+    const cacheKey = `${CacheKeys.SEARCH_NFTS_FOR_PROFILE}_${chainId}_${args?.input.url}_${args?.input.query}`
+    const cachedData = await cache.get(cacheKey)
+    let nfts: entity.NFT[]
+    if (cachedData) {
+      nfts = JSON.parse(cachedData) as entity.NFT[]
+    } else {
+      nfts = await queryNFTsForProfile(repositories, profile, false, args?.input.query)
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
+    }
+    if (!nfts.length) return Promise.reject(new Error('No NFT found'))
+    const nftIds = nfts.map((nft) => nft.id)
+    const filter: Partial<entity.Edge> = helper.removeEmpty({
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: profile.id,
+      thatEntityType: defs.EntityType.NFT,
+      thatEntityId: In(nftIds),
+      edgeType: defs.EdgeType.Displays,
+    })
+
+    return core.paginatedThatEntitiesOfEdgesBy(
+      ctx,
+      repositories.nft,
+      filter,
+      args?.input.pageInput,
+      'weight',
+      'ASC',
+      chainId,
+      'NFT',
+    ).then(result => {
+      // refresh order queue trigger
+      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
+        .then(() => Promise.resolve(result))
+    })
+  } catch (err) {
+    Sentry.captureMessage(`Error in searchNFTsForProfile: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1487,6 +1607,8 @@ export default {
     isProfileCustomized: isProfileCustomized,
     profilesByDisplayNft,
     profilesMintedByGK: getProfilesMintedByGK,
+    searchVisibleNFTsForProfile: searchVisibleNFTsForProfile,
+    searchNFTsForProfile: combineResolvers(auth.isAuthenticated, searchNFTsForProfile),
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

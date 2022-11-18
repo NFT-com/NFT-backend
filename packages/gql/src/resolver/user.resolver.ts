@@ -31,6 +31,7 @@ const signUp = (
     username: Joi.string(),
     referredBy: Joi.string().optional(),
     referredUrl: Joi.string().optional(),
+    referralId: Joi.string().optional(),
     wallet: joi.buildWalletInputSchema(),
   })
   joi.validateSchema(schema, args.input)
@@ -802,7 +803,7 @@ export const sendReferEmail = async (
           } else {
             const now = helper.toUTCDate()
             if (existingUser.confirmEmailTokenExpiresAt &&
-              existingUser.confirmEmailTokenExpiresAt < now
+              existingUser.confirmEmailTokenExpiresAt > now
             ) {
               unconfirmedEmails.push(email)
             } else {
