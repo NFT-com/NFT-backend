@@ -245,7 +245,7 @@ const returnProfileNFTs = async (
 
 const getMyNFTs = async (
   _: unknown,
-  args: gql.QueryNFTsArgs,
+  args: gql.QueryMyNFTsArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { user, chain, wallet, repositories } = ctx
