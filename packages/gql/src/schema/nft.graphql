@@ -53,6 +53,7 @@ input NFTsInput {
   profileId: ID
   chainId: String
   ownedByWallet: Boolean
+  query: String
 }
 
 input CurationInput {
@@ -125,6 +126,7 @@ input UpdateNFTsForProfileInput {
   profileId: ID!
   chainId: String
   pageInput: PageInput
+  query: String
 }
 
 enum SupportedExternalExchange {
