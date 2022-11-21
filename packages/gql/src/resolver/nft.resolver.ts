@@ -668,7 +668,12 @@ const updateNFTsForProfile = async (
       await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
     }
 
-    let filter: Partial<entity.Edge>
+    let filter: Partial<entity.Edge> = helper.removeEmpty({
+      thisEntityType: defs.EntityType.Profile,
+      thisEntityId: profile.id,
+      thatEntityType: defs.EntityType.NFT,
+      edgeType: defs.EdgeType.Displays,
+    })
     if (args?.input.query && args?.input.query?.length) {
       const cacheKey = `${CacheKeys.SEARCH_VISIBLE_NFTS_FOR_PROFILE}_${chainId}_${profile.url}_${args?.input.query}`
       const cachedData = await cache.get(cacheKey)
@@ -686,13 +691,6 @@ const updateNFTsForProfile = async (
         thisEntityId: profile.id,
         thatEntityType: defs.EntityType.NFT,
         thatEntityId: In(nftIds),
-        edgeType: defs.EdgeType.Displays,
-      })
-    } else {
-      filter = helper.removeEmpty({
-        thisEntityType: defs.EntityType.Profile,
-        thisEntityId: profile.id,
-        thatEntityType: defs.EntityType.NFT,
         edgeType: defs.EdgeType.Displays,
       })
     }
