@@ -13,7 +13,7 @@ cd -
 npx -y nx run monitors-hidden-nfts:build:production
 
 echo "zip build directory"
-cd dist/packages/monitors
+cd dist/cronjobs/monitors
 zip -q -r archive.zip hidden-nfts/*
 
 # Package node_modules
