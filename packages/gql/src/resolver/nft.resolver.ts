@@ -1,7 +1,7 @@
 import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { FindOneOptions, In } from 'typeorm'
+import { In } from 'typeorm'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/error-types'
@@ -213,59 +213,6 @@ const getContractNFT = async (
   }
 }
 
-const getNFTs = (
-  _: unknown,
-  args: gql.QueryNFTsArgs,
-  ctx: Context,
-): Promise<gql.CurationNFTsOutput> => {
-  const { user, repositories } = ctx
-  logger.debug('getNFTs', { loggedInUserId: user?.id, input: args?.input })
-  const { types, profileId } = helper.safeObject(args?.input)
-  const chainId = args?.input.chainId || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  const filter: Partial<entity.NFT> = helper.removeEmpty({
-    type: helper.safeInForOmitBy(types),
-  })
-  return core.thatEntitiesOfEdgesBy<entity.Curation>(ctx, {
-    thisEntityId: profileId,
-    thisEntityType: defs.EntityType.Profile,
-    edgeType: defs.EdgeType.Displays,
-  }).then((curations) => {
-    if (curations == null || curations.length === 0) {
-      // If no curations associated with this Profile,
-      // (e.g. before user-curated curations are available)
-      // we'll return all the owner's NFTs (at this wallet)
-      return repositories.profile.findOne({
-        where: { id: profileId, chainId: chainId },
-      })
-        .then((profile: entity.Profile) =>
-          repositories.nft.findByWalletId(profile.ownerWalletId, chainId)
-            .then((nfts: entity.NFT[]) =>
-              Promise.all(nfts.map((nft: entity.NFT) => {
-                return {
-                  nft,
-                  size: defs.NFTSize.Medium, // default
-                }
-              }))))
-        .then((curationItems) => Promise.resolve({
-          items: curationItems,
-        }))
-    } else {
-      return Promise.all([
-        // TODO: return array of Curations once we support multiple
-        Promise.resolve(curations[0].items),
-        Promise.all(curations[0].items.map(item =>
-          repositories.nft.findOne({ where: { id: item.id, ...filter } } as FindOneOptions<entity.NFT>))),
-      ]).then(([items, nfts]) => nfts
-        .filter((nft) => nft !== null)
-        .map((nft, index) => ({ nft: nft, size: items[index].size })))
-        .then((nfts) => Promise.resolve({
-          items: nfts,
-        }))
-    }
-  })
-}
-
 const returnProfileNFTs = async (
   profileId: string,
   ctx: Context,
@@ -328,7 +275,7 @@ const returnProfileNFTs = async (
 
 const getMyNFTs = async (
   _: unknown,
-  args: gql.QueryNFTsArgs,
+  args: gql.QueryMyNFTsArgs,
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   const { user, chain, wallet, repositories } = ctx
@@ -1209,7 +1156,6 @@ export default {
     gkNFTs: getGkNFTs,
     nft: getContractNFT,
     nftById: getNFT,
-    nfts: getNFTs,
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
     collectionNFTs: getCollectionNFTs,
