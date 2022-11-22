@@ -3,7 +3,7 @@ import * as upath from 'upath'
 
 import * as pulumi from '@pulumi/pulumi'
 
-import { deployInfra, getStage, isProduction } from '../helper'
+import { deployInfra, getStage, isProduction, pulumiOutToValue } from '../helper'
 import { createCollectionStatsEcsCluster, createCollectionStatsTaskDefinition } from './collectionStats/ecs'
 import { createCollectionStatsEventBridgeTarget } from './collectionStats/eventbridge'
 import { createDBSyncEcsCluster, createDBSyncTaskDefinition } from './dbsync/ecs'
@@ -21,9 +21,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
 
   // Utilize resources created from gql.shared stack
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
-  const subnets = await sharedStack.getOutputValue('publicSubnetIds')
-  const internalEcsSGId = await sharedStack.getOutputValue('internalEcsSGId')
-  const vpcId = await sharedStack.getOutputValue('vpcId')
+  const subnets = await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))
+  const internalEcsSGId = await pulumiOutToValue(sharedStack.getOutput('internalEcsSGId'))
+  const vpcId = await pulumiOutToValue(sharedStack.getOutput('vpcId'))
 
   // START: CRONJOB - MINTRUNNER
   if (isProduction()) {
