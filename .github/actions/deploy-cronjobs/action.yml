@@ -76,7 +76,9 @@ runs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
     - run: npm i
+      shell: bash
     - name: Build and Package Monitor Hidden NFTs Lambda
+      shell: bash
       run: npx -y nx package monitors-hidden-nfts
     - name: Deploy Cronjob Infra
       shell: bash
