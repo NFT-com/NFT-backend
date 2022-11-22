@@ -15,6 +15,7 @@ export const countHiddenNFTs = async (): Promise<PutMetricDataCommandOutput> => 
     edgeType: defs.EdgeType.Displays,
     hide: true,
   })
+  logger.info({ hiddenCount }, 'Got count of hidden edges')
   try {
     return await cwClient.send(new PutMetricDataCommand({
       MetricData: [
