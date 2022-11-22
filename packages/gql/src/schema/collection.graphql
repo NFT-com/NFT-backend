@@ -184,6 +184,8 @@ extend type Query {
 
 extend type Mutation {
   removeDuplicates(contracts: [Address!]!): RemoveDuplicatesOutput!
+  "AUTHETICATED"
+  refreshCollectionRarity(id: ID!, ttl: DateTime, force: Boolean): String!
   saveCollectionForContract(contract: Address!): saveCollectionForContractOutput!
   syncCollectionsWithNFTs(count: Int!): SyncCollectionsWithNFTsOutput!
   fillChainIds(input: FillChainIdsInput!): FillChainIdsOutput!

@@ -52,4 +52,7 @@ export class NFT extends BaseEntity {
   @Column({ nullable: true, type: 'timestamp with time zone' })
   lastRefreshed: Date
 
+  @Column({ nullable: true })
+  rarity: string
+
 }
