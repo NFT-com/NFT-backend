@@ -224,7 +224,6 @@ extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
   nftById(id: ID!): NFT!
-  nfts(input: NFTsInput!): CurationNFTsOutput!
   "AUTHETICATED"
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
