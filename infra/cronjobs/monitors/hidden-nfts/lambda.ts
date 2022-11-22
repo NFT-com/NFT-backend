@@ -3,23 +3,17 @@ import { join } from 'path'
 import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
-import { getResourceName,getStage } from '../../../helper'
+import { getResourceName, getStage } from '../../../helper'
 
 function relativeRootPath(path: string): string {
   return join(process.cwd(), '..', path)
 }
 
 /**
- * Globals
- */
-const account = pulumi.output(aws.getCallerIdentity({ async: true })).accountId
-const executionRoleName = getResourceName('role')
-const lambdaFunctionName = getResourceName('monitor-hidden-nfts')
-
-/**
  * IAM Role
  */
-const createIAMRole = (): aws.iam.Role => {
+const createIAMRole = (account: pulumi.Output<string>, lambdaFunctionName: string): aws.iam.Role => {
+  const executionRoleName = getResourceName('role')
   const executionRole = new aws.iam.Role(executionRoleName, {
     name: executionRoleName,
     assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
@@ -94,7 +88,9 @@ const bundleAssets = (): any[] => {
 export const createMonitorHiddenNftsLambdaFunction = (
   securityGroupIds: string[], subnetIds: string[], vpcId: undefined):
 aws.lambda.Function => {
-  const executionRole = createIAMRole()
+  const account = pulumi.output(aws.getCallerIdentity({ async: true })).accountId
+  const lambdaFunctionName = getResourceName('monitor-hidden-nfts')
+  const executionRole = createIAMRole(account, lambdaFunctionName)
   const [code, nodeModuleLambdaLayer] = bundleAssets()
 
   return new aws.lambda.Function(lambdaFunctionName, {
