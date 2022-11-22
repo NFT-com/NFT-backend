@@ -75,6 +75,9 @@ runs:
         docker build . -f cronjobs/collection-stats/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
+    - name: Build and Package Monitor Hidden NFTs Lambda
+      shell: bash
+      run: npx -y nx package monitors-hidden-nfts
     - name: Deploy Cronjob Infra
       shell: bash
       working-directory: infra
