@@ -184,12 +184,14 @@ input UpdateAssociatedContractInput {
 input ListNFTSeaportInput {
   seaportParams: String
   seaportSignature: String
+  createdInternally: Boolean
   profileUrl: String
   chainId: String
 }
 
 input ListNFTLooksrareInput {
   looksrareOrder: String
+  createdInternally: Boolean
   profileUrl: String
   chainId: String
 }
@@ -222,7 +224,6 @@ extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
   nftById(id: ID!): NFT!
-  nfts(input: NFTsInput!): CurationNFTsOutput!
   "AUTHETICATED"
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!

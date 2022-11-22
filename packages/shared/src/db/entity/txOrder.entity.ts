@@ -1,10 +1,11 @@
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseEntity, TxActivity } from '.'
 
 @Entity()
+@Index(['makerAddress', 'exchange', 'nonce'])
 export class TxOrder extends BaseEntity {
 
   @OneToOne(() => TxActivity,
@@ -31,7 +32,7 @@ export class TxOrder extends BaseEntity {
 
   @Column({ nullable: true })
   takerAddress: string
-  
+
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   orderType: ActivityType
 
@@ -51,5 +52,8 @@ export class TxOrder extends BaseEntity {
   // only required for OS
   @Column({ nullable: true })
   zone: string
+
+  @Column({ default: false })
+  createdInternally: boolean
 
 }

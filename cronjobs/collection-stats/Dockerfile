@@ -42,6 +42,7 @@ COPY cronjobs/collection-stats cronjobs/collection-stats
 COPY packages/cache packages/cache
 COPY packages/contract-data packages/contract-data
 COPY packages/error-types packages/error-types
+COPY packages/leaderboard packages/leaderboard
 COPY packages/nftport-client packages/nftport-client
 COPY packages/shared packages/shared
 COPY nx.json tsconfig.base.json ./

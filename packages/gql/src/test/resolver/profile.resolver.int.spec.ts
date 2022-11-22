@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 // const sharedLibs = jest.requireActual('@nftcom/shared')
 // const sharedLibs = jest.requireActual('@nftcom/gql/service')
 import { DataSource } from 'typeorm'
@@ -920,6 +920,213 @@ describe('profile resolver', () => {
       expect(result.data.saveUserActionForBuyNFTs.message).toEqual('Incentive action for buying NFTs is saved. ProfileURL: test-profile')
       const incentiveAction = await repositories.incentiveAction.findAll()
       expect(incentiveAction.length).toEqual(1)
+    })
+  })
+
+  describe('searchVisibleNFTsForProfile', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(repositories,
+        testMockUser,
+        testMockWallet,
+      )
+
+      const nftA = await repositories.nft.save({
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x0d5415',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+
+      const nftB = await repositories.nft.save({
+        contract: '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E',
+        tokenId: '0xf2',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-2',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+      const profile = await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: 'test-user-id',
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '7307',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+      await repositories.edge.save({
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftA.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+        weight: 'aaaa',
+      })
+      await repositories.edge.save({
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftB.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+        weight: 'aaab',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return visible nfts with search query', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { items { id } pageInfo { firstCursor lastCursor } } }',
+        variables: {
+          input: {
+            url: 'testprofile',
+            query: 'test',
+            chainId: '5',
+            pageInput: {
+              first: 1,
+            },
+          },
+        },
+      })
+
+      expect(result.data.searchVisibleNFTsForProfile.items.length).toEqual(1)
+      expect(result.data.searchVisibleNFTsForProfile.pageInfo.firstCursor).toBeDefined()
+    })
+  })
+
+  describe('searchNFTsForProfile', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+
+      const nftA = await repositories.nft.save({
+        contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+        tokenId: '0x0d5415',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-1',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: user.id,
+        walletId: testMockWallet.id,
+      })
+
+      const nftB = await repositories.nft.save({
+        contract: '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E',
+        tokenId: '0xf2',
+        chainId: '5',
+        metadata: {
+          name: 'test-nft-2',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: user.id,
+        walletId: testMockWallet.id,
+      })
+      const profile = await repositories.profile.save({
+        url: 'testprofile',
+        ownerUserId: user.id,
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '7307',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+      await repositories.edge.save({
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftA.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+        weight: 'aaaa',
+      })
+      await repositories.edge.save({
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityId: nftB.id,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: true,
+        weight: 'aaab',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+
+      await repositories.collection.save({
+        contract: ethers.utils.getAddress('0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'),
+        name: 'NFT.com Profile',
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return all nfts with search query', async () => {
+      const result = await testServer.executeOperation({
+        query: 'query SearchNFTsForProfile($input: SearchNFTsForProfileInput!) { searchNFTsForProfile(input: $input) { items { id } } }',
+        variables: {
+          input: {
+            url: 'testprofile',
+            query: 'test',
+            chainId: '5',
+            pageInput: {
+              first: 2,
+            },
+          },
+        },
+      })
+
+      expect(result.data.searchNFTsForProfile.items.length).toEqual(2)
     })
   })
 })

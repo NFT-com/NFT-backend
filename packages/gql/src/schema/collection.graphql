@@ -71,6 +71,7 @@ type Collection {
   description: String
   isCurated: Boolean
   isSpam: Boolean
+  isOfficial: Boolean
   floorPrice: Float
   totalVolume: Float
   averagePrice: Float
@@ -164,6 +165,7 @@ type TraitCounts {
 
 input CollectionLeaderboardInput {
   pageInput: PageInput
+  dateRange: String
 }
 
 type CollectionLeaderboard {

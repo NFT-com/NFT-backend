@@ -2,7 +2,7 @@ import { ApolloServerPluginDrainHttpServer, ApolloServerPluginLandingPageDisable
 import { ApolloServer } from 'apollo-server-express'
 import cors from 'cors'
 import cryptoRandomString from 'crypto-random-string'
-import { addDays } from 'date-fns'
+import { addDays, differenceInCalendarDays } from 'date-fns'
 import { utils } from 'ethers'
 import express from 'express'
 import rateLimiter from 'express-rate-limit'
@@ -15,14 +15,14 @@ import { pinoHttp } from 'pino-http'
 import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
 import { cache } from '@nftcom/cache'
-import { appError, profileError } from '@nftcom/error-types'
+import { appError, profileError, userError } from '@nftcom/error-types'
 import { sendgrid } from '@nftcom/gql/service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authMessage, serverPort } from './config'
+import { authExpireDuration, authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -31,6 +31,7 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
 const chainIdHeader = 'chain-id'
 const authHeader = 'authorization'
+const timestampHeader = 'timestamp'
 
 const repositories = db.newRepositories()
 
@@ -41,8 +42,8 @@ type GQLError = {
   path: Array<string | number>
 }
 
-const getAddressFromSignature = (signature: string): string =>
-  utils.verifyMessage(authMessage, signature)
+const getAddressFromSignature = (authMsg, signature: string): string =>
+  utils.verifyMessage(authMsg, signature)
 
 export const createContext = async (ctx): Promise<Context> => {
   const { req, connection } = ctx
@@ -53,13 +54,28 @@ export const createContext = async (ctx): Promise<Context> => {
   const chainId = headers[chainIdHeader] || null
   const authSignature = headers[authHeader] || null
   const xMintSignature = headers['x-mint-signature'] || null
+  const timestamp = headers[timestampHeader] || null
   let chain: defs.Chain = null
   let wallet: entity.Wallet = null
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
-  if (helper.isNotEmpty(authSignature)) {
+
+  if (helper.isNotEmpty(authSignature) && timestamp) {
+    const nowDate = helper.toUTCDate()
+    const expireDate = new Date(Number(timestamp) * 1000)
+    // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
+    if (differenceInCalendarDays(nowDate, expireDate) > authExpireDuration) {
+      return Promise.reject(userError.buildAuthOutOfExpireDuration())
+    }
+    // If auth header is out of expire duration, this request should be rejected
+    const now = nowDate.getTime() / 1000
+    if (Number(timestamp) < now) {
+      return Promise.reject(userError.buildAuthExpired())
+    }
     chain = auth.verifyAndGetNetworkChain(network, chainId)
-    const address = getAddressFromSignature(authSignature)
+    // we check signature and nonce to get wallet address
+    const msg = `${authMessage} ${timestamp}`
+    const address = getAddressFromSignature(msg, authSignature)
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)
@@ -184,7 +200,7 @@ export const start = async (): Promise<void> => {
   // verify new email and add to homepage v2 sendgrid marketing list
   app.get('/verify/:email/:token', validate.validate(validate.verifySchema), async function (req, res) {
     const { email, token } = req.params
-    
+
     return repositories.user.findOne({ where:
       {
         email: email?.toLowerCase(),
