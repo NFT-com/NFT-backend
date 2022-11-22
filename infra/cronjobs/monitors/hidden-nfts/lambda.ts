@@ -100,7 +100,7 @@ aws.lambda.Function => {
     role: executionRole.arn,
     code,
     layers: [nodeModuleLambdaLayer.arn],
-    memorySize: 256,
+    memorySize: 512,
     timeout: 5,
     environment: {
       variables: {

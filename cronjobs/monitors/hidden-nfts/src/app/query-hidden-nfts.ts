@@ -22,12 +22,12 @@ export const countHiddenNFTs = async (): Promise<PutMetricDataCommandOutput> => 
     return await cwClient.send(new PutMetricDataCommand({
       MetricData: [
         {
-          MetricName: 'hidden_nfts',
+          MetricName: `hidden_nfts_${NODE_ENV.toLowerCase()}`,
           Unit: 'Count',
           Value: hiddenCount,
         },
       ],
-      Namespace: `NFTCOM/nftcom_edge_${NODE_ENV.toLowerCase()}`,
+      Namespace: 'NFTCOM/edge',
     }))
   } catch (err) {
     logger.error(err, 'Unable to put metric to cloudwatch')
