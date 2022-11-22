@@ -22,6 +22,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   // Utilize resources created from gql.shared stack
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
   const subnets = await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds')) as string[]
+  const privateSubnets = await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds')) as string[]
   const internalEcsSGId = await pulumiOutToValue(sharedStack.getOutput('internalEcsSGId')) as string
 
   // START: CRONJOB - MINTRUNNER
@@ -50,7 +51,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   // END: CRONJOB - COLLECTION STATS
   // START: CRONJOB - MONITOR/HIDDEN NFTS
   if (isProduction() || 1 === 1) { // force truthiness for dev testing -- TODO: remove before merging
-    const lambda = createMonitorHiddenNftsLambdaFunction([internalEcsSGId], subnets)
+    const lambda = createMonitorHiddenNftsLambdaFunction([internalEcsSGId], privateSubnets)
     createMonitorHiddenNFTsEventBridgeTarget(lambda)
   }
   // END: CRONJOB - MONITOR/HIDDEN NFTS

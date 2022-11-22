@@ -10,7 +10,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('monitorHiddenNFTs-eventRule')
   return new aws.cloudwatch.EventRule('monitorHiddenNFTs-eventRule', {
     name: resourceName,
-    scheduleExpression: isProduction() ? 'cron(00 05 * * ? *)' : 'cron(00 05 1 * ? *)',  // if prod, run daily at 05:00 UTC, otherwise 1x monthly
+    scheduleExpression: isProduction() ? 'cron(2/5 * * * ? *)' : 'cron(00 00 * * ? *)', // run every 5 minutes at *2 and *7 of the hour
     tags: getTags(tags),
   })
 }

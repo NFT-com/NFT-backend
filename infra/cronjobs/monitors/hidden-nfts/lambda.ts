@@ -13,7 +13,7 @@ function relativeRootPath(path: string): string {
  * IAM Role
  */
 const createIAMRole = (account: pulumi.Output<string>, lambdaFunctionName: string): aws.iam.Role => {
-  const executionRoleName = getResourceName('role')
+  const executionRoleName = getResourceName('monitorHiddenNFTs-role')
   const executionRole = new aws.iam.Role(executionRoleName, {
     name: executionRoleName,
     assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
@@ -70,7 +70,7 @@ const bundleAssets = (): any[] => {
   })
   
   const zipFile = relativeRootPath('layers/archive.zip')
-  const nodeModuleLambdaLayerName = getResourceName('lambda-layer-nodemodules-hidden-nfts')
+  const nodeModuleLambdaLayerName = getResourceName('lambda-layer-nodemodules-monitorHiddenNFTs')
   const nodeModuleLambdaLayer = new aws.lambda.LayerVersion(
     nodeModuleLambdaLayerName,
     {
@@ -89,7 +89,7 @@ export const createMonitorHiddenNftsLambdaFunction = (
   securityGroupIds: string[], subnetIds: string[]):
 aws.lambda.Function => {
   const account = pulumi.output(aws.getCallerIdentity({ async: true })).accountId
-  const lambdaFunctionName = getResourceName('monitor-hidden-nfts')
+  const lambdaFunctionName = getResourceName('monitorHiddenNFTs')
   const executionRole = createIAMRole(account, lambdaFunctionName)
   const [code, nodeModuleLambdaLayer] = bundleAssets()
 
