@@ -59,7 +59,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   if (stage === 'prod') {
     const dbSyncTask = createDBSyncTaskDefinition()
     const dbSyncCluster = createDBSyncEcsCluster()
-    createDBSyncEventBridgeTarget(dbSyncTask,subnetVal,dbSyncCluster)
+    createDBSyncEventBridgeTarget(dbSyncTask, subnets, dbSyncCluster)
   }
   // END: CRONJOB - DB SYNC
 }
