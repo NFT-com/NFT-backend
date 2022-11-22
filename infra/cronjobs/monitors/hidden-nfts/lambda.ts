@@ -86,7 +86,7 @@ const bundleAssets = (): any[] => {
  * Lambda Function
  */
 export const createMonitorHiddenNftsLambdaFunction = (
-  securityGroupIds: string[], subnetIds: string[], vpcId: undefined):
+  securityGroupIds: string[], subnetIds: string[], vpcId: string):
 aws.lambda.Function => {
   const account = pulumi.output(aws.getCallerIdentity({ async: true })).accountId
   const lambdaFunctionName = getResourceName('monitor-hidden-nfts')

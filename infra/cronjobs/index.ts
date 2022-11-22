@@ -21,9 +21,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
 
   // Utilize resources created from gql.shared stack
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
-  const subnets = await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))
-  const internalEcsSGId = await pulumiOutToValue(sharedStack.getOutput('internalEcsSGId'))
-  const vpcId = await pulumiOutToValue(sharedStack.getOutput('vpcId'))
+  const subnets = await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds')) as string[]
+  const internalEcsSGId = await pulumiOutToValue(sharedStack.getOutput('internalEcsSGId')) as string
+  const vpcId = await pulumiOutToValue(sharedStack.getOutput('vpcId')) as string
 
   // START: CRONJOB - MINTRUNNER
   if (isProduction()) {
