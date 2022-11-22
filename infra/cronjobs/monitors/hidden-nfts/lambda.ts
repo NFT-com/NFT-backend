@@ -19,81 +19,109 @@ const lambdaFunctionName = getResourceName('monitor-hidden-nfts')
 /**
  * IAM Role
  */
-const executionRole = new aws.iam.Role(executionRoleName, {
-  name: executionRoleName,
-  assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
-    Service: 'lambda.amazonaws.com',
-  }),
-  tags: {
-    Environment: getStage(),
-  },
-})
-const executionRolePolicyName = `${executionRoleName}-policy`
-const rolePolicy = new aws.iam.RolePolicy(executionRolePolicyName, {
-  name: executionRolePolicyName,
-  role: executionRole,
-  policy: {
-    Version: '2012-10-17',
-    Statement: [
-      {
-        Effect: 'Allow',
-        Action: [
-          'logs:CreateLogGroup',
-          'logs:CreateLogStream',
-          'logs:PutLogEvents',
-        ],
-        Resource: account.apply(
-          (accountId) =>
-            `arn:aws:logs:${aws.config.region}:${accountId}:log-group:/aws/lambda/${lambdaFunctionName}*`,
-        ),
-      },
-      {
-        'Effect': 'Allow',
-        'Action': [
-          /* VPC Access */
-          'ec2:CreateNetworkInterface',
-          'ec2:DeleteNetworkInterface',
-          'ec2:DescribeNetworkInterfaces',
-          /* CloudWatch Metric API */
-          'cloudwatch:PutMetricData',
-        ],
-        'Resource': '*',
-      },
-    ],
-  },
-})
+const createIAMRole = (): aws.iam.Role => {
+  const executionRole = new aws.iam.Role(executionRoleName, {
+    name: executionRoleName,
+    assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
+      Service: 'lambda.amazonaws.com',
+    }),
+    tags: {
+      Environment: getStage(),
+    },
+  })
+  const executionRolePolicyName = `${executionRoleName}-policy`
+  /* Create Role Policy for Role */
+  new aws.iam.RolePolicy(executionRolePolicyName, {
+    name: executionRolePolicyName,
+    role: executionRole,
+    policy: {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Action: [
+            'logs:CreateLogGroup',
+            'logs:CreateLogStream',
+            'logs:PutLogEvents',
+          ],
+          Resource: account.apply(
+            (accountId) =>
+              `arn:aws:logs:${aws.config.region}:${accountId}:log-group:/aws/lambda/${lambdaFunctionName}*`,
+          ),
+        },
+        {
+          'Effect': 'Allow',
+          'Action': [
+            /* VPC Access */
+            'ec2:CreateNetworkInterface',
+            'ec2:DeleteNetworkInterface',
+            'ec2:DescribeNetworkInterfaces',
+            /* CloudWatch Metric API */
+            'cloudwatch:PutMetricData',
+          ],
+          'Resource': '*',
+        },
+      ],
+    },
+  })
+  return executionRole
+}
 
 /**
  * Code Archive & Lambda layer
  */
-const code = new pulumi.asset.AssetArchive({
-  '.': new pulumi.asset.FileArchive(relativeRootPath('dist/cronjobs/monitors/archive.zip')),
-})
-
-const zipFile = relativeRootPath('layers/archive.zip')
-const nodeModuleLambdaLayerName = getResourceName('lambda-layer-nodemodules-hidden-nfts')
-const nodeModuleLambdaLayer = new aws.lambda.LayerVersion(
-  nodeModuleLambdaLayerName,
-  {
-    compatibleRuntimes: [aws.lambda.Runtime.NodeJS16dX],
-    code: new pulumi.asset.FileArchive(zipFile),
-    layerName: nodeModuleLambdaLayerName,
-  },
-)
+const bundleAssets = (): any[] => {
+  const code = new pulumi.asset.AssetArchive({
+    '.': new pulumi.asset.FileArchive(relativeRootPath('dist/cronjobs/monitors/archive.zip')),
+  })
+  
+  const zipFile = relativeRootPath('layers/archive.zip')
+  const nodeModuleLambdaLayerName = getResourceName('lambda-layer-nodemodules-hidden-nfts')
+  const nodeModuleLambdaLayer = new aws.lambda.LayerVersion(
+    nodeModuleLambdaLayerName,
+    {
+      compatibleRuntimes: [aws.lambda.Runtime.NodeJS16dX],
+      code: new pulumi.asset.FileArchive(zipFile),
+      layerName: nodeModuleLambdaLayerName,
+    },
+  )
+  return [code, nodeModuleLambdaLayer]
+}
 
 /**
  * Lambda Function
  */
-const createLambdaFunction = new aws.lambda.Function(lambdaFunctionName, {
-  name: lambdaFunctionName,
-  runtime: aws.lambda.Runtime.NodeJS16dX,
-  handler: 'hidden-nfts/main.handler',
-  role: executionRole.arn,
-  code,
-  layers: [nodeModuleLambdaLayer.arn],
-  memorySize: 256,
-  timeout: 5,
-  tags: {
-    Environment: pulumi.getStack(),
-  },
-})
+export const createMonitorHiddenNftsLambdaFunction = (
+  securityGroupIds: string[], subnetIds: string[], vpcId: undefined):
+aws.lambda.Function => {
+  const executionRole = createIAMRole()
+  const [code, nodeModuleLambdaLayer] = bundleAssets()
+
+  return new aws.lambda.Function(lambdaFunctionName, {
+    name: lambdaFunctionName,
+    runtime: aws.lambda.Runtime.NodeJS16dX,
+    handler: 'hidden-nfts/main.handler',
+    role: executionRole.arn,
+    code,
+    layers: [nodeModuleLambdaLayer.arn],
+    memorySize: 256,
+    timeout: 5,
+    environment: {
+      variables: {
+        DB_HOST: process.env.GQL_DB_HOST || '',
+        DB_HOST_RO: process.env.GQL_DB_HOST_RO || '',
+        DB_PORT: process.env.GQL_DB_PORT || '5432',
+        DB_PASSWORD: process.env.GQL_DB_PASSWORD || 'password',
+        DB_USE_SSL: process.env.GQL_DB_USE_SSL || '',
+      },
+    },
+    vpcConfig: {
+      securityGroupIds,
+      subnetIds,
+      vpcId,
+    },
+    tags: {
+      Environment: pulumi.getStack(),
+    },
+  })
+}
