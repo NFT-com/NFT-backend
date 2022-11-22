@@ -102,6 +102,7 @@ runs:
         PROFILE_PER_GK: ${{ fromJSON(inputs.secrets).PROFILE_PER_GK }}
         MINT_TABLE_NAME: ${{ fromJSON(inputs.secrets).MINT_TABLE_NAME }}
         GQL_DB_HOST: ${{ fromJSON(inputs.secrets).GQL_DB_HOST }}
+        GQL_DB_HOST_RO: ${{ fromJSON(inputs.secrets).GQL_DB_HOST_RO }}
         GQL_DB_PORT: ${{ fromJSON(inputs.secrets).GQL_DB_PORT }}
         GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).GQL_DB_PASSWORD }}
         GQL_DB_USE_SSL: ${{ fromJSON(inputs.secrets).GQL_DB_USE_SSL }}
