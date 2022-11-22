@@ -5,13 +5,13 @@ import bidResolvers from './bid.resolver'
 import collectionResolvers from './collection.resolver'
 import contractDataResolver from './contractData.resolver'
 import curationResolvers from './curation.resolver'
-import marketAskResolvers from './marketAsk.resolver'
 import marketBidResolvers from './marketBid.resolver'
 import marketSwapResolvers from './marketSwap.resolver'
 import miscResolvers from './misc.resolver'
 import nftResolvers from './nft.resolver'
 import profileResolvers from './profile.resolver'
 import scalarResolvers from './scalar.resolver'
+import tradingResolvers from './trading.resolver'
 import txActivityResolvers from './txActivity.resolver'
 import userResolvers from './user.resolver'
 import walletResolvers from './wallet.resolver'
@@ -24,7 +24,7 @@ export const resolvers: any = mergeResolvers([
   curationResolvers,
   collectionResolvers,
   contractDataResolver,
-  marketAskResolvers,
+  tradingResolvers,
   marketBidResolvers,
   marketSwapResolvers,
   miscResolvers,

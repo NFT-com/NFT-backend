@@ -31,13 +31,14 @@ const repositories = db.newRepositories()
  * activityBuilder
  * @param activityType - type of activity
  * @param activityHash - orderHash for off-chain, txHash for on-chain
- * @param walletId - maker address
+ * @param walletAddress
  * @param chainId - chainId
+ * @param nftIds
  * @param contract - asset contract
  * @param timestampFromSource - event creation timestamp of activity
  * @param expirationFromSource - expiration or null for on-chain
  */
-const activityBuilder = async (
+export const activityBuilder = async (
   activityType: defs.ActivityType,
   activityHash: string,
   walletAddress: string,
@@ -53,7 +54,7 @@ const activityBuilder = async (
     if (activity) {
       activity.updatedAt = new Date()
       // in case contract is not present for default contracts
-      activity.nftContract = helper.checkSum(contract)
+      activity.nftContract = contract === '0x' ? '0x' : helper.checkSum(contract)
       return activity
     }
   }
@@ -65,9 +66,9 @@ const activityBuilder = async (
   activity.read = false
   activity.timestamp = new Date(timestampFromSource * 1000) // convert to ms
   activity.expiration = expirationFromSource ? new Date(expirationFromSource * 1000) : null // conver to ms
-  activity.walletAddress = helper.checkSum(walletAddress)
+  activity.walletAddress = walletAddress === '0x' ? '0x' : helper.checkSum(walletAddress)
   activity.chainId = chainId
-  activity.nftContract = helper.checkSum(contract)
+  activity.nftContract = contract === '0x' ? '0x' : helper.checkSum(contract)
   activity.nftId = [...nftIds]
   activity.status = defs.ActivityStatus.Valid
 
@@ -134,7 +135,7 @@ const looksrareOrderBuilder = (
 }
 
 /**
- * x2y2OrderBuilder 
+ * x2y2OrderBuilder
  * @param order
  */
 
@@ -170,7 +171,7 @@ const x2y2OrderBuilder = (
 }
 
 /**
- * orderEntityBuilder 
+ * orderEntityBuilder
  * @param protocol
  * @param orderType
  * @param order

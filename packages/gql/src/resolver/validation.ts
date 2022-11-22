@@ -1,12 +1,12 @@
 import { ethers } from 'ethers'
 
-import { _logger, contracts, db, provider } from '@nftcom/shared'
+import { _logger, contracts, db, defs,provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
-export enum AskOrBid {
-  Ask = 'MARKET_ASK',
+export enum ListingOrBid {
+  Listing = 'MARKET_LISTING',
   Bid = 'MARKET_BID',
 }
 
@@ -15,13 +15,13 @@ export enum AskOrBid {
  * @param txHash
  * @param chainId
  * @param id
- * @param askOrBid
+ * @param listingOrBid
  */
 export const validateTxHashForCancel = async (
   txHash: string,
   chainId: string,
   id: string,
-  askOrBid: AskOrBid,
+  listingOrBid: ListingOrBid,
 ): Promise<boolean> => {
   try {
     const chainProvider = provider.provider(Number(chainId))
@@ -45,24 +45,30 @@ export const validateTxHashForCancel = async (
           const event = iface.parseLog(log)
           if (event.name === 'Cancel') {
             const makerHash = event.args.structHash
-            const makerAddress = event.args.maker
+            const makerAddress = ethers.utils.getAddress(event.args.maker)
             let entity
-            // if id is marketAskId...
-            if (askOrBid === AskOrBid.Ask) {
-              entity = await repositories.marketAsk.findOne({
+            // if id is listingOrderId...
+            if (listingOrBid === ListingOrBid.Listing) {
+              entity = await repositories.txOrder.findOne({
                 where: {
                   id: id,
-                  structHash: makerHash,
-                  makerAddress: ethers.utils.getAddress(makerAddress),
+                  orderHash: makerHash,
+                  makerAddress,
+                  exchange: defs.ExchangeType.Marketplace,
+                  orderType: defs.ActivityType.Listing,
+                  protocol: defs.ProtocolType.Marketplace,
                 },
               })
             } else {
-              // if id is marketBidId...
-              entity = await repositories.marketBid.findOne({
+              // if id is bidOrderId...
+              entity = await repositories.txOrder.findOne({
                 where: {
                   id: id,
-                  structHash: makerHash,
-                  makerAddress: ethers.utils.getAddress(makerAddress),
+                  orderHash: makerHash,
+                  makerAddress,
+                  exchange: defs.ExchangeType.Marketplace,
+                  orderType: defs.ActivityType.Bid,
+                  protocol: defs.ProtocolType.Marketplace,
                 },
               })
             }
