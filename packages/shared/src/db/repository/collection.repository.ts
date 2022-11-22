@@ -1,4 +1,5 @@
-import { Collection, NFT } from '@nftcom/shared/db/entity'
+import { db } from '@nftcom/shared/db'
+import { Collection } from '@nftcom/shared/db/entity'
 
 import { BaseRepository } from './base.repository'
 
@@ -14,12 +15,24 @@ export class CollectionRepository extends BaseRepository<Collection> {
     })
   }
 
-  findAllWithAnNft(): Promise<Collection[]> {
-    return this.getRepository(true)
-      .createQueryBuilder('collection')
-      .leftJoinAndMapOne('collection.nft', NFT,
-        'nft', 'collection.contract = nft.contract')
-      .getMany()
+  findPageWithAnNft(cursor?: string, limit?: number): Promise<any[]> {
+    const queryRunner = db.getDataSource(true).createQueryRunner()
+    const cursorAndLimit = `
+    AND contract > $1
+    ORDER BY contract ASC LIMIT $2`
+    const limitOnly = 'ORDER BY contract ASC LIMIT $1'
+    return queryRunner.query(`
+    WITH nft_collections AS (
+      SELECT DISTINCT ON (contract) * FROM nft
+    )
+    SELECT
+      collection.*,
+      row_to_json(nft_collections.*) as nft,
+      COUNT(*) OVER () AS total_count
+    FROM collection
+    LEFT JOIN nft_collections ON nft_collections."contract" = collection."contract"
+    AND collection."deletedAt" IS NULL
+      ${cursor ? cursorAndLimit : limit ? limitOnly : ''}`, [cursor, limit].filter(x => !!x))
   }
 
   findAllOfficial(): Promise<Collection[]> {

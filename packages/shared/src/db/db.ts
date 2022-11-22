@@ -7,6 +7,7 @@ import * as entity from './entity'
 import * as repo from './repository'
 
 const {
+  DB_HOST,
   DB_HOST_RO,
   DB_USE_SSL,
 } = process.env
@@ -34,7 +35,10 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
   }
 
   const ssl = helper.parseBoolean(DB_USE_SSL)
-    ? { ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString() }
+    ? {
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: DB_HOST !== 'localhost',
+    }
     : null
 
   const entities = [
