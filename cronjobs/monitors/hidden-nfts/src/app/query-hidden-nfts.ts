@@ -6,6 +6,8 @@ import { getConnection } from './data-source'
 
 const logger = _logger.Factory('query-hidden-nfts', _logger.Context.Misc)
 
+const { NODE_ENV = 'development' } = process.env
+
 export const countHiddenNFTs = async (): Promise<PutMetricDataCommandOutput> => {
   await getConnection()
   const edgeRepo = db.newRepositories().edge
@@ -25,7 +27,7 @@ export const countHiddenNFTs = async (): Promise<PutMetricDataCommandOutput> => 
           Value: hiddenCount,
         },
       ],
-      Namespace: 'AWS/nftcom_edge',
+      Namespace: `NFTCOM/nftcom_edge_${NODE_ENV.toLowerCase()}`,
     }))
   } catch (err) {
     logger.error(err, 'Unable to put metric to cloudwatch')

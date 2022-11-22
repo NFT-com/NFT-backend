@@ -109,6 +109,7 @@ aws.lambda.Function => {
         DB_PORT: process.env.GQL_DB_PORT || '5432',
         DB_PASSWORD: process.env.GQL_DB_PASSWORD || 'password',
         DB_USE_SSL: process.env.GQL_DB_USE_SSL || '',
+        NODE_ENV: process.env.NODE_ENV || 'development',
       },
     },
     vpcConfig: {
