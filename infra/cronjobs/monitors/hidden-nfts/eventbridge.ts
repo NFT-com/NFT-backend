@@ -1,6 +1,6 @@
 import * as aws from '@pulumi/aws'
 
-import { getResourceName, getTags, isProduction } from '../../../helper'
+import { getResourceName, getTags } from '../../../helper'
 
 const tags = {
   cronjob: 'monitor-hidden-nfts',
@@ -10,7 +10,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('monitorHiddenNFTs-eventRule')
   return new aws.cloudwatch.EventRule('monitorHiddenNFTs-eventRule', {
     name: resourceName,
-    scheduleExpression: isProduction() ? 'cron(2/5 * * * ? *)' : 'cron(00 00 * * ? *)', // run every 5 minutes at *2 and *7 of the hour
+    scheduleExpression: 'cron(2/5 * * * ? *)', // run every 5 minutes at *2 and *7 of the hour
     tags: getTags(tags),
   })
 }
@@ -19,6 +19,13 @@ export const createMonitorHiddenNFTsEventBridgeTarget = (
   lambda: aws.lambda.Function,
 ): aws.cloudwatch.EventTarget => {
   const rule = createEventBridgeRule()
+
+  new aws.lambda.Permission('name', {
+    action: 'lamdba:InvokeFunction',
+    'function': lambda.name,
+    principal: 'events.amazonaws.com',
+    sourceArn: rule.arn,
+  })
 
   return new aws.cloudwatch.EventTarget('monitorHiddenNFTs-eventTarget', {
     arn: lambda.arn,
