@@ -57,13 +57,14 @@ const getRequests = async () => {
 }
 
 
-export default async function () {
-  const requests = await getRequests()
-  const responses = http.batch(requests)
+export default function () {
+  getRequests().then((requests) => {
+    const responses = http.batch(requests)
 
-  for (const response of responses) {
-    if (response.status >= 400) {
-      console.error(`Received HTTP ${response.status} for ${response.url}, body: ${response.body}`);
+    for (const response of responses) {
+      if (response.status >= 400) {
+        console.error(`Received HTTP ${response.status} for ${response.url}, body: ${response.body}`);
+      }
     }
-  }
+  })
 }
