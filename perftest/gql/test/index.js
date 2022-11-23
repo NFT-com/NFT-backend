@@ -1,5 +1,21 @@
 import http from 'k6/http'
+import { addDays } from 'date-fns'
+import { Wallet } from 'ethers'
 
+import { helper } from '@nftcom/shared'
+
+const getAuth = async () => {
+  const authMessage = 'I\'d like to sign in'
+  const privateKey = 'a2f890d2f7023d5eeba7f5c600bd50650ca59bd7e7007af8e016cd7abdc9af5d'
+  const signer = new Wallet(privateKey)
+  if (!signer) {
+    return Promise.reject(new Error('invalid private key'))
+  }
+  const timestamp = addDays(helper.toUTCDate(), 7)
+  const unixTimestamp = Math.floor(timestamp.getTime() / 1000 )
+  const signature = await signer.signMessage(`${authMessage} ${unixTimestamp}`)
+  return [signature, unixTimestamp]
+}
 const queryData = JSON.parse(open(`./${__ENV.QUERY_DIR}/queries.json`))
 
 export const options = {
@@ -19,12 +35,14 @@ for (const data of queryData) {
     query: data.query,
     variables: data.variables,
   })
+  const [signature, timestamp] = await getAuth()
   const params = {
     headers: {
       'Content-Type': 'application/json',
       'network': 'ethereum',
       'chain-id': '5',
-      'authorization': '0x3e28a0402f9a3b2fa2c6ca855cf1335ce9637513af7e5e029f2b78d75b44c5f0233b479a16ca772efcf1574ba593195b8c1164df48825d146a2acef9badc52331c'
+      'authorization': signature,
+      timestamp
     },
     tags: {
       rw: data.operation === 'Mutation' ? 'write' : 'read'
