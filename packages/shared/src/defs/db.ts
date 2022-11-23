@@ -118,6 +118,7 @@ export enum CurrencyType {
 export type Trait = {
   type: string
   value: string
+  rarity?: string
 }
 
 export type NFTMetadata = {
