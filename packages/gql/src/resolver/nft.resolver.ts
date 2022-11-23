@@ -257,11 +257,20 @@ const returnProfileNFTs = async (
       for (const edge of edges) {
         const nft = await ctx.repositories.nft.findOne({ where: { id: edge.thatEntityId } })
         if (nft) {
-          nfts.push({
-            sortIndex: index,
-            ...nft,
-          })
-          index++
+          const collection = await ctx.repositories.collection.findOne({
+            where: {
+              contract: ethers.utils.getAddress(nft.contract),
+              isSpam: false,
+              chainId,
+            } })
+          if (collection) {
+            nfts.push({
+              sortIndex: index,
+              isHide: edge.hide,
+              ...nft,
+            })
+            index++
+          }
         }
       }
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)

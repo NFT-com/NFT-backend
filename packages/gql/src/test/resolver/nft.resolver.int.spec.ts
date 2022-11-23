@@ -932,6 +932,7 @@ describe('nft resolver', () => {
 
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
+      expect(result.data.myNFTs.items[0].isHide).toEqual(false)
     })
 
     it('should return NFTs of profile not owned by wallet', async () => {
