@@ -23,6 +23,7 @@ import { Maybe } from 'graphql/jsutils/Maybe'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { PageInput } from '@nftcom/gql/defs/gql'
+import { safeInput } from '@nftcom/gql/helper/pagination'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
@@ -218,31 +219,89 @@ const returnProfileNFTs = async (
   pageInput: PageInput,
   chainId: string,
 ): Promise<any> => {
-  const filter: Partial<entity.Edge> = helper.removeEmpty({
-    thisEntityType: defs.EntityType.Profile,
-    thisEntityId: profileId,
-    thatEntityType: defs.EntityType.NFT,
-    edgeType: defs.EdgeType.Displays,
-  })
-  return core.paginatedThatEntitiesOfEdgesBy(
-    ctx,
-    ctx.repositories.nft,
-    filter,
-    pageInput,
-    'weight',
-    'ASC',
-    chainId,
-    'NFT',
-  )
-    .then((result) => {
-      if (result?.items.length) {
-      // refresh order queue trigger
-        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-          .then(() => Promise.resolve(result))
-      } else {
-        return Promise.resolve(result)
+  try {
+    let nfts: gql.NFT[] = []
+    const cacheKey = `${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`
+    const cachedData = await cache.get(cacheKey)
+    if (cachedData) {
+      nfts = JSON.parse(cachedData) as gql.NFT[]
+    } else {
+      const filter: Partial<entity.Edge> = helper.removeEmpty({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: profileId,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+      })
+      const visibleEdges = await ctx.repositories.edge.find({
+        where: {
+          ...filter,
+          hide: false,
+        },
+        order: {
+          weight: 'ASC',
+        },
+      })
+      const hiddenEdges = await ctx.repositories.edge.find({
+        where: {
+          ...filter,
+          hide: true,
+        },
+        order: {
+          createdAt: 'DESC',
+        },
+      })
+      const edges: entity.Edge[] = []
+      edges.push(...visibleEdges)
+      edges.push(...hiddenEdges)
+      let index = 0
+      for (const edge of edges) {
+        const nft = await ctx.repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+        if (nft) {
+          nfts.push({
+            sortIndex: index,
+            ...nft,
+          })
+          index++
+        }
       }
-    })
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
+    }
+
+    let paginatedNFTs: Array<gql.NFT>
+    let defaultCursor
+    if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+      defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+        { afterCursor: nfts.length.toString() }
+    }
+
+    const safePageInput = safeInput(pageInput, defaultCursor)
+    let totalItems
+    if (pagination.hasFirst(safePageInput)) {
+      const cursor = pagination.hasAfter(safePageInput) ?
+        safePageInput.afterCursor : safePageInput.beforeCursor
+      paginatedNFTs = nfts.filter((nft) => nft.sortIndex > Number(cursor))
+      totalItems = paginatedNFTs.length
+      paginatedNFTs = paginatedNFTs.slice(0, safePageInput.first)
+    } else {
+      const cursor = pagination.hasAfter(safePageInput) ?
+        safePageInput.afterCursor : safePageInput.beforeCursor
+      paginatedNFTs = nfts.filter((nft) => nft.sortIndex < Number(cursor))
+      totalItems = paginatedNFTs.length
+      paginatedNFTs = paginatedNFTs.slice(paginatedNFTs.length - safePageInput.last)
+    }
+
+    const result = pagination.toPageable(
+      pageInput,
+      paginatedNFTs[0],
+      paginatedNFTs[paginatedNFTs.length - 1],
+      'sortIndex',
+    )([paginatedNFTs, totalItems])
+    return triggerNFTOrderRefreshQueue(result.items, chainId)
+      .then(() => Promise.resolve(result))
+  } catch (err) {
+    logger.error(`Error in returnProfileNFTs: ${err}`)
+    throw err
+  }
 }
 
 const getMyNFTs = async (
