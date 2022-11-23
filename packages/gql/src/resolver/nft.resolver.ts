@@ -273,7 +273,7 @@ const returnProfileNFTs = async (
           }
         }
       }
-      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 30) // 30 second cache
+      // await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 30) // 30 second cache
     }
 
     let paginatedNFTs: Array<gql.NFT>
