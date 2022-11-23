@@ -239,6 +239,8 @@ const returnProfileNFTs = async (
       // refresh order queue trigger
         return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
           .then(() => Promise.resolve(result))
+      } else {
+        return Promise.resolve(result)
       }
     })
 }

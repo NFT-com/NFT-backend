@@ -724,8 +724,8 @@ export const updateNFTOwnershipAndMetadata = async (
 
     if (!walletChainId) {
       const wallet = await repositories.wallet.findById(walletId)
-      await cache.set(`chainId_${walletId}`, wallet.chainId)
-      walletChainId = wallet.chainId
+      walletChainId = wallet?.chainId || process.env.CHAIN_ID
+      await cache.set(`chainId_${walletId}`, walletChainId)
     }
 
     let type, name, description, image
@@ -770,7 +770,7 @@ export const updateNFTOwnershipAndMetadata = async (
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
       const savedNFT = await repositories.nft.save({
-        chainId: walletChainId || process.env.CHAIN_ID,
+        chainId: walletChainId,
         userId,
         walletId,
         contract: ethers.utils.getAddress(nft.contract.address),
