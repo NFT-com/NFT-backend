@@ -21,7 +21,7 @@ export const createMonitorHiddenNFTsEventBridgeTarget = (
   const rule = createEventBridgeRule()
 
   new aws.lambda.Permission('name', {
-    action: 'lamdba:InvokeFunction',
+    action: 'lambda:InvokeFunction',
     'function': lambda.name,
     principal: 'events.amazonaws.com',
     sourceArn: rule.arn,
