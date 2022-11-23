@@ -1,7 +1,7 @@
 import { addDays } from 'date-fns'
 import { Wallet } from 'ethers'
 
-import { helper } from '@nftcom/shared/dist/packages/shared/src'
+import { helper } from '@nftcom/shared'
 
 const authMessage = 'I\'d like to sign in'
 const defaultKey = 'a2f890d2f7023d5eeba7f5c600bd50650ca59bd7e7007af8e016cd7abdc9af5d'

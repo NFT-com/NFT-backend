@@ -79,6 +79,8 @@ export const createContext = async (ctx): Promise<Context> => {
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)
+  } else {
+    return Promise.reject(userError.buildAuthInvalid())
   }
 
   return {
