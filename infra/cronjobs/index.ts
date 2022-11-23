@@ -50,7 +50,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   }
   // END: CRONJOB - COLLECTION STATS
   // START: CRONJOB - MONITOR/HIDDEN NFTS
-  if (isProduction() || 1 === 1) { // force truthiness for dev testing -- TODO: remove before merging
+  if (isProduction()) {
     const lambda = createMonitorHiddenNftsLambdaFunction([internalEcsSGId], privateSubnets)
     createMonitorHiddenNFTsEventBridgeTarget(lambda)
   }
