@@ -475,7 +475,7 @@ export const paginatedActivitiesBy = (
  * @param forced
  */
 export const triggerNFTOrderRefreshQueue = async (
-  nfts: entity.NFT[],
+  nfts: any[],
   chainId: string,
   forced?: boolean,
 ): Promise<number> => {
