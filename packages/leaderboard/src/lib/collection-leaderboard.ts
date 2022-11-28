@@ -87,7 +87,7 @@ export const hydrateCollectionLeaderboard = async (
     await fetchCollections(opts?.collectionRepo)
   return leaderboardContracts.map((contract) => {
     return collections.find((c) => c.contract === contract)
-  })
+  }).filter((collection) => collection) // filter to remove any nulls from previously official collections
 }
 
 export const updateCollectionLeaderboard = async (collectionRepo: repository.CollectionRepository, cacheKey?: string):

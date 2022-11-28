@@ -8,6 +8,7 @@ Thumbs.db
 # compiled / dependencies
 node_modules
 dist
+layers
 tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo
 !.env

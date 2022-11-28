@@ -77,7 +77,7 @@ export const deployInfra = async (
   console.info('Successfully initialized stack')
 
   console.info('Installing plugins...')
-  await stack.workspace.installPlugin('aws', 'v4.29.0')
+  await stack.workspace.installPlugin('aws', 'v5.21.1')
 
   if (preview) {
     await stack.preview({ onOutput: console.info })
