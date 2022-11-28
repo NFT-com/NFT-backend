@@ -452,7 +452,7 @@ const createEcsTaskDefinition = (
             logDriver: 'awslogs',
             options: {
               'awslogs-group': '/ecs/ecs-aws-otel-sidecar-collector',
-              'awslogs-region': 'us-east-11',
+              'awslogs-region': 'us-east-1',
               'awslogs-stream-prefix': 'ecs',
               'awslogs-create-group': 'True',
             },
