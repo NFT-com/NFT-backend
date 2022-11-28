@@ -6,7 +6,8 @@ import Joi from 'joi'
 import { IsNull } from 'typeorm'
 import { In } from 'typeorm/find-options/operator/In'
 
-import { cache } from '@nftcom/cache'
+import { cache, CacheKeys } from '@nftcom/cache'
+import { appError, collectionError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
@@ -577,6 +578,57 @@ const getCollectionLeaderboard = async (
   )([paginatedLeaderboard, leaderboardLength])
 }
 
+export const refreshCollectionRarity = async (  _: any,
+  args: gql.MutationRefreshNFTOrderArgs,
+  ctx: Context): Promise<string> => {
+  const { repositories, chain } = ctx
+  logger.debug('refreshCollectionRarity', { id: args?.id })
+  const schema = Joi.object().keys({
+    id: Joi.string().required(),
+    force: Joi.boolean().optional(),
+    ttl: Joi.date().optional(),
+  })
+  joi.validateSchema(schema, args)
+  try {
+    const collection = await repositories.collection.findById(args?.id)
+    if (!collection) {
+      return Promise.reject(appError.buildNotFound(
+        collectionError.buildCollectionNotFoundMsg('NFT: ' + args?.id),
+        collectionError.ErrorType.CollectionNotFound,
+      ))
+    }
+
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chain.id}`, `${collection.contract}`)
+    if (!args.force && recentlyRefreshed) {
+      return 'Refreshed Recently! Try in sometime!'
+    }
+
+    let collectionCacheId: string = collection.contract
+
+    if (args?.force) {
+      collectionCacheId += ':force'
+    } else {
+      if (args?.ttl === null) {
+        collectionCacheId += ':manual'
+      }
+
+      if(args?.ttl) {
+        const ttlDate: Date = new Date(args?.ttl)
+        const now: Date = new Date()
+        if (ttlDate && ttlDate > now) {
+          collectionCacheId += `:${ttlDate.getTime()}`
+        }
+      }
+    }
+    // add to cache list
+    await cache.zadd(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chain.id}`, 'INCR', 1, collectionCacheId)
+    return 'Added to queue! Check back shortly!'
+  } catch (err) {
+    Sentry.captureMessage(`Error in refreshCollectionRarity: ${err}`)
+    return err
+  }
+}
+
 export default {
   Query: {
     collection: getCollection,
@@ -589,6 +641,7 @@ export default {
   },
   Mutation: {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
+    refreshCollectionRarity: combineResolvers(auth.isAuthenticated, refreshCollectionRarity),
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
     syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
     updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),

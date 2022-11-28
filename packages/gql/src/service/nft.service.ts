@@ -24,6 +24,7 @@ import {
   s3ToCdn,
   saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
+import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
@@ -476,6 +477,32 @@ export const updateCollectionForNFTs = async (
   }
 }
 
+// traits with rarity
+export const nftTraitBuilder = (
+  nftAttributes: defs.Trait[],
+  rarityAttributes: NFTPortRarityAttributes[],
+): defs.Trait[] => {
+  const traits: defs.Trait[] = []
+  if (nftAttributes.length) {
+    for (const attribute of nftAttributes) {
+      const traitExists: NFTPortRarityAttributes = rarityAttributes.find(
+        (rarityAttribute: NFTPortRarityAttributes) =>
+          rarityAttribute.trait_type === attribute.type
+          && rarityAttribute.value === attribute.value,
+      )
+      if (traitExists.statistics.prevalence) {
+        traits.push(
+          {
+            ...attribute,
+            rarity: String(traitExists.statistics.prevalence),
+          },
+        )
+      }
+    }
+  }
+  return traits
+}
+
 // helper function to get traits for metadata, nftPort optional
 export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Array<defs.Trait> => {
   const traits: Array<defs.Trait> = []
@@ -527,6 +554,10 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
         }))
       })
     }
+  }
+
+  if(Array.isArray(nftPortDetails?.nft?.attributes)) {
+    return nftTraitBuilder(traits, nftPortDetails?.nft?.attributes)
   }
 
   return traits
@@ -611,7 +642,6 @@ const getNFTMetaData = async (
       logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
       return Promise.reject(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
     }
-
     const traits: Array<defs.Trait> = getMetadata(metadata, nftPortDetails)
 
     return {
@@ -747,10 +777,13 @@ export const updateNFTOwnershipAndMetadata = async (
       if (nft.metadata?.attributes && Array.isArray(nft.metadata?.attributes)) {
         nft.metadata?.attributes.map((trait) => {
           let value = trait?.value || trait?.trait_value
+          let rarity = trait?.rarity
           value = typeof value === 'string' ? value : JSON.stringify(value)
+          rarity = typeof rarity === 'string' ? rarity : JSON.stringify(rarity)
           traits.push(({
             type: trait?.trait_type,
             value,
+            rarity,
           }))
         })
       }

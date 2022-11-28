@@ -16,6 +16,7 @@ enum NFTSize {
 type NFTTrait {
   type: String
   value: String
+  rarity: String
 }
 
 type NFTMetadata {
@@ -38,6 +39,7 @@ type NFT {
   preferredProfile: Profile
   type: NFTType!
 #  user: User
+  rarity: String
   wallet: Wallet
   collection: Collection
   createdAt: DateTime!
