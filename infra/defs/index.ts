@@ -5,6 +5,7 @@ export type SharedInfraOutput = {
   assetBucketRole: string
   dbHost: string
   publicSubnets: string[]
+  privateSubnets: string[]
   redisHost: string
   vpcId: string
   typesenseSGId: string

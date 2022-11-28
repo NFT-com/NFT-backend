@@ -1,0 +1,58 @@
+{
+  "name": "monitors-hidden-nfts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "cronjobs/monitors/hidden-nfts/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/cronjobs/monitors/hidden-nfts",
+        "main": "cronjobs/monitors/hidden-nfts/src/main.ts",
+        "tsConfig": "cronjobs/monitors/hidden-nfts/tsconfig.app.json"
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "inspect": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "monitors-hidden-nfts:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "monitors-hidden-nfts:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["cronjobs/monitors/hidden-nfts/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/cronjobs/monitors/hidden-nfts"],
+      "options": {
+        "jestConfig": "cronjobs/monitors/hidden-nfts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "package": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./cronjobs/monitors/hidden-nfts/scripts/package.sh"
+      }
+    }
+  },
+  "tags": []
+}
