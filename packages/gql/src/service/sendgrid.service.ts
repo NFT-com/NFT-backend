@@ -193,11 +193,11 @@ export const addEmailToList = async (
 }
 
 export const sendMarketplaceBidConfirmEmail = (
-  bid: entity.MarketBid,
+  makerAddress: string,
   user: entity.User,
 ): Promise<boolean> => {
   if (user?.email) {
-    logger.debug('sendMarketplaceBidConfirmEmail', { bid, user })
+    logger.debug('sendMarketplaceBidConfirmEmail', { makerAddress, user })
 
     if (helper.isFalse(user.preferences.bidActivityNotifications)) {
       return Promise.resolve(false)
@@ -208,7 +208,7 @@ export const sendMarketplaceBidConfirmEmail = (
       from,
       to: { email: user.email },
       subject: 'Someone has bid on one of your marketplace asset',
-      text: `${bid.makerAddress} has bid on one of your marketplace asset.`,
+      text: `${makerAddress} has bid on one of your marketplace asset.`,
     }).then(() => true)
   }
 }

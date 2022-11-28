@@ -3,7 +3,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 import { IsNull } from 'typeorm'
 
-import { appError, marketListingError } from '@nftcom/error-types'
+import { appError, marketBidError, marketListingError } from '@nftcom/error-types'
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
 import { ListingOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
@@ -19,7 +19,7 @@ import {
 import * as Sentry from '@sentry/node'
 
 import { auth, joi, pagination, utils } from '../helper'
-import { core } from '../service'
+import { core, sendgrid } from '../service'
 import { activityBuilder } from '../service/txActivity.service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
@@ -110,7 +110,7 @@ const getNFTListings = async (
 }
 
 export const validListing = async (
-  marketListingArgs: gql.MutationCreateListingArgs,
+  marketListingArgs: gql.MutationCreateMarketListingArgs,
   chainId: string,
 ): Promise<boolean> => {
   const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
@@ -160,7 +160,7 @@ export const validListing = async (
 
 const cancelListing = async (
   _: any,
-  args: gql.MutationCancelListingArgs,
+  args: gql.MutationCancelMarketListingArgs,
   ctx: Context,
 ): Promise<boolean> => {
   const { user, repositories, wallet, chain } = ctx
@@ -277,7 +277,7 @@ const availableToCreateListing = async (
 
 const createListing = async (
   _: any,
-  args: gql.MutationCreateListingArgs,
+  args: gql.MutationCreateMarketListingArgs,
   ctx: Context,
 ): Promise<gql.TxListingOrder> => {
   const { user, repositories, wallet } = ctx
@@ -660,15 +660,403 @@ const filterListings = (
 //      -> front end to show if signature has enough balance
 // 5. get singular ASK (show all bids for a single ask)
 
+const validOrderMatch = async (
+  listing: entity.TxOrder,
+  marketBidArgs: gql.MutationCreateMarketBidArgs,
+  wallet: entity.Wallet,
+): Promise<boolean> => {
+  const validationLogicContract = typechain.ValidationLogic__factory.connect(
+    contracts.validationLogicAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+
+  const nftMarketplaceContract = typechain.NftMarketplace__factory.connect(
+    contracts.nftMarketplaceAddress(wallet.chainId),
+    provider.provider(Number(wallet.chainId)),
+  )
+
+  // STEP 1 basic validation of order structure (if not used before)
+  try {
+    const result = await nftMarketplaceContract.validateOrder_(
+      {
+        maker: marketBidArgs?.input.makerAddress,
+        makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        taker: marketBidArgs?.input.takerAddress,
+        takeAssets: getAssetList(marketBidArgs?.input.takeAsset),
+        salt: marketBidArgs?.input.salt,
+        start: marketBidArgs?.input.start,
+        end: marketBidArgs?.input.end,
+        nonce: marketBidArgs?.input.nonce,
+        auctionType: utils.auctionTypeToInt(marketBidArgs.input.auctionType),
+      },
+      marketBidArgs?.input.signature.v,
+      marketBidArgs?.input.signature.r,
+      marketBidArgs?.input.signature.s,
+    )
+
+    const calculatedStructHash: string = result?.[1]
+
+    if (marketBidArgs?.input.structHash !== calculatedStructHash) {
+      throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketBidArgs?.input.structHash}`)
+    }
+  } catch (err) {
+    logger.error('order validation error: ', err)
+
+    Sentry.captureMessage(`Order validation error: ${err}`)
+    return false
+  }
+
+  // STEP 2 cross validation between listing and potential bid
+  try {
+    // check time match
+    const currentUnixSec = Math.floor(new Date().getTime() / 1000)
+
+    const askStart = Math.floor(listing.activity.timestamp.getTime() / 1000)
+    const askEnd = Math.floor(listing.activity.expiration.getTime() / 1000)
+    const bidStart = Number(marketBidArgs?.input.start)
+    const bidEnd = Number(marketBidArgs?.input.end)
+
+    // TODO: make sure logic is sound...
+    // Reference logic in smart contract -> LibSignature.validate
+    if (!(askStart == 0 || askStart < currentUnixSec)) {
+      throw Error(`Invalid Market Ask Start: ${askStart}`)
+    } else if (!(bidStart == 0 || bidStart < currentUnixSec)) {
+      throw Error(`Invalid Market Bid Start: ${bidStart}`)
+    } else if (!(askEnd == 0 || askEnd > currentUnixSec)) {
+      throw Error(`Invalid Market Ask End: ${askEnd}`)
+    } else if (!(bidEnd == 0 || bidEnd > currentUnixSec)) {
+      throw Error(`Invalid Market Bid End: ${bidEnd}`)
+    }
+
+    // make sure listing taker is valid for Bid
+    const listingTaker = listing.takerAddress
+    if (
+      !(listingTaker == helper.AddressZero() || listingTaker == '0x' ||
+        helper.checkSum(listingTaker) == helper.checkSum(marketBidArgs?.input.makerAddress))
+    ) {
+      throw Error(`Bidder ${marketBidArgs?.input.makerAddress} not equal to Listing owner's Taker ${listingTaker}`)
+    }
+
+    // make sure assets match via contract
+    const result = await validationLogicContract.validateMatch_(
+      {
+        maker: listing.makerAddress,
+        makeAssets: getAssetList(listing.makeAsset),
+        taker: listing.takerAddress,
+        takeAssets: getAssetList(listing.takeAsset),
+        salt: listing.protocolData.salt,
+        start: askStart,
+        end: askEnd,
+        nonce: listing.nonce,
+        auctionType: utils.auctionTypeToInt(listing.protocolData.auctionType),
+      },
+      {
+        maker: marketBidArgs?.input.makerAddress,
+        makeAssets: getAssetList(marketBidArgs?.input.makeAsset),
+        taker: marketBidArgs?.input.takerAddress,
+        takeAssets: getAssetList(marketBidArgs?.input.takeAsset),
+        salt: marketBidArgs?.input.salt,
+        start: marketBidArgs?.input.start,
+        end: marketBidArgs?.input.end,
+        nonce: marketBidArgs?.input.nonce,
+        auctionType: utils.auctionTypeToInt(marketBidArgs?.input.auctionType),
+      },
+      listing.makerAddress,
+      false,
+    )
+
+    if (!result) {
+      throw Error('Market Bid does not match with Market Listing')
+    }
+  } catch (err) {
+    logger.error('order matching validation error: ', err)
+
+    Sentry.captureMessage(`Order matching validation error: ${err}`)
+    return false
+  }
+
+  return true
+}
+
+// FIXME: add validation later for 1% increase AND marketAskId
+// NOTE: currently this is limited every user to 1 active bid per user, not per ask
+// const availableToBid = async (
+//   address: string,
+//   repositories: db.Repository,
+// ): Promise<boolean> => {
+//   const now = Date.now() / 1000
+//   const marketBids = await repositories.marketBid.find({
+//     skip: 0,
+//     take: 1,
+//     order: { createdAt: 'DESC' },
+//     where: {
+//       makerAddress: ethers.utils.getAddress(address),
+//       cancelTxHash: null,
+//       marketSwapId: null,
+//       rejectedAt: null,
+//     },
+//   })
+
+//   const activeBids = marketBids.filter((bid) => bid.end >= now)
+//   return (activeBids.length === 0)
+// }
+
+const createBid = async (
+  _: any,
+  args: gql.MutationCreateMarketBidArgs,
+  ctx: Context,
+): Promise<gql.TxListingOrder> => {
+  const { user, repositories, wallet } = ctx
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('createBid', { loggedInUserId: user?.id, input: JSON.stringify(args?.input, null, 2) })
+  try {
+    const schema = Joi.object().keys({
+      chainId: Joi.string().required(),
+      structHash: Joi.string().required(),
+      nonce: Joi.required().custom(joi.buildBigNumber),
+      auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
+      signature: joi.buildSignatureInputSchema(),
+      listingId: Joi.string().required(),
+      makerAddress: Joi.string().required(),
+      makeAsset: Joi.array().min(1).max(100).items(
+        Joi.object().keys({
+          standard: Joi.object().keys({
+            assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+            bytes: Joi.string().required(),
+            contractAddress: Joi.string().required(),
+            tokenId: Joi.optional(),
+            allowAll: Joi.boolean().required(),
+          }),
+          bytes: Joi.string().required(),
+          value: Joi.required().custom(joi.buildBigNumber),
+          minimumBid: Joi.required().custom(joi.buildBigNumber),
+        }),
+      ),
+      takerAddress: Joi.string().required(),
+      takeAsset: Joi.array().min(0).max(100).items(
+        Joi.object().keys({
+          standard: Joi.object().keys({
+            assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+            bytes: Joi.string().required(),
+            contractAddress: Joi.string().required(),
+            tokenId: Joi.optional(),
+            allowAll: Joi.boolean().required(),
+          }),
+          bytes: Joi.string().required(),
+          value: Joi.required().custom(joi.buildBigNumber),
+          minimumBid: Joi.required().custom(joi.buildBigNumber),
+        }),
+      ),
+      start: Joi.number().required(),
+      end: Joi.number().required(),
+      salt: Joi.number().required(),
+    })
+    joi.validateSchema(schema, args?.input)
+
+    const makeAssetInput = args?.input.makeAsset
+    const makeAssets = convertAssetInput(makeAssetInput)
+
+    const takeAssetInput = args?.input.takeAsset
+    const takeAssets = convertAssetInput(takeAssetInput)
+
+    if (ethers.utils.getAddress(args?.input.makerAddress) !==
+      ethers.utils.getAddress(wallet.address)) {
+      return Promise.reject(appError.buildForbidden(
+        marketBidError.buildMakerAddressNotOwnedMsg(),
+        marketBidError.ErrorType.MakerAddressNotOwned,
+      ))
+    }
+
+    const listing = await repositories.txOrder.findById(args?.input.listingId)
+    if (!listing) {
+      return Promise.reject(appError.buildForbidden(
+        marketBidError.buildMarketListingNotFoundMsg(),
+        marketBidError.ErrorType.MarketListingNotFound,
+      ))
+    }
+
+    const isValid = await validOrderMatch(listing, args, wallet)
+    if (!isValid) {
+      return Promise.reject(appError.buildInvalid(
+        marketBidError.buildMarketBidInvalidMsg(),
+        marketBidError.ErrorType.MarketBidInvalid,
+      ))
+    }
+
+    let bidOrder = await repositories.txOrder.findOne({
+      where: {
+        orderHash: args?.input.structHash,
+      },
+    })
+    if (bidOrder) {
+      return Promise.reject(appError.buildExists(
+        marketBidError.buildMarketBidExistingMsg(),
+        marketBidError.ErrorType.MarketBidExisting,
+      ))
+    }
+    const activity = await activityBuilder(
+      defs.ActivityType.Bid,
+      args?.input.structHash,
+      wallet.address,
+      chainId,
+      [],
+      '0x',
+      args?.input.start,
+      args?.input.end,
+    )
+    bidOrder = await repositories.txOrder.save({
+      activity,
+      orderHash: args?.input.structHash,
+      exchange: defs.ExchangeType.Marketplace,
+      orderType: defs.ActivityType.Bid,
+      protocol: defs.ProtocolType.Marketplace,
+      nonce: args?.input.nonce,
+      protocolData: {
+        auctionType: args?.input.auctionType,
+        signature: args?.input.signature,
+        salt: args?.input.salt,
+      },
+      makerAddress: ethers.utils.getAddress(args?.input.makerAddress),
+      makeAsset: makeAssets,
+      takerAddress: ethers.utils.getAddress(args?.input.takerAddress),
+      takeAsset: takeAssets,
+      chainId: wallet.chainId,
+      listingId: args?.input.listingId,
+      memo: args?.input.message,
+      createdInternally: true,
+    })
+
+    const listingWallet = await repositories.wallet.findByChainAddress(chainId, listing.makerAddress)
+    const listingUser = await repositories.user.findById(listingWallet.userId)
+    await sendgrid.sendMarketplaceBidConfirmEmail(bidOrder.makerAddress, listingUser)
+    return {
+      id: bidOrder.id,
+      orderHash: bidOrder.orderHash,
+      nonce: bidOrder.nonce,
+      signature: bidOrder.protocolData.signature,
+      makerAddress: bidOrder.makerAddress,
+      makeAsset: bidOrder.makeAsset,
+      start: bidOrder.activity.timestamp,
+      end: bidOrder.activity.expiration,
+      salt: bidOrder.protocolData.salt,
+      chainId,
+      auctionType: bidOrder.protocolData.auctionType,
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in createListing: ${err}`)
+    return err
+  }
+}
+
+const cancelBid = async (
+  _: any,
+  args: gql.MutationCancelMarketBidArgs,
+  ctx: Context,
+): Promise<boolean> => {
+  const { user, repositories, wallet, chain } = ctx
+  const chainId = chain.id || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  logger.debug('cancelBid', { loggedInUserId: user?.id, input: args?.input })
+  try {
+    const bidOrder = await repositories.txOrder.findById(args?.input.bidOrderId)
+    if (!bidOrder) {
+      return Promise.reject(appError.buildNotFound(
+        marketBidError.buildMarketBidNotFoundMsg(args?.input.bidOrderId),
+        marketBidError.ErrorType.MarketBidNotFound,
+      ))
+    }
+    if (ethers.utils.getAddress(bidOrder.makerAddress) !== ethers.utils.getAddress(wallet.address)) {
+      return Promise.reject(appError.buildForbidden(
+        marketBidError.buildMarketBidNotOwnedMsg(),
+        marketBidError.ErrorType.MarketBidNotOwned,
+      ))
+    }
+    const isValid = await validateTxHashForCancel(
+      args?.input.txHash,
+      bidOrder.chainId,
+      args?.input.bidOrderId,
+      ListingOrBid.Bid,
+    )
+    if (!isValid) {
+      return Promise.reject(appError.buildInvalid(
+        marketBidError.buildTxHashInvalidMsg(args?.input.txHash),
+        marketBidError.ErrorType.TxHashInvalid,
+      ))
+    }
+    const txCancel = await repositories.txCancel.findOne({
+      where: {
+        exchange: defs.ExchangeType.Marketplace,
+        foreignType: defs.CancelActivities[1],
+        foreignKeyId: bidOrder.orderHash,
+        transactionHash: args?.input.txHash,
+        chainId,
+      },
+    })
+    if (!txCancel) {
+      const chainProvider = provider.provider(Number(chainId))
+      const tx = await chainProvider.getTransaction(args?.input.txHash)
+      await repositories.txCancel.save({
+        activity: bidOrder.activity,
+        exchange: defs.ExchangeType.Marketplace,
+        foreignType: defs.CancelActivities[1],
+        foreignKeyId: bidOrder.orderHash,
+        transactionHash: args?.input.txHash,
+        blockNumber: tx.blockNumber.toString(),
+        chainId,
+      })
+      const bidActivity = await repositories.txActivity.findById(bidOrder.activity.id)
+      await repositories.txActivity.updateOneById(bidActivity.id, { status: defs.ActivityStatus.Cancelled })
+    }
+    return true
+  } catch (err) {
+    Sentry.captureMessage(`Error in cancelListing: ${err}`)
+    return err
+  }
+}
+
+const getBids = (
+  _: any,
+  args: gql.QueryGetBidsArgs,
+  ctx: Context,
+): Promise<gql.GetListingOrders> => {
+  const { repositories } = ctx
+  logger.debug('getBids', { input: args?.input })
+  const chainId = args?.input.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  const pageInput = args?.input?.pageInput
+  const { makerAddress } = helper.safeObject(args?.input)
+
+  const filter: Partial<entity.TxOrder> = helper.removeEmpty({
+    makerAddress: ethers.utils.getAddress(makerAddress),
+    exchange: defs.ExchangeType.Marketplace,
+    orderType: defs.ActivityType.Bid,
+    protocol: defs.ProtocolType.Marketplace,
+    listingId: args?.input.listingOrderId,
+    chainId,
+  })
+  return core.paginatedEntitiesBy(
+    repositories.txOrder,
+    pageInput,
+    [filter],
+    [], // relations
+  )
+    .then(pagination.toPageable(pageInput))
+}
+
 export default {
   Query: {
     getListings,
     getNFTListings,
     filterListings,
+    getBids,
   },
   Mutation: {
-    createListing: combineResolvers(auth.isAuthenticated, createListing),
-    cancelListing: combineResolvers(auth.isAuthenticated, cancelListing),
+    createMarketListing: combineResolvers(auth.isAuthenticated, createListing),
+    cancelMarketListing: combineResolvers(auth.isAuthenticated, cancelListing),
     buyNow: combineResolvers(auth.isAuthenticated, buyNow),
+    createMarketBid: combineResolvers(auth.isAuthenticated, createBid),
+    cancelMarketBid: combineResolvers(auth.isAuthenticated, cancelBid),
+
   },
 }

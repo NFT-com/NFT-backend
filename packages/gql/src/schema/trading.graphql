@@ -24,6 +24,12 @@ type GetListingOrders {
   totalItems: Int
 }
 
+type GetBidOrders {
+  items: [TxOrder!]
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
 type AssetType {
   assetClass: AssetClass!
   bytes: String!
@@ -51,6 +57,24 @@ type TxListingOrder {
   end: DateTime!
   salt: Int!
   acceptedAt: DateTime
+  chainId: String!
+  auctionType: AuctionType!
+}
+
+type TxBidOrder {
+  id: ID!
+  orderHash: String!
+  nonce: Int!
+  signature: Signature!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAsset!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAsset!]
+  start: DateTime!
+  end: DateTime!
+  salt: Int!
+  acceptedAt: DateTime
+  rejectedAt: DateTime
   chainId: String!
   auctionType: AuctionType!
 }
@@ -98,8 +122,30 @@ input CreateListingInput {
   chainId: String!
 }
 
+input CreateBidInput {
+  structHash: String!
+  nonce: Int!
+  auctionType: AuctionType!
+  signature: SignatureInput!
+  listingId: String!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
+  start: Int!
+  end: Int!
+  salt: Int!
+  chainId: String!
+  message: String!
+}
+
 input CancelListInput {
   listingOrderId: ID!
+  txHash: String!
+}
+
+input CancelBidInput {
+  bidOrderId: ID!
   txHash: String!
 }
 
@@ -115,17 +161,29 @@ input FilterListingInput {
   pageInput: PageInput!
 }
 
+input MarketBidsInput {
+  makerAddress: Address
+  listingOrderId: String
+  pageInput: PageInput
+  chainId: String
+}
+
 extend type Query {
   getListings(input: ListingsInput!): GetListingOrders!
   getNFTListings(input: NftListingsInput!): [TxListingOrder!]!
   filterListings(input: FilterListingInput!): GetListingOrders!
+  getBids(input: MarketBidsInput!): GetBidOrders!
 }
 
 extend type Mutation {
   "AUTHENTICATED"
-  createListing(input: CreateListingInput!): TxListingOrder!
+  createMarketListing(input: CreateListingInput!): TxListingOrder!
   "AUTHENTICATED"
-  cancelListing(input: CancelListInput!): Boolean!
+  cancelMarketListing(input: CancelListInput!): Boolean!
   "AUTHENTICATED"
   buyNow(input: BuyNowInput!): MarketSwap!
+  "AUTHENTICATED"
+  createMarketBid(input: CreateBidInput!): TxBidOrder!
+  "AUTHENTICATED"
+  cancelMarketBid(input: CancelBidInput!): Boolean!
 }

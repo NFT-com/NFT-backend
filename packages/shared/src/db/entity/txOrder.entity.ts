@@ -71,7 +71,16 @@ export class TxOrder extends BaseEntity {
   @Column({ nullable: true })
   swapTransactionId: string
 
+  @Column({ nullable: true })
+  listingId: string
+
   @Column({ type: 'timestamp with time zone', nullable: true })
   acceptedAt: Date
+
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  rejectedAt: Date
+
+  @Column({ nullable: true })
+  memo: string
 
 }

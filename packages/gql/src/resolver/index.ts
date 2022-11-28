@@ -5,7 +5,6 @@ import bidResolvers from './bid.resolver'
 import collectionResolvers from './collection.resolver'
 import contractDataResolver from './contractData.resolver'
 import curationResolvers from './curation.resolver'
-import marketBidResolvers from './marketBid.resolver'
 import marketSwapResolvers from './marketSwap.resolver'
 import miscResolvers from './misc.resolver'
 import nftResolvers from './nft.resolver'
@@ -25,7 +24,6 @@ export const resolvers: any = mergeResolvers([
   collectionResolvers,
   contractDataResolver,
   tradingResolvers,
-  marketBidResolvers,
   marketSwapResolvers,
   miscResolvers,
   nftResolvers,
