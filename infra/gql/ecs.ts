@@ -430,6 +430,10 @@ const createEcsTaskDefinition = (
               Name: 'AUTH_EXPIRE_BY_DAYS',
               Value: process.env.AUTH_EXPIRE_BY_DAYS,
             },
+            {
+              Name: 'NODE_ENV',
+              Value: process.env.NODE_ENV,
+            },
           ],
         },
         {

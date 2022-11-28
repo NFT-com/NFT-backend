@@ -10,9 +10,7 @@ import { setupTracing } from './tracer'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
-logger.info({ env: process.env.NODE_ENV }, 'NODE ENV')
 if (['development','staging','production'].includes(process.env.NODE_ENV)) {
-  logger.info(`SET UP TRACING: ${process.env.NODE_ENV}-gql`)
   setupTracing(`${process.env.NODE_ENV}-gql`)
 }
 
