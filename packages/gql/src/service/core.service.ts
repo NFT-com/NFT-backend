@@ -263,6 +263,12 @@ export const stringifyTraits = (
         if (typeof nft.metadata.traits[i].value !== 'string')
           nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
       }
+
+      // if trait rarity exists
+      if (nft.metadata.traits[i].rarity) {
+        if (typeof nft.metadata.traits[i].rarity !== 'string')
+          nft.metadata.traits[i].rarity = JSON.stringify(nft.metadata.traits[i].rarity)
+      }
     }
   }
   return nft

@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import qs from 'qs'
 
 import { cache } from '@nftcom/cache'
 import { chainFromId } from '@nftcom/gql/helper/utils'
@@ -9,6 +10,15 @@ import * as Sentry from '@sentry/node'
 const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
 
 const logger = _logger.Factory(_logger.Context.NFTPort)
+
+export interface NFTPortRarityAttributes {
+  trait_type: string
+  value: string
+  statistics: {
+    total_count: number
+    prevalence: number
+  }
+}
 
 export interface NFTPortNFT {
   nft: {
@@ -22,6 +32,14 @@ export interface NFTPortNFT {
       image: string
       image_url: string
     }
+    rarity?: {
+      strategy: string
+      score: number
+      rank: number
+      max_rank: number
+      updated_date: string
+    }
+    attributes?: NFTPortRarityAttributes[]
   }
   contract: {
     name?: string
@@ -35,7 +53,6 @@ export interface NFTPortNFT {
   }
   status_message?: string
 }
-
 export const retrieveNFTDetailsNFTPort = async (
   contract: string,
   tokenId: string,
@@ -57,7 +74,9 @@ export const retrieveNFTDetailsNFTPort = async (
       params: {
         chain: chain,
         refresh_metadata: refreshMetadata || undefined,
+        include: ['attributes'],
       },
+      paramsSerializer: (params) => qs.stringify(params, { arrayFormat: 'repeat' }),
     })
     if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
@@ -66,6 +85,7 @@ export const retrieveNFTDetailsNFTPort = async (
       return undefined
     }
   } catch (err) {
+    logger.error(JSON.stringify(err))
     logger.error(`Error in retrieveNFTDetailsNFTPort: ${err}`)
     Sentry.captureMessage(`Error in retrieveNFTDetailsNFTPort: ${err}`)
     return undefined
