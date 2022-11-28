@@ -4,6 +4,7 @@ gql-naming-fn.js
 cronjobs/*/dist
 cronjobs/*/node_modules
 dist/*
+layers/*
 packages/*/dist
 packages/gql/src/defs/gql.ts
 perftest/**/*.js

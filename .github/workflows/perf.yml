@@ -3,7 +3,7 @@ name: GQL Performance Test
 on: [push]
 
 jobs:
-  build:
+  perftest:
 
     runs-on: ubuntu-latest
     environment: nftcom_dev
