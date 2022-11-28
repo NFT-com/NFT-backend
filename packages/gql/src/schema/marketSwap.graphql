@@ -1,6 +1,6 @@
 type MarketSwap {
   marketAsk: TxListingOrder
-  marketBid: MarketBid
+  marketBid: TxBidOrder
   txHash: String!
   blockNumber: String!
   private: Boolean
