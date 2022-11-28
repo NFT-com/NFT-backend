@@ -582,7 +582,13 @@ export const refreshCollectionRarity = async (  _: any,
   args: gql.MutationRefreshNFTOrderArgs,
   ctx: Context): Promise<string> => {
   const { repositories, chain } = ctx
-  logger.debug('refreshNftOrders', { id: args?.id })
+  logger.debug('refreshCollectionRarity', { id: args?.id })
+  const schema = Joi.object().keys({
+    id: Joi.string().required(),
+    force: Joi.boolean().optional(),
+    ttl: Joi.date().optional(),
+  })
+  joi.validateSchema(schema, args)
   try {
     const collection = await repositories.collection.findById(args?.id)
     if (!collection) {
