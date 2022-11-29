@@ -1,3 +1,9 @@
+// Tracing needs to be set up early for graphql
+import { setupTracing } from './tracer'
+if (['development','staging','production'].includes(process.env.NODE_ENV)) {
+  setupTracing(`${process.env.NODE_ENV}-gql`)
+}
+
 import kill from 'kill-port'
 
 import { _logger, db, fp } from '@nftcom/shared'
@@ -6,11 +12,6 @@ import { dbConfig, serverPort, verifyConfiguration } from './config'
 import { job } from './job'
 import * as server from './server'
 import HederaConsensusService from './service/hedera.service'
-import { setupTracing } from './tracer'
-
-if (['development','staging','production'].includes(process.env.NODE_ENV)) {
-  setupTracing(`${process.env.NODE_ENV}-gql`)
-}
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
