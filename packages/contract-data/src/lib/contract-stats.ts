@@ -11,6 +11,7 @@ export const updateContractStats = async (collections: entity.Collection[]): Pro
       collection.floorPrice = stats.floor_price
       collection.totalVolume = stats.total_volume
       collection.averagePrice = stats.average_price
+      collection.totalSales = stats.total_sales
     } catch (_e) {
       // NFTPort doesn't have this collection, so leave as-is
     }
