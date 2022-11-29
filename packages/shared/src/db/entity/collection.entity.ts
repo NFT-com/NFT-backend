@@ -46,6 +46,9 @@ export class Collection extends BaseEntity {
   @Column({ nullable: true, type: 'numeric' })
   averagePrice: number
 
+  @Column({ nullable: true, type: 'integer' })
+  totalSales: number
+
   @Column({ nullable: true, type: 'timestamptz' })
   issuanceDate: Date
 
