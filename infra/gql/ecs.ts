@@ -437,7 +437,7 @@ const createEcsTaskDefinition = (
           ],
           dependsOn: [
             {
-              containerName: 'aws-otel-collector',
+              containerName: getResourceName('aws-otel-collector'),
               condition: 'START',
             },
           ],
