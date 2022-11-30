@@ -186,7 +186,8 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [awsxray]`,
+      exporters: [awsxray]
+  extensions: [health_check]`,
   })
 }
 
