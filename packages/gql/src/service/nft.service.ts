@@ -1297,9 +1297,11 @@ export const updateNFTsOrder = async (
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
           edgeType: defs.EdgeType.Displays,
+          hide: false,
         },
         order: {
           weight: 'ASC',
+          updatedAt: 'DESC',
         },
       })
       const existingNFT = await repositories.nft.findOne({
@@ -1315,6 +1317,7 @@ export const updateNFTsOrder = async (
             thisEntityId: profileId,
             thatEntityId: orders[i].nftId,
             edgeType: defs.EdgeType.Displays,
+            hide: false,
           },
         })
         if (existingEdge) {
