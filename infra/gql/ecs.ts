@@ -167,6 +167,29 @@ const createEcsTaskRole = (): aws.iam.Role => {
   return role
 }
 
+const createAOTCollectorSSMParameter = (): aws.ssm.Parameter => {
+  return new aws.ssm.Parameter('otel-collector-config', {
+    name: getResourceName('otel-collector-config'),
+    type: 'String',
+    value: `extensions:
+  health_check:
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  awsxray:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [awsxray]`,
+  })
+}
+
 const createEcsTaskDefinition = (
   config: pulumi.Config,
   gqlECRRepo: string,
@@ -174,6 +197,7 @@ const createEcsTaskDefinition = (
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
+  const ssmParam = createAOTCollectorSSMParameter()
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
@@ -198,6 +222,10 @@ const createEcsTaskDefinition = (
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
           ],
           environment: [
+            {
+              Name: 'AOT_CONFIG_CONTENT',
+              ValueFrom: ssmParam.name,
+            },
             {
               Name: 'STAGE',
               Value: process.env.STAGE,
