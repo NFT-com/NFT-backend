@@ -484,7 +484,7 @@ const createEcsTaskDefinition = (
           secrets: [
             {
               Name: 'AOT_CONFIG_CONTENT',
-              ValueFrom: ssmParam.name,
+              ValueFrom: pulumi.interpolate`${ssmParam.arn}`,
             },
           ],
           logConfiguration: {
