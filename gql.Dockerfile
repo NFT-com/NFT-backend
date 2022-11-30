@@ -13,6 +13,8 @@ RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && npm set progress=false \
     && npm ci --omit=dev \
     && cp -R node_modules prod_node_modules \
+    && ([ -d "packages/gql/node_modules" ] && cp -R packages/gql/node_modules/. prod_node_modules) || true \
+    && ([ -d "packages/shared/node_modules" ] && cp -R packages/shared/node_modules/. prod_node_modules) || true \
     && npm ci \
     && apk del .gyp
 

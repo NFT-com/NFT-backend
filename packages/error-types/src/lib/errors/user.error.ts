@@ -13,6 +13,7 @@ export enum ErrorType {
   EventAction = 'EVENT_NOT_FOUND',
   InvalidReferralId = 'INVALID_REFERRAL_ID',
   AuthenticationExpired = 'AUTHENTICATION_EXPIRED',
+  AuthenticationInvalid = 'AUTHENTICATION_INVALID',
 }
 
 export const buildAuth = (): ApolloError =>
@@ -34,6 +35,13 @@ export const buildAuthOutOfExpireDuration = (): ApolloError =>
     'Expire duration of Authentication is out of expiry limit',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationExpired },
+  )
+
+export const buildAuthInvalid = (): ApolloError =>
+  new ApolloError(
+    'Auth signature or timestamp does not exist in Authentication header ',
+    HTTP.Unauthorized,
+    { errorKey: ErrorType.AuthenticationInvalid },
   )
 
 export const buildUserNotFoundMsg = (id: string): string => `User ${id} not found`

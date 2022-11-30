@@ -5,7 +5,7 @@ import {
   buildNFTNotValid,
   buildProfileNotOwnedMsg } from './nft.error'
 
-describe('curation error', () => {
+describe('nft error', () => {
   describe('buildNFTNotFoundMsg', () => {
     it('sets an id in the message', () => {
       const msg = buildNFTNotFoundMsg('qfkneqwioeqw')

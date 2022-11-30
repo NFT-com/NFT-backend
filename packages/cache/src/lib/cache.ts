@@ -8,6 +8,8 @@ const DEFAULT_TTL_MINS = Number(process.env.DEFAULT_TTL_MINS) || 15 // 15 mins
 export enum CacheKeys {
   REFRESH_NFT_ORDERS_EXT = 'refresh_nft_orders_ext',
   REFRESHED_NFT_ORDERS_EXT = 'refreshed_nft_orders_ext',
+  REFRESH_COLLECTION_RARITY= 'refresh_collection_rarity',
+  REFRESHED_COLLECTION_RARITY= 'refreshed_collection_rarity',
   UPDATED_NFTS_PROFILE = 'updated_nfts_profile',
   UPDATE_NFTS_PROFILE = 'update_nfts_profile',
   UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
@@ -22,6 +24,8 @@ export enum CacheKeys {
   PROFILES_MINTED_BY_GK = 'profiles_minted_by_gk',
   SEARCH_VISIBLE_NFTS_FOR_PROFILE = 'search_visible_nfts_for_profile',
   SEARCH_NFTS_FOR_PROFILE = 'search_nfts_for_profile',
+  PROFILE_SORTED_NFTS = 'PROFILE_SORTED_NFTS',
+  PROFILE_SORTED_VISIBLE_NFTS = 'PROFILE_SORTED_VISIBLE_NFTS',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {

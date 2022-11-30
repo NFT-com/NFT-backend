@@ -1,9 +1,6 @@
-import { Sampler, SpanKind } from '@opentelemetry/api'
-
 import opentelemetry = require('@opentelemetry/api');
 
-import { Attributes } from '@opentelemetry/api'
-import { AlwaysOnSampler } from '@opentelemetry/core'
+import { Attributes, SpanKind } from '@opentelemetry/api'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express'
@@ -12,7 +9,7 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis'
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
 import { Resource } from '@opentelemetry/resources'
-import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { AlwaysOnSampler, Sampler, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { SemanticAttributes, SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 

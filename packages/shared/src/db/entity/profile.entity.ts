@@ -98,4 +98,7 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   associatedContract: string
 
+  @Column({ nullable: true, type: 'timestamp with time zone' })
+  expireAt: Date
+
 }

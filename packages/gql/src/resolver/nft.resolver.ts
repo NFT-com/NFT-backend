@@ -1,7 +1,6 @@
 import { ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { In } from 'typeorm'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/error-types'
@@ -24,13 +23,14 @@ import { Maybe } from 'graphql/jsutils/Maybe'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { PageInput } from '@nftcom/gql/defs/gql'
+import { safeInput } from '@nftcom/gql/helper/pagination'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   getNFTActivities,
   getUserWalletFromNFT,
-  initiateWeb3, queryNFTsForProfile,
+  initiateWeb3,
   saveNewNFT, updateCollectionForAssociatedContract,
   updateNFTMetadata, updateNFTOwnershipAndMetadata, updateNFTsForAssociatedAddresses,
   updateWalletNFTs,
@@ -218,57 +218,117 @@ const returnProfileNFTs = async (
   ctx: Context,
   pageInput: PageInput,
   chainId: string,
-  repositories: db.Repository,
+  includeHidden: boolean,
+  cacheKeyStr: string,
   query: string,
 ): Promise<any> => {
   try {
-    let filter: Partial<entity.Edge> = helper.removeEmpty({
-      thisEntityType: defs.EntityType.Profile,
-      thisEntityId: profileId,
-      thatEntityType: defs.EntityType.NFT,
-      edgeType: defs.EdgeType.Displays,
-    })
-    const profile = await repositories.profile.findById(profileId)
+    let nfts: gql.NFT[] = []
+    let cacheKey
     if (query && query?.length) {
-      const cacheKey = `${CacheKeys.SEARCH_NFTS_FOR_PROFILE}_${chainId}_${profile.url}_${query}`
-      const cachedData = await cache.get(cacheKey)
-      let nfts: entity.NFT[]
-      if (cachedData) {
-        nfts = JSON.parse(cachedData) as entity.NFT[]
-      } else {
-        nfts = await queryNFTsForProfile(repositories, profile, false, query)
-        await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
-      }
-      if (!nfts.length) return Promise.resolve({ items: [] })
-      const nftIds = nfts.map((nft) => nft.id)
-      filter = helper.removeEmpty({
+      cacheKey =  `${cacheKeyStr}_${chainId}_${profileId}_${query}`
+    } else {
+      cacheKey = `${cacheKeyStr}_${chainId}_${profileId}`
+    }
+    const cachedData = await cache.get(cacheKey)
+    if (cachedData) {
+      nfts = JSON.parse(cachedData) as gql.NFT[]
+    } else {
+      const filter: Partial<entity.Edge> = helper.removeEmpty({
         thisEntityType: defs.EntityType.Profile,
-        thisEntityId: profile.id,
+        thisEntityId: profileId,
         thatEntityType: defs.EntityType.NFT,
-        thatEntityId: In(nftIds),
         edgeType: defs.EdgeType.Displays,
       })
-    }
-    return core.paginatedThatEntitiesOfEdgesBy(
-      ctx,
-      ctx.repositories.nft,
-      filter,
-      pageInput,
-      'weight',
-      'ASC',
-      chainId,
-      'NFT',
-    )
-      .then((result) => {
-        if (result?.items.length) {
-          // refresh order queue trigger
-          return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-            .then(() => Promise.resolve(result))
-        }
+      const edges: entity.Edge[] = []
+      const visibleEdges = await ctx.repositories.edge.find({
+        where: {
+          ...filter,
+          hide: false,
+        },
+        order: {
+          weight: 'ASC',
+          updatedAt: 'DESC',
+        },
       })
+      edges.push(...visibleEdges)
+      if (includeHidden) {
+        const hiddenEdges = await ctx.repositories.edge.find({
+          where: {
+            ...filter,
+            hide: true,
+          },
+          order: {
+            updatedAt: 'DESC',
+          },
+        })
+        edges.push(...hiddenEdges)
+      }
+
+      let index = 0
+      for (const edge of edges) {
+        const nft = await ctx.repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+        if (nft) {
+          let isMatch = false
+          if (query && query?.length) {
+            if (nft.metadata.name && nft.metadata.name.toLowerCase().includes(query.toLowerCase())) {
+              isMatch = true
+            }
+          } else {
+            isMatch = true
+          }
+          const collection = await ctx.repositories.collection.findOne({
+            where: {
+              contract: ethers.utils.getAddress(nft.contract),
+              isSpam: false,
+              chainId,
+            } })
+          if (collection && isMatch) {
+            nfts.push({
+              sortIndex: index,
+              isHide: edge.hide,
+              ...nft,
+            })
+            index++
+          }
+        }
+      }
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 30) // 30 second cache
+    }
+
+    let paginatedNFTs: Array<gql.NFT>
+    let defaultCursor
+    if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+      defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+        { afterCursor: nfts.length.toString() }
+    }
+
+    const safePageInput = safeInput(pageInput, defaultCursor)
+    let totalItems
+    if (pagination.hasFirst(safePageInput)) {
+      const cursor = pagination.hasAfter(safePageInput) ?
+        safePageInput.afterCursor : safePageInput.beforeCursor
+      paginatedNFTs = nfts.filter((nft) => nft.sortIndex > Number(cursor))
+      totalItems = paginatedNFTs.length
+      paginatedNFTs = paginatedNFTs.slice(0, safePageInput.first)
+    } else {
+      const cursor = pagination.hasAfter(safePageInput) ?
+        safePageInput.afterCursor : safePageInput.beforeCursor
+      paginatedNFTs = nfts.filter((nft) => nft.sortIndex < Number(cursor))
+      totalItems = paginatedNFTs.length
+      paginatedNFTs = paginatedNFTs.slice(paginatedNFTs.length - safePageInput.last)
+    }
+
+    const result = pagination.toPageable(
+      pageInput,
+      paginatedNFTs[0],
+      paginatedNFTs[paginatedNFTs.length - 1],
+      'sortIndex',
+    )([paginatedNFTs, totalItems])
+    return triggerNFTOrderRefreshQueue(result.items, chainId)
+      .then(() => Promise.resolve(result))
   } catch (err) {
     logger.error(`Error in returnProfileNFTs: ${err}`)
-    Sentry.captureMessage(`Error in returnProfileNFTs: ${err}`)
     throw err
   }
 }
@@ -298,10 +358,11 @@ const getMyNFTs = async (
   try {
     const filters: Partial<entity.NFT> = {
       walletId: wallet.id,
-      userId: user.id ,
+      userId: user.id,
       chainId,
     }
 
+    const query = args?.input.query
     if (args?.input?.ownedByWallet && args?.input?.profileId) {
       const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
       if (!profile) {
@@ -316,7 +377,15 @@ const getMyNFTs = async (
           nftError.ErrorType.NFTNotOwned,
         ))
       }
-      return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId, repositories, args?.input.query)
+      return await returnProfileNFTs(
+        args?.input.profileId,
+        ctx,
+        pageInput,
+        chainId,
+        true,
+        CacheKeys.PROFILE_SORTED_NFTS,
+        query,
+      )
     } else if (!args?.input?.ownedByWallet && args?.input?.profileId) {
       const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
       if (!profile) {
@@ -325,8 +394,16 @@ const getMyNFTs = async (
           profileError.ErrorType.ProfileNotFound,
         ))
       }
-      return await returnProfileNFTs(args?.input.profileId, ctx, pageInput, chainId, repositories, args?.input.query)
-    } else if (args?.input?.ownedByWallet && !args?.input?.profileId ) {
+      return await returnProfileNFTs(
+        args?.input.profileId,
+        ctx,
+        pageInput,
+        chainId,
+        true,
+        CacheKeys.PROFILE_SORTED_NFTS,
+        query,
+      )
+    } else if (args?.input?.ownedByWallet && !args?.input?.profileId) {
       return core.paginatedEntitiesBy(
         repositories.nft,
         pageInput,
@@ -365,7 +442,15 @@ const getMyNFTs = async (
               .then(() => Promise.resolve(result))
           })
       } else {
-        return await returnProfileNFTs(defaultProfile.id, ctx, pageInput, chainId, repositories, args?.input.query)
+        return await returnProfileNFTs(
+          defaultProfile.id,
+          ctx,
+          pageInput,
+          chainId,
+          true,
+          CacheKeys.PROFILE_SORTED_NFTS,
+          query,
+        )
       }
     }
   } catch (err) {
@@ -615,47 +700,15 @@ const updateNFTsForProfile = async (
       await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
     }
 
-    let filter: Partial<entity.Edge> = helper.removeEmpty({
-      thisEntityType: defs.EntityType.Profile,
-      thisEntityId: profile.id,
-      thatEntityType: defs.EntityType.NFT,
-      edgeType: defs.EdgeType.Displays,
-    })
-    if (args?.input.query && args?.input.query?.length) {
-      const cacheKey = `${CacheKeys.SEARCH_VISIBLE_NFTS_FOR_PROFILE}_${chainId}_${profile.url}_${args?.input.query}`
-      const cachedData = await cache.get(cacheKey)
-      let nfts: entity.NFT[]
-      if (cachedData) {
-        nfts = JSON.parse(cachedData) as entity.NFT[]
-      } else {
-        nfts = await queryNFTsForProfile(repositories, profile, true, args?.input.query)
-        await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
-      }
-      if (!nfts.length) return Promise.resolve({ items: [] })
-      const nftIds = nfts.map((nft) => nft.id)
-      filter = helper.removeEmpty({
-        thisEntityType: defs.EntityType.Profile,
-        thisEntityId: profile.id,
-        thatEntityType: defs.EntityType.NFT,
-        thatEntityId: In(nftIds),
-        edgeType: defs.EdgeType.Displays,
-      })
-    }
-
-    return core.paginatedThatEntitiesOfEdgesBy(
+    return await returnProfileNFTs(
+      profile.id,
       ctx,
-      repositories.nft,
-      { ...filter, hide: false },
       pageInput,
-      'weight',
-      'ASC',
       chainId,
-      'NFT',
-    ).then(result => {
-      // refresh order queue trigger
-      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-        .then(() => Promise.resolve(result))
-    })
+      false,
+      CacheKeys.PROFILE_SORTED_VISIBLE_NFTS,
+      args?.input.query,
+    )
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
     return err

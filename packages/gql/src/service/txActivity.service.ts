@@ -134,7 +134,7 @@ const looksrareOrderBuilder = (
 }
 
 /**
- * x2y2OrderBuilder 
+ * x2y2OrderBuilder
  * @param order
  */
 
@@ -170,7 +170,7 @@ const x2y2OrderBuilder = (
 }
 
 /**
- * orderEntityBuilder 
+ * orderEntityBuilder
  * @param protocol
  * @param orderType
  * @param order
@@ -474,7 +474,7 @@ export const paginatedActivitiesBy = (
  * @param forced
  */
 export const triggerNFTOrderRefreshQueue = async (
-  nfts: entity.NFT[],
+  nfts: any[],
   chainId: string,
   forced?: boolean,
 ): Promise<number> => {

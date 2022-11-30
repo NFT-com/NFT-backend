@@ -59,8 +59,10 @@ export const createContext = async (ctx): Promise<Context> => {
   let wallet: entity.Wallet = null
   let user: entity.User = null
   const teamKey: string = headers['teamkey']
+  const hasAuthSignature = helper.isNotEmpty(authSignature)
 
-  if (helper.isNotEmpty(authSignature) && timestamp) {
+  if (hasAuthSignature && timestamp) {
+    // Attempting auth with signature and timestamp
     const nowDate = helper.toUTCDate()
     const expireDate = new Date(Number(timestamp) * 1000)
     // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
@@ -79,7 +81,10 @@ export const createContext = async (ctx): Promise<Context> => {
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)
-  }
+  } else if (hasAuthSignature) {
+    // Auth signature, but no timestamp is forbidden
+    return Promise.reject(userError.buildAuthInvalid())
+  } // Else, create context for unauthenticated requests
 
   return {
     network,
