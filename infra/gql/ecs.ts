@@ -435,6 +435,12 @@ const createEcsTaskDefinition = (
               Value: process.env.NODE_ENV,
             },
           ],
+          dependsOn: [
+            {
+              containerName: 'aws-otel-collector',
+              condition: 'START',
+            },
+          ],
         },
         {
           name: getResourceName('log-router'),
