@@ -1301,6 +1301,7 @@ export const updateNFTsOrder = async (
         },
         order: {
           weight: 'ASC',
+          updatedAt: 'DESC',
         },
       })
       const existingNFT = await repositories.nft.findOne({
