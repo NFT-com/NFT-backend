@@ -223,10 +223,6 @@ const createEcsTaskDefinition = (
           ],
           environment: [
             {
-              Name: 'AOT_CONFIG_CONTENT',
-              ValueFrom: ssmParam.name,
-            },
-            {
               Name: 'STAGE',
               Value: process.env.STAGE,
             },
@@ -484,8 +480,13 @@ const createEcsTaskDefinition = (
         {
           name: getResourceName('aws-otel-collector'),
           image: 'amazon/aws-otel-collector',
-          command:['--config=/etc/ecs/ecs-default-config.yaml'],
           essential: true,
+          environment: [
+            {
+              Name: 'AOT_CONFIG_CONTENT',
+              ValueFrom: ssmParam.name,
+            },
+          ],
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
@@ -517,7 +518,10 @@ const createEcsTaskDefinition = (
       tags: getTags(tags),
     },
     {
-      dependsOn: [pulumi.output(role)],
+      dependsOn: [
+        pulumi.output(role),
+        pulumi.output(ssmParam),
+      ],
     },
   )
 }
