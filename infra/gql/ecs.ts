@@ -481,10 +481,10 @@ const createEcsTaskDefinition = (
           name: getResourceName('aws-otel-collector'),
           image: 'amazon/aws-otel-collector',
           essential: true,
-          environment: [
+          secrets: [
             {
               Name: 'AOT_CONFIG_CONTENT',
-              ValueFrom: ssmParam.name,
+              ValueFrom: ssmParam.arn,
             },
           ],
           logConfiguration: {
