@@ -177,7 +177,19 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: 0.0.0.0:4317
       http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch/traces:
+    timeout: 1s
+    send_batch_size: 50
+  resourcedetection:
+    detectors:
+      - env
+      - system
+      - ecs
 
 exporters:
   awsxray:
@@ -186,6 +198,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
+      processors: [resourcedetection, batch/traces]
       exporters: [awsxray]
   extensions: [health_check]`,
   })
