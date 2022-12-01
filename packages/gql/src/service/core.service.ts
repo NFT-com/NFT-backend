@@ -1280,6 +1280,10 @@ export type Call = {
  * @param calls 'Call' array
  * @param abi
  * @param chainId
+ * based on:
+ * - https://github.com/mds1/multicall#deployments
+ * - https://github.com/sushiswap/sushiswap-sdk/blob/canary/src/constants/addresses.ts#L323
+ * - https://github.com/joshstevens19/ethereum-multicall#multicall-contracts
  */
 
 export const fetchDataUsingMulticall = async (
