@@ -193,13 +193,15 @@ processors:
 
 exporters:
   awsxray:
+  logging:
+    loglevel: debug
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [resourcedetection, batch/traces]
-      exporters: [awsxray]
+      exporters: [awsxray, logging]
   extensions: [health_check]`,
   })
 }
@@ -497,6 +499,7 @@ const createEcsTaskDefinition = (
               name: getResourceName('aws-otel-collector'),
               image: 'amazon/aws-otel-collector',
               essential: true,
+              command: ['--log-level DEBUG'],
               secrets: [
                 {
                   Name: 'AOT_CONFIG_CONTENT',
