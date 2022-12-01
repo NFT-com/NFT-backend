@@ -13,6 +13,7 @@ export type { LooksrareExchange } from "./LooksrareExchange";
 export type { LpStake } from "./LpStake";
 export type { MarketplaceEvent } from "./MarketplaceEvent";
 export type { MerkleDistributor } from "./MerkleDistributor";
+export type { Multicall2 } from "./Multicall2";
 export type { NftBuyer } from "./NftBuyer";
 export type { NftMarketplace } from "./NftMarketplace";
 export type { NftProfile } from "./NftProfile";
@@ -36,6 +37,7 @@ export { LooksrareExchange__factory } from "./factories/LooksrareExchange__facto
 export { LpStake__factory } from "./factories/LpStake__factory";
 export { MarketplaceEvent__factory } from "./factories/MarketplaceEvent__factory";
 export { MerkleDistributor__factory } from "./factories/MerkleDistributor__factory";
+export { Multicall2__factory } from "./factories/Multicall2__factory";
 export { NftBuyer__factory } from "./factories/NftBuyer__factory";
 export { NftMarketplace__factory } from "./factories/NftMarketplace__factory";
 export { NftProfile__factory } from "./factories/NftProfile__factory";

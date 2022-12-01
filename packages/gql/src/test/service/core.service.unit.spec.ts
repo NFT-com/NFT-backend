@@ -3,9 +3,13 @@ import { BigNumber, ethers } from 'ethers'
 import { testDBConfig } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
 import { WalletInput } from '@nftcom/gql/defs/gql'
-import { createProfileFromEvent, getWallet } from '@nftcom/gql/service/core.service'
+import {
+  createProfileFromEvent,
+  fetchDataUsingMulticall,
+  getWallet,
+} from '@nftcom/gql/service/core.service'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
-import { db, defs } from '@nftcom/shared'
+import { contracts, db, defs } from '@nftcom/shared'
 import { User, Wallet } from '@nftcom/shared/db/entity'
 
 import { testMockUser, testMockWallet } from '../util/constants'
@@ -133,6 +137,28 @@ describe('core service', () => {
       })
       expect(referNetworkAction).toBeDefined()
       expect(referNetworkAction.userId).toBeDefined()
+    })
+  })
+
+  describe('fetchDataUsingMulticall', () => {
+    it('should return expire date of profile', async () => {
+      const abi = contracts.NftProfileABI()
+      const calls = [
+        {
+          contract: contracts.nftProfileAddress('5'),
+          name: 'getExpiryTimeline',
+          params: [['lucas', 'gk']],
+        },
+        {
+          contract: contracts.nftProfileAddress('5'),
+          name: 'getExpiryTimeline',
+          params: [['lucasgoerli', 'joey', 'donald']],
+        },
+      ]
+      const res = await fetchDataUsingMulticall(calls, abi, '5')
+      expect(res.length).toEqual(2)
+      expect(res[0][0].length).toEqual(2)
+      expect(res[1][0].length).toEqual(3)
     })
   })
 })

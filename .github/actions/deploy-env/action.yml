@@ -118,5 +118,6 @@ runs:
         IPFS_WEB_GATEWAY: ${{ fromJSON(inputs.secrets).IPFS_WEB_GATEWAY }}
         DEFAULT_TTL_MINS: ${{ fromJSON(inputs.secrets).DEFAULT_TTL_MINS }}
         AUTH_EXPIRE_BY_DAYS: ${{ fromJSON(inputs.secrets).AUTH_EXPIRE_BY_DAYS }}
+        MULTICALL_CONTRACT: ${{ fromJSON(inputs.secrets).MULTICALL_CONTRACT }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
       run: npm run deploy:gql
