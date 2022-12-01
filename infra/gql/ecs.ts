@@ -194,9 +194,9 @@ processors:
 exporters:
   awsxray:
   otlp/traces:
-    endpoint: "\${OTLP_COLLECTOR_ENDPOINT}
+    endpoint: "\${OTLP_COLLECTOR_ENDPOINT}"
     headers:
-      "x-honeycomb-team": "mP2M7zrcAwSHpfb5YMhfrE"
+      "x-honeycomb-team": "\${HONEYCOMB_API_KEY}"
 
 service:
   pipelines:
@@ -505,6 +505,10 @@ const createEcsTaskDefinition = (
                 {
                   Name: 'OTLP_COLLECTOR_ENDPOINT',
                   Value: 'api.honeycomb.io:443',
+                },
+                {
+                  Name: 'HONEYCOMB_API_KEY',
+                  Value: process.env.HONEYCOMB_API_KEY,
                 },
               ],
               secrets: [
