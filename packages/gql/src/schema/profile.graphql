@@ -63,7 +63,7 @@ type Profile {
   profileView: ProfileViewType
   visibleNFTs: Int
   usersActionsWithPoints: [UsersActionOutput]
-  expireAt: DateTime!
+  expireAt: DateTime
 }
 
 type UsersActionOutput {
