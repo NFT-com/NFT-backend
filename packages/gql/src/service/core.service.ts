@@ -8,17 +8,17 @@ import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
-import { Interface, Result } from '@ethersproject/abi'
+import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
-import Multicall3 from '@nftcom/gql/helper/abi/Multicall3.json'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 import { ProfileTask } from '@nftcom/shared/defs'
+import Multicall2 from '@nftcom/shared/helper/abis/Multicall2.json'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -1270,7 +1270,7 @@ export const paginateEntityArray =
 }
 
 export type Call = {
-  address: string
+  contract: string
   name: string
   params?: any[]
 }
@@ -1287,19 +1287,19 @@ export const fetchDataUsingMulticall = async (
   abi: any[],
   chainId: string,
 ): Promise<Array<Result | undefined>> => {
-  // 1. create contract using multicall contract address and abi...
-  const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'
-  const multicallContract = new Contract(
-    multicallAddress.toLowerCase(),
-    Multicall3,
-    provider.provider(Number(chainId)),
-  )
-  const abiInterface = new Interface(abi)
-  const callData = calls.map((call) => [
-    call.address.toLowerCase(),
-    abiInterface.encodeFunctionData(call.name, call.params),
-  ])
   try {
+    // 1. create contract using multicall contract address and abi...
+    const multicallAddress = process.env.MULTICALL_CONTRACT
+    const multicallContract = new Contract(
+      multicallAddress.toLowerCase(),
+      Multicall2,
+      provider.provider(Number(chainId)),
+    )
+    const abiInterface = new ethers.utils.Interface(abi)
+    const callData = calls.map((call) => [
+      call.contract.toLowerCase(),
+      abiInterface.encodeFunctionData(call.name, call.params),
+    ])
     // 2. get bytes array from multicall contract by process aggregate method...
     const results: { success: boolean; returnData: string }[] =
       await multicallContract.tryAggregate(false, callData)
