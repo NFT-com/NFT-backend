@@ -193,15 +193,17 @@ processors:
 
 exporters:
   awsxray:
-  logging:
-    loglevel: debug
+  otlp/traces:
+    endpoint: "\${OTLP_COLLECTOR_ENDPOINT}
+    headers:
+      "x-honeycomb-team": "mP2M7zrcAwSHpfb5YMhfrE"
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [resourcedetection, batch/traces]
-      exporters: [awsxray, logging]
+      exporters: [awsxray, otlp/traces]
   extensions: [health_check]`,
   })
 }
@@ -499,6 +501,12 @@ const createEcsTaskDefinition = (
               name: getResourceName('aws-otel-collector'),
               image: 'amazon/aws-otel-collector',
               essential: true,
+              environment: [
+                {
+                  Name: 'OTLP_COLLECTOR_ENDPOINT',
+                  Value: 'api.honeycomb.io:443',
+                },
+              ],
               secrets: [
                 {
                   Name: 'AOT_CONFIG_CONTENT',
