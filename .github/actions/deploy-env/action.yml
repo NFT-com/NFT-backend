@@ -120,4 +120,5 @@ runs:
         AUTH_EXPIRE_BY_DAYS: ${{ fromJSON(inputs.secrets).AUTH_EXPIRE_BY_DAYS }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
         HONEYCOMB_API_KEY: ${{ fromJSON(inputs.secrets).HONEYCOMB_API_KEY }}
+        DATADOG_API_KEY: ${{ fromJSON(inputs.secrets).DATADOG_API_KEY }}
       run: npm run deploy:gql

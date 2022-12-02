@@ -145,11 +145,6 @@ const createEcsTaskRole = (): aws.iam.Role => {
             'logs:PutLogEvents',
             'logs:DescribeLogStreams',
             'logs:DescribeLogGroups',
-            'xray:PutTraceSegments',
-            'xray:PutTelemetryRecords',
-            'xray:GetSamplingRules',
-            'xray:GetSamplingTargets',
-            'xray:GetSamplingStatisticSummaries',
             'ssm:GetParameters',
           ],
           Resource: '*',
@@ -192,18 +187,20 @@ processors:
       - ecs
 
 exporters:
-  awsxray:
   otlp/traces:
     endpoint: "\${OTLP_COLLECTOR_ENDPOINT}"
     headers:
       "x-honeycomb-team": "\${HONEYCOMB_API_KEY}"
+  datadog:
+    api:
+      key: "\${DATADOG_API_KEY}"
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [resourcedetection, batch/traces]
-      exporters: [awsxray, otlp/traces]
+      exporters: [datadog/api, otlp/traces]
   extensions: [health_check]`,
   })
 }
@@ -509,6 +506,10 @@ const createEcsTaskDefinition = (
                 {
                   Name: 'HONEYCOMB_API_KEY',
                   Value: process.env.HONEYCOMB_API_KEY,
+                },
+                {
+                  Name: 'DATADOG_API_KEY',
+                  Value: process.env.DATADOG_API_KEY,
                 },
               ],
               secrets: [
