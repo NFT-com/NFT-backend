@@ -68,18 +68,23 @@ export class TxOrder extends BaseEntity {
   @Column({ default: false })
   createdInternally: boolean
 
+  // only required for native trading
   @Column({ nullable: true })
   swapTransactionId: string
 
+  // only required for native trading
   @Column({ nullable: true })
   listingId: string
 
+  // only required for native trading
   @Column({ type: 'timestamp with time zone', nullable: true })
   acceptedAt: Date
 
+  // only required for native trading
   @Column({ type: 'timestamp with time zone', nullable: true })
   rejectedAt: Date
 
+  // only required for native trading
   @Column({ nullable: true })
   memo: string
 

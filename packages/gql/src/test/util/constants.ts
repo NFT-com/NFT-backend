@@ -1,6 +1,7 @@
 import { DeepPartial } from 'typeorm'
 
-import { ActivityStatus, NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, ProtocolData, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import { gql } from '@nftcom/gql/defs'
+import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, ProtocolData, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared'
@@ -282,9 +283,9 @@ export const testLooksrareExistingOrder: LooksRareOrder = {
 export const testExistingActivity: TxActivity = {
   id: 'test-activity-id',
   walletAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  activityType: ActivityType.Listing,
+  activityType: gql.ActivityType.Listing,
   activityTypeId: 'test-existing-order-hash',
-  status: ActivityStatus.Valid,
+  status: gql.ActivityStatus.Valid,
   read: false,
   timestamp: 'test-timestamp',
   nftContract: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
