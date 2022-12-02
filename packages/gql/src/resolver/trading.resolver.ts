@@ -851,6 +851,7 @@ const createBid = async (
       start: Joi.number().required(),
       end: Joi.number().required(),
       salt: Joi.number().required(),
+      message: Joi.string().optional(),
     })
     joi.validateSchema(schema, args?.input)
 

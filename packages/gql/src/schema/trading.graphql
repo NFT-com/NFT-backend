@@ -136,10 +136,10 @@ input CreateBidInput {
   end: Int!
   salt: Int!
   chainId: String!
-  message: String!
+  message: String
 }
 
-input CancelListInput {
+input CancelListingInput {
   listingOrderId: ID!
   txHash: String!
 }
@@ -179,7 +179,7 @@ extend type Mutation {
   "AUTHENTICATED"
   createMarketListing(input: CreateListingInput!): TxListingOrder!
   "AUTHENTICATED"
-  cancelMarketListing(input: CancelListInput!): Boolean!
+  cancelMarketListing(input: CancelListingInput!): Boolean!
   "AUTHENTICATED"
   buyNow(input: BuyNowInput!): MarketSwap!
   "AUTHENTICATED"
