@@ -8,6 +8,8 @@ import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
+import { Result } from '@ethersproject/abi'
+import { Contract } from '@ethersproject/contracts'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
@@ -16,6 +18,7 @@ import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 import { ProfileTask } from '@nftcom/shared/defs'
+import Multicall2 from '@nftcom/shared/helper/abis/Multicall2.json'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -262,6 +265,12 @@ export const stringifyTraits = (
       if (nft.metadata.traits[i].value) {
         if (typeof nft.metadata.traits[i].value !== 'string')
           nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
+      }
+
+      // if trait rarity exists
+      if (nft.metadata.traits[i].rarity) {
+        if (typeof nft.metadata.traits[i].rarity !== 'string')
+          nft.metadata.traits[i].rarity = JSON.stringify(nft.metadata.traits[i].rarity)
       }
     }
   }
@@ -1258,4 +1267,62 @@ export const paginateEntityArray =
     lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
     lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
   })
+}
+
+export type Call = {
+  contract: string
+  name: string
+  params?: any[]
+}
+
+/**
+ * Fetches information about pools and return as `Pair` array using multicall contract.
+ * @param calls 'Call' array
+ * @param abi
+ * @param chainId
+ * based on:
+ * - https://github.com/mds1/multicall#deployments
+ * - https://github.com/sushiswap/sushiswap-sdk/blob/canary/src/constants/addresses.ts#L323
+ * - https://github.com/joshstevens19/ethereum-multicall#multicall-contracts
+ */
+
+export const fetchDataUsingMulticall = async (
+  calls: Array<Call>,
+  abi: any[],
+  chainId: string,
+): Promise<Array<Result | undefined>> => {
+  try {
+    // 1. create contract using multicall contract address and abi...
+    const multicallAddress = process.env.MULTICALL_CONTRACT
+    const multicallContract = new Contract(
+      multicallAddress.toLowerCase(),
+      Multicall2,
+      provider.provider(Number(chainId)),
+    )
+    const abiInterface = new ethers.utils.Interface(abi)
+    const callData = calls.map((call) => [
+      call.contract.toLowerCase(),
+      abiInterface.encodeFunctionData(call.name, call.params),
+    ])
+    // 2. get bytes array from multicall contract by process aggregate method...
+    const results: { success: boolean; returnData: string }[] =
+      await multicallContract.tryAggregate(false, callData)
+
+    // 3. decode bytes array to useful data array...
+    return results.map((result, i) => {
+      if (result.returnData === '0x') {
+        return undefined
+      } else {
+        return abiInterface.decodeFunctionResult(
+          calls[i].name,
+          result.returnData,
+        )
+      }
+    })
+  } catch (error) {
+    logger.error(
+      `Failed to fetch data using multicall: ${error}`,
+    )
+    return []
+  }
 }

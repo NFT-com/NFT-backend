@@ -16,6 +16,7 @@ enum NFTSize {
 type NFTTrait {
   type: String
   value: String
+  rarity: String
 }
 
 type NFTMetadata {
@@ -38,12 +39,14 @@ type NFT {
   preferredProfile: Profile
   type: NFTType!
 #  user: User
+  rarity: String
   wallet: Wallet
   collection: Collection
   createdAt: DateTime!
   memo: String
   previewLink: String
   isHide: Boolean
+  sortIndex: Int
   listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address): TxActivitiesOutput
 }
 
@@ -53,6 +56,7 @@ input NFTsInput {
   profileId: ID
   chainId: String
   ownedByWallet: Boolean
+  query: String
 }
 
 input CurationInput {
@@ -125,6 +129,7 @@ input UpdateNFTsForProfileInput {
   profileId: ID!
   chainId: String
   pageInput: PageInput
+  query: String
 }
 
 enum SupportedExternalExchange {
@@ -224,7 +229,6 @@ extend type Query {
   gkNFTs(tokenId: String!, chainId: String): GetGkNFTSOutput!
   nft(contract: Address!, id: String!, chainId: String): NFT!
   nftById(id: ID!): NFT!
-  nfts(input: NFTsInput!): CurationNFTsOutput!
   "AUTHETICATED"
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!

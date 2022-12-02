@@ -29,6 +29,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     internalEcsSGId: sgs.internalEcs.id,
     redisHost: cacheMain.cacheNodes[0].address,
     publicSubnetIds: vpc.publicSubnetIds,
+    privateSubnetIds: vpc.privateSubnetIds,
     vpcId: vpc.id,
     typesenseSGId: sgs.typesense.id,
     webSGId: sgs.web.id,

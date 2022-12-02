@@ -324,17 +324,17 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "string",
+        internalType: "string[]",
         name: "_string",
-        type: "string",
+        type: "string[]",
       },
     ],
     name: "getExpiryTimeline",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint256[]",
         name: "",
-        type: "uint256",
+        type: "uint256[]",
       },
     ],
     stateMutability: "view",
