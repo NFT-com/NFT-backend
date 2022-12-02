@@ -26,7 +26,7 @@ export interface NftProfileInterface extends utils.Interface {
     "createProfile(address,string,uint256)": FunctionFragment;
     "extendLicense(string,uint256,address)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
-    "getExpiryTimeline(string)": FunctionFragment;
+    "getExpiryTimeline(string[])": FunctionFragment;
     "getTokenId(string)": FunctionFragment;
     "initialize(string,string,address,string)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
@@ -74,7 +74,7 @@ export interface NftProfileInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getExpiryTimeline",
-    values: [string]
+    values: [string[]]
   ): string;
   encodeFunctionData(functionFragment: "getTokenId", values: [string]): string;
   encodeFunctionData(
@@ -377,9 +377,9 @@ export interface NftProfile extends BaseContract {
     ): Promise<[string]>;
 
     getExpiryTimeline(
-      _string: string,
+      _string: string[],
       overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    ): Promise<[BigNumber[]]>;
 
     getTokenId(
       _string: string,
@@ -535,9 +535,9 @@ export interface NftProfile extends BaseContract {
   ): Promise<string>;
 
   getExpiryTimeline(
-    _string: string,
+    _string: string[],
     overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  ): Promise<BigNumber[]>;
 
   getTokenId(_string: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -684,9 +684,9 @@ export interface NftProfile extends BaseContract {
     ): Promise<string>;
 
     getExpiryTimeline(
-      _string: string,
+      _string: string[],
       overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ): Promise<BigNumber[]>;
 
     getTokenId(_string: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -895,7 +895,7 @@ export interface NftProfile extends BaseContract {
     ): Promise<BigNumber>;
 
     getExpiryTimeline(
-      _string: string,
+      _string: string[],
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -1057,7 +1057,7 @@ export interface NftProfile extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     getExpiryTimeline(
-      _string: string,
+      _string: string[],
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

@@ -144,6 +144,13 @@ const createEcsTaskRole = (): aws.iam.Role => {
             'logs:CreateLogStream',
             'logs:PutLogEvents',
             'logs:DescribeLogStreams',
+            'logs:DescribeLogGroups',
+            'xray:PutTraceSegments',
+            'xray:PutTelemetryRecords',
+            'xray:GetSamplingRules',
+            'xray:GetSamplingTargets',
+            'xray:GetSamplingStatisticSummaries',
+            'ssm:GetParameters',
           ],
           Resource: '*',
         },
@@ -167,7 +174,6 @@ const createEcsTaskDefinition = (
   const ecrImage = `${process.env.ECR_REGISTRY}/${gqlECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
   const resourceName = getResourceName('gql')
-  const loggerMemory = 50
 
   return new aws.ecs.TaskDefinition(
     'gql-td',
@@ -187,7 +193,6 @@ const createEcsTaskDefinition = (
               auto_create_group: 'true',
             },
           },
-          memoryReservation: config.requireNumber('ecsTaskMemory') - loggerMemory,
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
@@ -425,6 +430,14 @@ const createEcsTaskDefinition = (
               Name: 'AUTH_EXPIRE_BY_DAYS',
               Value: process.env.AUTH_EXPIRE_BY_DAYS,
             },
+            {
+              Name: 'MULTICALL_CONTRACT',
+              Value: process.env.MULTICALL_CONTRACT,
+            },
+            {
+              Name: 'NODE_ENV',
+              Value: process.env.NODE_ENV,
+            },
           ],
         },
         {
@@ -437,7 +450,28 @@ const createEcsTaskDefinition = (
               'enable-ecs-log-metadata': 'false',
             },
           },
-          memoryReservation: loggerMemory,
+        },
+        {
+          name: getResourceName('aws-otel-collector'),
+          image: 'amazon/aws-otel-collector',
+          command:['--config=/etc/ecs/ecs-default-config.yaml'],
+          essential: true,
+          logConfiguration: {
+            logDriver: 'awslogs',
+            options: {
+              'awslogs-group': '/ecs/ecs-aws-otel-sidecar-collector',
+              'awslogs-region': 'us-east-1',
+              'awslogs-stream-prefix': 'ecs',
+              'awslogs-create-group': 'True',
+            },
+          },
+          healthCheck: {
+            command: ['/healthcheck'],
+            interval: 5,
+            timeout: 6,
+            retries: 5,
+            startPeriod: 1,
+          },
         },
       ]),
       cpu: config.require('ecsTaskCpu'),

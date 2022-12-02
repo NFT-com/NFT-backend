@@ -1,5 +1,6 @@
 export * as appError from './app.error'
 export * as approvalError from './approval.error'
+export * as collectionError from './collection.error'
 export * as curationError from './curation.error'
 export * as marketBidError from './marketBid.error'
 export * as marketListingError from './marketListing.error'

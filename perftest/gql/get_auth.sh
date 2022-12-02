@@ -1,0 +1,1 @@
+echo $(cd ../../packages/gql && npm run signature:gen) | awk '{print $8,$10}'
