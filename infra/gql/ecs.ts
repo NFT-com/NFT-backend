@@ -191,8 +191,7 @@ exporters:
     endpoint: "\${OTLP_COLLECTOR_ENDPOINT}"
     headers:
       "x-honeycomb-team": "\${HONEYCOMB_API_KEY}"
-  datadog:
-    api:
+  datadog/api:
       key: "\${DATADOG_API_KEY}"
 
 service:
