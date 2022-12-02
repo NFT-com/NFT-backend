@@ -192,6 +192,7 @@ exporters:
     headers:
       "x-honeycomb-team": "\${HONEYCOMB_API_KEY}"
   datadog/api:
+    api:
       key: "\${DATADOG_API_KEY}"
 
 service:
