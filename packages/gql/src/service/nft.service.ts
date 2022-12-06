@@ -607,7 +607,7 @@ export const getNftType = (
     return defs.NFTType.ERC721
   } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
     return defs.NFTType.ERC1155
-  } else if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS') {
+  } else if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb') {
     return defs.NFTType.CRYPTO_PUNKS
   } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
