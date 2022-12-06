@@ -561,7 +561,7 @@ const getCollectionLeaderboard = async (
     JSON.parse(cachedLeaderboard) :
     await getSortedLeaderboard(repositories.collection, { dateRange })
   if (!cachedLeaderboard && leaderboard.length) {
-    await cache.set(cacheKey, JSON.stringify(leaderboard), 'EX', 60 * 60)
+    await cache.set(cacheKey, JSON.stringify(leaderboard), 'EX', 60 * 60 * 24)
   }
 
   const defaultCursor = pageInput && pagination.hasLast(pageInput) ?
