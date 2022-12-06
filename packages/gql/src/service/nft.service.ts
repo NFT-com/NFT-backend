@@ -544,6 +544,15 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
         value,
       }))
     })
+  } else if (Array.isArray(nftPortDetails?.metadata?.traits)) { // nft port collection nft metadata import in streams
+    nftPortDetails?.metadata?.metadata.map((trait) => {
+      let value = trait?.value
+      value = typeof value === 'string' ? value : JSON.stringify(value)
+      traits.push(({
+        type: trait?.trait_type,
+        value,
+      }))
+    })
   } else {
     if (metadata?.attributes) {
       Object.keys(metadata?.attributes).map(keys => {
@@ -598,6 +607,8 @@ export const getNftType = (
     return defs.NFTType.ERC721
   } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
     return defs.NFTType.ERC1155
+  } else if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS') {
+    return defs.NFTType.CRYPTO_PUNKS
   } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
