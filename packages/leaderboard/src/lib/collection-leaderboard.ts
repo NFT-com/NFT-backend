@@ -48,6 +48,7 @@ Promise<(entity.Collection & {stats?: any})[]> => {
   return collections
 }
 
+const FILTERED_ART_BLOCKS_CONTRACT = '0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270'
 export const hydrateCollectionLeaderboard = async (
   leaderboardContracts: string[],
   opts?: {
@@ -61,7 +62,7 @@ export const hydrateCollectionLeaderboard = async (
     await fetchCollections(opts?.collectionRepo)
   return leaderboardContracts.map((contract) => {
     return collections.find((c) => c.contract === contract)
-  }).filter((collection) => collection) // filter to remove any nulls from previously official collections
+  }).filter((collection) => collection && collection.contract !== FILTERED_ART_BLOCKS_CONTRACT) // filter to remove any nulls from previously official collections
 }
 
 export const updateCollectionLeaderboard = async (collectionRepo: repository.CollectionRepository, cacheKey?: string):
