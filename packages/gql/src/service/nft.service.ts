@@ -35,6 +35,7 @@ const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = new SearchEngineService()
 
+const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
@@ -569,7 +570,7 @@ export const getNftName = (
   contractMetadata: any = undefined,
   tokenId: string = undefined,
 ): string => {
-  return nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
+  return nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK ? nftPortDetails?.nft?.metadata?.name : nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
 }
 
 export const getNftDescription = (
@@ -583,7 +584,7 @@ export const getNftImage = (
   metadata: any,
   nftPortDetails: any = undefined,
 ): string => {
-  return metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url :
+  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) ? nftPortDetails?.nft?.cached_file_url :
     metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
       metadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
         (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
