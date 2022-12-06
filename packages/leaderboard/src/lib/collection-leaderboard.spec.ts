@@ -2,7 +2,7 @@ import { fetchData } from '@nftcom/nftport-client'
 import { entity } from '@nftcom/shared'
 import { CollectionRepository } from '@nftcom/shared/db/repository'
 
-import { hydrateCollectionLeaderboard,updateCollectionLeaderboard } from './collection-leaderboard'
+import { hydrateCollectionLeaderboard, updateCollectionLeaderboard } from './collection-leaderboard'
 
 let mockCacheData = {}
 jest.mock('@nftcom/cache', () => ({
@@ -20,7 +20,7 @@ jest.mock('@nftcom/cache', () => ({
       const [key, ..._rest] = args
       return mockCacheData[key] ?
         mockCacheData[key].sort((a, b) => {
-          return b.score - a.score
+          return parseInt(b.score) - parseInt(a.score)
         }).map((v) => v.data) :
         undefined
     },
@@ -50,20 +50,20 @@ describe('leaderboard', () => {
       }  as unknown as CollectionRepository
 
       mockFetchData
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 0 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 2 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 3 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 4 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 0 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 1 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 2 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 3 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 4 } })
 
       const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_7d')
 
       expect(leaderboard).toEqual([
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 0 } },
+        { id: '4', contract: '0x0004', stats: { seven_day_volume: 4 } },
+        { id: '3', contract: '0x0003', stats: { seven_day_volume: 3 } },
+        { id: '2', contract: '0x0002', stats: { seven_day_volume: 2 } },
+        { id: '1', contract: '0x0001', stats: { seven_day_volume: 1 } },
+        { id: '0', contract: '0x0000', stats: { seven_day_volume: 0 } },
       ])
     })
 
@@ -79,20 +79,20 @@ describe('leaderboard', () => {
       }  as unknown as CollectionRepository
 
       mockFetchData
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 0 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 1 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 2 } })
         .mockResolvedValueOnce({ })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 3 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 4 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 3 } })
+        .mockResolvedValueOnce({ statistics: { seven_day_volume: 4 } })
 
       const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_7d')
 
       expect(leaderboard).toEqual([
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 0 } },
-        { id: '2', contract: '0x0002' },
+        { id: '4', contract: '0x0004', stats: { seven_day_volume: 4 } },
+        { id: '3', contract: '0x0003', stats: { seven_day_volume: 3 } },
+        { id: '1', contract: '0x0001', stats: { seven_day_volume: 2 } },
+        { id: '0', contract: '0x0000', stats: { seven_day_volume: 1 } },
+        { id: '2', contract: '0x0002', stats: { } },
       ])
     })
 
@@ -109,106 +109,22 @@ describe('leaderboard', () => {
 
       mockFetchData
         .mockImplementationOnce(() => { throw new Error() })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1 } })
+        .mockResolvedValueOnce({ statistics: { total_volume: 101 } })
         .mockImplementationOnce(() => { throw new Error() })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 3 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 4 } })
+        .mockResolvedValueOnce({ statistics: { total_volume: 300 } })
+        .mockResolvedValueOnce({ statistics: { total_volume: 400 } })
 
-      const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_7d')
+      const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_all')
       const leaderboardItems = leaderboard.map(({ totalVolume, ...rest }) => rest)
 
+      console.log(leaderboardItems)
+
       expect(leaderboardItems).toEqual([
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
-        { id: '2', contract: '0x0002' },
-        { id: '0', contract: '0x0000' },
-      ])
-    })
-
-    it('should sort collections with different stats available', async () => {
-      const collectionRepo = {
-        findAllOfficial: jest.fn().mockResolvedValue([
-          { id: '0', contract: '0x0000' },
-          { id: '1', contract: '0x0001' },
-          { id: '2', contract: '0x0002' },
-          { id: '3', contract: '0x0003' },
-          { id: '4', contract: '0x0004' },
-          { id: '5', contract: '0x0005' },
-        ]),
-      }  as unknown as CollectionRepository
-
-      mockFetchData
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: Number.MAX_SAFE_INTEGER } })
-        .mockResolvedValueOnce({ statistics: { seven_day_volume: 1 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_volume: Number.MAX_SAFE_INTEGER } })
-        .mockResolvedValueOnce({ statistics: { total_volume: 1 } })
-        .mockResolvedValueOnce({ statistics: { total_volume: Number.MAX_SAFE_INTEGER } })
-
-      const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_7d')
-
-      expect(leaderboard).toEqual([
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: Number.MAX_SAFE_INTEGER } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 1 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_volume: Number.MAX_SAFE_INTEGER } },
-        { id: '2', contract: '0x0002', stats: { seven_day_volume: 1 } },
-        { id: '5', contract: '0x0005', stats: { total_volume: Number.MAX_SAFE_INTEGER } },
-        { id: '4', contract: '0x0004', stats: { total_volume: 1 } },
-      ])
-    })
-
-    it('should sort collections with all stats available', async () => {
-      const collectionRepo = {
-        findAllOfficial: jest.fn().mockResolvedValue([
-          { id: '0', contract: '0x0000' },
-          { id: '1', contract: '0x0001' },
-          { id: '2', contract: '0x0002' },
-        ]),
-      }  as unknown as CollectionRepository
-
-      mockFetchData
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1, seven_day_volume: 1, total_volume: 1 } })
-        .mockResolvedValueOnce({ statistics: {
-          seven_day_sales: Number.MAX_SAFE_INTEGER, seven_day_volume: 1, total_volume: 1,
-        } })
-        .mockResolvedValueOnce({ statistics: {
-          seven_day_sales: 1, seven_day_volume: Number.MAX_SAFE_INTEGER, total_volume: Number.MAX_SAFE_INTEGER,
-        } })
-
-      const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_7d')
-
-      expect(leaderboard).toEqual([
-        { id: '1', contract: '0x0001', stats: {
-          seven_day_sales: Number.MAX_SAFE_INTEGER, seven_day_volume: 1, total_volume: 1,
-        } },
-        { id: '2', contract: '0x0002', stats: {
-          seven_day_sales: 1, seven_day_volume: Number.MAX_SAFE_INTEGER, total_volume: Number.MAX_SAFE_INTEGER,
-        } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 1, seven_day_volume: 1, total_volume: 1 } },
-      ])
-    })
-
-    it('should sort collections when stats near', async () => {
-      const collectionRepo = {
-        findAllOfficial: jest.fn().mockResolvedValue([
-          { id: '0', contract: '0x0000' },
-          { id: '1', contract: '0x0001' },
-          { id: '2', contract: '0x0002' },
-        ]),
-      }  as unknown as CollectionRepository
-
-      mockFetchData
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 1, seven_day_volume: 2, total_volume: 3 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 3, seven_day_volume: 2, total_volume: 1 } })
-        .mockResolvedValueOnce({ statistics: { seven_day_sales: 2, seven_day_volume: 3, total_volume: 2 } })
-
-      const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_7d')
-
-      expect(leaderboard).toEqual([
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 3, seven_day_volume: 2, total_volume: 1 } },
-        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2, seven_day_volume: 3, total_volume: 2 } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 1, seven_day_volume: 2, total_volume: 3 } },
+        { id: '4', contract: '0x0004', stats: { total_volume: 400 } },
+        { id: '3', contract: '0x0003', stats: { total_volume: 300 } },
+        { id: '1', contract: '0x0001', stats: { total_volume: 101 } },
+        { id: '2', contract: '0x0002', stats: { total_volume: 100 } },
+        { id: '0', contract: '0x0000', stats: { total_volume: 90 } },
       ])
     })
   })

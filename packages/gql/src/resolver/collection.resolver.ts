@@ -555,7 +555,7 @@ const getCollectionLeaderboard = async (
 
   const dateRange = dateRangeInput as CollectionLeaderboardDateRange || DEFAULT_COLL_LB_DATE_RANGE
   const defaultNumItems = 10
-  const cacheKey = `COLLECTION_LEADERBOARD_${dateRange}_${pageInput?.first || pageInput?.last || defaultNumItems}`
+  const cacheKey = `COLLECTION_LEADERBOARD_${dateRange}_${pageInput?.first || pageInput?.last || defaultNumItems}_${pageInput?.afterCursor || pageInput?.beforeCursor || ''}`
   const cachedLeaderboard = await cache.get(cacheKey)
   const leaderboard = cachedLeaderboard ?
     JSON.parse(cachedLeaderboard) :
