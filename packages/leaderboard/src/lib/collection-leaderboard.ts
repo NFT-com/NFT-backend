@@ -39,11 +39,10 @@ Promise<(entity.Collection & {stats?: any})[]> => {
   const collections: (entity.Collection & {stats?: any})[] = await fetchCollections(collectionRepo)
   // Save score to cache
   for (const collection of collections) {
-    const score_24h = collection.stats.one_day_volume?.toString()
-    const score_7d = collection.stats.seven_day_volume?.toString()
-    const score_30d = collection.stats.thirty_day_volume?.toString()
-    const score_all = collection.stats.total_volume?.toString()
-    console.log({ score_24h, score_7d, score_30d, score_all })
+    const score_24h = collection.stats.one_day_volume?.toString() || '0'
+    const score_7d = collection.stats.seven_day_volume?.toString() || '0'
+    const score_30d = collection.stats.thirty_day_volume?.toString() || '0'
+    const score_all = collection.stats.total_volume?.toString() || '0'
     await Promise.all([
       cache.zadd('COLLECTION_LEADERBOARD_24h', score_24h, collection.contract),
       cache.zadd('COLLECTION_LEADERBOARD_7d', score_7d, collection.contract),

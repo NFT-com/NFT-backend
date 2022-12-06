@@ -117,8 +117,6 @@ describe('leaderboard', () => {
       const leaderboard = await updateCollectionLeaderboard(collectionRepo, 'COLLECTION_LEADERBOARD_all')
       const leaderboardItems = leaderboard.map(({ totalVolume, ...rest }) => rest)
 
-      console.log(leaderboardItems)
-
       expect(leaderboardItems).toEqual([
         { id: '4', contract: '0x0004', stats: { total_volume: 400 } },
         { id: '3', contract: '0x0003', stats: { total_volume: 300 } },
