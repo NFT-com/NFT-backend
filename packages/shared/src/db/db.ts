@@ -89,6 +89,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
 
   const readOnlyDataSource = new DataSource({
     type: 'postgres',
+    poolSize: 20,
     host: readOnlyDbConfig.host,
     port: readOnlyDbConfig.port,
     username: readOnlyDbConfig.username,
