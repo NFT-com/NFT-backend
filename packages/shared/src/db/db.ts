@@ -65,6 +65,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
 
   const defaultDataSource = new DataSource({
     type: 'postgres',
+    poolSize: 20,
     host: dbConfig.host,
     port: dbConfig.port,
     username: dbConfig.username,
