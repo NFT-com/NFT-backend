@@ -2,7 +2,7 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { getResourceName, getTags } from '../helper'
+import { getResourceName, getTags, isProduction } from '../helper'
 
 const tags = {
   service: 'gql',
@@ -178,6 +178,9 @@ processors:
   batch/traces:
     timeout: 1s
     send_batch_size: 50
+  probabilistic_sampler:
+    hash_seed: 31
+    sampling_percentage: ${isProduction() ? '100' : '10'}
   resourcedetection:
     detectors:
       - env
@@ -197,7 +200,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [resourcedetection, batch/traces]
+      processors: [probabilistic_sampler, resourcedetection, batch/traces]
       exporters: [datadog/api, otlp/traces]
   extensions: [health_check]`,
   })
