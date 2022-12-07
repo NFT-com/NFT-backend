@@ -10,7 +10,7 @@ import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis'
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg'
 import { Resource } from '@opentelemetry/resources'
 import { AlwaysOnSampler, Sampler, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
-import { ConsoleSpanExporter, NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { SemanticAttributes, SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
 type FilterFunction = (spanName: string, spanKind: SpanKind, attributes: Attributes) => boolean;
@@ -67,7 +67,6 @@ export const setupTracing = (serviceName: string): opentelemetry.Tracer => {
   const exporter = new OTLPTraceExporter()
 
   provider.addSpanProcessor(new SimpleSpanProcessor(exporter))
-  provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
 
   // Initialize the OpenTelemetry APIs to use the NodeTracerProvider bindings
   provider.register()

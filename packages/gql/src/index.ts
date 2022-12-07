@@ -1,6 +1,6 @@
 // Tracing needs to be set up early for graphql
 import { setupTracing } from './tracer'
-if (['development','staging','production', 'local'].includes(process.env.NODE_ENV)) {
+if (['development','staging','production'].includes(process.env.NODE_ENV)) {
   setupTracing(`${process.env.NODE_ENV}-gql`)
 }
 

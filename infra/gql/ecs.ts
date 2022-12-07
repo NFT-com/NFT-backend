@@ -200,7 +200,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [resourcedetection, batch/traces]
+      processors: [probabilistic_sampler, resourcedetection, batch/traces]
       exporters: [datadog/api, otlp/traces]
   extensions: [health_check]`,
   })
