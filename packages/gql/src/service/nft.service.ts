@@ -545,7 +545,7 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
       }))
     })
   } else if (Array.isArray(nftPortDetails?.metadata?.traits)) { // nft port collection nft metadata import in streams
-    nftPortDetails?.metadata?.metadata.map((trait) => {
+    nftPortDetails?.metadata?.traits.map((trait) => {
       let value = trait?.value
       value = typeof value === 'string' ? value : JSON.stringify(value)
       traits.push(({
