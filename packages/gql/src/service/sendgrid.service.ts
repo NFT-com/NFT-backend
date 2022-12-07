@@ -19,6 +19,7 @@ const templates = {
   winbid: 'd-9e11556ce7f34fbeb66e42f8d3803986',
   sendConfirmEmail: 'd-f11f18c741e84e7f9c50e93eceb7a9a2',
   confirmedEmailSuccess: 'd-fad5182e6dfc42deaa2d1f6084feb687',
+  referralEmail: 'd-66e9e661f7ee43c58c85412ed950d2fe',
 }
 
 const send = (
@@ -62,22 +63,15 @@ export const sendReferralEmail = async (
   profileUrl: string,
   receiverReferralId: string,
 ): Promise<boolean> => {
-  // TODO: text should be replaced with HTML template
-  const text = `Hey there,\n\nYour friend ${profileUrl} has invited you to create your NFT Profile at NFT.com!` +
-    '\n\nNFT.com is the social NFT marketplace. We’re bringing artists, collectors, creators and fans\n\n together, ' +
-    'providing them the tools they need to buy, sell, display, and engage with NFTs.' +
-    '\n\nYour NFT Profile is exactly that, yours. We’ve had enough of social networks that exploit their\n\n users. ' +
-    'Creating your profile enables you to establish and own your digital identity. ' +
-    'You can collect\n\n and display new NFTs or promote your latest NFT collection.' +
-    `\n\nCreate your free NFT Profile: ${confirmEmailUrl}?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}` +
-    '\n\nYou’ll be able to customize your NFT Profile, grow your network and collect new NFTs on NFT.com' +
-    '\n\nSee you in the metaverse,\n\nNFT.com Team'
   try {
     await send({
       from,
       to: { email },
-      subject: `${profileUrl} has invited you to join them on NFT.com.`,
-      text,
+      dynamicTemplateData: {
+        profileName: profileUrl,
+        createProfileLink: `${confirmEmailUrl}?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}`,
+      },
+      templateId: templates.referralEmail,
     })
     return true
   } catch (err) {
