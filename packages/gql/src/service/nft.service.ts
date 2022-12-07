@@ -35,6 +35,7 @@ const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = new SearchEngineService()
 
+const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
@@ -543,6 +544,15 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
         value,
       }))
     })
+  } else if (Array.isArray(nftPortDetails?.metadata?.traits)) { // nft port collection nft metadata import in streams
+    nftPortDetails?.metadata?.traits.map((trait) => {
+      let value = trait?.value
+      value = typeof value === 'string' ? value : JSON.stringify(value)
+      traits.push(({
+        type: trait?.trait_type,
+        value,
+      }))
+    })
   } else {
     if (metadata?.attributes) {
       Object.keys(metadata?.attributes).map(keys => {
@@ -569,7 +579,7 @@ export const getNftName = (
   contractMetadata: any = undefined,
   tokenId: string = undefined,
 ): string => {
-  return nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
+  return nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK ? nftPortDetails?.nft?.metadata?.name : nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
 }
 
 export const getNftDescription = (
@@ -583,7 +593,7 @@ export const getNftImage = (
   metadata: any,
   nftPortDetails: any = undefined,
 ): string => {
-  return metadata?.image?.indexOf('copebear') >= 0 ? nftPortDetails?.nft?.cached_file_url :
+  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) ? nftPortDetails?.nft?.cached_file_url :
     metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
       metadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
         (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
@@ -597,6 +607,8 @@ export const getNftType = (
     return defs.NFTType.ERC721
   } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
     return defs.NFTType.ERC1155
+  } else if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb') {
+    return defs.NFTType.CRYPTO_PUNKS
   } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
@@ -1297,9 +1309,11 @@ export const updateNFTsOrder = async (
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
           edgeType: defs.EdgeType.Displays,
+          hide: false,
         },
         order: {
           weight: 'ASC',
+          updatedAt: 'DESC',
         },
       })
       const existingNFT = await repositories.nft.findOne({
@@ -1315,6 +1329,7 @@ export const updateNFTsOrder = async (
             thisEntityId: profileId,
             thatEntityId: orders[i].nftId,
             edgeType: defs.EdgeType.Displays,
+            hide: false,
           },
         })
         if (existingEdge) {

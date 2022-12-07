@@ -108,22 +108,22 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = await collectionResolver.Query.collectionLeaderboard(undefined, {}, mockCtx)
 
       expect(leaderboard.items).toEqual([
-        { id: '20', contract: '0x0020', stats: { seven_day_sales: 20 } },
-        { id: '19', contract: '0x0019', stats: { seven_day_sales: 19 } },
-        { id: '18', contract: '0x0018', stats: { seven_day_sales: 18 } },
-        { id: '17', contract: '0x0017', stats: { seven_day_sales: 17 } },
-        { id: '16', contract: '0x0016', stats: { seven_day_sales: 16 } },
-        { id: '15', contract: '0x0015', stats: { seven_day_sales: 15 } },
-        { id: '14', contract: '0x0014', stats: { seven_day_sales: 14 } },
-        { id: '13', contract: '0x0013', stats: { seven_day_sales: 13 } },
-        { id: '12', contract: '0x0012', stats: { seven_day_sales: 12 } },
-        { id: '11', contract: '0x0011', stats: { seven_day_sales: 11 } },
+        { id: '20', contract: '0x0020', stats: { seven_day_volume: 20 } },
+        { id: '19', contract: '0x0019', stats: { seven_day_volume: 19 } },
+        { id: '18', contract: '0x0018', stats: { seven_day_volume: 18 } },
+        { id: '17', contract: '0x0017', stats: { seven_day_volume: 17 } },
+        { id: '16', contract: '0x0016', stats: { seven_day_volume: 16 } },
+        { id: '15', contract: '0x0015', stats: { seven_day_volume: 15 } },
+        { id: '14', contract: '0x0014', stats: { seven_day_volume: 14 } },
+        { id: '13', contract: '0x0013', stats: { seven_day_volume: 13 } },
+        { id: '12', contract: '0x0012', stats: { seven_day_volume: 12 } },
+        { id: '11', contract: '0x0011', stats: { seven_day_volume: 11 } },
 
       ])
       expect(leaderboard.totalItems).toEqual(21)
@@ -165,7 +165,7 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = (await collectionResolver
@@ -173,16 +173,16 @@ describe('collection resolver', () => {
         .collectionLeaderboard(undefined, { input: { pageInput: { afterCursor: '11' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '10', contract: '0x0010', stats: { seven_day_sales: 10 } },
-        { id: '9', contract: '0x0009', stats: { seven_day_sales: 9 } },
-        { id: '8', contract: '0x0008', stats: { seven_day_sales: 8 } },
-        { id: '7', contract: '0x0007', stats: { seven_day_sales: 7 } },
-        { id: '6', contract: '0x0006', stats: { seven_day_sales: 6 } },
-        { id: '5', contract: '0x0005', stats: { seven_day_sales: 5 } },
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
+        { id: '10', contract: '0x0010', stats: { seven_day_volume: 10 } },
+        { id: '9', contract: '0x0009', stats: { seven_day_volume: 9 } },
+        { id: '8', contract: '0x0008', stats: { seven_day_volume: 8 } },
+        { id: '7', contract: '0x0007', stats: { seven_day_volume: 7 } },
+        { id: '6', contract: '0x0006', stats: { seven_day_volume: 6 } },
+        { id: '5', contract: '0x0005', stats: { seven_day_volume: 5 } },
+        { id: '4', contract: '0x0004', stats: { seven_day_volume: 4 } },
+        { id: '3', contract: '0x0003', stats: { seven_day_volume: 3 } },
+        { id: '2', contract: '0x0002', stats: { seven_day_volume: 2 } },
+        { id: '1', contract: '0x0001', stats: { seven_day_volume: 1 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
@@ -223,7 +223,7 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = (await collectionResolver
@@ -231,16 +231,16 @@ describe('collection resolver', () => {
         .collectionLeaderboard(undefined, { input: { pageInput: { beforeCursor: '10' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '20', contract: '0x0020', stats: { seven_day_sales: 20 } },
-        { id: '19', contract: '0x0019', stats: { seven_day_sales: 19 } },
-        { id: '18', contract: '0x0018', stats: { seven_day_sales: 18 } },
-        { id: '17', contract: '0x0017', stats: { seven_day_sales: 17 } },
-        { id: '16', contract: '0x0016', stats: { seven_day_sales: 16 } },
-        { id: '15', contract: '0x0015', stats: { seven_day_sales: 15 } },
-        { id: '14', contract: '0x0014', stats: { seven_day_sales: 14 } },
-        { id: '13', contract: '0x0013', stats: { seven_day_sales: 13 } },
-        { id: '12', contract: '0x0012', stats: { seven_day_sales: 12 } },
-        { id: '11', contract: '0x0011', stats: { seven_day_sales: 11 } },
+        { id: '20', contract: '0x0020', stats: { seven_day_volume: 20 } },
+        { id: '19', contract: '0x0019', stats: { seven_day_volume: 19 } },
+        { id: '18', contract: '0x0018', stats: { seven_day_volume: 18 } },
+        { id: '17', contract: '0x0017', stats: { seven_day_volume: 17 } },
+        { id: '16', contract: '0x0016', stats: { seven_day_volume: 16 } },
+        { id: '15', contract: '0x0015', stats: { seven_day_volume: 15 } },
+        { id: '14', contract: '0x0014', stats: { seven_day_volume: 14 } },
+        { id: '13', contract: '0x0013', stats: { seven_day_volume: 13 } },
+        { id: '12', contract: '0x0012', stats: { seven_day_volume: 12 } },
+        { id: '11', contract: '0x0011', stats: { seven_day_volume: 11 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
@@ -281,7 +281,7 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = (await collectionResolver
@@ -289,11 +289,11 @@ describe('collection resolver', () => {
         .collectionLeaderboard(undefined, { input: { pageInput: { first: 5, beforeCursor: '10' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '20', contract: '0x0020', stats: { seven_day_sales: 20 } },
-        { id: '19', contract: '0x0019', stats: { seven_day_sales: 19 } },
-        { id: '18', contract: '0x0018', stats: { seven_day_sales: 18 } },
-        { id: '17', contract: '0x0017', stats: { seven_day_sales: 17 } },
-        { id: '16', contract: '0x0016', stats: { seven_day_sales: 16 } },
+        { id: '20', contract: '0x0020', stats: { seven_day_volume: 20 } },
+        { id: '19', contract: '0x0019', stats: { seven_day_volume: 19 } },
+        { id: '18', contract: '0x0018', stats: { seven_day_volume: 18 } },
+        { id: '17', contract: '0x0017', stats: { seven_day_volume: 17 } },
+        { id: '16', contract: '0x0016', stats: { seven_day_volume: 16 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
@@ -334,7 +334,7 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = (await collectionResolver
@@ -342,10 +342,10 @@ describe('collection resolver', () => {
         .collectionLeaderboard(undefined, { input: { pageInput: { last: 4, beforeCursor: '5' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '9', contract: '0x0009', stats: { seven_day_sales: 9 } },
-        { id: '8', contract: '0x0008', stats: { seven_day_sales: 8 } },
-        { id: '7', contract: '0x0007', stats: { seven_day_sales: 7 } },
-        { id: '6', contract: '0x0006', stats: { seven_day_sales: 6 } },
+        { id: '9', contract: '0x0009', stats: { seven_day_volume: 9 } },
+        { id: '8', contract: '0x0008', stats: { seven_day_volume: 8 } },
+        { id: '7', contract: '0x0007', stats: { seven_day_volume: 7 } },
+        { id: '6', contract: '0x0006', stats: { seven_day_volume: 6 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
@@ -386,7 +386,7 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = (await collectionResolver
@@ -394,13 +394,13 @@ describe('collection resolver', () => {
         .collectionLeaderboard(undefined, { input: { pageInput: { last: 7, afterCursor: '18' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '6', contract: '0x0006', stats: { seven_day_sales: 6 } },
-        { id: '5', contract: '0x0005', stats: { seven_day_sales: 5 } },
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 0 } },
+        { id: '6', contract: '0x0006', stats: { seven_day_volume: 6 } },
+        { id: '5', contract: '0x0005', stats: { seven_day_volume: 5 } },
+        { id: '4', contract: '0x0004', stats: { seven_day_volume: 4 } },
+        { id: '3', contract: '0x0003', stats: { seven_day_volume: 3 } },
+        { id: '2', contract: '0x0002', stats: { seven_day_volume: 2 } },
+        { id: '1', contract: '0x0001', stats: { seven_day_volume: 1 } },
+        { id: '0', contract: '0x0000', stats: { seven_day_volume: 0 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
@@ -441,7 +441,7 @@ describe('collection resolver', () => {
       let sales = 0
       mockFetchData
         .mockImplementation(() => {
-          return { statistics: { seven_day_sales: sales++ } }
+          return { statistics: { seven_day_volume: sales++ } }
         })
 
       const leaderboard = (await collectionResolver
@@ -449,11 +449,11 @@ describe('collection resolver', () => {
         .collectionLeaderboard(undefined, { input: { pageInput: { last: 7, afterCursor: '5' } } }, mockCtx))
 
       expect(leaderboard.items).toEqual([
-        { id: '4', contract: '0x0004', stats: { seven_day_sales: 4 } },
-        { id: '3', contract: '0x0003', stats: { seven_day_sales: 3 } },
-        { id: '2', contract: '0x0002', stats: { seven_day_sales: 2 } },
-        { id: '1', contract: '0x0001', stats: { seven_day_sales: 1 } },
-        { id: '0', contract: '0x0000', stats: { seven_day_sales: 0 } },
+        { id: '4', contract: '0x0004', stats: { seven_day_volume: 4 } },
+        { id: '3', contract: '0x0003', stats: { seven_day_volume: 3 } },
+        { id: '2', contract: '0x0002', stats: { seven_day_volume: 2 } },
+        { id: '1', contract: '0x0001', stats: { seven_day_volume: 1 } },
+        { id: '0', contract: '0x0000', stats: { seven_day_volume: 0 } },
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({

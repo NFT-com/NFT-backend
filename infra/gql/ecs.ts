@@ -470,6 +470,10 @@ const createEcsTaskDefinition = (
                   Value: process.env.AUTH_EXPIRE_BY_DAYS,
                 },
                 {
+                  Name: 'MULTICALL_CONTRACT',
+                  Value: process.env.MULTICALL_CONTRACT,
+                },
+                {
                   Name: 'NODE_ENV',
                   Value: process.env.NODE_ENV,
                 },

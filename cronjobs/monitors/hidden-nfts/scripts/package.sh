@@ -22,7 +22,6 @@ cp $CWD/package-lock.json $BUILD_PATH_LAYERS/package-lock.json
 cp $CWD/package.json $BUILD_PATH_LAYERS/package.json
 mkdir -p $BUILD_PATH_LAYERS/packages/shared
 cp $CWD/packages/shared/package.json $BUILD_PATH_LAYERS/packages/shared/package.json
-cp $CWD/packages/shared/package-lock.json $BUILD_PATH_LAYERS/packages/shared/package-lock.json
 
 cd $BUILD_PATH_LAYERS
 echo "installing production only dependencies"

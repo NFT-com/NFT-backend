@@ -2,6 +2,7 @@ enum NFTType {
   ERC721
   ERC1155
   UNKNOWN
+  CRYPTO_PUNKS
   Profile
   GenesisKey
   GenesisKeyProfile
@@ -56,6 +57,7 @@ input NFTsInput {
   profileId: ID
   chainId: String
   ownedByWallet: Boolean
+  query: String
 }
 
 input CurationInput {
@@ -128,6 +130,7 @@ input UpdateNFTsForProfileInput {
   profileId: ID!
   chainId: String
   pageInput: PageInput
+  query: String
 }
 
 enum SupportedExternalExchange {
