@@ -71,6 +71,7 @@ export class SearchEngineService {
           marketplace: TYPESENSE_HOST.startsWith('prod') ? '' : 'OpenSea',
           listingType: '',
           listedPx: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
+          listedFloor: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
           currency: TYPESENSE_HOST.startsWith('prod') ? '' : 'ETH',
           status: '',
           isProfile: nft.contract === PROFILE_CONTRACT,
