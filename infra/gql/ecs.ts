@@ -180,7 +180,7 @@ processors:
     send_batch_size: 50
   probabilistic_sampler:
     hash_seed: 31
-    sampling_percentage: ${isProduction() ? '100' : '10'}
+    sampling_percentage: ${isProduction() ? '20' : '10'}
   resourcedetection:
     detectors:
       - env
