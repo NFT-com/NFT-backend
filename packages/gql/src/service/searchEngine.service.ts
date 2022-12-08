@@ -54,6 +54,7 @@ export class SearchEngineService {
             return {
               type: trait.type,
               value: `${trait.value}`,
+              rarity: parseFloat(trait.rarity) || 0.0,
             }
           })
         }
@@ -73,7 +74,8 @@ export class SearchEngineService {
           listedPx: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
           listedFloor: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
           currency: TYPESENSE_HOST.startsWith('prod') ? '' : 'ETH',
-          status: '',
+          status: '', //  HasOffers, BuyNow, New, OnAuction
+          rarity: parseFloat(nft.rarity) || 0.0,
           isProfile: nft.contract === PROFILE_CONTRACT,
         }
       }))
@@ -116,6 +118,10 @@ export class SearchEngineService {
               description: collection.description || '',
               floor: 0.0,
               nftType: nft ? nft.type : '',
+              bannerUrl: collection.bannerUrl || nft?.metadata?.imageURL,
+              logoUrl: collection.logoUrl,
+              isOfficial: collection.isOfficial || false,
+              isCurated: collection.isCurated || false,
               score: this._calculateCollectionScore(collection),
             }
           }),
