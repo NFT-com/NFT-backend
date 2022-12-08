@@ -150,7 +150,7 @@ input CancelBidInput {
 }
 
 input BuyNowInput {
-  marketAskId: ID!
+  listingOrderId: ID!
   txHash: String!
 }
 
