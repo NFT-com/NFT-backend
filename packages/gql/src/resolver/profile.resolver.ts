@@ -255,7 +255,7 @@ const maybeUpdateProfileOwnership = (
               ownerWalletId: wallet ? wallet.id : null,
               tokenId: profile.tokenId,
               status: profile.status,
-              chainId: wallet.chainId || process.env.CHAIN_ID,
+              chainId,
               nftsLastUpdated: null,
               displayType: defs.ProfileDisplayType.NFT,
               layoutType: defs.ProfileLayoutType.Default,
