@@ -26,10 +26,10 @@ export const cacheStats = async (): Promise<void> => {
   await updateContractStats(collections)
   await updateCollectionLeaderboard(collectionRepo)
   cache.del([
-    'COLLECTION_LEADERBOARD_24h_10',
-    'COLLECTION_LEADERBOARD_7d_10',
-    'COLLECTION_LEADERBOARD_30d_10',
-    'COLLECTION_LEADERBOARD_all_10',
+    'COLLECTION_LEADERBOARD_HYDRATED_24h',
+    'COLLECTION_LEADERBOARD_HYDRATED_7d',
+    'COLLECTION_LEADERBOARD_HYDRATED_30d',
+    'COLLECTION_LEADERBOARD_HYDRATED_all',
   ])
   await Promise.all([
     gqlClient.post('/graphql', {
