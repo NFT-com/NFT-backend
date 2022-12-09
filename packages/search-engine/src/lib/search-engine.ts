@@ -1,11 +1,12 @@
 import { BigNumber, utils } from 'ethers'
 
-import { SearchEngineClient } from '@nftcom/gql/adapter/searchEngineClient'
 import { getRandomFloat } from '@nftcom/gql/helper/utils'
 import { core } from '@nftcom/gql/service'
 import { db, defs } from '@nftcom/shared'
 import { Collection as CollectionEntity, NFT as NFTEntity, Wallet as WalletEntity } from '@nftcom/shared/db/entity'
 import * as Sentry from '@sentry/node'
+
+import { SearchEngineClient } from './search-engine-client'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?

@@ -18,7 +18,7 @@ import { getTestApolloServer } from '../util/testApolloServer'
 
 jest.setTimeout(500000)
 
-jest.mock('@nftcom/gql/service/searchEngine.service', () => {
+jest.mock('@nftcom/search-engine', () => {
   return {
     SearchEngineService: jest.fn().mockImplementation(() => {
       return {

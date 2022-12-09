@@ -1,5 +1,4 @@
-import { SearchEngineClient } from '@nftcom/gql/adapter/searchEngineClient'
-import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
+import { SearchEngineClient, SearchEngineService } from '@nftcom/search-engine'
 import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
 
 import { NullTypesenseClient } from '../__nulls__/NullTypesenseClient'

@@ -1,4 +1,4 @@
-import { NullClient } from '@nftcom/gql/adapter/searchEngineClient'
+import { NullClient } from '@nftcom/search-engine'
 
 export class NullTypesenseClient implements NullClient {
 

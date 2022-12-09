@@ -33,6 +33,7 @@
       "@nftcom/gql/*": ["packages/gql/src/*"],
       "@nftcom/leaderboard": ["packages/leaderboard/src/index.ts"],
       "@nftcom/nftport-client": ["packages/nftport-client/src/index.ts"],
+      "@nftcom/search-engine": ["packages/search-engine/src/index.ts"],
       "@nftcom/shared/*": ["packages/shared/src/*"]
     }
   },

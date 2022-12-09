@@ -1,0 +1,35 @@
+{
+  "name": "search-engine",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/search-engine/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/search-engine",
+        "tsConfig": "packages/search-engine/tsconfig.lib.json",
+        "packageJson": "packages/search-engine/package.json",
+        "main": "packages/search-engine/src/index.ts",
+        "assets": ["packages/search-engine/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/search-engine/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/search-engine"],
+      "options": {
+        "jestConfig": "packages/search-engine/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

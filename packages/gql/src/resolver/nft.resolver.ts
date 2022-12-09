@@ -36,9 +36,9 @@ import {
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
-import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
 import { createX2Y2Listing } from '@nftcom/gql/service/x2y2.service'
+import { SearchEngineService } from '@nftcom/search-engine'
 import * as Sentry from '@sentry/node'
 
 // const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
