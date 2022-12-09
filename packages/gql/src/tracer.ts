@@ -54,7 +54,10 @@ export const setupTracing = (serviceName: string): opentelemetry.Tracer => {
       new ExpressInstrumentation({
         ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
       }),
-      new GraphQLInstrumentation(),
+      new GraphQLInstrumentation({
+        depth: 5,
+        ignoreTrivialResolveSpans: true,
+      }),
       new IORedisInstrumentation({
         requireParentSpan: false,
       }),
