@@ -153,7 +153,7 @@ describe('nft service', () => {
       const collectionInfo = await getCollectionInfo(contract, chainId, repositories)
       expect(collectionInfo.collection.bannerUrl).toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).toEqual('https://cdn.nft.com/profile-image-default.svg')
-      expect(collectionInfo.collection.description).not.toEqual('placeholder collection description text')
+      expect(collectionInfo.collection.description).not.toEqual(null)
     })
     it('should return valid banner, logo image and description', async () => {
       const contract = '0x8fB5a7894AB461a59ACdfab8918335768e411414'
@@ -161,7 +161,7 @@ describe('nft service', () => {
       const collectionInfo = await getCollectionInfo(contract, chainId, repositories)
       expect(collectionInfo.collection.bannerUrl).not.toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).not.toEqual('https://cdn.nft.com/profile-image-default.svg')
-      expect(collectionInfo.collection.description).not.toEqual('placeholder collection description text')
+      expect(collectionInfo.collection.description).not.toEqual(null)
     })
   })
 

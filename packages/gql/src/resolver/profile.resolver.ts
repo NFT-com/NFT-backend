@@ -1,5 +1,3 @@
-import cryptoRandomString from 'crypto-random-string'
-import { addDays } from 'date-fns'
 import { BigNumber, ethers, utils } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.js'
@@ -238,61 +236,26 @@ const maybeUpdateProfileOwnership = (
       ctx.repositories.wallet.findById(profile.ownerWalletId),
     ])
       .then(([trueOwner, wallet]: [string, entity.Wallet]) => {
-        const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
         if (ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
           return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
-            .then(fp.thruIfEmpty(() =>
-              ctx.repositories.user.findOne({ where: {
-                username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
-              } })
-                .then((existingUser: entity.User) => {
-                  if (existingUser) {
-                    return ctx.repositories.wallet.save({
-                      userId: existingUser.id,
-                      network: 'ethereum',
-                      chainId,
-                      chainName: chain.name,
-                      address: trueOwner,
-                    })
-                  } else {
-                    return ctx.repositories.user.save({
-                      email: null,
-                      username: `ethereum-${ethers.utils.getAddress(trueOwner)}`,
-                      referredBy: null,
-                      avatarURL: null,
-                      confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
-                      confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
-                      referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-                    })
-                      .then((user: entity.User) =>
-                        ctx.repositories.wallet.save({
-                          userId: user.id,
-                          network: 'ethereum',
-                          chainId,
-                          chainName: chain.name,
-                          address: trueOwner,
-                        }),
-                      )
-                  }
-                }),
-            ))
-            .then((wallet: entity.Wallet) => {
-              return Promise.all([
-                ctx.repositories.user.findById(wallet.userId),
-                Promise.resolve(wallet),
-              ])
+            .then((wallet: entity.Wallet | undefined) => {
+              if (!wallet) {
+                return Promise.all([undefined, undefined])
+              } else {
+                return Promise.all([
+                  ctx.repositories.user.findById(wallet.userId),
+                  Promise.resolve(wallet),
+                ])
+              }
             })
             .then(([user, wallet]) => ctx.repositories.profile.save({
               id: profile.id,
               url: profile.url,
-              ownerUserId: user.id,
-              ownerWalletId: wallet.id,
+              ownerUserId: user ? user.id : null,
+              ownerWalletId: wallet ? wallet.id : null,
               tokenId: profile.tokenId,
               status: profile.status,
-              chainId: wallet.chainId || process.env.CHAIN_ID,
-              bannerURL: null,
-              photoURL: null,
-              description: null,
+              chainId,
               nftsLastUpdated: null,
               displayType: defs.ProfileDisplayType.NFT,
               layoutType: defs.ProfileLayoutType.Default,

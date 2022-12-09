@@ -54,6 +54,7 @@ export class SearchEngineService {
             return {
               type: trait.type,
               value: `${trait.value}`,
+              rarity: parseFloat(trait.rarity) || 0.0,
             }
           })
         }
@@ -68,12 +69,9 @@ export class SearchEngineService {
           chain: wallet ? wallet.chainName : '',
           contractName: collection ? collection.name : '',
           contractAddr: nft.contract || '',
-          marketplace: TYPESENSE_HOST.startsWith('prod') ? '' : 'OpenSea',
-          listingType: '',
-          listedPx: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
           listedFloor: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
-          currency: TYPESENSE_HOST.startsWith('prod') ? '' : 'ETH',
-          status: '',
+          status: '', //  HasOffers, BuyNow, New, OnAuction
+          rarity: parseFloat(nft.rarity) || 0.0,
           isProfile: nft.contract === PROFILE_CONTRACT,
         }
       }))
@@ -114,8 +112,15 @@ export class SearchEngineService {
               contractName: collection.name,
               chain: collection.chainId,
               description: collection.description || '',
-              floor: 0.0,
-              nftType: nft ? nft.type : '',
+              issuance: collection.issuanceDate?.getTime() || 0,
+              sales: collection.totalSales || 0,
+              volume: +collection.totalVolume || 0.0,
+              floor: +collection.floorPrice || 0.0,
+              nftType: nft?.type || '',
+              bannerUrl: collection.bannerUrl || nft?.metadata?.imageURL,
+              logoUrl: collection.logoUrl,
+              isOfficial: collection.isOfficial || false,
+              isCurated: collection.isCurated || false,
               score: this._calculateCollectionScore(collection),
             }
           }),

@@ -1850,7 +1850,7 @@ export const getCollectionInfo = async (
 
       let bannerUrl = 'https://cdn.nft.com/collectionBanner_default.png'
       let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
-      let description = 'placeholder collection description text'
+      let description = null
       const uploadPath = `collections/${chainId}/`
 
       const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
