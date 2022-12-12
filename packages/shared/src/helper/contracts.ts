@@ -13,6 +13,7 @@ import nftResolverABIJSON from '@nftcom/shared/helper/abis/NftResolver.json'
 import openseaSeaportABIJSON from '@nftcom/shared/helper/abis/OSSeaport.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
 import validationLogicABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
+import x2y2ABIJSON from '@nftcom/shared/helper/abis/X2Y2.json'
 
 // TODO: move contract addresses to Doppler
 export function nftTokenAddress(chainId: string | number = 'mainnet'): string {
@@ -241,6 +242,19 @@ export function openseaSeaportAddress(chainId: string | number = 'mainnet'): str
   }
 }
 
+export function x2y2Address(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '5':
+  case 'goerli':
+  case 5:
+    return utils.getAddress('0x1891EcD5F7b1E751151d857265D6e6D08ae8989e')
+  case '1':
+  case 1:
+  case 'mainnet':
+    return utils.getAddress('0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3')
+  }
+}
+
 export const MintedProfileTopic = '0xfdbd996e3e72e8c7d34fc2f374c3c85c80a530bd1cdaa4a748d34e32103c5cc3'
 
 export function validationLogicABI(): any {
@@ -289,6 +303,10 @@ export function looksrareExchangeABI(): any {
 
 export function openseaSeaportABI(): any {
   return openseaSeaportABIJSON
+}
+
+export function x2y2ABI(): any {
+  return x2y2ABIJSON
 }
 
 export interface GasInfo {
