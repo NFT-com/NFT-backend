@@ -19,6 +19,7 @@ import * as Sentry from '@sentry/node'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core, sendgrid } from '../service'
+import { filterNativeOrdersForNFT } from '../service/nft.service'
 import { activityBuilder } from '../service/txActivity.service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
@@ -27,7 +28,7 @@ const getListings = (
   _: any,
   args: gql.QueryGetListingsArgs,
   ctx: Context,
-): Promise<gql.GetListingOrders> => {
+): Promise<gql.GetOrders> => {
   const { repositories } = ctx
   logger.debug('getListings', { input: args?.input })
   const chainId = args?.input.chainId || process.env.CHAIN_ID
@@ -51,20 +52,6 @@ const getListings = (
     .then(pagination.toPageable(pageInput))
 }
 
-const filterListingsForNft = (
-  listings: entity.TxOrder[],
-  contract: string,
-  tokenId: string,
-): entity.TxOrder[] => {
-  return listings.filter((listing: entity.TxOrder) => {
-    const matchingMakeAsset = listing.makeAsset.find((asset) => {
-      return asset?.standard?.contractAddress === contract &&
-        BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
-    })
-    return matchingMakeAsset != null
-  })
-}
-
 const getNFTListings = async (
   _: any,
   args: gql.QueryGetNFTListingsArgs,
@@ -84,7 +71,12 @@ const getNFTListings = async (
       chainId,
     },
   })
-  const filteredListings = filterListingsForNft(txOrders, ethers.utils.getAddress(nftContractAddress), nftTokenId)
+  const filteredListings = await filterNativeOrdersForNFT(
+    txOrders,
+    ethers.utils.getAddress(nftContractAddress),
+    nftTokenId,
+
+  )
   return filteredListings.map((listing) => {
     return {
       id: listing.id,
@@ -316,6 +308,8 @@ const createListing = async (
       protocolData: {
         auctionType: args?.input.auctionType,
         signature: args?.input.signature,
+        start: args?.input.start,
+        end: args?.input.end,
         salt: args?.input.salt,
       },
       makerAddress: ethers.utils.getAddress(args?.input.makerAddress),
@@ -349,7 +343,7 @@ const filterListings = (
   _: any,
   args: gql.QueryFilterListingsArgs,
   ctx: Context,
-): Promise<gql.GetListingOrders> => {
+): Promise<gql.GetOrders> => {
   const { repositories } = ctx
   console.log(repositories)
   logger.debug('filterAsks', { input: args?.input })
@@ -664,6 +658,8 @@ const createBid = async (
         auctionType: args?.input.auctionType,
         signature: args?.input.signature,
         salt: args?.input.salt,
+        start: args?.input.start,
+        end: args?.input.end,
       },
       makerAddress: ethers.utils.getAddress(args?.input.makerAddress),
       makeAsset: makeAssets,
@@ -701,7 +697,7 @@ const getBids = (
   _: any,
   args: gql.QueryGetBidsArgs,
   ctx: Context,
-): Promise<gql.GetListingOrders> => {
+): Promise<gql.GetOrders> => {
   const { repositories } = ctx
   logger.debug('getBids', { input: args?.input })
   const chainId = args?.input.chainId || process.env.CHAIN_ID

@@ -49,6 +49,8 @@ type NFT {
   isHide: Boolean
   sortIndex: Int
   listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address): TxActivitiesOutput
+  nativeListings(pageInput: PageInput, status: ActivityStatus, owner: Address): GetOrders
+  nativeBids(pageInput: PageInput, status: ActivityStatus, owner: Address): GetOrders
 }
 
 input NFTsInput {

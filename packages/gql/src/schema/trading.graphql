@@ -18,13 +18,7 @@ enum ListingSortType {
   Oldest
 }
 
-type GetListingOrders {
-  items: [TxOrder!]
-  pageInfo: PageInfo
-  totalItems: Int
-}
-
-type GetBidOrders {
+type GetOrders {
   items: [TxOrder!]
   pageInfo: PageInfo
   totalItems: Int
@@ -159,10 +153,10 @@ input MarketBidsInput {
 }
 
 extend type Query {
-  getListings(input: ListingsInput!): GetListingOrders!
+  getListings(input: ListingsInput!): GetOrders!
   getNFTListings(input: NftListingsInput!): [TxListingOrder!]!
-  filterListings(input: FilterListingInput!): GetListingOrders!
-  getBids(input: MarketBidsInput!): GetBidOrders!
+  filterListings(input: FilterListingInput!): GetOrders!
+  getBids(input: MarketBidsInput!): GetOrders!
 }
 
 extend type Mutation {
