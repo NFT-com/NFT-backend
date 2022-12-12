@@ -23,11 +23,6 @@ import { activityBuilder } from '../service/txActivity.service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
 
-// interface BuyNowInfo {
-//   block: number
-//   buyNowTaker: string | null
-// }
-
 const getListings = (
   _: any,
   args: gql.QueryGetListingsArgs,
@@ -348,187 +343,6 @@ const createListing = async (
     Sentry.captureMessage(`Error in createListing: ${err}`)
     return err
   }
-}
-
-// const validListingOrder = (
-//   listing: entity.TxOrder,
-// ): boolean => {
-//   // if user wants to buy nft directly, its auction type should be fixed or decreasing method...
-//   return (listing.protocolData.auctionType === defs.AuctionType.FixedPrice ||
-//     listing.protocolData.auctionType === defs.AuctionType.Decreasing)
-// }
-
-/**
- * do validation on txHash and return block number if it's valid
- * @param txHash
- * @param chainId
- * @param marketAskId
- */
-// const validateTxHashForBuyNow = async (
-//   txHash: string,
-//   chainId: string,
-//   marketAskId: string,
-// ): Promise<BuyNowInfo | undefined> => {
-//   try {
-//     const chainProvider = provider.provider(Number(chainId))
-//     const repositories = db.newRepositories()
-//     // check if tx hash has been executed...
-//     const tx = await chainProvider.getTransaction(txHash)
-//     if (!tx.confirmations)
-//       return undefined
-//
-//     const sourceReceipt = await tx.wait()
-//     const abi = contracts.marketplaceEventABI()
-//     const iface = new ethers.utils.Interface(abi)
-//     let eventEmitted = false
-//     let buyNowTaker = null
-//
-//     const topics = [
-//       ethers.utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
-//       ethers.utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
-//       ethers.utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
-//       ethers.utils.id('BuyNowInfo(bytes32,address)'),
-//     ]
-//     // look through events of tx and check it contains Match or Match2A or Match2B event...
-//     // if it contains match events, then we validate if marketAskId is correct one...
-//     await Promise.all(
-//       sourceReceipt.logs.map(async (log) => {
-//         if (topics.find((topic) => topic === log.topics[0])) {
-//           const event = iface.parseLog(log)
-//           if (event.name === 'Match') {
-//             const makerHash = event.args.makerStructHash
-//             const auctionType = event.args.auctionType == 0 ?
-//               defs.AuctionType.FixedPrice :
-//               event.args.auctionType == 1 ?
-//                 defs.AuctionType.English :
-//                 defs.AuctionType.Decreasing
-//             if (auctionType === defs.AuctionType.English) eventEmitted = false
-//             else {
-//               const marketAsk = await repositories.marketAsk.findOne({
-//                 where: {
-//                   id: marketAskId,
-//                   structHash: makerHash,
-//                 },
-//               })
-//               eventEmitted = (marketAsk !== undefined)
-//             }
-//           }
-//           if (event.name === 'Match2A') {
-//             const makerHash = event.args.makerStructHash
-//             const marketAsk = await repositories.marketAsk.findOne({
-//               where: {
-//                 id: marketAskId,
-//                 structHash: makerHash,
-//               },
-//             })
-//             eventEmitted = (marketAsk !== undefined)
-//           }
-//           if (event.name === 'Match2B') {
-//             const makerHash = event.args.makerStructHash
-//             const marketAsk = await repositories.marketAsk.findOne({
-//               where: {
-//                 id: marketAskId,
-//                 structHash: makerHash,
-//               },
-//             })
-//             eventEmitted = (marketAsk !== undefined)
-//           }
-//           if (event.name === 'BuyNowInfo') {
-//             const makerHash = event.args.makerStructHash
-//             buyNowTaker = event.args.args.takerAddress
-//             const marketAsk = await repositories.marketAsk.findOne({
-//               where: {
-//                 id: marketAskId,
-//                 structHash: makerHash,
-//               },
-//             })
-//             eventEmitted = (marketAsk !== undefined)
-//           }
-//         }
-//       }))
-//     if (eventEmitted) {
-//       return {
-//         block: tx.blockNumber,
-//         buyNowTaker: buyNowTaker,
-//       } as BuyNowInfo
-//     }
-//     else return undefined
-//   } catch (e) {
-//     logger.debug(`${txHash} is not valid`, e)
-//     Sentry.captureException(e)
-//     Sentry.captureMessage(`Error in validateTxHashForBuyNow: ${e}`)
-//     return undefined
-//   }
-// }
-
-const buyNow = async (
-  _: any,
-  args: gql.MutationBuyNowArgs,
-  ctx: Context,
-): Promise<gql.MarketSwap> => {
-  const { user } = ctx
-  logger.debug('buyNow', { loggedInUserId: user?.id, input: args?.input })
-
-  const schema = Joi.object().keys({
-    marketAskId: Joi.string().required(),
-    txHash: Joi.string().required(),
-  })
-  joi.validateSchema(schema, args?.input)
-  return null
-  // return repositories.marketAsk.findById(args?.input.marketAskId)
-  //   .then(fp.rejectIfEmpty(appError.buildNotFound(
-  //     marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
-  //     marketAskError.ErrorType.MarketAskNotFound,
-  //   )))
-  //   .then((ask: entity.MarketAsk): Promise<entity.MarketSwap> => {
-  //     if (validMarketAsk(ask)) {
-  //       if (!ask.marketSwapId) {
-  //         return validateTxHashForBuyNow(args?.input.txHash, ask.chainId, args?.input.marketAskId)
-  //           .then((buyNowInfo): Promise<entity.MarketSwap> => {
-  //             if (buyNowInfo) {
-  //               if (buyNowInfo.buyNowTaker) {
-  //                 return repositories.marketSwap.findOne({
-  //                   where: {
-  //                     txHash: args?.input.txHash,
-  //                     marketAsk: ask,
-  //                   } as FindOptionsWhere<entity.MarketAsk>,
-  //                 })
-  //                   .then(fp.rejectIfNotEmpty(appError.buildExists(
-  //                     marketSwapError.buildMarketSwapExistingMsg(),
-  //                     marketSwapError.ErrorType.MarketSwapExisting,
-  //                   )))
-  //                   .then(() =>
-  //                     repositories.marketSwap.save({
-  //                       txHash: args?.input.txHash,
-  //                       blockNumber: buyNowInfo.block.toFixed(),
-  //                       marketAsk: ask,
-  //                     }).then((swap: entity.MarketSwap) =>
-  //                       blockNumberToTimestamp(Number(buyNowInfo.block.toFixed()), ask.chainId)
-  //                         .then((time) => repositories.marketAsk.updateOneById(ask.id, {
-  //                           marketSwapId: swap.id,
-  //                           offerAcceptedAt: new Date(time),
-  //                           buyNowTaker: buyNowInfo.buyNowTaker,
-  //                         }).then(() => swap)),
-  //                     ))
-  //               } else {
-  //                 return Promise.reject(appError.buildInvalid(
-  //                   marketAskError.buildTxHashInvalidMsg(args?.input.txHash),
-  //                   marketAskError.ErrorType.TxHashInvalid,
-  //                 ))
-  //               }
-  //             }})
-  //       } else {
-  //         return Promise.reject(appError.buildInvalid(
-  //           marketAskError.buildMarketAskBoughtMsg(),
-  //           marketAskError.ErrorType.MarketAskBought))
-  //       }
-  //     } else {
-  //       return Promise.reject(appError.buildInvalid(
-  //         marketAskError.buildAuctionTypeInvalidMsg(),
-  //         marketAskError.ErrorType.AuctionTypeInvalid,
-  //       ))
-  //     }
-  //   })
 }
 
 const filterListings = (
@@ -921,7 +735,6 @@ export default {
   },
   Mutation: {
     createMarketListing: combineResolvers(auth.isAuthenticated, createListing),
-    buyNow: combineResolvers(auth.isAuthenticated, buyNow),
     createMarketBid: combineResolvers(auth.isAuthenticated, createBid),
   },
 }

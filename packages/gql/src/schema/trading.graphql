@@ -139,16 +139,6 @@ input CreateBidInput {
   message: String
 }
 
-input CancelListingInput {
-  listingOrderId: ID!
-  txHash: String!
-}
-
-input CancelBidInput {
-  bidOrderId: ID!
-  txHash: String!
-}
-
 input BuyNowInput {
   listingOrderId: ID!
   txHash: String!
@@ -178,8 +168,6 @@ extend type Query {
 extend type Mutation {
   "AUTHENTICATED"
   createMarketListing(input: CreateListingInput!): TxListingOrder!
-  "AUTHENTICATED"
-  buyNow(input: BuyNowInput!): MarketSwap!
   "AUTHENTICATED"
   createMarketBid(input: CreateBidInput!): TxBidOrder!
 }
