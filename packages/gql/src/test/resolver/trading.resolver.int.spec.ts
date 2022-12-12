@@ -79,65 +79,6 @@ describe('trading', () => {
     })
   })
 
-  describe('cancelMarketListing', () => {
-    beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
-
-      // nft listing
-
-      // active activity
-      let activity = new TxActivity()
-      activity.activityType = defs.ActivityType.Listing
-      activity.activityTypeId = 'test-listing-order'
-      activity.status = defs.ActivityStatus.Valid
-      activity.timestamp = new Date()
-      const currentDate: Date = new Date()
-      currentDate.setDate(currentDate.getDate() + 1)
-      activity.expiration = currentDate
-      activity.walletAddress = testMockWallet.address
-      activity.nftContract ='0x'
-      activity.nftId = []
-      activity.chainId = '5'
-
-      // active order
-      let activityType = new TxOrder()
-      activityType.id = 'test-listing-order'
-      activityType.activity = activity
-      activityType.exchange = defs.ExchangeType.Marketplace
-      activityType.orderHash = '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df'
-      activityType.orderType = defs.ActivityType.Listing
-      activityType.makerAddress = testMockWallet.address
-      activityType.protocol = defs.ProtocolType.Marketplace
-      activityType.protocolData = {}
-      activityType.chainId = '5'
-
-      activity = await repositories.txActivity.save(activity)
-      activityType.activity = activity
-      activityType = await repositories.txOrder.save(activityType)
-    })
-
-    afterAll(async () => {
-      await clearDB(repositories)
-      await testServer.stop()
-    })
-    it('should throw TX_HASH_INVALID error', async () => {
-      const result = await testServer.executeOperation({
-        query: 'mutation CancelMarketListing($input: CancelListingInput!) { cancelMarketListing(input: $input) }',
-        variables: {
-          input: {
-            listingOrderId: 'test-listing-order',
-            txHash: '0x62fe7e81f3c869093f8357472597d7aac0fa2d5b49a79a42c9633850d832c967',
-          },
-        },
-      })
-
-      expect(result.errors.length).toEqual(1)
-    })
-  })
-
   describe('createMarketBid', () => {
     beforeAll(async () => {
       testServer = getTestApolloServer(repositories,

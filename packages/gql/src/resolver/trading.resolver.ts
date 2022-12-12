@@ -5,7 +5,6 @@ import { IsNull } from 'typeorm'
 
 import { appError, marketBidError, marketListingError } from '@nftcom/error-types'
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
-import { ListingOrBid, validateTxHashForCancel } from '@nftcom/gql/resolver/validation'
 import {
   _logger,
   contracts,
@@ -156,72 +155,6 @@ export const validListing = async (
   }
 
   return true
-}
-
-const cancelListing = async (
-  _: any,
-  args: gql.MutationCancelMarketListingArgs,
-  ctx: Context,
-): Promise<boolean> => {
-  const { user, repositories, wallet, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  logger.debug('cancelListing', { loggedInUserId: user?.id, input: args?.input })
-  try {
-    const listingOrder = await repositories.txOrder.findById(args?.input.listingOrderId)
-    if (!listingOrder) {
-      return Promise.reject(appError.buildNotFound(
-        marketListingError.buildMarketListingNotFoundMsg(args?.input.listingOrderId),
-        marketListingError.ErrorType.MarketListingNotFound,
-      ))
-    }
-    if (ethers.utils.getAddress(listingOrder.makerAddress) !== ethers.utils.getAddress(wallet.address)) {
-      return Promise.reject(appError.buildForbidden(
-        marketListingError.buildMarketListingNotOwnedMsg(wallet.address, args?.input.listingOrderId),
-        marketListingError.ErrorType.MarketListingNotOwned,
-      ))
-    }
-    const isValid = await validateTxHashForCancel(
-      args?.input.txHash,
-      listingOrder.chainId,
-      args?.input.listingOrderId,
-      ListingOrBid.Listing,
-    )
-    if (!isValid) {
-      return Promise.reject(appError.buildInvalid(
-        marketListingError.buildTxHashInvalidMsg(args?.input.txHash),
-        marketListingError.ErrorType.TxHashInvalid,
-      ))
-    }
-    const txCancel = await repositories.txCancel.findOne({
-      where: {
-        exchange: defs.ExchangeType.Marketplace,
-        foreignType: defs.CancelActivities[0],
-        foreignKeyId: listingOrder.orderHash,
-        transactionHash: args?.input.txHash,
-        chainId,
-      },
-    })
-    if (!txCancel) {
-      const chainProvider = provider.provider(Number(chainId))
-      const tx = await chainProvider.getTransaction(args?.input.txHash)
-      await repositories.txCancel.save({
-        activity: listingOrder.activity,
-        exchange: defs.ExchangeType.Marketplace,
-        foreignType: defs.CancelActivities[0],
-        foreignKeyId: listingOrder.orderHash,
-        transactionHash: args?.input.txHash,
-        blockNumber: tx.blockNumber.toString(),
-        chainId,
-      })
-      const listingActivity = await repositories.txActivity.findById(listingOrder.activity.id)
-      await repositories.txActivity.updateOneById(listingActivity.id, { status: defs.ActivityStatus.Cancelled })
-    }
-    return true
-  } catch (err) {
-    Sentry.captureMessage(`Error in cancelListing: ${err}`)
-    return err
-  }
 }
 
 const availableToCreateListing = async (
@@ -950,72 +883,6 @@ const createBid = async (
   }
 }
 
-const cancelBid = async (
-  _: any,
-  args: gql.MutationCancelMarketBidArgs,
-  ctx: Context,
-): Promise<boolean> => {
-  const { user, repositories, wallet, chain } = ctx
-  const chainId = chain.id || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  logger.debug('cancelBid', { loggedInUserId: user?.id, input: args?.input })
-  try {
-    const bidOrder = await repositories.txOrder.findById(args?.input.bidOrderId)
-    if (!bidOrder) {
-      return Promise.reject(appError.buildNotFound(
-        marketBidError.buildMarketBidNotFoundMsg(args?.input.bidOrderId),
-        marketBidError.ErrorType.MarketBidNotFound,
-      ))
-    }
-    if (ethers.utils.getAddress(bidOrder.makerAddress) !== ethers.utils.getAddress(wallet.address)) {
-      return Promise.reject(appError.buildForbidden(
-        marketBidError.buildMarketBidNotOwnedMsg(),
-        marketBidError.ErrorType.MarketBidNotOwned,
-      ))
-    }
-    const isValid = await validateTxHashForCancel(
-      args?.input.txHash,
-      bidOrder.chainId,
-      args?.input.bidOrderId,
-      ListingOrBid.Bid,
-    )
-    if (!isValid) {
-      return Promise.reject(appError.buildInvalid(
-        marketBidError.buildTxHashInvalidMsg(args?.input.txHash),
-        marketBidError.ErrorType.TxHashInvalid,
-      ))
-    }
-    const txCancel = await repositories.txCancel.findOne({
-      where: {
-        exchange: defs.ExchangeType.Marketplace,
-        foreignType: defs.CancelActivities[1],
-        foreignKeyId: bidOrder.orderHash,
-        transactionHash: args?.input.txHash,
-        chainId,
-      },
-    })
-    if (!txCancel) {
-      const chainProvider = provider.provider(Number(chainId))
-      const tx = await chainProvider.getTransaction(args?.input.txHash)
-      await repositories.txCancel.save({
-        activity: bidOrder.activity,
-        exchange: defs.ExchangeType.Marketplace,
-        foreignType: defs.CancelActivities[1],
-        foreignKeyId: bidOrder.orderHash,
-        transactionHash: args?.input.txHash,
-        blockNumber: tx.blockNumber.toString(),
-        chainId,
-      })
-      const bidActivity = await repositories.txActivity.findById(bidOrder.activity.id)
-      await repositories.txActivity.updateOneById(bidActivity.id, { status: defs.ActivityStatus.Cancelled })
-    }
-    return true
-  } catch (err) {
-    Sentry.captureMessage(`Error in cancelListing: ${err}`)
-    return err
-  }
-}
-
 const getBids = (
   _: any,
   args: gql.QueryGetBidsArgs,
@@ -1054,10 +921,7 @@ export default {
   },
   Mutation: {
     createMarketListing: combineResolvers(auth.isAuthenticated, createListing),
-    cancelMarketListing: combineResolvers(auth.isAuthenticated, cancelListing),
     buyNow: combineResolvers(auth.isAuthenticated, buyNow),
     createMarketBid: combineResolvers(auth.isAuthenticated, createBid),
-    cancelMarketBid: combineResolvers(auth.isAuthenticated, cancelBid),
-
   },
 }
