@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
-import { BigNumberish } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
@@ -138,7 +138,6 @@ const retrieveX2Y2ListingsInBatches = async (
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
-      // console.log('orders', orders)
       listings.push(
         orderEntityBuilder(
           defs.ProtocolType.X2Y2,
@@ -188,7 +187,6 @@ const retrieveX2Y2OffersInBatches = async (
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
-      // console.log('offer', orders)
       offers.push(
         orderEntityBuilder(
           defs.ProtocolType.X2Y2,
@@ -269,6 +267,25 @@ export const retrieveMultipleOrdersX2Y2 = async (
 //   return ethers.utils.defaultAbiCoder.encode([orderParamType], [order])
 // }
 
+const retriveOrderX2Y2 = async (
+  maker: string,
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<X2Y2Order | null> => {
+  const baseUrl = chainId === '1' ?  X2Y2_API_BASE_URL: X2Y2_API_TESTNET_BASE_URL
+  const token: string = BigNumber.from(tokenId).toString()
+  try {
+    const res = await getX2Y2Interceptor(baseUrl)
+      .get(`/v1/orders?maker=${maker}&contract=${contract}&token_id=${token}&sort=created_at&direction=desc`)
+    if (res.status === 200 && res.data) {
+      return res.data?.data?.[0]
+    }
+  } catch (err) {
+    logger.error(`Error in retrieveOrderX2Y2: ${err}`)
+  }
+  return null
+}
 /**
  * Returns true if the listing succeeded, false otherwise.
  * @param order  x2y2 order
@@ -276,7 +293,11 @@ export const retrieveMultipleOrdersX2Y2 = async (
  */
 export const createX2Y2Listing = async (
   order: string,
+  maker: string,
+  contract: string,
+  tokenId: string,
   chainId: string,
+  createdInternally: boolean,
 ): Promise<Partial<entity.TxOrder> | null | Error> => {
   let x2y2Order: Partial<entity.TxOrder>
   const baseUrl = chainId === '1' ?  X2Y2_API_BASE_URL: X2Y2_API_TESTNET_BASE_URL
@@ -284,13 +305,17 @@ export const createX2Y2Listing = async (
     const res = await getX2Y2Interceptor(baseUrl).post('/api/orders/add',
       JSON.parse(order),
     )
-    if (res.status === 201 && res.data.data) {
+    // give x2y2 time to propagate order
+    await delay(5000)
+    const retrievedOrder: X2Y2Order = await retriveOrderX2Y2(maker, contract, tokenId, chainId)
+    if (res.status === 200 && retrievedOrder) {
       x2y2Order = await orderEntityBuilder(
         defs.ProtocolType.X2Y2,
         defs.ActivityType.Listing,
-        res.data.data,
+        retrievedOrder,
         chainId,
-        res.data.data.collectionAddress,
+        contract,
+        createdInternally,
       )
       return x2y2Order
     }
