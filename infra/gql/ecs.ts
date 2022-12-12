@@ -2,7 +2,7 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 import { SharedInfraOutput } from '../defs'
-import { getResourceName, getTags, isProduction } from '../helper'
+import { getResourceName, getStage, getTags, isProduction } from '../helper'
 
 const tags = {
   service: 'gql',
@@ -180,7 +180,7 @@ processors:
     send_batch_size: 50
   probabilistic_sampler:
     hash_seed: 31
-    sampling_percentage: ${isProduction() ? '20' : '10'}
+    sampling_percentage: ${isProduction() ? '20' : getStage() === 'staging' ? '10' : '0'}
   resourcedetection:
     detectors:
       - env
