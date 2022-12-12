@@ -77,6 +77,10 @@ export class TxOrder extends BaseEntity {
   listingId: string
 
   // only required for native trading
+  @Column({ nullable: true })
+  buyNowTaker: string
+
+  // only required for native trading
   @Column({ type: 'timestamp with time zone', nullable: true })
   acceptedAt: Date
 
