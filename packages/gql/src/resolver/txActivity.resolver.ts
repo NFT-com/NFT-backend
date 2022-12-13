@@ -364,6 +364,11 @@ export default {
       if (obj.signer) {
         return 'LooksrareProtocolData'
       }
+
+      if (obj.id) {
+        return 'X2Y2ProtocolData'
+      }
+
       return 'SeaportProtocolData'
     },
   },
@@ -372,6 +377,11 @@ export default {
       if (obj.signer) {
         return 'TxLooksrareProtocolData'
       }
+
+      if (obj.currency) {
+        return 'TxX2Y2ProtocolData'
+      }
+
       return 'TxSeaportProtocolData'
     },
   },
