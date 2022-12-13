@@ -1154,6 +1154,18 @@ export const listNFTX2Y2 = async (
   ctx: Context,
 ): Promise<any> => {
   const { repositories } = ctx
+  const schema = Joi.object().keys({
+    input: Joi.object().keys({
+      x2y2Order: Joi.string().required(),
+      maker: Joi.string().required(),
+      contract: Joi.string().required(),
+      tokenId: Joi.string().required(),
+      chainId: Joi.string().optional(),
+      profileUrl: Joi.string().optional(),
+      createdInternally: Joi.boolean().optional(),
+    }),
+  })
+  joi.validateSchema(schema, args)
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const x2y2Order = args?.input?.x2y2Order
   const profileUrl = args?.input?.profileUrl
