@@ -378,7 +378,7 @@ export default {
         return 'TxLooksrareProtocolData'
       }
 
-      if (obj.detail) {
+      if (obj.currency) {
         return 'TxX2Y2ProtocolData'
       }
 
