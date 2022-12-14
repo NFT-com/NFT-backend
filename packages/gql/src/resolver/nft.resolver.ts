@@ -1109,7 +1109,7 @@ export const listNFTSeaport = async (
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   const profileUrl = args?.input.profileUrl
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
+  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : true
 
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
@@ -1133,7 +1133,7 @@ export const listNFTLooksrare = async (
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
   const profileUrl = args?.input.profileUrl
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
+  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : true
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
@@ -1172,7 +1172,7 @@ export const listNFTX2Y2 = async (
   const maker = args?.input?.maker
   const contract = args?.input?.contract
   const tokenId = args?.input?.tokenId
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
+  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : true
 
   logger.debug({ input: args?.input, wallet: ctx?.wallet?.id }, 'listNFTX2Y2')
 

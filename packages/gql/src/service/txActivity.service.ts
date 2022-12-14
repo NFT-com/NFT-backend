@@ -193,7 +193,7 @@ export const orderEntityBuilder = async (
   if (createdInternally) {
     isInternal = createdInternally
   } else {
-    isInternal = false
+    isInternal = true
   }
   let orderHash: string,
     walletAddress: string,
