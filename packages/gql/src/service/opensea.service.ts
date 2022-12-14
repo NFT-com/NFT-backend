@@ -419,13 +419,11 @@ export const retrieveMultipleOrdersOpensea = async (
  * @param signature  signature of the order for these parameters
  * @param parameters stringified JSON matching the 'parameters' field in the protocol data schema
  * @param chainId
- * @param createdInternally boolean to check if listing is created by NFT.com
  */
 export const createSeaportListing = async (
   signature: Maybe<string>,
   parameters: Maybe<string>,
   chainId: string,
-  createdInternally: boolean,
 ): Promise<Partial<entity.TxOrder> | null| Error> => {
   let openseaOrder: Partial<entity.TxOrder>
   const baseUrlV2 = chainId === '1' ? OPENSEA_API_BASE_URL : OPENSEA_API_TESTNET_BASE_URL
@@ -451,7 +449,6 @@ export const createSeaportListing = async (
         res.data.order,
         chainId,
         contract,
-        createdInternally,
       )
       return openseaOrder
     }
