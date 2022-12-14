@@ -95,7 +95,7 @@ export class SearchEngineService {
           })
         }
         let listings = []
-        if (txActivityListings.length) {
+        if (txActivityListings?.length) {
           listings = await Promise.all(txActivityListings.map(async (txActivity: TxActivityDAO) => {
             const contractAddress = getListingCurrencyAddress(txActivity)
             return {

@@ -34,6 +34,9 @@ describe('search engine service', () => {
             return Promise.resolve(new Collection())
           },
         },
+        txActivity: {
+          findActivitiesForNFT: jest.fn(),
+        },
         wallet: {
           findById: (_: string) => {
             return Promise.resolve(new Wallet())
