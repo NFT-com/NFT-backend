@@ -1,19 +1,47 @@
 import { BigNumber, utils } from 'ethers'
 
-import { getRandomFloat } from '@nftcom/gql/helper/utils'
+import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { core } from '@nftcom/gql/service'
-import { db, defs } from '@nftcom/shared'
-import { Collection as CollectionEntity, NFT as NFTEntity, Wallet as WalletEntity } from '@nftcom/shared/db/entity'
+import { db, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from './search-engine-client'
 
+type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
+const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
   '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' : '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D'
 
-const GK_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
+const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
   '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
+
+const getListingPrice = (listing: TxActivityDAO): BigNumber => {
+  switch(listing?.order?.protocol) {
+  case (defs.ProtocolType.LooksRare): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.price ?? 0)
+  }
+  case (defs.ProtocolType.Seaport): {
+    const order = listing?.order?.protocolData
+    return order?.parameters?.consideration
+      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount ?? 0)), BigNumber.from(0))
+  }
+  }
+}
+
+const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
+  switch(listing?.order?.protocol) {
+  case (defs.ProtocolType.LooksRare): {
+    const order = listing?.order?.protocolData
+    return order?.currencyAddress ?? order?.['currency']
+  }
+  case (defs.ProtocolType.Seaport): {
+    const order = listing?.order?.protocolData
+    return order?.parameters?.consideration?.[0]?.token
+  }
+  }
+}
 
 export class SearchEngineService {
 
@@ -25,7 +53,10 @@ export class SearchEngineService {
     this._repos = repos
   }
 
-  indexNFTs = async (nfts: NFTEntity[]): Promise<boolean> => {
+  private _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
+    return  (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
+  }
+  indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     try {
       const nftsToIndex = await Promise.all(nfts.map(async (nft) => {
         const ctx = {
@@ -36,17 +67,21 @@ export class SearchEngineService {
           wallet: null,
         }
 
-        const collection = await core.resolveEntityById<NFTEntity, CollectionEntity>(
+        const collection = await core.resolveEntityById<entity.NFT, entity.Collection>(
           'contract',
           defs.EntityType.NFT,
           defs.EntityType.Collection,
         )(nft, null, ctx)
 
-        const wallet = await core.resolveEntityById<NFTEntity, WalletEntity>(
+        const wallet = await core.resolveEntityById<entity.NFT, entity.Wallet>(
           'walletId',
           defs.EntityType.NFT,
           defs.EntityType.Wallet,
         )(nft, null, ctx)
+
+        const txActivityListings = await this._repos.txActivity.findActivitiesForNFT(
+          nft.contract, nft.tokenId, defs.ActivityType.Listing,
+        )
 
         const tokenId = BigNumber.from(nft.tokenId).toString()
         let traits = []
@@ -59,21 +94,39 @@ export class SearchEngineService {
             }
           })
         }
+        let listings = []
+        if (txActivityListings.length) {
+          listings = await Promise.all(txActivityListings.map(async (txActivity: TxActivityDAO) => {
+            const contractAddress = getListingCurrencyAddress(txActivity)
+            return {
+              marketplace: txActivity.order?.exchange,
+              price: utils.formatUnits(
+                getListingPrice(txActivity),
+                await getDecimalsForContract(contractAddress),
+              ),
+              type: undefined,
+              currency: await getSymbolForContract(contractAddress),
+            }
+          }))
+        }
         return {
           id: nft.id,
           nftName: nft.metadata?.name || `#${tokenId}`,
           nftType: nft.type,
           tokenId,
           traits,
+          listings,
           imageURL: nft.metadata?.imageURL,
-          ownerAddr: wallet ? wallet.address : '',
-          chain: wallet ? wallet.chainName : '',
-          contractName: collection ? collection.name : '',
+          ownerAddr: wallet?.address || '',
+          chain: wallet?.chainName || '',
+          contractName: collection?.name || '',
           contractAddr: nft.contract || '',
-          listedFloor: TYPESENSE_HOST.startsWith('prod') ? 0.0 : getRandomFloat(0.3, 2, 2),
           status: '', //  HasOffers, BuyNow, New, OnAuction
           rarity: parseFloat(nft.rarity) || 0.0,
           isProfile: nft.contract === PROFILE_CONTRACT,
+          issuance: collection?.issuanceDate?.getTime() || 0,
+          hasListings: listings.length ? 1 : 0,
+          score: this._calculateNFTScore(collection, !!listings.length),
         }
       }))
 
@@ -88,12 +141,12 @@ export class SearchEngineService {
     return this._client.removeDocument('nfts', nftId)
   }
 
-  private _calculateCollectionScore = (collection: CollectionEntity): number => {
+  private _calculateCollectionScore = (collection: entity.Collection): number => {
     const officialVal = collection.isOfficial ? 1 : 0
     const nftcomVal = [PROFILE_CONTRACT, GK_CONTRACT].includes(collection.contract) ? 1000000 : 0
     return officialVal + nftcomVal
   }
-  indexCollections = async (collections: CollectionEntity[]): Promise<boolean> => {
+  indexCollections = async (collections: entity.Collection[]): Promise<boolean> => {
     try {
       const collectionsToIndex = await Promise.all(
         collections
@@ -134,7 +187,7 @@ export class SearchEngineService {
     }
   }
 
-  deleteCollections = async (collections: CollectionEntity[]): Promise<void> => {
+  deleteCollections = async (collections: entity.Collection[]): Promise<void> => {
     try {
       await Promise.all(collections.map(async (collection) => {
         await this._client.removeDocument('collections', collection.id)
