@@ -193,7 +193,33 @@ export const orderEntityBuilder = async (
   if (createdInternally) {
     isInternal = createdInternally
   } else {
-    isInternal = true
+    // check if this order is already existing in our DB
+    let txOrder
+    if (protocol === defs.ProtocolType.Seaport) {
+      txOrder = await repositories.txOrder.findOne({
+        where: {
+          orderHash: (order as SeaportOrder).order_hash,
+        },
+      })
+    } else if (protocol === defs.ProtocolType.LooksRare) {
+      txOrder = await repositories.txOrder.findOne({
+        where: {
+          orderHash: (order as LooksRareOrder).hash,
+        },
+      })
+    } else if (protocol === defs.ProtocolType.X2Y2) {
+      txOrder = await repositories.txOrder.findOne({
+        where: {
+          orderHash: (order as X2Y2Order).item_hash,
+        },
+      })
+    }
+    if (txOrder) {
+      // we keep createdInternally value
+      isInternal = txOrder.createdInternally
+    } else {
+      isInternal = true
+    }
   }
   let orderHash: string,
     walletAddress: string,
