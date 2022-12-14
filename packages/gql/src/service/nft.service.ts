@@ -285,13 +285,6 @@ export const filterNFTsWithAlchemy = async (
                   walletId: wallet?.id,
                 })
               }
-            } else {
-              // if there is no owner from api, then we just delete it from our DB
-              await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
-                .then(() => repositories.nft.hardDelete({
-                  id: dbNFT?.id,
-                }))
-              await seService.deleteNFT(dbNFT?.id)
             }
           } catch (err) {
             logger.error(`Error in filterNFTsWithAlchemy: ${err}`)
