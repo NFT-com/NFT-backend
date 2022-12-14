@@ -53,6 +53,7 @@ type TxListingOrder {
   acceptedAt: DateTime
   chainId: String!
   auctionType: AuctionType!
+  memo: String
 }
 
 type TxBidOrder {
@@ -71,6 +72,7 @@ type TxBidOrder {
   rejectedAt: DateTime
   chainId: String!
   auctionType: AuctionType!
+  memo: String
 }
 
 input ListingsInput {
@@ -114,6 +116,7 @@ input CreateListingInput {
   end: Int!
   salt: Int!
   chainId: String!
+  message: String
 }
 
 input CreateBidInput {

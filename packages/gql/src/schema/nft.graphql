@@ -195,6 +195,7 @@ input ListNFTSeaportInput {
   createdInternally: Boolean
   profileUrl: String
   chainId: String
+  memo: String
 }
 
 input ListNFTLooksrareInput {
@@ -202,6 +203,7 @@ input ListNFTLooksrareInput {
   createdInternally: Boolean
   profileUrl: String
   chainId: String
+  memo: String
 }
 
 input ListNFTX2Y2Input {
@@ -212,6 +214,7 @@ input ListNFTX2Y2Input {
   contract: String
   tokenId: String
   chainId: String
+  memo: String
 }
 
 type UpdateAssociatedContractOutput {

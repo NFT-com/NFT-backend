@@ -244,6 +244,7 @@ const createListing = async (
       start: Joi.number().required(),
       end: Joi.number().required(),
       salt: Joi.number().required(),
+      message: Joi.string().optional(),
     })
     joi.validateSchema(schema, args?.input)
 
@@ -318,6 +319,7 @@ const createListing = async (
       takeAsset: takeAssets,
       chainId: wallet.chainId,
       createdInternally: true,
+      memo: args?.input.message ?? null,
     })
 
     return {
@@ -332,6 +334,7 @@ const createListing = async (
       salt: listingOrder.protocolData.salt,
       chainId,
       auctionType: listingOrder.protocolData.auctionType,
+      memo: listingOrder.memo,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in createListing: ${err}`)
@@ -667,7 +670,7 @@ const createBid = async (
       takeAsset: takeAssets,
       chainId: wallet.chainId,
       listingId: args?.input.listingId,
-      memo: args?.input.message,
+      memo: args?.input.message ?? null,
       createdInternally: true,
     })
 
@@ -686,6 +689,7 @@ const createBid = async (
       salt: bidOrder.protocolData.salt,
       chainId,
       auctionType: bidOrder.protocolData.auctionType,
+      memo: bidOrder.memo,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in createListing: ${err}`)

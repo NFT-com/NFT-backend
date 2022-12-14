@@ -1115,7 +1115,7 @@ export const listNFTSeaport = async (
 
   return createSeaportListing(seaportSignature, seaportParams, chainId, createdInternally)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save(order)
+      return repositories.txOrder.save({ ...order, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1139,7 +1139,7 @@ export const listNFTLooksrare = async (
 
   return createLooksrareListing(looksrareOrder, chainId, createdInternally)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save(order)
+      return repositories.txOrder.save({ ...order, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1178,7 +1178,7 @@ export const listNFTX2Y2 = async (
 
   return createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId, createdInternally)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save(order)
+      return repositories.txOrder.save({ ...order, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(

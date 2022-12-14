@@ -1,6 +1,6 @@
 
 enum ActivityType {
-  Listing 
+  Listing
   Bid
   Cancel
   Sale
@@ -201,6 +201,7 @@ type TxOrder {
   takerAddress: String
   protocol: String!
   protocolData: ProtocolData
+  memo: String
 }
 
 type TxTransaction {
