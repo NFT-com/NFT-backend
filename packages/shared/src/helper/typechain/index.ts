@@ -22,6 +22,7 @@ export type { NftTransferProxy } from "./NftTransferProxy";
 export type { OSSeaport } from "./OSSeaport";
 export type { ProfileAuction } from "./ProfileAuction";
 export type { ValidationLogic } from "./ValidationLogic";
+export type { X2Y2 } from "./X2Y2";
 export type { Weth } from "./Weth";
 export type { Whitelist } from "./Whitelist";
 
@@ -46,5 +47,6 @@ export { NftTransferProxy__factory } from "./factories/NftTransferProxy__factory
 export { OSSeaport__factory } from "./factories/OSSeaport__factory";
 export { ProfileAuction__factory } from "./factories/ProfileAuction__factory";
 export { ValidationLogic__factory } from "./factories/ValidationLogic__factory";
+export { X2Y2__factory } from "./factories/X2Y2__factory";
 export { Weth__factory } from "./factories/Weth__factory";
 export { Whitelist__factory } from "./factories/Whitelist__factory";

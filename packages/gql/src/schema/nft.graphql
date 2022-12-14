@@ -207,6 +207,10 @@ input ListNFTLooksrareInput {
 input ListNFTX2Y2Input {
   x2y2Order: String
   profileUrl: String
+  createdInternally: Boolean
+  maker: String
+  contract: String
+  tokenId: String
   chainId: String
 }
 

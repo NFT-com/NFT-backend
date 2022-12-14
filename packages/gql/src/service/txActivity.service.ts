@@ -141,6 +141,7 @@ const looksrareOrderBuilder = (
 
 const x2y2OrderBuilder = (
   order: X2Y2Order,
+  createdInternally = false,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.X2Y2,
@@ -167,6 +168,7 @@ const x2y2OrderBuilder = (
       is_bundle: order.is_bundle,
       is_private: order.is_private,
     },
+    createdInternally,
   }
 }
 
@@ -237,7 +239,7 @@ export const orderEntityBuilder = async (
     timestampFromSource = Number(x2y2Order.created_at)
     expirationFromSource = Number(x2y2Order.end_at)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = x2y2OrderBuilder(x2y2Order)
+    orderEntity = x2y2OrderBuilder(x2y2Order, isInternal)
     break
   default:
     break

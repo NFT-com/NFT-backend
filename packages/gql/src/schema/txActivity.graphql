@@ -75,7 +75,28 @@ type LooksrareProtocolData {
   s: String
 }
 
-union ProtocolData = SeaportProtocolData | LooksrareProtocolData 
+type X2Y2ProtocolData {
+  side: Int
+  type: String
+  erc_type: Int
+  status: String
+  maker: String
+  contract: String
+  price: String
+  amount: Int
+  tokenId: String
+  currencyAddress: String
+  id: Int
+  created_at: Int
+  updated_at: Int
+  end_at: Int
+  royalty_fee: Int
+  is_collection_offer: Boolean
+  is_bundle: Boolean
+  is_private: Boolean
+}
+
+union ProtocolData = SeaportProtocolData | LooksrareProtocolData | X2Y2ProtocolData
 
 type TxSeaportProtocolData {
   offer: [SeaportOffer]
@@ -101,7 +122,49 @@ type TxLooksrareProtocolData {
   s: String
 }
 
-union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
+type TxX2Y2OrderItem {
+  price: [String]
+  data: String
+}
+
+type TxX2Y2Fee {
+  percentage: String
+  to: String
+}
+
+type TxX2Y2SettleDetail {
+  op: [String]
+  orderIdx: [String]
+  itemIdx: [String]
+  price: [String]
+  itemHash: String
+  executionDelegate: String
+  dataReplacement: String
+  bidIncentivePct: [String]
+  aucMinIncrementPct: [String]
+  aucIncDurationSecs: [String]
+  fees: [TxX2Y2Fee]
+}
+
+type TxX2Y2ProtocolData {
+  orderHash: String
+  currency: String
+  amount: String
+  maker: String
+  taker: String
+  orderSalt: String
+  settleSalt: String
+  intent: String
+  delegateType: String
+  deadline: String
+  data: String
+  item: [TxX2Y2OrderItem]
+  detail: [TxX2Y2SettleDetail]
+}
+
+
+
+union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxX2Y2ProtocolData
 
 type TxActivity {
   id: ID!
