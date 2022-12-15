@@ -77,11 +77,9 @@ const activityBuilder = async (
 /**
  * seaportOrderBuilder
  * @param order
- * @param createdInternally
  */
 const seaportOrderBuilder = (
   order: SeaportOrder,
-  createdInternally = false,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.OpenSea,
@@ -92,19 +90,16 @@ const seaportOrderBuilder = (
     protocolData: {
       ...order.protocol_data,
     },
-    createdInternally,
   }
 }
 
 /**
  * looksrareOrderBuilder
  * @param order
- * @param createdInternally
  */
 
 const looksrareOrderBuilder = (
   order: LooksRareOrder,
-  createdInternally = false,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
@@ -129,7 +124,6 @@ const looksrareOrderBuilder = (
       r: order.r,
       s: order.s,
     },
-    createdInternally,
   }
 }
 
@@ -140,7 +134,6 @@ const looksrareOrderBuilder = (
 
 const x2y2OrderBuilder = (
   order: X2Y2Order,
-  createdInternally = false,
 ): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.X2Y2,
@@ -167,7 +160,6 @@ const x2y2OrderBuilder = (
       is_bundle: order.is_bundle,
       is_private: order.is_private,
     },
-    createdInternally,
   }
 }
 
@@ -178,7 +170,6 @@ const x2y2OrderBuilder = (
  * @param order
  * @param chainId
  * @param contract
- * @param createdInternally
  */
 
 export const orderEntityBuilder = async (
@@ -187,14 +178,7 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
   contract: string,
-  createdInternally?: boolean,
 ):  Promise<Partial<entity.TxOrder>> => {
-  let isInternal
-  if (createdInternally) {
-    isInternal = createdInternally
-  } else {
-    isInternal = false
-  }
   let orderHash: string,
     walletAddress: string,
     tokenId: string,
@@ -218,7 +202,7 @@ export const orderEntityBuilder = async (
       tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
       return `ethereum/${checksumContract}/${tokenId}`
     })
-    orderEntity = seaportOrderBuilder(seaportOrder, isInternal)
+    orderEntity = seaportOrderBuilder(seaportOrder)
     break
   case defs.ProtocolType.LooksRare:
     looksrareOrder = order as LooksRareOrder
@@ -228,7 +212,7 @@ export const orderEntityBuilder = async (
     timestampFromSource = Number(looksrareOrder.startTime)
     expirationFromSource =  Number(looksrareOrder.endTime)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = looksrareOrderBuilder(looksrareOrder, isInternal)
+    orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
   case defs.ProtocolType.X2Y2:
     x2y2Order = order as X2Y2Order
@@ -238,7 +222,7 @@ export const orderEntityBuilder = async (
     timestampFromSource = Number(x2y2Order.created_at)
     expirationFromSource = Number(x2y2Order.end_at)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = x2y2OrderBuilder(x2y2Order, isInternal)
+    orderEntity = x2y2OrderBuilder(x2y2Order)
     break
   default:
     break
