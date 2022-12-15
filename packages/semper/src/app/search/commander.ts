@@ -150,7 +150,7 @@ class Commander {
           await addDocumentsToTypesense(this.client, collectionName, documents)
         }
       } while (retrievedCount !== totalCount)
-      this.client.aliases().upsert(name, { collection_name: collectionName })
+      // this.client.aliases().upsert(name, { collection_name: collectionName })
     }
   }
 
