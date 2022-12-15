@@ -2,14 +2,11 @@ import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-// import { FindOptionsWhere, IsNull } from 'typeorm'
-// import { appError, marketBidError, marketListingError, marketSwapError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { _logger, contracts, db, defs, entity, helper, provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { auth, joi } from '../helper'
-// import { core } from '../service'
 
 const logger = _logger.Factory(_logger.Context.MarketSwap, _logger.Context.GraphQL)
 
