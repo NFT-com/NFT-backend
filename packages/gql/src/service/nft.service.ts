@@ -690,7 +690,7 @@ const uploadImageToS3 = async (
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
       // File Format not acceptable
       logger.log(`File format not acceptable for ${imageUrl}`)
-      return Promise.reject(new Error('File format is unacceptable'))
+      return null
     } else {
       imageUrl = processIPFSURL(imageUrl)
       ext = extensionFromFilename(filename)
@@ -743,7 +743,9 @@ const uploadImageToS3 = async (
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
-    throw err
+    
+    // error should not be thrown, just logged
+    return null
   }
 }
 
@@ -1860,6 +1862,7 @@ export const getCollectionInfo = async (
         && collection.logoUrl !== logoUrl
         && !!collection.description
 
+      logger.log(`notAllowedToProceed: ${notAllowedToProceed}`)
       if (notAllowedToProceed) {
         return {
           collection,
@@ -1868,6 +1871,7 @@ export const getCollectionInfo = async (
       }
 
       const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
+      logger.log(`details: ${details}`)
       if (details) {
         if (details.contract) {
           if (details.contract.metadata?.cached_banner_url && details.contract.metadata?.cached_banner_url?.length) {
