@@ -50,7 +50,7 @@ describe('search engine service', () => {
     })
 
     it('sends an NFT to the search engine', async () => {
-      const seService = new SearchEngineService(
+      const seService = SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])), repos)
 
       const result = await seService.indexNFTs([nft])
@@ -59,7 +59,7 @@ describe('search engine service', () => {
     })
 
     it('notifies of an unsuccessful import', async () => {
-      const seService = new SearchEngineService(
+      const seService = SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])), repos)
 
       const result = await seService.indexNFTs([nft])
@@ -79,7 +79,7 @@ describe('search engine service', () => {
     })
 
     it('calls the search engine client to remove the NFT document', async () => {
-      const seService = new SearchEngineService(
+      const seService = SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
       
       const result = await seService.deleteNFT('123456abc')
@@ -105,7 +105,7 @@ describe('search engine service', () => {
     })
 
     it('sends collections to the search engine', async () => {
-      const seService = new SearchEngineService(
+      const seService = SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient(
           [{ success: true }, { success: true }])), repos)
 
@@ -119,7 +119,7 @@ describe('search engine service', () => {
     })
 
     it('notifies of failed import', async () => {
-      const seService = new SearchEngineService(
+      const seService = SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient(
           [{ success: false }, { success: true }])), repos)
 
@@ -144,7 +144,7 @@ describe('search engine service', () => {
     })
 
     it('calls the search engine client to remove the NFT document', async () => {
-      const seService = new SearchEngineService(
+      const seService = SearchEngineService(
         SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
 
       const collections = [

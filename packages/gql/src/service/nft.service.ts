@@ -33,7 +33,7 @@ import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-const seService = new SearchEngineService()
+const seService = SearchEngineService()
 
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL

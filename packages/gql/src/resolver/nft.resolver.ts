@@ -107,7 +107,7 @@ const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
 //   },
 // ]
 
-const seService = new SearchEngineService()
+const seService = SearchEngineService()
 
 const getNFT = (
   _: unknown,

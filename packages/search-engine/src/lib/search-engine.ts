@@ -43,26 +43,17 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   }
 }
 
-export class SearchEngineService {
-
-  private _client: SearchEngineClient | Partial<SearchEngineClient>
-  private _repos: db.Repository | any
-
-  constructor(client = SearchEngineClient.create(), repos: any = db.newRepositories()) {
-    this._client = client
-    this._repos = repos
-  }
-
-  private _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
+export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
+  const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
     return  (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
   }
-  indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
+  const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     try {
       const nftsToIndex = await Promise.all(nfts.map(async (nft) => {
         const ctx = {
           chain: null,
           network: null,
-          repositories: this._repos, // Only repositories is required for this query
+          repositories: repos, // Only repositories is required for this query
           user: null,
           wallet: null,
         }
@@ -79,7 +70,7 @@ export class SearchEngineService {
           defs.EntityType.Wallet,
         )(nft, null, ctx)
 
-        const txActivityListings = await this._repos.txActivity.findActivitiesForNFT(
+        const txActivityListings = await repos.txActivity.findActivitiesForNFT(
           nft.contract, nft.tokenId, defs.ActivityType.Listing,
         )
 
@@ -126,33 +117,33 @@ export class SearchEngineService {
           isProfile: nft.contract === PROFILE_CONTRACT,
           issuance: collection?.issuanceDate?.getTime() || 0,
           hasListings: listings.length ? 1 : 0,
-          score: this._calculateNFTScore(collection, !!listings.length),
+          score: _calculateNFTScore(collection, !!listings.length),
         }
       }))
 
-      return this._client.insertDocuments('nfts', nftsToIndex)
+      return client.insertDocuments('nfts', nftsToIndex)
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err
     }
   }
 
-  deleteNFT = (nftId: string): Promise<boolean> => {
-    return this._client.removeDocument('nfts', nftId)
+  const deleteNFT = (nftId: string): Promise<boolean> => {
+    return client.removeDocument('nfts', nftId)
   }
 
-  private _calculateCollectionScore = (collection: entity.Collection): number => {
+  const _calculateCollectionScore = (collection: entity.Collection): number => {
     const officialVal = collection.isOfficial ? 1 : 0
     const nftcomVal = [PROFILE_CONTRACT, GK_CONTRACT].includes(collection.contract) ? 1000000 : 0
     return officialVal + nftcomVal
   }
-  indexCollections = async (collections: entity.Collection[]): Promise<boolean> => {
+  const indexCollections = async (collections: entity.Collection[]): Promise<boolean> => {
     try {
       const collectionsToIndex = await Promise.all(
         collections
           .filter((collection) => !collection.isSpam)
           .map(async (collection) => {
-            const nft = await this._repos.nft.findOne({
+            const nft = await repos.nft.findOne({
               select: ['type'],
               where: {
                 contract: utils.getAddress(collection.contract),
@@ -175,22 +166,22 @@ export class SearchEngineService {
               logoUrl: collection.logoUrl,
               isOfficial: collection.isOfficial || false,
               isCurated: collection.isCurated || false,
-              score: this._calculateCollectionScore(collection),
+              score: _calculateCollectionScore(collection),
             }
           }),
       )
 
-      return this._client.insertDocuments('collections', collectionsToIndex)
+      return client.insertDocuments('collections', collectionsToIndex)
     } catch (err) {
       Sentry.captureMessage(`Error in indexCollections: ${err}`)
       throw err
     }
   }
 
-  deleteCollections = async (collections: entity.Collection[]): Promise<void> => {
+  const deleteCollections = async (collections: entity.Collection[]): Promise<void> => {
     try {
       await Promise.all(collections.map(async (collection) => {
-        await this._client.removeDocument('collections', collection.id)
+        await client.removeDocument('collections', collection.id)
       }))
     } catch (err) {
       Sentry.captureMessage(`Error in deleteCollections: ${err}`)
@@ -198,4 +189,10 @@ export class SearchEngineService {
     }
   }
 
+  return {
+    deleteCollections,
+    deleteNFT,
+    indexCollections,
+    indexNFTs,
+  }
 }
