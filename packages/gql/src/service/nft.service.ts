@@ -39,12 +39,7 @@ const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
-const exceptionBannerUrls: string[] = [
-  'https://cdn.nft.com/collections/1/%banner.png',
-  'https://cdn.nft.com/collections/1/%banner.jpg',
-  'https://cdn.nft.com/collections/1/%banner.jpeg',
-  'https://cdn.nft.com/collectionBanner_default.png',
-]
+const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
 
 let alchemyUrl: string
 let chainId: string
@@ -1860,10 +1855,12 @@ export const getCollectionInfo = async (
 
       // check if logoUrl, bannerUrl, description are null or default -> if not, return, else, proceed
       const notAllowedToProceed: boolean = !!collection.bannerUrl
-        && !exceptionBannerUrls.includes(collection.bannerUrl)
+        && !exceptionBannerUrlRegex.test(collection.bannerUrl)
         && !!collection.logoUrl
         && collection.logoUrl !== logoUrl
         && !!collection.description
+
+      logger.log(`conditon: ${notAllowedToProceed}`)
 
       if (notAllowedToProceed) {
         return {
