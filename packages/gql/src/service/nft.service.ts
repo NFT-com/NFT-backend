@@ -1862,7 +1862,6 @@ export const getCollectionInfo = async (
         && collection.logoUrl !== logoUrl
         && !!collection.description
 
-      logger.log(`notAllowedToProceed: ${notAllowedToProceed}`)
       if (notAllowedToProceed) {
         return {
           collection,
@@ -1871,7 +1870,6 @@ export const getCollectionInfo = async (
       }
 
       const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
-      logger.log(`details: ${details}`)
       if (details) {
         if (details.contract) {
           if (details.contract.metadata?.cached_banner_url && details.contract.metadata?.cached_banner_url?.length) {
