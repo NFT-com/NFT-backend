@@ -318,9 +318,7 @@ export const start = async (): Promise<void> => {
   server = new ApolloServer({
     //gql schema only visibly locally
     schema,
-    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(cache) }), {
-      disableBatchReads: true,
-    }),
+    cache: new KeyvAdapter(new Keyv({ store: new KeyvRedis(cache) })),
     introspection: process.env.NODE_ENV === 'local',
     context: createContext,
     formatError,
