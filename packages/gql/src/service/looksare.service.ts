@@ -201,12 +201,10 @@ export const retrieveMultipleOrdersLooksrare = async (
  * Returns true if the listing succeeded, false otherwise.
  * @param order  stringified JSON matching the LooksRareOrder type
  * @param chainId
- * @param createdInternally
  */
 export const createLooksrareListing = async (
   order: string,
   chainId: string,
-  createdInternally: boolean,
 ): Promise<Partial<entity.TxOrder> | null | Error> => {
   let looksrareOrder: Partial<entity.TxOrder>
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
@@ -224,7 +222,6 @@ export const createLooksrareListing = async (
         res.data.data,
         chainId,
         res.data.data.collectionAddress,
-        createdInternally,
       )
       return looksrareOrder
     }

@@ -1109,13 +1109,12 @@ export const listNFTSeaport = async (
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   const profileUrl = args?.input.profileUrl
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return createSeaportListing(seaportSignature, seaportParams, chainId, createdInternally)
+  return createSeaportListing(seaportSignature, seaportParams, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save({ ...order, memo: args?.input.memo ?? null })
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1133,13 +1132,12 @@ export const listNFTLooksrare = async (
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
   const profileUrl = args?.input.profileUrl
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return createLooksrareListing(looksrareOrder, chainId, createdInternally)
+  return createLooksrareListing(looksrareOrder, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save({ ...order, memo: args?.input.memo ?? null })
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1172,13 +1170,12 @@ export const listNFTX2Y2 = async (
   const maker = args?.input?.maker
   const contract = args?.input?.contract
   const tokenId = args?.input?.tokenId
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug({ input: args?.input, wallet: ctx?.wallet?.id }, 'listNFTX2Y2')
 
-  return createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId, createdInternally)
+  return createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save({ ...order, memo: args?.input.memo ?? null })
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(

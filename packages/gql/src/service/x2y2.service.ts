@@ -183,7 +183,7 @@ const retrieveX2Y2OffersInBatches = async (
     const response: AxiosResponse = await offerInterceptorX2Y2(
       `/v1/offers?${queryUrl}&sort=price&direction=desc`,
     )
-    
+
     if (response?.data?.data?.length)
     {
       const orders = response?.data?.data
@@ -289,7 +289,7 @@ const retriveOrderX2Y2 = async (
 /**
  * Returns true if the listing succeeded, false otherwise.
  * @param order  x2y2 order
- * @param chainId 
+ * @param chainId
  */
 export const createX2Y2Listing = async (
   order: string,
@@ -297,7 +297,6 @@ export const createX2Y2Listing = async (
   contract: string,
   tokenId: string,
   chainId: string,
-  createdInternally: boolean,
 ): Promise<Partial<entity.TxOrder> | null | Error> => {
   let x2y2Order: Partial<entity.TxOrder>
   const baseUrl = chainId === '1' ?  X2Y2_API_BASE_URL: X2Y2_API_TESTNET_BASE_URL
@@ -315,7 +314,6 @@ export const createX2Y2Listing = async (
         retrievedOrder,
         chainId,
         contract,
-        createdInternally,
       )
       return x2y2Order
     }
