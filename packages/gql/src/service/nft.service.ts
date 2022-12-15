@@ -1860,8 +1860,6 @@ export const getCollectionInfo = async (
         && collection.logoUrl !== logoUrl
         && !!collection.description
 
-      logger.log(`conditon: ${notAllowedToProceed}`)
-
       if (notAllowedToProceed) {
         return {
           collection,
