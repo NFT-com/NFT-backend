@@ -143,7 +143,7 @@ export function marketplaceEventAddress(chainId: string | number = 'mainnet'): s
   case 5:
   case '5':
   case 'goerli':
-    return ''
+    return utils.getAddress('0xca2A56282ac2B8B42c506225c2bD4dbB8169aC25')
   case '1':
   case 1:
   case 'mainnet':
@@ -157,7 +157,7 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case 5:
   case '5':
   case 'goerli':
-    return ''
+    return utils.getAddress('0xa75F995f252ba5F7C17f834b314201271d32eC35')
   case '1':
   case 1:
   case 'mainnet':

@@ -11,15 +11,15 @@ enum AuctionType {
   Decreasing
 }
 
-enum AskSortType {
+enum ListingSortType {
   RecentlyCreated
   RecentlySold
   EndingSoon
   Oldest
 }
 
-type GetMarketAsk {
-  items: [MarketAsk!]
+type GetOrders {
+  items: [TxOrder!]
   pageInfo: PageInfo
   totalItems: Int
 }
@@ -40,36 +40,52 @@ type MarketplaceAsset {
   minimumBid: Uint256!
 }
 
-type MarketAsk {
+type TxListingOrder {
   id: ID!
-  structHash: String!
+  orderHash: String!
+  nonce: Int!
+  signature: Signature!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAsset!]
+  start: DateTime!
+  end: DateTime!
+  salt: Int!
+  acceptedAt: DateTime
+  chainId: String!
+  auctionType: AuctionType!
+  memo: String
+}
+
+type TxBidOrder {
+  id: ID!
+  orderHash: String!
   nonce: Int!
   signature: Signature!
   makerAddress: Address!
   makeAsset: [MarketplaceAsset!]
   takerAddress: Address!
   takeAsset: [MarketplaceAsset!]
-  buyNowTaker: String
-  marketSwapId: String
-  approvalTxHash: String
-  cancelTxHash: String
-  start: Int!
-  end: Int!
+  start: DateTime!
+  end: DateTime!
   salt: Int!
-  offerAcceptedAt: DateTime
+  acceptedAt: DateTime
+  rejectedAt: DateTime
   chainId: String!
   auctionType: AuctionType!
+  memo: String
 }
 
-input AsksInput {
+input ListingsInput {
   makerAddress: Address
   pageInput: PageInput
+  chainId: String
 }
 
-input NftAsksInput {
+input NftListingsInput {
   nftTokenId: Uint256!
   nftContractAddress: Address!
   makerAddress: Address
+  chainId: String
 }
 
 input AssetTypeInput {
@@ -87,7 +103,7 @@ input MarketplaceAssetInput {
   minimumBid: Uint256!
 }
 
-input CreateAskInput {
+input CreateListingInput {
   structHash: String!
   nonce: Int!
   auctionType: AuctionType!
@@ -100,37 +116,55 @@ input CreateAskInput {
   end: Int!
   salt: Int!
   chainId: String!
+  message: String
 }
 
-input CancelAskInput {
-  marketAskId: ID!
-  txHash: String!
+input CreateBidInput {
+  structHash: String!
+  nonce: Int!
+  auctionType: AuctionType!
+  signature: SignatureInput!
+  listingId: String!
+  makerAddress: Address!
+  makeAsset: [MarketplaceAssetInput!]
+  takerAddress: Address!
+  takeAsset: [MarketplaceAssetInput!]
+  start: Int!
+  end: Int!
+  salt: Int!
+  chainId: String!
+  message: String
 }
 
 input BuyNowInput {
-  marketAskId: ID!
+  listingOrderId: ID!
   txHash: String!
 }
 
-input FilterAskInput {
+input FilterListingInput {
   auctionType: AuctionType
-  sortBy: AskSortType
+  sortBy: ListingSortType
   chainId: String
+  pageInput: PageInput!
+}
+
+input MarketBidsInput {
+  makerAddress: Address
+  listingOrderId: String
   pageInput: PageInput
+  chainId: String
 }
 
 extend type Query {
-  getAsks(input: AsksInput!): GetMarketAsk!
-  getNFTAsks(input: NftAsksInput!): [MarketAsk!]!
-  getNFTOffers(input: NftAsksInput!): [MarketAsk!]!
-  filterAsks(input: FilterAskInput!): GetMarketAsk!
+  getListings(input: ListingsInput!): GetOrders!
+  getNFTListings(input: NftListingsInput!): [TxListingOrder!]!
+  filterListings(input: FilterListingInput!): GetOrders!
+  getBids(input: MarketBidsInput!): GetOrders!
 }
 
 extend type Mutation {
   "AUTHENTICATED"
-  createAsk(input: CreateAskInput!): MarketAsk!
+  createMarketListing(input: CreateListingInput!): TxListingOrder!
   "AUTHENTICATED"
-  cancelAsk(input: CancelAskInput!): Boolean!
-  "AUTHENTICATED"
-  buyNow(input: BuyNowInput!): MarketSwap!
+  createMarketBid(input: CreateBidInput!): TxBidOrder!
 }

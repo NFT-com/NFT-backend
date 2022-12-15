@@ -27,7 +27,7 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses,
+  checkNFTContractAddresses, getNativeOrdersForNFT,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
@@ -1114,7 +1114,7 @@ export const listNFTSeaport = async (
 
   return createSeaportListing(seaportSignature, seaportParams, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save({ ...order, createdInternally: true })
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1137,7 +1137,7 @@ export const listNFTLooksrare = async (
 
   return createLooksrareListing(looksrareOrder, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save({ ...order, createdInternally: true })
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1175,7 +1175,7 @@ export const listNFTX2Y2 = async (
 
   return createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save({ ...order, createdInternally: true })
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
     .catch(err => appError.buildInvalid(
@@ -1263,6 +1263,12 @@ export default {
     ),
     listings: getNFTActivities(
       defs.ActivityType.Listing,
+    ),
+    nativeListings: getNativeOrdersForNFT(
+      defs.ActivityType.Listing,
+    ),
+    nativeBids: getNativeOrdersForNFT(
+      defs.ActivityType.Bid,
     ),
   },
 }
