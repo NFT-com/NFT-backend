@@ -2128,9 +2128,9 @@ export const getNativeOrdersForNFT = <T>(
       const txOrders = await repositories.txOrder.find({
         where: {
           makerAddress: ethers.utils.getAddress(ownerAddress),
-          exchange: defs.ExchangeType.Marketplace,
+          exchange: defs.ExchangeType.NFTCOM,
           orderType: activityType,
-          protocol: defs.ProtocolType.Marketplace,
+          protocol: defs.ProtocolType.NFTCOM,
           chainId,
         },
       })
@@ -2144,9 +2144,9 @@ export const getNativeOrdersForNFT = <T>(
       const ids = filteredOrders.map((order) => order.id)
       const filter: Partial<entity.TxOrder> = helper.removeEmpty({
         makerAddress: ethers.utils.getAddress(ownerAddress),
-        exchange: defs.ExchangeType.Marketplace,
+        exchange: defs.ExchangeType.NFTCOM,
         orderType: activityType,
-        protocol: defs.ProtocolType.Marketplace,
+        protocol: defs.ProtocolType.NFTCOM,
         id: In(ids),
         chainId,
       })

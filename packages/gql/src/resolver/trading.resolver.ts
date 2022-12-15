@@ -38,9 +38,9 @@ const getListings = (
 
   const filter: Partial<entity.TxOrder> = helper.removeEmpty({
     makerAddress: ethers.utils.getAddress(makerAddress),
-    exchange: defs.ExchangeType.Marketplace,
+    exchange: defs.ExchangeType.NFTCOM,
     orderType: defs.ActivityType.Listing,
-    protocol: defs.ProtocolType.Marketplace,
+    protocol: defs.ProtocolType.NFTCOM,
     chainId,
   })
   return core.paginatedEntitiesBy(
@@ -65,9 +65,9 @@ const getNFTListings = async (
   const txOrders = await repositories.txOrder.find({
     where: {
       makerAddress: ethers.utils.getAddress(makerAddress),
-      exchange: defs.ExchangeType.Marketplace,
+      exchange: defs.ExchangeType.NFTCOM,
       orderType: defs.ActivityType.Listing,
-      protocol: defs.ProtocolType.Marketplace,
+      protocol: defs.ProtocolType.NFTCOM,
       chainId,
     },
   })
@@ -155,9 +155,9 @@ const availableToCreateListing = async (
       makerAddress: ethers.utils.getAddress(address),
       acceptedAt: IsNull(),
       swapTransactionId: IsNull(),
-      exchange: defs.ExchangeType.Marketplace,
+      exchange: defs.ExchangeType.NFTCOM,
       orderType: defs.ActivityType.Listing,
-      protocol: defs.ProtocolType.Marketplace,
+      protocol: defs.ProtocolType.NFTCOM,
     },
   })
 
@@ -302,9 +302,9 @@ const createListing = async (
     const listingOrder = await repositories.txOrder.save({
       activity,
       orderHash: args?.input.structHash,
-      exchange: defs.ExchangeType.Marketplace,
+      exchange: defs.ExchangeType.NFTCOM,
       orderType: defs.ActivityType.Listing,
-      protocol: defs.ProtocolType.Marketplace,
+      protocol: defs.ProtocolType.NFTCOM,
       nonce: args?.input.nonce,
       protocolData: {
         auctionType: args?.input.auctionType,
@@ -653,9 +653,9 @@ const createBid = async (
     bidOrder = await repositories.txOrder.save({
       activity,
       orderHash: args?.input.structHash,
-      exchange: defs.ExchangeType.Marketplace,
+      exchange: defs.ExchangeType.NFTCOM,
       orderType: defs.ActivityType.Bid,
-      protocol: defs.ProtocolType.Marketplace,
+      protocol: defs.ProtocolType.NFTCOM,
       nonce: args?.input.nonce,
       protocolData: {
         auctionType: args?.input.auctionType,
@@ -711,9 +711,9 @@ const getBids = (
 
   const filter: Partial<entity.TxOrder> = helper.removeEmpty({
     makerAddress: ethers.utils.getAddress(makerAddress),
-    exchange: defs.ExchangeType.Marketplace,
+    exchange: defs.ExchangeType.NFTCOM,
     orderType: defs.ActivityType.Bid,
-    protocol: defs.ProtocolType.Marketplace,
+    protocol: defs.ProtocolType.NFTCOM,
     listingId: args?.input.listingOrderId,
     chainId,
   })
