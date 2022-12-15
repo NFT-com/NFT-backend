@@ -39,6 +39,13 @@ const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
+const exceptionBannerUrls: string[] = [
+  'https://cdn.nft.com/collections/1/%banner.png',
+  'https://cdn.nft.com/collections/1/%banner.jpg',
+  'https://cdn.nft.com/collections/1/%banner.jpeg',
+  'https://cdn.nft.com/collectionBanner_default.png',
+]
+
 let alchemyUrl: string
 let chainId: string
 
@@ -686,6 +693,8 @@ const uploadImageToS3 = async (
     if (!imageUrl) return undefined
     // We skip previewLink generation for SVG, GIF, MP4 and MP3
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
+      // File Format not acceptable
+      logger.log(`File format not acceptable for ${imageUrl}`)
       return Promise.reject(new Error('File format is unacceptable'))
     } else {
       imageUrl = processIPFSURL(imageUrl)
@@ -694,17 +703,20 @@ const uploadImageToS3 = async (
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           // this image is svg so we skip it
-          return Promise.reject(new Error('ENS file format is unacceptable'))
+          logger.log(`ENS file format not acceptable for ${imageUrl}`)
+          return null
         } else if (imageUrl.includes('https://arweave.net/')) {
           // AR images are mp4 format, so we don't save as preview link
-          return Promise.reject(new Error('Arweave file format is unacceptable'))
+          logger.log(`Arweave file format is unacceptable for ${imageUrl}`)
+          return null
         } else {
           ext = 'png'
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
         }
       } else {
         if (ext === 'mp4' || ext === 'gif' || ext === 'svg' || ext === 'mp3') {
-          return Promise.reject(new Error('File format is unacceptable'))
+          logger.log(`File format is unacceptable for ${imageUrl}`)
+          return null
         } else {
           imageKey = uploadPath + Date.now() + '-' + filename
         }
@@ -1846,6 +1858,20 @@ export const getCollectionInfo = async (
       let description = null
       const uploadPath = `collections/${chainId}/`
 
+      // check if logoUrl, bannerUrl, description are null or default -> if not, return, else, proceed
+      const notAllowedToProceed: boolean = !!collection.bannerUrl
+        && !exceptionBannerUrls.includes(collection.bannerUrl)
+        && !!collection.logoUrl
+        && collection.logoUrl !== logoUrl
+        && !!collection.description
+
+      if (notAllowedToProceed) {
+        return {
+          collection,
+          nftPortResults,
+        }
+      }
+
       const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
       if (details) {
         if (details.contract) {
@@ -1858,7 +1884,14 @@ export const getCollectionInfo = async (
               contract,
               uploadPath,
             )
-            bannerUrl = banner ? banner : bannerUrl
+
+            if (banner) {
+              bannerUrl = banner
+            } else {
+              if (nft.metadata?.imageURL) {
+                bannerUrl = nft.metadata.imageURL
+              }
+            }
           }
           if (details.contract.metadata?.cached_thumbnail_url &&
             details.contract.metadata?.cached_thumbnail_url?.length
@@ -1897,6 +1930,9 @@ export const getCollectionInfo = async (
         }
       } else {
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
+          if (nft.metadata?.imageURL) {
+            bannerUrl = nft.metadata.imageURL
+          }
           await seService.indexCollections([
             await repositories.collection.updateOneById(collection.id, {
               bannerUrl,
