@@ -361,12 +361,7 @@ const filterListings = (
   const chainId = args?.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   const { auctionType, sortBy, pageInput } = helper.safeObject(args?.input)
-  // const filters: Partial<entity.MarketAsk>[] = [
-  //   helper.removeEmpty({
-  //     auctionType,
-  //     chainId,
-  //   }),
-  // ]
+
   let orderKey
   let orderDirection
   if (sortBy === 'RecentlyCreated') {
@@ -385,24 +380,7 @@ const filterListings = (
   console.log(auctionType, pageInput)
   console.log(orderKey, orderDirection)
   return null
-  // return core.paginatedEntitiesBy(
-  //   repositories.marketAsk,
-  //   pageInput,
-  //   filters,
-  //   [],
-  //   orderKey,
-  //   orderDirection,
-  // )
-  //   .then(pagination.toPageable(pageInput))
 }
-
-// TODOs
-// 1. add more advanced filters (sort by price, sort by floor)
-// 2. filter asks from a single user (walletId or address)
-// 3. filter private orders (designated takerAddress)
-// 4. show all marketAsk / marketBid, even if NFT is not in wallet -> to allow user to cancel
-//      -> front end to show if signature has enough balance
-// 5. get singular ASK (show all bids for a single ask)
 
 const validOrderMatch = async (
   listing: entity.TxOrder,
@@ -521,29 +499,6 @@ const validOrderMatch = async (
 
   return true
 }
-
-// FIXME: add validation later for 1% increase AND marketAskId
-// NOTE: currently this is limited every user to 1 active bid per user, not per ask
-// const availableToBid = async (
-//   address: string,
-//   repositories: db.Repository,
-// ): Promise<boolean> => {
-//   const now = Date.now() / 1000
-//   const marketBids = await repositories.marketBid.find({
-//     skip: 0,
-//     take: 1,
-//     order: { createdAt: 'DESC' },
-//     where: {
-//       makerAddress: ethers.utils.getAddress(address),
-//       cancelTxHash: null,
-//       marketSwapId: null,
-//       rejectedAt: null,
-//     },
-//   })
-
-//   const activeBids = marketBids.filter((bid) => bid.end >= now)
-//   return (activeBids.length === 0)
-// }
 
 const createBid = async (
   _: any,

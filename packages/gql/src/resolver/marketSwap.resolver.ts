@@ -38,13 +38,6 @@ const getSwaps = (
   ]
   console.log(filters)
   return null
-  // return core.paginatedEntitiesBy(
-  //   repositories.marketSwap,
-  //   pageInput,
-  //   filters,
-  //   ['marketAsk', 'marketBid'],
-  // )
-  //   .then(pagination.toPageable(pageInput))
 }
 
 const getUserSwaps = (
@@ -84,13 +77,6 @@ const getUserSwaps = (
   ]
   console.log(filters)
   return null
-  // return core.paginatedEntitiesBy(
-  //   repositories.marketSwap,
-  //   pageInput,
-  //   filters,
-  //   ['marketAsk', 'marketBid'],
-  // )
-  //   .then(pagination.toPageable(pageInput))
 }
 
 /**
@@ -204,51 +190,6 @@ const swapNFT = (
   joi.validateSchema(schema, args?.input)
   console.log(repositories)
   return null
-  // return repositories.marketAsk.findById(args?.input.marketAskId)
-  //   .then(fp.rejectIfEmpty(appError.buildNotFound(
-  //     marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
-  //     marketAskError.ErrorType.MarketAskNotFound,
-  //   )))
-  //   .then((ask: entity.MarketAsk): Promise<entity.MarketSwap> => {
-  //     return repositories.marketBid.findById(args?.input.marketBidId)
-  //       .then(fp.rejectIfEmpty(appError.buildNotFound(
-  //         marketBidError.buildMarketBidNotFoundMsg(args?.input.marketBidId),
-  //         marketBidError.ErrorType.MarketAskNotFound,
-  //       )))
-  //       .then((bid: entity.MarketBid): Promise<entity.MarketSwap> => {
-  //         // return validateTxHashForSwapNFT(
-  //         //   args?.input.txHash,
-  //         //   ask.chainId,
-  //         //   args?.input.marketAskId,
-  //         //   args?.input.marketBidId,
-  //         // ).then((blockNumber): Promise<entity.MarketSwap> => {
-  //         // if (blockNumber) {
-  //         return repositories.marketSwap.findOne({
-  //           where: {
-  //             txHash: args?.input.txHash,
-  //             marketAsk: ask,
-  //             marketBid: bid ? bid : IsNull(),
-  //           } as FindOptionsWhere<entity.MarketSwap> })
-  //           .then(fp.rejectIfNotEmpty(appError.buildExists(
-  //             marketSwapError.buildMarketSwapExistingMsg(),
-  //             marketSwapError.ErrorType.MarketSwapExisting,
-  //           )))
-  //           .then(() => repositories.marketSwap.save({
-  //             txHash: args?.input.txHash,
-  //             blockNumber: '',
-  //             marketAsk: ask,
-  //             marketBid: bid,
-  //           }))
-  //           // }
-  //           // else {
-  //           //   return Promise.reject(appError.buildInvalid(
-  //           //     marketSwapError.buildTxHashInvalidMsg(args?.input.txHash),
-  //           //     marketSwapError.ErrorType.TxHashInvalid,
-  //           //   ))
-  //           // }
-  //         // })
-  //       })
-  //   })
 }
 
 export default {
