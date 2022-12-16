@@ -38,10 +38,10 @@ export class TxTransaction extends BaseEntity {
   @Column({ nullable: false })
   blockNumber: string
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   nftContractAddress: string
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   nftContractTokenId: string
 
   @Column({ nullable: false, default: 'Default' })
@@ -55,5 +55,11 @@ export class TxTransaction extends BaseEntity {
 
   @Column({ nullable: true })
   chainId: string
+
+  @Column({ nullable: true })
+  listingOrderId: string
+
+  @Column({ nullable: true })
+  bidOrderId: string
 
 }

@@ -81,6 +81,7 @@ export enum ActivityType {
   Cancel = 'Cancel',
   Sale = 'Sale',
   Transfer = 'Transfer',
+  Swap = 'Swap',
 }
 
 export enum ActivityHL {
@@ -97,13 +98,15 @@ export enum ActivityStatus {
 export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',
-  X2Y2 = 'X2Y2'
+  X2Y2 = 'X2Y2',
+  NFTCOM = 'NFTCOM'
 }
 
 export enum ProtocolType {
   Seaport = 'Seaport',
   LooksRare = 'LooksRare',
-  X2Y2 = 'X2Y2'
+  X2Y2 = 'X2Y2',
+  NFTCOM = 'NFTCOM'
 }
 
 export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const

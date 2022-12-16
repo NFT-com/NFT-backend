@@ -49,6 +49,8 @@ type NFT {
   isHide: Boolean
   sortIndex: Int
   listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address): TxActivitiesOutput
+  nativeListings(pageInput: PageInput, status: ActivityStatus, owner: Address): GetOrders
+  nativeBids(pageInput: PageInput, status: ActivityStatus, owner: Address): GetOrders
 }
 
 input NFTsInput {
@@ -192,12 +194,14 @@ input ListNFTSeaportInput {
   seaportSignature: String
   profileUrl: String
   chainId: String
+  memo: String
 }
 
 input ListNFTLooksrareInput {
   looksrareOrder: String
   profileUrl: String
   chainId: String
+  memo: String
 }
 
 input ListNFTX2Y2Input {
@@ -207,6 +211,7 @@ input ListNFTX2Y2Input {
   contract: String
   tokenId: String
   chainId: String
+  memo: String
 }
 
 type UpdateAssociatedContractOutput {

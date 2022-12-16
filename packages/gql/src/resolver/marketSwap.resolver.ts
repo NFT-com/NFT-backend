@@ -1,15 +1,12 @@
 import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { FindOptionsWhere, IsNull } from 'typeorm'
 
-import { appError, marketAskError, marketBidError, marketSwapError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
-import { _logger, contracts, db, defs, entity, fp, helper, provider } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, helper, provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { auth, joi, pagination } from '../helper'
-import { core } from '../service'
+import { auth, joi } from '../helper'
 
 const logger = _logger.Factory(_logger.Context.MarketSwap, _logger.Context.GraphQL)
 
@@ -23,6 +20,7 @@ const getSwaps = (
   const pageInput = args?.input?.pageInput
   const { marketAskIds, marketBidIds } = helper.safeObject(args?.input)
 
+  console.log(repositories, pageInput)
   const filters: Partial<entity.MarketSwap>[] = [
     ...(marketAskIds ?? []).map((askIdToFind) => helper.removeEmpty({
       marketAsk: askIdToFind == null ? null : {
@@ -35,13 +33,8 @@ const getSwaps = (
       },
     })),
   ]
-  return core.paginatedEntitiesBy(
-    repositories.marketSwap,
-    pageInput,
-    filters,
-    ['marketAsk', 'marketBid'],
-  )
-    .then(pagination.toPageable(pageInput))
+  console.log(filters)
+  return null
 }
 
 const getUserSwaps = (
@@ -56,6 +49,7 @@ const getUserSwaps = (
   // TODO: also find the swaps where input.participant initiated a "buyNow" event
   // in that case, there is just one MarketAsk and the buyer's address isn't saved
   // anywhere in our DB currently.
+  console.log(repositories, pageInput)
   const filters: Partial<entity.MarketSwap>[] = [
     helper.removeEmpty({
       marketAsk: {
@@ -78,13 +72,8 @@ const getUserSwaps = (
       },
     }),
   ]
-  return core.paginatedEntitiesBy(
-    repositories.marketSwap,
-    pageInput,
-    filters,
-    ['marketAsk', 'marketBid'],
-  )
-    .then(pagination.toPageable(pageInput))
+  console.log(filters)
+  return null
 }
 
 /**
@@ -196,51 +185,8 @@ const swapNFT = (
     txHash: Joi.string().required(),
   })
   joi.validateSchema(schema, args?.input)
-  return repositories.marketAsk.findById(args?.input.marketAskId)
-    .then(fp.rejectIfEmpty(appError.buildNotFound(
-      marketAskError.buildMarketAskNotFoundMsg(args?.input.marketAskId),
-      marketAskError.ErrorType.MarketAskNotFound,
-    )))
-    .then((ask: entity.MarketAsk): Promise<entity.MarketSwap> => {
-      return repositories.marketBid.findById(args?.input.marketBidId)
-        .then(fp.rejectIfEmpty(appError.buildNotFound(
-          marketBidError.buildMarketBidNotFoundMsg(args?.input.marketBidId),
-          marketBidError.ErrorType.MarketAskNotFound,
-        )))
-        .then((bid: entity.MarketBid): Promise<entity.MarketSwap> => {
-          // return validateTxHashForSwapNFT(
-          //   args?.input.txHash,
-          //   ask.chainId,
-          //   args?.input.marketAskId,
-          //   args?.input.marketBidId,
-          // ).then((blockNumber): Promise<entity.MarketSwap> => {
-          // if (blockNumber) {
-          return repositories.marketSwap.findOne({
-            where: {
-              txHash: args?.input.txHash,
-              marketAsk: ask,
-              marketBid: bid ? bid : IsNull(),
-            } as FindOptionsWhere<entity.MarketSwap> })
-            .then(fp.rejectIfNotEmpty(appError.buildExists(
-              marketSwapError.buildMarketSwapExistingMsg(),
-              marketSwapError.ErrorType.MarketSwapExisting,
-            )))
-            .then(() => repositories.marketSwap.save({
-              txHash: args?.input.txHash,
-              blockNumber: '',
-              marketAsk: ask,
-              marketBid: bid,
-            }))
-            // }
-            // else {
-            //   return Promise.reject(appError.buildInvalid(
-            //     marketSwapError.buildTxHashInvalidMsg(args?.input.txHash),
-            //     marketSwapError.ErrorType.TxHashInvalid,
-            //   ))
-            // }
-          // })
-        })
-    })
+  console.log(repositories)
+  return null
 }
 
 export default {
