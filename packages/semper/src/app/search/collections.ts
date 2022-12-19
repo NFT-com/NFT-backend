@@ -21,8 +21,9 @@ const getRandomFloat = (min, max, decimals): number => {
 
 const calculateCollectionScore = (collection: CollectionDao): number => {
   const officialVal = collection.isOfficial ? 1 : 0
+  const curatedVal = collection.isCurated ? 1 : 0
   const nftcomVal = [PROFILE_CONTRACT, GK_CONTRACT].includes(collection.contract) ? 1000000 : 0
-  return officialVal + nftcomVal
+  return officialVal + curatedVal + nftcomVal
 }
 
 const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): number => {
