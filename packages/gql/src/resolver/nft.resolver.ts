@@ -293,7 +293,7 @@ const returnProfileNFTs = async (
           }
         }
       }
-      // await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 0) // no cache
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
     }
 
     let paginatedNFTs: Array<gql.NFT>
@@ -1160,7 +1160,6 @@ export const listNFTX2Y2 = async (
       tokenId: Joi.string().required(),
       chainId: Joi.string().optional(),
       profileUrl: Joi.string().optional(),
-      createdInternally: Joi.boolean().optional(),
     }),
   })
   joi.validateSchema(schema, args)
