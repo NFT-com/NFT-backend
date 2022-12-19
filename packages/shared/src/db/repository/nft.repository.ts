@@ -25,6 +25,7 @@ export class NFTRepository extends BaseRepository<NFT> {
       SELECT
         "contract",
         "name",
+        "issuanceDate",
         "isOfficial",
         "isCurated"
       FROM
