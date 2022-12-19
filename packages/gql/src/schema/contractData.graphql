@@ -138,6 +138,7 @@ type NFTPortTxByContract {
 type NFTPortTxByNFTPriceDetails {
   asset_type: String
   price: Float
+  contract_address: String
   price_usd: Float
 }
 
