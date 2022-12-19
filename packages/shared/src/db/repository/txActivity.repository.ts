@@ -1,9 +1,9 @@
 import {  In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
+import { entity } from '@nftcom/shared'
 import { TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
 
-import { entity } from '..'
 import { BaseRepository } from './base.repository'
 
 interface EntityNameAndType {
@@ -122,7 +122,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   ): Promise<TxActivity[]> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
-  
+
     return queryBuilder
       .where({
         nftContract: contract,
@@ -167,10 +167,10 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     activityType: ActivityType,
   ): Promise<TxActivity[]> => {
     const nftIds = nfts.map((nft: entity.NFT) => `ethereum/${nft.contract}/${nft.tokenId}`)
-  
+
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
-  
+
     return queryBuilder
       .where({
         activityType,
