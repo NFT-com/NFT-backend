@@ -24,7 +24,9 @@ export class NFTRepository extends BaseRepository<NFT> {
     WITH parent_collection AS (
       SELECT
         "contract",
-        "name"
+        "name",
+        "isOfficial",
+        "isCurated"
       FROM
         collection
       WHERE "isSpam" = false

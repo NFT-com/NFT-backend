@@ -36,8 +36,8 @@ const main = async (): Promise<void> => {
   const repositories = db.newRepositories()
   const commander = new Commander(typesenseClient, repositories)
   
-  await commander.help()
-  // await commander.restore()
+  // await commander.help()
+  await commander.restore()
   // await commander.erase()
   // await commander.update('collections', ['issuance'])
   // await commander.update('nfts', ['contractAddr'])

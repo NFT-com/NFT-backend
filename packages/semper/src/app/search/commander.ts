@@ -2,10 +2,12 @@ import * as Typesense from 'typesense'
 import { CollectionSchema, CollectionUpdateSchema } from 'typesense/lib/Typesense/Collection'
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections'
 
-import { _logger } from '@nftcom/shared'
+import { _logger, helper } from '@nftcom/shared'
 import { db } from '@nftcom/shared'
+import { ActivityType } from '@nftcom/shared/defs'
 
 import { collectionNames, mapCollectionData } from './collections'
+import { TxActivityDAO } from './model'
 import collections from './schemas/collections.json'
 import nfts from './schemas/nfts.json'
 
@@ -14,6 +16,7 @@ const logger = _logger.Factory(
   _logger.Context.Typesense,
 )
 
+const NFT_PAGE_SIZE = parseInt(process.env.NFT_PAGE_SIZE) || 2_000_000
 const N_CHUNKS = parseInt(process.env.N_CHUNKS) || 1
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE) || 50_000
 const chunk = (arr: any[], size: number): any[] => {
@@ -38,7 +41,7 @@ const addDocumentsToTypesense = async (
           return client
             .collections(collectionName)
             .documents()
-            .import(jsonl, { batch_size: docChunk.length })
+            .import(jsonl)
         }),
       )
 
@@ -105,7 +108,7 @@ class Commander {
       const cursorContract = cursor ? cursor[0] : undefined
       const cursorId = cursor ? cursor[1] : undefined
       const data = await this.repositories
-        .nft.findPageWithCollectionAndWallet(cursorContract, cursorId, 2_000_000)
+        .nft.findPageWithCollectionAndWallet(cursorContract, cursorId, NFT_PAGE_SIZE)
       const count = parseInt(data[0].total_count)
       return [data, count]
     } else if (name === 'collections') {
@@ -128,6 +131,23 @@ class Commander {
         totalCount = 0,
         cursor: string | any[]
       const collectionName = `${name}-${timestamp}`
+
+      let listingMap
+      if (name === 'nfts') {
+        listingMap = (await this.repositories.txActivity.findActivitiesNotExpired(ActivityType.Listing))
+          .reduce((map, txActivity: TxActivityDAO) => {
+            if (helper.isNotEmpty(txActivity.order.protocolData)) {
+              const nftIdParts = txActivity.nftId[0].split('/')
+              const k = `${nftIdParts[1]}-${nftIdParts[2]}`
+              if (map[k]?.length) {
+                map[k].push(txActivity)
+              } else {
+                map[k] = [txActivity]
+              }
+            }
+            return map
+          }, {})
+      }
       do {
         logger.info({ name }, 'COLLECTING DATA')
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -140,17 +160,16 @@ class Commander {
           cursor = [data[data.length - 1].contract, data[data.length - 1].id]
         }
         logger.info({ retrievedCount, totalCount, cursor })
-
         logger.info({ name }, 'MAPPING DATA')
         const documents = (
-          await mapCollectionData(name, data, this.repositories)
+          await mapCollectionData(name, data, this.repositories, listingMap)
         ).filter(x => x !== undefined)
 
         if (documents) {
           await addDocumentsToTypesense(this.client, collectionName, documents)
         }
       } while (retrievedCount !== totalCount)
-      // this.client.aliases().upsert(name, { collection_name: collectionName })
+      this.client.aliases().upsert(name, { collection_name: collectionName })
     }
   }
 

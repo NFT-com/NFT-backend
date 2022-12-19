@@ -1,7 +1,7 @@
 import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
-import { defs, entity } from '@nftcom/shared'
+import { defs, entity, helper } from '@nftcom/shared'
 
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
 
@@ -26,12 +26,13 @@ const calculateCollectionScore = (collection: CollectionDao): number => {
 }
 
 const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): number => {
-  return (collection?.isCurated ? 1 : 0) + (collection?.isOfficial ? 1 : 0) + (+hasListings)
+  return (collection?.isCurated ? 1 : 0) + (collection?.isOfficial ? 1 : 0) + (hasListings ? 1 : 0)
 }
 
 const getListingPrice = (listing: TxActivityDAO): BigNumber => {
   switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare): {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
     const order = listing?.order?.protocolData
     return BigNumber.from(order?.price ?? 0)
   }
@@ -45,7 +46,8 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
 
 const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare): {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
     const order = listing?.order?.protocolData
     return order?.currencyAddress ?? order?.['currency']
   }
@@ -61,6 +63,7 @@ export const mapCollectionData = async (
   data: any[],
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _repos: any,
+  listingMap?: any,
 ): Promise<entity.BaseEntity[]> => {
   const result = []
   switch (collectionName) {
@@ -102,23 +105,23 @@ export const mapCollectionData = async (
           }
         })
       }
-      const txActivityListings = await _repos.txActivity.findActivitiesForNFT(
-        nft.contract, nft.tokenId, defs.ActivityType.Listing,
-      )
-      let listings = []
-      if (txActivityListings.length) {
-        listings = await Promise.all(txActivityListings.map(async (txActivity: TxActivityDAO) => {
-          const contractAddress = getListingCurrencyAddress(txActivity)
-          return {
-            marketplace: txActivity.order?.exchange,
-            price: utils.formatUnits(
-              getListingPrice(txActivity),
-              await getDecimalsForContract(contractAddress),
-            ),
-            type: undefined,
-            currency: await getSymbolForContract(contractAddress),
+      const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
+      const listings = []
+      if (txActivityListings) {
+        for (const txActivity of txActivityListings) {
+          if (helper.isNotEmpty(txActivity.order.protocolData)) {
+            const contractAddress = getListingCurrencyAddress(txActivity)
+            listings.push({
+              marketplace: txActivity.order?.exchange,
+              price: +utils.formatUnits(
+                getListingPrice(txActivity),
+                await getDecimalsForContract(contractAddress),
+              ),
+              type: undefined,
+              currency: await getSymbolForContract(contractAddress),
+            })
           }
-        }))
+        }
       }
       result.push({
         id: nft.id,
