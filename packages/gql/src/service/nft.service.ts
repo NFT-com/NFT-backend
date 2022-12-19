@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
-import { IsNull } from 'typeorm'
+import { In, IsNull } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
@@ -20,6 +20,7 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
+  paginatedEntitiesBy,
   processIPFSURL,
   s3ToCdn,
   saveUsersForAssociatedAddress,
@@ -39,6 +40,8 @@ const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
+const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
+
 let alchemyUrl: string
 let chainId: string
 
@@ -686,7 +689,9 @@ const uploadImageToS3 = async (
     if (!imageUrl) return undefined
     // We skip previewLink generation for SVG, GIF, MP4 and MP3
     if (imageUrl.indexOf('data:image/svg+xml') === 0) {
-      return Promise.reject(new Error('File format is unacceptable'))
+      // File Format not acceptable
+      logger.log(`File format not acceptable for ${imageUrl}`)
+      return null
     } else {
       imageUrl = processIPFSURL(imageUrl)
       ext = extensionFromFilename(filename)
@@ -694,17 +699,20 @@ const uploadImageToS3 = async (
       if (!ext) {
         if (imageUrl.includes('https://metadata.ens.domains/')) {
           // this image is svg so we skip it
-          return Promise.reject(new Error('ENS file format is unacceptable'))
+          logger.log(`ENS file format not acceptable for ${imageUrl}`)
+          return null
         } else if (imageUrl.includes('https://arweave.net/')) {
           // AR images are mp4 format, so we don't save as preview link
-          return Promise.reject(new Error('Arweave file format is unacceptable'))
+          logger.log(`Arweave file format is unacceptable for ${imageUrl}`)
+          return null
         } else {
           ext = 'png'
           imageKey = uploadPath + Date.now() + '-' + filename + '.png'
         }
       } else {
         if (ext === 'mp4' || ext === 'gif' || ext === 'svg' || ext === 'mp3') {
-          return Promise.reject(new Error('File format is unacceptable'))
+          logger.log(`File format is unacceptable for ${imageUrl}`)
+          return null
         } else {
           imageKey = uploadPath + Date.now() + '-' + filename
         }
@@ -736,7 +744,9 @@ const uploadImageToS3 = async (
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
-    throw err
+
+    // error should not be thrown, just logged
+    return null
   }
 }
 
@@ -1253,15 +1263,19 @@ export const changeNFTsVisibility = async (
   try {
     if (showAll) {
       await showAllNFTs(repositories, walletId, profileId, chainId)
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       return
     } else {
+      let clearCache = false
       if (showNFTIds?.length) {
         await showNFTs(showNFTIds, profileId, chainId)
+        clearCache = true
       }
-      if (hideNFTIds) {
+      if (hideNFTIds && hideNFTIds?.length) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
             const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
@@ -1281,6 +1295,10 @@ export const changeNFTsVisibility = async (
             }
           }),
         )
+        clearCache = true
+      }
+      if (clearCache) {
+        await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       }
     }
   } catch (err) {
@@ -1356,6 +1374,10 @@ export const updateNFTsOrder = async (
           }
         }
       }
+    }
+    if (orders.length) {
+      const chainId = process.env.CHAIN_ID
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
     }
   } catch (err) {
     logger.error(`Error in updateNFTsOrder: ${err}`)
@@ -1846,6 +1868,20 @@ export const getCollectionInfo = async (
       let description = null
       const uploadPath = `collections/${chainId}/`
 
+      // check if logoUrl, bannerUrl, description are null or default -> if not, return, else, proceed
+      const notAllowedToProceed: boolean = !!collection.bannerUrl
+        && !exceptionBannerUrlRegex.test(collection.bannerUrl)
+        && !!collection.logoUrl
+        && collection.logoUrl !== logoUrl
+        && !!collection.description
+
+      if (notAllowedToProceed) {
+        return {
+          collection,
+          nftPortResults,
+        }
+      }
+
       const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
       if (details) {
         if (details.contract) {
@@ -1858,7 +1894,14 @@ export const getCollectionInfo = async (
               contract,
               uploadPath,
             )
-            bannerUrl = banner ? banner : bannerUrl
+
+            if (banner) {
+              bannerUrl = banner
+            } else {
+              if (nft.metadata?.imageURL) {
+                bannerUrl = nft.metadata.imageURL
+              }
+            }
           }
           if (details.contract.metadata?.cached_thumbnail_url &&
             details.contract.metadata?.cached_thumbnail_url?.length
@@ -1897,6 +1940,9 @@ export const getCollectionInfo = async (
         }
       } else {
         if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
+          if (nft.metadata?.imageURL) {
+            bannerUrl = nft.metadata.imageURL
+          }
           await seService.indexCollections([
             await repositories.collection.updateOneById(collection.id, {
               bannerUrl,
@@ -2074,6 +2120,88 @@ export const getNFTActivities = <T>(
         'DESC',
       )
         .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+    }
+  }
+}
+
+export const filterNativeOrdersForNFT = async (
+  orders: entity.TxOrder[],
+  contract: string,
+  tokenId: string,
+  status: defs.ActivityStatus = defs.ActivityStatus.Valid,
+): Promise<entity.TxOrder[]> => {
+  const filteredOrders: entity.TxOrder[] = []
+  await Promise.allSettled(
+    orders.map(async (order: entity.TxOrder) => {
+      const matchingMakeAsset = order.makeAsset.find((asset) => {
+        return helper.checkSum(asset?.standard?.contractAddress) === helper.checkSum(contract) &&
+          BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
+      })
+      if (matchingMakeAsset) {
+        const activity = await repositories.txActivity.findById(order.activity.id)
+        if (activity.status === status) {
+          filteredOrders.push(order)
+        }
+      }
+    }),
+  )
+  return filteredOrders
+}
+
+export const getNativeOrdersForNFT = <T>(
+  activityType: defs.ActivityType,
+) => {
+  return async (parent: T, args: unknown, ctx: Context): Promise<gql.GetOrders> => {
+    let pageInput: gql.PageInput = args?.['pageInput']
+    const status: defs.ActivityStatus = args?.['status'] || defs.ActivityStatus.Valid
+    let ownerAddress: string = args?.['owner']
+    if (!ownerAddress) {
+      const walletId = parent?.['walletId']
+      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+      ownerAddress = wallet?.address
+    }
+    if (!pageInput) {
+      pageInput = {
+        'first': 50,
+      }
+    }
+    const contract = parent?.['contract']
+    const tokenId = parent?.['tokenId']
+    const chainId = parent?.['chainId'] || process.env.chainId
+
+    if (contract && tokenId) {
+      const txOrders = await repositories.txOrder.find({
+        where: {
+          makerAddress: ethers.utils.getAddress(ownerAddress),
+          exchange: defs.ExchangeType.NFTCOM,
+          orderType: activityType,
+          protocol: defs.ProtocolType.NFTCOM,
+          chainId,
+        },
+      })
+      const checksumContract = helper.checkSum(contract)
+      const filteredOrders = await filterNativeOrdersForNFT(
+        txOrders,
+        checksumContract,
+        BigNumber.from(tokenId).toHexString(),
+        status,
+      )
+      const ids = filteredOrders.map((order) => order.id)
+      const filter: Partial<entity.TxOrder> = helper.removeEmpty({
+        makerAddress: ethers.utils.getAddress(ownerAddress),
+        exchange: defs.ExchangeType.NFTCOM,
+        orderType: activityType,
+        protocol: defs.ProtocolType.NFTCOM,
+        id: In(ids),
+        chainId,
+      })
+      return paginatedEntitiesBy(
+        repositories.txOrder,
+        pageInput,
+        [filter],
+        [], // relations
+      )
+        .then(pagination.toPageable(pageInput))
     }
   }
 }

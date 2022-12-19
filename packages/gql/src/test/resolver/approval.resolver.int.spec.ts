@@ -41,6 +41,7 @@ jest.mock('@nftcom/cache', () => ({
 jest.mock('@nftcom/gql/service/nft.service', () => {
   return {
     getNFTActivities: () => Promise.resolve(null),
+    getNativeOrdersForNFT: () => Promise.resolve(null),
   }
 })
 
@@ -70,7 +71,7 @@ describe('approval resolver', () => {
       testMockWallet,
       )
     })
-      
+
     afterAll(async () => {
       jest.clearAllMocks()
       await testServer.stop()
@@ -133,4 +134,3 @@ describe('approval resolver', () => {
     })
   })
 })
-  

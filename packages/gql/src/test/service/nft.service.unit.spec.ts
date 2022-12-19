@@ -32,6 +32,7 @@ jest.mock('@nftcom/cache', () => ({
   cache: {
     get: jest.fn(),
     set: jest.fn(),
+    del: jest.fn(),
   },
   createCacheConnection: jest.fn(),
 }))

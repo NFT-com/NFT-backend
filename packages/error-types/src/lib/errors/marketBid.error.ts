@@ -1,5 +1,5 @@
 export enum ErrorType {
-  MarketAskNotFound = 'MARKET_ASK_NOT_FOUND',
+  MarketListingNotFound = 'MARKET_LISTING_NOT_FOUND',
   MarketBidInvalid = 'MARKET_BID_INVALID',
   MarketBidExisting = 'MARKET_BID_EXISTING',
   MarketBidNotFound = 'MARKET_BID_NOT_FOUND',
@@ -9,7 +9,7 @@ export enum ErrorType {
   TxHashInvalid = 'TX_HASH_INVALID',
 }
 
-export const buildMarketAskNotFoundMsg = (): string => 'MarketAsk not found'
+export const buildMarketListingNotFoundMsg = (): string => 'MarketListing not found'
 
 export const buildMarketBidInvalidMsg = (): string => 'MarketBid invalid'
 

@@ -18,7 +18,7 @@ describe('sendgrid service', () => {
       mailerSuccessResponse = true
       mailerFailureResponse = undefined
     })
-      
+
     afterAll(async () => {
       jest.clearAllMocks()
     })
@@ -139,9 +139,6 @@ describe('sendgrid service', () => {
     it('sends marketplace bid confirmation email', async () => {
       (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
         .mockResolvedValueOnce(mailerFailureResponse)
-      const bid: Partial<entity.MarketBid> = {
-        makerAddress: testMockWallet.address,
-      }
       const testUser: Partial<entity.User> = {
         email: testMockUser.email,
         preferences: {
@@ -154,7 +151,7 @@ describe('sendgrid service', () => {
       }
 
       const testSendResponse = await sendgridService
-        .sendMarketplaceBidConfirmEmail(bid as entity.MarketBid, testUser as entity.User)
+        .sendMarketplaceBidConfirmEmail(testMockWallet.address, testUser as entity.User)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })

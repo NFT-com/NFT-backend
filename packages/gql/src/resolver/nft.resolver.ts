@@ -29,7 +29,7 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses,
+  checkNFTContractAddresses, getNativeOrdersForNFT,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
@@ -295,7 +295,7 @@ const returnProfileNFTs = async (
           }
         }
       }
-      // await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 0) // no cache
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
     }
 
     let paginatedNFTs: Array<gql.NFT>
@@ -1111,13 +1111,12 @@ export const listNFTSeaport = async (
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
   const profileUrl = args?.input.profileUrl
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return createSeaportListing(seaportSignature, seaportParams, chainId, createdInternally)
+  return createSeaportListing(seaportSignature, seaportParams, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save(order)
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then((order) => {
       return Promise.all([
@@ -1140,13 +1139,12 @@ export const listNFTLooksrare = async (
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
   const profileUrl = args?.input.profileUrl
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return createLooksrareListing(looksrareOrder, chainId, createdInternally)
+  return createLooksrareListing(looksrareOrder, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save(order)
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then((order) => {
       return Promise.all([
@@ -1174,7 +1172,6 @@ export const listNFTX2Y2 = async (
       tokenId: Joi.string().required(),
       chainId: Joi.string().optional(),
       profileUrl: Joi.string().optional(),
-      createdInternally: Joi.boolean().optional(),
     }),
   })
   joi.validateSchema(schema, args)
@@ -1184,13 +1181,12 @@ export const listNFTX2Y2 = async (
   const maker = args?.input?.maker
   const contract = args?.input?.contract
   const tokenId = args?.input?.tokenId
-  const createdInternally = args?.input.createdInternally ? args?.input.createdInternally : false
 
   logger.debug({ input: args?.input, wallet: ctx?.wallet?.id }, 'listNFTX2Y2')
 
-  return createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId, createdInternally)
+  return createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId)
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
-      return repositories.txOrder.save(order)
+      return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
     .then((order) => {
       return Promise.all([
@@ -1283,6 +1279,12 @@ export default {
     ),
     listings: getNFTActivities(
       defs.ActivityType.Listing,
+    ),
+    nativeListings: getNativeOrdersForNFT(
+      defs.ActivityType.Listing,
+    ),
+    nativeBids: getNativeOrdersForNFT(
+      defs.ActivityType.Bid,
     ),
   },
 }
