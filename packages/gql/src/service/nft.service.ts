@@ -789,7 +789,7 @@ const uploadImageToS3 = async (
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
-    
+
     // error should not be thrown, just logged
     return null
   }
@@ -1320,15 +1320,19 @@ export const changeNFTsVisibility = async (
   try {
     if (showAll) {
       await showAllNFTs(repositories, walletId, profileId, chainId)
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       return
     } else {
+      let clearCache = false
       if (showNFTIds?.length) {
         await showNFTs(showNFTIds, profileId, chainId)
+        clearCache = true
       }
-      if (hideNFTIds) {
+      if (hideNFTIds && hideNFTIds?.length) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
             const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
@@ -1348,6 +1352,10 @@ export const changeNFTsVisibility = async (
             }
           }),
         )
+        clearCache = true
+      }
+      if (clearCache) {
+        await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       }
     }
   } catch (err) {
@@ -1423,6 +1431,10 @@ export const updateNFTsOrder = async (
           }
         }
       }
+    }
+    if (orders.length) {
+      const chainId = process.env.CHAIN_ID
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
     }
   } catch (err) {
     logger.error(`Error in updateNFTsOrder: ${err}`)
