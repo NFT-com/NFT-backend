@@ -3,6 +3,7 @@ import { Client, TopicMessageQuery, TopicMessageSubmitTransaction } from '@hashg
 import SubscriptionHandle from '@hashgraph/sdk/lib/topic/SubscriptionHandle'
 import { _logger } from '@nftcom/shared'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { isProduction } from '../config'
 import { IHederaConsensusService } from '../defs/hedera'
 
@@ -17,15 +18,15 @@ class _HederaConsensusService implements IHederaConsensusService {
   mirrorNetwork: string
 
   constructor() {
-    if (isProduction()) {
-      this.client = Client.forMainnet()
-      this.mirrorNetwork = 'mainnet-public.mirrornode.hedera.com:443'
-    } else {
-      this.client = Client.forTestnet()
-      this.mirrorNetwork = 'hcs.testnet.mirrornode.hedera.com:5600'
-    }
+    // if (isProduction()) {
+    //   this.client = Client.forMainnet()
+    //   this.mirrorNetwork = 'mainnet-public.mirrornode.hedera.com:443'
+    // } else {
+    //   this.client = Client.forTestnet()
+    //   this.mirrorNetwork = 'hcs.testnet.mirrornode.hedera.com:5600'
+    // }
 
-    this.topicId = process.env.HCS_TOPIC_ID
+    // this.topicId = process.env.HCS_TOPIC_ID
   }
 
   subscribe(): void {
