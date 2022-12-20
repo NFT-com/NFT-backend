@@ -8,6 +8,7 @@ import { _logger, defs, entity, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Approval, _logger.Context.GraphQL)
 
+// approve
 const approveAmount = (
   _: any,
   args: gql.MutationApproveAmountArgs,
