@@ -55,6 +55,7 @@ jobs:
         envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
         envkey_MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
         envkey_HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
+        envkey_HCS_ENABLED: ${{ secrets.HCS_ENABLED }}
         envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
         envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
