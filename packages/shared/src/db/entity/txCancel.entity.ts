@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { CancelActivities, CancelActivityType,ExchangeType } from '@nftcom/shared/defs'
+import { CancelActivities, CancelActivityType } from '@nftcom/shared/defs'
 
 import { BaseEntity, TxActivity } from '.'
 
@@ -20,8 +20,8 @@ export class TxCancel extends BaseEntity {
   })
   activity: TxActivity
 
-  @Column({ type: 'enum', enum: ExchangeType, nullable: false })
-  exchange: ExchangeType
+  @Column({  nullable: false })
+  exchange: string
 
   @Column({ type: 'enum', enum: CancelActivities, nullable: true })
   foreignType: CancelActivityType

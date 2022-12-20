@@ -1,0 +1,71 @@
+import { MigrationInterface, QueryRunner } from 'typeorm'
+
+export class RemoveEnumTypesFromTx1671569457593 implements MigrationInterface {
+
+  name = 'RemoveEnumTypesFromTx1671569457593'
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query('ALTER TABLE "tx_activity" DROP COLUMN "activityType"')
+    await queryRunner.query('DROP TYPE "public"."tx_activity_activitytype_enum"')
+    await queryRunner.query('ALTER TABLE "tx_activity" ADD "activityType" character varying NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_activity" DROP COLUMN "status"')
+    await queryRunner.query('DROP TYPE "public"."tx_activity_status_enum"')
+    await queryRunner.query('ALTER TABLE "tx_activity" ADD "status" character varying NOT NULL DEFAULT \'Valid\'')
+    await queryRunner.query('ALTER TABLE "tx_cancel" DROP COLUMN "exchange"')
+    await queryRunner.query('DROP TYPE "public"."tx_cancel_exchange_enum"')
+    await queryRunner.query('ALTER TABLE "tx_cancel" ADD "exchange" character varying NOT NULL')
+    await queryRunner.query('DROP INDEX "public"."IDX_83f602f1b4e1749ca7b9205df4"')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "exchange"')
+    await queryRunner.query('DROP TYPE "public"."tx_order_exchange_enum"')
+    await queryRunner.query('ALTER TABLE "tx_order" ADD "exchange" character varying NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "orderType"')
+    await queryRunner.query('DROP TYPE "public"."tx_order_ordertype_enum"')
+    await queryRunner.query('ALTER TABLE "tx_order" ADD "orderType" character varying NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "protocol"')
+    await queryRunner.query('DROP TYPE "public"."tx_order_protocol_enum"')
+    await queryRunner.query('ALTER TABLE "tx_order" ADD "protocol" character varying NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_transaction" DROP COLUMN "exchange"')
+    await queryRunner.query('DROP TYPE "public"."tx_transaction_exchange_enum"')
+    await queryRunner.query('ALTER TABLE "tx_transaction" ADD "exchange" character varying NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_transaction" DROP COLUMN "transactionType"')
+    await queryRunner.query('DROP TYPE "public"."tx_transaction_transactiontype_enum"')
+    await queryRunner.query('ALTER TABLE "tx_transaction" ADD "transactionType" character varying NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_transaction" DROP COLUMN "protocol"')
+    await queryRunner.query('DROP TYPE "public"."tx_transaction_protocol_enum"')
+    await queryRunner.query('ALTER TABLE "tx_transaction" ADD "protocol" character varying NOT NULL')
+    await queryRunner.query('CREATE INDEX "IDX_83f602f1b4e1749ca7b9205df4" ON "tx_order" ("makerAddress", "exchange", "nonce") ')
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query('DROP INDEX "public"."IDX_83f602f1b4e1749ca7b9205df4"')
+    await queryRunner.query('ALTER TABLE "tx_transaction" DROP COLUMN "protocol"')
+    await queryRunner.query('CREATE TYPE "public"."tx_transaction_protocol_enum" AS ENUM(\'LooksRare\', \'NFTCOM\', \'Seaport\', \'X2Y2\')')
+    await queryRunner.query('ALTER TABLE "tx_transaction" ADD "protocol" "public"."tx_transaction_protocol_enum" NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_transaction" DROP COLUMN "transactionType"')
+    await queryRunner.query('CREATE TYPE "public"."tx_transaction_transactiontype_enum" AS ENUM(\'Bid\', \'Cancel\', \'Listing\', \'Sale\', \'Swap\', \'Transfer\')')
+    await queryRunner.query('ALTER TABLE "tx_transaction" ADD "transactionType" "public"."tx_transaction_transactiontype_enum" NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_transaction" DROP COLUMN "exchange"')
+    await queryRunner.query('CREATE TYPE "public"."tx_transaction_exchange_enum" AS ENUM(\'LooksRare\', \'NFTCOM\', \'OpenSea\', \'X2Y2\')')
+    await queryRunner.query('ALTER TABLE "tx_transaction" ADD "exchange" "public"."tx_transaction_exchange_enum" NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "protocol"')
+    await queryRunner.query('CREATE TYPE "public"."tx_order_protocol_enum" AS ENUM(\'LooksRare\', \'NFTCOM\', \'Seaport\', \'X2Y2\')')
+    await queryRunner.query('ALTER TABLE "tx_order" ADD "protocol" "public"."tx_order_protocol_enum" NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "orderType"')
+    await queryRunner.query('CREATE TYPE "public"."tx_order_ordertype_enum" AS ENUM(\'Bid\', \'Cancel\', \'Listing\', \'Sale\', \'Swap\', \'Transfer\')')
+    await queryRunner.query('ALTER TABLE "tx_order" ADD "orderType" "public"."tx_order_ordertype_enum" NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_order" DROP COLUMN "exchange"')
+    await queryRunner.query('CREATE TYPE "public"."tx_order_exchange_enum" AS ENUM(\'LooksRare\', \'NFTCOM\', \'OpenSea\', \'X2Y2\')')
+    await queryRunner.query('ALTER TABLE "tx_order" ADD "exchange" "public"."tx_order_exchange_enum" NOT NULL')
+    await queryRunner.query('CREATE INDEX "IDX_83f602f1b4e1749ca7b9205df4" ON "tx_order" ("exchange", "makerAddress", "nonce") ')
+    await queryRunner.query('ALTER TABLE "tx_cancel" DROP COLUMN "exchange"')
+    await queryRunner.query('CREATE TYPE "public"."tx_cancel_exchange_enum" AS ENUM(\'LooksRare\', \'NFTCOM\', \'OpenSea\', \'X2Y2\')')
+    await queryRunner.query('ALTER TABLE "tx_cancel" ADD "exchange" "public"."tx_cancel_exchange_enum" NOT NULL')
+    await queryRunner.query('ALTER TABLE "tx_activity" DROP COLUMN "status"')
+    await queryRunner.query('CREATE TYPE "public"."tx_activity_status_enum" AS ENUM(\'Cancelled\', \'Executed\', \'Valid\')')
+    await queryRunner.query('ALTER TABLE "tx_activity" ADD "status" "public"."tx_activity_status_enum" NOT NULL DEFAULT \'Valid\'')
+    await queryRunner.query('ALTER TABLE "tx_activity" DROP COLUMN "activityType"')
+    await queryRunner.query('CREATE TYPE "public"."tx_activity_activitytype_enum" AS ENUM(\'Bid\', \'Cancel\', \'Listing\', \'Sale\', \'Swap\', \'Transfer\')')
+    await queryRunner.query('ALTER TABLE "tx_activity" ADD "activityType" "public"."tx_activity_activitytype_enum" NOT NULL')
+  }
+
+}

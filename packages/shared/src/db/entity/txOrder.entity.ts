@@ -1,6 +1,6 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 
-import { ActivityType, ExchangeType, MarketplaceAsset, ProtocolType } from '@nftcom/shared/defs'
+import { MarketplaceAsset } from '@nftcom/shared/defs'
 
 import { BaseEntity, TxActivity } from '.'
 
@@ -24,8 +24,8 @@ export class TxOrder extends BaseEntity {
   @Column({ unique: true, nullable: false }) // on-chain data will store tx hash
   orderHash: string
 
-  @Column({ type: 'enum', enum: ExchangeType, nullable: false })
-  exchange: ExchangeType
+  @Column({ nullable: false })
+  exchange: string
 
   @Column({ nullable: false })
   makerAddress: string
@@ -45,11 +45,11 @@ export class TxOrder extends BaseEntity {
   })
   takeAsset: MarketplaceAsset[]
 
-  @Column({ type: 'enum', enum: ActivityType, nullable: false })
-  orderType: ActivityType
+  @Column({ nullable: false })
+  orderType: string
 
-  @Column({ type: 'enum', enum: ProtocolType, nullable: false })
-  protocol: ProtocolType
+  @Column({ nullable: false })
+  protocol: string
 
   @Column({ type: 'json' })
   protocolData: any
