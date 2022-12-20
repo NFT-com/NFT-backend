@@ -25,7 +25,7 @@ import {
   s3ToCdn,
   saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
-import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
+import { NFTPortNFT, NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { SearchEngineService } from '@nftcom/search-engine'
@@ -345,36 +345,6 @@ export const getContractMetaDataFromAlchemy = async (
   }
 }
 
-export const getNFTsForCollection = async (
-  contractAddress: string,
-): Promise<any> => {
-  try {
-    const key = `getNFTsForCollection${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
-    const cachedContractMetadata: string = await cache.get(key)
-
-    const nfts = []
-    if (cachedContractMetadata) {
-      return JSON.parse(cachedContractMetadata)
-    } else {
-      const baseUrl = `${alchemyUrl}/getNFTsForCollection/?contractAddress=${contractAddress}&withMetadata=true`
-      const response = await axios.get(baseUrl)
-
-      if (response && response?.data) {
-        if (response?.data?.nfts && response?.data?.nfts?.length) {
-          nfts.push(...response.data.nfts)
-          await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 10) // 10 minutes
-          return nfts
-        } else {
-          return undefined
-        }
-      }
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in getNFTsForCollection: ${err}`)
-    return undefined
-  }
-}
-
 export const getCollectionNameFromContract = (
   contractAddress: string,
   chainId: string,
@@ -405,6 +375,81 @@ export const getCollectionNameFromContract = (
   }
 }
 
+export const getNFTsForCollection = async (
+  contractAddress: string,
+): Promise<any> => {
+  try {
+    const key = `getNFTsForCollection${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
+    const cachedContractMetadata: string = await cache.get(key)
+
+    const nfts = []
+    if (cachedContractMetadata) {
+      return JSON.parse(cachedContractMetadata)
+    } else {
+      const baseUrl = `${alchemyUrl}/getNFTsForCollection/?contractAddress=${contractAddress}&withMetadata=true`
+      const response = await axios.get(baseUrl)
+
+      if (response && response?.data) {
+        if (response?.data?.nfts && response?.data?.nfts?.length) {
+          nfts.push(...response.data.nfts)
+          await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 10) // 10 minutes
+          return nfts
+        } else {
+          return undefined
+        }
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getNFTsForCollection: ${err}`)
+    return undefined
+  }
+}
+
+export const getCollectionNameFromDataProvider = async (
+  contract: string,
+  chainId: string,
+  type:  defs.NFTType,
+): Promise<string> => {
+  try {
+    const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
+
+    if (contractDetails?.contractMetadata?.name) {
+      return contractDetails.contractMetadata.name
+    } else {
+      const contractNFT: entity.NFT = await repositories.nft.findOne({
+        where: {
+          contract,
+          chainId,
+        },
+      })
+
+      if (contractNFT) {
+        const nftPortDetails: NFTPortNFT = await retrieveNFTDetailsNFTPort(
+          contract,
+          contractNFT.tokenId,
+          chainId || process.env.CHAIN_ID,
+        )
+  
+        if (nftPortDetails?.contract?.name) {
+          return nftPortDetails?.contract?.name
+        }
+      }
+    }
+  } catch (error) {
+    logger.error(`Error in getCollectionNameFromDataProvider: ${error}`)
+    Sentry.captureException(error)
+    Sentry.captureMessage(`Error in getCollectionNameFromDataProvider: ${error}`)
+  }
+
+  const nameFromContract: string = await getCollectionNameFromContract(
+    contract,
+    chainId,
+    type,
+  )
+
+  return nameFromContract
+}
+
 export const updateCollectionForNFTs = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
@@ -427,7 +472,7 @@ export const updateCollectionForNFTs = async (
           where: { contract: ethers.utils.getAddress(nft.contract) },
         })
         if (!collection) {
-          const collectionName = await getCollectionNameFromContract(
+          const collectionName = await getCollectionNameFromDataProvider(
             nft.contract,
             nft.chainId,
             nft.type,
@@ -958,6 +1003,18 @@ export const indexNFTsOnSearchEngine = async (
   } catch (err) {
     logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
     Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
+    throw err
+  }
+}
+
+export const indexCollectionsOnSearchEngine = async (
+  collections: Array<entity.Collection>,
+): Promise<void> => {
+  try {
+    await seService.indexCollections(collections)
+  } catch (err) {
+    logger.error(`Error in indexCollectionsOnSearchEngine: ${err}`)
+    Sentry.captureMessage(`Error in indexCollectionsOnSearchEngine: ${err}`)
     throw err
   }
 }
@@ -1665,13 +1722,13 @@ export const updateCollectionForAssociatedContract = async (
       await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
     }
     // get collection info
-    let collectionName = await getCollectionNameFromContract(
+    let collectionName = await getCollectionNameFromDataProvider(
       contract,
       chainId,
       defs.NFTType.ERC721,
     )
     if (collectionName === 'Unknown Name') {
-      collectionName = await getCollectionNameFromContract(
+      collectionName = await getCollectionNameFromDataProvider(
         contract,
         chainId,
         defs.NFTType.ERC1155,
@@ -2134,7 +2191,8 @@ export const filterNativeOrdersForNFT = async (
   await Promise.allSettled(
     orders.map(async (order: entity.TxOrder) => {
       const matchingMakeAsset = order.makeAsset.find((asset) => {
-        return helper.checkSum(asset?.standard?.contractAddress) === helper.checkSum(contract) &&
+        return asset?.standard?.contractAddress &&
+          helper.checkSum(asset?.standard?.contractAddress) === helper.checkSum(contract) &&
           BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
       })
       if (matchingMakeAsset) {
