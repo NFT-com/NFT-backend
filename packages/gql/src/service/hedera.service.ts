@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Client, TopicMessageQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk'
 import SubscriptionHandle from '@hashgraph/sdk/lib/topic/SubscriptionHandle'
 import { _logger } from '@nftcom/shared'
@@ -5,6 +6,7 @@ import { _logger } from '@nftcom/shared'
 import { isProduction } from '../config'
 import { IHederaConsensusService } from '../defs/hedera'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 class _HederaConsensusService implements IHederaConsensusService {
@@ -31,26 +33,28 @@ class _HederaConsensusService implements IHederaConsensusService {
     this.client.setMirrorNetwork(this.mirrorNetwork)
   
     // subscribe to topic to listen to all new messages submitted to it
-    this.HCS = new TopicMessageQuery()
-      .setTopicId(this.topicId)
-      .subscribe(this.client,
-        error => { logger.error( error ) },
-        response => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const message = response.contents.toString()
-          // logger.info(message)
-        })
+    // this.HCS = new TopicMessageQuery()
+    //   .setTopicId(this.topicId)
+    //   .subscribe(this.client,
+    //     error => { logger.error( error ) },
+    //     response => {
+    //       // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //       const message = response.contents.toString()
+    //       // logger.info(message)
+    //     })
   }
 
   unsubscribe(): void {
-    if (!this.HCS) {
-      return
-    }
+    return
 
-    this.HCS.unsubscribe()
+    // if (!this.HCS) {
+    //   return
+    // }
+
+    // this.HCS.unsubscribe()
   }
 
-  async submitMessage(message: string): Promise<void> {
+  async submitMessage(_message: string): Promise<void> {
     // build client
     const accountId = process.env.HCS_ACCOUNT_ID
     const privateKey = process.env.HCS_PRIVATE_KEY
@@ -58,10 +62,10 @@ class _HederaConsensusService implements IHederaConsensusService {
     this.client.setOperator(accountId, privateKey)
 
     // specify topic id and submit a new message to HCS
-    await new TopicMessageSubmitTransaction()
-      .setTopicId(this.topicId)
-      .setMessage(message)
-      .execute(this.client)
+    // await new TopicMessageSubmitTransaction()
+    //   .setTopicId(this.topicId)
+    //   .setMessage(_message)
+    //   .execute(this.client)
   }
 
 }
