@@ -62,11 +62,11 @@ class _HederaConsensusService implements IHederaConsensusService {
     this.HCS.unsubscribe()
   }
 
-  async submitMessage(_message: string): Promise<void> {
+  async submitMessage(message: string): Promise<void> {
     if (!process.env.HCS_ENABLED) {
       return
     }
-    
+
     // build client
     const accountId = process.env.HCS_ACCOUNT_ID
     const privateKey = process.env.HCS_PRIVATE_KEY
@@ -76,7 +76,7 @@ class _HederaConsensusService implements IHederaConsensusService {
     // specify topic id and submit a new message to HCS
     await new TopicMessageSubmitTransaction()
       .setTopicId(this.topicId)
-      .setMessage(_message)
+      .setMessage(message)
       .execute(this.client)
   }
 
