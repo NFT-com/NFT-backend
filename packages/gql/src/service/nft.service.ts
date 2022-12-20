@@ -413,6 +413,7 @@ export const getCollectionNameFromDataProvider = async (
   try {
     const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
 
+    // priority to OS Collection Name from Alchemy before fetching name from contract  
     if (contractDetails?.contractMetadata?.openSea?.collectionName) {
       return contractDetails?.contractMetadata?.openSea?.collectionName
     }
@@ -420,8 +421,6 @@ export const getCollectionNameFromDataProvider = async (
     if (contractDetails?.contractMetadata?.name) {
       return contractDetails?.contractMetadata?.name
     }
-
-    // priority to OS Collection Name from Alchemy before fetching name from contract   
   } catch (error) {
     logger.error(`Error in getCollectionNameFromDataProvider: ${error}`)
     Sentry.captureException(error)
