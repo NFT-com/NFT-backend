@@ -461,6 +461,26 @@ describe('nft service', () => {
     })
   })
 
+  describe('getCollectionNameFromDataProvider', () => {
+    it('should return correct collection name for ERC721 type', async () => {
+      const contractAddress = '0x23581767a106ae21c074b2276D25e5C3e136a68b'
+      const chainId = '1'
+      const type = defs.NFTType.ERC721
+      const name = await nftService.getCollectionNameFromDataProvider(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown Name')
+    })
+
+    it('should return correct collection name for ERC1155 type', async () => {
+      const contractAddress = '0xdDd6754c22ffAC44980342173fa956Bc7DDa018e'
+      const chainId = '1'
+      const type = defs.NFTType.ERC1155
+      const name = await nftService.getCollectionNameFromDataProvider(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown Name')
+    })
+  })
+
   describe('getUserWalletFromNFT', () => {
     it('should return undefined when getOwnersForNFT throws error', async () => {
       // wrong contract
