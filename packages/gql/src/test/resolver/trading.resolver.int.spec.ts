@@ -104,11 +104,11 @@ describe('trading', () => {
       let activityType = new TxOrder()
       activityType.id = '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df'
       activityType.activity = activity
-      activityType.exchange = defs.ExchangeType.NFTCOM
+      // activityType.exchange = defs.ExchangeType.NFTCOM
       activityType.orderHash = '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df'
       activityType.orderType = defs.ActivityType.Listing
       activityType.makerAddress = testMockWallet.address
-      activityType.protocol = defs.ProtocolType.NFTCOM
+      // activityType.protocol = defs.ProtocolType.NFTCOM
       activityType.protocolData = {}
       activityType.chainId = '5'
 
