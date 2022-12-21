@@ -25,7 +25,7 @@ import {
   s3ToCdn,
   saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
-import { NFTPortNFT, NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
+import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { SearchEngineService } from '@nftcom/search-engine'
@@ -413,27 +413,13 @@ export const getCollectionNameFromDataProvider = async (
   try {
     const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
 
-    if (contractDetails?.contractMetadata?.name) {
-      return contractDetails.contractMetadata.name
-    } else {
-      const contractNFT: entity.NFT = await repositories.nft.findOne({
-        where: {
-          contract,
-          chainId,
-        },
-      })
+    // priority to OS Collection Name from Alchemy before fetching name from contract  
+    if (contractDetails?.contractMetadata?.openSea?.collectionName) {
+      return contractDetails?.contractMetadata?.openSea?.collectionName
+    }
 
-      if (contractNFT) {
-        const nftPortDetails: NFTPortNFT = await retrieveNFTDetailsNFTPort(
-          contract,
-          contractNFT.tokenId,
-          chainId || process.env.CHAIN_ID,
-        )
-  
-        if (nftPortDetails?.contract?.name) {
-          return nftPortDetails?.contract?.name
-        }
-      }
+    if (contractDetails?.contractMetadata?.name) {
+      return contractDetails?.contractMetadata?.name
     }
   } catch (error) {
     logger.error(`Error in getCollectionNameFromDataProvider: ${error}`)
@@ -446,7 +432,7 @@ export const getCollectionNameFromDataProvider = async (
     chainId,
     type,
   )
-
+  
   return nameFromContract
 }
 
