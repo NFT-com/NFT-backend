@@ -479,14 +479,6 @@ describe('nft service', () => {
       expect(name).toBeDefined()
       expect(name).not.toEqual('Unknown Name')
     })
-
-    it('should return unknown name for wrong type', async () => {
-      const contractAddress = '0x5D42e55014d20E97A25bC726D7eDF5FE9d95d70f'
-      const chainId = '1'
-      const type = defs.NFTType.GenesisKey
-      const name = await nftService.getCollectionNameFromDataProvider(contractAddress, chainId, type)
-      expect(name).toEqual('Unknown Name')
-    })
   })
 
   describe('getUserWalletFromNFT', () => {
