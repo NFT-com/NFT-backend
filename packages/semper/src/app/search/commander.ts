@@ -73,9 +73,25 @@ class Commander {
     this.repositories = repositories
   }
 
-  reindexNFTsByContract = async (contractAddr: string): Promise<void> => {
+  retrieveListings = async (): Promise<any>  => {
+    return (await this.repositories.txActivity.findActivitiesNotExpired(ActivityType.Listing))
+      .reduce((map, txActivity: TxActivityDAO) => {
+        if (helper.isNotEmpty(txActivity.order.protocolData)) {
+          const nftIdParts = txActivity.nftId[0].split('/')
+          const k = `${nftIdParts[1]}-${nftIdParts[2]}`
+          if (map[k]?.length) {
+            map[k].push(txActivity)
+          } else {
+            map[k] = [txActivity]
+          }
+        }
+        return map
+      }, {})
+  }
+
+  reindexNFTsByContract = async (contractAddr: string, listingMap?: any): Promise<void> => {
     const nfts = await this.repositories.nft.findAllWithRelationsByContract(contractAddr)
-    const collection = await mapCollectionData('nfts', nfts, this.repositories)
+    const collection = await mapCollectionData('nfts', nfts, this.repositories, listingMap)
     if (collection?.length) {
       await this.client.collections('nfts').documents().delete({ 'filter_by': `contractAddr:=${contractAddr}` })
       try {
@@ -132,22 +148,9 @@ class Commander {
         cursor: string | any[]
       const collectionName = `${name}-${timestamp}`
 
-      let listingMap
-      if (name === 'nfts') {
-        listingMap = (await this.repositories.txActivity.findActivitiesNotExpired(ActivityType.Listing))
-          .reduce((map, txActivity: TxActivityDAO) => {
-            if (helper.isNotEmpty(txActivity.order.protocolData)) {
-              const nftIdParts = txActivity.nftId[0].split('/')
-              const k = `${nftIdParts[1]}-${nftIdParts[2]}`
-              if (map[k]?.length) {
-                map[k].push(txActivity)
-              } else {
-                map[k] = [txActivity]
-              }
-            }
-            return map
-          }, {})
-      }
+      const listingMap = name === 'nfts' ?
+        await this.retrieveListings() :
+        undefined
       do {
         logger.info({ name }, 'COLLECTING DATA')
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
