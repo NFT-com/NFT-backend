@@ -2,7 +2,7 @@ import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { core } from '@nftcom/gql/service'
-import { db, defs, entity } from '@nftcom/shared'
+import { db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
@@ -45,10 +45,24 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
 
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
   const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
-    return  (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
+    return (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     try {
+      const listingMap = (await repos.txActivity
+        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, true))
+        .reduce((map, txActivity: TxActivityDAO) => {
+          if (helper.isNotEmpty(txActivity.order.protocolData)) {
+            const nftIdParts = txActivity.nftId[0].split('/')
+            const k = `${nftIdParts[1]}-${nftIdParts[2]}`
+            if (map[k]?.length) {
+              map[k].push(txActivity)
+            } else {
+              map[k] = [txActivity]
+            }
+          }
+          return map
+        }, {})
       const nftsToIndex = await Promise.all(nfts.map(async (nft) => {
         const ctx = {
           chain: null,
@@ -70,10 +84,6 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           defs.EntityType.Wallet,
         )(nft, null, ctx)
 
-        const txActivityListings = await repos.txActivity.findActivitiesForNFT(
-          nft.contract, nft.tokenId, defs.ActivityType.Listing,
-        )
-
         const tokenId = BigNumber.from(nft.tokenId).toString()
         let traits = []
         if (nft.metadata.traits.length < 100) {
@@ -85,20 +95,23 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
             }
           })
         }
-        let listings = []
-        if (txActivityListings?.length) {
-          listings = await Promise.all(txActivityListings.map(async (txActivity: TxActivityDAO) => {
-            const contractAddress = getListingCurrencyAddress(txActivity)
-            return {
-              marketplace: txActivity.order?.exchange,
-              price: utils.formatUnits(
-                getListingPrice(txActivity),
-                await getDecimalsForContract(contractAddress),
-              ),
-              type: undefined,
-              currency: await getSymbolForContract(contractAddress),
+        const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
+        const listings = []
+        if (txActivityListings) {
+          for (const txActivity of txActivityListings) {
+            if (helper.isNotEmpty(txActivity.order.protocolData)) {
+              const contractAddress = getListingCurrencyAddress(txActivity)
+              listings.push({
+                marketplace: txActivity.order?.exchange,
+                price: +utils.formatUnits(
+                  getListingPrice(txActivity),
+                  await getDecimalsForContract(contractAddress),
+                ),
+                type: undefined,
+                currency: await getSymbolForContract(contractAddress),
+              })
             }
-          }))
+          }
         }
         return {
           id: nft.id,
@@ -134,8 +147,9 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
 
   const _calculateCollectionScore = (collection: entity.Collection): number => {
     const officialVal = collection.isOfficial ? 1 : 0
+    const curatedVal = collection.isCurated ? 1 : 0
     const nftcomVal = [PROFILE_CONTRACT, GK_CONTRACT].includes(collection.contract) ? 1000000 : 0
-    return officialVal + nftcomVal
+    return officialVal + curatedVal + nftcomVal
   }
   const indexCollections = async (collections: entity.Collection[]): Promise<boolean> => {
     try {

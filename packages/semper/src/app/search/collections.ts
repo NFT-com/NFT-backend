@@ -27,7 +27,7 @@ const calculateCollectionScore = (collection: CollectionDao): number => {
 }
 
 const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): number => {
-  return (collection?.isCurated ? 1 : 0) + (collection?.isOfficial ? 1 : 0) + (hasListings ? 1 : 0)
+  return (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
 }
 
 const getListingPrice = (listing: TxActivityDAO): BigNumber => {

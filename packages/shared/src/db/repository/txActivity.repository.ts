@@ -164,6 +164,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   public findActivitiesForNFTs = (
     nfts: NFT[],
     activityType: ActivityType,
+    notExpired?: boolean,
   ): Promise<TxActivity[]> => {
     const nftIds = nfts.map((nft: NFT) => `ethereum/${nft.contract}/${nft.tokenId}`)
 
@@ -174,6 +175,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .where({
         activityType,
         status: ActivityStatus.Valid,
+        expiration: notExpired ? MoreThan(new Date()) : undefined,
       })
       .andWhere('activity.nftId && ARRAY[:...nftIds]', { nftIds })
       .orderBy({ 'activity.updatedAt': 'DESC' })
