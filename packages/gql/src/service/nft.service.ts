@@ -297,6 +297,7 @@ export const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
+    logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     throw err
   }
