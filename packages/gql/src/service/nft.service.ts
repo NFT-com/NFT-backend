@@ -200,7 +200,7 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    logger.error(`Error in getOwnersForNFT: ${err}`)
+    logger.error(`Error in getNFTsFromAlchemy: ${err}`)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     throw err
   }
@@ -251,12 +251,11 @@ export const filterNFTsWithAlchemy = async (
   })
   try {
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
-    const checksum = ethers.utils.getAddress
 
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
-          checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
+          ethers.utils.getAddress(ownedNFT?.contract?.address) === ethers.utils.getAddress(dbNFT?.contract) &&
           BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId)),
         )
         // We didn't find this NFT entry in the most recent list of
@@ -414,7 +413,7 @@ export const getCollectionNameFromDataProvider = async (
   try {
     const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
 
-    // priority to OS Collection Name from Alchemy before fetching name from contract  
+    // priority to OS Collection Name from Alchemy before fetching name from contract
     if (contractDetails?.contractMetadata?.openSea?.collectionName) {
       return contractDetails?.contractMetadata?.openSea?.collectionName
     }
@@ -433,7 +432,7 @@ export const getCollectionNameFromDataProvider = async (
     chainId,
     type,
   )
-  
+
   return nameFromContract
 }
 
