@@ -15,7 +15,7 @@ let testServer
 const repositories = db.newRepositories()
 let connection: DataSource
 
-describe('trading', () => {
+describe.skip('trading', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
   })
