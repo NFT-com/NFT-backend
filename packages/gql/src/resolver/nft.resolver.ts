@@ -29,7 +29,7 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses, getNativeOrdersForNFT,
+  checkNFTContractAddresses,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
@@ -1280,11 +1280,11 @@ export default {
     listings: getNFTActivities(
       defs.ActivityType.Listing,
     ),
-    nativeListings: getNativeOrdersForNFT(
-      defs.ActivityType.Listing,
-    ),
-    nativeBids: getNativeOrdersForNFT(
-      defs.ActivityType.Bid,
-    ),
+    // nativeListings: getNativeOrdersForNFT(
+    //   defs.ActivityType.Listing,
+    // ),
+    // nativeBids: getNativeOrdersForNFT(
+    //   defs.ActivityType.Bid,
+    // ),
   },
 }
