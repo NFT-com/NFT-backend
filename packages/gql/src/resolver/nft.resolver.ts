@@ -27,7 +27,7 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses, getNativeOrdersForNFT,
+  checkNFTContractAddresses,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
@@ -293,7 +293,7 @@ const returnProfileNFTs = async (
           }
         }
       }
-      // await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 0) // no cache
+      await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
     }
 
     let paginatedNFTs: Array<gql.NFT>
@@ -1160,7 +1160,6 @@ export const listNFTX2Y2 = async (
       tokenId: Joi.string().required(),
       chainId: Joi.string().optional(),
       profileUrl: Joi.string().optional(),
-      createdInternally: Joi.boolean().optional(),
     }),
   })
   joi.validateSchema(schema, args)
@@ -1264,11 +1263,11 @@ export default {
     listings: getNFTActivities(
       defs.ActivityType.Listing,
     ),
-    nativeListings: getNativeOrdersForNFT(
-      defs.ActivityType.Listing,
-    ),
-    nativeBids: getNativeOrdersForNFT(
-      defs.ActivityType.Bid,
-    ),
+    // nativeListings: getNativeOrdersForNFT(
+    //   defs.ActivityType.Listing,
+    // ),
+    // nativeBids: getNativeOrdersForNFT(
+    //   defs.ActivityType.Bid,
+    // ),
   },
 }

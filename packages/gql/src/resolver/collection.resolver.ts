@@ -11,7 +11,7 @@ import { appError, collectionError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
-import { getCollectionInfo, getCollectionNameFromContract } from '@nftcom/gql/service/nft.service'
+import { getCollectionInfo, getCollectionNameFromDataProvider } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -162,7 +162,7 @@ const fetchAndSaveCollectionInfo = async (
       contract: ethers.utils.getAddress(contract),
     } })
     if (nfts.length) {
-      const collectionName = await getCollectionNameFromContract(
+      const collectionName = await getCollectionNameFromDataProvider(
         nfts[0].contract,
         nfts[0].chainId,
         nfts[0].type,
@@ -380,7 +380,7 @@ const updateCollectionName = async (
             chainId,
           },
         })
-        const name = await getCollectionNameFromContract(collection.contract, chainId, nft.type)
+        const name = await getCollectionNameFromDataProvider(collection.contract, chainId, nft.type)
         if (name !== 'Unknown Name') {
           await repositories.collection.updateOneById(collection.id, { name })
         } else {

@@ -15,6 +15,10 @@ class _HederaConsensusService implements IHederaConsensusService {
   mirrorNetwork: string
 
   constructor() {
+    if (!process.env.HCS_ENABLED) {
+      return
+    }
+
     if (isProduction()) {
       this.client = Client.forMainnet()
       this.mirrorNetwork = 'mainnet-public.mirrornode.hedera.com:443'
@@ -27,6 +31,10 @@ class _HederaConsensusService implements IHederaConsensusService {
   }
 
   subscribe(): void {
+    if (!process.env.HCS_ENABLED) {
+      return
+    }
+
     // build consensus client
     this.client.setMirrorNetwork(this.mirrorNetwork)
   
@@ -43,6 +51,10 @@ class _HederaConsensusService implements IHederaConsensusService {
   }
 
   unsubscribe(): void {
+    if (!process.env.HCS_ENABLED) {
+      return
+    }
+
     if (!this.HCS) {
       return
     }
@@ -51,6 +63,10 @@ class _HederaConsensusService implements IHederaConsensusService {
   }
 
   async submitMessage(message: string): Promise<void> {
+    if (!process.env.HCS_ENABLED) {
+      return
+    }
+
     // build client
     const accountId = process.env.HCS_ACCOUNT_ID
     const privateKey = process.env.HCS_PRIVATE_KEY

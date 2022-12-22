@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
-import { In, IsNull } from 'typeorm'
+import { IsNull } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
@@ -20,7 +20,6 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
-  paginatedEntitiesBy,
   processIPFSURL,
   s3ToCdn,
   saveUsersForAssociatedAddress,
@@ -345,36 +344,6 @@ export const getContractMetaDataFromAlchemy = async (
   }
 }
 
-export const getNFTsForCollection = async (
-  contractAddress: string,
-): Promise<any> => {
-  try {
-    const key = `getNFTsForCollection${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
-    const cachedContractMetadata: string = await cache.get(key)
-
-    const nfts = []
-    if (cachedContractMetadata) {
-      return JSON.parse(cachedContractMetadata)
-    } else {
-      const baseUrl = `${alchemyUrl}/getNFTsForCollection/?contractAddress=${contractAddress}&withMetadata=true`
-      const response = await axios.get(baseUrl)
-
-      if (response && response?.data) {
-        if (response?.data?.nfts && response?.data?.nfts?.length) {
-          nfts.push(...response.data.nfts)
-          await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 10) // 10 minutes
-          return nfts
-        } else {
-          return undefined
-        }
-      }
-    }
-  } catch (err) {
-    Sentry.captureMessage(`Error in getNFTsForCollection: ${err}`)
-    return undefined
-  }
-}
-
 export const getCollectionNameFromContract = (
   contractAddress: string,
   chainId: string,
@@ -405,6 +374,67 @@ export const getCollectionNameFromContract = (
   }
 }
 
+export const getNFTsForCollection = async (
+  contractAddress: string,
+): Promise<any> => {
+  try {
+    const key = `getNFTsForCollection${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
+    const cachedContractMetadata: string = await cache.get(key)
+
+    const nfts = []
+    if (cachedContractMetadata) {
+      return JSON.parse(cachedContractMetadata)
+    } else {
+      const baseUrl = `${alchemyUrl}/getNFTsForCollection/?contractAddress=${contractAddress}&withMetadata=true`
+      const response = await axios.get(baseUrl)
+
+      if (response && response?.data) {
+        if (response?.data?.nfts && response?.data?.nfts?.length) {
+          nfts.push(...response.data.nfts)
+          await cache.set(key, JSON.stringify(nfts), 'EX', 60 * 10) // 10 minutes
+          return nfts
+        } else {
+          return undefined
+        }
+      }
+    }
+  } catch (err) {
+    Sentry.captureMessage(`Error in getNFTsForCollection: ${err}`)
+    return undefined
+  }
+}
+
+export const getCollectionNameFromDataProvider = async (
+  contract: string,
+  chainId: string,
+  type:  defs.NFTType,
+): Promise<string> => {
+  try {
+    const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
+
+    // priority to OS Collection Name from Alchemy before fetching name from contract  
+    if (contractDetails?.contractMetadata?.openSea?.collectionName) {
+      return contractDetails?.contractMetadata?.openSea?.collectionName
+    }
+
+    if (contractDetails?.contractMetadata?.name) {
+      return contractDetails?.contractMetadata?.name
+    }
+  } catch (error) {
+    logger.error(`Error in getCollectionNameFromDataProvider: ${error}`)
+    Sentry.captureException(error)
+    Sentry.captureMessage(`Error in getCollectionNameFromDataProvider: ${error}`)
+  }
+
+  const nameFromContract: string = await getCollectionNameFromContract(
+    contract,
+    chainId,
+    type,
+  )
+  
+  return nameFromContract
+}
+
 export const updateCollectionForNFTs = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
@@ -427,7 +457,7 @@ export const updateCollectionForNFTs = async (
           where: { contract: ethers.utils.getAddress(nft.contract) },
         })
         if (!collection) {
-          const collectionName = await getCollectionNameFromContract(
+          const collectionName = await getCollectionNameFromDataProvider(
             nft.contract,
             nft.chainId,
             nft.type,
@@ -744,7 +774,7 @@ const uploadImageToS3 = async (
   } catch (err) {
     logger.error(`Error in uploadImageToS3 ${err}`)
     Sentry.captureMessage(`Error in uploadImageToS3 ${err}`)
-    
+
     // error should not be thrown, just logged
     return null
   }
@@ -958,6 +988,18 @@ export const indexNFTsOnSearchEngine = async (
   } catch (err) {
     logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
     Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
+    throw err
+  }
+}
+
+export const indexCollectionsOnSearchEngine = async (
+  collections: Array<entity.Collection>,
+): Promise<void> => {
+  try {
+    await seService.indexCollections(collections)
+  } catch (err) {
+    logger.error(`Error in indexCollectionsOnSearchEngine: ${err}`)
+    Sentry.captureMessage(`Error in indexCollectionsOnSearchEngine: ${err}`)
     throw err
   }
 }
@@ -1263,15 +1305,19 @@ export const changeNFTsVisibility = async (
   try {
     if (showAll) {
       await showAllNFTs(repositories, walletId, profileId, chainId)
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       return
     } else if (hideAll) {
       await hideAllNFTs(repositories, profileId)
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       return
     } else {
+      let clearCache = false
       if (showNFTIds?.length) {
         await showNFTs(showNFTIds, profileId, chainId)
+        clearCache = true
       }
-      if (hideNFTIds) {
+      if (hideNFTIds && hideNFTIds?.length) {
         await Promise.allSettled(
           hideNFTIds?.map(async (id) => {
             const existingNFT = await repositories.nft.findOne({ where: { id, chainId } })
@@ -1291,6 +1337,10 @@ export const changeNFTsVisibility = async (
             }
           }),
         )
+        clearCache = true
+      }
+      if (clearCache) {
+        await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
       }
     }
   } catch (err) {
@@ -1366,6 +1416,10 @@ export const updateNFTsOrder = async (
           }
         }
       }
+    }
+    if (orders.length) {
+      const chainId = process.env.CHAIN_ID
+      await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
     }
   } catch (err) {
     logger.error(`Error in updateNFTsOrder: ${err}`)
@@ -1653,13 +1707,13 @@ export const updateCollectionForAssociatedContract = async (
       await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
     }
     // get collection info
-    let collectionName = await getCollectionNameFromContract(
+    let collectionName = await getCollectionNameFromDataProvider(
       contract,
       chainId,
       defs.NFTType.ERC721,
     )
     if (collectionName === 'Unknown Name') {
-      collectionName = await getCollectionNameFromContract(
+      collectionName = await getCollectionNameFromDataProvider(
         contract,
         chainId,
         defs.NFTType.ERC1155,
@@ -2122,7 +2176,8 @@ export const filterNativeOrdersForNFT = async (
   await Promise.allSettled(
     orders.map(async (order: entity.TxOrder) => {
       const matchingMakeAsset = order.makeAsset.find((asset) => {
-        return helper.checkSum(asset?.standard?.contractAddress) === helper.checkSum(contract) &&
+        return asset?.standard?.contractAddress &&
+          helper.checkSum(asset?.standard?.contractAddress) === helper.checkSum(contract) &&
           BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
       })
       if (matchingMakeAsset) {
@@ -2136,63 +2191,63 @@ export const filterNativeOrdersForNFT = async (
   return filteredOrders
 }
 
-export const getNativeOrdersForNFT = <T>(
-  activityType: defs.ActivityType,
-) => {
-  return async (parent: T, args: unknown, ctx: Context): Promise<gql.GetOrders> => {
-    let pageInput: gql.PageInput = args?.['pageInput']
-    const status: defs.ActivityStatus = args?.['status'] || defs.ActivityStatus.Valid
-    let ownerAddress: string = args?.['owner']
-    if (!ownerAddress) {
-      const walletId = parent?.['walletId']
-      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-      ownerAddress = wallet?.address
-    }
-    if (!pageInput) {
-      pageInput = {
-        'first': 50,
-      }
-    }
-    const contract = parent?.['contract']
-    const tokenId = parent?.['tokenId']
-    const chainId = parent?.['chainId'] || process.env.chainId
+// export const getNativeOrdersForNFT = <T>(
+//   activityType: defs.ActivityType,
+// ) => {
+//   return async (parent: T, args: unknown, ctx: Context): Promise<gql.GetOrders> => {
+//     let pageInput: gql.PageInput = args?.['pageInput']
+//     const status: defs.ActivityStatus = args?.['status'] || defs.ActivityStatus.Valid
+//     let ownerAddress: string = args?.['owner']
+//     if (!ownerAddress) {
+//       const walletId = parent?.['walletId']
+//       const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+//       ownerAddress = wallet?.address
+//     }
+//     if (!pageInput) {
+//       pageInput = {
+//         'first': 50,
+//       }
+//     }
+//     const contract = parent?.['contract']
+//     const tokenId = parent?.['tokenId']
+//     const chainId = parent?.['chainId'] || process.env.chainId
 
-    if (contract && tokenId) {
-      const txOrders = await repositories.txOrder.find({
-        where: {
-          makerAddress: ethers.utils.getAddress(ownerAddress),
-          exchange: defs.ExchangeType.NFTCOM,
-          orderType: activityType,
-          protocol: defs.ProtocolType.NFTCOM,
-          chainId,
-        },
-      })
-      const checksumContract = helper.checkSum(contract)
-      const filteredOrders = await filterNativeOrdersForNFT(
-        txOrders,
-        checksumContract,
-        BigNumber.from(tokenId).toHexString(),
-        status,
-      )
-      const ids = filteredOrders.map((order) => order.id)
-      const filter: Partial<entity.TxOrder> = helper.removeEmpty({
-        makerAddress: ethers.utils.getAddress(ownerAddress),
-        exchange: defs.ExchangeType.NFTCOM,
-        orderType: activityType,
-        protocol: defs.ProtocolType.NFTCOM,
-        id: In(ids),
-        chainId,
-      })
-      return paginatedEntitiesBy(
-        repositories.txOrder,
-        pageInput,
-        [filter],
-        [], // relations
-      )
-        .then(pagination.toPageable(pageInput))
-    }
-  }
-}
+//     if (contract && tokenId) {
+//       const txOrders = await repositories.txOrder.find({
+//         where: {
+//           makerAddress: ethers.utils.getAddress(ownerAddress),
+//           exchange: defs.ExchangeType.NFTCOM,
+//           orderType: activityType,
+//           protocol: defs.ProtocolType.NFTCOM,
+//           chainId,
+//         },
+//       })
+//       const checksumContract = helper.checkSum(contract)
+//       const filteredOrders = await filterNativeOrdersForNFT(
+//         txOrders,
+//         checksumContract,
+//         BigNumber.from(tokenId).toHexString(),
+//         status,
+//       )
+//       const ids = filteredOrders.map((order) => order.id)
+//       const filter: Partial<entity.TxOrder> = helper.removeEmpty({
+//         makerAddress: ethers.utils.getAddress(ownerAddress),
+//         exchange: defs.ExchangeType.NFTCOM,
+//         orderType: activityType,
+//         protocol: defs.ProtocolType.NFTCOM,
+//         id: In(ids),
+//         chainId,
+//       })
+//       return paginatedEntitiesBy(
+//         repositories.txOrder,
+//         pageInput,
+//         [filter],
+//         [], // relations
+//       )
+//         .then(pagination.toPageable(pageInput))
+//     }
+//   }
+// }
 
 export const queryNFTsForProfile = async (
   repositories: db.Repository,

@@ -16,9 +16,11 @@
 1. With your funded mainnet account, create a mainnet topic id.
 2. Set into your secrets platform's **production** config:
 
-       HCS_ACCOUNT_ID= mainnet account id
+       HCS_ACCOUNT_ID = mainnet account id
        HCS_PRIVATE_KEY = mainnet account private key
        HCS_TOPIC_ID = newly (or previously) created mainnet topic id
+
+	   HCS_ENABLED = whether HCS is enabled
 
 ### **Supplemental Guides**
 

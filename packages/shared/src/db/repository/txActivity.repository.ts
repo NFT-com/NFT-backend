@@ -1,6 +1,6 @@
 import {  In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
-import { TxActivity } from '@nftcom/shared/db/entity'
+import { NFT, TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
@@ -114,6 +114,27 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .getManyAndCount()
   }
 
+  // activities for collection
+  public findActivitiesForCollection = (
+    contract: string,
+    activityType: ActivityType,
+  ): Promise<TxActivity[]> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
+      .createQueryBuilder('activity')
+
+    return queryBuilder
+      .where({
+        nftContract: contract,
+        activityType,
+        status: ActivityStatus.Valid,
+      })
+      .orderBy({ 'activity.updatedAt': 'DESC' })
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .cache(true)
+      .getMany()
+  }
+
   // activities for NFT
   public findActivitiesForNFT = (
     contract: string,
@@ -132,6 +153,29 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         status: ActivityStatus.Valid,
       })
       .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
+      .orderBy({ 'activity.updatedAt': 'DESC' })
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .cache(true)
+      .getMany()
+  }
+
+  // activities for NFT
+  public findActivitiesForNFTs = (
+    nfts: NFT[],
+    activityType: ActivityType,
+  ): Promise<TxActivity[]> => {
+    const nftIds = nfts.map((nft: NFT) => `ethereum/${nft.contract}/${nft.tokenId}`)
+
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
+      .createQueryBuilder('activity')
+
+    return queryBuilder
+      .where({
+        activityType,
+        status: ActivityStatus.Valid,
+      })
+      .andWhere('activity.nftId && ARRAY[:...nftIds]', { nftIds })
       .orderBy({ 'activity.updatedAt': 'DESC' })
       .leftJoinAndMapOne('activity.order', 'TxOrder',
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')

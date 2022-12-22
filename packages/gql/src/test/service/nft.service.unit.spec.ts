@@ -32,6 +32,11 @@ jest.mock('@nftcom/cache', () => ({
   cache: {
     get: jest.fn(),
     set: jest.fn(),
+    del: jest.fn(),
+  },
+  CacheKeys: {
+    PROFILE_SORTED_NFTS: 'PROFILE_SORTED_NFTS',
+    PROFILE_SORTED_VISIBLE_NFTS: 'PROFILE_SORTED_VISIBLE_NFTS',
   },
   createCacheConnection: jest.fn(),
 }))
@@ -453,6 +458,26 @@ describe('nft service', () => {
       const type = defs.NFTType.GenesisKey
       const name = await nftService.getCollectionNameFromContract(contractAddress, chainId, type)
       expect(name).toEqual('Unknown Name')
+    })
+  })
+
+  describe('getCollectionNameFromDataProvider', () => {
+    it('should return correct collection name for ERC721 type', async () => {
+      const contractAddress = '0x23581767a106ae21c074b2276D25e5C3e136a68b'
+      const chainId = '1'
+      const type = defs.NFTType.ERC721
+      const name = await nftService.getCollectionNameFromDataProvider(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown Name')
+    })
+
+    it('should return correct collection name for ERC1155 type', async () => {
+      const contractAddress = '0xdDd6754c22ffAC44980342173fa956Bc7DDa018e'
+      const chainId = '1'
+      const type = defs.NFTType.ERC1155
+      const name = await nftService.getCollectionNameFromDataProvider(contractAddress, chainId, type)
+      expect(name).toBeDefined()
+      expect(name).not.toEqual('Unknown Name')
     })
   })
 
