@@ -1,4 +1,4 @@
-import {  In, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import {  In, MoreThan, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { NFT, TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
@@ -164,6 +164,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   public findActivitiesForNFTs = (
     nfts: NFT[],
     activityType: ActivityType,
+    notExpired?: boolean,
   ): Promise<TxActivity[]> => {
     const nftIds = nfts.map((nft: NFT) => `ethereum/${nft.contract}/${nft.tokenId}`)
 
@@ -174,8 +175,28 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .where({
         activityType,
         status: ActivityStatus.Valid,
+        expiration: notExpired ? MoreThan(new Date()) : undefined,
       })
       .andWhere('activity.nftId && ARRAY[:...nftIds]', { nftIds })
+      .orderBy({ 'activity.updatedAt': 'DESC' })
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .cache(true)
+      .getMany()
+  }
+
+  public findActivitiesNotExpired = (
+    activityType: ActivityType,
+  ): Promise<TxActivity[]> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
+      .createQueryBuilder('activity')
+
+    return queryBuilder
+      .where({
+        activityType,
+        status: ActivityStatus.Valid,
+        expiration: MoreThan(new Date()),
+      })
       .orderBy({ 'activity.updatedAt': 'DESC' })
       .leftJoinAndMapOne('activity.order', 'TxOrder',
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
