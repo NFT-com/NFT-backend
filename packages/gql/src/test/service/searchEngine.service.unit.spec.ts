@@ -37,6 +37,7 @@ describe('search engine service', () => {
         },
         txActivity: {
           findActivitiesForNFT: jest.fn(),
+          findActivitiesForNFTs: jest.fn().mockResolvedValue([]),
         },
         wallet: {
           findById: (_: string) => {
