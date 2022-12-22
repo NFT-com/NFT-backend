@@ -84,7 +84,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           defs.EntityType.Wallet,
         )(nft, null, ctx)
 
-        const tokenId = BigNumber.from(nft.tokenId).toString()
+        const tokenId = nft.tokenId ? BigNumber.from(nft.tokenId).toString() : 'Unknown'
         let traits = []
         if (nft.metadata.traits.length < 100) {
           traits = nft.metadata.traits.map((trait) => {
