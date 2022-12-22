@@ -45,7 +45,7 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
 
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
   const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
-    return (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
+    return (+collection?.isCurated) + (+collection?.isOfficial) + (+hasListings)
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     try {
