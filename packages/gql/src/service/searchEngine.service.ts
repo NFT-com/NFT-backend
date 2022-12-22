@@ -5,7 +5,7 @@ import { core } from '@nftcom/gql/service'
 import { db, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { SearchEngineClient } from './search-engine-client'
+import { SearchEngineClient } from '../adapter'
 
 type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
 

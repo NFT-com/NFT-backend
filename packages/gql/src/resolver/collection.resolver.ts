@@ -12,7 +12,7 @@ import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { getCollectionInfo, getCollectionNameFromDataProvider } from '@nftcom/gql/service/nft.service'
-import { SearchEngineService } from '@nftcom/search-engine'
+import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
