@@ -237,6 +237,7 @@ const maybeUpdateProfileOwnership = (
     ])
       .then(([trueOwner, wallet]: [string, entity.Wallet]) => {
         if (ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
+          logger.log(`&&& maybeUpdateProfileOwnership: trueOwner: ${trueOwner}, wallet.address: ${wallet.address}, wallet.id: ${wallet.id}, profile.tokenId: ${profile.tokenId}, profile.id: ${profile.id}`)
           return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
             .then((wallet: entity.Wallet | undefined) => {
               if (!wallet) {
