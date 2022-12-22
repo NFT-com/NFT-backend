@@ -20,12 +20,12 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
   switch(listing?.order?.protocol) {
   case (defs.ProtocolType.LooksRare): {
     const order = listing?.order?.protocolData
-    return BigNumber.from(order?.price ?? 0)
+    return BigNumber.from(order?.price || 0)
   }
   case (defs.ProtocolType.Seaport): {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration
-      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount ?? 0)), BigNumber.from(0))
+      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
   }
   }
 }
