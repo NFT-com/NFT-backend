@@ -2,17 +2,15 @@ import crypto from 'crypto'
 import { parseISO } from 'date-fns'
 import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
-import { Contract, utils } from 'ethers'
+import { utils } from 'ethers'
 import { differenceBy } from 'lodash'
 import { MoreThanOrEqual } from 'typeorm'
 
-import { cache } from '@nftcom/cache'
 import { fetchData } from '@nftcom/nftport-client'
-import { db, provider, typechain } from '@nftcom/shared'
-import { _logger } from '@nftcom/shared'
+import { db } from '@nftcom/shared'
 import { MarketplaceSale } from '@nftcom/shared/db/entity'
 
-const logger = _logger.Factory('ContractDataService', _logger.Context.GraphQL)
+import { getSymbolForContract } from './erc20-util'
 
 const repositories = db.newRepositories()
 
@@ -34,26 +32,6 @@ const createTxIdFromNFTPortData = (tx): string => {
   return hmac
     .update(`${tx.transaction_hash}-${tx.buyer_address}-${tx.seller_address}-${tx.nft.token_id}`)
     .digest('hex')
-}
-
-const getSymbolForContract = async (contractAddress: string): Promise<string> => {
-  const key = `ERC20_SYMBOL_${contractAddress}`
-  let symbol = await cache.get(key)
-  if (!symbol) {
-    const contract = new Contract(
-      contractAddress,
-      typechain.ERC20Metadata__factory.abi,
-      provider.provider(),
-    ) as unknown as typechain.ERC20Metadata
-    try {
-      symbol = await contract.symbol()
-    } catch (e) {
-      symbol = 'UNKNOWN'
-      logger.error(e, `Symbol not found for ${contractAddress}`)
-    }
-    cache.set(key, symbol)
-  }
-  return symbol
 }
 
 const getSymbolFromNFTPortData = async (tx): Promise<string> => {

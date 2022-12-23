@@ -9,11 +9,13 @@ import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
 import {
   _logger,
-  contracts, db,
+  contracts,
+  db,
   defs,
   entity,
   fp,
   helper,
+  utils as dbUtils,
 } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
@@ -105,7 +107,7 @@ const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
 //   },
 // ]
 
-const seService = new SearchEngineService()
+const seService = SearchEngineService()
 
 const getNFT = (
   _: unknown,
@@ -1116,7 +1118,12 @@ export const listNFTSeaport = async (
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
-    .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
+    .then((order) => {
+      return Promise.all([
+        addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
+        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+      ]).then(results => results[0])
+    })
     .catch(err => appError.buildInvalid(
       txActivityError.buildOpenSea(err),
       txActivityError.ErrorType.OpenSea,
@@ -1139,7 +1146,12 @@ export const listNFTLooksrare = async (
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
-    .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
+    .then((order) => {
+      return Promise.all([
+        addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
+        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+      ]).then(results => results[0])
+    })
     .catch(err => appError.buildInvalid(
       txActivityError.buildLooksRare(err),
       txActivityError.ErrorType.LooksRare,
@@ -1176,7 +1188,12 @@ export const listNFTX2Y2 = async (
     .then(fp.thruIfNotEmpty((order: entity.TxOrder) => {
       return repositories.txOrder.save({ ...order, createdInternally: true, memo: args?.input.memo ?? null })
     }))
-    .then(order => addListNFTsIncentiveAction(repositories, profileUrl, chainId, order))
+    .then((order) => {
+      return Promise.all([
+        addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
+        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+      ]).then(results => results[0])
+    })
     .catch(err => appError.buildInvalid(
       txActivityError.buildX2Y2(err),
       txActivityError.ErrorType.X2Y2,
