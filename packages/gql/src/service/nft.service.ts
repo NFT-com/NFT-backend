@@ -255,19 +255,23 @@ export const filterNFTsWithAlchemy = async (
 
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
-          checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
-          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId)),
-        )
+        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
+          logger.log(`&&&***&&& precheck filterNFTsWithAlchemy 1: ownedNFT.id: ${ownedNFT?.id}, dbNFT.id: ${dbNFT?.id} ||| checksum(ownedNFT?.contract?.address) ${checksum(ownedNFT?.contract?.address)}, checksum(dbNFT?.contract) ${checksum(dbNFT?.contract)}, BigNumber.from(ownedNFT?.id?.tokenId) ${BigNumber.from(ownedNFT?.id?.tokenId)}, BigNumber.from(dbNFT?.tokenId) ${BigNumber.from(dbNFT?.tokenId)}`)
+          return checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
+          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId))
+        })
+
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
           try {
+            logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
             await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
             const owners = await getOwnersForNFT(dbNFT)
             if (owners.length) {
               if (owners.length > 1) {
                 // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+                logger.log(`&&& filterNFTsWithAlchemy 2: dbNFT?.id ${dbNFT?.id}`)
                 await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
                   .then(() => repositories.nft.hardDelete({
                     id: dbNFT?.id,
@@ -517,11 +521,11 @@ export const nftTraitBuilder = (
           rarityAttribute.trait_type === attribute.type
           && rarityAttribute.value === attribute.value,
       )
-      if (traitExists.statistics.prevalence) {
+      if (traitExists?.statistics?.prevalence) {
         traits.push(
           {
             ...attribute,
-            rarity: String(traitExists.statistics.prevalence),
+            rarity: String(traitExists.statistics.prevalence || '0'),
           },
         )
       }
@@ -867,6 +871,7 @@ export const updateNFTOwnershipAndMetadata = async (
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
         // we remove edge of previous profile
+        logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
 
         // if this NFT is a profile NFT...
