@@ -249,8 +249,17 @@ export const filterNFTsWithAlchemy = async (
   nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
     contracts.push(ethers.utils.getAddress(nft.contract))
   })
+  const nonDuplicates = []
+  const seen = {}
+  for (const contract of contracts) {
+    const key = ethers.utils.getAddress(contract)
+    if (!seen[key]) {
+      nonDuplicates.push(contract)
+      seen[key] = true
+    }
+  }
   try {
-    const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
+    const ownedNfts = await getNFTsFromAlchemy(owner, nonDuplicates)
     const checksum = ethers.utils.getAddress
 
     await Promise.allSettled(
@@ -965,17 +974,8 @@ export const checkNFTContractAddresses = async (
     if (!nfts.length) {
       return
     }
-    const nonDuplicates = []
-    const seen = {}
-    for (const nft of nfts) {
-      const key = ethers.utils.getAddress(nft.contract)
-      if (!seen[key]) {
-        nonDuplicates.push(nft)
-        seen[key] = true
-      }
-    }
     const nftsChunks: entity.NFT[][] = Lodash.chunk(
-      nonDuplicates,
+      nfts,
       20,
     )
     await Promise.allSettled(
