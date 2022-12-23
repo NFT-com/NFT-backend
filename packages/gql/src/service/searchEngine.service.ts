@@ -18,7 +18,8 @@ const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
 
 const getListingPrice = (listing: TxActivityDAO): BigNumber => {
   switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare): {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
     const order = listing?.order?.protocolData
     return BigNumber.from(order?.price || 0)
   }
@@ -32,7 +33,8 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
 
 const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare): {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
     const order = listing?.order?.protocolData
     return order?.currencyAddress ?? order?.['currency']
   }
@@ -133,6 +135,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           isProfile: nft.contract === PROFILE_CONTRACT,
           issuance: collection?.issuanceDate?.getTime() || 0,
           hasListings: listings.length ? 1 : 0,
+          listedFloor: 0.0,
           score: _calculateNFTScore(collection, !!listings.length) || 0,
         }
       }))
