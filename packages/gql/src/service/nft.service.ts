@@ -247,22 +247,25 @@ export const filterNFTsWithAlchemy = async (
 ): Promise<void> => {
   const contracts = []
   nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
-    contracts.push(nft.contract)
+    contracts.push(ethers.utils.getAddress(nft.contract))
   })
   try {
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
+    const checksum = ethers.utils.getAddress
 
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) =>
-          ethers.utils.getAddress(ownedNFT?.contract?.address) === ethers.utils.getAddress(dbNFT?.contract) &&
-          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId)),
-        )
+        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
+          logger.log(`&&&***&&& precheck filterNFTsWithAlchemy 1: ownedNFT.id: ${ownedNFT?.id}, dbNFT.id: ${dbNFT?.id} ||| checksum(ownedNFT?.contract?.address) ${checksum(ownedNFT?.contract?.address)}, checksum(dbNFT?.contract) ${checksum(dbNFT?.contract)}, BigNumber.from(ownedNFT?.id?.tokenId) ${BigNumber.from(ownedNFT?.id?.tokenId)}, BigNumber.from(dbNFT?.tokenId) ${BigNumber.from(dbNFT?.tokenId)}`)
+          return checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
+          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId))
+        })
+
         // We didn't find this NFT entry in the most recent list of
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
           try {
-            logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}`)
+            logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
             await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
             const owners = await getOwnersForNFT(dbNFT)
             if (owners.length) {
@@ -962,8 +965,17 @@ export const checkNFTContractAddresses = async (
     if (!nfts.length) {
       return
     }
+    const nonDuplicates = []
+    const seen = {}
+    for (const nft of nfts) {
+      const key = ethers.utils.getAddress(nft.contract)
+      if (!seen[key]) {
+        nonDuplicates.push(nft)
+        seen[key] = true
+      }
+    }
     const nftsChunks: entity.NFT[][] = Lodash.chunk(
-      nfts,
+      nonDuplicates,
       20,
     )
     await Promise.allSettled(
