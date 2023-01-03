@@ -1121,7 +1121,7 @@ export const listNFTSeaport = async (
     .then((order) => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
-        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+        dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1149,7 +1149,7 @@ export const listNFTLooksrare = async (
     .then((order) => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
-        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+        dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1191,7 +1191,7 @@ export const listNFTX2Y2 = async (
     .then((order) => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
-        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+        dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
