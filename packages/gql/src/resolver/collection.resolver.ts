@@ -20,7 +20,7 @@ import { core } from '../service'
 import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
-const seService = new SearchEngineService()
+const seService = SearchEngineService()
 
 const MAX_SAVE_COUNTS = 500
 

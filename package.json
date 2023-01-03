@@ -31,6 +31,7 @@
     "@commitlint/cli": "^15.0.0",
     "@commitlint/config-conventional": "^15.0.0",
     "@nrwl/jest": "14.8.3",
+    "@nrwl/js": "14.8.6",
     "@nrwl/node": "^14.8.3",
     "@salesforce-ux/design-system": "^2.18.0",
     "@types/jest": "28.1.1",

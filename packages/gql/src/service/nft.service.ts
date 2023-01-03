@@ -33,7 +33,7 @@ import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-const seService = new SearchEngineService()
+const seService = SearchEngineService()
 
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
@@ -200,7 +200,7 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    logger.error(`Error in getOwnersForNFT: ${err}`)
+    logger.error(`Error in getNFTsFromAlchemy: ${err}`)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     throw err
   }
@@ -246,8 +246,13 @@ export const filterNFTsWithAlchemy = async (
   owner: string,
 ): Promise<void> => {
   const contracts = []
+  const seen = {}
   nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
-    contracts.push(nft.contract)
+    const key = ethers.utils.getAddress(nft.contract)
+    if (!seen[key]) {
+      contracts.push(key)
+      seen[key] = true
+    }
   })
   try {
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
@@ -300,6 +305,7 @@ export const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
+    logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     throw err
   }
@@ -416,7 +422,7 @@ export const getCollectionNameFromDataProvider = async (
   try {
     const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
 
-    // priority to OS Collection Name from Alchemy before fetching name from contract  
+    // priority to OS Collection Name from Alchemy before fetching name from contract
     if (contractDetails?.contractMetadata?.openSea?.collectionName) {
       return contractDetails?.contractMetadata?.openSea?.collectionName
     }
@@ -435,7 +441,7 @@ export const getCollectionNameFromDataProvider = async (
     chainId,
     type,
   )
-  
+
   return nameFromContract
 }
 

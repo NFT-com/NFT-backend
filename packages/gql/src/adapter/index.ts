@@ -1,1 +1,1 @@
-export * from './searchEngineClient'
+export * from './search-engine-client'

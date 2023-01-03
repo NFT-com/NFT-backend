@@ -1,9 +1,6 @@
 import { ApprovalInput } from '@nftcom/gql/defs/gql'
 
 import { testMockUser, testMockWallet } from '../util/constants'
-
-const { core } = jest.requireActual('@nftcom/gql/service')
-
 import { getTestApolloServer } from '../util/testApolloServer'
 
 const approvalInput: ApprovalInput = {
@@ -46,9 +43,10 @@ jest.mock('@nftcom/gql/service/nft.service', () => {
 })
 
 jest.mock('@nftcom/gql/service', () => {
+  const gqlServices = jest.requireActual('@nftcom/gql/service')
   return {
     core: {
-      ...core,
+      ...gqlServices.core,
       getWallet: () => Promise.resolve(approvalInput.wallet),
     },
   }

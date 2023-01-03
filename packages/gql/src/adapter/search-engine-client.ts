@@ -55,9 +55,14 @@ export class SearchEngineClient {
   }
 
   removeDocument = async (collection: string, documentId: string): Promise<boolean> => {
-    const response = await this._client.collections(collection).documents(documentId)
-      .delete() as {id: string}
-    return !!response.id
+    try {
+      const response = await this._client.collections(collection).documents(documentId)
+        .delete() as {id: string}
+      return !!response.id
+    } catch (e) {
+      logger.error(e, 'Error deleting from Typesense')
+    }
+    return false
   }
 
 }

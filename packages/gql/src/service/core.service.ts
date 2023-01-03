@@ -509,6 +509,18 @@ export const blacklistProfilePatterns = [
   /^rocnation$/,
   /^cockpunch$/,
   /^timferriss$/,
+  /^ud$/,
+  /^udp$/,
+  /^premintxyz$/,
+  /^nftwineclub$/,
+  /^wineclub$/,
+  /^unstoppabledomains$/,
+  /^unstoppableeth$/,
+  /^orangecomet$/,
+  /^saintrobotica$/,
+  /^lostminers$/,
+  /^macroverse$/,
+  /^allurebridals$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
