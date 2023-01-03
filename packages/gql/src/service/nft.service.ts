@@ -33,7 +33,7 @@ import * as Sentry from '@sentry/node'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
-const seService = SearchEngineService()
+const seService = new SearchEngineService()
 
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
@@ -200,7 +200,7 @@ export const getNFTsFromAlchemy = async (
       return []
     }
   } catch (err) {
-    logger.error(`Error in getNFTsFromAlchemy: ${err}`)
+    logger.error(`Error in getOwnersForNFT: ${err}`)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
     throw err
   }
@@ -246,13 +246,8 @@ export const filterNFTsWithAlchemy = async (
   owner: string,
 ): Promise<void> => {
   const contracts = []
-  const seen = {}
   nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
-    const key = ethers.utils.getAddress(nft.contract)
-    if (!seen[key]) {
-      contracts.push(key)
-      seen[key] = true
-    }
+    contracts.push(nft.contract)
   })
   try {
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
@@ -261,6 +256,7 @@ export const filterNFTsWithAlchemy = async (
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
+          // logger.log(`&&&***&&& precheck filterNFTsWithAlchemy 1: ownedNFT.id: ${ownedNFT?.id}, dbNFT.id: ${dbNFT?.id} ||| checksum(ownedNFT?.contract?.address) ${checksum(ownedNFT?.contract?.address)}, checksum(dbNFT?.contract) ${checksum(dbNFT?.contract)}, BigNumber.from(ownedNFT?.id?.tokenId) ${BigNumber.from(ownedNFT?.id?.tokenId)}, BigNumber.from(dbNFT?.tokenId) ${BigNumber.from(dbNFT?.tokenId)}`)
           return checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
           BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId))
         })
@@ -269,11 +265,13 @@ export const filterNFTsWithAlchemy = async (
         // this user's owned tokens for this contract/collection.
         if (index === -1) {
           try {
+            // logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
             await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
             const owners = await getOwnersForNFT(dbNFT)
             if (owners.length) {
               if (owners.length > 1) {
                 // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+                // logger.log(`&&& filterNFTsWithAlchemy 2: dbNFT?.id ${dbNFT?.id}`)
                 await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
                   .then(() => repositories.nft.hardDelete({
                     id: dbNFT?.id,
@@ -302,7 +300,6 @@ export const filterNFTsWithAlchemy = async (
       }),
     )
   } catch (err) {
-    logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
     throw err
   }
@@ -419,7 +416,7 @@ export const getCollectionNameFromDataProvider = async (
   try {
     const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
 
-    // priority to OS Collection Name from Alchemy before fetching name from contract
+    // priority to OS Collection Name from Alchemy before fetching name from contract  
     if (contractDetails?.contractMetadata?.openSea?.collectionName) {
       return contractDetails?.contractMetadata?.openSea?.collectionName
     }
@@ -438,7 +435,7 @@ export const getCollectionNameFromDataProvider = async (
     chainId,
     type,
   )
-
+  
   return nameFromContract
 }
 
