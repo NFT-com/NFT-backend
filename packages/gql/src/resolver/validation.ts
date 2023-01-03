@@ -54,9 +54,9 @@ export const validateTxHashForCancel = async (
                   id: id,
                   orderHash: makerHash,
                   makerAddress,
-                  // exchange: defs.ExchangeType.NFTCOM,
+                  exchange: defs.ExchangeType.NFTCOM,
                   orderType: defs.ActivityType.Listing,
-                  // protocol: defs.ProtocolType.NFTCOM,
+                  protocol: defs.ProtocolType.NFTCOM,
                 },
               })
             } else {
@@ -66,9 +66,9 @@ export const validateTxHashForCancel = async (
                   id: id,
                   orderHash: makerHash,
                   makerAddress,
-                  // exchange: defs.ExchangeType.NFTCOM,
+                  exchange: defs.ExchangeType.NFTCOM,
                   orderType: defs.ActivityType.Bid,
-                  // protocol: defs.ProtocolType.NFTCOM,
+                  protocol: defs.ProtocolType.NFTCOM,
                 },
               })
             }

@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
-import { IsNull } from 'typeorm'
+import { In, IsNull } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
@@ -20,6 +20,7 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
+  paginatedEntitiesBy,
   processIPFSURL,
   s3ToCdn,
   saveUsersForAssociatedAddress,
@@ -2202,63 +2203,63 @@ export const filterNativeOrdersForNFT = async (
   return filteredOrders
 }
 
-// export const getNativeOrdersForNFT = <T>(
-//   activityType: defs.ActivityType,
-// ) => {
-//   return async (parent: T, args: unknown, ctx: Context): Promise<gql.GetOrders> => {
-//     let pageInput: gql.PageInput = args?.['pageInput']
-//     const status: defs.ActivityStatus = args?.['status'] || defs.ActivityStatus.Valid
-//     let ownerAddress: string = args?.['owner']
-//     if (!ownerAddress) {
-//       const walletId = parent?.['walletId']
-//       const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-//       ownerAddress = wallet?.address
-//     }
-//     if (!pageInput) {
-//       pageInput = {
-//         'first': 50,
-//       }
-//     }
-//     const contract = parent?.['contract']
-//     const tokenId = parent?.['tokenId']
-//     const chainId = parent?.['chainId'] || process.env.chainId
+export const getNativeOrdersForNFT = <T>(
+  activityType: defs.ActivityType,
+) => {
+  return async (parent: T, args: unknown, ctx: Context): Promise<gql.GetOrders> => {
+    let pageInput: gql.PageInput = args?.['pageInput']
+    const status: defs.ActivityStatus = args?.['status'] || defs.ActivityStatus.Valid
+    let ownerAddress: string = args?.['owner']
+    if (!ownerAddress) {
+      const walletId = parent?.['walletId']
+      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+      ownerAddress = wallet?.address
+    }
+    if (!pageInput) {
+      pageInput = {
+        'first': 50,
+      }
+    }
+    const contract = parent?.['contract']
+    const tokenId = parent?.['tokenId']
+    const chainId = parent?.['chainId'] || process.env.chainId
 
-//     if (contract && tokenId) {
-//       const txOrders = await repositories.txOrder.find({
-//         where: {
-//           makerAddress: ethers.utils.getAddress(ownerAddress),
-//           exchange: defs.ExchangeType.NFTCOM,
-//           orderType: activityType,
-//           protocol: defs.ProtocolType.NFTCOM,
-//           chainId,
-//         },
-//       })
-//       const checksumContract = helper.checkSum(contract)
-//       const filteredOrders = await filterNativeOrdersForNFT(
-//         txOrders,
-//         checksumContract,
-//         BigNumber.from(tokenId).toHexString(),
-//         status,
-//       )
-//       const ids = filteredOrders.map((order) => order.id)
-//       const filter: Partial<entity.TxOrder> = helper.removeEmpty({
-//         makerAddress: ethers.utils.getAddress(ownerAddress),
-//         exchange: defs.ExchangeType.NFTCOM,
-//         orderType: activityType,
-//         protocol: defs.ProtocolType.NFTCOM,
-//         id: In(ids),
-//         chainId,
-//       })
-//       return paginatedEntitiesBy(
-//         repositories.txOrder,
-//         pageInput,
-//         [filter],
-//         [], // relations
-//       )
-//         .then(pagination.toPageable(pageInput))
-//     }
-//   }
-// }
+    if (contract && tokenId) {
+      const txOrders = await repositories.txOrder.find({
+        where: {
+          makerAddress: ethers.utils.getAddress(ownerAddress),
+          exchange: defs.ExchangeType.NFTCOM,
+          orderType: activityType,
+          protocol: defs.ProtocolType.NFTCOM,
+          chainId,
+        },
+      })
+      const checksumContract = helper.checkSum(contract)
+      const filteredOrders = await filterNativeOrdersForNFT(
+        txOrders,
+        checksumContract,
+        BigNumber.from(tokenId).toHexString(),
+        status,
+      )
+      const ids = filteredOrders.map((order) => order.id)
+      const filter: Partial<entity.TxOrder> = helper.removeEmpty({
+        makerAddress: ethers.utils.getAddress(ownerAddress),
+        exchange: defs.ExchangeType.NFTCOM,
+        orderType: activityType,
+        protocol: defs.ProtocolType.NFTCOM,
+        id: In(ids),
+        chainId,
+      })
+      return paginatedEntitiesBy(
+        repositories.txOrder,
+        pageInput,
+        [filter],
+        [], // relations
+      )
+        .then(pagination.toPageable(pageInput))
+    }
+  }
+}
 
 export const queryNFTsForProfile = async (
   repositories: db.Repository,
