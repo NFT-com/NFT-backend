@@ -147,19 +147,14 @@ type TxX2Y2SettleDetail {
 }
 
 type TxX2Y2ProtocolData {
-  orderHash: String
   currency: String
   amount: String
-  maker: String
-  taker: String
   orderSalt: String
   settleSalt: String
   intent: String
   delegateType: String
   deadline: String
   data: String
-  item: [TxX2Y2OrderItem]
-  detail: [TxX2Y2SettleDetail]
 }
 
 
