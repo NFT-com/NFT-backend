@@ -107,10 +107,12 @@ export const mapCollectionData = async (
         })
       }
       const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
+      const ownerAddr = nft.wallet?.address || ''
       const listings = []
       if (txActivityListings) {
         for (const txActivity of txActivityListings) {
-          if (helper.isNotEmpty(txActivity.order.protocolData)) {
+          if (txActivity.walletAddress === ownerAddr &&
+            helper.isNotEmpty(txActivity.order.protocolData)) {
             const contractAddress = getListingCurrencyAddress(txActivity)
             listings.push({
               marketplace: txActivity.order?.exchange,
@@ -132,7 +134,7 @@ export const mapCollectionData = async (
         traits,
         listings,
         imageURL: nft.metadata?.imageURL,
-        ownerAddr: nft.wallet ? nft.wallet.address : '',
+        ownerAddr,
         chain: nft.wallet ? nft.wallet.chainName : '',
         contractName: nft.collection ? nft.collection.name : '',
         contractAddr: nft.contract || '',
@@ -140,7 +142,7 @@ export const mapCollectionData = async (
         status: '', //  HasOffers, BuyNow, New, OnAuction
         rarity: parseFloat(nft.rarity) || 0.0,
         isProfile: nft.contract === PROFILE_CONTRACT,
-        issuance: nft.collection?.issuanceDate?.getTime() || 0,
+        issuance: nft.collection?.issuanceDate ? new Date(nft.collection?.issuanceDate).getTime() : 0,
         hasListings: listings.length ? 1 : 0,
         score: calculateNFTScore(nft.collection, !!listings.length),
       })

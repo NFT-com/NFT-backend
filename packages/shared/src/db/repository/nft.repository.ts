@@ -14,12 +14,16 @@ export class NFTRepository extends BaseRepository<NFT> {
   }
 
   /* Currently only used to load data into search engine, so object properties are limited to what is needed */
-  findPageWithCollectionAndWallet(cursorContract: string, cursorId: string, limit: number): Promise<any[]> {
+  findPageWithCollectionAndWallet(
+    cursorContract: string,
+    cursorId: string,
+    limit: number,
+    isSingleContract?: boolean): Promise<any[]> {
     const queryRunner = db.getDataSource(true).createQueryRunner()
     const cursorAndLimit = `
     AND (nft.contract, nft.id) > ($1, $2)
     ORDER BY nft.contract ASC, nft.id ASC LIMIT $3`
-    const limitOnly = 'ORDER BY nft.contract ASC, nft.id ASC LIMIT $1'
+    const limitOnly = `ORDER BY nft.contract ASC, nft.id ASC LIMIT ${isSingleContract ? '$2' : '$1'}`
     return queryRunner.query(`
     WITH parent_collection AS (
       SELECT
@@ -51,7 +55,8 @@ export class NFTRepository extends BaseRepository<NFT> {
       LEFT JOIN parent_wallet ON parent_wallet."id" = nft."walletId"
       WHERE nft.contract IN (SELECT "contract" from parent_collection)
       AND nft."deletedAt" IS NULL
-      ${cursorContract ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
+      ${isSingleContract ? 'AND nft.contract = $1' : ''}
+      ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
   }
 
   findAllWithRelations(): Promise<NFT[]> {

@@ -101,10 +101,12 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           })
         }
         const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
+        const ownerAddr = wallet?.address || ''
         const listings = []
         if (txActivityListings) {
           for (const txActivity of txActivityListings) {
-            if (helper.isNotEmpty(txActivity.order.protocolData)) {
+            if (txActivity.walletAddress === ownerAddr &&
+              helper.isNotEmpty(txActivity.order.protocolData)) {
               const contractAddress = getListingCurrencyAddress(txActivity)
               listings.push({
                 marketplace: txActivity.order?.exchange,
@@ -126,7 +128,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           traits,
           listings,
           imageURL: nft.metadata?.imageURL,
-          ownerAddr: wallet?.address || '',
+          ownerAddr,
           chain: wallet?.chainName || '',
           contractName: collection?.name || '',
           contractAddr: nft.contract || '',
