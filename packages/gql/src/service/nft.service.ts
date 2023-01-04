@@ -873,12 +873,13 @@ export const updateNFTOwnershipAndMetadata = async (
         },
       })
 
+      await seService.indexNFTs([savedNFT])
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
         // we remove edge of previous profile
-        logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
+        // logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
 
         // if this NFT is a profile NFT...
@@ -903,7 +904,7 @@ export const updateNFTOwnershipAndMetadata = async (
           }
         }
 
-        return await repositories.nft.updateOneById(existingNFT.id, {
+        const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId,
           type,
@@ -915,6 +916,9 @@ export const updateNFTOwnershipAndMetadata = async (
             traits: traits,
           },
         })
+
+        await seService.indexNFTs([updatedNFT])
+        return updatedNFT
       } else {
         const isTraitSame = (existingNFT.metadata.traits.length == traits.length) &&
           existingNFT.metadata.traits.every(function(element, index) {
@@ -938,6 +942,7 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
+          await seService.indexNFTs([updatedNFT])
           return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
