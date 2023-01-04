@@ -134,7 +134,7 @@ export function validationLogicAddress(chainId: string | number = 'mainnet'): st
   case 1:
   case 'mainnet':
   default:
-    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+    return utils.getAddress('0x127beBc6380dF5C8d7c0A728D1dd125A50e4b88E')
   }
 }
 
@@ -148,7 +148,7 @@ export function marketplaceEventAddress(chainId: string | number = 'mainnet'): s
   case 1:
   case 'mainnet':
   default:
-    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+    return utils.getAddress('0x2E42652b9B539C849ECe944329C0Ba0bC4F70968')
   }
 }
 
@@ -162,7 +162,7 @@ export function nftMarketplaceAddress(chainId: string | number = 'mainnet'): str
   case 1:
   case 'mainnet':
   default:
-    return utils.getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+    return utils.getAddress('0x1fD9Bc58C7FfdB18D19a8A8d791B6ae9fa2BD097')
   }
 }
 

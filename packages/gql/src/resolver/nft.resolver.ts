@@ -30,6 +30,7 @@ import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
+  getNativeOrdersForNFT,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
@@ -1121,7 +1122,7 @@ export const listNFTSeaport = async (
     .then((order) => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
-        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+        dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1149,7 +1150,7 @@ export const listNFTLooksrare = async (
     .then((order) => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
-        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+        dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1191,7 +1192,7 @@ export const listNFTX2Y2 = async (
     .then((order) => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
-        dbUtils.getNFTsFromTxOrders(order).then(seService.indexNFTs),
+        dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1280,11 +1281,11 @@ export default {
     listings: getNFTActivities(
       defs.ActivityType.Listing,
     ),
-    // nativeListings: getNativeOrdersForNFT(
-    //   defs.ActivityType.Listing,
-    // ),
-    // nativeBids: getNativeOrdersForNFT(
-    //   defs.ActivityType.Bid,
-    // ),
+    nativeListings: getNativeOrdersForNFT(
+      defs.ActivityType.Listing,
+    ),
+    nativeBids: getNativeOrdersForNFT(
+      defs.ActivityType.Bid,
+    ),
   },
 }

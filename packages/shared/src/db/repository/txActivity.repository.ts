@@ -1,4 +1,4 @@
-import {  In, MoreThan, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import {  In, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { NFT, TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
@@ -187,6 +187,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   public findActivitiesNotExpired = (
     activityType: ActivityType,
+    updatedAt?: Date,
   ): Promise<TxActivity[]> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
@@ -196,6 +197,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         activityType,
         status: ActivityStatus.Valid,
         expiration: MoreThan(new Date()),
+        updatedAt: updatedAt ? MoreThanOrEqual(updatedAt): undefined,
       })
       .orderBy({ 'activity.updatedAt': 'DESC' })
       .leftJoinAndMapOne('activity.order', 'TxOrder',
