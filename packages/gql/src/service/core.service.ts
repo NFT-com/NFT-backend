@@ -1378,6 +1378,6 @@ export const checkAddressIsSanctioned = async (
     }
   } catch (err) {
     logger.error(`Error in checkAddressIsSanctioned: ${err}`)
-    throw err
+    return true
   }
 }
