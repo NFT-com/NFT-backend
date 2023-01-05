@@ -33,7 +33,7 @@ export const buildAuthExpired = (): ApolloError =>
 
 export const buildAddressSanctioned = (): ApolloError =>
   new ApolloError(
-    'Address is sanctioned',
+    'Address is sanctioned from OFAC',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AddressSanctioned },
   )
