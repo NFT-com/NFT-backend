@@ -1355,7 +1355,7 @@ export const sendEmailVerificationCode = async (
       confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
       confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
     })
-    await sendgrid.sendConfirmEmail(updatedUser)
+    await sendgrid.sendEmailVerificationCode(updatedUser)
   } catch (err) {
     logger.error(`Error in sendEmailVerificationCode: ${err}`)
   }
