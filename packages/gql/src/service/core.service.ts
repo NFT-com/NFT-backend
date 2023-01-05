@@ -629,7 +629,7 @@ export const reservedProfiles = {
   '0x4911E3049a846A2495C2474d45a4d578AbDeAEAB': ['gaming', 'cryptostache'],
   '0x67bF9c5a79C676A6D446cC391DB632704EB0f020': ['shiralazar', 'shira'],
   '0x67Ff9934c797DD104F86F6FAcc7feF23D8a6f9e3': ['twiitch', 'twiitchcreative'],
-  '0xeCd49fA04513201450083C9B6dE1ba1e81d8B05F': ['zahira', 'hiphop'],
+  '0xE98E91c49F26eCE72770a34554CA696F9043e7d8': ['zahira', 'hiphop'],
   '0xA9Fe952EdD2958aB7Dea126c6d8B4413AfD3E771': ['todd', 'picasso'],
   '0xc5B746bDe254F5B88f4F906AafbD788EB282c760': ['nba', 'pfp'],
   '0x9E3508a1dE57a459835a2DFDc451afa7677962DD': ['trading', 'tomcrown'],
