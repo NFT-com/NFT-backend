@@ -1,3 +1,4 @@
+import axios from 'axios'
 import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { BigNumber, ethers } from 'ethers'
@@ -1357,5 +1358,26 @@ export const sendEmailVerificationCode = async (
     await sendgrid.sendConfirmEmail(updatedUser)
   } catch (err) {
     logger.error(`Error in sendEmailVerificationCode: ${err}`)
+  }
+}
+
+export const checkAddressIsSanctioned = async (
+  address: string,
+): Promise<boolean> => {
+  try {
+    const headers = {
+      'X-API-Key': process.env.OFAC_API_KEY,
+      'Accept': 'application/json',
+    }
+    const url = `https://public.chainalysis.com/api/v1/address/${address}`
+    const res = await axios.get(url, { headers })
+    if (res && res?.data && res?.data?.identifications) {
+      return !!res?.data?.identifications.length
+    } else {
+      return true
+    }
+  } catch (err) {
+    logger.error(`Error in checkAddressIsSanctioned: ${err}`)
+    throw err
   }
 }
