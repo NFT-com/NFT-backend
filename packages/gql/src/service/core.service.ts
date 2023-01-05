@@ -1,4 +1,6 @@
+import axios from 'axios'
 import cryptoRandomString from 'crypto-random-string'
+import { addDays } from 'date-fns'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
@@ -14,6 +16,7 @@ import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
+import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
@@ -1338,5 +1341,43 @@ export const fetchDataUsingMulticall = async (
       `Failed to fetch data using multicall: ${error}`,
     )
     return []
+  }
+}
+
+export const sendEmailVerificationCode = async (
+  email: string,
+  user: entity.User,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    const updatedUser = await repositories.user.updateOneById(user.id, {
+      email,
+      confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
+      confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+    })
+    await sendgrid.sendConfirmEmail(updatedUser)
+  } catch (err) {
+    logger.error(`Error in sendEmailVerificationCode: ${err}`)
+  }
+}
+
+export const checkAddressIsSanctioned = async (
+  address: string,
+): Promise<boolean> => {
+  try {
+    const headers = {
+      'X-API-Key': process.env.OFAC_API_KEY,
+      'Accept': 'application/json',
+    }
+    const url = `https://public.chainalysis.com/api/v1/address/${address}`
+    const res = await axios.get(url, { headers })
+    if (res && res?.data && res?.data?.identifications) {
+      return !!res?.data?.identifications.length
+    } else {
+      return true
+    }
+  } catch (err) {
+    logger.error(`Error in checkAddressIsSanctioned: ${err}`)
+    return true
   }
 }

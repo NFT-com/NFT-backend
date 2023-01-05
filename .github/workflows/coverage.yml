@@ -92,6 +92,7 @@ jobs:
         envkey_DEFAULT_TTL_MINS: ${{ secrets.DEFAULT_TTL_MINS }}
         envkey_AUTH_EXPIRE_BY_DAYS: ${{ secrets.AUTH_EXPIRE_BY_DAYS }}
         envkey_MULTICALL_CONTRACT: ${{ secrets.MULTICALL_CONTRACT }}
+        envkey_OFAC_API_KEY: ${{ secrets.OFAC_API_KEY }}
         file_name: packages/gql/.env
         fail_on_empty: false
 

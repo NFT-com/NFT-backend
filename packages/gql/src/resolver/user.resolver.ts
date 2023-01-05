@@ -228,11 +228,26 @@ const updateMe = (
 
   const {
     avatarURL = user.avatarURL,
-    email = user.email,
     preferences = user.preferences,
+    email,
   } = args.input
-  // TODO notify user?
-  return repositories.user.updateOneById(user.id, { avatarURL, email, preferences })
+  return repositories.user.updateOneById(user.id, { avatarURL, preferences })
+    .then((user) => {
+      if (email.length && email !== user.email) {
+        return core.sendEmailVerificationCode(email, user, repositories)
+          .then(() => user)
+      } else if (email === user.email) {
+        // if token is expired...
+        if (!user.isEmailConfirmed && new Date(user.confirmEmailTokenExpiresAt) <= new Date()) {
+          return core.sendEmailVerificationCode(email, user, repositories)
+            .then(() => user)
+        } else {
+          return user
+        }
+      } else {
+        return user
+      }
+    })
 }
 
 const resendEmailConfirm = (

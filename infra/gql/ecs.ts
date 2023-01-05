@@ -488,6 +488,10 @@ const createEcsTaskDefinition = (
                   Name: 'NODE_ENV',
                   Value: process.env.NODE_ENV,
                 },
+                {
+                  Name: 'OFAC_API_KEY',
+                  Value: process.env.OFAC_API_KEY,
+                },
               ],
               dependsOn: [
                 {
