@@ -116,7 +116,7 @@ const signUp = (
         chainName: chain.name,
         address,
       }),
-      sendgrid.sendConfirmEmail(user),
+      sendgrid.sendEmailVerificationCode(user),
     ])))
 }
 
@@ -143,7 +143,7 @@ const updateEmail = (
     confirmEmailToken,
     confirmEmailTokenExpiresAt,
   })
-    .then(fp.tapWait(sendgrid.sendConfirmEmail))
+    .then(fp.tapWait(sendgrid.sendEmailVerificationCode))
 }
 
 const updateReferral = (ctx: Context) => {
@@ -264,7 +264,7 @@ const resendEmailConfirm = (
     confirmEmailToken,
     confirmEmailTokenExpiresAt,
   })
-    .then(fp.tapWait(sendgrid.sendConfirmEmail))
+    .then(fp.tapWait(sendgrid.sendEmailVerificationCode))
 }
 
 const getMyAddresses = (

@@ -20,6 +20,7 @@ const templates = {
   sendConfirmEmail: 'd-f11f18c741e84e7f9c50e93eceb7a9a2',
   confirmedEmailSuccess: 'd-fad5182e6dfc42deaa2d1f6084feb687',
   referralEmail: 'd-66e9e661f7ee43c58c85412ed950d2fe',
+  sendEmailVerificationCode: 'd-afd347552d7d4059ba5bfd9e727e7500',
 }
 
 const send = (
@@ -42,6 +43,22 @@ export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
         confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
       },
       templateId: templates.sendConfirmEmail,
+    }).then(() => true)
+  }
+}
+
+export const sendEmailVerificationCode = (user: entity.User): Promise<boolean> => {
+  if (user?.email) {
+    logger.debug('sendEmailVerificationCode', { user })
+    const baseUrl = confirmEmailUrl
+
+    return send({
+      from,
+      to: { email: user.email },
+      dynamicTemplateData: {
+        confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
+      },
+      templateId: templates.sendEmailVerificationCode,
     }).then(() => true)
   }
 }
