@@ -35,6 +35,7 @@ export class NFTRepository extends BaseRepository<NFT> {
       FROM
         collection
       WHERE "isSpam" = false
+      ${isSingleContract ? 'AND "contract" = $1' : ''}
     ),
     parent_wallet AS (
       SELECT
@@ -55,7 +56,6 @@ export class NFTRepository extends BaseRepository<NFT> {
       LEFT JOIN parent_wallet ON parent_wallet."id" = nft."walletId"
       WHERE nft.contract IN (SELECT "contract" from parent_collection)
       AND nft."deletedAt" IS NULL
-      ${isSingleContract ? 'AND nft.contract = $1' : ''}
       ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
   }
 

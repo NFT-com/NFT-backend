@@ -37,11 +37,12 @@ const main = async (): Promise<void> => {
   const commander = new Commander(typesenseClient, repositories)
   
   // await commander.help()
-  // await commander.restore()
+  await commander.erase()
+  await commander.restore()
   // await commander.erase()
   // await commander.update('collections', ['issuance'])
   // await commander.update('nfts', ['contractAddr'])
-  await commander.reindexNFTsByContract('0xBd3531dA5CF5857e7CfAA92426877b022e612cf8', await commander.retrieveListings())
+  // await commander.reindexNFTsByContract('0xBd3531dA5CF5857e7CfAA92426877b022e612cf8', await commander.retrieveListings())
 
   await db.disconnect()
 }
