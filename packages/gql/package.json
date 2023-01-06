@@ -30,7 +30,7 @@
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/contracts": "^5.7.0",
     "@graphql-tools/merge": "^8.2.0",
-    "@hashgraph/sdk": "^2.7.1",
+    "@hashgraph/sdk": "^2.19.1",
     "@keyv/redis": "^2.3.6",
     "@opentelemetry/exporter-trace-otlp-http": "0.34.0",
     "@opentelemetry/instrumentation-express": "0.32.0",
