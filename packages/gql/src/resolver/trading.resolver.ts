@@ -326,6 +326,7 @@ const createListing = async (
     })
 
     await dbUtils.getNFTsFromTxOrders([listingOrder]).then(seService.indexNFTs)
+    await sendgrid.sendListingCompleteEmail(user, defs.ExchangeType.NFTCOM)
 
     return {
       id: listingOrder.id,

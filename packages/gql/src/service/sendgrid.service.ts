@@ -3,7 +3,7 @@ import fetch from 'isomorphic-unfetch'
 import { encode } from 'url-encode-decode'
 
 import { confirmEmailUrl, sgAPIKey } from '@nftcom/gql/config'
-import { _logger, entity, fp, helper } from '@nftcom/shared'
+import { _logger, defs,entity, fp, helper } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
 
 sendgrid.setApiKey(sgAPIKey)
@@ -105,6 +105,19 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
       to: { email: user.email },
       subject: `New NFT.com Referral! ${new Date().toUTCString()}`,
       text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
+    })
+      .then(() => true)
+  }
+}
+
+export const sendListingCompleteEmail = (user: entity.User, listingType: defs.ExchangeType): Promise<boolean> => {
+  if (user?.email) {
+    logger.debug('sendReferredBy', { user })
+    return send({
+      from,
+      to: { email: user.email },
+      subject: `New NFT.com Listing! ${new Date().toUTCString()}`,
+      text: `Congratulations! You completed listing on ${listingType} via NFT.com.`,
     })
       .then(() => true)
   }

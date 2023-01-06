@@ -6,7 +6,7 @@ import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/error-types'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { core, sendgrid } from '@nftcom/gql/service'
 import {
   _logger,
   contracts,
@@ -1107,7 +1107,7 @@ export const listNFTSeaport = async (
   args: gql.MutationListNFTSeaportArgs,
   ctx: Context,
 ): Promise<any> => {
-  const { repositories } = ctx
+  const { repositories, user } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const seaportSignature = args?.input?.seaportSignature
   const seaportParams = args?.input?.seaportParams
@@ -1123,6 +1123,7 @@ export const listNFTSeaport = async (
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
         dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
+        sendgrid.sendListingCompleteEmail(user, defs.ExchangeType.OpenSea),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1136,7 +1137,7 @@ export const listNFTLooksrare = async (
   args: gql.MutationListNFTLooksrareArgs,
   ctx: Context,
 ): Promise<any> => {
-  const { repositories } = ctx
+  const { repositories, user } = ctx
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
   const looksrareOrder = args?.input?.looksrareOrder
   const profileUrl = args?.input.profileUrl
@@ -1151,6 +1152,7 @@ export const listNFTLooksrare = async (
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
         dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
+        sendgrid.sendListingCompleteEmail(user, defs.ExchangeType.LooksRare),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
@@ -1164,7 +1166,7 @@ export const listNFTX2Y2 = async (
   args: gql.MutationListNFTx2Y2Args,
   ctx: Context,
 ): Promise<any> => {
-  const { repositories } = ctx
+  const { repositories, user } = ctx
   const schema = Joi.object().keys({
     input: Joi.object().keys({
       x2y2Order: Joi.string().required(),
@@ -1193,6 +1195,7 @@ export const listNFTX2Y2 = async (
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
         dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
+        sendgrid.sendListingCompleteEmail(user, defs.ExchangeType.X2Y2),
       ]).then(results => results[0])
     })
     .catch(err => appError.buildInvalid(
