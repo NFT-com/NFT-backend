@@ -1,4 +1,5 @@
 import queue from 'async/queue'
+import { Pool as PgClient, QueryResult } from 'pg'
 import * as Typesense from 'typesense'
 import { CollectionSchema, CollectionUpdateSchema } from 'typesense/lib/Typesense/Collection'
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections'
@@ -68,10 +69,12 @@ class Commander {
 
   client: Typesense.Client
   repositories: db.Repository
+  pgClient: PgClient
 
-  constructor(client: Typesense.Client, repositories: db.Repository) {
+  constructor(client: Typesense.Client, repositories: db.Repository, pgClient: PgClient) {
     this.client = client
     this.repositories = repositories
+    this.pgClient = pgClient
   }
 
   retrieveListings = async (): Promise<any>  => {
@@ -119,15 +122,36 @@ class Commander {
     )
   }
 
+  private _findPageWithCollectionAndWallet(
+    cursorContract: string,
+    cursorId: string,
+    limit: number,
+    isSingleContract?: boolean): Promise<QueryResult<any>> {
+    const cursorAndLimit = `
+    AND (nft.contract, nft.id) > ($1, $2)
+    ORDER BY nft.contract ASC, nft.id ASC LIMIT $3`
+    const limitOnly = `ORDER BY nft.contract ASC, nft.id ASC LIMIT ${isSingleContract ? '$2' : '$1'}`
+    return this.pgClient.query(`
+    SELECT
+      nft.*,
+      row_to_json(collection.*) as collection,
+      row_to_json(wallet.*) as wallet,
+      COUNT(*) OVER () AS total_count
+    FROM
+      nft
+      LEFT JOIN collection ON collection."contract" = nft."contract"
+      LEFT JOIN wallet ON wallet."id" = nft."walletId"
+      WHERE nft."deletedAt" IS NULL
+      ${isSingleContract ? 'AND nft."contract" = $1' : ''}
+      ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
+  }
+
   private _retrieveData = async (name: string, cursor?: string | string[]):
   Promise<[any[], number]> => {
     if (name === 'nfts') {
       const cursorContract = cursor ? cursor[0] : undefined
       const cursorId = cursor ? cursor[1] : undefined
-      logger.info({ cursorContract, cursorId }, 'NFT QUERY')
-      const data = await this.repositories
-        .nft.findPageWithCollectionAndWallet(cursorContract, cursorId, NFT_PAGE_SIZE, true)
-      logger.info({ cursorContract, cursorId }, 'FINISHED NFT QUERY')
+      const data = (await this._findPageWithCollectionAndWallet(cursorContract, cursorId, NFT_PAGE_SIZE, true)).rows
       const count = parseInt(data[0].total_count)
       return [data, count]
     } else if (name === 'collections') {
@@ -138,7 +162,7 @@ class Commander {
     return [data, data.length]
   }
 
-  _indexCollection = async (collectionName: string): Promise<string> => {
+  private _indexCollection = async (collectionName: string): Promise<string> => {
     const name = 'collections'
     let retrievedCount = 0,
       totalCount = 0,
@@ -163,13 +187,19 @@ class Commander {
     return name
   }
 
-  _indexNFTs = async (collectionName: string): Promise<string> => {
+  private _indexNFTs = async (collectionName: string): Promise<string> => {
     const name = 'nfts'
     const listingMap = await this.retrieveListings()
     const collections = (await this.repositories.collection.find({
       select: { contract: true },
       where: {
         isSpam: false,
+      },
+      order: {
+        totalSales: {
+          direction: 'DESC',
+          nulls: 'LAST',
+        },
       },
     })).map((c) => c.contract)
 
@@ -193,7 +223,7 @@ class Commander {
         }
       } while (retrievedCount !== totalCount)
       return { contract, remaining: q.length() }
-    }, 10)
+    }, 40)
 
     q.push(collections, (err, task) => {
       if (err) {

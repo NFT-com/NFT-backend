@@ -1,3 +1,4 @@
+import { Pool } from 'pg'
 import Typesense from 'typesense'
 
 import { db, helper } from '@nftcom/shared'
@@ -21,7 +22,20 @@ const typesenseClient = new Typesense.Client({
   connectionTimeoutSeconds: 3600, // 1 hour... because typesense
 })
 
-const dbConfig = {
+const pgClient = new Pool({
+  user: process.env.DB_USERNAME || 'app',
+  password: process.env.DB_PASSWORD || 'password',
+  host: process.env.DB_HOST_RO || 'localhost',
+  database: process.env.DB_DATABASE || 'app',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+  max: 40,
+  application_name: 'semper',
+})
+
+export const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 5432,
   username: process.env.DB_USERNAME || 'app',
@@ -33,8 +47,9 @@ const dbConfig = {
 
 const main = async (): Promise<void> => {
   await db.connect(dbConfig)
+  pgClient.connect()
   const repositories = db.newRepositories()
-  const commander = new Commander(typesenseClient, repositories)
+  const commander = new Commander(typesenseClient, repositories, pgClient)
   
   // await commander.help()
   await commander.erase()
