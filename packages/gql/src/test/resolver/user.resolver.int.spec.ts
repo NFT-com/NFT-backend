@@ -14,7 +14,7 @@ jest.mock('@nftcom/cache', () => ({
 jest.mock('@nftcom/gql/service/sendgrid.service', () => ({
   sendConfirmEmail: jest.fn().mockResolvedValue(true),
   sendReferralEmail: jest.fn().mockResolvedValue(true),
-
+  sendEmailVerificationCode: jest.fn().mockResolvedValue(true),
 }))
 
 let connection
