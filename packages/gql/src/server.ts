@@ -17,6 +17,7 @@ import KeyvRedis from '@keyv/redis'
 import { cache } from '@nftcom/cache'
 import { appError, profileError, userError } from '@nftcom/error-types'
 import { sendgrid } from '@nftcom/gql/service'
+import { checkAddressIsSanctioned } from '@nftcom/gql/service/core.service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
@@ -78,6 +79,11 @@ export const createContext = async (ctx): Promise<Context> => {
     // we check signature and nonce to get wallet address
     const msg = `${authMessage} ${timestamp}`
     const address = getAddressFromSignature(msg, authSignature)
+    // check if address is in OFAC list
+    const isSanctioned = await checkAddressIsSanctioned(address)
+    if (isSanctioned) {
+      return Promise.reject(userError.buildAddressSanctioned())
+    }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     user = await repositories.user.findById(wallet?.userId)

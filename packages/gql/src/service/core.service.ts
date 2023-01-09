@@ -1,4 +1,6 @@
+import axios from 'axios'
 import cryptoRandomString from 'crypto-random-string'
+import { addDays } from 'date-fns'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
@@ -14,6 +16,7 @@ import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
+import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
@@ -521,6 +524,7 @@ export const blacklistProfilePatterns = [
   /^lostminers$/,
   /^macroverse$/,
   /^allurebridals$/,
+  /^thealopecians$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
@@ -627,7 +631,7 @@ export const reservedProfiles = {
   '0x4911E3049a846A2495C2474d45a4d578AbDeAEAB': ['gaming', 'cryptostache'],
   '0x67bF9c5a79C676A6D446cC391DB632704EB0f020': ['shiralazar', 'shira'],
   '0x67Ff9934c797DD104F86F6FAcc7feF23D8a6f9e3': ['twiitch', 'twiitchcreative'],
-  '0xeCd49fA04513201450083C9B6dE1ba1e81d8B05F': ['zahira', 'hiphop'],
+  '0xE98E91c49F26eCE72770a34554CA696F9043e7d8': ['zahira', 'hiphop'],
   '0xA9Fe952EdD2958aB7Dea126c6d8B4413AfD3E771': ['todd', 'picasso'],
   '0xc5B746bDe254F5B88f4F906AafbD788EB282c760': ['nba', 'pfp'],
   '0x9E3508a1dE57a459835a2DFDc451afa7677962DD': ['trading', 'tomcrown'],
@@ -1338,5 +1342,43 @@ export const fetchDataUsingMulticall = async (
       `Failed to fetch data using multicall: ${error}`,
     )
     return []
+  }
+}
+
+export const sendEmailVerificationCode = async (
+  email: string,
+  user: entity.User,
+  repositories: db.Repository,
+): Promise<void> => {
+  try {
+    const updatedUser = await repositories.user.updateOneById(user.id, {
+      email,
+      confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
+      confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+    })
+    await sendgrid.sendEmailVerificationCode(updatedUser)
+  } catch (err) {
+    logger.error(`Error in sendEmailVerificationCode: ${err}`)
+  }
+}
+
+export const checkAddressIsSanctioned = async (
+  address: string,
+): Promise<boolean> => {
+  try {
+    const headers = {
+      'X-API-Key': process.env.OFAC_API_KEY,
+      'Accept': 'application/json',
+    }
+    const url = `https://public.chainalysis.com/api/v1/address/${address}`
+    const res = await axios.get(url, { headers })
+    if (res && res?.data && res?.data?.identifications) {
+      return !!res?.data?.identifications.length
+    } else {
+      return true
+    }
+  } catch (err) {
+    logger.error(`Error in checkAddressIsSanctioned: ${err}`)
+    return true
   }
 }
