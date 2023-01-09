@@ -524,18 +524,33 @@ export const nftTraitBuilder = (
   if (nftAttributes.length) {
     for (const attribute of nftAttributes) {
       const traitExists: NFTPortRarityAttributes = rarityAttributes.find(
-        (rarityAttribute: NFTPortRarityAttributes) =>
-          rarityAttribute.trait_type === attribute.type
-          && rarityAttribute.value === attribute.value,
+        (rarityAttribute: NFTPortRarityAttributes) => {
+          if (rarityAttribute.trait_type === attribute.type
+            && rarityAttribute.value.trim() === attribute.value.trim()) {
+            return rarityAttribute
+          }
+        },
       )
-      if (traitExists?.statistics?.prevalence) {
-        traits.push(
-          {
-            ...attribute,
-            rarity: String(traitExists.statistics.prevalence || '0'),
-          },
-        )
+      let traitsToBePushed: defs.Trait = {
+        ...attribute,
       }
+
+      if (traitExists) {
+        traitsToBePushed = {
+          type: traitExists.trait_type,
+          value: traitExists.value,
+        }
+        if (traitExists?.statistics?.prevalence) {
+          traitsToBePushed = {
+            ...traitsToBePushed,
+            rarity: String(traitExists.statistics.prevalence || '0'),
+          }
+        }
+      }
+      
+      traits.push(
+        traitsToBePushed,
+      )
     }
   }
   return traits
@@ -616,7 +631,7 @@ export const getNftName = (
   contractMetadata: any = undefined,
   tokenId: string = undefined,
 ): string => {
-  return nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK ? nftPortDetails?.nft?.metadata?.name : nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
+  return nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK ? nftPortDetails?.nft?.metadata?.name : nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
 }
 
 export const getNftDescription = (
@@ -630,7 +645,7 @@ export const getNftImage = (
   metadata: any,
   nftPortDetails: any = undefined,
 ): string => {
-  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) ? nftPortDetails?.nft?.cached_file_url :
+  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK) ? nftPortDetails?.nft?.cached_file_url :
     metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
       metadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
         (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
@@ -640,12 +655,12 @@ export const getNftType = (
   nftMetadata: any,
   nftPortDetails: any = undefined,
 ): defs.NFTType | undefined => {
-  if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
+  if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) {
+    return defs.NFTType.CRYPTO_PUNKS
+  } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
     return defs.NFTType.ERC721
   } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
     return defs.NFTType.ERC1155
-  } else if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb') {
-    return defs.NFTType.CRYPTO_PUNKS
   } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
@@ -817,7 +832,9 @@ export const updateNFTOwnershipAndMetadata = async (
     let type, name, description, image
     let traits = []
     if (nft.id.tokenMetadata && nft.id.tokenMetadata?.tokenType) {
-      if (nft.id.tokenMetadata?.tokenType === 'ERC721') {
+      if (nft.contract.address.toLowerCase() === CRYPTOPUNK) {
+        type = defs.NFTType.CRYPTO_PUNKS
+      } else if (nft.id.tokenMetadata?.tokenType === 'ERC721') {
         type = defs.NFTType.ERC721
       } else if (nft.id.tokenMetadata?.tokenType === 'ERC1155') {
         type = defs.NFTType.ERC1155
@@ -844,7 +861,6 @@ export const updateNFTOwnershipAndMetadata = async (
         })
       }
     }
-
     // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
     if (!type || !name || !description || !image || !traits.length) {
       const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)

@@ -23,6 +23,7 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false })
   timestamp: Date
 
+  @Index()
   @Column({ type: 'timestamptz', nullable: true })
   expiration: Date
 
@@ -32,6 +33,10 @@ export class TxActivity extends BaseEntity {
   @Column({ nullable: false, default: '0x' })
   nftContract: string
 
+  /*
+   *  @Index() -- Manually added to migration 1673014408233-txActivityNftIdExpirationIndexes.ts
+   *  because Typeorm does not support GIN index required for array types
+   */
   @Column('text', { array: true })
   nftId: string[]
 

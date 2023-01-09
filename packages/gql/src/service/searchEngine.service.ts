@@ -53,6 +53,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     return curatedVal + officialVal + listingsVal
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
+    if (!nfts.length) return true
     try {
       const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
         .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, true))
