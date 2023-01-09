@@ -158,11 +158,13 @@ const availableToCreateListing = async (
       makerAddress: ethers.utils.getAddress(address),
       acceptedAt: IsNull(),
       swapTransactionId: IsNull(),
-      exchange: defs.ExchangeType.NFTCOM,
       orderType: defs.ActivityType.Listing,
+      exchange: defs.ExchangeType.NFTCOM,
       protocol: defs.ProtocolType.NFTCOM,
     },
   })
+
+  if (!listingOrders.length) return true
 
   const NonFungibleAssetAsset = ['ERC721']
 
@@ -170,7 +172,7 @@ const availableToCreateListing = async (
 
   // find out active listingOrders which have user's make asset...
   const activeOrders = listingOrders.filter((order) => {
-    if (order.activity.expiration < now) return false
+    if (order.activity?.expiration && order.activity?.expiration < now) return false
     else {
       if (assets.length !== order.makeAsset.length) return false
       else {
@@ -286,7 +288,7 @@ const createListing = async (
       ))
     }
 
-    const isAvailable = availableToCreateListing(wallet.address, makeAssets, repositories)
+    const isAvailable = await availableToCreateListing(wallet.address, makeAssets, repositories)
     if (!isAvailable) {
       return Promise.reject(appError.buildForbidden(
         marketListingError.buildMarketListingUnavailableMsg(wallet.address),
