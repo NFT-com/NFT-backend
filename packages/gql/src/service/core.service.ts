@@ -524,6 +524,7 @@ export const blacklistProfilePatterns = [
   /^lostminers$/,
   /^macroverse$/,
   /^allurebridals$/,
+  /^thealopecians$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
