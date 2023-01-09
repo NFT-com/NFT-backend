@@ -116,7 +116,7 @@ const signUp = (
         chainName: chain.name,
         address,
       }),
-      sendgrid.sendConfirmEmail(user),
+      sendgrid.sendEmailVerificationCode(user),
     ])))
 }
 
@@ -143,7 +143,7 @@ const updateEmail = (
     confirmEmailToken,
     confirmEmailTokenExpiresAt,
   })
-    .then(fp.tapWait(sendgrid.sendConfirmEmail))
+    .then(fp.tapWait(sendgrid.sendEmailVerificationCode))
 }
 
 const updateReferral = (ctx: Context) => {
@@ -228,11 +228,26 @@ const updateMe = (
 
   const {
     avatarURL = user.avatarURL,
-    email = user.email,
     preferences = user.preferences,
+    email,
   } = args.input
-  // TODO notify user?
-  return repositories.user.updateOneById(user.id, { avatarURL, email, preferences })
+  return repositories.user.updateOneById(user.id, { avatarURL, preferences })
+    .then((user) => {
+      if (email.length && email !== user.email) {
+        return core.sendEmailVerificationCode(email, user, repositories)
+          .then(() => user)
+      } else if (email === user.email) {
+        // if token is expired...
+        if (!user.isEmailConfirmed && new Date(user.confirmEmailTokenExpiresAt) <= new Date()) {
+          return core.sendEmailVerificationCode(email, user, repositories)
+            .then(() => user)
+        } else {
+          return user
+        }
+      } else {
+        return user
+      }
+    })
 }
 
 const resendEmailConfirm = (
@@ -249,7 +264,7 @@ const resendEmailConfirm = (
     confirmEmailToken,
     confirmEmailTokenExpiresAt,
   })
-    .then(fp.tapWait(sendgrid.sendConfirmEmail))
+    .then(fp.tapWait(sendgrid.sendEmailVerificationCode))
 }
 
 const getMyAddresses = (

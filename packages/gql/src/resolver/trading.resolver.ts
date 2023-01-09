@@ -158,9 +158,9 @@ const availableToCreateListing = async (
       makerAddress: ethers.utils.getAddress(address),
       acceptedAt: IsNull(),
       swapTransactionId: IsNull(),
-      // exchange: defs.ExchangeType.NFTCOM,
+      exchange: defs.ExchangeType.NFTCOM,
       orderType: defs.ActivityType.Listing,
-      // protocol: defs.ProtocolType.NFTCOM,
+      protocol: defs.ProtocolType.NFTCOM,
     },
   })
 
@@ -671,9 +671,9 @@ const getBids = (
 
   const filter: Partial<entity.TxOrder> = helper.removeEmpty({
     makerAddress: ethers.utils.getAddress(makerAddress),
-    // exchange: defs.ExchangeType.NFTCOM,
+    exchange: defs.ExchangeType.NFTCOM,
     orderType: defs.ActivityType.Bid,
-    // protocol: defs.ProtocolType.NFTCOM,
+    protocol: defs.ProtocolType.NFTCOM,
     listingId: args?.input.listingOrderId,
     chainId,
   })

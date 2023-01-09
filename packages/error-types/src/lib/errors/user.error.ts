@@ -14,6 +14,7 @@ export enum ErrorType {
   InvalidReferralId = 'INVALID_REFERRAL_ID',
   AuthenticationExpired = 'AUTHENTICATION_EXPIRED',
   AuthenticationInvalid = 'AUTHENTICATION_INVALID',
+  AddressSanctioned = 'ADDRESS_SANCTIONED',
 }
 
 export const buildAuth = (): ApolloError =>
@@ -28,6 +29,13 @@ export const buildAuthExpired = (): ApolloError =>
     'Authentication header is expired',
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationExpired },
+  )
+
+export const buildAddressSanctioned = (): ApolloError =>
+  new ApolloError(
+    'Address is sanctioned from OFAC',
+    HTTP.Unauthorized,
+    { errorKey: ErrorType.AddressSanctioned },
   )
 
 export const buildAuthOutOfExpireDuration = (): ApolloError =>
