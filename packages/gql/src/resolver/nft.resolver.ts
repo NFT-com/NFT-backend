@@ -20,7 +20,7 @@ import {
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
-import { differenceInMilliseconds } from 'date-fns'
+// import { differenceInMilliseconds } from 'date-fns'
 import { Maybe } from 'graphql/jsutils/Maybe'
 
 import { cache, CacheKeys } from '@nftcom/cache'
@@ -46,7 +46,7 @@ import * as Sentry from '@sentry/node'
 
 // const PROFILE_NFTS_EXPIRE_DURATION = Number(process.env.PROFILE_NFTS_EXPIRE_DURATION)
 // const PROFILE_SCORE_EXPIRE_DURATION = Number(process.env.PROFILE_SCORE_EXPIRE_DURATION)
-const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
+// const REFRESH_NFT_DURATION = Number(process.env.REFRESH_NFT_DURATION)
 
 // commented for future reference
 // const baseCoins = [
@@ -156,41 +156,42 @@ const getContractNFT = async (
     if (nft) {
       // fix (short-term) : trait value
       nft = stringifyTraits(nft)
-      const now = helper.toUTCDate()
-      let duration
-      if (nft.lastRefreshed) {
-        duration = differenceInMilliseconds(now, nft.lastRefreshed)
-      }
-      if (!nft.lastRefreshed  ||
-        (duration && duration > REFRESH_NFT_DURATION)
-      ) {
-        repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
-          .then((Nft) => {
-            const obj = {
-              contract: {
-                address: Nft.contract,
-              },
-              id: {
-                tokenId: Nft.tokenId,
-              },
-            }
-            getUserWalletFromNFT(Nft.contract, Nft.tokenId, chainId)
-              .then((wallet) => {
-                if (!wallet) {
-                  logger.error('Failed to create new user and wallet for NFT ownership')
-                } else {
-                  updateNFTOwnershipAndMetadata(
-                    obj,
-                    wallet.userId,
-                    wallet.id,
-                    chainId,
-                  ).then(() => {
-                    logger.info(`Updated NFT ownership and metadata for contract ${Nft.contract} and tokenId ${Nft.tokenId}`)
-                  })
-                }
-              })
-          })
-      }
+      
+      // const now = helper.toUTCDate()
+      // let duration
+      // if (nft.lastRefreshed) {
+      //   duration = differenceInMilliseconds(now, nft.lastRefreshed)
+      // }
+      // if (!nft.lastRefreshed  ||
+      //   (duration && duration > REFRESH_NFT_DURATION)
+      // ) {
+      //   repositories.nft.updateOneById(nft.id, { lastRefreshed: now })
+      //     .then((Nft) => {
+      //       const obj = {
+      //         contract: {
+      //           address: Nft.contract,
+      //         },
+      //         id: {
+      //           tokenId: Nft.tokenId,
+      //         },
+      //       }
+      //       getUserWalletFromNFT(Nft.contract, Nft.tokenId, chainId)
+      //         .then((wallet) => {
+      //           if (!wallet) {
+      //             logger.error('Failed to create new user and wallet for NFT ownership')
+      //           } else {
+      //             updateNFTOwnershipAndMetadata(
+      //               obj,
+      //               wallet.userId,
+      //               wallet.id,
+      //               chainId,
+      //             ).then(() => {
+      //               logger.info(`Updated NFT ownership and metadata for contract ${Nft.contract} and tokenId ${Nft.tokenId}`)
+      //             })
+      //           }
+      //         })
+      //     })
+      // }
       return nft
     } else {
       // This NFT is not existing in our DB, so we try to get and save
