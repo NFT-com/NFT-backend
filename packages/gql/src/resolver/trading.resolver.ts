@@ -5,7 +5,6 @@ import { IsNull } from 'typeorm'
 
 import { appError, marketBidError, marketListingError } from '@nftcom/error-types'
 import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
-import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import {
   _logger,
   contracts,
@@ -15,7 +14,6 @@ import {
   helper,
   provider,
   typechain,
-  utils as dbUtils,
 } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -25,7 +23,7 @@ import { filterNativeOrdersForNFT } from '../service/nft.service'
 import { activityBuilder } from '../service/txActivity.service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
-const seService = SearchEngineService()
+// const seService = SearchEngineService()
 
 const getListings = (
   _: any,
@@ -288,7 +286,7 @@ const createListing = async (
       ))
     }
 
-    const isAvailable = availableToCreateListing(wallet.address, makeAssets, repositories)
+    const isAvailable = await availableToCreateListing(wallet.address, makeAssets, repositories)
     if (!isAvailable) {
       return Promise.reject(appError.buildForbidden(
         marketListingError.buildMarketListingUnavailableMsg(wallet.address),
@@ -327,7 +325,7 @@ const createListing = async (
       memo: args?.input.message ?? null,
     })
 
-    await dbUtils.getNFTsFromTxOrders([listingOrder]).then(seService.indexNFTs)
+    // await dbUtils.getNFTsFromTxOrders([listingOrder]).then(seService.indexNFTs)
 
     return {
       id: listingOrder.id,
