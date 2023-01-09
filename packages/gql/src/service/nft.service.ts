@@ -655,7 +655,7 @@ export const getNftType = (
   nftMetadata: any,
   nftPortDetails: any = undefined,
 ): defs.NFTType | undefined => {
-  if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb') {
+  if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) {
     return defs.NFTType.CRYPTO_PUNKS
   } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
     return defs.NFTType.ERC721
