@@ -41,7 +41,13 @@ export const clearDB = async (repositories: db.Repository): Promise<void> => {
     const activityIds = activities.map((activity) => activity.id)
     // just orders for now
     const activityTypeIds = activities.map((activity) => activity.activityTypeId)
-    if (activityTypeIds.length) await repositories.txOrder.hardDeleteByIds(activityTypeIds)
+    if (activityTypeIds.length) {
+      await Promise.allSettled(
+        activityTypeIds.map(async (hash) => {
+          await repositories.txOrder.hardDelete({ orderHash: hash })
+        }),
+      )
+    }
     if (activityIds) await repositories.txActivity.hardDeleteByIds(activityIds)
   }
 
