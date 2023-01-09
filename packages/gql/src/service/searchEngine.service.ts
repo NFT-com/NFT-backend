@@ -54,7 +54,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     try {
-      const listingMap = (await repos.txActivity
+      const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
         .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, true))
         .reduce((map, txActivity: TxActivityDAO) => {
           if (helper.isNotEmpty(txActivity.order.protocolData)) {
@@ -104,9 +104,14 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         const ownerAddr = wallet?.address || ''
         const listings = []
         if (txActivityListings) {
-          for (const txActivity of txActivityListings) {
-            if (txActivity.walletAddress === ownerAddr &&
-              helper.isNotEmpty(txActivity.order.protocolData)) {
+          if (!ownerAddr) {
+            const marketplaces = [...new Set(txActivityListings.map((l) => l.order?.exchange))]
+              .filter((x) => !!x)
+            txActivityListings.sort((a, b) => {
+              return b.updatedAt.getTime() - a.updatedAt.getTime()
+            })
+            const txActivities = marketplaces.map((m) => txActivityListings.find((l) => l.order?.exchange === m))
+            for (const txActivity of txActivities) {
               const contractAddress = getListingCurrencyAddress(txActivity)
               listings.push({
                 marketplace: txActivity.order?.exchange,
@@ -118,8 +123,25 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
                 currency: await getSymbolForContract(contractAddress),
               })
             }
+          } else {
+            for (const txActivity of txActivityListings) {
+              if (txActivity.walletAddress === ownerAddr &&
+                helper.isNotEmpty(txActivity.order.protocolData)) {
+                const contractAddress = getListingCurrencyAddress(txActivity)
+                listings.push({
+                  marketplace: txActivity.order?.exchange,
+                  price: +utils.formatUnits(
+                    getListingPrice(txActivity),
+                    await getDecimalsForContract(contractAddress),
+                  ),
+                  type: undefined,
+                  currency: await getSymbolForContract(contractAddress),
+                })
+              }
+            }
           }
         }
+        
         return {
           id: nft.id,
           nftName: nft.metadata?.name || `#${tokenId}`,

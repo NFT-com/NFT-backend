@@ -78,7 +78,12 @@ const addDocumentsToTypesense = async (
 }
 
 const schemas = [collections, nfts]
-const LARGE_COLLECTIONS = ['0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85', '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d']
+const LARGE_COLLECTIONS = [
+  '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
+  '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
+  '0xD1E5b0FF1287aA9f9A268759062E4Ab08b9Dacbe',
+  '0x495f947276749Ce646f68AC8c248420045cb7b5e',
+]
 
 class Commander {
 
@@ -95,7 +100,7 @@ class Commander {
   retrieveListings = async (): Promise<any>  => {
     return (await this.repositories.txActivity.findActivitiesNotExpired(ActivityType.Listing))
       .reduce((map, txActivity: TxActivityDAO) => {
-        if (helper.isNotEmpty(txActivity.order.protocolData)) {
+        if (helper.isNotEmpty(txActivity.order.protocolData) && txActivity.nftId.length) {
           const nftIdParts = txActivity.nftId[0].split('/')
           const k = `${nftIdParts[1]}-${nftIdParts[2]}`
           if (map[k]?.length) {
@@ -238,9 +243,9 @@ class Commander {
         }
       } while (retrievedCount !== totalCount)
       return { contract, remaining: q.length() }
-    }, 40)
+    }, 50)
 
-    q.push(collections, (err, task) => {
+    q.push([...LARGE_COLLECTIONS, ...collections], (err, task) => {
       if (err) {
         logger.error(err)
         return
@@ -253,32 +258,6 @@ class Commander {
     return name
   }
 
-  private _indexLargeCollections = async (collectionName, contract): Promise<string> => {
-    const name = 'nfts'
-    const listingMap = this.retrieveListings()
-    let retrievedCount = 0,
-      totalCount = 0,
-      cursor: string[]
-
-    do {
-      logger.info({ contract, name }, 'COLLECTING DATA')
-      const [data, count] = await this._retrieveData(name, cursor, 1_000_000)
-      retrievedCount = data.length
-      totalCount = count
-      cursor = [data[data.length - 1].contract, data[data.length - 1].id]
-      logger.info({ contract, retrievedCount, totalCount, cursor })
-      logger.info({ contract, name }, 'MAPPING DATA')
-      const mappedData = await mapCollectionData(name, data, this.repositories, listingMap)
-      const documents = mappedData.filter((x) => x !== undefined)
-      if (documents) {
-        await addDocumentsToTypesense(this.client, collectionName, documents)
-        logger.info({ contract }, 'DOCUMENTS added to typesense')
-      }
-    } while (retrievedCount !== totalCount)
-
-    return undefined
-  }
-
   restore = async (): Promise<void> => {
     const timestamp = new Date().getTime()
     for (const schema of schemas) {
@@ -289,14 +268,11 @@ class Commander {
     const collectionNames = await Promise.all([
       this._indexCollection(`collections-${timestamp}`),
       this._indexNFTs(`nfts-${timestamp}`),
-      ...LARGE_COLLECTIONS.map((c) => this._indexLargeCollections(`nfts-${timestamp}`, c)),
     ])
 
     for (const name of collectionNames) {
-      if (name) {
-        const collectionName = `${name}-${timestamp}`
-        await this.client.aliases().upsert(name, { collection_name: collectionName })
-      }
+      const collectionName = `${name}-${timestamp}`
+      await this.client.aliases().upsert(name, { collection_name: collectionName })
     }
   }
 

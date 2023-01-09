@@ -64,7 +64,7 @@ export const mapCollectionData = async (
   data: any[],
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _repos: any,
-  listingMap?: any,
+  listingMap?: { [k:string]: TxActivityDAO[] },
 ): Promise<any[]> => {
   const result = []
   switch (collectionName) {
@@ -110,9 +110,14 @@ export const mapCollectionData = async (
       const ownerAddr = nft.wallet?.address || ''
       const listings = []
       if (txActivityListings) {
-        for (const txActivity of txActivityListings) {
-          if (txActivity.walletAddress === ownerAddr &&
-            helper.isNotEmpty(txActivity.order.protocolData)) {
+        if (!ownerAddr) {
+          const marketplaces = [...new Set(txActivityListings.map((l) => l.order?.exchange))]
+            .filter((x) => !!x)
+          txActivityListings.sort((a, b) => {
+            return b.updatedAt.getTime() - a.updatedAt.getTime()
+          })
+          const txActivities = marketplaces.map((m) => txActivityListings.find((l) => l.order?.exchange === m))
+          for (const txActivity of txActivities) {
             const contractAddress = getListingCurrencyAddress(txActivity)
             listings.push({
               marketplace: txActivity.order?.exchange,
@@ -123,6 +128,22 @@ export const mapCollectionData = async (
               type: undefined,
               currency: await getSymbolForContract(contractAddress),
             })
+          }
+        } else {
+          for (const txActivity of txActivityListings) {
+            if (txActivity.walletAddress === ownerAddr &&
+              helper.isNotEmpty(txActivity.order.protocolData)) {
+              const contractAddress = getListingCurrencyAddress(txActivity)
+              listings.push({
+                marketplace: txActivity.order?.exchange,
+                price: +utils.formatUnits(
+                  getListingPrice(txActivity),
+                  await getDecimalsForContract(contractAddress),
+                ),
+                type: undefined,
+                currency: await getSymbolForContract(contractAddress),
+              })
+            }
           }
         }
       }
