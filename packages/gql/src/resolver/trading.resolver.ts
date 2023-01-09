@@ -159,6 +159,8 @@ const availableToCreateListing = async (
       acceptedAt: IsNull(),
       swapTransactionId: IsNull(),
       orderType: defs.ActivityType.Listing,
+      exchange: defs.ExchangeType.NFTCOM,
+      protocol: defs.ProtocolType.NFTCOM,
     },
   })
 
