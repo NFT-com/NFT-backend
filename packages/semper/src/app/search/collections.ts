@@ -1,7 +1,7 @@
 import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
-import { defs, entity, helper } from '@nftcom/shared'
+import { defs, helper } from '@nftcom/shared'
 
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
 
@@ -65,7 +65,7 @@ export const mapCollectionData = async (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _repos: any,
   listingMap?: any,
-): Promise<entity.BaseEntity[]> => {
+): Promise<any[]> => {
   const result = []
   switch (collectionName) {
   case 'collections':

@@ -44,6 +44,20 @@ const addDocumentsToTypesense = async (
             .collections(collectionName)
             .documents()
             .import(jsonl)
+            .catch(async (err) => {
+              if (err.httpStatus === 413) {
+                const responses = await Promise.all(
+                  chunk(docChunk, Math.ceil(docChunk.length / 2)).map(async (dc) => {
+                    const jsonl = dc.map((doc: any) => JSON.stringify(doc)).join('\n')
+                    logger.info({ size: dc.length }, 'IMPORTING BATCH')
+                    return await client.collections(collectionName).documents().import(jsonl)
+                  }),
+                )
+                return responses.flat()
+              } else {
+                throw err
+              }
+            })
         }),
       )
 
@@ -64,6 +78,7 @@ const addDocumentsToTypesense = async (
 }
 
 const schemas = [collections, nfts]
+const LARGE_COLLECTIONS = ['0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85', '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d']
 
 class Commander {
 
@@ -146,12 +161,12 @@ class Commander {
       ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
   }
 
-  private _retrieveData = async (name: string, cursor?: string | string[]):
+  private _retrieveData = async (name: string, cursor?: string | string[], pageSize = NFT_PAGE_SIZE):
   Promise<[any[], number]> => {
     if (name === 'nfts') {
       const cursorContract = cursor ? cursor[0] : undefined
       const cursorId = cursor ? cursor[1] : undefined
-      const data = (await this._findPageWithCollectionAndWallet(cursorContract, cursorId, NFT_PAGE_SIZE, true)).rows
+      const data = (await this._findPageWithCollectionAndWallet(cursorContract, cursorId, pageSize, true)).rows
       const count = parseInt(data[0].total_count)
       return [data, count]
     } else if (name === 'collections') {
@@ -201,7 +216,7 @@ class Commander {
           nulls: 'LAST',
         },
       },
-    })).map((c) => c.contract)
+    })).filter((c) => !LARGE_COLLECTIONS.includes(c.contract)).map((c) => c.contract)
 
     const q = queue(async (contract) => {
       let retrievedCount = 0,
@@ -238,6 +253,32 @@ class Commander {
     return name
   }
 
+  private _indexLargeCollections = async (collectionName, contract): Promise<string> => {
+    const name = 'nfts'
+    const listingMap = this.retrieveListings()
+    let retrievedCount = 0,
+      totalCount = 0,
+      cursor: string[]
+
+    do {
+      logger.info({ contract, name }, 'COLLECTING DATA')
+      const [data, count] = await this._retrieveData(name, cursor, 1_000_000)
+      retrievedCount = data.length
+      totalCount = count
+      cursor = [data[data.length - 1].contract, data[data.length - 1].id]
+      logger.info({ contract, retrievedCount, totalCount, cursor })
+      logger.info({ contract, name }, 'MAPPING DATA')
+      const mappedData = await mapCollectionData(name, data, this.repositories, listingMap)
+      const documents = mappedData.filter((x) => x !== undefined)
+      if (documents) {
+        await addDocumentsToTypesense(this.client, collectionName, documents)
+        logger.info({ contract }, 'DOCUMENTS added to typesense')
+      }
+    } while (retrievedCount !== totalCount)
+
+    return undefined
+  }
+
   restore = async (): Promise<void> => {
     const timestamp = new Date().getTime()
     for (const schema of schemas) {
@@ -248,11 +289,14 @@ class Commander {
     const collectionNames = await Promise.all([
       this._indexCollection(`collections-${timestamp}`),
       this._indexNFTs(`nfts-${timestamp}`),
+      ...LARGE_COLLECTIONS.map((c) => this._indexLargeCollections(`nfts-${timestamp}`, c)),
     ])
 
     for (const name of collectionNames) {
-      const collectionName = `${name}-${timestamp}`
-      await this.client.aliases().upsert(name, { collection_name: collectionName })
+      if (name) {
+        const collectionName = `${name}-${timestamp}`
+        await this.client.aliases().upsert(name, { collection_name: collectionName })
+      }
     }
   }
 
