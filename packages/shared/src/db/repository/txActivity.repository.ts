@@ -192,16 +192,20 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
 
+    const queryObj = {
+      activityType,
+      status: ActivityStatus.Valid,
+      expiration: MoreThan(new Date()),
+      updatedAt: MoreThanOrEqual(updatedAt),
+    }
+    if (!updatedAt) {
+      delete queryObj['updatedAt']
+    }
     return queryBuilder
-      .where({
-        activityType,
-        status: ActivityStatus.Valid,
-        expiration: MoreThan(new Date()),
-        updatedAt: updatedAt ? MoreThanOrEqual(updatedAt): undefined,
-      })
+      .where(queryObj)
       .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .innerJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId')
       .cache(true)
       .getMany()
   }

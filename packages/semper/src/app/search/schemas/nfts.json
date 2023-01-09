@@ -22,7 +22,7 @@
     { "name": "status", "type": "string", "facet": true, "index": true, "optional": true },
     { "name": "rarity", "type": "float", "facet": true, "index": true, "optional": true },
     { "name": "isProfile", "type": "bool", "facet": true, "index": true },
-    { "name": "issuance", "type": "int32", "facet": true, "index": true },
+    { "name": "issuance", "type": "int64", "facet": true, "index": true },
     { "name": "hasListings", "type": "int32", "index": true },
     { "name": "score", "type": "int32", "index": true }
   ],
