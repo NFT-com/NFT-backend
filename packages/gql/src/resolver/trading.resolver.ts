@@ -288,7 +288,7 @@ const createListing = async (
       ))
     }
 
-    const isAvailable = availableToCreateListing(wallet.address, makeAssets, repositories)
+    const isAvailable = await availableToCreateListing(wallet.address, makeAssets, repositories)
     if (!isAvailable) {
       return Promise.reject(appError.buildForbidden(
         marketListingError.buildMarketListingUnavailableMsg(wallet.address),
