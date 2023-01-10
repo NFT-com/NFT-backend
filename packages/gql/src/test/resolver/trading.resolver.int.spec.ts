@@ -153,6 +153,7 @@ describe.skip('trading', () => {
                       }
                       protocolData {
                         ... on NFTCOMProtocolData {
+                          auctionType
                           salt
                           start
                           end
