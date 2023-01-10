@@ -12,6 +12,7 @@ import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
+import { cache } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
@@ -1366,6 +1367,12 @@ export const checkAddressIsSanctioned = async (
   address: string,
 ): Promise<boolean> => {
   try {
+    const key = `OFAC_RESULT_${address}`
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      const identification = JSON.parse(cachedData) as number
+      return identification !== 0
+    }
     const headers = {
       'X-API-Key': process.env.OFAC_API_KEY,
       'Accept': 'application/json',
@@ -1373,6 +1380,7 @@ export const checkAddressIsSanctioned = async (
     const url = `https://public.chainalysis.com/api/v1/address/${address}`
     const res = await axios.get(url, { headers })
     if (res && res?.data && res?.data?.identifications) {
+      await cache.set(key, JSON.stringify(res?.data?.identifications.length), 'EX', 60 * 60) // 1 hour
       return !!res?.data?.identifications.length
     } else {
       return true
