@@ -148,9 +148,15 @@ describe.skip('trading', () => {
                     items {
                       id
                       makeAsset {
-                        nftId
                         bytes
                         value
+                      }
+                      protocolData {
+                        ... on NFTCOMProtocolData {
+                          salt
+                          start
+                          end
+                        }
                       }
                     }
                   }
@@ -158,7 +164,7 @@ describe.skip('trading', () => {
               }`,
         variables: {
           contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
-          nftId: '0x3e',
+          nftId: '0x3f',
           chainId: '5',
           pageInput: {
             first: 2,
