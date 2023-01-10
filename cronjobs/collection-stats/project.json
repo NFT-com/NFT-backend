@@ -1,5 +1,5 @@
 {
-  "name": "..-cronjobs-collection-stats",
+  "name": "collection-stats",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "cronjobs/collection-stats/src",
   "projectType": "application",
@@ -27,11 +27,11 @@
     "serve": {
       "executor": "@nrwl/js:node",
       "options": {
-        "buildTarget": "..-cronjobs-collection-stats:build"
+        "buildTarget": "collection-stats:build"
       },
       "configurations": {
         "production": {
-          "buildTarget": "..-cronjobs-collection-stats:build:production"
+          "buildTarget": "collection-stats:build:production"
         }
       }
     },
