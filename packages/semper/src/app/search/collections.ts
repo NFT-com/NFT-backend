@@ -1,7 +1,7 @@
 import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
-import { defs, entity, helper } from '@nftcom/shared'
+import { defs, helper } from '@nftcom/shared'
 
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
 
@@ -64,8 +64,8 @@ export const mapCollectionData = async (
   data: any[],
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _repos: any,
-  listingMap?: any,
-): Promise<entity.BaseEntity[]> => {
+  listingMap?: { [k:string]: TxActivityDAO[] },
+): Promise<any[]> => {
   const result = []
   switch (collectionName) {
   case 'collections':
@@ -107,10 +107,17 @@ export const mapCollectionData = async (
         })
       }
       const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
+      const ownerAddr = nft.wallet?.address || ''
       const listings = []
       if (txActivityListings) {
-        for (const txActivity of txActivityListings) {
-          if (helper.isNotEmpty(txActivity.order.protocolData)) {
+        if (!ownerAddr) {
+          const marketplaces = [...new Set(txActivityListings.map((l) => l.order?.exchange))]
+            .filter((x) => !!x)
+          txActivityListings.sort((a, b) => {
+            return b.updatedAt.getTime() - a.updatedAt.getTime()
+          })
+          const txActivities = marketplaces.map((m) => txActivityListings.find((l) => l.order?.exchange === m))
+          for (const txActivity of txActivities) {
             const contractAddress = getListingCurrencyAddress(txActivity)
             listings.push({
               marketplace: txActivity.order?.exchange,
@@ -122,6 +129,22 @@ export const mapCollectionData = async (
               currency: await getSymbolForContract(contractAddress),
             })
           }
+        } else {
+          for (const txActivity of txActivityListings) {
+            if (txActivity.walletAddress === ownerAddr &&
+              helper.isNotEmpty(txActivity.order.protocolData)) {
+              const contractAddress = getListingCurrencyAddress(txActivity)
+              listings.push({
+                marketplace: txActivity.order?.exchange,
+                price: +utils.formatUnits(
+                  getListingPrice(txActivity),
+                  await getDecimalsForContract(contractAddress),
+                ),
+                type: undefined,
+                currency: await getSymbolForContract(contractAddress),
+              })
+            }
+          }
         }
       }
       result.push({
@@ -132,7 +155,7 @@ export const mapCollectionData = async (
         traits,
         listings,
         imageURL: nft.metadata?.imageURL,
-        ownerAddr: nft.wallet ? nft.wallet.address : '',
+        ownerAddr,
         chain: nft.wallet ? nft.wallet.chainName : '',
         contractName: nft.collection ? nft.collection.name : '',
         contractAddr: nft.contract || '',
@@ -140,7 +163,7 @@ export const mapCollectionData = async (
         status: '', //  HasOffers, BuyNow, New, OnAuction
         rarity: parseFloat(nft.rarity) || 0.0,
         isProfile: nft.contract === PROFILE_CONTRACT,
-        issuance: nft.collection?.issuanceDate?.getTime() || 0,
+        issuance: nft.collection?.issuanceDate ? new Date(nft.collection?.issuanceDate).getTime() : 0,
         hasListings: listings.length ? 1 : 0,
         score: calculateNFTScore(nft.collection, !!listings.length),
       })
