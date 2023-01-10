@@ -654,7 +654,7 @@ const createBid = async (
       memo: bidOrder.memo,
     }
   } catch (err) {
-    Sentry.captureMessage(`Error in createListing: ${err}`)
+    Sentry.captureMessage(`Error in createBid: ${err}`)
     return err
   }
 }
