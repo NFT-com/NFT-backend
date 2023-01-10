@@ -547,7 +547,7 @@ export const nftTraitBuilder = (
           }
         }
       }
-      
+
       traits.push(
         traitsToBePushed,
       )
@@ -2214,7 +2214,7 @@ export const filterNativeOrdersForNFT = async (
           BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))
       })
       if (matchingMakeAsset) {
-        const activity = await repositories.txActivity.findById(order.activity.id)
+        const activity = await repositories.txActivity.findOne({ where: { activityTypeId: order.orderHash } })
         if (activity.status === status) {
           filteredOrders.push(order)
         }
