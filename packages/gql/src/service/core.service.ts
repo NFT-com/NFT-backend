@@ -1367,7 +1367,7 @@ export const checkAddressIsSanctioned = async (
   address: string,
 ): Promise<boolean> => {
   try {
-    const key = `OFAC_RESULT_${address}`
+    const key = `OFAC_RESULT_${ethers.utils.getAddress(address)}`
     const cachedData = await cache.get(key)
     if (cachedData) {
       const identification = JSON.parse(cachedData) as number
