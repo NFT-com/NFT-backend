@@ -86,7 +86,7 @@ describe('trading', () => {
         testMockUser,
         testMockWallet1,
       )
-      const result = await testServer.executeOperation({
+      let result = await testServer.executeOperation({
         query: 'mutation CreateMarketListing($input: CreateListingInput!) { createMarketListing(input: $input) { orderHash } }',
         variables: {
           input: {
@@ -137,6 +137,33 @@ describe('trading', () => {
       })
 
       expect(result.data.createMarketListing.orderHash).toBeDefined()
+
+      result = await testServer.executeOperation({
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $pageInput: PageInput, $status: ActivityStatus, $owner: Address) {
+                nft(contract: $contract, id: $nftId, chainId: $chainId) {
+                  contract
+                  tokenId
+                  chainId
+                  nativeListings(pageInput: $pageInput, status: $status, owner: $owner) {
+                    items {
+                      id
+                    }
+                  }
+                }
+              }`,
+        variables: {
+          contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+          nftId: '0x3e',
+          chainId: '5',
+          pageInput: {
+            first: 2,
+          },
+          owner: testMockWallet1.address,
+          status: gql.ActivityStatus.Valid,
+        },
+      })
+
+      expect(result.data.nft.nativeListings.items[0].id).toBeDefined()
     })
   })
 
