@@ -133,7 +133,7 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
       }
     }
   }
-    
+
   const ownedIds: string[] = ownedActivities.length ?  ownedActivities.map(
     (ownedActivity: entity.TxActivity) => ownedActivity.id,
   ) : []
@@ -305,7 +305,7 @@ const getActivities = async (
   } else if (expirationType === gql.ActivityExpiration.Expired){
     filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
   }
-  
+
   let safefilters
   if (read !== undefined) {
     safefilters = [{ ...helper.inputT2SafeK(filters),  read }]
@@ -367,6 +367,10 @@ export default {
 
       if (obj.id) {
         return 'X2Y2ProtocolData'
+      }
+
+      if (obj.salt) {
+        return 'NFTCOMProtocolData'
       }
 
       return 'SeaportProtocolData'

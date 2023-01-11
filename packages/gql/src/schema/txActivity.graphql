@@ -96,7 +96,15 @@ type X2Y2ProtocolData {
   is_private: Boolean
 }
 
-union ProtocolData = SeaportProtocolData | LooksrareProtocolData | X2Y2ProtocolData
+type NFTCOMProtocolData {
+  auctionType: AuctionType
+  signature: Signature
+  salt: Int
+  start: Int
+  end: Int
+}
+
+union ProtocolData = SeaportProtocolData | LooksrareProtocolData | X2Y2ProtocolData | NFTCOMProtocolData
 
 type TxSeaportProtocolData {
   offer: [SeaportOffer]
@@ -193,7 +201,9 @@ type TxOrder {
   orderHash: String!
   orderType: String!
   makerAddress: String!
+  makeAsset: [MarketplaceAsset]
   takerAddress: String
+  takeAsset: [MarketplaceAsset]
   protocol: String!
   protocolData: ProtocolData
   memo: String
