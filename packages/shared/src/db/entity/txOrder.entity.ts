@@ -1,6 +1,6 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 
-import { ActivityType, ExchangeType, MarketplaceAsset, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseEntity, TxActivity } from '.'
 
@@ -30,20 +30,20 @@ export class TxOrder extends BaseEntity {
   @Column({ nullable: false })
   makerAddress: string
 
-  @Column('json', {
-    nullable: false,
-    default: [],
-  })
-  makeAsset: MarketplaceAsset[]
+  // @Column('json', {
+  //   nullable: false,
+  //   default: [],
+  // })
+  // makeAsset: MarketplaceAsset[]
 
   @Column({ nullable: true })
   takerAddress: string
 
-  @Column('json', {
-    nullable: false,
-    default: [],
-  })
-  takeAsset: MarketplaceAsset[]
+  // @Column('json', {
+  //   nullable: false,
+  //   default: [],
+  // })
+  // takeAsset: MarketplaceAsset[]
 
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   orderType: ActivityType
@@ -69,24 +69,24 @@ export class TxOrder extends BaseEntity {
   createdInternally: boolean
 
   // only required for native trading
-  @Column({ nullable: true })
-  swapTransactionId: string
+  // @Column({ nullable: true })
+  // swapTransactionId: string
 
   // only required for native trading
-  @Column({ nullable: true })
-  listingId: string
+  // @Column({ nullable: true })
+  // listingId: string
 
   // only required for native trading
-  @Column({ nullable: true })
-  buyNowTaker: string
+  // @Column({ nullable: true })
+  // buyNowTaker: string
 
   // only required for native trading
-  @Column({ type: 'timestamp with time zone', nullable: true })
-  acceptedAt: Date
+  // @Column({ type: 'timestamp with time zone', nullable: true })
+  // acceptedAt: Date
 
   // only required for native trading
-  @Column({ type: 'timestamp with time zone', nullable: true })
-  rejectedAt: Date
+  // @Column({ type: 'timestamp with time zone', nullable: true })
+  // rejectedAt: Date
 
   // only required for native trading
   @Column({ nullable: true })

@@ -1,3 +1,5 @@
+import { ethers } from 'ethers'
+
 import { gql } from '@nftcom/gql/defs'
 import { _logger, db, defs, entity, helper, provider } from '@nftcom/shared'
 
@@ -100,6 +102,16 @@ Array<gql.MarketplaceAssetInput> =>
   })
 
   return assets
+}
+
+export const parseNFTIdsFromNativeAsset = (
+  assets: Array<gql.MarketplaceAssetInput>,
+): string[] => {
+  const nftIds: string[] = []
+  for (const asset of assets) {
+    nftIds.push(`ethereum/${ethers.utils.getAddress(asset.standard.contractAddress)}/${helper.bigNumberToHex(asset.standard.tokenId)}`)
+  }
+  return nftIds
 }
 
 export const blockNumberToTimestamp = async (

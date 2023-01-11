@@ -23,7 +23,22 @@ interface TxLooksrareProtocolData {
   collection: string
 }
 
-type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
+interface TxNFTCOMProtocolData {
+  makeAsset: defs.MarketplaceAsset[]
+  takeAsset: defs.MarketplaceAsset[]
+  swapTransactionId: string
+  acceptedAt: number
+  rejectedAt: number
+  listingId: string
+  buyNowTaker: string
+  auctionType: string
+  signature: defs.Signature
+  start: number
+  end: number
+  salt: number
+}
+
+type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxNFTCOMProtocolData
 
 const repositories = db.newRepositories()
 

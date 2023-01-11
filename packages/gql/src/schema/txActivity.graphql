@@ -97,6 +97,13 @@ type X2Y2ProtocolData {
 }
 
 type NFTCOMProtocolData {
+  makeAsset: [MarketplaceAsset]
+  takeAsset: [MarketplaceAsset]
+  swapTransactionId: String
+  acceptedAt: Int
+  rejectedAt: Int
+  listingId: String
+  buyNowTaker: String
   auctionType: AuctionType
   signature: Signature
   salt: Int
@@ -201,9 +208,7 @@ type TxOrder {
   orderHash: String!
   orderType: String!
   makerAddress: String!
-  makeAsset: [MarketplaceAsset]
   takerAddress: String
-  takeAsset: [MarketplaceAsset]
   protocol: String!
   protocolData: ProtocolData
   memo: String
