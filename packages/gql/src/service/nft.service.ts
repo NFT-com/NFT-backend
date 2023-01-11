@@ -41,6 +41,7 @@ const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
+const TEST_WALLET_ID = 'test'
 
 let alchemyUrl: string
 let chainId: string
@@ -657,9 +658,9 @@ export const getNftType = (
 ): defs.NFTType | undefined => {
   if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) {
     return defs.NFTType.CRYPTO_PUNKS
-  } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC721') {
+  } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC721') {
     return defs.NFTType.ERC721
-  } else if (nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type === 'ERC1155') {
+  } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC1155') {
     return defs.NFTType.ERC1155
   } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
@@ -2155,8 +2156,11 @@ export const getNFTActivities = <T>(
     let listingsOwnerAddress: string = args?.['listingsOwner']
     if (!listingsOwnerAddress) {
       const walletId = parent?.['walletId']
-      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-      listingsOwnerAddress = wallet?.address
+
+      if (walletId && walletId !== TEST_WALLET_ID) {
+        const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+        listingsOwnerAddress = wallet?.address
+      }
     }
 
     if (!pageInput) {
@@ -2176,8 +2180,11 @@ export const getNFTActivities = <T>(
         nftId,
         activityType,
         status: listingsStatus,
-        walletAddress: helper.checkSum(listingsOwnerAddress),
         chainId,
+      }
+
+      if (listingsOwnerAddress) {
+        filters = { ...filters, walletAddress: helper.checkSum(listingsOwnerAddress) }
       }
       // by default active items are included
       if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
@@ -2233,8 +2240,10 @@ export const getNativeOrdersForNFT = <T>(
     let ownerAddress: string = args?.['owner']
     if (!ownerAddress) {
       const walletId = parent?.['walletId']
-      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-      ownerAddress = wallet?.address
+      if (walletId && walletId !== TEST_WALLET_ID) {
+        const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+        ownerAddress = wallet?.address
+      }
     }
     if (!pageInput) {
       pageInput = {
@@ -2245,14 +2254,23 @@ export const getNativeOrdersForNFT = <T>(
     const tokenId = parent?.['tokenId']
     const chainId = parent?.['chainId'] || process.env.chainId
 
+    let queryFilter = {
+      exchange: defs.ExchangeType.NFTCOM,
+      orderType: activityType,
+      protocol: defs.ProtocolType.NFTCOM,
+      chainId,
+    }
+
+    if (ownerAddress) {
+      queryFilter = {
+        ...queryFilter,
+        makerAddress: ethers.utils.getAddress(ownerAddress),
+      } as any
+    }
     if (contract && tokenId) {
       const txOrders = await repositories.txOrder.find({
         where: {
-          makerAddress: ethers.utils.getAddress(ownerAddress),
-          exchange: defs.ExchangeType.NFTCOM,
-          orderType: activityType,
-          protocol: defs.ProtocolType.NFTCOM,
-          chainId,
+          ...queryFilter,
         },
       })
       const checksumContract = helper.checkSum(contract)
@@ -2264,12 +2282,8 @@ export const getNativeOrdersForNFT = <T>(
       )
       const ids = filteredOrders.map((order) => order.id)
       const filter: Partial<entity.TxOrder> = helper.removeEmpty({
-        makerAddress: ethers.utils.getAddress(ownerAddress),
-        exchange: defs.ExchangeType.NFTCOM,
-        orderType: activityType,
-        protocol: defs.ProtocolType.NFTCOM,
+        ...queryFilter,
         id: In(ids),
-        chainId,
       })
       return paginatedEntitiesBy(
         repositories.txOrder,
