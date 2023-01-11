@@ -2240,8 +2240,10 @@ export const getNativeOrdersForNFT = <T>(
     let ownerAddress: string = args?.['owner']
     if (!ownerAddress) {
       const walletId = parent?.['walletId']
-      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-      ownerAddress = wallet?.address
+      if (walletId && walletId !== TEST_WALLET_ID) {
+        const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+        ownerAddress = wallet?.address
+      }
     }
     if (!pageInput) {
       pageInput = {
@@ -2252,14 +2254,23 @@ export const getNativeOrdersForNFT = <T>(
     const tokenId = parent?.['tokenId']
     const chainId = parent?.['chainId'] || process.env.chainId
 
+    let queryFilter = {
+      exchange: defs.ExchangeType.NFTCOM,
+      orderType: activityType,
+      protocol: defs.ProtocolType.NFTCOM,
+      chainId,
+    }
+
+    if (ownerAddress) {
+      queryFilter = {
+        ...queryFilter,
+        makerAddress: ethers.utils.getAddress(ownerAddress),
+      } as any
+    }
     if (contract && tokenId) {
       const txOrders = await repositories.txOrder.find({
         where: {
-          makerAddress: ethers.utils.getAddress(ownerAddress),
-          exchange: defs.ExchangeType.NFTCOM,
-          orderType: activityType,
-          protocol: defs.ProtocolType.NFTCOM,
-          chainId,
+          ...queryFilter,
         },
       })
       const checksumContract = helper.checkSum(contract)
@@ -2271,12 +2282,8 @@ export const getNativeOrdersForNFT = <T>(
       )
       const ids = filteredOrders.map((order) => order.id)
       const filter: Partial<entity.TxOrder> = helper.removeEmpty({
-        makerAddress: ethers.utils.getAddress(ownerAddress),
-        exchange: defs.ExchangeType.NFTCOM,
-        orderType: activityType,
-        protocol: defs.ProtocolType.NFTCOM,
+        ...queryFilter,
         id: In(ids),
-        chainId,
       })
       return paginatedEntitiesBy(
         repositories.txOrder,
