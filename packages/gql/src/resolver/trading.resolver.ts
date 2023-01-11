@@ -134,6 +134,7 @@ const availableToCreateListing = async (
 
   // find out active listingOrders which have user's make asset...
   const activeOrders = filteredOrders.filter((order) => {
+    if (!order.protocolData.makeAsset) return false
     if (order.activity?.expiration && order.activity?.expiration < now) return false
     else {
       if (assets.length !== order.protocolData.makeAsset?.length) return false
