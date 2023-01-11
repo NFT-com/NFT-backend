@@ -114,6 +114,21 @@ export const parseNFTIdsFromNativeAsset = (
   return nftIds
 }
 
+export const parseContractsFromNativeAsset = (
+  assets: Array<gql.MarketplaceAssetInput>,
+): string[] => {
+  const contracts: string[] = []
+  const seen = {}
+  for (const asset of assets) {
+    const contract = ethers.utils.getAddress(asset.standard.contractAddress)
+    if (!seen[contract]) {
+      contracts.push(contract)
+      seen[contract] = true
+    }
+  }
+  return contracts
+}
+
 export const blockNumberToTimestamp = async (
   blockNumber: number,
   chainId: string,

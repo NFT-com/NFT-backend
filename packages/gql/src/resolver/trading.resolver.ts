@@ -7,7 +7,7 @@ import {
   Context,
   convertAssetInput,
   getAssetList,
-  gql,
+  gql, parseContractsFromNativeAsset,
   parseNFTIdsFromNativeAsset,
 } from '@nftcom/gql/defs'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
@@ -257,13 +257,15 @@ const createListing = async (
         marketListingError.ErrorType.MarketListingUnavailable))
     }
     const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
+    const contracts = parseContractsFromNativeAsset(makeAssets)
+    const contract = contracts.length === 1 ? contracts[0] : '0x'
     const activity = await activityBuilder(
       defs.ActivityType.Listing,
       args?.input.structHash,
       wallet.address,
       chainId.toString(),
       nftIds,
-      '0x',
+      contract,
       args?.input.start,
       args?.input.end,
     )
@@ -565,13 +567,15 @@ const createBid = async (
       ))
     }
     const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
+    const contracts = parseContractsFromNativeAsset(makeAssets)
+    const contract = contracts.length === 1 ? contracts[0] : '0x'
     const activity = await activityBuilder(
       defs.ActivityType.Bid,
       args?.input.structHash,
       wallet.address,
       chainId,
       nftIds,
-      '0x',
+      contract,
       args?.input.start,
       args?.input.end,
     )
