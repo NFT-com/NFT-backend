@@ -41,6 +41,7 @@ const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
+const TEST_WALLET_ID = 'test'
 
 let alchemyUrl: string
 let chainId: string
@@ -2155,8 +2156,11 @@ export const getNFTActivities = <T>(
     let listingsOwnerAddress: string = args?.['listingsOwner']
     if (!listingsOwnerAddress) {
       const walletId = parent?.['walletId']
-      const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-      listingsOwnerAddress = wallet?.address
+
+      if (walletId && walletId !== TEST_WALLET_ID) {
+        const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+        listingsOwnerAddress = wallet?.address
+      }
     }
 
     if (!pageInput) {
@@ -2176,8 +2180,11 @@ export const getNFTActivities = <T>(
         nftId,
         activityType,
         status: listingsStatus,
-        walletAddress: helper.checkSum(listingsOwnerAddress),
         chainId,
+      }
+
+      if (listingsOwnerAddress) {
+        filters = { ...filters, walletAddress: helper.checkSum(listingsOwnerAddress) }
       }
       // by default active items are included
       if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
