@@ -50,7 +50,11 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     const curatedVal = collection?.isCurated ? 1 : 0
     const officialVal = collection?.isOfficial ? 1 : 0
     const listingsVal = hasListings ? 1 : 0
-    return curatedVal + officialVal + listingsVal
+    const score = curatedVal + officialVal + listingsVal
+    if (score === 3) {
+      return score + Math.floor(Math.random() * 10_000_001)
+    }
+    return score
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true

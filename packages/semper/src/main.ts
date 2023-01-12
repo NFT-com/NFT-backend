@@ -31,7 +31,7 @@ const pgClient = new Pool({
   ssl: {
     rejectUnauthorized: false,
   },
-  max: 50,
+  max: 100,
   application_name: 'semper',
 })
 
@@ -51,9 +51,9 @@ const main = async (): Promise<void> => {
   const repositories = db.newRepositories()
   const commander = new Commander(typesenseClient, repositories, pgClient)
   
-  await commander.help()
+  // await commander.help()
   // await commander.erase()
-  // await commander.restore()
+  await commander.restore()
   // await commander.erase()
   // await commander.update('collections', ['issuance'])
   // await commander.update('nfts', ['contractAddr'])
