@@ -221,6 +221,11 @@ input SearchNFTsForProfileInput {
   pageInput: PageInput
 }
 
+type ValidateProfileGKOwners {
+  id: String!
+  gkIconVisible: Boolean
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -242,6 +247,7 @@ extend type Query {
   searchVisibleNFTsForProfile(input: SearchVisibleNFTsForProfileInput!): NFTsOutput!
   "AUTHENTICATED"
   searchNFTsForProfile(input: SearchNFTsForProfileInput!): NFTsOutput!
+  validateProfileGKOwners(profileIds: [String!]!, chainId: String): [ValidateProfileGKOwners!]!
 }
 
 extend type Mutation {
