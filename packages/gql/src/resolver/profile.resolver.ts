@@ -1554,6 +1554,38 @@ const searchNFTsForProfile = async (
   }
 }
 
+const validateProfileGKOwners = async (
+  _: any,
+  args: gql.QueryValidateProfileGkOwnersArgs,
+  ctx: Context,
+): Promise<gql.ValidateProfileGkOwners[]> => {
+  try {
+    const schema = Joi.object().keys({
+      profileIds: Joi.array().required().items(Joi.string().required()),
+      chainId: Joi.string().optional(),
+    })
+    joi.validateSchema(schema, args)
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const { profileIds } = args
+    const { repositories } = ctx
+    const profile: entity.Profile[] = await repositories.profile.find({
+      where: {
+        id: In([...profileIds]),
+        chainId,
+      },
+      select: {
+        id: true,
+        gkIconVisible: true,
+      },
+    })
+    return profile
+  } catch (err) {
+    Sentry.captureMessage(`Error in validateProfileGKOwners: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1573,6 +1605,7 @@ export default {
     profilesMintedByGK: getProfilesMintedByGK,
     searchVisibleNFTsForProfile: searchVisibleNFTsForProfile,
     searchNFTsForProfile: combineResolvers(auth.isAuthenticated, searchNFTsForProfile),
+    validateProfileGKOwners,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),
