@@ -2215,7 +2215,7 @@ export const filterNativeOrdersForNFT = async (
   const filteredOrders: entity.TxOrder[] = []
   await Promise.allSettled(
     orders.map(async (order: entity.TxOrder) => {
-      const matchingMakeAsset = order.makeAsset.find((asset) => {
+      const matchingMakeAsset = order.protocolData.makeAsset.find((asset) => {
         return asset?.standard?.contractAddress &&
           helper.checkSum(asset?.standard?.contractAddress) === helper.checkSum(contract) &&
           BigNumber.from(asset?.standard?.tokenId).eq(BigNumber.from(tokenId))

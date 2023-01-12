@@ -46,11 +46,9 @@ type TxListingOrder {
   nonce: Int!
   signature: Signature!
   makerAddress: Address!
-  makeAsset: [MarketplaceAsset!]
   start: DateTime!
   end: DateTime!
   salt: Int!
-  acceptedAt: DateTime
   chainId: String!
   auctionType: AuctionType!
   memo: String
@@ -62,14 +60,10 @@ type TxBidOrder {
   nonce: Int!
   signature: Signature!
   makerAddress: Address!
-  makeAsset: [MarketplaceAsset!]
   takerAddress: Address!
-  takeAsset: [MarketplaceAsset!]
   start: DateTime!
   end: DateTime!
   salt: Int!
-  acceptedAt: DateTime
-  rejectedAt: DateTime
   chainId: String!
   auctionType: AuctionType!
   memo: String
@@ -157,7 +151,6 @@ input MarketBidsInput {
 
 extend type Query {
   getListings(input: ListingsInput!): GetOrders!
-  getNFTListings(input: NftListingsInput!): [TxListingOrder!]!
   filterListings(input: FilterListingInput!): GetOrders!
   getBids(input: MarketBidsInput!): GetOrders!
 }

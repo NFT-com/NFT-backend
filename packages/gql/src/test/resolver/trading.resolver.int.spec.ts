@@ -27,6 +27,20 @@ describe.skip('trading', () => {
 
   describe('createMarketListing', () => {
     beforeAll(async () => {
+      await repositories.nft.save({
+        contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
+        tokenId: '0x3f',
+        chainId: '5',
+        metadata: {
+          name: '',
+          description: '',
+          traits: [],
+        },
+        type: defs.NFTType.ERC721,
+        userId: testMockUser.id,
+        walletId: testMockWallet.id,
+      })
+
       testServer = getTestApolloServer(repositories,
         testMockUser,
         testMockWallet,
@@ -147,12 +161,12 @@ describe.skip('trading', () => {
                   nativeListings(pageInput: $pageInput, status: $status, owner: $owner) {
                     items {
                       id
-                      makeAsset {
-                        bytes
-                        value
-                      }
                       protocolData {
                         ... on NFTCOMProtocolData {
+                          makeAsset {
+                            bytes
+                            value
+                          }
                           auctionType
                           salt
                           start
