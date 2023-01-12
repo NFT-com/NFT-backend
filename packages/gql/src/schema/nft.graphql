@@ -48,7 +48,7 @@ type NFT {
   previewLink: String
   isHide: Boolean
   sortIndex: Int
-  listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address, onlyNative: Boolean): TxActivitiesOutput
+  listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address, protocol: ProtocolType): TxActivitiesOutput
 }
 
 input NFTsInput {

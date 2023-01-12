@@ -406,6 +406,7 @@ export const cancelEntityBuilder = async (
  * @param relations
  * @param orderKey
  * @param orderDirection
+ * @param protocol
  * @param distinctOn
  */
 
@@ -416,6 +417,7 @@ export const paginatedActivitiesBy = (
   relations: string[],
   orderKey= 'createdAt',
   orderDirection = 'DESC',
+  protocol?: gql.ProtocolType,
   distinctOn?: defs.DistinctOn<entity.TxActivity>,
 ): Promise<defs.PageableResult<entity.TxActivity>> => {
   const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
@@ -429,28 +431,32 @@ export const paginatedActivitiesBy = (
       orderBy,
       take: pageInput.first,
       distinctOn,
-    }),
+    },
+    protocol,
+    ),
     firstBefore: () => repo.findActivities({
       filters: pageableFilters,
       relations: relations,
       orderBy,
       take: pageInput.first,
       distinctOn,
-    }),
+    },
+    protocol,
+    ),
     lastAfter: () => repo.findActivities({
       filters: pageableFilters,
       relations: relations,
       orderBy: reversedOrderBy,
       take: pageInput.last,
       distinctOn,
-    }).then(pagination.reverseResult),
+    }, protocol).then(pagination.reverseResult),
     lastBefore: () => repo.findActivities({
       filters: pageableFilters,
       relations: relations,
       orderBy: reversedOrderBy,
       take: pageInput.last,
       distinctOn,
-    }).then(pagination.reverseResult),
+    }, protocol).then(pagination.reverseResult),
   })
 }
 

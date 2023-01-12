@@ -1,7 +1,7 @@
 import {  In, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { NFT, TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult } from '@nftcom/shared/defs'
+import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -77,7 +77,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   }
 
   // activities for filters - pageable result
-  public findActivities = (query: PageableQuery<TxActivity>)
+  public findActivities = (query: PageableQuery<TxActivity>, protocol?: ProtocolType)
   : Promise<PageableResult<TxActivity>> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
@@ -101,17 +101,31 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         .andWhere('activity.nftId @> ARRAY[:...nftId]', { nftId: nftIds })
     }
 
-    return queryBuilder
-      .orderBy(query.orderBy)
-      .take(query.take)
-      .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
-      .cache(true)
-      .getManyAndCount()
+    if (protocol) {
+      return queryBuilder
+        .orderBy(query.orderBy)
+        .take(query.take)
+        .leftJoinAndMapOne('activity.order', 'TxOrder',
+          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
+        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+          'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+          'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+        .cache(true)
+        .getManyAndCount()
+    } else {
+      return queryBuilder
+        .orderBy(query.orderBy)
+        .take(query.take)
+        .leftJoinAndMapOne('activity.order', 'TxOrder',
+          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+          'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+          'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+        .cache(true)
+        .getManyAndCount()
+    }
   }
 
   // activities for collection

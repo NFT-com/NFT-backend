@@ -1,4 +1,11 @@
 
+enum ProtocolType {
+  Seaport
+  LooksRare
+  X2Y2
+  NFTCOM
+}
+
 enum ActivityType {
   Listing
   Bid
