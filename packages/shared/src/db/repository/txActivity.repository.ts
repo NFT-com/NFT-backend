@@ -105,7 +105,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .orderBy(query.orderBy)
       .take(query.take)
       .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
       .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
         'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
       .leftJoinAndMapOne('activity.cancel', 'TxCancel',

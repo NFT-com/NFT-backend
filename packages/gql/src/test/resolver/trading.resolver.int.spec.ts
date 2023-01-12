@@ -153,15 +153,17 @@ describe.skip('trading', () => {
       expect(result.data.createMarketListing.orderHash).toBeDefined()
 
       result = await testServer.executeOperation({
-        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $pageInput: PageInput, $status: ActivityStatus, $owner: Address) {
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsOwner: Address, $onlyNative: Boolean) {
                 nft(contract: $contract, id: $nftId, chainId: $chainId) {
                   contract
                   tokenId
                   chainId
-                  nativeListings(pageInput: $pageInput, status: $status, owner: $owner) {
+                  listings(listingsPageInput: $listingsPageInput, listingsOwner: $listingsOwner, onlyNative: $onlyNative) {
                     items {
                       id
-                      protocolData {
+                      order {
+                        id
+                        protocolData {
                         ... on NFTCOMProtocolData {
                           makeAsset {
                             bytes
@@ -173,6 +175,7 @@ describe.skip('trading', () => {
                           end
                         }
                       }
+                      }
                     }
                   }
                 }
@@ -181,15 +184,15 @@ describe.skip('trading', () => {
           contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
           nftId: '0x3f',
           chainId: '5',
-          pageInput: {
+          listingsPageInput: {
             first: 2,
           },
-          owner: testMockWallet1.address,
-          status: gql.ActivityStatus.Valid,
+          listingsOwner: testMockWallet1.address,
+          onlyNative: true,
         },
       })
 
-      expect(result.data.nft.nativeListings.items[0].id).toBeDefined()
+      expect(result.data.nft.listings.items[0].id).toBeDefined()
     })
   })
 
