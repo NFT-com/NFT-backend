@@ -153,12 +153,12 @@ describe.skip('trading', () => {
       expect(result.data.createMarketListing.orderHash).toBeDefined()
 
       result = await testServer.executeOperation({
-        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsOwner: Address, $onlyNative: Boolean) {
+        query: `query Nft($contract: Address!, $nftId: String!, $chainId: String!, $listingsPageInput: PageInput, $listingsOwner: Address, $protocol: ProtocolType) {
                 nft(contract: $contract, id: $nftId, chainId: $chainId) {
                   contract
                   tokenId
                   chainId
-                  listings(listingsPageInput: $listingsPageInput, listingsOwner: $listingsOwner, onlyNative: $onlyNative) {
+                  listings(listingsPageInput: $listingsPageInput, listingsOwner: $listingsOwner, protocol: $protocol) {
                     items {
                       id
                       order {
@@ -188,7 +188,7 @@ describe.skip('trading', () => {
             first: 2,
           },
           listingsOwner: testMockWallet1.address,
-          onlyNative: true,
+          protocol: gql.ProtocolType.NFTCOM,
         },
       })
 
