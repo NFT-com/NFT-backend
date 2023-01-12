@@ -2272,7 +2272,7 @@ export const getNFTActivities = <T>(
     if (contract && tokenId) {
       const checksumContract = helper.checkSum(contract)
       if (onlyNative) {
-        // return only listing or bids for native trding
+        // return only listing or bids for native trading
         return await getNativeTradingActivities(
           activityType,
           listingsOwnerAddress,
