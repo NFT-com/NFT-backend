@@ -28,6 +28,10 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
     return order?.parameters?.consideration
       ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
   }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
+  }
   }
 }
 
@@ -42,6 +46,10 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration?.[0]?.token
   }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
+  }
   }
 }
 
@@ -50,7 +58,15 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     const curatedVal = collection?.isCurated ? 1 : 0
     const officialVal = collection?.isOfficial ? 1 : 0
     const listingsVal = hasListings ? 1 : 0
-    return curatedVal + officialVal + listingsVal
+    const score = curatedVal + officialVal + listingsVal
+    if (score === 3) {
+      const multiplier = defs.LARGE_COLLECTIONS.includes(collection.contract)
+        && Math.floor(Math.random() * 10) % 10 !== 0
+        ? 9_000_000
+        : 10_000_000
+      return score + Math.floor(Math.random() * multiplier)
+    }
+    return score
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
