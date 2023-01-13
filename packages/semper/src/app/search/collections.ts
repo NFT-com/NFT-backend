@@ -3,6 +3,7 @@ import { BigNumber, utils } from 'ethers'
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { defs, helper } from '@nftcom/shared'
 
+import { LARGE_COLLECTIONS } from './commander'
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
 
 const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
@@ -32,7 +33,8 @@ const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): num
   const listingsVal = hasListings ? 1 : 0
   const score = curatedVal + officialVal + listingsVal
   if (score === 3) {
-    return score + Math.floor(Math.random() * 10_000_001)
+    const multiplier = LARGE_COLLECTIONS.includes(collection.contract) ? 8_000_001 : 10_000_001
+    return score + Math.floor(Math.random() * multiplier)
   }
   return score
 }
@@ -69,7 +71,6 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
 export const mapCollectionData = async (
   collectionName: string,
   data: any[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _repos: any,
   listingMap?: { [k:string]: TxActivityDAO[] },
 ): Promise<any[]> => {
