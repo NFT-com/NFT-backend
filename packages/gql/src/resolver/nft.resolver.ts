@@ -30,7 +30,6 @@ import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  getNativeOrdersForNFT,
   getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
@@ -156,7 +155,7 @@ const getContractNFT = async (
     if (nft) {
       // fix (short-term) : trait value
       nft = stringifyTraits(nft)
-      
+
       // const now = helper.toUTCDate()
       // let duration
       // if (nft.lastRefreshed) {
@@ -1281,12 +1280,6 @@ export default {
     ),
     listings: getNFTActivities(
       defs.ActivityType.Listing,
-    ),
-    nativeListings: getNativeOrdersForNFT(
-      defs.ActivityType.Listing,
-    ),
-    nativeBids: getNativeOrdersForNFT(
-      defs.ActivityType.Bid,
     ),
   },
 }

@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
 import * as typeorm from 'typeorm'
-import { In, IsNull } from 'typeorm'
+import { IsNull } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
@@ -20,7 +20,6 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
-  paginatedEntitiesBy,
   processIPFSURL,
   s3ToCdn,
   saveUsersForAssociatedAddress,
@@ -2141,71 +2140,6 @@ export const saveNewNFT = async (
   }
 }
 
-/**
- * getNFTActivities
- * @param activityType
- */
-
-export const getNFTActivities = <T>(
-  activityType: defs.ActivityType,
-) => {
-  return async (parent: T, args: unknown, ctx: Context): Promise<Pageable<entity.TxActivity> | null> => {
-    let pageInput: gql.PageInput = args?.['listingsPageInput']
-    const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
-    const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
-    let listingsOwnerAddress: string = args?.['listingsOwner']
-    if (!listingsOwnerAddress) {
-      const walletId = parent?.['walletId']
-
-      if (walletId && walletId !== TEST_WALLET_ID) {
-        const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-        listingsOwnerAddress = wallet?.address
-      }
-    }
-
-    if (!pageInput) {
-      pageInput = {
-        'first': 50,
-      }
-    }
-    const contract = parent?.['contract']
-    const tokenId = parent?.['tokenId']
-    const chainId = parent?.['chainId'] || process.env.chainId
-
-    if (contract && tokenId) {
-      const checksumContract = helper.checkSum(contract)
-      const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
-      let filters: defs.ActivityFilters = {
-        nftContract: checksumContract,
-        nftId,
-        activityType,
-        status: listingsStatus,
-        chainId,
-      }
-
-      if (listingsOwnerAddress) {
-        filters = { ...filters, walletAddress: helper.checkSum(listingsOwnerAddress) }
-      }
-      // by default active items are included
-      if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
-        filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
-      } else if (expirationType === gql.ActivityExpiration.Expired){
-        filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
-      }
-      const safefilters = [helper.inputT2SafeK(filters)]
-      return paginatedActivitiesBy(
-        ctx.repositories.txActivity,
-        pageInput,
-        safefilters,
-        [],
-        'createdAt',
-        'DESC',
-      )
-        .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
-    }
-  }
-}
-
 export const filterNativeOrdersForNFT = async (
   orders: entity.TxOrder[],
   contract: string,
@@ -2231,67 +2165,76 @@ export const filterNativeOrdersForNFT = async (
   return filteredOrders
 }
 
-export const getNativeOrdersForNFT = <T>(
+/**
+ * getNFTActivities
+ * @param activityType
+ */
+
+export const getNFTActivities = <T>(
   activityType: defs.ActivityType,
 ) => {
-  return async (parent: T, args: unknown, ctx: Context): Promise<gql.GetOrders> => {
-    let pageInput: gql.PageInput = args?.['pageInput']
-    const status: defs.ActivityStatus = args?.['status'] || defs.ActivityStatus.Valid
-    let ownerAddress: string = args?.['owner']
-    if (!ownerAddress) {
-      const walletId = parent?.['walletId']
-      if (walletId && walletId !== TEST_WALLET_ID) {
-        const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
-        ownerAddress = wallet?.address
-      }
-    }
-    if (!pageInput) {
-      pageInput = {
-        'first': 50,
-      }
-    }
-    const contract = parent?.['contract']
-    const tokenId = parent?.['tokenId']
-    const chainId = parent?.['chainId'] || process.env.chainId
+  return async (parent: T, args: unknown, ctx: Context): Promise<Pageable<entity.TxActivity> | null> => {
+    try {
+      let pageInput: gql.PageInput = args?.['listingsPageInput']
+      const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
+      const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
+      let listingsOwnerAddress: string = args?.['listingsOwner']
+      if (!listingsOwnerAddress) {
+        const walletId = parent?.['walletId']
 
-    let queryFilter = {
-      exchange: defs.ExchangeType.NFTCOM,
-      orderType: activityType,
-      protocol: defs.ProtocolType.NFTCOM,
-      chainId,
-    }
+        if (walletId && walletId !== TEST_WALLET_ID) {
+          const wallet: entity.Wallet = await ctx.repositories.wallet.findById(walletId)
+          listingsOwnerAddress = wallet?.address
+        }
+      }
 
-    if (ownerAddress) {
-      queryFilter = {
-        ...queryFilter,
-        makerAddress: ethers.utils.getAddress(ownerAddress),
-      } as any
-    }
-    if (contract && tokenId) {
-      const txOrders = await repositories.txOrder.find({
-        where: {
-          ...queryFilter,
-        },
-      })
-      const checksumContract = helper.checkSum(contract)
-      const filteredOrders = await filterNativeOrdersForNFT(
-        txOrders,
-        checksumContract,
-        BigNumber.from(tokenId).toHexString(),
-        status,
-      )
-      const ids = filteredOrders.map((order) => order.id)
-      const filter: Partial<entity.TxOrder> = helper.removeEmpty({
-        ...queryFilter,
-        id: In(ids),
-      })
-      return paginatedEntitiesBy(
-        repositories.txOrder,
-        pageInput,
-        [filter],
-        [], // relations
-      )
-        .then(pagination.toPageable(pageInput))
+      if (!pageInput) {
+        pageInput = {
+          'first': 50,
+        }
+      }
+      const contract = parent?.['contract']
+      const tokenId = parent?.['tokenId']
+      const chainId = parent?.['chainId'] || process.env.chainId
+
+      const protocol: gql.ProtocolType = args?.['protocol']
+
+      if (contract && tokenId) {
+        const checksumContract = helper.checkSum(contract)
+        const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
+        let filters: defs.ActivityFilters = {
+          nftContract: checksumContract,
+          nftId,
+          activityType,
+          status: listingsStatus,
+          chainId,
+        }
+
+        if (listingsOwnerAddress) {
+          filters = { ...filters, walletAddress: helper.checkSum(listingsOwnerAddress) }
+        }
+        // by default active items are included
+        if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
+          filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
+        } else if (expirationType === gql.ActivityExpiration.Expired){
+          filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
+        }
+        const safefilters = [helper.inputT2SafeK(filters)]
+        return paginatedActivitiesBy(
+          ctx.repositories.txActivity,
+          pageInput,
+          safefilters,
+          [],
+          'createdAt',
+          'DESC',
+          protocol,
+        )
+          .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+      }
+    } catch (err) {
+      logger.error(`Error in getNFTActivities: ${err}`)
+      Sentry.captureMessage(`Error in getNFTActivities: ${err}`)
+      throw err
     }
   }
 }
