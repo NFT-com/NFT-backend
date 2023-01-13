@@ -526,8 +526,8 @@ export const nftTraitBuilder = (
     for (const attribute of nftAttributes) {
       const traitExists: NFTPortRarityAttributes = rarityAttributes.find(
         (rarityAttribute: NFTPortRarityAttributes) => {
-          if (rarityAttribute.trait_type === attribute.type
-            && rarityAttribute.value.trim() === attribute.value.trim()) {
+          if (rarityAttribute?.trait_type === attribute?.type
+            && rarityAttribute?.value.trim() === attribute?.value.trim()) {
             return rarityAttribute
           }
         },
@@ -538,8 +538,9 @@ export const nftTraitBuilder = (
 
       if (traitExists) {
         traitsToBePushed = {
-          type: traitExists.trait_type,
-          value: traitExists.value,
+          ...traitsToBePushed,
+          type: traitExists?.trait_type || attribute?.type || '',
+          value: traitExists?.value || attribute?.value|| '',
         }
         if (traitExists?.statistics?.prevalence) {
           traitsToBePushed = {
