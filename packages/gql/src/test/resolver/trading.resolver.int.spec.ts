@@ -163,6 +163,7 @@ describe.skip('trading', () => {
                       id
                       order {
                         id
+                        nonce
                         protocolData {
                         ... on NFTCOMProtocolData {
                           makeAsset {
