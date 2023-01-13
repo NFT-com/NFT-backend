@@ -7,9 +7,8 @@ import { CollectionSchema, CollectionUpdateSchema } from 'typesense/lib/Typesens
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections'
 
 import { searchEngineService } from '@nftcom/gql/service'
-import { _logger, helper, utils } from '@nftcom/shared'
+import { _logger, defs,helper, utils } from '@nftcom/shared'
 import { db } from '@nftcom/shared'
-import { ActivityType } from '@nftcom/shared/defs'
 
 import { mapCollectionData } from './collections'
 import { TxActivityDAO } from './model'
@@ -23,7 +22,7 @@ const logger = _logger.Factory(
 
 const NFT_PAGE_SIZE = parseInt(process.env.NFT_PAGE_SIZE) || 100_000
 const N_CHUNKS = parseInt(process.env.N_CHUNKS) || 1
-const BATCH_SIZE = parseInt(process.env.BATCH_SIZE) || 20_000
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE) || 10_000
 const chunk = (arr: any[], size: number): any[] => {
   const chunks = []
   while (arr.length) {
@@ -81,12 +80,6 @@ const addDocumentsToTypesense = async (
 }
 
 const schemas = [collections, nfts]
-export const LARGE_COLLECTIONS = [
-  '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-  '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
-  '0xD1E5b0FF1287aA9f9A268759062E4Ab08b9Dacbe',
-  '0x495f947276749Ce646f68AC8c248420045cb7b5e',
-]
 
 class Commander {
 
@@ -102,7 +95,7 @@ class Commander {
   }
 
   retrieveListings = async (sinceUpdatedAt?: Date): Promise<any>  => {
-    return (await this.repositories.txActivity.findActivitiesNotExpired(ActivityType.Listing, sinceUpdatedAt))
+    return (await this.repositories.txActivity.findActivitiesNotExpired(defs.ActivityType.Listing, sinceUpdatedAt))
       .reduce((map, txActivity: TxActivityDAO) => {
         if (helper.isNotEmpty(txActivity.order.protocolData) && txActivity.nftId.length) {
           const nftIdParts = txActivity.nftId[0].split('/')
@@ -210,7 +203,7 @@ class Commander {
         await addDocumentsToTypesense(this.client, collectionName, documents)
       }
     } while (retrievedCount !== totalCount)
-    return collectionName
+    return name
   }
 
   private _indexNFTCollection = async (collectionName: string, contract: string, listingMap: any): Promise<string> => {
@@ -276,7 +269,7 @@ class Commander {
 
     await q.drain()
 
-    return collectionName
+    return name
   }
 
   private _indexNFTs = async (collectionName: string, listingMap: any): Promise<string> => {
@@ -291,7 +284,7 @@ class Commander {
           nulls: 'LAST',
         },
       },
-    })).filter((c) => !LARGE_COLLECTIONS.includes(c.contract)).map((c) => c.contract)
+    })).filter((c) => !defs.LARGE_COLLECTIONS.includes(c.contract)).map((c) => c.contract)
 
     const q = queue(async (contract: string) => {
       await this._indexNFTCollection(collectionName, contract, listingMap)
@@ -308,16 +301,16 @@ class Commander {
 
     await q.drain()
 
-    return collectionName
+    return 'nfts'
   }
 
   private _indexLargeCollections = async (collectionName: string, listingMap: any): Promise<string> => {
     const q = queue(async (contract: string) => {
       await this._indexNFTCollection(collectionName, contract, listingMap)
       return { contract, remaining: q.length() }
-    }, LARGE_COLLECTIONS.length)
+    }, defs.LARGE_COLLECTIONS.length)
 
-    q.push(collections, (err, task) => {
+    q.push(defs.LARGE_COLLECTIONS, (err, task) => {
       if (err) {
         logger.error(err)
         return
@@ -327,7 +320,7 @@ class Commander {
 
     await q.drain()
 
-    return collectionName
+    return 'nfts'
   }
 
   restore = async (): Promise<void> => {
@@ -341,19 +334,26 @@ class Commander {
       this._indexCollection(`collections-${timestamp}`),
       this.retrieveListings()
         .then(async (listingMap) => {
-          return (await Promise.all([
-            this._indexNFTs(`nfts-${timestamp}`, listingMap),
-            this._indexLargeCollections(`nfts-${timestamp}`, listingMap),
-          ]))[1]
+          await this._indexLargeCollections(`nfts-${timestamp}`, listingMap)
+          return listingMap
+        })
+        .then(async (listingMap) => {
+          return await this._indexNFTs(`nfts-${timestamp}`, listingMap)
         }),
     ])
+
+    logger.info('***** DONE INDEXING COLLECTIONS *****')
 
     for (const name of collectionNames) {
       const collectionName = `${name}-${timestamp}`
       await this.client.aliases().upsert(name, { collection_name: collectionName })
     }
 
-    const listings = await this.retrieveListings(new Date(timestamp))
+    const listings = []
+    const listingMap = await this.retrieveListings(new Date(timestamp))
+    for (const key in listingMap) {
+      listings.push(...listingMap[key])
+    }
     const nftsWithListingUpdates = await utils.getNFTsFromTxActivities(listings)
     await this.seService.indexNFTs(nftsWithListingUpdates)
   }

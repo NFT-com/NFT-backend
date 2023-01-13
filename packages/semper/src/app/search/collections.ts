@@ -3,7 +3,6 @@ import { BigNumber, utils } from 'ethers'
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { defs, helper } from '@nftcom/shared'
 
-import { LARGE_COLLECTIONS } from './commander'
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
 
 const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
@@ -33,7 +32,10 @@ const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): num
   const listingsVal = hasListings ? 1 : 0
   const score = curatedVal + officialVal + listingsVal
   if (score === 3) {
-    const multiplier = LARGE_COLLECTIONS.includes(collection.contract) ? 8_000_001 : 10_000_001
+    const multiplier = defs.LARGE_COLLECTIONS.includes(collection.contract)
+      && Math.floor(Math.random() * 10) % 10 !== 0
+      ? 9_000_000
+      : 10_000_000
     return score + Math.floor(Math.random() * multiplier)
   }
   return score
@@ -51,6 +53,10 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
     return order?.parameters?.consideration
       ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount ?? 0)), BigNumber.from(0))
   }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
+  }
   }
 }
 
@@ -64,6 +70,10 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   case (defs.ProtocolType.Seaport): {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration?.[0]?.token
+  }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
   }
   }
 }
