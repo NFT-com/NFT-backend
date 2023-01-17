@@ -38,6 +38,7 @@ jest.mock('@nftcom/cache', () => ({
   CacheKeys: {
     PROFILE_SORTED_NFTS: 'PROFILE_SORTED_NFTS',
     PROFILE_SORTED_VISIBLE_NFTS: 'PROFILE_SORTED_VISIBLE_NFTS',
+    GENESIS_KEY_OWNERS: 'genesis_key_owners',
   },
   createCacheConnection: jest.fn(),
 }))
