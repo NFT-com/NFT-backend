@@ -20,7 +20,6 @@ const typesenseClient = new Typesense.Client({
   ],
   apiKey: TYPESENSE_API_KEY,
   connectionTimeoutSeconds: 3600, // 1 hour... because typesense
-  timeoutSeconds: 3600, // See above ^^^^^^
 })
 
 const pgClient = new Pool({

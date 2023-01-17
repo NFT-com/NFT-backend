@@ -53,6 +53,7 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   }
 }
 
+const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 2)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
   const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
     const curatedVal = collection?.isCurated ? 1 : 0
@@ -60,7 +61,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     const listingsVal = hasListings ? 1 : 0
     const score = curatedVal + officialVal + listingsVal
     if (score === 3) {
-      const multiplier = defs.LARGE_COLLECTIONS.includes(collection.contract)
+      const multiplier = LARGEST_COLLECTIONS.includes(collection.contract)
         && Math.floor(Math.random() * 10) % 10 !== 0
         ? 9_000_000
         : 10_000_000
