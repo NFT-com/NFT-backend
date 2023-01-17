@@ -23,6 +23,7 @@ jest.mock('@nftcom/cache', () => ({
   },
   CacheKeys: {
     GENESIS_KEY_OWNERS: 'genesis_key_owners',
+    PROFILE_GK_OWNERS: 'profile_gk_owners',
   },
   createCacheConnection: jest.fn(),
 }))
