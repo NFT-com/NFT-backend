@@ -2267,3 +2267,7 @@ export const queryNFTsForProfile = async (
   )
   return nfts
 }
+
+export const buildTest = (): string => {
+  return 'Build Test Successful!'
+}
