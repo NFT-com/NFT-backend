@@ -1569,9 +1569,22 @@ const validateProfileGKOwners = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     const { profileIds } = args
     const { repositories } = ctx
-    const profile: entity.Profile[] = await repositories.profile.find({
+    const filteredProfileIds: string[] = []
+    const profiles: gql.ValidateProfileGkOwners[] = []
+    for (const profileId of profileIds) {
+      const profileScore: string = await cache.zscore(`${CacheKeys.PROFILE_GK_OWNERS}_${chainId}`, profileId)
+      if (!Number(profileScore)) {
+        filteredProfileIds.push(profileId)
+      } else {
+        profiles.push({
+          id: profileId,
+          gkIconVisible: Number(profileScore) === 1 ? true : false,
+        })
+      }
+    }
+    const dbProfiles: entity.Profile[] = await repositories.profile.find({
       where: {
-        id: In([...profileIds]),
+        id: In([...filteredProfileIds]),
         chainId,
       },
       select: {
@@ -1579,7 +1592,26 @@ const validateProfileGKOwners = async (
         gkIconVisible: true,
       },
     })
-    return profile
+
+    if (dbProfiles?.length) {
+      const profileCacheMap = []
+      for (const profile of dbProfiles) {
+        const profileId: string = profile.id
+        if (profile.gkIconVisible !== null || profile.gkIconVisible !== undefined) {
+          if (profile.gkIconVisible) {
+            // 1 - gkIconVisible
+            profileCacheMap.push(1, profileId)
+          } else {
+            // 2 - gkIconNotVisible
+            profileCacheMap.push(2, profileId)
+          }
+        }
+      }
+
+      await cache.zadd(`${CacheKeys.PROFILE_GK_OWNERS}_${chainId}`, ...profileCacheMap)
+      return [...profiles, ...dbProfiles]
+    }
+    return profiles
   } catch (err) {
     Sentry.captureMessage(`Error in validateProfileGKOwners: ${err}`)
     return err
