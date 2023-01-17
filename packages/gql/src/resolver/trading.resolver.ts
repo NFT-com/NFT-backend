@@ -7,7 +7,8 @@ import {
   Context,
   convertAssetInput,
   getAssetList,
-  gql, parseContractsFromNativeAsset,
+  gql,
+  parseContractsFromNativeAsset,
   parseNFTIdsFromNativeAsset,
 } from '@nftcom/gql/defs'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
