@@ -219,6 +219,7 @@ type TxOrder {
   protocol: String!
   protocolData: ProtocolData
   memo: String
+  nonce: Int
 }
 
 type TxTransaction {
