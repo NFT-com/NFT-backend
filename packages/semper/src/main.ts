@@ -20,7 +20,6 @@ const typesenseClient = new Typesense.Client({
   ],
   apiKey: TYPESENSE_API_KEY,
   connectionTimeoutSeconds: 3600, // 1 hour... because typesense
-  timeoutSeconds: 3600, // See above ^^^^^^
 })
 
 const pgClient = new Pool({
@@ -52,9 +51,9 @@ const main = async (): Promise<void> => {
   const repositories = db.newRepositories()
   const commander = new Commander(typesenseClient, repositories, pgClient)
   
-  await commander.help()
-  // await commander.erase()
-  // await commander.restore()
+  // await commander.help()
+  await commander.erase()
+  await commander.restore()
   // await commander.erase()
   // await commander.update('collections', ['issuance'])
   // await commander.update('nfts', ['contractAddr'])
