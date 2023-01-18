@@ -1016,9 +1016,10 @@ export const checkNFTContractAddresses = async (
 
 export const indexNFTsOnSearchEngine = async (
   nfts: Array<entity.NFT>,
+  updateOnly?: boolean,
 ): Promise<void> => {
   try {
-    await seService.indexNFTs(nfts)
+    await seService.indexNFTs(nfts, updateOnly)
   } catch (err) {
     logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
     Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
@@ -1028,9 +1029,10 @@ export const indexNFTsOnSearchEngine = async (
 
 export const indexCollectionsOnSearchEngine = async (
   collections: Array<entity.Collection>,
+  updateOnly?: boolean,
 ): Promise<void> => {
   try {
-    await seService.indexCollections(collections)
+    await seService.indexCollections(collections, updateOnly)
   } catch (err) {
     logger.error(`Error in indexCollectionsOnSearchEngine: ${err}`)
     Sentry.captureMessage(`Error in indexCollectionsOnSearchEngine: ${err}`)
