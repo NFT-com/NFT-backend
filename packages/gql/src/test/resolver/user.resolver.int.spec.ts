@@ -582,6 +582,13 @@ describe('user resolver', () => {
         task: defs.ProfileTask.CREATE_NFT_PROFILE,
         point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
       })
+
+      await repositories.incentiveAction.save({
+        profileUrl: 'test-profile-2',
+        userId: null,
+        task: defs.ProfileTask.CREATE_NFT_PROFILE,
+        point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
+      })
     })
 
     afterAll(async () => {

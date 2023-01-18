@@ -42,7 +42,7 @@ export class SearchEngineClient {
     }
     return !unsuccessful.length
   }
-
+  
   insertDocuments = async (collection: string,  documents: any[]): Promise<boolean> => {
     let response
     try {
