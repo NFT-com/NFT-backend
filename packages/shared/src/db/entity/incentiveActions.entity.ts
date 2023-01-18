@@ -8,7 +8,7 @@ import { BaseEntity } from '.'
 @Unique(['userId', 'profileUrl', 'task'])
 export class IncentiveAction extends BaseEntity {
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   userId: string
 
   @Column({ nullable: false })

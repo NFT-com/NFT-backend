@@ -899,6 +899,11 @@ describe('profile resolver', () => {
         chainId: '5',
       })
 
+      await repositories.profile.save({
+        url: 'test-profile-1',
+        chainId: '5',
+      })
+
       testServer = getTestApolloServer(repositories,
         user,
         testMockWallet,

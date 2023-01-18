@@ -350,7 +350,7 @@ const addCustomizeIncentiveAction = async (
       if (edges.length) {
         const existingAction = await repositories.incentiveAction.findOne({
           where: {
-            userId: profile.ownerUserId,
+            userId: profile.ownerUserId ?? IsNull(),
             profileUrl: profile.url,
             task: defs.ProfileTask.CUSTOMIZE_PROFILE,
           },
