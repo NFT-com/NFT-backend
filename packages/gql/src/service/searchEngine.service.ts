@@ -181,7 +181,6 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           score: _calculateNFTScore(collection, !!listings.length) || 0,
         }
       }))
-
       return client.insertDocuments('nfts', nftsToIndex)
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
@@ -232,7 +231,6 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
             }
           }),
       )
-
       return client.insertDocuments('collections', collectionsToIndex)
     } catch (err) {
       Sentry.captureMessage(`Error in indexCollections: ${err}`)
