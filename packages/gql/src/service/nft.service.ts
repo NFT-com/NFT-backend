@@ -2268,6 +2268,7 @@ export const queryNFTsForProfile = async (
   return nfts
 }
 
+// test -  to be removed
 export const buildTest = (): string => {
   return 'Build Test Successful!'
 }
