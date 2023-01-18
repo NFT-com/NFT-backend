@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Get branch name
         id: branch-name
-        uses: tj-actions/branch-names@v5.2
+        uses: tj-actions/branch-names@v6
       - name: Get base branch name
         id: get-base-branch-name
         run: |
@@ -75,7 +75,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Test unit
-        run: npx nx test:unit ${{ matrix.projectName }}
+        run: npx nx test ${{ matrix.projectName }}
   build-finished:
     runs-on: ubuntu-latest
     needs: [test-unit]
