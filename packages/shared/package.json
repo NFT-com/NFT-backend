@@ -1,7 +1,7 @@
 {
   "name": "@nftcom/shared",
-  "main": "src/index",
-  "types": "src/index",
+  "main": "dist/packages/shared/src/index",
+  "types": "dist/packages/shared/src/index.d.ts",
   "scripts": {
     "prebuild": "npx json -I -f package.json -e \"this.main='dist/packages/shared/src/index'\" -e \"this.types='dist/packages/shared/src/index.d.ts'\"",
     "build": "npm run clean && npm run compile && npm run copy:cert",
