@@ -15,9 +15,9 @@ jobs:
         id: get-base-branch-name
         run: |
             if [[ "${{github.event.pull_request.base.ref}}" != "" ]]; then
-              echo "::set-output name=branch::${{github.event.pull_request.base.ref}}"
+              echo "branch=branch::${{github.event.pull_request.base.ref}}" >> $GITHUB_OUTPUT
             else
-              echo "::set-output name=branch::main"
+              echo "branch=branch::main" >> $GITHUB_OUTPUT
             fi
     outputs:
       base-branch-name: ${{ steps.get-base-branch-name.outputs.branch }}
@@ -49,6 +49,8 @@ jobs:
             else
               echo "test-unit=$(node scripts/print-affected-array.js test:unit origin/${{needs.branch-info.outputs.base-branch-name}})" >> $GITHUB_OUTPUT
             fi
+    outputs:
+      test-unit: ${{ steps.get-projects-arrays.outputs.test-unit }}
   test-unit:
     runs-on: ubuntu-latest
     needs: [get-affected]
