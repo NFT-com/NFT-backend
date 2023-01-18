@@ -15,9 +15,9 @@ jobs:
         id: get-base-branch-name
         run: |
             if [[ "${{github.event.pull_request.base.ref}}" != "" ]]; then
-              echo "branch=branch::${{github.event.pull_request.base.ref}}" >> $GITHUB_OUTPUT
+              echo "branch=${{github.event.pull_request.base.ref}}" >> $GITHUB_OUTPUT
             else
-              echo "branch=branch::main" >> $GITHUB_OUTPUT
+              echo "branch=main" >> $GITHUB_OUTPUT
             fi
     outputs:
       base-branch-name: ${{ steps.get-base-branch-name.outputs.branch }}
