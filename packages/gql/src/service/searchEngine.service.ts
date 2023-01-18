@@ -28,6 +28,10 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
     return order?.parameters?.consideration
       ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
   }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
+  }
   }
 }
 
@@ -42,15 +46,28 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration?.[0]?.token
   }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
+  }
   }
 }
 
+const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 2)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
   const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
     const curatedVal = collection?.isCurated ? 1 : 0
     const officialVal = collection?.isOfficial ? 1 : 0
     const listingsVal = hasListings ? 1 : 0
-    return curatedVal + officialVal + listingsVal
+    const score = curatedVal + officialVal + listingsVal
+    if (score === 3) {
+      const multiplier = LARGEST_COLLECTIONS.includes(collection.contract)
+        && Math.floor(Math.random() * 10) % 10 !== 0
+        ? 9_000_000
+        : 10_000_000
+      return score + Math.floor(Math.random() * multiplier)
+    }
+    return score
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
@@ -58,7 +75,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
       const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
         .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, true))
         .reduce((map, txActivity: TxActivityDAO) => {
-          if (helper.isNotEmpty(txActivity.order.protocolData)) {
+          if (helper.isNotEmpty(txActivity.order?.protocolData)) {
             const nftIdParts = txActivity.nftId[0].split('/')
             const k = `${nftIdParts[1]}-${nftIdParts[2]}`
             if (map[k]?.length) {
@@ -142,7 +159,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
             }
           }
         }
-        
+
         return {
           id: nft.id,
           nftName: nft.metadata?.name || `#${tokenId}`,

@@ -56,10 +56,4 @@ export class TxTransaction extends BaseEntity {
   @Column({ nullable: true })
   chainId: string
 
-  @Column({ nullable: true })
-  listingOrderId: string
-
-  @Column({ nullable: true })
-  bidOrderId: string
-
 }

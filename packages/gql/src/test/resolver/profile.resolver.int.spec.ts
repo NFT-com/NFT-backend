@@ -23,6 +23,7 @@ jest.mock('@nftcom/cache', () => ({
   },
   CacheKeys: {
     GENESIS_KEY_OWNERS: 'genesis_key_owners',
+    PROFILE_GK_OWNERS: 'profile_gk_owners',
   },
   createCacheConnection: jest.fn(),
 }))
@@ -1127,6 +1128,113 @@ describe('profile resolver', () => {
       })
 
       expect(result.data.searchNFTsForProfile.items.length).toEqual(2)
+    })
+  })
+
+  describe('validateProfileGKOwners', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+
+      await repositories.profile.save({
+        id: 'testProfileA',
+        url: 'testProfileA',
+        ownerUserId: user.id,
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '7307',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: true,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      await repositories.profile.save({
+        id: 'testProfileB',
+        url: 'testProfileB',
+        ownerUserId: 'test-id-b',
+        ownerWalletId: 'test-wallet-id-b',
+        tokenId: '7301',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: false,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+
+      await repositories.profile.save({
+        id: 'testProfileC',
+        url: 'testProfileC',
+        ownerUserId: 'test-id-c',
+        ownerWalletId: 'test-wallet-id-c',
+        tokenId: '7305',
+        status: defs.ProfileStatus.Owned,
+        gkIconVisible: null,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return true for profile A', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ValidateProfileGKOwners($profileIds: [String!]!, $chainId: String) {
+          validateProfileGKOwners(profileIds: $profileIds, chainId: $chainId) {
+            gkIconVisible
+            id
+          }
+        }`,
+        variables: {
+          profileIds: ['testProfileA'],
+          chainId: '5',
+        },
+      })
+
+      expect(result?.data?.validateProfileGKOwners?.[0]?.gkIconVisible).toBe(true)
+    })
+
+    it('should return false for profile B', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ValidateProfileGKOwners($profileIds: [String!]!, $chainId: String) {
+            validateProfileGKOwners(profileIds: $profileIds, chainId: $chainId) {
+              gkIconVisible
+              id
+            }
+          }`,
+        variables: {
+          profileIds: ['testProfileB'],
+          chainId: '5',
+        },
+      })
+
+      expect(result?.data?.validateProfileGKOwners?.[0]?.gkIconVisible).toBe(false)
+    })
+
+    it('should return false for profile C', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ValidateProfileGKOwners($profileIds: [String!]!, $chainId: String) {
+            validateProfileGKOwners(profileIds: $profileIds, chainId: $chainId) {
+              gkIconVisible
+              id
+            }
+          }`,
+        variables: {
+          profileIds: ['testProfileC'],
+          chainId: '5',
+        },
+      })
+
+      expect(result?.data?.validateProfileGKOwners?.[0]?.gkIconVisible).toBe(null)
     })
   })
 })

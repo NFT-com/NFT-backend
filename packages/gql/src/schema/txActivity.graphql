@@ -1,4 +1,11 @@
 
+enum ProtocolType {
+  Seaport
+  LooksRare
+  X2Y2
+  NFTCOM
+}
+
 enum ActivityType {
   Listing
   Bid
@@ -96,7 +103,22 @@ type X2Y2ProtocolData {
   is_private: Boolean
 }
 
-union ProtocolData = SeaportProtocolData | LooksrareProtocolData | X2Y2ProtocolData
+type NFTCOMProtocolData {
+  makeAsset: [MarketplaceAsset]
+  takeAsset: [MarketplaceAsset]
+  swapTransactionId: String
+  acceptedAt: Int
+  rejectedAt: Int
+  listingId: String
+  buyNowTaker: String
+  auctionType: AuctionType
+  signature: Signature
+  salt: Int
+  start: Int
+  end: Int
+}
+
+union ProtocolData = SeaportProtocolData | LooksrareProtocolData | X2Y2ProtocolData | NFTCOMProtocolData
 
 type TxSeaportProtocolData {
   offer: [SeaportOffer]
@@ -197,6 +219,7 @@ type TxOrder {
   protocol: String!
   protocolData: ProtocolData
   memo: String
+  nonce: Int
 }
 
 type TxTransaction {

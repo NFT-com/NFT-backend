@@ -11,6 +11,8 @@ const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
 const GK_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
   '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
 
+const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 2)
+
 export const collectionNames = ['collections', 'nfts']
 
 const getRandomFloat = (min, max, decimals): number => {
@@ -27,7 +29,18 @@ const calculateCollectionScore = (collection: CollectionDao): number => {
 }
 
 const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): number => {
-  return (+collection.isCurated) + (+collection.isOfficial) + (+hasListings)
+  const curatedVal = collection?.isCurated ? 1 : 0
+  const officialVal = collection?.isOfficial ? 1 : 0
+  const listingsVal = hasListings ? 1 : 0
+  const score = curatedVal + officialVal + listingsVal
+  if (score === 3) {
+    const multiplier = LARGEST_COLLECTIONS.includes(collection.contract)
+      && Math.floor(Math.random() * 10) % 10 !== 0
+      ? 9_000_000
+      : 10_000_000
+    return score + Math.floor(Math.random() * multiplier)
+  }
+  return score
 }
 
 const getListingPrice = (listing: TxActivityDAO): BigNumber => {
@@ -41,6 +54,10 @@ const getListingPrice = (listing: TxActivityDAO): BigNumber => {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration
       ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount ?? 0)), BigNumber.from(0))
+  }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
   }
   }
 }
@@ -56,13 +73,16 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration?.[0]?.token
   }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
+  }
   }
 }
 
 export const mapCollectionData = async (
   collectionName: string,
   data: any[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _repos: any,
   listingMap?: { [k:string]: TxActivityDAO[] },
 ): Promise<any[]> => {

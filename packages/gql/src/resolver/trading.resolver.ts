@@ -1,10 +1,16 @@
 import { BigNumber, ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
-import { IsNull } from 'typeorm'
 
 import { appError, marketBidError, marketListingError } from '@nftcom/error-types'
-import { Context, convertAssetInput, getAssetList, gql } from '@nftcom/gql/defs'
+import {
+  Context,
+  convertAssetInput,
+  getAssetList,
+  gql,
+  parseContractsFromNativeAsset,
+  parseNFTIdsFromNativeAsset,
+} from '@nftcom/gql/defs'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import {
   _logger,
@@ -21,7 +27,6 @@ import * as Sentry from '@sentry/node'
 
 import { auth, joi, pagination, utils } from '../helper'
 import { core, sendgrid } from '../service'
-import { filterNativeOrdersForNFT } from '../service/nft.service'
 import { activityBuilder } from '../service/txActivity.service'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
@@ -53,49 +58,6 @@ const getListings = (
     [], // relations
   )
     .then(pagination.toPageable(pageInput))
-}
-
-const getNFTListings = async (
-  _: any,
-  args: gql.QueryGetNFTListingsArgs,
-  ctx: Context,
-): Promise<gql.TxListingOrder[]> => {
-  const { repositories } = ctx
-  logger.debug('getNFTListings', { input: args?.input })
-  const chainId = args?.input.chainId || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
-  const { makerAddress, nftContractAddress, nftTokenId } = helper.safeObject(args?.input)
-  const txOrders = await repositories.txOrder.find({
-    where: {
-      makerAddress: ethers.utils.getAddress(makerAddress),
-      exchange: defs.ExchangeType.NFTCOM,
-      orderType: defs.ActivityType.Listing,
-      protocol: defs.ProtocolType.NFTCOM,
-      chainId,
-    },
-  })
-  const filteredListings = await filterNativeOrdersForNFT(
-    txOrders,
-    ethers.utils.getAddress(nftContractAddress),
-    nftTokenId,
-
-  )
-  return filteredListings.map((listing) => {
-    return {
-      id: listing.id,
-      orderHash: listing.orderHash,
-      nonce: listing.nonce,
-      signature: listing.protocolData.signature,
-      makerAddress: listing.makerAddress,
-      makeAsset: listing.makeAsset,
-      start: listing.activity.timestamp,
-      end: listing.activity.expiration,
-      salt: listing.protocolData.salt,
-      acceptedAt: listing.acceptedAt,
-      chainId,
-      auctionType: listing.protocolData.auctionType,
-    }
-  })
 }
 
 export const validListing = async (
@@ -156,32 +118,34 @@ const availableToCreateListing = async (
   const listingOrders = await repositories.txOrder.find({
     where: {
       makerAddress: ethers.utils.getAddress(address),
-      acceptedAt: IsNull(),
-      swapTransactionId: IsNull(),
       orderType: defs.ActivityType.Listing,
       exchange: defs.ExchangeType.NFTCOM,
       protocol: defs.ProtocolType.NFTCOM,
     },
   })
 
-  if (!listingOrders.length) return true
+  const filteredOrders = listingOrders.filter((order) =>
+    !order.protocolData.acceptedAt && !order.protocolData.swapTransactionId,
+  )
+  if (!filteredOrders.length) return true
 
   const NonFungibleAssetAsset = ['ERC721']
 
   logger.debug('==============> assets: ', assets)
 
   // find out active listingOrders which have user's make asset...
-  const activeOrders = listingOrders.filter((order) => {
+  const activeOrders = filteredOrders.filter((order) => {
+    if (!order.protocolData.makeAsset) return false
     if (order.activity?.expiration && order.activity?.expiration < now) return false
     else {
-      if (assets.length !== order.makeAsset.length) return false
+      if (assets.length !== order.protocolData.makeAsset?.length) return false
       else {
         assets.forEach((asset, index) => {
           const isERC721 = NonFungibleAssetAsset.includes(asset.standard.assetClass)
           const sameContractAddress = ethers.utils.getAddress(asset.standard.contractAddress) ===
-            ethers.utils.getAddress(order.makeAsset[index].standard.contractAddress)
+            ethers.utils.getAddress(order.protocolData.makeAsset[index].standard.contractAddress)
           const sameTokenId = BigNumber.from(asset.standard.tokenId)
-            .eq(order.makeAsset[index].standard.tokenId)
+            .eq(order.protocolData.makeAsset[index].standard.tokenId)
 
           if (isERC721 && sameContractAddress && sameTokenId) {
             logger.debug('====> contractAddress', ethers.utils.getAddress(asset.standard.contractAddress))
@@ -294,13 +258,16 @@ const createListing = async (
         marketListingError.buildMarketListingUnavailableMsg(wallet.address),
         marketListingError.ErrorType.MarketListingUnavailable))
     }
+    const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
+    const contracts = parseContractsFromNativeAsset(makeAssets)
+    const contract = contracts.length === 1 ? contracts[0] : '0x'
     const activity = await activityBuilder(
       defs.ActivityType.Listing,
       args?.input.structHash,
       wallet.address,
       chainId.toString(),
-      [],
-      '0x',
+      nftIds,
+      contract,
       args?.input.start,
       args?.input.end,
     )
@@ -312,6 +279,8 @@ const createListing = async (
       protocol: defs.ProtocolType.NFTCOM,
       nonce: args?.input.nonce,
       protocolData: {
+        makeAsset: makeAssets,
+        takeAsset: takeAssets,
         auctionType: args?.input.auctionType,
         signature: args?.input.signature,
         start: args?.input.start,
@@ -319,9 +288,7 @@ const createListing = async (
         salt: args?.input.salt,
       },
       makerAddress: ethers.utils.getAddress(args?.input.makerAddress),
-      makeAsset: makeAssets,
       takerAddress: ethers.utils.getAddress(args?.input.takerAddress),
-      takeAsset: takeAssets,
       chainId: wallet.chainId,
       createdInternally: true,
       memo: args?.input.message ?? null,
@@ -335,7 +302,6 @@ const createListing = async (
       nonce: listingOrder.nonce,
       signature: listingOrder.protocolData.signature,
       makerAddress: listingOrder.makerAddress,
-      makeAsset: listingOrder.makeAsset,
       start: listingOrder.activity.timestamp,
       end: listingOrder.activity.expiration,
       salt: listingOrder.protocolData.salt,
@@ -470,9 +436,9 @@ const validOrderMatch = async (
     const result = await validationLogicContract.validateMatch_(
       {
         maker: listing.makerAddress,
-        makeAssets: getAssetList(listing.makeAsset),
+        makeAssets: getAssetList(listing.protocolData.makeAsset),
         taker: listing.takerAddress,
-        takeAssets: getAssetList(listing.takeAsset),
+        takeAssets: getAssetList(listing.protocolData.takeAsset),
         salt: listing.protocolData.salt,
         start: askStart,
         end: askEnd,
@@ -511,7 +477,7 @@ const createBid = async (
   _: any,
   args: gql.MutationCreateMarketBidArgs,
   ctx: Context,
-): Promise<gql.TxListingOrder> => {
+): Promise<gql.TxBidOrder> => {
   const { user, repositories, wallet } = ctx
   const chainId = args?.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -602,13 +568,16 @@ const createBid = async (
         marketBidError.ErrorType.MarketBidExisting,
       ))
     }
+    const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
+    const contracts = parseContractsFromNativeAsset(makeAssets)
+    const contract = contracts.length === 1 ? contracts[0] : '0x'
     const activity = await activityBuilder(
       defs.ActivityType.Bid,
       args?.input.structHash,
       wallet.address,
       chainId,
-      [],
-      '0x',
+      nftIds,
+      contract,
       args?.input.start,
       args?.input.end,
     )
@@ -620,6 +589,9 @@ const createBid = async (
       protocol: defs.ProtocolType.NFTCOM,
       nonce: args?.input.nonce,
       protocolData: {
+        makeAsset: makeAssets,
+        takeAsset: takeAssets,
+        listingId: args?.input.listingId,
         auctionType: args?.input.auctionType,
         signature: args?.input.signature,
         salt: args?.input.salt,
@@ -627,11 +599,8 @@ const createBid = async (
         end: args?.input.end,
       },
       makerAddress: ethers.utils.getAddress(args?.input.makerAddress),
-      makeAsset: makeAssets,
       takerAddress: ethers.utils.getAddress(args?.input.takerAddress),
-      takeAsset: takeAssets,
       chainId: wallet.chainId,
-      listingId: args?.input.listingId,
       memo: args?.input.message ?? null,
       createdInternally: true,
     })
@@ -645,7 +614,7 @@ const createBid = async (
       nonce: bidOrder.nonce,
       signature: bidOrder.protocolData.signature,
       makerAddress: bidOrder.makerAddress,
-      makeAsset: bidOrder.makeAsset,
+      takerAddress: bidOrder.takerAddress,
       start: bidOrder.activity.timestamp,
       end: bidOrder.activity.expiration,
       salt: bidOrder.protocolData.salt,
@@ -654,7 +623,7 @@ const createBid = async (
       memo: bidOrder.memo,
     }
   } catch (err) {
-    Sentry.captureMessage(`Error in createListing: ${err}`)
+    Sentry.captureMessage(`Error in createBid: ${err}`)
     return err
   }
 }
@@ -691,7 +660,6 @@ const getBids = (
 export default {
   Query: {
     getListings,
-    getNFTListings,
     filterListings,
     getBids,
   },

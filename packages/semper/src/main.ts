@@ -31,7 +31,7 @@ const pgClient = new Pool({
   ssl: {
     rejectUnauthorized: false,
   },
-  max: 50,
+  max: 100,
   application_name: 'semper',
 })
 

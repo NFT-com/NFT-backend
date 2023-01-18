@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 
 import { testDBConfig } from '@nftcom/gql/config'
+import { NFTType } from '@nftcom/gql/defs/gql'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import {
   getCollectionInfo,
@@ -37,6 +38,7 @@ jest.mock('@nftcom/cache', () => ({
   CacheKeys: {
     PROFILE_SORTED_NFTS: 'PROFILE_SORTED_NFTS',
     PROFILE_SORTED_VISIBLE_NFTS: 'PROFILE_SORTED_VISIBLE_NFTS',
+    GENESIS_KEY_OWNERS: 'genesis_key_owners',
   },
   createCacheConnection: jest.fn(),
 }))
@@ -964,6 +966,53 @@ describe('nft service', () => {
       for (const nft of nfts) {
         expect(nft.id.tokenId).toBeDefined()
       }
+    })
+  })
+
+  describe('getNftType', () => {
+    it('should get type for nftPort CRYPTOPUNKS by type', () => {
+      const type = nftService.getNftType(undefined, { contract: { type: 'CRYPTO_PUNKS' } })
+      expect(type).toBe(NFTType.CRYPTO_PUNKS)
+    })
+
+    it('should get type for nftPort CRYPTOPUNKS by contract address', () => {
+      const type = nftService.getNftType(undefined, { contract_address: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb' })
+      expect(type).toBe(NFTType.CRYPTO_PUNKS)
+    })
+
+    it('should get type for alchemy ERC721', () => {
+      const type = nftService.getNftType({ id: { tokenMetadata: { tokenType: 'ERC721' } } })
+      expect(type).toBe(NFTType.ERC721)
+    })
+
+    it('should get type for nftPort ERC721', () => {
+      const type = nftService.getNftType(undefined, { contract: { type: 'ERC721' } })
+      expect(type).toBe(NFTType.ERC721)
+    })
+
+    it('should get type for alchemy ERC1155', () => {
+      const type = nftService.getNftType({ id: { tokenMetadata: { tokenType: 'ERC1155' } } })
+      expect(type).toBe(NFTType.ERC1155)
+    })
+
+    it('should get type for nftPort ERC1155', () => {
+      const type = nftService.getNftType(undefined, { contract: { type: 'ERC1155' } })
+      expect(type).toBe(NFTType.ERC1155)
+    })
+
+    it('should get type for alchemy UNKNOWN', () => {
+      const type = nftService.getNftType({ title: 'anything.eth' })
+      expect(type).toBe(NFTType.UNKNOWN)
+    })
+
+    it('should get type for nftPort UNKNOWN', () => {
+      const type = nftService.getNftType(undefined, { nft: { metadata: { name: 'something.eth' } } })
+      expect(type).toBe(NFTType.UNKNOWN)
+    })
+
+    it('should fail to undefined', () => {
+      const type = nftService.getNftType(undefined, undefined)
+      expect(type).toBeUndefined()
     })
   })
 })
