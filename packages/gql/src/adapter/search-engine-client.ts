@@ -43,6 +43,16 @@ export class SearchEngineClient {
     return !unsuccessful.length
   }
 
+  updateDocuments = async (collection: string,  documents: any[]): Promise<boolean> => {
+    let response
+    try {
+      response = await this._client.collections(collection).documents().import(documents, { action: 'update' })
+    } catch (e) {
+      logger.error(documents, 'Error in updating document in Typesense')
+    }
+    return this.isFullySuccessful(response)
+  }
+  
   insertDocuments = async (collection: string,  documents: any[]): Promise<boolean> => {
     let response
     try {
