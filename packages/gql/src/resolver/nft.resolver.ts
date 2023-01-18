@@ -22,6 +22,7 @@ const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
 // import { differenceInMilliseconds } from 'date-fns'
 import { Maybe } from 'graphql/jsutils/Maybe'
+import { IsNull } from 'typeorm'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { PageInput } from '@nftcom/gql/defs/gql'
@@ -627,7 +628,7 @@ const saveIncentiveActionsForProfile = async (
   const createAction = await repositories.incentiveAction.findOne({
     where: {
       profileUrl: profile.url,
-      userId: profile.ownerUserId,
+      userId: profile.ownerUserId ?? IsNull(),
       task: defs.ProfileTask.CREATE_NFT_PROFILE,
     },
   })
@@ -640,7 +641,7 @@ const saveIncentiveActionsForProfile = async (
     })
   }
   // save incentive action for CUSTOMIZE_PROFILE
-  if (profile.ownerUserId && profile.description && profile.photoURL) {
+  if (profile.description && profile.photoURL) {
     const edges = await repositories.edge.find({
       where: {
         thisEntityType: defs.EntityType.Profile,
@@ -654,7 +655,7 @@ const saveIncentiveActionsForProfile = async (
       const customizeAction = await repositories.incentiveAction.findOne({
         where: {
           profileUrl: profile.url,
-          userId: profile.ownerUserId,
+          userId: profile.ownerUserId ?? IsNull(),
           task: defs.ProfileTask.CUSTOMIZE_PROFILE,
         },
       })
@@ -1075,7 +1076,7 @@ const addListNFTsIncentiveAction = async (
       if (profile) {
         const existingAction = await repositories.incentiveAction.findOne({
           where: {
-            userId: profile.ownerUserId,
+            userId: profile.ownerUserId ?? IsNull(),
             profileUrl: profile.url,
             task: defs.ProfileTask.LIST_NFTS,
           },
