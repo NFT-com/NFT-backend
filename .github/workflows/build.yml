@@ -125,9 +125,78 @@ jobs:
         projectName: ${{fromJson(needs.get-affected.outputs.test-unit)}}
     env:
       NODE: ${{ matrix.node }}
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: ${{ secrets.TEST_DB_DATABASE }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PORT: ${{ secrets.TEST_DB_PORT }}
+          POSTGRES_USER: ${{ secrets.TEST_DB_USERNAME }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Make envfile
+        uses: SpicyPizza/create-envfile@v1.3
+        with:
+          envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          envkey_DB_HOST: 'postgres'
+          envkey_DB_PORT: ${{ secrets.TEST_DB_PORT }}
+          envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
+          envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
+          envkey_CONFIRM_EMAIL_URL: ${{ secrets.CONFIRM_EMAIL_URL }}
+          envkey_ASSET_BUCKET: ${{ secrets.ASSET_BUCKET }}
+          envkey_ASSET_BUCKET_ROLE: ${{ secrets.ASSET_BUCKET_ROLE }}
+          envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
+          envkey_TEAM_AUTH_TOKEN: ${{ secrets.TEAM_AUTH_TOKEN }}
+          envkey_MNEMONIC: ${{ secrets.MNEMONIC }}
+          envkey_MNEMONIC_RINKEBY: ${{ secrets.MNEMONIC_RINKEBY }}
+          envkey_HCS_TOPIC_ID: ${{ secrets.HCS_TOPIC_ID }}
+          envkey_HCS_ENABLED: ${{ secrets.HCS_ENABLED }}
+          envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
+          envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
+          envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
+          envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          envkey_CHAIN_ID: ${{ secrets.CHAIN_ID }}
+          envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          envkey_ACTIVITY_ENDPOINTS_ENABLED: ${{ secrets.ACTIVITY_ENDPOINTS_ENABLED }}
+          envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
+          envkey_ALCHEMY_API_URL_RINKEBY: ${{ secrets.ALCHEMY_API_URL_RINKEBY }}
+          envkey_ALCHEMY_API_URL_GOERLI: ${{ secrets.ALCHEMY_API_URL_GOERLI }}
+          envkey_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          envkey_PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
+          envkey_SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}
+          envkey_SHARED_MINT_SECRET: ${{ secrets.SHARED_MINT_SECRET }}
+          envkey_SUPPORTED_NETWORKS: ${{ secrets.SUPPORTED_NETWORKS }}
+          envkey_TYPESENSE_HOST: ${{ secrets.TYPESENSE_HOST }}
+          envkey_TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+          envkey_MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ secrets.MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
+          envkey_PROFILE_NFTS_EXPIRE_DURATION: ${{ secrets.PROFILE_NFTS_EXPIRE_DURATION }}
+          envkey_BULL_MAX_REPEAT_COUNT: ${{ secrets.BULL_MAX_REPEAT_COUNT }}
+          envkey_OPENSEA_API_KEY: ${{ secrets.OPENSEA_API_KEY }}
+          envkey_LOOKSRARE_API_KEY: ${{ secrets.LOOKSRARE_API_KEY }}
+          envkey_NFTPORT_KEY: ${{ secrets.NFTPORT_KEY }}
+          envkey_PROFILE_SCORE_EXPIRE_DURATION: ${{ secrets.PROFILE_SCORE_EXPIRE_DURATION }}
+          envkey_NFT_EXTERNAL_ORDER_REFRESH_DURATION: ${{ secrets.NFT_EXTERNAL_ORDER_REFRESH_DURATION }}
+          envkey_TEST_DB_HOST: 'postgres'
+          envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
+          envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
+          envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
+          envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
+          envkey_REFRESH_NFT_DURATION: ${{ secrets.REFRESH_NFT_DURATION }}
+          envkey_IPFS_WEB_GATEWAY: ${{ secrets.IPFS_WEB_GATEWAY }}
+          envkey_DEFAULT_TTL_MINS: ${{ secrets.DEFAULT_TTL_MINS }}
+          envkey_AUTH_EXPIRE_BY_DAYS: ${{ secrets.AUTH_EXPIRE_BY_DAYS }}
+          envkey_MULTICALL_CONTRACT: ${{ secrets.MULTICALL_CONTRACT }}
+          envkey_OFAC_API_KEY: ${{ secrets.OFAC_API_KEY }}
+          file_name: packages/gql/.env
+          fail_on_empty: false
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
