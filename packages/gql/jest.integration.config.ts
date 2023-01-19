@@ -8,7 +8,7 @@ export default {
     },
   },
   testEnvironment: 'node',
-  testMatch: ['**/?(*.)+.int.(spec|test).[jt]s?(x)'],
+  testMatch: ['**/?(*.)+int.(spec|test).[jt]s?(x)'],
   transform: {
     '^.+\\.[tj]s$': 'ts-jest',
   },
