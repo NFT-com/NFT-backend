@@ -241,8 +241,8 @@ jobs:
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
         run: cd packages/gql && npm run gql:gen
-      - name: Test unit
-        run: npx nx test ${{ matrix.projectName }}
+      - name: Test integrate
+        run: npx nx test:int ${{ matrix.projectName }}
   build-finished:
     runs-on: ubuntu-latest
     needs: [test-unit,test-int]
