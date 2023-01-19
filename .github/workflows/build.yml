@@ -131,13 +131,15 @@ jobs:
         env:
           POSTGRES_DB: ${{ secrets.TEST_DB_DATABASE }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_PORT: ${{ secrets.TEST_DB_PORT }}
+          POSTGRES_PORT: 5432
           POSTGRES_USER: ${{ secrets.TEST_DB_USERNAME }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - ${{ secrets.TEST_DB_PORT }}:5432
     steps:
       - name: Checkout
         uses: actions/checkout@v3
