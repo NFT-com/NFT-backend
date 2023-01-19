@@ -1160,6 +1160,34 @@ export const getOwnersOfGenesisKeys = async (
   }
 }
 
+export const getOwnersOfNFTProfile = async (
+  chainId: string,
+): Promise<string[]> => {
+  const contract = contracts.nftProfileAddress(chainId)
+  if (chainId !== '1' && chainId !== '5') return []
+  try {
+    const key = `${CacheKeys.NFT_PROFILE_OWNERS}_${chainId}`
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return JSON.parse(cachedData) as string[]
+    }
+
+    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
+    if (res && res?.data && res.data?.ownerAddresses) {
+      const profileOwners = res.data.ownerAddresses as string[]
+      await cache.set(key, JSON.stringify(profileOwners), 'EX', 60)
+      return profileOwners
+    } else {
+      return Promise.reject(`No owner found for NFT profile on chain ${chainId}`)
+    }
+  } catch (err) {
+    logger.error(`Error in getOwnersOfNFTProfile: ${err}`)
+    Sentry.captureMessage(`Error in getOwnersOfNFTProfile: ${err}`)
+    throw err
+  }
+}
+
 export const hideAllNFTs = async (
   repositories: db.Repository,
   profileId: string,
