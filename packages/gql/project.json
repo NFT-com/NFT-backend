@@ -46,6 +46,14 @@
         "jestConfig": "packages/gql/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "test:int": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/gql-integration"],
+      "options": {
+        "jestConfig": "packages/gql/jest.integration.config.ts",
+        "passWithNoTests": true
+      }
     }
   },
   "tags": []
