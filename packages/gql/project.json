@@ -51,7 +51,7 @@
       "executor": "@nrwl/jest:jest",
       "outputs": ["coverage/packages/gql-integration"],
       "options": {
-        "jestConfig": "packages/gql/jest.integration.config.ts",
+        "jestConfig": "packages/gql/jest.config.integration.ts",
         "passWithNoTests": true
       }
     }
