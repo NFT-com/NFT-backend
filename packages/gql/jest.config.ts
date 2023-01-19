@@ -8,7 +8,7 @@ export default {
     },
   },
   testEnvironment: 'node',
-  testRegex: '^.+\\.unit\\.spec\\.[tj]s$',
+  testMatch: ['**/?(*.)+.unit.(spec|test).[jt]s?(x)'],
   transform: {
     '^.+\\.[tj]s$': 'ts-jest',
   },
