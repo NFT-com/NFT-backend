@@ -68,8 +68,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
-          id: branch-name
-          uses: tj-actions/branch-names@v6
+        id: branch-name
+        uses: tj-actions/branch-names@v6
       - name: Get base branch name
         id: get-base-branch-name
         run: |
