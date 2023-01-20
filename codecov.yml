@@ -1,3 +1,6 @@
+fixes:
+  - "unit-coverage/::"
+  - "integration-coverage/::"
 ignore:
   - "packages/gql/src/tracer.ts"
   - "packages/gql/src/job/job.ts"
