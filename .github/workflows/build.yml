@@ -340,6 +340,11 @@ jobs:
     steps:
       - name: Download Coverage
         uses: actions/download-artifact@v3
+        with:
+          path: ./coverage
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: ./coverage
       - name: ✅ Upload coverage to Codecov
         uses: codecov/codecov-action@v3.1.0
         with:
