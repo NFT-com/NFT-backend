@@ -299,6 +299,12 @@ jobs:
           envkey_OFAC_API_KEY: ${{ secrets.OFAC_API_KEY }}
           file_name: packages/gql/.env
           fail_on_empty: false
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
