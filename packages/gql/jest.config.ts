@@ -1,7 +1,7 @@
 /* eslint-disable */
 require('dotenv').config()
 if (!process.env.TEAM_AUTH_TOKEN) {
-  require('child_process').execSync('doppler run -- printenv').toString().split('\n').reduce((acc, envStr) => {
+  require('child_process').execSync('doppler run -- printenv').toString().split('\n').reduce((acc: any, envStr: string) => {
     const name = envStr.split('=')[0]
     acc[name] = envStr.substring(name.length + 1)
     return acc

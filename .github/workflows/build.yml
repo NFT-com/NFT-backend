@@ -99,12 +99,12 @@ jobs:
           cache: 'npm'
       - name: Cache Node Modules
         id: cache-node-modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: Get affected
         id: get-projects-arrays
@@ -199,12 +199,12 @@ jobs:
           cache: 'npm'
       - name: Cache Node Modules
         id: cache-node-modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
@@ -306,12 +306,12 @@ jobs:
           cache: 'npm'
       - name: Cache Node Modules
         id: cache-node-modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
