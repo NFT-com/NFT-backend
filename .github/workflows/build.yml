@@ -97,8 +97,12 @@ jobs:
         with:
           node-version: "16.x"
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            cronjobs/sales-processor/package-lock.json
+            packages/shared/package-lock.json
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: Get affected
         id: get-projects-arrays
         # When not in a PR and the current branch is main, pass --all flag. Otherwise pass the base branch
@@ -190,8 +194,12 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            cronjobs/sales-processor/package-lock.json
+            packages/shared/package-lock.json
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
         run: cd packages/gql && npm run gql:gen
@@ -216,7 +224,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_DB: ${{ secrets.TEST_DB_DATABASE }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
           POSTGRES_PORT: 5432
           POSTGRES_USER: ${{ secrets.TEST_DB_USERNAME }}
         options: >-
@@ -290,8 +298,12 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            cronjobs/sales-processor/package-lock.json
+            packages/shared/package-lock.json
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
         run: cd packages/gql && npm run gql:gen
