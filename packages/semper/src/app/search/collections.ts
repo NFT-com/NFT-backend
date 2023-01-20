@@ -11,7 +11,7 @@ const PROFILE_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
 const GK_CONTRACT = process.env.TYPESENSE_HOST.startsWith('dev') ?
   '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
 
-const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 2)
+const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 3)
 
 export const collectionNames = ['collections', 'nfts']
 
@@ -35,7 +35,6 @@ const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): num
   const score = curatedVal + officialVal + listingsVal
   if (score === 3) {
     const multiplier = LARGEST_COLLECTIONS.includes(collection.contract)
-      && Math.floor(Math.random() * 10) % 10 !== 0
       ? 9_000_000
       : 10_000_000
     return score + Math.floor(Math.random() * multiplier)

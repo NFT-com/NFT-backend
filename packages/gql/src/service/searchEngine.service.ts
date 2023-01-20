@@ -53,7 +53,7 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   }
 }
 
-const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 2)
+const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 3)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
   const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
     const curatedVal = collection?.isCurated ? 1 : 0
@@ -62,14 +62,13 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     const score = curatedVal + officialVal + listingsVal
     if (score === 3) {
       const multiplier = LARGEST_COLLECTIONS.includes(collection.contract)
-        && Math.floor(Math.random() * 10) % 10 !== 0
         ? 9_000_000
         : 10_000_000
       return score + Math.floor(Math.random() * multiplier)
     }
     return score
   }
-  const indexNFTs = async (nfts: entity.NFT[], updateOnly?: boolean): Promise<boolean> => {
+  const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
     try {
       const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
@@ -181,11 +180,6 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           score: _calculateNFTScore(collection, !!listings.length) || 0,
         }
       }))
-
-      if (updateOnly) {
-        return client.updateDocuments('nfts', nftsToIndex)
-      }
-
       return client.insertDocuments('nfts', nftsToIndex)
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
@@ -203,7 +197,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     const nftcomVal = [PROFILE_CONTRACT, GK_CONTRACT].includes(collection.contract) ? 1000000 : 0
     return officialVal + curatedVal + nftcomVal
   }
-  const indexCollections = async (collections: entity.Collection[], updateOnly?: boolean): Promise<boolean> => {
+  const indexCollections = async (collections: entity.Collection[]): Promise<boolean> => {
     try {
       const collectionsToIndex = await Promise.all(
         collections
@@ -236,11 +230,6 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
             }
           }),
       )
-
-      if (updateOnly) {
-        return client.updateDocuments('collections', collectionsToIndex)
-      }
-
       return client.insertDocuments('collections', collectionsToIndex)
     } catch (err) {
       Sentry.captureMessage(`Error in indexCollections: ${err}`)
