@@ -239,7 +239,7 @@ describe.skip('trading', () => {
       await clearDB(repositories)
       await testServer.stop()
     })
-    xit('should throw MARKET_BID_INVALID error', async () => {
+    it('should throw MARKET_BID_INVALID error', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation CreateMarketBid($input: CreateBidInput!) { createMarketBid(input: $input) { orderHash } }',
         variables: {
