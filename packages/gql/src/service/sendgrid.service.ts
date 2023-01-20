@@ -6,7 +6,6 @@ import { confirmEmailUrl, sgAPIKey } from '@nftcom/gql/config'
 import { _logger, entity, fp, helper } from '@nftcom/shared'
 import sendgrid from '@sendgrid/mail'
 
-console.log({ sgAPIKey, SG_API_KEY: process.env['SG_API_KEY'] })
 sendgrid.setApiKey(sgAPIKey)
 const logger = _logger.Factory(_logger.Context.SendGrid, _logger.Context.General)
 const from = {

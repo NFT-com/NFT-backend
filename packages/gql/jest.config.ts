@@ -1,4 +1,13 @@
 /* eslint-disable */
+require('dotenv').config()
+if (!process.env.TEAM_AUTH_TOKEN) {
+  require('child_process').execSync('doppler run -- printenv').toString().split('\n').reduce((acc, envStr) => {
+    const name = envStr.split('=')[0]
+    acc[name] = envStr.substring(name.length + 1)
+    return acc
+  }, process.env)
+}
+
 export default {
   displayName: 'gql',
   preset: '../../jest.preset.js',

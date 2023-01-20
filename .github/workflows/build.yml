@@ -97,11 +97,14 @@ jobs:
         with:
           node-version: "16.x"
           cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            cronjobs/sales-processor/package-lock.json
-            packages/shared/package-lock.json
+      - name: Cache Node Modules
+        id: cache-node-modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: Get affected
         id: get-projects-arrays
@@ -194,17 +197,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            cronjobs/sales-processor/package-lock.json
-            packages/shared/package-lock.json
+      - name: Cache Node Modules
+        id: cache-node-modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
         run: cd packages/gql && npm run gql:gen
       - name: Test unit
-        run: npx nx test ${{ matrix.projectName }}
+        run: npx nx test ${{ matrix.projectName }} --ci --coverage --forceExit
   test-int:
     runs-on: ubuntu-latest
     environment: nftcom_dev
@@ -298,17 +304,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            cronjobs/sales-processor/package-lock.json
-            packages/shared/package-lock.json
+      - name: Cache Node Modules
+        id: cache-node-modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
         run: cd packages/gql && npm run gql:gen
       - name: Test integrate
-        run: npx nx test:int ${{ matrix.projectName }}
+        run: npx nx test:int ${{ matrix.projectName }} --ci --coverage --forceExit
   build-finished:
     runs-on: ubuntu-latest
     needs: [test-unit,test-int]
