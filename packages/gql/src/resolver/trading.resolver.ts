@@ -11,6 +11,7 @@ import {
   parseContractsFromNativeAsset,
   parseNFTIdsFromNativeAsset,
 } from '@nftcom/gql/defs'
+import { getOwnersOfGenesisKeys, getOwnersOfNFTProfile } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import {
   _logger,
@@ -473,6 +474,23 @@ const validOrderMatch = async (
   return true
 }
 
+const ownedProfileOrGK = async (
+  address: string,
+  chainId: string,
+): Promise<boolean> => {
+  try {
+    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    let index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === ethers.utils.getAddress(address))
+    if (index !== -1) return true
+    const profileOwners = await getOwnersOfNFTProfile(chainId)
+    index = profileOwners.findIndex((owner) => ethers.utils.getAddress(owner) === ethers.utils.getAddress(address))
+    return index !== -1
+  } catch (err) {
+    logger.error('error in ownedProfileOrGK: ', err)
+    throw err
+  }
+}
+
 const createBid = async (
   _: any,
   args: gql.MutationCreateMarketBidArgs,
@@ -554,6 +572,14 @@ const createBid = async (
       return Promise.reject(appError.buildInvalid(
         marketBidError.buildMarketBidInvalidMsg(),
         marketBidError.ErrorType.MarketBidInvalid,
+      ))
+    }
+
+    const isAvailable = await ownedProfileOrGK(args?.input.makerAddress, chainId)
+    if (!isAvailable) {
+      return Promise.reject(appError.buildInvalid(
+        marketBidError.buildMakerNotOwnedProfileOrGK(args?.input.makerAddress),
+        marketBidError.ErrorType.MakerNotOwnedProfileOrGK,
       ))
     }
 

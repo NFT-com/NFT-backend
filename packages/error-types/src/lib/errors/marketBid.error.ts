@@ -7,6 +7,7 @@ export enum ErrorType {
   MarketBidUnavailable = 'MARKET_BID_UNAVAILABLE',
   MakerAddressNotOwned = 'MAKER_ADDRESS_NOT_OWNED',
   TxHashInvalid = 'TX_HASH_INVALID',
+  MakerNotOwnedProfileOrGK = 'MAKER_NOT_OWNED_PROFILE_OR_GK'
 }
 
 export const buildMarketListingNotFoundMsg = (): string => 'MarketListing not found'
@@ -24,3 +25,5 @@ export const buildMarketBidUnavailableMsg = (walletAddress: string): string => `
 export const buildMakerAddressNotOwnedMsg = (): string => 'MakerAddress is not owned'
 
 export const buildTxHashInvalidMsg = (txHash: string): string => `TxHash ${txHash} is not valid`
+
+export const buildMakerNotOwnedProfileOrGK = (address: string): string => `Maker ${address} does not own Genesis key or profile.`
