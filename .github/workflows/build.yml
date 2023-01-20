@@ -99,12 +99,12 @@ jobs:
           cache: 'npm'
       - name: Cache Node Modules
         id: cache-node-modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: Get affected
         id: get-projects-arrays
@@ -122,6 +122,7 @@ jobs:
       test-int: ${{ steps.get-projects-arrays.outputs.test-int }}
   test-unit:
     runs-on: ubuntu-latest
+    environment: nftcom_dev
     needs: [get-affected]
     # Skip the job if there are not affected projects containing unit tests
     if:  ${{ fromJson(needs.get-affected.outputs.test-unit)[0] }}
@@ -190,8 +191,7 @@ jobs:
           envkey_AUTH_EXPIRE_BY_DAYS: ${{ secrets.AUTH_EXPIRE_BY_DAYS }}
           envkey_MULTICALL_CONTRACT: ${{ secrets.MULTICALL_CONTRACT }}
           envkey_OFAC_API_KEY: ${{ secrets.OFAC_API_KEY }}
-          file_name: packages/gql/.env
-          fail_on_empty: false
+          directory: packages/gql/
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
@@ -199,12 +199,12 @@ jobs:
           cache: 'npm'
       - name: Cache Node Modules
         id: cache-node-modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
@@ -306,12 +306,12 @@ jobs:
           cache: 'npm'
       - name: Cache Node Modules
         id: cache-node-modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
         run: npm ci
       - name: GQL Generate
         if: ${{ matrix.projectName == 'gql' }}
