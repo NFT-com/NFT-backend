@@ -323,7 +323,7 @@ jobs:
         if: ${{ matrix.projectName == 'gql' }}
         run: cd packages/gql && npm run gql:gen
       - name: Test integrate
-        run: npx nx test:int ${{ matrix.projectName }} --ci --runInBand --coverage --forceExit
+        run: npx nx test:int ${{ matrix.projectName }} --ci --coverage --forceExit
   build-finished:
     runs-on: ubuntu-latest
     needs: [test-unit,test-int]
