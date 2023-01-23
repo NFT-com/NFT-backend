@@ -319,6 +319,9 @@ const getProfileByURL = (
           args.url,
         )
       })))
+    .catch((err) => {
+      console.log({ err })
+    })
 }
 
 const getWinningBid = (
@@ -924,6 +927,7 @@ const leaderboard = async (
         numberOfCollections: collectionInfo.collectionCount,
         photoURL: profile.photoURL,
         url: profile.url,
+        isGKMinted: profile.isGKMinted,
       })
       index++
     }
