@@ -111,6 +111,7 @@ type NFTPortTxByContractNft {
 }
 
 type NFTPortTxByContractTransactions {
+  index: Int
   type: String
   owner_address: String
   contract_address: String
@@ -125,14 +126,15 @@ type NFTPortTxByContractTransactions {
   buyer_address: String
   seller_address: String
   marketplace: String
+  protocolData: TxProtocolData
   price_details: NFTPortTxByContractPriceDetails
   nft: NFTPortTxByContractNft
 }
 
-type NFTPortTxByContract {
-  response: String
-  continuation: String
-  transactions: [NFTPortTxByContractTransactions]
+type GetTxByContract {
+  items: [NFTPortTxByContractTransactions]
+  pageInfo: PageInfo
+  totalItems: Int
 }
 
 type NFTPortTxByNFTPriceDetails {
@@ -156,6 +158,7 @@ type NFTPortTxByNFTNft {
 }
 
 type NFTPortTxByNFTTransactions {
+  index: Int
   type: String
   lister_address: String
   quantity: Int
@@ -173,13 +176,14 @@ type NFTPortTxByNFTTransactions {
   seller_address: String
   price_details: NFTPortTxByNFTPriceDetails
   listing_details: NFTPortTxByNFTListingDetails
+  protocolData: TxProtocolData
   nft: NFTPortTxByNFTNft
 }
 
-type NFTPortTxByNFT {
-  response: String
-  continuation: String
-  transactions: [NFTPortTxByNFTTransactions]
+type GetTxByNFT {
+  items: [NFTPortTxByNFTTransactions]
+  pageInfo: PageInfo
+  totalItems: Int
 }
 
 type TransactionSales {
@@ -222,8 +226,7 @@ input TransactionsByContractInput {
   contractAddress: String!
   chain: String # only ethereum allowed right now
   type: [String] # Value in [transfer, mint, burn, sale, all]
-  continuation: String
-  pageSize: Int
+  pageInput: PageInput,
 }
 
 input TransactionsByNFTInput {
@@ -231,8 +234,7 @@ input TransactionsByNFTInput {
   tokenId: String!
   chain: String # only ethereum allowed right now
   type: [String] # Value in [transfer, mint, burn, sale, all]
-  continuation: String
-  pageSize: Int
+  pageInput: PageInput
 }
 
 input TransactionSalesInput {
@@ -244,7 +246,7 @@ input TransactionSalesInput {
 extend type Query {
   getNFTDetails(input: NFTDetailInput): NFTDetail
   getContractSalesStatistics(input: ContractSalesStatisticsInput): ContractSalesStatistics
-  getTxByContract(input: TransactionsByContractInput): NFTPortTxByContract
-  getTxByNFT(input: TransactionsByNFTInput): NFTPortTxByNFT
+  getTxByContract(input: TransactionsByContractInput): GetTxByContract
+  getTxByNFT(input: TransactionsByNFTInput): GetTxByNFT
   getSales(input: TransactionSalesInput): [TransactionSales]
 }

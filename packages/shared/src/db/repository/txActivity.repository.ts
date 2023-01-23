@@ -131,7 +131,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   // activities for collection
   public findActivitiesForCollection = (
     contract: string,
-    activityType: ActivityType,
+    activityTypes: ActivityType[],
   ): Promise<TxActivity[]> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
@@ -139,12 +139,16 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return queryBuilder
       .where({
         nftContract: contract,
-        activityType,
+        activityType: In(activityTypes),
         status: ActivityStatus.Valid,
       })
       .orderBy({ 'activity.updatedAt': 'DESC' })
       .leftJoinAndMapOne('activity.order', 'TxOrder',
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
       .cache(true)
       .getMany()
   }
@@ -153,7 +157,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   public findActivitiesForNFT = (
     contract: string,
     tokenId: string,
-    activityType: ActivityType,
+    activityTypes: ActivityType[],
   ): Promise<TxActivity[]> => {
     const nftId = `ethereum/${contract}/${tokenId}`
 
@@ -163,13 +167,17 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return queryBuilder
       .where({
         nftContract: contract,
-        activityType,
+        activityType: In(activityTypes),
         status: ActivityStatus.Valid,
       })
       .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
       .orderBy({ 'activity.updatedAt': 'DESC' })
       .leftJoinAndMapOne('activity.order', 'TxOrder',
         'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
       .cache(true)
       .getMany()
   }
