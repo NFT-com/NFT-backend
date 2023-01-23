@@ -82,7 +82,7 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
 export const mapCollectionData = async (
   collectionName: string,
   data: any[],
-  _repos: any,
+  repos: any,
   listingMap?: { [k:string]: TxActivityDAO[] },
 ): Promise<any[]> => {
   const result = []
@@ -115,6 +115,13 @@ export const mapCollectionData = async (
       const nft = data[i] as NFTDao
 
       const tokenId = BigNumber.from(nft.tokenId).toString()
+      const profile = nft.contract === PROFILE_CONTRACT
+        ? await repos.profile.findOne({
+          where: {
+            tokenId: BigNumber.from(nft.tokenId).toString(),
+          },
+        })
+        : undefined
       let traits = []
       if (nft.metadata?.traits?.length < 100) {
         traits = nft.metadata.traits.map((trait) => {
@@ -166,6 +173,7 @@ export const mapCollectionData = async (
           }
         }
       }
+      const gkExpirationYear = 3021
       result.push({
         id: nft.id,
         nftName: nft.metadata?.name ? `${nft.metadata?.name}` : `#${tokenId}`,
@@ -182,6 +190,7 @@ export const mapCollectionData = async (
         status: '', //  HasOffers, BuyNow, New, OnAuction
         rarity: parseFloat(nft.rarity) || 0.0,
         isProfile: nft.contract === PROFILE_CONTRACT,
+        isProfileGKMinted: profile?.expireAt.getFullYear() >= gkExpirationYear,
         issuance: nft.collection?.issuanceDate ? new Date(nft.collection?.issuanceDate).getTime() : 0,
         hasListings: listings.length ? 1 : 0,
         score: calculateNFTScore(nft.collection, !!listings.length),
