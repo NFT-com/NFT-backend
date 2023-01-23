@@ -54,13 +54,15 @@ const fetchTxsFromNFTPort = async (
   tokenId?: string,
 ): Promise<any[]> => {
   try {
+    const availableTypes = ['transfer', 'burn', 'mint', 'sale', 'all']
+    const filteredType = type.filter((t) => availableTypes.indexOf(t) !== -1)
     const nftPortResult = []
     let args, cacheKey
     if (tokenId) {
-      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(type)}_${contractAddress}_${tokenId}`
+      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}_${tokenId}`
       args = [contractAddress, tokenId]
     } else {
-      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(type)}_${contractAddress}`
+      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}`
       args = [contractAddress]
     }
     const cachedData = await cache.get(cacheKey)
