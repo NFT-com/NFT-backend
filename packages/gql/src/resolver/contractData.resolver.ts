@@ -4,8 +4,8 @@ import Joi from 'joi'
 import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
-import { joi, pagination } from '@nftcom/gql/helper'
-import { safeInput } from '@nftcom/gql/helper/pagination'
+import { joi } from '@nftcom/gql/helper'
+import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -216,41 +216,11 @@ export const getTxByContract = async (
       cacheKey,
       JSON.stringify(txActivities),
       'EX',
-      10 * 60, // 5 min
+      10 * 60, // 10 min
     )
-
-    let paginatedTxs: Array<gql.NFTPortTxByContractTransactions>
-    let defaultCursor
-    if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
-      defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
-        { afterCursor: txActivities.length.toString() }
-    }
-
-    const safePageInput = safeInput(pageInput, defaultCursor)
-
-    let totalItems
-    if (pagination.hasFirst(safePageInput)) {
-      const cursor = pagination.hasAfter(safePageInput) ?
-        safePageInput.afterCursor : safePageInput.beforeCursor
-      paginatedTxs = txActivities.filter((leader) => leader.index > Number(cursor))
-      totalItems = paginatedTxs.length
-      paginatedTxs = paginatedTxs.slice(0, safePageInput.first)
-    } else {
-      const cursor = pagination.hasAfter(safePageInput) ?
-        safePageInput.afterCursor : safePageInput.beforeCursor
-      paginatedTxs = txActivities.filter((leader) => leader.index < Number(cursor))
-      totalItems = paginatedTxs.length
-      paginatedTxs =
-        paginatedTxs.slice(paginatedTxs.length - safePageInput.last)
-    }
-
-    return pagination.toPageable(
-      pageInput,
-      paginatedTxs[0],
-      paginatedTxs[paginatedTxs.length - 1],
-      'index',
-    )([paginatedTxs, totalItems])
   }
+
+  return paginatedResultFromIndexedArray(txActivities, pageInput)
 }
 
 export const getTxByNFT = async (
@@ -323,41 +293,11 @@ export const getTxByNFT = async (
       cacheKey,
       JSON.stringify(txActivities),
       'EX',
-      10 * 60, // 5 min
+      10 * 60, // 10 min
     )
-
-    let paginatedTxs: Array<gql.NFTPortTxByNftTransactions>
-    let defaultCursor
-    if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
-      defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
-        { afterCursor: txActivities.length.toString() }
-    }
-
-    const safePageInput = safeInput(pageInput, defaultCursor)
-
-    let totalItems
-    if (pagination.hasFirst(safePageInput)) {
-      const cursor = pagination.hasAfter(safePageInput) ?
-        safePageInput.afterCursor : safePageInput.beforeCursor
-      paginatedTxs = txActivities.filter((leader) => leader.index > Number(cursor))
-      totalItems = paginatedTxs.length
-      paginatedTxs = paginatedTxs.slice(0, safePageInput.first)
-    } else {
-      const cursor = pagination.hasAfter(safePageInput) ?
-        safePageInput.afterCursor : safePageInput.beforeCursor
-      paginatedTxs = txActivities.filter((leader) => leader.index < Number(cursor))
-      totalItems = paginatedTxs.length
-      paginatedTxs =
-        paginatedTxs.slice(paginatedTxs.length - safePageInput.last)
-    }
-
-    return pagination.toPageable(
-      pageInput,
-      paginatedTxs[0],
-      paginatedTxs[paginatedTxs.length - 1],
-      'index',
-    )([paginatedTxs, totalItems])
   }
+
+  return paginatedResultFromIndexedArray(txActivities, pageInput)
 }
 
 export const getSales = async (_: any, args: gql.QueryGetSalesArgs, _ctx: any): Promise<any> => {
