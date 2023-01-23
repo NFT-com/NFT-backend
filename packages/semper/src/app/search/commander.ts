@@ -208,11 +208,12 @@ class Commander {
 
   private _indexNFTCollection = async (collectionName: string, contract: string, listingMap: any): Promise<string> => {
     const name = 'nfts'
+    const repositories = this.repositories
     const mapNFTs = new Transform({
       readableObjectMode: true,
       writableObjectMode: true,
       async transform(chunk, _encoding, callback) {
-        const mappedData = (await mapCollectionData(name, [chunk], undefined, listingMap))
+        const mappedData = (await mapCollectionData(name, [chunk], repositories, listingMap))
           .filter((x) => x !== undefined)
         callback(null, mappedData)
       },
@@ -358,17 +359,17 @@ class Commander {
     await this.seService.indexNFTs(nftsWithListingUpdates)
   }
 
-  private _dropFields = (fields: string[]): { name: string; drop: boolean }[] => {
-    return fields.map(field => {
+  private _dropFields = (fields: string[], newFields: string[]): { name: string; drop: boolean }[] => {
+    return fields.filter((field) => !newFields.includes(field)).map(field => {
       return { name: field, drop: true }
     })
   }
-  update = async (collection: string, fields: string[]): Promise<void> => {
+  update = async (collection: string, fields: string[], newFields: string[]): Promise<void> => {
     for (const schema of schemas) {
       if (schema.name === collection) {
         const updateSchema = {
           fields: [
-            ...this._dropFields(fields),
+            ...this._dropFields(fields, newFields),
             ...schema.fields.filter(field => fields.includes(field.name)),
           ],
         }
