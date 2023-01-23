@@ -10,7 +10,7 @@ import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
+const logger = _logger.Factory(_logger.Context.ContractData, _logger.Context.GraphQL)
 
 type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
 
