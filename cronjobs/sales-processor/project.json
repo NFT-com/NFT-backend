@@ -1,5 +1,5 @@
 {
-  "name": "..-cronjobs-sales-processor",
+  "name": "sales-processor",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "cronjobs/sales-processor/src",
   "projectType": "application",
@@ -27,11 +27,11 @@
     "serve": {
       "executor": "@nrwl/js:node",
       "options": {
-        "buildTarget": "..-cronjobs-sales-processor:build"
+        "buildTarget": "sales-processor:build"
       },
       "configurations": {
         "production": {
-          "buildTarget": "..-cronjobs-sales-processor:build:production"
+          "buildTarget": "sales-processor:build:production"
         }
       }
     },

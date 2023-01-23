@@ -1,6 +1,6 @@
 /* eslint-disable */
 export default {
-  displayName: 'gql',
+  displayName: 'gql-integration',
   preset: '../../jest.preset.js',
   globals: {
     'ts-jest': {
@@ -8,7 +8,7 @@ export default {
     },
   },
   testEnvironment: 'node',
-  testMatch: ['**/?(*.)+(unit).(spec|test).[jt]s?(x)'],
+  testMatch: ['**/?(*.)+(int).(spec|test).[jt]s?(x)'],
   transform: {
     '^.+\\.[tj]s$': 'ts-jest',
   },

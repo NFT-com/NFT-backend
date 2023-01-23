@@ -1,5 +1,9 @@
 {
   "extends": "nx/presets/npm.json",
+  "affected": {
+    "defaultBase": "main"
+  },
+  "npmScope": "@nftcom",
   "tasksRunnerOptions": {
     "default": {
       "runner": "nx/tasks-runners/default",
@@ -31,6 +35,14 @@
       }
     }
   },
+  "implicitDependencies": {
+    "package-lock.json": "*",
+    "package.json": {
+      "dependencies": "*",
+      "devDependencies": "*"
+    },
+    "nx.json": "*"
+  },
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"]
@@ -39,7 +51,9 @@
       "inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"]
     }
   },
-  "affected": {
-    "defaultBase": "main"
+  "pluginsConfig": {
+    "@nrwl/js": {
+      "analyzeSourceFiles": true
+    }
   }
 }
