@@ -75,6 +75,7 @@ const fetchTxsFromNFTPort = async (
         chain,
         type: type,
         page_size: 50,
+        cacheSeconds: 60 * 10,
       },
     })
     if (res?.data?.transactions) {
@@ -89,6 +90,7 @@ const fetchTxsFromNFTPort = async (
               type: type,
               continuation,
               page_size: 50,
+              cacheSeconds: 60 * 10,
             },
           })
           if (res?.data?.transactions) {
