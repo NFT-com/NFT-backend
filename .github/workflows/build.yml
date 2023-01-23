@@ -338,13 +338,12 @@ jobs:
       (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') &&
       (needs.test-int.result == 'success' || needs.test-int.result == 'skipped')
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Download Coverage
         uses: actions/download-artifact@v3
         with:
           path: ./coverage
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: ./coverage
       - name: ✅ Upload coverage to Codecov
         uses: codecov/codecov-action@v3.1.0
         with:
