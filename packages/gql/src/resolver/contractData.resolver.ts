@@ -1,4 +1,4 @@
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import Joi from 'joi'
 import * as _lodash from 'lodash'
 
@@ -64,7 +64,7 @@ const fetchTxsFromNFTPort = async (
     const nftPortResult = []
     let args, cacheKey
     if (tokenId) {
-      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}_${tokenId}`
+      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}_${BigNumber.from(tokenId).toHexString()}`
       args = [contractAddress, tokenId]
     } else {
       cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}`
@@ -83,10 +83,10 @@ const fetchTxsFromNFTPort = async (
         cacheSeconds: 60 * 10,
       },
     })
-    if (res?.data?.transactions) {
-      nftPortResult.push(res?.data?.transactions)
-      if (res?.data?.continuation) {
-        let continuation = res?.data?.continuation
+    if (res?.transactions) {
+      nftPortResult.push(...res.transactions)
+      if (res?.continuation) {
+        let continuation = res?.continuation
         // eslint-disable-next-line no-constant-condition
         while (true) {
           res = await fetchData(endpoint, args, {
@@ -98,10 +98,10 @@ const fetchTxsFromNFTPort = async (
               cacheSeconds: 60 * 10,
             },
           })
-          if (res?.data?.transactions) {
-            nftPortResult.push(res?.data?.transactions)
-            if (res?.data?.continuation) {
-              continuation = res?.data?.continuation
+          if (res?.transactions) {
+            nftPortResult.push(...res.transactions)
+            if (res?.continuation) {
+              continuation = res?.continuation
             } else {
               break
             }
@@ -193,7 +193,6 @@ export const getTxByContract = async (
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
       let activity: gql.NFTPortTxByContractTransactions = {
-        index: i,
         type: activityDAO.activityType.toLowerCase(),
         owner_address: activityDAO.order.makerAddress,
         contract_address: ethers.utils.getAddress(contractAddress),
@@ -263,7 +262,7 @@ export const getTxByNFT = async (
   })
   joi.validateSchema(schema, args.input)
   const { contractAddress, tokenId, chain, type, pageInput } = args.input
-  const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${tokenId}`
+  const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}`
   const cachedData = await cache.get(cacheKey)
   let indexedActivities: Array<gql.NFTPortTxByNftTransactions> = []
 
@@ -275,14 +274,13 @@ export const getTxByNFT = async (
     const activityTypes = parseTypesToActivityTypes(type || ['all'])
     const activities = await repositories.txActivity.findActivitiesForNFT(
       ethers.utils.getAddress(contractAddress),
-      tokenId,
+      BigNumber.from(tokenId).toHexString(),
       activityTypes,
     )
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
       let activity: gql.NFTPortTxByNftTransactions = {
-        index: i,
         type: activityDAO.activityType.toLowerCase(),
         owner_address: activityDAO.order.makerAddress,
         contract_address: ethers.utils.getAddress(contractAddress),
@@ -290,7 +288,7 @@ export const getTxByNFT = async (
         marketplace: activityDAO.order.protocol,
         nft: {
           contract_address: contractAddress,
-          token_id: tokenId,
+          token_id: BigNumber.from(tokenId).toHexString(),
         },
         updatedAt: activityDAO.updatedAt,
       }
@@ -321,7 +319,6 @@ export const getTxByNFT = async (
     })
 
     // 3. sort result
-    const indexedActivities = []
     let index = 0
     txActivities = _lodash.orderBy(txActivities, ['updatedAt'], ['desc'])
     txActivities.map((activity) => {

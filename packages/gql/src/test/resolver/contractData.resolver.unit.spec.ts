@@ -1,6 +1,15 @@
 import axios from 'axios'
+import { DataSource } from 'typeorm'
 
-import { getContractSalesStatistics, getNFTDetails, getTxByContract, getTxByNFT } from '@nftcom/gql/resolver/contractData.resolver'
+import { testDBConfig } from '@nftcom/gql/config'
+import { getContractSalesStatistics, getNFTDetails } from '@nftcom/gql/resolver/contractData.resolver'
+import { testMockWallet, testMockWatchlistUser } from '@nftcom/gql/test/util/constants'
+import { clearDB } from '@nftcom/gql/test/util/helpers'
+import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'
+import { db } from '@nftcom/shared/db'
+
+jest.setTimeout(300000)
+jest.retryTimes(2)
 
 jest.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
@@ -22,12 +31,30 @@ jest.mock('@nftcom/cache', () => ({
     get: jest.fn(),
     set: jest.fn(),
   },
+  CacheKeys: {
+    GET_TX_BY_CONTRACT: 'get_tx_by_contract',
+    GET_TX_BY_NFT: 'get_tx_by_nft',
+  },
 }))
 
+const repositories = db.newRepositories()
+let connection : DataSource
+let testServer
+
 describe('contract data resolver', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.destroy()
+  })
+
   afterEach(() => {
     jest.resetAllMocks()
   })
+
   describe('getNFTDetails', () => {
     it('should return nft details', async () => {
       const nftDetails = {
@@ -114,6 +141,18 @@ describe('contract data resolver', () => {
   })
 
   describe('getTxByContract', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(
+        repositories,
+        testMockWatchlistUser,
+        testMockWallet,
+      )
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
     it('should return transactions by contract', async () => {
       const transactions = {
         'response': 'OK',
@@ -163,18 +202,48 @@ describe('contract data resolver', () => {
             'marketplace': 'opensea',
           },
         ],
-        'continuation': '1661909438000_630eb9c3816e600b96b5cdc5',
       }
       mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: transactions }))
 
-      const response = await getTxByContract(undefined, { input: { contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D' } }, undefined)
+      const result = await testServer.executeOperation({
+        query: `query GetTxByContract($input: TransactionsByContractInput) {
+                getTxByContract(input: $input) {
+                  items {
+                    index
+                  }
+                  totalItems
+                }
+              }`,
+        variables: {
+          input: {
+            contractAddress: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
+            chain: 'ethereum',
+            type: ['all'],
+            pageInput: {
+              first: 50,
+            },
+          },
+        },
+      })
+      expect(result.data.getTxByContract.items.length).toEqual(3)
 
       expect(mockedAxios.get).toHaveBeenCalled()
-      expect(response).toEqual(transactions)
     })
   })
 
   describe('getTxByNFT', () => {
+    beforeAll(async () => {
+      testServer = getTestApolloServer(
+        repositories,
+        testMockWatchlistUser,
+        testMockWallet,
+      )
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
     it('should return transactions by NFT', async () => {
       const transactions = {
         'response': 'OK',
@@ -206,10 +275,29 @@ describe('contract data resolver', () => {
       }
       mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: transactions }))
 
-      const response = await getTxByNFT(undefined, { input: { contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D', tokenId: '625' } }, undefined)
-
+      const result = await testServer.executeOperation({
+        query: `query GetTxByNFT($input: TransactionsByNFTInput) {
+                getTxByNFT(input: $input) {
+                  items {
+                    index
+                  }
+                  totalItems
+                }
+              }`,
+        variables: {
+          input: {
+            contractAddress: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
+            tokenId: '0x271',
+            chain: 'ethereum',
+            type: ['all'],
+            pageInput: {
+              first: 50,
+            },
+          },
+        },
+      })
+      expect(result.data.getTxByNFT.items.length).toEqual(2)
       expect(mockedAxios.get).toHaveBeenCalled()
-      expect(response).toEqual(transactions)
     })
   })
 })
