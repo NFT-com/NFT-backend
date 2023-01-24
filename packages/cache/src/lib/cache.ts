@@ -27,7 +27,9 @@ export enum CacheKeys {
   SEARCH_NFTS_FOR_PROFILE = 'search_nfts_for_profile',
   PROFILE_SORTED_NFTS = 'PROFILE_SORTED_NFTS',
   PROFILE_SORTED_VISIBLE_NFTS = 'PROFILE_SORTED_VISIBLE_NFTS',
-  PROFILE_GK_OWNERS = 'profile_gk_owners'
+  PROFILE_GK_OWNERS = 'profile_gk_owners',
+  GET_TX_BY_CONTRACT = 'get_tx_by_contract',
+  GET_TX_BY_NFT = 'get_tx_by_nft',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
