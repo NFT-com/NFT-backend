@@ -198,7 +198,7 @@ export const getTxByContract = async (
         contract_address: ethers.utils.getAddress(contractAddress),
         protocolData: activityDAO.order.protocolData,
         marketplace: activityDAO.order.protocol,
-        updatedAt: activityDAO.updatedAt,
+        timestamp: activityDAO.timestamp,
       }
       if (activityDAO.order.orderType === 'Listing') {
         activity = {
@@ -221,14 +221,14 @@ export const getTxByContract = async (
     // 2. return NFTPort result
     nftPortResult.map((tx) => {
       txActivities.push({
-        updatedAt: new Date(tx.transaction_date),
+        timestamp: new Date(tx.transaction_date),
         ...tx,
       })
     })
 
     // 3. sort result
     let index = 0
-    txActivities = _lodash.orderBy(txActivities, ['updatedAt'], ['desc'])
+    txActivities = _lodash.orderBy(txActivities, ['timestamp'], ['desc'])
     txActivities.map((activity) => {
       indexedActivities.push({
         index,
@@ -290,7 +290,7 @@ export const getTxByNFT = async (
           contract_address: contractAddress,
           token_id: BigNumber.from(tokenId).toHexString(),
         },
-        updatedAt: activityDAO.updatedAt,
+        timestamp: activityDAO.timestamp,
       }
       if (activityDAO.order.orderType === 'Listing') {
         activity = {
@@ -313,14 +313,14 @@ export const getTxByNFT = async (
     // 2. return NFTPort result
     nftPortResult.map((tx) => {
       txActivities.push({
-        updatedAt: new Date(tx.transaction_date),
+        timestamp: new Date(tx.transaction_date),
         ...tx,
       })
     })
 
     // 3. sort result
     let index = 0
-    txActivities = _lodash.orderBy(txActivities, ['updatedAt'], ['desc'])
+    txActivities = _lodash.orderBy(txActivities, ['timestamp'], ['desc'])
     txActivities.map((activity) => {
       indexedActivities.push({
         index,

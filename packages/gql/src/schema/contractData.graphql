@@ -128,7 +128,7 @@ type NFTPortTxByContractTransactions {
   marketplace: String
   protocolData: TxProtocolData
   price_details: NFTPortTxByContractPriceDetails
-  updatedAt: DateTime
+  timestamp: DateTime
   nft: NFTPortTxByContractNft
 }
 
@@ -178,7 +178,7 @@ type NFTPortTxByNFTTransactions {
   price_details: NFTPortTxByNFTPriceDetails
   listing_details: NFTPortTxByNFTListingDetails
   protocolData: TxProtocolData
-  updatedAt: DateTime
+  timestamp: DateTime
   nft: NFTPortTxByNFTNft
 }
 
