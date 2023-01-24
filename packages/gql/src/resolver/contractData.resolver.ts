@@ -59,7 +59,7 @@ const fetchTxsFromNFTPort = async (
   tokenId?: string,
 ): Promise<any[]> => {
   try {
-    const availableTypes = ['transfer', 'burn', 'mint', 'sale', 'all']
+    const availableTypes = ['transfer', 'burn', 'mint', 'sale', 'list', 'all']
     const filteredType = type.filter((t) => availableTypes.indexOf(t) !== -1)
     const nftPortResult = []
     let args, cacheKey
@@ -170,7 +170,7 @@ export const getTxByContract = async (
   const schema = Joi.object().keys({
     contractAddress: Joi.string().required(),
     chain: Joi.string().valid('ethereum').optional(),
-    type: Joi.array().items(Joi.string().valid('listing', 'bid', 'cancel', 'swap', 'transfer', 'burn', 'mint', 'sale', 'all')).optional(),
+    type: Joi.array().items(Joi.string().valid('listing', 'bid', 'cancel', 'swap', 'transfer', 'burn', 'mint', 'sale', 'list', 'all')).optional(),
     pageInput: Joi.any().optional(),
   })
   joi.validateSchema(schema, args.input)
@@ -258,7 +258,7 @@ export const getTxByNFT = async (
     contractAddress: Joi.string().required(),
     tokenId: Joi.string().required(),
     chain: Joi.string().valid('ethereum').optional(),
-    type: Joi.array().items(Joi.string().valid('listing', 'bid', 'cancel', 'swap', 'transfer', 'burn', 'mint', 'sale', 'all')).optional(),
+    type: Joi.array().items(Joi.string().valid('listing', 'bid', 'cancel', 'swap', 'transfer', 'burn', 'mint', 'sale', 'list', 'all')).optional(),
     pageInput: Joi.any().optional(),
   })
   joi.validateSchema(schema, args.input)
