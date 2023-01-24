@@ -1,5 +1,7 @@
 import { FindOperator } from 'typeorm'
 
+import { Collection, NFT } from '../db/entity'
+
 export enum EntityType {
   Approval = 'Approval',
   Bid = 'Bid',
@@ -226,3 +228,9 @@ export type PageableQuery<T> = {
 }
 
 export type FindPageableFn<T> = (query: PageableQuery<T>) => Promise<PageableResult<T>>
+
+export type ProfileSearchNFT = NFT & {
+  collection: Collection
+  isHide: boolean
+  index: number
+}

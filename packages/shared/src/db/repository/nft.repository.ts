@@ -1,5 +1,6 @@
 import { db } from '@nftcom/shared/db'
 import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
+import { ProfileSearchNFT } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -90,6 +91,34 @@ export class NFTRepository extends BaseRepository<NFT> {
     GROUP BY (traits.value->>'type'), (traits.value->>'value') 
     ORDER BY type ASC, count DESC
     `, [collectionAddress])
+  }
+
+  findByEdgeProfileDisplays(profileId: string, shouldIncludeHidden=false): Promise<ProfileSearchNFT[]> {
+    const queryRunner = db.getDataSource(true).createQueryRunner()
+    return queryRunner.query(`
+    SELECT
+      sorted.*,
+      row_number() OVER () AS "sortIndex"
+    FROM (
+      SELECT
+        nft.*,
+        row_to_json(collection.*) AS collection,
+        edge.hide AS "isHide"
+      FROM
+        edge
+        JOIN nft ON nft.id = edge. "thatEntityId"
+        JOIN collection ON collection.contract = nft.contract
+      WHERE
+        edge."thisEntityType" = 'Profile'
+        AND edge."thisEntityId" = $1
+        AND edge."thatEntityType" = 'NFT'
+        AND edge."edgeType" = 'Displays'
+        ${shouldIncludeHidden ? '' : 'AND edge."hide" = false'}
+        AND collection."isSpam" = false
+      ORDER BY
+        edge.hide ASC,
+        edge.weight ASC,
+        edge. "updatedAt" DESC) as sorted`, [profileId])
   }
 
 }
