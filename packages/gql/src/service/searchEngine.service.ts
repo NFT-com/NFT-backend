@@ -106,6 +106,14 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           defs.EntityType.Wallet,
         )(nft, null, ctx)
 
+        const profile = nft.contract === PROFILE_CONTRACT
+          ? await repos.profile.findOne({
+            where: {
+              tokenId: BigNumber.from(nft.tokenId).toString(),
+            },
+          })
+          : undefined
+
         const tokenId = nft.tokenId ? BigNumber.from(nft.tokenId).toString() : 'Unknown'
         let traits = []
         if (nft.metadata.traits.length < 100) {
@@ -159,6 +167,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           }
         }
 
+        const gkExpirationYear = 3021
         return {
           id: nft.id,
           nftName: nft.metadata?.name || `#${tokenId}`,
@@ -174,6 +183,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           status: '', //  HasOffers, BuyNow, New, OnAuction
           rarity: parseFloat(nft.rarity) || 0.0,
           isProfile: nft.contract === PROFILE_CONTRACT,
+          isProfileGKMinted: profile?.expireAt.getFullYear() >= gkExpirationYear,
           issuance: collection?.issuanceDate?.getTime() || 0,
           hasListings: listings.length ? 1 : 0,
           listedFloor: 0.0,
