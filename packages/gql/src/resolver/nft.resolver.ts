@@ -238,7 +238,16 @@ const returnProfileNFTs = async (
     if (cachedData) {
       nfts = JSON.parse(cachedData) as gql.NFT[]
     } else {
-      nfts = await ctx.repositories.nft.findByEdgeProfileDisplays(profileId, includeHidden)
+      nfts = (await ctx.repositories.nft.findByEdgeProfileDisplays(profileId, includeHidden))
+        .filter((nft: defs.ProfileSearchNFT) => {
+          return !query
+          || !query.length // query is empty string
+          || nft.metadata.name.toLowerCase().includes(query.toLowerCase())
+        })
+        .map((nft, index) => {
+          nft.sortIndex = index
+          return nft
+        })
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
     }
 

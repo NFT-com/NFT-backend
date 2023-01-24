@@ -232,5 +232,5 @@ export type FindPageableFn<T> = (query: PageableQuery<T>) => Promise<PageableRes
 export type ProfileSearchNFT = NFT & {
   collection: Collection
   isHide: boolean
-  index: number
+  sortIndex: number
 }
