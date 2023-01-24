@@ -15,8 +15,9 @@ import { Contract } from '@ethersproject/contracts'
 import { cache } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
-import { Context, gql } from '@nftcom/gql/defs'
+import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
+import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
@@ -222,6 +223,43 @@ export const paginatedEntitiesBy = <T>(
       take: pageInput.last,
     } as FindManyOptions<T>).then(pagination.reverseResult),
   })
+}
+
+export const paginatedResultFromIndexedArray = (
+  array: Array<any>,
+  pageInput: gql.PageInput,
+): Pageable<any> => {
+  let paginatedArray: Array<any>
+  let defaultCursor
+  if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
+    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
+      { afterCursor: array.length.toString() }
+  }
+
+  const safePageInput = safeInput(pageInput, defaultCursor)
+
+  let totalItems
+  if (pagination.hasFirst(safePageInput)) {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedArray = array.filter((item) => item.index > Number(cursor))
+    totalItems = paginatedArray.length
+    paginatedArray = paginatedArray.slice(0, safePageInput.first)
+  } else {
+    const cursor = pagination.hasAfter(safePageInput) ?
+      safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedArray = array.filter((item) => item.index < Number(cursor))
+    totalItems = paginatedArray.length
+    paginatedArray =
+      paginatedArray.slice(paginatedArray.length - safePageInput.last)
+  }
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedArray[0],
+    paginatedArray[paginatedArray.length - 1],
+    'index',
+  )([paginatedArray, totalItems])
 }
 
 const entitiesOfEdges = <T>(
@@ -1380,7 +1418,7 @@ export const checkAddressIsSanctioned = async (
     const url = `https://public.chainalysis.com/api/v1/address/${address}`
     const res = await axios.get(url, { headers })
     if (res && res?.data && res?.data?.identifications) {
-      await cache.set(key, JSON.stringify(res?.data?.identifications.length), 'EX', 60 * 60) // 1 hour
+      await cache.set(key, JSON.stringify(res?.data?.identifications.length), 'EX', 60 * 60 * 24 * 3) // 3 days
       return !!res?.data?.identifications.length
     } else {
       return true
