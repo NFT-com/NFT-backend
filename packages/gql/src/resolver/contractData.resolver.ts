@@ -195,26 +195,37 @@ export const getTxByContract = async (
       const activityDAO = activities[i] as TxActivityDAO
       let activity: gql.NFTPortTxByContractTransactions = {
         type: activityDAO.activityType.toLowerCase(),
-        owner_address: activityDAO.order.makerAddress,
         contract_address: ethers.utils.getAddress(contractAddress),
-        protocolData: activityDAO.order.protocolData,
-        marketplace: activityDAO.order.protocol,
         timestamp: activityDAO.timestamp,
       }
-      if (activityDAO.order.orderType === 'Listing') {
+      if (activityDAO.activityType === 'Listing') {
         activity = {
           ...activity,
+          owner_address: activityDAO.order.makerAddress,
           seller_address: activityDAO.order.makerAddress,
+          protocolData: activityDAO.order.protocolData,
+          marketplace: activityDAO.order.protocol,
         }
-      } else if (activityDAO.order.orderType === 'Bid') {
+      } else if (activityDAO.activityType === 'Bid') {
         activity = {
           ...activity,
+          owner_address: activityDAO.order.makerAddress,
           buyer_address: activityDAO.order.makerAddress,
+          protocolData: activityDAO.order.protocolData,
+          marketplace: activityDAO.order.protocol,
         }
-      } else if (activityDAO.order.orderType === 'Cancel') {
+      } else if (activityDAO.activityType === 'Cancel') {
         activity = {
           ...activity,
           transaction_hash: activityDAO.cancel.transactionHash,
+          marketplace: activityDAO.cancel.exchange,
+        }
+      } else if (activityDAO.activityType === 'Swap') {
+        activity = {
+          ...activity,
+          transaction_hash: activityDAO.transaction.transactionHash,
+          protocolData: activityDAO.transaction.protocolData,
+          marketplace: activityDAO.transaction.protocol,
         }
       }
       txActivities.push(activity)
@@ -284,30 +295,41 @@ export const getTxByNFT = async (
       const activityDAO = activities[i] as TxActivityDAO
       let activity: gql.NFTPortTxByNftTransactions = {
         type: activityDAO.activityType.toLowerCase(),
-        owner_address: activityDAO.order.makerAddress,
         contract_address: ethers.utils.getAddress(contractAddress),
-        protocolData: activityDAO.order.protocolData,
-        marketplace: activityDAO.order.protocol,
         nft: {
           contract_address: contractAddress,
           token_id: BigNumber.from(tokenId).toHexString(),
         },
         timestamp: activityDAO.timestamp,
       }
-      if (activityDAO.order.orderType === 'Listing') {
+      if (activityDAO.activityType === 'Listing') {
         activity = {
           ...activity,
+          owner_address: activityDAO.order.makerAddress,
           seller_address: activityDAO.order.makerAddress,
+          protocolData: activityDAO.order.protocolData,
+          marketplace: activityDAO.order.protocol,
         }
-      } else if (activityDAO.order.orderType === 'Bid') {
+      } else if (activityDAO.activityType === 'Bid') {
         activity = {
           ...activity,
+          owner_address: activityDAO.order.makerAddress,
           buyer_address: activityDAO.order.makerAddress,
+          protocolData: activityDAO.order.protocolData,
+          marketplace: activityDAO.order.protocol,
         }
-      } else if (activityDAO.order.orderType === 'Cancel') {
+      } else if (activityDAO.activityType === 'Cancel') {
         activity = {
           ...activity,
           transaction_hash: activityDAO.cancel.transactionHash,
+          marketplace: activityDAO.cancel.exchange,
+        }
+      } else if (activityDAO.activityType === 'Swap') {
+        activity = {
+          ...activity,
+          transaction_hash: activityDAO.transaction.transactionHash,
+          protocolData: activityDAO.transaction.protocolData,
+          marketplace: activityDAO.transaction.protocol,
         }
       }
       txActivities.push(activity)
