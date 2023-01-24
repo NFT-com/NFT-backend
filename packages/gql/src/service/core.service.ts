@@ -1418,7 +1418,7 @@ export const checkAddressIsSanctioned = async (
     const url = `https://public.chainalysis.com/api/v1/address/${address}`
     const res = await axios.get(url, { headers })
     if (res && res?.data && res?.data?.identifications) {
-      await cache.set(key, JSON.stringify(res?.data?.identifications.length), 'EX', 60 * 60) // 1 hour
+      await cache.set(key, JSON.stringify(res?.data?.identifications.length), 'EX', 60 * 60 * 24 * 3) // 3 days
       return !!res?.data?.identifications.length
     } else {
       return true
