@@ -128,6 +128,7 @@ type NFTPortTxByContractTransactions {
   marketplace: String
   protocolData: TxProtocolData
   price_details: NFTPortTxByContractPriceDetails
+  updatedAt: DateTime
   nft: NFTPortTxByContractNft
 }
 
@@ -177,6 +178,7 @@ type NFTPortTxByNFTTransactions {
   price_details: NFTPortTxByNFTPriceDetails
   listing_details: NFTPortTxByNFTListingDetails
   protocolData: TxProtocolData
+  updatedAt: DateTime
   nft: NFTPortTxByNFTNft
 }
 
@@ -226,7 +228,7 @@ input TransactionsByContractInput {
   contractAddress: String!
   chain: String # only ethereum allowed right now
   type: [String] # Value in [transfer, mint, burn, sale, all]
-  pageInput: PageInput,
+  pageInput: PageInput!,
 }
 
 input TransactionsByNFTInput {
@@ -234,7 +236,7 @@ input TransactionsByNFTInput {
   tokenId: String!
   chain: String # only ethereum allowed right now
   type: [String] # Value in [transfer, mint, burn, sale, all]
-  pageInput: PageInput
+  pageInput: PageInput!
 }
 
 input TransactionSalesInput {

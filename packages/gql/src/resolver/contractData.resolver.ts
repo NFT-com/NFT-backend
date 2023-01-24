@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import Joi from 'joi'
+import * as _lodash from 'lodash'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
@@ -12,7 +13,11 @@ import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.ContractData, _logger.Context.GraphQL)
 
-type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+type TxActivityDAO = entity.TxActivity & {
+  order: entity.TxOrder
+  transaction: entity.TxTransaction
+  cancel: entity.TxCancel
+}
 
 export const getNFTDetails = async (
   _: any,
@@ -172,11 +177,12 @@ export const getTxByContract = async (
   const { contractAddress, chain, type, pageInput } = args.input
   const cacheKey = `${CacheKeys.GET_TX_BY_CONTRACT}_${ethers.utils.getAddress(contractAddress)}`
   const cachedData = await cache.get(cacheKey)
-  let txActivities: Array<gql.NFTPortTxByContractTransactions> = []
+  let indexedActivities: Array<gql.NFTPortTxByContractTransactions> = []
 
   if (cachedData) {
-    txActivities = JSON.parse(cachedData)
+    indexedActivities = JSON.parse(cachedData)
   } else {
+    let txActivities: Array<gql.NFTPortTxByContractTransactions> = []
     const nftPortResult = await fetchTxsFromNFTPort('txByContract', chain || 'ethereum', type || ['all'], contractAddress)
     const activityTypes = parseTypesToActivityTypes(type || ['all'])
     const activities = await repositories.txActivity.findActivitiesForCollection(
@@ -193,6 +199,7 @@ export const getTxByContract = async (
         contract_address: ethers.utils.getAddress(contractAddress),
         protocolData: activityDAO.order.protocolData,
         marketplace: activityDAO.order.protocol,
+        updatedAt: activityDAO.updatedAt,
       }
       if (activityDAO.order.orderType === 'Listing') {
         activity = {
@@ -204,27 +211,41 @@ export const getTxByContract = async (
           ...activity,
           buyer_address: activityDAO.order.makerAddress,
         }
+      } else if (activityDAO.order.orderType === 'Cancel') {
+        activity = {
+          ...activity,
+          transaction_hash: activityDAO.cancel.transactionHash,
+        }
       }
       txActivities.push(activity)
     }
     // 2. return NFTPort result
-    let index = txActivities.length
     nftPortResult.map((tx) => {
       txActivities.push({
-        index,
+        updatedAt: new Date(tx.transaction_date),
         ...tx,
+      })
+    })
+
+    // 3. sort result
+    let index = 0
+    txActivities = _lodash.orderBy(txActivities, ['updatedAt'], ['desc'])
+    txActivities.map((activity) => {
+      indexedActivities.push({
+        index,
+        ...activity,
       })
       index++
     })
     await cache.set(
       cacheKey,
-      JSON.stringify(txActivities),
+      JSON.stringify(indexedActivities),
       'EX',
       10 * 60, // 10 min
     )
   }
 
-  return paginatedResultFromIndexedArray(txActivities, pageInput)
+  return paginatedResultFromIndexedArray(indexedActivities, pageInput)
 }
 
 export const getTxByNFT = async (
@@ -244,11 +265,12 @@ export const getTxByNFT = async (
   const { contractAddress, tokenId, chain, type, pageInput } = args.input
   const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${tokenId}`
   const cachedData = await cache.get(cacheKey)
-  let txActivities: Array<gql.NFTPortTxByNftTransactions> = []
+  let indexedActivities: Array<gql.NFTPortTxByNftTransactions> = []
 
   if (cachedData) {
-    txActivities = JSON.parse(cachedData)
+    indexedActivities = JSON.parse(cachedData)
   } else {
+    let txActivities: Array<gql.NFTPortTxByNftTransactions> = []
     const nftPortResult = await fetchTxsFromNFTPort('txByNFT', chain || 'ethereum', type || ['all'], contractAddress, tokenId)
     const activityTypes = parseTypesToActivityTypes(type || ['all'])
     const activities = await repositories.txActivity.findActivitiesForNFT(
@@ -270,6 +292,7 @@ export const getTxByNFT = async (
           contract_address: contractAddress,
           token_id: tokenId,
         },
+        updatedAt: activityDAO.updatedAt,
       }
       if (activityDAO.order.orderType === 'Listing') {
         activity = {
@@ -281,27 +304,42 @@ export const getTxByNFT = async (
           ...activity,
           buyer_address: activityDAO.order.makerAddress,
         }
+      } else if (activityDAO.order.orderType === 'Cancel') {
+        activity = {
+          ...activity,
+          transaction_hash: activityDAO.cancel.transactionHash,
+        }
       }
       txActivities.push(activity)
     }
     // 2. return NFTPort result
-    let index = txActivities.length
     nftPortResult.map((tx) => {
       txActivities.push({
-        index,
+        updatedAt: new Date(tx.transaction_date),
         ...tx,
+      })
+    })
+
+    // 3. sort result
+    const indexedActivities = []
+    let index = 0
+    txActivities = _lodash.orderBy(txActivities, ['updatedAt'], ['desc'])
+    txActivities.map((activity) => {
+      indexedActivities.push({
+        index,
+        ...activity,
       })
       index++
     })
     await cache.set(
       cacheKey,
-      JSON.stringify(txActivities),
+      JSON.stringify(indexedActivities),
       'EX',
       10 * 60, // 10 min
     )
   }
 
-  return paginatedResultFromIndexedArray(txActivities, pageInput)
+  return paginatedResultFromIndexedArray(indexedActivities, pageInput)
 }
 
 export const getSales = async (_: any, args: gql.QueryGetSalesArgs, _ctx: any): Promise<any> => {
