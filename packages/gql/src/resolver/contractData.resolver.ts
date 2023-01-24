@@ -188,6 +188,7 @@ export const getTxByContract = async (
     const activities = await repositories.txActivity.findActivitiesForCollection(
       ethers.utils.getAddress(contractAddress),
       activityTypes,
+      defs.ProtocolType.NFTCOM,
     )
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
@@ -276,6 +277,7 @@ export const getTxByNFT = async (
       ethers.utils.getAddress(contractAddress),
       BigNumber.from(tokenId).toHexString(),
       activityTypes,
+      defs.ProtocolType.NFTCOM,
     )
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {

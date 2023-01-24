@@ -132,25 +132,44 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   public findActivitiesForCollection = (
     contract: string,
     activityTypes: ActivityType[],
+    protocol?: string,
   ): Promise<TxActivity[]> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
 
-    return queryBuilder
-      .where({
-        nftContract: contract,
-        activityType: In(activityTypes),
-        status: ActivityStatus.Valid,
-      })
-      .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
-      .cache(true)
-      .getMany()
+    if (protocol) {
+      return queryBuilder
+        .where({
+          nftContract: contract,
+          activityType: In(activityTypes),
+          status: ActivityStatus.Valid,
+        })
+        .orderBy({ 'activity.updatedAt': 'DESC' })
+        .leftJoinAndMapOne('activity.order', 'TxOrder',
+          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
+        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+          'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+          'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+        .cache(true)
+        .getMany()
+    } else {
+      return queryBuilder
+        .where({
+          nftContract: contract,
+          activityType: In(activityTypes),
+          status: ActivityStatus.Valid,
+        })
+        .orderBy({ 'activity.updatedAt': 'DESC' })
+        .leftJoinAndMapOne('activity.order', 'TxOrder',
+          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+          'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+          'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+        .cache(true)
+        .getMany()
+    }
   }
 
   // activities for NFT
@@ -158,28 +177,48 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     contract: string,
     tokenId: string,
     activityTypes: ActivityType[],
+    protocol?: string,
   ): Promise<TxActivity[]> => {
     const nftId = `ethereum/${contract}/${tokenId}`
 
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
 
-    return queryBuilder
-      .where({
-        nftContract: contract,
-        activityType: In(activityTypes),
-        status: ActivityStatus.Valid,
-      })
-      .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
-      .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-        'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
-      .cache(true)
-      .getMany()
+    if (protocol) {
+      return queryBuilder
+        .where({
+          nftContract: contract,
+          activityType: In(activityTypes),
+          status: ActivityStatus.Valid,
+        })
+        .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
+        .orderBy({ 'activity.updatedAt': 'DESC' })
+        .leftJoinAndMapOne('activity.order', 'TxOrder',
+          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
+        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+          'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+          'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+        .cache(true)
+        .getMany()
+    } else {
+      return queryBuilder
+        .where({
+          nftContract: contract,
+          activityType: In(activityTypes),
+          status: ActivityStatus.Valid,
+        })
+        .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
+        .orderBy({ 'activity.updatedAt': 'DESC' })
+        .leftJoinAndMapOne('activity.order', 'TxOrder',
+          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+          'transaction', 'activity.id = transaction.activityId and transaction.id = activity.activityTypeId')
+        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+          'cancel', 'activity.id = cancel.activityId and cancel.id = activity.activityTypeId')
+        .cache(true)
+        .getMany()
+    }
   }
 
   // activities for NFT
