@@ -65,7 +65,7 @@ const fetchTxsFromNFTPort = async (
     let args, cacheKey
     if (tokenId) {
       cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}_${BigNumber.from(tokenId).toHexString()}`
-      args = [contractAddress, tokenId]
+      args = [contractAddress, BigNumber.from(tokenId).toString()]
     } else {
       cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}`
       args = [contractAddress]
