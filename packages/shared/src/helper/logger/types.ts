@@ -30,6 +30,7 @@ export enum LoggerContext {
   X2Y2 = 'x2y2',
   SalesProcessor = 'salesProcessor',
   CollectionStats = 'collectionStats',
+  ContractData = 'contractData',
 }
 
 export enum LogLevel {
