@@ -305,7 +305,7 @@ export const createX2Y2Listing = async (
       JSON.parse(order),
     )
     // give x2y2 time to propagate order
-    await delay(5000)
+    await delay(10000)
     const retrievedOrder: X2Y2Order = await retriveOrderX2Y2(maker, contract, tokenId, chainId)
     if (res.status === 200 && retrievedOrder) {
       x2y2Order = await orderEntityBuilder(
