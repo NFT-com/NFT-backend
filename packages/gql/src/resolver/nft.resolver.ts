@@ -225,6 +225,7 @@ const returnProfileNFTs = async (
   cacheKeyStr: string,
   query: string,
 ): Promise<any> => {
+  const start = Date.now()
   try {
     let nfts: gql.NFT[] = []
     let cacheKey
@@ -280,6 +281,7 @@ const returnProfileNFTs = async (
       'sortIndex',
     )([paginatedNFTs, totalItems])
     return triggerNFTOrderRefreshQueue(result.items, chainId)
+      .then(() => console.log(`returnProfileNFTs: Execution time: ${Date.now() - start} ms`))
       .then(() => Promise.resolve(result))
   } catch (err) {
     logger.error(`Error in returnProfileNFTs: ${err}`)
@@ -627,13 +629,17 @@ const updateNFTsForProfile = async (
   ctx: Context,
 ): Promise<gql.NFTsOutput> => {
   try {
+    const start = Date.now()
+
     const { repositories } = ctx
     logger.debug('updateNFTsForProfile', { input: args?.input })
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
+    console.log(`verifyAndGetNetworkChain: Execution time: ${Date.now() - start} ms`)
 
     const pageInput = args?.input.pageInput
     initiateWeb3(chainId)
+    console.log(`intitiateWeb3: Execution time: ${Date.now() - start} ms`)
 
     const profile = await repositories.profile.findOne({
       where: {
@@ -641,6 +647,7 @@ const updateNFTsForProfile = async (
         chainId,
       },
     })
+    console.log(`Find profile: Execution time: ${Date.now() - start} ms`)
 
     if (!profile) {
       return Promise.resolve({ items: [] })
@@ -654,6 +661,7 @@ const updateNFTsForProfile = async (
       await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
     }
 
+    console.log(`before returnProfileNFTs: Execution time: ${Date.now() - start} ms`)
     return await returnProfileNFTs(
       profile.id,
       ctx,
@@ -662,7 +670,10 @@ const updateNFTsForProfile = async (
       false,
       CacheKeys.PROFILE_SORTED_VISIBLE_NFTS,
       args?.input.query,
-    )
+    ).then((result) => {
+      console.log(`updateNFTsForProfile: Execution time: ${Date.now() - start} ms`)
+      return result
+    })
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForProfile: ${err}`)
     return err
@@ -1210,15 +1221,19 @@ export default {
     listNFTX2Y2,
   },
   NFT: {
-    collection: core.resolveCollectionById<gql.NFT, entity.Collection>(
-      'contract',
-      defs.EntityType.NFT,
-    ),
-    wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
-      'walletId',
-      defs.EntityType.NFT,
-      defs.EntityType.Wallet,
-    ),
+    collection: async (parent, args, ctx) => {
+      if (parent.collection) {
+        return parent.collection
+      }
+      return core.resolveCollectionById<gql.NFT, entity.Collection>(
+        'contract',
+        defs.EntityType.NFT,
+      )(parent, args, ctx)
+    },
+    wallet: async (parent, _args, ctx) => {
+      const { loaders: { wallet } } = ctx
+      return wallet.load(parent.walletId)
+    },
     isOwnedByMe: core.resolveEntityOwnership<gql.NFT>(
       'userId',
       'user',

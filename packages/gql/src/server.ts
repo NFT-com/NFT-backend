@@ -24,10 +24,10 @@ import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { authExpireDuration, authMessage, serverPort } from './config'
+import { listings, walletById } from './dataloader'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
-import { listingLoader } from './service/nft.service'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
@@ -49,7 +49,8 @@ const getAddressFromSignature = (authMsg, signature: string): string =>
 
 const createLoaders = (): any => {
   return {
-    listings: listingLoader,
+    listings: listings,
+    wallet: walletById,
   }
 }
 
