@@ -201,6 +201,7 @@ export const getTxByContract = async (
         type: activityDAO.activityType.toLowerCase(),
         contract_address: ethers.utils.getAddress(contractAddress),
         timestamp: activityDAO.timestamp,
+        transaction_date: activityDAO.timestamp.toString(),
       }
       if (activityDAO.activityType === 'Listing') {
         activity = {
@@ -298,8 +299,6 @@ export const getTxByNFT = async (
       const activityDAO = activity as TxActivityDAO
       return !!(activityDAO.order || activityDAO.transaction || activityDAO.cancel)
     })
-    logger.info(`activities length: ${activities.length}`)
-    logger.info(`activities data: ${JSON.stringify(activities)}`)
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
@@ -310,6 +309,7 @@ export const getTxByNFT = async (
           contract_address: contractAddress,
           token_id: BigNumber.from(tokenId).toHexString(),
         },
+        transaction_date: activityDAO.timestamp.toString(),
         timestamp: activityDAO.timestamp,
       }
       if (activityDAO.activityType === 'Listing') {
