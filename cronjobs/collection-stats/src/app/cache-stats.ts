@@ -25,7 +25,7 @@ export const cacheStats = async (): Promise<void> => {
   const collections =  await collectionRepo.findAllOfficial()
   await updateContractStats(collections)
   await updateCollectionLeaderboard(collectionRepo)
-  cache.del([
+  await cache.del([
     'COLLECTION_LEADERBOARD_HYDRATED_24h',
     'COLLECTION_LEADERBOARD_HYDRATED_7d',
     'COLLECTION_LEADERBOARD_HYDRATED_30d',
