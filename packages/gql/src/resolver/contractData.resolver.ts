@@ -290,6 +290,8 @@ export const getTxByNFT = async (
       activityTypes,
       defs.ProtocolType.NFTCOM,
     )
+    logger.info(`activities length: ${activities.length}`)
+    logger.info(`activities data: ${JSON.stringify(activities)}`)
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
