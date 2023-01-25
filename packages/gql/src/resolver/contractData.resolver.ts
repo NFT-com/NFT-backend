@@ -192,8 +192,7 @@ export const getTxByContract = async (
     )
     activities = activities.filter((activity) => {
       const activityDAO = activity as TxActivityDAO
-      if (activityDAO.order || activityDAO.transaction || activityDAO.cancel) return true
-      else return false
+      return !!(activityDAO.order || activityDAO.transaction || activityDAO.cancel)
     })
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
@@ -297,8 +296,7 @@ export const getTxByNFT = async (
     )
     activities = activities.filter((activity) => {
       const activityDAO = activity as TxActivityDAO
-      if (activityDAO.order || activityDAO.transaction || activityDAO.cancel) return true
-      else return false
+      return !!(activityDAO.order || activityDAO.transaction || activityDAO.cancel)
     })
     logger.info(`activities length: ${activities.length}`)
     logger.info(`activities data: ${JSON.stringify(activities)}`)
