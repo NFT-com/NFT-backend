@@ -92,6 +92,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           repositories: repos, // Only repositories is required for this query
           user: null,
           wallet: null,
+          loaders: null,
         }
 
         const collection = await core.resolveEntityById<entity.NFT, entity.Collection>(

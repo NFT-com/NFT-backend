@@ -27,6 +27,7 @@ import { authExpireDuration, authMessage, serverPort } from './config'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
+import { listingLoader } from './service/nft.service'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const networkHeader = 'network'
@@ -45,6 +46,12 @@ type GQLError = {
 
 const getAddressFromSignature = (authMsg, signature: string): string =>
   utils.verifyMessage(authMsg, signature)
+
+const createLoaders = (): any => {
+  return {
+    listings: listingLoader,
+  }
+}
 
 export const createContext = async (ctx): Promise<Context> => {
   const { req, connection } = ctx
@@ -100,6 +107,7 @@ export const createContext = async (ctx): Promise<Context> => {
     repositories,
     teamKey,
     xMintSignature,
+    loaders: createLoaders(),
   }
 }
 

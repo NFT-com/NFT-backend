@@ -31,7 +31,6 @@ import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
   saveNewNFT, updateCollectionForAssociatedContract,
@@ -1230,8 +1229,9 @@ export default {
       defs.EntityType.NFT,
       defs.EntityType.Profile,
     ),
-    listings: getNFTActivities(
-      defs.ActivityType.Listing,
-    ),
+    listings: async (parent, args, ctx) => {
+      const { loaders: { listings } } = ctx
+      return listings.load({ ...parent, args })
+    },
   },
 }
