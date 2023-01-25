@@ -10,7 +10,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('collectionStats-eventRule')
   return new aws.cloudwatch.EventRule('collectionStats-eventRule', {
     name: resourceName,
-    scheduleExpression: isProduction() ? 'cron(00 05 * * ? *)' : 'cron(15 05 * * ? *)',  // if prod, run daily at 05:00 UTC, otherwise at 05:15
+    scheduleExpression: isProduction() ? 'cron(00 * * * ? *)' : 'cron(15 05 * * ? *)',  // if prod, run hourly, otherwise at 05:15 daily
     tags: getTags(tags),
   })
 }
