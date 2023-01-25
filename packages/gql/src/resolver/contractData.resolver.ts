@@ -185,11 +185,16 @@ export const getTxByContract = async (
     let txActivities: Array<gql.NFTPortTxByContractTransactions> = []
     const nftPortResult = await fetchTxsFromNFTPort('txByContract', chain || 'ethereum', type || ['all'], contractAddress)
     const activityTypes = parseTypesToActivityTypes(type || ['all'])
-    const activities = await repositories.txActivity.findActivitiesForCollection(
+    let activities = await repositories.txActivity.findActivitiesForCollection(
       ethers.utils.getAddress(contractAddress),
       activityTypes,
       defs.ProtocolType.NFTCOM,
     )
+    activities = activities.filter((activity) => {
+      const activityDAO = activity as TxActivityDAO
+      if (activityDAO.order || activityDAO.transaction || activityDAO.cancel) return true
+      else return false
+    })
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
@@ -284,12 +289,17 @@ export const getTxByNFT = async (
     let txActivities: Array<gql.NFTPortTxByNftTransactions> = []
     const nftPortResult = await fetchTxsFromNFTPort('txByNFT', chain || 'ethereum', type || ['all'], contractAddress, tokenId)
     const activityTypes = parseTypesToActivityTypes(type || ['all'])
-    const activities = await repositories.txActivity.findActivitiesForNFT(
+    let activities = await repositories.txActivity.findActivitiesForNFT(
       ethers.utils.getAddress(contractAddress),
       BigNumber.from(tokenId).toHexString(),
       activityTypes,
       defs.ProtocolType.NFTCOM,
     )
+    activities = activities.filter((activity) => {
+      const activityDAO = activity as TxActivityDAO
+      if (activityDAO.order || activityDAO.transaction || activityDAO.cancel) return true
+      else return false
+    })
     logger.info(`activities length: ${activities.length}`)
     logger.info(`activities data: ${JSON.stringify(activities)}`)
     // 1. return activities from tx_activity table
