@@ -47,7 +47,7 @@ type GQLError = {
 const getAddressFromSignature = (authMsg, signature: string): string =>
   utils.verifyMessage(authMsg, signature)
 
-const createLoaders = (): any => {
+export const createLoaders = (): any => {
   return {
     listings: listingsByNFT(),
     wallet: walletById,
