@@ -10,7 +10,7 @@ sendgrid.setApiKey(sgAPIKey)
 const logger = _logger.Factory(_logger.Context.SendGrid, _logger.Context.General)
 const from = {
   name: 'NFT.com',
-  email: '<noreply@nft.com>',
+  email: 'noreply@nft.com',
 }
 
 const templates = {
