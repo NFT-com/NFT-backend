@@ -17,7 +17,6 @@ const repositories = db.newRepositories()
 export const listingsByNFT = (): DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string> => {
   return new DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string>(
     async (keys) => {
-      const start = Date.now()
       const results = await Promise.allSettled(
         keys.map(async ({ walletId, contract, tokenId, chainId, args }) => {
           try {
@@ -72,10 +71,6 @@ export const listingsByNFT = (): DataLoader<entity.NFT & { args: any }, Pageable
                 'DESC',
                 protocol,
               )
-                .then((result) => {
-                  console.log(`listingLoader: Execution time: ${Date.now() - start} ms`)
-                  return result
-                })
                 .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
             }
           } catch (err) {
