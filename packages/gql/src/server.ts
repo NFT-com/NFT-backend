@@ -94,7 +94,7 @@ export const createContext = async (ctx): Promise<Context> => {
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
-    walletById.prime(wallet.id, wallet)
+    walletById.clear(wallet.id).prime(wallet.id, wallet)
     user = await repositories.user.findById(wallet?.userId)
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden
