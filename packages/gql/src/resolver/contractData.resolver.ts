@@ -1,4 +1,5 @@
 import { BigNumber, ethers } from 'ethers'
+import { defaultAbiCoder } from 'ethers/lib/utils'
 import Joi from 'joi'
 import * as _lodash from 'lodash'
 
@@ -49,6 +50,36 @@ export const getContractSalesStatistics = async (
   const { contractAddress } = args.input
 
   return await fetchData('stats', [contractAddress])
+}
+
+const findNFTFromAssets = (
+  assets: defs.MarketplaceAsset[],
+  contractAddress: string,
+  tokenId: string,
+): defs.MarketplaceAsset => {
+  return assets.find((asset) =>
+    asset.standard.contractAddress === ethers.utils.getAddress(contractAddress) &&
+    asset.standard.tokenId === BigNumber.from(tokenId).toHexString(),
+  )
+}
+
+const parsePriceDetailFromAsset = (
+  asset?: defs.MarketplaceAsset,
+): gql.NFTPortTxByNftPriceDetails => {
+  if (!asset) {
+    return {
+      asset_type: null,
+      contract_address: null,
+      price: null,
+    }
+  }
+  const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
+  const value = BigNumber.from(res[0])
+  return {
+    asset_type: asset.standard.assetClass,
+    contract_address: asset.standard.contractAddress,
+    price: value.toNumber(),
+  }
 }
 
 const fetchTxsFromNFTPort = async (
@@ -277,6 +308,7 @@ export const getTxByNFT = async (
     type: Joi.array().items(Joi.string().valid('listing', 'bid', 'cancel', 'swap', 'transfer', 'burn', 'mint', 'sale', 'list', 'all')).optional(),
     pageInput: Joi.any().optional(),
   })
+
   joi.validateSchema(schema, args.input)
   const { contractAddress, tokenId, chain, type, pageInput } = args.input
   const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}`
@@ -295,10 +327,12 @@ export const getTxByNFT = async (
       activityTypes,
       defs.ProtocolType.NFTCOM,
     )
+
     activities = activities.filter((activity) => {
       const activityDAO = activity as TxActivityDAO
       return !!(activityDAO.order || activityDAO.transaction || activityDAO.cancel)
     })
+
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
@@ -313,20 +347,28 @@ export const getTxByNFT = async (
         timestamp: activityDAO.timestamp,
       }
       if (activityDAO.activityType === 'Listing') {
+        const price_details = parsePriceDetailFromAsset(
+          findNFTFromAssets(activityDAO.order.protocolData.takeAsset, contractAddress, tokenId),
+        )
         activity = {
           ...activity,
           owner_address: activityDAO.order.makerAddress,
           seller_address: activityDAO.order.makerAddress,
           protocolData: activityDAO.order.protocolData,
           marketplace: activityDAO.order.protocol,
+          price_details,
         }
       } else if (activityDAO.activityType === 'Bid') {
+        const price_details = parsePriceDetailFromAsset(
+          findNFTFromAssets(activityDAO.order.protocolData.makeAsset, contractAddress, tokenId),
+        )
         activity = {
           ...activity,
           owner_address: activityDAO.order.makerAddress,
           buyer_address: activityDAO.order.makerAddress,
           protocolData: activityDAO.order.protocolData,
           marketplace: activityDAO.order.protocol,
+          price_details,
         }
       } else if (activityDAO.activityType === 'Cancel') {
         activity = {
