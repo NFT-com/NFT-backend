@@ -13,82 +13,86 @@ const TEST_WALLET_ID = 'test'
 const logger = _logger.Factory('dataloader', _logger.Context.GraphQL)
 const repositories = db.newRepositories()
 
-export const listings = new DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string>(
-  async (keys) => {
-    const start = Date.now()
-    const results = await Promise.allSettled(
-      keys.map(async ({ walletId, contract, tokenId, chainId, args }) => {
-        try {
-          let pageInput: gql.PageInput = args?.['listingsPageInput']
-          const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
-          const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
-          let listingsOwnerAddress: string = args?.['listingsOwner']
-          if (!listingsOwnerAddress) {
-            if (walletId && walletId !== TEST_WALLET_ID) {
-              // eslint-disable-next-line no-use-before-define
-              const wallet: entity.Wallet = await walletById.load(walletId)
-              listingsOwnerAddress = wallet?.address
+// create a new loader per request by returing from a function
+export const listingsByNFT = (): DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string> => {
+  return new DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string>(
+    async (keys) => {
+      const start = Date.now()
+      const results = await Promise.allSettled(
+        keys.map(async ({ walletId, contract, tokenId, chainId, args }) => {
+          try {
+            let pageInput: gql.PageInput = args?.['listingsPageInput']
+            const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
+            const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
+            let listingsOwnerAddress: string = args?.['listingsOwner']
+            if (!listingsOwnerAddress) {
+              if (walletId && walletId !== TEST_WALLET_ID) {
+                // eslint-disable-next-line no-use-before-define
+                const wallet: entity.Wallet = await walletById.load(walletId)
+                listingsOwnerAddress = wallet?.address
+              }
             }
+      
+            if (!pageInput) {
+              pageInput = {
+                'first': 50,
+              }
+            }
+            chainId ??= process.env.chainId
+      
+            const protocol: gql.ProtocolType = args?.['protocol']
+      
+            if (contract && tokenId) {
+              const checksumContract = helper.checkSum(contract)
+              const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
+              let filters: defs.ActivityFilters = {
+                nftContract: checksumContract,
+                nftId,
+                activityType: defs.ActivityType.Listing,
+                status: listingsStatus,
+                chainId,
+              }
+      
+              if (listingsOwnerAddress) {
+                filters = { ...filters, walletAddress: helper.checkSum(listingsOwnerAddress) }
+              }
+              // by default active items are included
+              if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
+                filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
+              } else if (expirationType === gql.ActivityExpiration.Expired){
+                filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
+              }
+              const safefilters = [helper.inputT2SafeK(filters)]
+              return paginatedActivitiesBy(
+                repositories.txActivity,
+                pageInput,
+                safefilters,
+                [],
+                'createdAt',
+                'DESC',
+                protocol,
+              )
+                .then((result) => {
+                  console.log(`listingLoader: Execution time: ${Date.now() - start} ms`)
+                  return result
+                })
+                .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+            }
+          } catch (err) {
+            logger.error(`Error in getNFTActivities: ${err}`)
+            Sentry.captureMessage(`Error in getNFTActivities: ${err}`)
+            throw err
           }
-    
-          if (!pageInput) {
-            pageInput = {
-              'first': 50,
-            }
-          }
-          chainId ??= process.env.chainId
-    
-          const protocol: gql.ProtocolType = args?.['protocol']
-    
-          if (contract && tokenId) {
-            const checksumContract = helper.checkSum(contract)
-            const nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
-            let filters: defs.ActivityFilters = {
-              nftContract: checksumContract,
-              nftId,
-              activityType: defs.ActivityType.Listing,
-              status: listingsStatus,
-              chainId,
-            }
-    
-            if (listingsOwnerAddress) {
-              filters = { ...filters, walletAddress: helper.checkSum(listingsOwnerAddress) }
-            }
-            // by default active items are included
-            if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
-              filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
-            } else if (expirationType === gql.ActivityExpiration.Expired){
-              filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
-            }
-            const safefilters = [helper.inputT2SafeK(filters)]
-            return paginatedActivitiesBy(
-              repositories.txActivity,
-              pageInput,
-              safefilters,
-              [],
-              'createdAt',
-              'DESC',
-              protocol,
-            )
-              .then((result) => {
-                console.log(`listingLoader: Execution time: ${Date.now() - start} ms`)
-                return result
-              })
-              .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
-          }
-        } catch (err) {
-          logger.error(`Error in getNFTActivities: ${err}`)
-          Sentry.captureMessage(`Error in getNFTActivities: ${err}`)
-          throw err
-        }
-      }),
-    )
-    return results.map((result) => (result.status === 'fulfilled' ? result.value : null))
-  }, {
-    cacheKeyFn: (key) => `${key.walletId}:${key.contract}:${key.tokenId}:${key.chainId}`,
-  },
-)
+        }),
+      )
+      return results.map((result) => (result.status === 'fulfilled' ? result.value : null))
+    }, {
+      cacheKeyFn: (key) => `${key.walletId}:${key.contract}:${key.tokenId}:${key.chainId}`,
+    },
+  )
+}
 
+// reuse a loader by creating it once
 export const walletById = new DataLoader<string, entity.Wallet>((ids) => {
   return repositories.wallet.find({
     where: { id: In([...ids]) },

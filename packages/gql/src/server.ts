@@ -24,7 +24,7 @@ import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { authExpireDuration, authMessage, serverPort } from './config'
-import { listings, walletById } from './dataloader'
+import { listingsByNFT, walletById } from './dataloader'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -49,7 +49,7 @@ const getAddressFromSignature = (authMsg, signature: string): string =>
 
 const createLoaders = (): any => {
   return {
-    listings: listings,
+    listings: listingsByNFT(),
     wallet: walletById,
   }
 }
@@ -94,6 +94,7 @@ export const createContext = async (ctx): Promise<Context> => {
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
+    walletById.prime(wallet.id, wallet)
     user = await repositories.user.findById(wallet?.userId)
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden
