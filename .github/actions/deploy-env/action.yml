@@ -122,7 +122,6 @@ runs:
         AUTH_EXPIRE_BY_DAYS: ${{ fromJSON(inputs.secrets).AUTH_EXPIRE_BY_DAYS }}
         MULTICALL_CONTRACT: ${{ fromJSON(inputs.secrets).MULTICALL_CONTRACT }}
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
-        HONEYCOMB_API_KEY: ${{ fromJSON(inputs.secrets).HONEYCOMB_API_KEY }}
         DATADOG_API_KEY: ${{ fromJSON(inputs.secrets).DATADOG_API_KEY }}
         OFAC_API_KEY: ${{ fromJSON(inputs.secrets).OFAC_API_KEY }}
       run: npm run deploy:gql
