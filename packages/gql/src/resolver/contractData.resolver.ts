@@ -400,10 +400,10 @@ export const getTxByNFT = async (
       txActivities.push({
         timestamp: new Date(tx.transaction_date),
         price_details: {
-          asset_type: tx.price_details.asset_type ?? null,
-          contract_address: tx.price_details.contract_address ?? null,
-          price: tx.price_details.price ? tx.price_details.price.toString() : null,
-          price_usd: tx.price_details.price_usd ?? null,
+          asset_type: tx.price_details?.asset_type ?? null,
+          contract_address: tx.price_details?.contract_address ?? null,
+          price: tx.price_details?.price ? tx.price_details?.price.toString() : null,
+          price_usd: tx.price_details?.price_usd ?? null,
         },
         ...tx,
       })
