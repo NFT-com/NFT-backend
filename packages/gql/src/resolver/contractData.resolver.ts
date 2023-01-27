@@ -68,7 +68,7 @@ const parsePriceDetailFromAsset = (
   asset: defs.MarketplaceAsset,
 ): gql.NFTPortTxByNftPriceDetails => {
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
-  const value = new BN(res[0])
+  const value = new BN(BigNumber.from(res[0]).toHexString())
   const coin = coins.basicCoins.find((coin) =>
     coin.address === ethers.utils.getAddress(asset.standard.contractAddress),
   )
