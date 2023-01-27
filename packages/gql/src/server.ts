@@ -49,7 +49,7 @@ const getAddressFromSignature = (authMsg, signature: string): string =>
 
 export const createLoaders = (): any => {
   return {
-    listings: listingsByNFT(),
+    listings: listingsByNFT.clearAll(),
     wallet: walletById,
   }
 }
