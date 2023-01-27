@@ -68,7 +68,8 @@ const parsePriceDetailFromAsset = (
   asset: defs.MarketplaceAsset,
 ): gql.NFTPortTxByNftPriceDetails => {
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
-  const value = BigNumber.from(res[0]).toString()
+  const value = BigNumber.from(res[0]).toHexString()
+  logger.info(`hex value: ${value}`)
   const coin = coins.basicCoins.find((coin) =>
     coin.address === ethers.utils.getAddress(asset.standard.contractAddress),
   )
@@ -78,6 +79,8 @@ const parsePriceDetailFromAsset = (
   } else {
     decimals = 18
   }
+
+  logger.info(`decimals: ${decimals}`)
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
