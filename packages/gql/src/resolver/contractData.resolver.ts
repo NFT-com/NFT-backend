@@ -81,7 +81,7 @@ const parsePriceDetailFromAsset = (
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
-    price: value.shiftedBy(decimals).toFixed(),
+    price: value.shiftedBy(-decimals).toFixed(),
   }
 }
 
