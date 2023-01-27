@@ -56,23 +56,16 @@ const findNFTFromAssets = (
   assets: defs.MarketplaceAsset[],
   contractAddress: string,
   tokenId: string,
-): defs.MarketplaceAsset => {
-  return assets.find((asset) =>
+): number => {
+  return assets.findIndex((asset) =>
     asset.standard.contractAddress === ethers.utils.getAddress(contractAddress) &&
     asset.standard.tokenId === BigNumber.from(tokenId).toHexString(),
   )
 }
 
 const parsePriceDetailFromAsset = (
-  asset?: defs.MarketplaceAsset,
+  asset: defs.MarketplaceAsset,
 ): gql.NFTPortTxByNftPriceDetails => {
-  if (!asset) {
-    return {
-      asset_type: null,
-      contract_address: null,
-      price: null,
-    }
-  }
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
   const value = BigNumber.from(res[0])
   return {
@@ -347,9 +340,17 @@ export const getTxByNFT = async (
         timestamp: activityDAO.timestamp,
       }
       if (activityDAO.activityType === 'Listing') {
-        const price_details = parsePriceDetailFromAsset(
-          findNFTFromAssets(activityDAO.order.protocolData.takeAsset, contractAddress, tokenId),
-        )
+        let price_details
+        const index = findNFTFromAssets(activityDAO.order.protocolData.makeAsset, contractAddress, tokenId)
+        if (index !== -1) {
+          price_details = parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
+        } else {
+          price_details = {
+            asset_type: null,
+            contract_address: null,
+            price: null,
+          }
+        }
         activity = {
           ...activity,
           owner_address: activityDAO.order.makerAddress,
@@ -359,9 +360,17 @@ export const getTxByNFT = async (
           price_details,
         }
       } else if (activityDAO.activityType === 'Bid') {
-        const price_details = parsePriceDetailFromAsset(
-          findNFTFromAssets(activityDAO.order.protocolData.makeAsset, contractAddress, tokenId),
-        )
+        let price_details
+        const index = findNFTFromAssets(activityDAO.order.protocolData.takeAsset, contractAddress, tokenId)
+        if (index !== -1) {
+          price_details = parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
+        } else {
+          price_details = {
+            asset_type: null,
+            contract_address: null,
+            price: null,
+          }
+        }
         activity = {
           ...activity,
           owner_address: activityDAO.order.makerAddress,
