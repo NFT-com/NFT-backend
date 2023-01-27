@@ -71,7 +71,7 @@ const parsePriceDetailFromAsset = (
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
-    price: value.toNumber(),
+    price: value.toString(),
   }
 }
 
@@ -399,6 +399,12 @@ export const getTxByNFT = async (
     nftPortResult.map((tx) => {
       txActivities.push({
         timestamp: new Date(tx.transaction_date),
+        price_details: {
+          asset_type: tx.price_details.asset_type,
+          contract_address: tx.price_details.contract_address,
+          price: tx.price_details.price.toString(),
+          price_usd: tx.price_details.price_usd,
+        },
         ...tx,
       })
     })
