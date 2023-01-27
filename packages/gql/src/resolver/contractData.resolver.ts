@@ -1,3 +1,4 @@
+import { BigNumber as BN } from 'bignumber.js'
 import { BigNumber, ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Joi from 'joi'
@@ -6,7 +7,7 @@ import * as _lodash from 'lodash'
 import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
-import { joi } from '@nftcom/gql/helper'
+import { coins,joi } from '@nftcom/gql/helper'
 import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
@@ -67,11 +68,23 @@ const parsePriceDetailFromAsset = (
   asset: defs.MarketplaceAsset,
 ): gql.NFTPortTxByNftPriceDetails => {
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
-  const value = BigNumber.from(res[0])
+  const value = BigNumber.from(res[0]).toHexString()
+  logger.info(`hex value: ${value}`)
+  const coin = coins.basicCoins.find((coin) =>
+    coin.address === ethers.utils.getAddress(asset.standard.contractAddress),
+  )
+  let decimals
+  if (coin) {
+    decimals = coin.decimals
+  } else {
+    decimals = 18
+  }
+
+  logger.info(`decimals: ${decimals}`)
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
-    price: value.toString(),
+    price: new BN(value).shiftedBy(-decimals).toFixed(),
   }
 }
 
