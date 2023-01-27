@@ -1,3 +1,4 @@
+import { BigNumber as BN } from 'bignumber.js'
 import { BigNumber, ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Joi from 'joi'
@@ -67,7 +68,7 @@ const parsePriceDetailFromAsset = (
   asset: defs.MarketplaceAsset,
 ): gql.NFTPortTxByNftPriceDetails => {
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
-  const value = BigNumber.from(res[0])
+  const value = new BN(res[0])
   const coin = coins.basicCoins.find((coin) =>
     coin.address === ethers.utils.getAddress(asset.standard.contractAddress),
   )
@@ -80,7 +81,7 @@ const parsePriceDetailFromAsset = (
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
-    price: value.shl(decimals).toString(),
+    price: value.shiftedBy(-decimals).toString(),
   }
 }
 
