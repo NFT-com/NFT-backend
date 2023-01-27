@@ -80,7 +80,7 @@ const parsePriceDetailFromAsset = (
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
-    price: value.div(BigNumber.from(Math.pow(10, decimals))).toString(),
+    price: value.shl(decimals).toString(),
   }
 }
 
