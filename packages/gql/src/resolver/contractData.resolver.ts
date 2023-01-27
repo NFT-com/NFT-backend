@@ -6,7 +6,7 @@ import * as _lodash from 'lodash'
 import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
-import { joi } from '@nftcom/gql/helper'
+import { coins,joi } from '@nftcom/gql/helper'
 import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
@@ -68,10 +68,19 @@ const parsePriceDetailFromAsset = (
 ): gql.NFTPortTxByNftPriceDetails => {
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
   const value = BigNumber.from(res[0])
+  const coin = coins.basicCoins.find((coin) =>
+    coin.address === ethers.utils.getAddress(asset.standard.contractAddress),
+  )
+  let decimals
+  if (coin) {
+    decimals = coin.decimals
+  } else {
+    decimals = 18
+  }
   return {
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
-    price: value.toString(),
+    price: value.div(BigNumber.from(Math.pow(10, decimals))).toString(),
   }
 }
 
