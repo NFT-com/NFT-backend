@@ -24,6 +24,15 @@ import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { authExpireDuration, authMessage, serverPort } from './config'
+import {
+  listingsByNFT,
+  listingsByNFTCancelled,
+  listingsByNFTExecuted,
+  listingsByNFTExpired,
+  listingsByNFTExpiredAndCancelled,
+  listingsByNFTExpiredAndExecuted,
+  wallet as walletLoader,
+} from './dataloader'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -45,6 +54,18 @@ type GQLError = {
 
 const getAddressFromSignature = (authMsg, signature: string): string =>
   utils.verifyMessage(authMsg, signature)
+
+export const createLoaders = (): any => {
+  return {
+    listingsByNFT,
+    listingsByNFTExecuted,
+    listingsByNFTCancelled,
+    listingsByNFTExpired,
+    listingsByNFTExpiredAndCancelled,
+    listingsByNFTExpiredAndExecuted,
+    wallet: walletLoader,
+  }
+}
 
 export const createContext = async (ctx): Promise<Context> => {
   const { req, connection } = ctx
@@ -86,6 +107,7 @@ export const createContext = async (ctx): Promise<Context> => {
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
+    walletLoader.clear(wallet.id).prime(wallet.id, wallet)
     user = await repositories.user.findById(wallet?.userId)
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden
@@ -100,6 +122,7 @@ export const createContext = async (ctx): Promise<Context> => {
     repositories,
     teamKey,
     xMintSignature,
+    loaders: createLoaders(),
   }
 }
 

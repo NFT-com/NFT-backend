@@ -188,10 +188,6 @@ processors:
       - ecs
 
 exporters:
-  otlp/traces:
-    endpoint: "\${OTLP_COLLECTOR_ENDPOINT}"
-    headers:
-      "x-honeycomb-team": "\${HONEYCOMB_API_KEY}"
   datadog/api:
     api:
       key: "\${DATADOG_API_KEY}"
@@ -201,7 +197,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [probabilistic_sampler, resourcedetection, batch/traces]
-      exporters: [datadog/api, otlp/traces]
+      exporters: [datadog/api]
   extensions: [health_check]`,
   })
 }
@@ -516,14 +512,6 @@ const createEcsTaskDefinition = (
               image: 'amazon/aws-otel-collector',
               essential: true,
               environment: [
-                {
-                  Name: 'OTLP_COLLECTOR_ENDPOINT',
-                  Value: 'api.honeycomb.io:443',
-                },
-                {
-                  Name: 'HONEYCOMB_API_KEY',
-                  Value: process.env.HONEYCOMB_API_KEY,
-                },
                 {
                   Name: 'DATADOG_API_KEY',
                   Value: process.env.DATADOG_API_KEY,

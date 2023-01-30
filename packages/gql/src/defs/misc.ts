@@ -1,3 +1,4 @@
+import DataLoader from 'dataloader'
 import { ethers } from 'ethers'
 
 import { gql } from '@nftcom/gql/defs'
@@ -19,6 +20,7 @@ export type Context = {
   wallet: entity.Wallet
   teamKey?: string
   xMintSignature?: string
+  loaders: { [k: string]: DataLoader<any, any, any> }
 }
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)

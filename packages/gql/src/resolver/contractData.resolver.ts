@@ -1,11 +1,13 @@
+import { BigNumber as BN } from 'bignumber.js'
 import { BigNumber, ethers } from 'ethers'
+import { defaultAbiCoder } from 'ethers/lib/utils'
 import Joi from 'joi'
 import * as _lodash from 'lodash'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
-import { joi } from '@nftcom/gql/helper'
+import { coins,joi } from '@nftcom/gql/helper'
 import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
@@ -49,6 +51,41 @@ export const getContractSalesStatistics = async (
   const { contractAddress } = args.input
 
   return await fetchData('stats', [contractAddress])
+}
+
+const findNFTFromAssets = (
+  assets: defs.MarketplaceAsset[],
+  contractAddress: string,
+  tokenId: string,
+): number => {
+  return assets.findIndex((asset) =>
+    asset.standard.contractAddress === ethers.utils.getAddress(contractAddress) &&
+    asset.standard.tokenId === BigNumber.from(tokenId).toHexString(),
+  )
+}
+
+const parsePriceDetailFromAsset = (
+  asset: defs.MarketplaceAsset,
+): gql.NFTPortTxByNftPriceDetails => {
+  const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
+  const value = BigNumber.from(res[0]).toHexString()
+  logger.info(`hex value: ${value}`)
+  const coin = coins.basicCoins.find((coin) =>
+    coin.address === ethers.utils.getAddress(asset.standard.contractAddress),
+  )
+  let decimals
+  if (coin) {
+    decimals = coin.decimals
+  } else {
+    decimals = 18
+  }
+
+  logger.info(`decimals: ${decimals}`)
+  return {
+    asset_type: asset.standard.assetClass,
+    contract_address: asset.standard.contractAddress,
+    price: new BN(value).shiftedBy(-decimals).toFixed(),
+  }
 }
 
 const fetchTxsFromNFTPort = async (
@@ -201,6 +238,7 @@ export const getTxByContract = async (
         type: activityDAO.activityType.toLowerCase(),
         contract_address: ethers.utils.getAddress(contractAddress),
         timestamp: activityDAO.timestamp,
+        transaction_date: activityDAO.timestamp.toString(),
       }
       if (activityDAO.activityType === 'Listing') {
         activity = {
@@ -276,6 +314,7 @@ export const getTxByNFT = async (
     type: Joi.array().items(Joi.string().valid('listing', 'bid', 'cancel', 'swap', 'transfer', 'burn', 'mint', 'sale', 'list', 'all')).optional(),
     pageInput: Joi.any().optional(),
   })
+
   joi.validateSchema(schema, args.input)
   const { contractAddress, tokenId, chain, type, pageInput } = args.input
   const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}`
@@ -294,12 +333,12 @@ export const getTxByNFT = async (
       activityTypes,
       defs.ProtocolType.NFTCOM,
     )
+
     activities = activities.filter((activity) => {
       const activityDAO = activity as TxActivityDAO
       return !!(activityDAO.order || activityDAO.transaction || activityDAO.cancel)
     })
-    logger.info(`activities length: ${activities.length}`)
-    logger.info(`activities data: ${JSON.stringify(activities)}`)
+
     // 1. return activities from tx_activity table
     for (let i = 0; i < activities.length; i++) {
       const activityDAO = activities[i] as TxActivityDAO
@@ -310,23 +349,48 @@ export const getTxByNFT = async (
           contract_address: contractAddress,
           token_id: BigNumber.from(tokenId).toHexString(),
         },
+        transaction_date: activityDAO.timestamp.toString(),
         timestamp: activityDAO.timestamp,
       }
       if (activityDAO.activityType === 'Listing') {
+        let price_details
+        const index = findNFTFromAssets(activityDAO.order.protocolData.makeAsset, contractAddress, tokenId)
+        if (index !== -1) {
+          price_details = parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
+        } else {
+          price_details = {
+            asset_type: null,
+            contract_address: null,
+            price: null,
+          }
+        }
         activity = {
           ...activity,
           owner_address: activityDAO.order.makerAddress,
           seller_address: activityDAO.order.makerAddress,
           protocolData: activityDAO.order.protocolData,
           marketplace: activityDAO.order.protocol,
+          price_details,
         }
       } else if (activityDAO.activityType === 'Bid') {
+        let price_details
+        const index = findNFTFromAssets(activityDAO.order.protocolData.takeAsset, contractAddress, tokenId)
+        if (index !== -1) {
+          price_details = parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
+        } else {
+          price_details = {
+            asset_type: null,
+            contract_address: null,
+            price: null,
+          }
+        }
         activity = {
           ...activity,
           owner_address: activityDAO.order.makerAddress,
           buyer_address: activityDAO.order.makerAddress,
           protocolData: activityDAO.order.protocolData,
           marketplace: activityDAO.order.protocol,
+          price_details,
         }
       } else if (activityDAO.activityType === 'Cancel') {
         activity = {
@@ -348,6 +412,12 @@ export const getTxByNFT = async (
     nftPortResult.map((tx) => {
       txActivities.push({
         timestamp: new Date(tx.transaction_date),
+        price_details: {
+          asset_type: tx.price_details?.asset_type ?? null,
+          contract_address: tx.price_details?.contract_address ?? null,
+          price: tx.price_details?.price ? tx.price_details?.price.toString() : null,
+          price_usd: tx.price_details?.price_usd ?? null,
+        },
         ...tx,
       })
     })
