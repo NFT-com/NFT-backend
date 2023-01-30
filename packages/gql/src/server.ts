@@ -24,7 +24,15 @@ import * as Tracing from '@sentry/tracing'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { authExpireDuration, authMessage, serverPort } from './config'
-import { listingsByNFT, walletById } from './dataloader'
+import {
+  listingsByNFT,
+  listingsByNFTCancelled,
+  listingsByNFTExecuted,
+  listingsByNFTExpired,
+  listingsByNFTExpiredAndCancelled,
+  listingsByNFTExpiredAndExecuted,
+  wallet as walletLoader,
+} from './dataloader'
 import { Context } from './defs'
 import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
@@ -49,8 +57,13 @@ const getAddressFromSignature = (authMsg, signature: string): string =>
 
 export const createLoaders = (): any => {
   return {
-    listings: listingsByNFT.clearAll(),
-    wallet: walletById,
+    listingsByNFT,
+    listingsByNFTExecuted,
+    listingsByNFTCancelled,
+    listingsByNFTExpired,
+    listingsByNFTExpiredAndCancelled,
+    listingsByNFTExpiredAndExecuted,
+    wallet: walletLoader,
   }
 }
 
@@ -94,7 +107,7 @@ export const createContext = async (ctx): Promise<Context> => {
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
-    walletById.clear(wallet.id).prime(wallet.id, wallet)
+    walletLoader.clear(wallet.id).prime(wallet.id, wallet)
     user = await repositories.user.findById(wallet?.userId)
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden

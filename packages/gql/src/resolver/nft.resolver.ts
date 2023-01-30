@@ -237,16 +237,65 @@ const returnProfileNFTs = async (
     if (cachedData) {
       nfts = JSON.parse(cachedData) as gql.NFT[]
     } else {
-      nfts = (await ctx.repositories.nft.findByEdgeProfileDisplays(profileId, includeHidden))
-        .filter((nft: defs.ProfileSearchNFT) => {
-          return !query
-          || !query.length // query is empty string
-          || nft.metadata.name.toLowerCase().includes(query.toLowerCase())
+      const filter: Partial<entity.Edge> = helper.removeEmpty({
+        thisEntityType: defs.EntityType.Profile,
+        thisEntityId: profileId,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+      })
+      const edges: entity.Edge[] = []
+      const visibleEdges = await ctx.repositories.edge.find({
+        where: {
+          ...filter,
+          hide: false,
+        },
+        order: {
+          weight: 'ASC',
+          updatedAt: 'DESC',
+        },
+      })
+      edges.push(...visibleEdges)
+      if (includeHidden) {
+        const hiddenEdges = await ctx.repositories.edge.find({
+          where: {
+            ...filter,
+            hide: true,
+          },
+          order: {
+            updatedAt: 'DESC',
+          },
         })
-        .map((nft, index) => {
-          nft.sortIndex = index
-          return nft
-        })
+        edges.push(...hiddenEdges)
+      }
+
+      let index = 0
+      for (const edge of edges) {
+        const nft = await ctx.repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+        if (nft) {
+          let isMatch = false
+          if (query && query?.length) {
+            if (nft.metadata.name && nft.metadata.name.toLowerCase().includes(query.toLowerCase())) {
+              isMatch = true
+            }
+          } else {
+            isMatch = true
+          }
+          const collection = await ctx.repositories.collection.findOne({
+            where: {
+              contract: ethers.utils.getAddress(nft.contract),
+              isSpam: false,
+              chainId,
+            } })
+          if (collection && isMatch) {
+            nfts.push({
+              sortIndex: index,
+              isHide: edge.hide,
+              ...nft,
+            })
+            index++
+          }
+        }
+      }
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
     }
 
@@ -1234,8 +1283,30 @@ export default {
       defs.EntityType.Profile,
     ),
     listings: async (parent, args, ctx) => {
-      const { loaders: { listings } } = ctx
-      return listings.load({ ...parent, args })
+      const { loaders: {
+        listingsByNFT,
+        listingsByNFTCancelled,
+        listingsByNFTExecuted,
+        listingsByNFTExpired,
+        listingsByNFTExpiredAndCancelled,
+        listingsByNFTExpiredAndExecuted,
+      } } = ctx
+      const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
+      const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
+      if (expirationType === gql.ActivityExpiration.Expired) {
+        if (listingsStatus === defs.ActivityStatus.Cancelled) {
+          return listingsByNFTExpiredAndCancelled.load({ ...parent, args })
+        } else if (listingsStatus === defs.ActivityStatus.Executed) {
+          return listingsByNFTExpiredAndExecuted.load({ ...parent, args })
+        }
+        return listingsByNFTExpired.load({ ...parent, args })
+      }
+      if (listingsStatus === defs.ActivityStatus.Cancelled) {
+        return listingsByNFTCancelled.load({ ...parent, args })
+      } else if (listingsStatus === defs.ActivityStatus.Executed) {
+        return listingsByNFTExecuted.load({ ...parent, args })
+      }
+      return listingsByNFT.load({ ...parent, args })
     },
   },
 }
