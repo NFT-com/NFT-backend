@@ -47,6 +47,7 @@
     "apollo-server-express": "^3.10.3",
     "axios": "^0.21.4",
     "axios-retry": "^3.3.1",
+    "big-number": "^2.0.0",
     "bull": "^4.2.0",
     "cors": "^2.8.5",
     "crypto-random-string": "^3.3.1",

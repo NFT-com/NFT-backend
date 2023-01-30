@@ -280,6 +280,9 @@ describe('contract data resolver', () => {
                 getTxByNFT(input: $input) {
                   items {
                     index
+                    price_details {
+                      price
+                    }
                   }
                   totalItems
                 }
