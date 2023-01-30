@@ -1,4 +1,5 @@
 export * as auth from './auth'
+export * as coins from './coins'
 export * as joi from './joi'
 export * as pagination from './pagination'
 export * as provider from './provider'
