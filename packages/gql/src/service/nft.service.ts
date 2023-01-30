@@ -2198,7 +2198,6 @@ export const filterNativeOrdersForNFT = async (
  * getNFTActivities
  * @param activityType
  */
-
 export const getNFTActivities = <T>(
   activityType: defs.ActivityType,
 ) => {

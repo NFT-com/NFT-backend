@@ -3,6 +3,7 @@ import { BigNumber, ethers } from 'ethers'
 import { testDBConfig } from '@nftcom/gql/config'
 import { Context } from '@nftcom/gql/defs'
 import { WalletInput } from '@nftcom/gql/defs/gql'
+import { createLoaders } from '@nftcom/gql/server'
 import {
   createProfileFromEvent,
   fetchDataUsingMulticall,
@@ -26,6 +27,7 @@ const context: Context = {
   network: 'ethereum',
   user: testMockUser as User,
   wallet: testMockWallet as Wallet,
+  loaders: createLoaders(),
   repositories: {
     wallet :{
       // mocks that mockWallet is in db, and other wallets return empty response

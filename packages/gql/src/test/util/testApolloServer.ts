@@ -2,7 +2,7 @@ import { ApolloServer } from 'apollo-server-express'
 
 import { User, Wallet } from '@nftcom/gql/defs/gql'
 import { rateLimitedSchema } from '@nftcom/gql/schema'
-import { formatError } from '@nftcom/gql/server'
+import { createLoaders, formatError } from '@nftcom/gql/server'
 import { defs } from '@nftcom/shared'
 
 export function getTestApolloServer(
@@ -23,6 +23,7 @@ export function getTestApolloServer(
         wallet: wallet ?? null,
         repositories: testDB,
         teamKey: teamKey ?? null,
+        loaders: createLoaders(),
       }
     },
     formatError,
