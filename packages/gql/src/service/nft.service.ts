@@ -889,8 +889,6 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-
-      await seService.indexNFTs([savedNFT])
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -933,8 +931,6 @@ export const updateNFTOwnershipAndMetadata = async (
             traits: traits,
           },
         })
-
-        await seService.indexNFTs([updatedNFT])
         return updatedNFT
       } else {
         const isTraitSame = (existingNFT.metadata.traits.length == traits.length) &&
@@ -959,7 +955,6 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
-          await seService.indexNFTs([updatedNFT])
           return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
@@ -1073,8 +1068,8 @@ export const updateWalletNFTs = async (
         }
       }))
     if (savedNFTs.length) {
-      await indexNFTsOnSearchEngine(savedNFTs)
       await updateCollectionForNFTs(savedNFTs)
+      await indexNFTsOnSearchEngine(savedNFTs)
     }
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
