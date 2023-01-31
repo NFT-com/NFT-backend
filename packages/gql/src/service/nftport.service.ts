@@ -333,7 +333,8 @@ export const fetchTxsFromNFTPort = async (
     } else {
       args = [contractAddress]
     }
-    const chainId = chain === 'ethereum' ? '1' : '137'
+    if (chain === 'goerli') return
+    const chainId = '1'
     // fetch txs from NFTPort client we built
     let res = await fetchData(endpoint, args, {
       queryParams: {
