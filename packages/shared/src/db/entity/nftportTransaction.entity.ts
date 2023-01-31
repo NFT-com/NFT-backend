@@ -1,11 +1,19 @@
 import { Column, Entity, Index } from 'typeorm'
 
+import {
+  NFTPortMarketplace,
+  NFTPortNFTType,
+  NFTPortPriceType,
+} from '@nftcom/shared/defs'
+
 import { BaseEntity } from '.'
 
 @Entity()
-@Index(['type', 'transactionAt', 'contractAddress'])
-export class NFTPortTransactionEntity extends BaseEntity {
+@Index(['type', 'transactionDate', 'contractAddress'])
+@Index(['marketplace'])
+export class NFTPortTransaction extends BaseEntity {
 
+  // transaction type - list, cancel_list, mint, sale, burn, transfer, bid, cancel_bid
   @Column({ nullable: false })
   type: string
 
@@ -34,9 +42,6 @@ export class NFTPortTransactionEntity extends BaseEntity {
   blockNumber: string
 
   @Column({ nullable: true })
-  transactionDate: string
-
-  @Column({ nullable: true })
   transferFrom: string
 
   @Column({ nullable: true })
@@ -48,19 +53,19 @@ export class NFTPortTransactionEntity extends BaseEntity {
   @Column({ nullable: true })
   sellerAddress: string
 
-  @Column({ nullable: true })
-  marketplace: string
+  @Column({ type: 'enum', enum: NFTPortMarketplace, nullable: true })
+  marketplace: NFTPortMarketplace
 
   @Column({ nullable: true })
   bidderAddress : string
 
   @Column({ type: 'json', nullable: true })
-  nft: any
+  nft: NFTPortNFTType
 
   @Column({ type: 'json', nullable: true })
-  priceDetails: any
+  priceDetails: NFTPortPriceType
 
-  @Column({ nullable: true, type: 'timestamp with time zone' })
-  transactionAt: string
+  @Column({ nullable: false, type: 'timestamp with time zone' })
+  transactionDate: Date
 
 }

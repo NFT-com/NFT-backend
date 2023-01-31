@@ -1,11 +1,11 @@
-import { NFTPortTransactionEntity } from '@nftcom/shared/db/entity'
+import { NFTPortTransaction } from '@nftcom/shared/db/entity'
 
 import { BaseRepository } from './base.repository'
 
-export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransactionEntity> {
+export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransaction> {
 
   constructor() {
-    super(NFTPortTransactionEntity)
+    super(NFTPortTransaction)
   }
 
 }
