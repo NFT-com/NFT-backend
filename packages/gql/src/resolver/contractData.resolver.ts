@@ -9,9 +9,9 @@ import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
 import { coins,joi } from '@nftcom/gql/helper'
 import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
+import { fetchTxsFromNFTPort } from '@nftcom/gql/service/nftport.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
-import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.ContractData, _logger.Context.GraphQL)
 
@@ -85,77 +85,6 @@ const parsePriceDetailFromAsset = (
     asset_type: asset.standard.assetClass,
     contract_address: asset.standard.contractAddress,
     price: new BN(value).shiftedBy(-decimals).toFixed(),
-  }
-}
-
-const fetchTxsFromNFTPort = async (
-  endpoint: string,
-  chain: string,
-  type: string[],
-  contractAddress: string,
-  tokenId?: string,
-): Promise<any[]> => {
-  try {
-    const availableTypes = ['transfer', 'burn', 'mint', 'sale', 'list', 'all']
-    const filteredType = type.filter((t) => availableTypes.indexOf(t) !== -1)
-    const nftPortResult = []
-    let args, cacheKey
-    if (tokenId) {
-      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}_${BigNumber.from(tokenId).toHexString()}`
-      args = [contractAddress, BigNumber.from(tokenId).toString()]
-    } else {
-      cacheKey = `NFTPORT_${endpoint}_${chain}_${JSON.stringify(filteredType)}_${contractAddress}`
-      args = [contractAddress]
-    }
-    const cachedData = await cache.get(cacheKey)
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    }
-    // fetch txs from NFTPort client we built
-    let res = await fetchData(endpoint, args, {
-      queryParams: {
-        chain,
-        type: type,
-        page_size: 50,
-        cacheSeconds: 60 * 10,
-      },
-    })
-    if (res?.transactions) {
-      nftPortResult.push(...res.transactions)
-      if (res?.continuation) {
-        let continuation = res?.continuation
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          res = await fetchData(endpoint, args, {
-            queryParams: {
-              chain,
-              type: type,
-              continuation,
-              page_size: 50,
-              cacheSeconds: 60 * 10,
-            },
-          })
-          if (res?.transactions) {
-            nftPortResult.push(...res.transactions)
-            if (res?.continuation) {
-              continuation = res?.continuation
-            } else {
-              break
-            }
-          } else {
-            break
-          }
-        }
-      }
-      await cache.set(cacheKey, JSON.stringify(nftPortResult), 'EX', 60 * 10) // 10 min
-      return nftPortResult
-    } else {
-      return []
-    }
-  } catch (err) {
-    logger.error(`Error in fetchTxsFromNFTPort: ${err}`)
-    Sentry.captureMessage(`Error in fetchTxsFromNFTPort: ${err}`)
-    return []
   }
 }
 
