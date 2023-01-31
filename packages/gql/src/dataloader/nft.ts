@@ -19,7 +19,7 @@ export const nftsByWalletId = new DataLoader<string, entity.NFT[]>((walletIds) =
     where: { walletId: In([...walletIds]) },
   }).then((rows) => {
     return walletIds.map((id) => {
-      const foundNFTs = rows.filter((x) => x.id === id)
+      const foundNFTs = rows.filter((nft) => nft.walletId === id)
       for (const foundNFT of foundNFTs) {
         nft.clear(foundNFT.id).prime(foundNFT.id, foundNFT)
       }

@@ -1533,6 +1533,7 @@ export const updateEdgesWeightForProfile = async (
 ): Promise<void> => {
   try {
     const nfts = await nftsByWalletId.load(walletId)
+    console.log('NFTS', nfts, { walletId })
     if (!nfts.length) return
     await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
