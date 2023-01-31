@@ -261,6 +261,7 @@ export const filterNFTsWithAlchemy = async (
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
     const checksum = ethers.utils.getAddress
 
+    const newOwnerNFTs = new Map()
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
@@ -287,17 +288,9 @@ export const filterNFTsWithAlchemy = async (
                 await seService.deleteNFT(dbNFT?.id)
               } else {
                 const newOwner = owners[0]
-                // save User, Wallet for new owner addresses if it's not in our DB ...
-                const wallet = await saveUsersForAssociatedAddress(dbNFT?.chainId, newOwner, repositories)
-                const user = await repositories.user.findOne({
-                  where: {
-                    username: 'ethereum-' + ethers.utils.getAddress(newOwner),
-                  },
-                })
-                await repositories.nft.updateOneById(dbNFT?.id, {
-                  userId: user?.id,
-                  walletId: wallet?.id,
-                })
+                newOwnerNFTs.has(newOwner)
+                  ? newOwnerNFTs.get(newOwner).push(dbNFT)
+                  : newOwnerNFTs.set(newOwner, [dbNFT])
               }
             }
           } catch (err) {
@@ -307,6 +300,24 @@ export const filterNFTsWithAlchemy = async (
         }
       }),
     )
+    for (const [owner, nftsToUpdate] of newOwnerNFTs) {
+      // save User, Wallet for new owner addresses if it's not in our DB ...
+      const wallet = await saveUsersForAssociatedAddress(nftsToUpdate[0]?.chainId, owner, repositories)
+      const user = await repositories.user.findOne({
+        where: {
+          username: 'ethereum-' + ethers.utils.getAddress(owner),
+        },
+      })
+      await Promise.allSettled(
+        nftsToUpdate.map((nft) => {
+          repositories.nft.updateOneById(nft?.id, {
+            userId: user?.id,
+            walletId: wallet?.id,
+          })
+        }),
+      )
+      await seService.indexNFTs(nftsToUpdate)
+    }
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
