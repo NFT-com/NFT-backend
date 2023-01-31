@@ -31,6 +31,8 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
+import { nft as nftLoader, nftsByWalletId } from '../dataloader'
+
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = SearchEngineService()
@@ -259,6 +261,7 @@ export const filterNFTsWithAlchemy = async (
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
     const checksum = ethers.utils.getAddress
 
+    const newOwnerNFTs = new Map()
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
         const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
@@ -285,17 +288,9 @@ export const filterNFTsWithAlchemy = async (
                 await seService.deleteNFT(dbNFT?.id)
               } else {
                 const newOwner = owners[0]
-                // save User, Wallet for new owner addresses if it's not in our DB ...
-                const wallet = await saveUsersForAssociatedAddress(dbNFT?.chainId, newOwner, repositories)
-                const user = await repositories.user.findOne({
-                  where: {
-                    username: 'ethereum-' + ethers.utils.getAddress(newOwner),
-                  },
-                })
-                await repositories.nft.updateOneById(dbNFT?.id, {
-                  userId: user?.id,
-                  walletId: wallet?.id,
-                })
+                newOwnerNFTs.has(newOwner)
+                  ? newOwnerNFTs.get(newOwner).push(dbNFT)
+                  : newOwnerNFTs.set(newOwner, [dbNFT])
               }
             }
           } catch (err) {
@@ -305,6 +300,24 @@ export const filterNFTsWithAlchemy = async (
         }
       }),
     )
+    for (const [owner, nftsToUpdate] of newOwnerNFTs) {
+      // save User, Wallet for new owner addresses if it's not in our DB ...
+      const wallet = await saveUsersForAssociatedAddress(nftsToUpdate[0]?.chainId, owner, repositories)
+      const user = await repositories.user.findOne({
+        where: {
+          username: 'ethereum-' + ethers.utils.getAddress(owner),
+        },
+      })
+      await Promise.allSettled(
+        nftsToUpdate.map((nft) => {
+          repositories.nft.updateOneById(nft?.id, {
+            userId: user?.id,
+            walletId: wallet?.id,
+          })
+        }),
+      )
+      await seService.indexNFTs(nftsToUpdate)
+    }
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
@@ -889,8 +902,6 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-
-      await seService.indexNFTs([savedNFT])
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
@@ -933,8 +944,6 @@ export const updateNFTOwnershipAndMetadata = async (
             traits: traits,
           },
         })
-
-        await seService.indexNFTs([updatedNFT])
         return updatedNFT
       } else {
         const isTraitSame = (existingNFT.metadata.traits.length == traits.length) &&
@@ -959,7 +968,6 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
-          await seService.indexNFTs([updatedNFT])
           return updatedNFT
         } else {
           logger.debug('No need to update owner and metadata', existingNFT.contract)
@@ -1073,8 +1081,8 @@ export const updateWalletNFTs = async (
         }
       }))
     if (savedNFTs.length) {
-      await indexNFTsOnSearchEngine(savedNFTs)
       await updateCollectionForNFTs(savedNFTs)
+      await indexNFTsOnSearchEngine(savedNFTs)
     }
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
@@ -1524,7 +1532,8 @@ export const updateEdgesWeightForProfile = async (
   walletId: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: { walletId } })
+    const nfts = await nftsByWalletId.load(walletId)
+    console.log('NFTS', nfts, { walletId })
     if (!nfts.length) return
     await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
@@ -1570,7 +1579,7 @@ export const syncEdgesWithNFTs = async (
           seen[key] = true
         }
 
-        const nft = await repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+        const nft = await nftLoader.load(edge.thatEntityId)
         if (!nft) {
           await repositories.edge.hardDelete({ id: edge.id })
         }
