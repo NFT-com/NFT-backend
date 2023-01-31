@@ -936,6 +936,7 @@ export const createProfileFromEvent = async (
       repositories: repositories,
       user: null,
       wallet,
+      loaders: null,
     }
     const profile = await createProfile(ctx, {
       status: defs.ProfileStatus.Owned,

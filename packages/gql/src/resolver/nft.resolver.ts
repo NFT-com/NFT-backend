@@ -31,7 +31,6 @@ import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
-  getNFTActivities,
   getUserWalletFromNFT,
   initiateWeb3,
   saveNewNFT, updateCollectionForAssociatedContract,
@@ -1260,15 +1259,19 @@ export default {
     listNFTX2Y2,
   },
   NFT: {
-    collection: core.resolveCollectionById<gql.NFT, entity.Collection>(
-      'contract',
-      defs.EntityType.NFT,
-    ),
-    wallet: core.resolveEntityById<gql.NFT, entity.Wallet>(
-      'walletId',
-      defs.EntityType.NFT,
-      defs.EntityType.Wallet,
-    ),
+    collection: async (parent, args, ctx) => {
+      if (parent.collection) {
+        return parent.collection
+      }
+      return core.resolveCollectionById<gql.NFT, entity.Collection>(
+        'contract',
+        defs.EntityType.NFT,
+      )(parent, args, ctx)
+    },
+    wallet: async (parent, _args, ctx) => {
+      const { loaders: { wallet } } = ctx
+      return wallet.load(parent.walletId)
+    },
     isOwnedByMe: core.resolveEntityOwnership<gql.NFT>(
       'userId',
       'user',
@@ -1279,8 +1282,31 @@ export default {
       defs.EntityType.NFT,
       defs.EntityType.Profile,
     ),
-    listings: getNFTActivities(
-      defs.ActivityType.Listing,
-    ),
+    listings: async (parent, args, ctx) => {
+      const { loaders: {
+        listingsByNFT,
+        listingsByNFTCancelled,
+        listingsByNFTExecuted,
+        listingsByNFTExpired,
+        listingsByNFTExpiredAndCancelled,
+        listingsByNFTExpiredAndExecuted,
+      } } = ctx
+      const expirationType: gql.ActivityExpiration = args?.['listingsExpirationType']
+      const listingsStatus: defs.ActivityStatus = args?.['listingsStatus'] || defs.ActivityStatus.Valid
+      if (expirationType === gql.ActivityExpiration.Expired) {
+        if (listingsStatus === defs.ActivityStatus.Cancelled) {
+          return listingsByNFTExpiredAndCancelled.load({ ...parent, args })
+        } else if (listingsStatus === defs.ActivityStatus.Executed) {
+          return listingsByNFTExpiredAndExecuted.load({ ...parent, args })
+        }
+        return listingsByNFTExpired.load({ ...parent, args })
+      }
+      if (listingsStatus === defs.ActivityStatus.Cancelled) {
+        return listingsByNFTCancelled.load({ ...parent, args })
+      } else if (listingsStatus === defs.ActivityStatus.Executed) {
+        return listingsByNFTExecuted.load({ ...parent, args })
+      }
+      return listingsByNFT.load({ ...parent, args })
+    },
   },
 }
