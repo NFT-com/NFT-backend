@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { BigNumber as BN } from 'bignumber.js'
 import { BigNumber, ethers } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
@@ -13,6 +14,9 @@ import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.ContractData, _logger.Context.GraphQL)
+
+// TODO: Authorization header for streams rest api should be updated
+const AUTH_HEADER = '0xeaa4dddada518825a9451b7a0c7f2482119b8602def91287c5e6447a481131bc41747c116e2d7a463d78849773287c7d575104f1b24e90b86e4b6b88cf1714641b'
 
 type TxActivityDAO = entity.TxActivity & {
   order: entity.TxOrder
@@ -139,7 +143,18 @@ export const getTxByContract = async (
     pageInput: Joi.any().optional(),
   })
   joi.validateSchema(schema, args.input)
+
   const { contractAddress, chain, type, pageInput } = args.input
+  // Execute trigger to sync transactions from NFTPort
+  const payload = {
+    'contractAddress': contractAddress,
+  }
+  const headers = {
+    'authorization': AUTH_HEADER,
+  }
+  const url = `${process.env.STREAM_BASE_URL}/syncTxsFromNFTPort`
+  await axios.post(url, payload, { headers })
+
   const cacheKey = `${CacheKeys.GET_TX_BY_CONTRACT}_${ethers.utils.getAddress(contractAddress)}`
   const cachedData = await cache.get(cacheKey)
   let indexedActivities: Array<gql.NFTPortTxByContractTransactions> = []
@@ -287,6 +302,17 @@ export const getTxByNFT = async (
 
   joi.validateSchema(schema, args.input)
   const { contractAddress, tokenId, chain, type, pageInput } = args.input
+  // Execute trigger to sync transactions from NFTPort
+  const payload = {
+    'contractAddress': contractAddress,
+    'tokenId': tokenId,
+  }
+  const headers = {
+    'authorization': AUTH_HEADER,
+  }
+  const url = `${process.env.STREAM_BASE_URL}/syncTxsFromNFTPort`
+  await axios.post(url, payload, { headers })
+
   const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}`
   const cachedData = await cache.get(cacheKey)
   let indexedActivities: Array<gql.NFTPortTxByNftTransactions> = []
