@@ -54,10 +54,10 @@ export class NFTPortTransactionEntity extends BaseEntity {
   @Column({ nullable: true })
   bidderAddress : string
 
-  @Column({ type: 'json' })
+  @Column({ type: 'json', nullable: true })
   nft: any
 
-  @Column({ type: 'json' })
+  @Column({ type: 'json', nullable: true })
   priceDetails: any
 
   @Column({ nullable: true, type: 'timestamp with time zone' })
