@@ -31,6 +31,8 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
+import { nft as nftLoader, nftsByWalletId } from '../dataloader'
+
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = SearchEngineService()
@@ -1519,7 +1521,7 @@ export const updateEdgesWeightForProfile = async (
   walletId: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: { walletId } })
+    const nfts = await nftsByWalletId.load(walletId)
     if (!nfts.length) return
     await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
@@ -1565,7 +1567,7 @@ export const syncEdgesWithNFTs = async (
           seen[key] = true
         }
 
-        const nft = await repositories.nft.findOne({ where: { id: edge.thatEntityId } })
+        const nft = await nftLoader.load(edge.thatEntityId)
         if (!nft) {
           await repositories.edge.hardDelete({ id: edge.id })
         }

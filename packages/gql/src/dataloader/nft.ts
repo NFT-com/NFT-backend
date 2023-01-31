@@ -14,16 +14,18 @@ export const nft = new DataLoader<string, entity.NFT>((ids) => {
   cacheMap: new LRUMap(100_000),
 })
 
-export const nftByWalletId = new DataLoader<string, entity.NFT>((walletIds) => {
+export const nftsByWalletId = new DataLoader<string, entity.NFT[]>((walletIds) => {
   return repositories.nft.find({
     where: { walletId: In([...walletIds]) },
   }).then((rows) => {
     return walletIds.map((id) => {
-      const row = rows.find((x) => x.id === id)
-      nft.clear(row.id).prime(row.id, row)
-      return row
+      const foundNFTs = rows.filter((x) => x.id === id)
+      for (const foundNFT of foundNFTs) {
+        nft.clear(foundNFT.id).prime(foundNFT.id, foundNFT)
+      }
+      return foundNFTs
     })
   })
 }, {
-  cacheMap: new LRUMap(1000),
+  cacheMap: new LRUMap(20),
 })

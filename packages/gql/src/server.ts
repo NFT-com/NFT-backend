@@ -32,7 +32,7 @@ import {
   listingsByNFTExpiredAndCancelled,
   listingsByNFTExpiredAndExecuted,
   nft,
-  nftByWalletId,
+  nftsByWalletId,
   wallet as walletLoader,
 } from './dataloader'
 import { Context } from './defs'
@@ -66,7 +66,7 @@ export const createLoaders = (): any => {
     listingsByNFTExpiredAndCancelled,
     listingsByNFTExpiredAndExecuted,
     nft,
-    nftByWalletId,
+    nftsByWalletId,
     wallet: walletLoader,
   }
 }
