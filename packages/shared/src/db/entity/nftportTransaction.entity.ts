@@ -68,4 +68,7 @@ export class NFTPortTransaction extends BaseEntity {
   @Column({ nullable: false, type: 'timestamp with time zone' })
   transactionDate: Date
 
+  @Column({ nullable: true })
+  chainId: string
+
 }

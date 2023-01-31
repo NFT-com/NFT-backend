@@ -115,7 +115,6 @@ export type NFTPortNFTType = {
   contractType: string
   contractAddress: string
   tokenId: string
-  metadata_url: string
 }
 
 export type NFTPortPriceType = {
