@@ -147,7 +147,7 @@ export const getTxByContract = async (
   const { contractAddress, chain, type, pageInput } = args.input
   // Execute trigger to sync transactions from NFTPort
   const payload = {
-    'contractAddress': contractAddress,
+    'address': contractAddress,
   }
   const headers = {
     'authorization': AUTH_HEADER,
@@ -304,7 +304,7 @@ export const getTxByNFT = async (
   const { contractAddress, tokenId, chain, type, pageInput } = args.input
   // Execute trigger to sync transactions from NFTPort
   const payload = {
-    'contractAddress': contractAddress,
+    'address': contractAddress,
     'tokenId': tokenId,
   }
   const headers = {
