@@ -61,6 +61,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.TxTransaction,
     entity.Wallet,
     entity.IncentiveAction,
+    entity.NFTPortTransaction,
   ]
 
   const defaultDataSource = new DataSource({
