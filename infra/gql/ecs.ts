@@ -489,6 +489,10 @@ const createEcsTaskDefinition = (
                   Name: 'OFAC_API_KEY',
                   Value: process.env.OFAC_API_KEY,
                 },
+                {
+                  Name: 'STREAM_BASE_URL',
+                  Value: process.env.STREAM_BASE_URL,
+                },
               ],
               dependsOn: [
                 {

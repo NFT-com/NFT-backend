@@ -26,6 +26,10 @@ export const clearDB = async (repositories: db.Repository): Promise<void> => {
 
   const incentiveActions = await repositories.incentiveAction.findAll()
   const actionIds = incentiveActions.map((action) => action.id)
+
+  const nftPortTxs = await repositories.nftPortTransaction.findAll()
+  const nftPortTxIds = nftPortTxs.map((tx) => tx.id)
+
   if (edgeIds.length) await repositories.edge.hardDeleteByIds(edgeIds)
   if (collectionIds.length) await repositories.collection.hardDeleteByIds(collectionIds)
   if (nftIds.length) await repositories.nft.hardDeleteByIds(nftIds)
@@ -34,6 +38,7 @@ export const clearDB = async (repositories: db.Repository): Promise<void> => {
   if (walletIds.length) await repositories.wallet.hardDeleteByIds(walletIds)
   if (eventIds.length) await repositories.event.hardDeleteByIds(eventIds)
   if (actionIds.length) await repositories.incentiveAction.hardDeleteByIds(actionIds)
+  if (nftPortTxIds.length) await repositories.nftPortTransaction.hardDeleteByIds(nftPortTxIds)
 
   const activities = await repositories.txActivity.findAll()
 
