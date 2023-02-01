@@ -319,9 +319,6 @@ const getProfileByURL = (
           args.url,
         )
       })))
-    .catch((err) => {
-      console.log({ err })
-    })
 }
 
 const getWinningBid = (
