@@ -924,6 +924,7 @@ const leaderboard = async (
         numberOfCollections: collectionInfo.collectionCount,
         photoURL: profile.photoURL,
         url: profile.url,
+        isGKMinted: profile.isGKMinted,
       })
       index++
     }

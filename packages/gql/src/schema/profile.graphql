@@ -50,6 +50,7 @@ type Profile {
   layoutType: ProfileLayoutType
   followersCount: Int
   isFollowedByMe: Boolean
+  isGKMinted: Boolean
   isOwnedByMe: Boolean
   gkIconVisible: Boolean
   nftsDescriptionsVisible: Boolean
@@ -80,6 +81,7 @@ type LeaderboardProfile {
   numberOfGenesisKeys: Int
   numberOfCollections: Int
   itemsVisible: Int
+  isGKMinted: Boolean
 }
 
 input ProfilesInput {
