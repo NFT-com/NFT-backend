@@ -540,8 +540,6 @@ export const blacklistProfilePatterns = [
   /^garyv$/,
   /^veefriends$/,
   /^loreal$/,
-  /^supernormal$/,
-  /^andrewchoi$/,
   /^cryptodads$/,
   /^nftviking$/,
   /^cryptomoms$/,
@@ -558,7 +556,6 @@ export const blacklistProfilePatterns = [
   /^unstoppabledomains$/,
   /^unstoppableeth$/,
   /^orangecomet$/,
-  /^saintrobotica$/,
   /^lostminers$/,
   /^macroverse$/,
   /^allurebridals$/,
@@ -696,8 +693,9 @@ export const reservedProfiles = {
   '0xECDD2F733bD20E56865750eBcE33f17Da0bEE461': ['cryptodads'],
   '0x9A7364b902557850ed11cAb9eF4C61710fc51692': ['nftviking'],
   '0x99654fd49C0E51b8029d2ba7DE5b99734aB7AFEC': ['cryptomoms'],
-  '0x078928DDB9AF4B363880C29F926CFd0F82E86D69': ['supernormal', 'zipcy'],
-  '0x1fFA64E82C677B550aa239Ef81Aa57A9658C691a': ['andrewchoi'],
+  '0x89f862f870de542c2d91095CCBbCE86cA112A72a': ['supernormal', 'zipcy', 'andrewchoi'],
+  '0xd75aB5D7B1F65eEFc8B6A08EDF08e6FFbB014408': ['neotokyo', 'neocitizens', 'neoidentities'],
+  '0xd2E2E23b9f82e1351cB38987DA181c22D0492AAB': ['deadheads', 'saintrobotica'],
 }
 
 export const OFAC = {
