@@ -10,7 +10,7 @@ const repositories = db.newRepositories()
 
 const TEST_WALLET_ID = 'test'
 const nftsToListingsFn = (listings: entity.TxActivity[], wallets: entity.Wallet[]) => {
-  return ({ contract, tokenId, args: { walletId, listingsOwner, listingsPageInput } })
+  return ({ contract, tokenId, walletId, args: { listingsOwner, listingsPageInput } })
   : Pageable<entity.TxActivity>  => {
     let listingsOwnerAddress: string = listingsOwner
     if (!listingsOwnerAddress) {
@@ -19,7 +19,6 @@ const nftsToListingsFn = (listings: entity.TxActivity[], wallets: entity.Wallet[
         listingsOwnerAddress = wallet?.address
       }
     }
-
     const keyListings = listings
       .filter((listing) => listing.nftId.includes(`ethereum/${contract}/${tokenId}`)
         && (!listingsOwnerAddress || listing.walletAddress === listingsOwnerAddress))
@@ -36,7 +35,6 @@ const nftsToListingsFn = (listings: entity.TxActivity[], wallets: entity.Wallet[
       keyListings[keyListings.length - 1],
       'createdAt',
     )([keyListings, keyListings.length])
-    console.log({ page })
     return page
   }
 }
