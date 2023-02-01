@@ -7,6 +7,7 @@ import genKeyStakeABIJSON from '@nftcom/shared/helper/abis/GenesisNftStake.json'
 import looksrareExchangeABIJSON from '@nftcom/shared/helper/abis/LooksrareExchange.json'
 import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/MarketplaceEvent.json'
 import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
+import Multicall2ABIJSON from '@nftcom/shared/helper/abis/Multicall2.json'
 import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.json'
 import nftProfileABIJSON from '@nftcom/shared/helper/abis/NftProfile.json'
 import nftResolverABIJSON from '@nftcom/shared/helper/abis/NftResolver.json'
@@ -271,6 +272,10 @@ export function marketplaceABIJSON(): any {
 
 export function marketplaceEventABI(): any {
   return marketplaceEventABIJSON
+}
+
+export function Multicall2ABI(): any {
+  return Multicall2ABIJSON
 }
 
 export function NftProfileABI(): any {

@@ -21,9 +21,8 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
-import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import { _logger,contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 import { ProfileTask } from '@nftcom/shared/defs'
-import Multicall2 from '@nftcom/shared/helper/abis/Multicall2.json'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -1350,11 +1349,12 @@ export const fetchDataUsingMulticall = async (
   chainId: string,
 ): Promise<Array<Result | undefined>> => {
   try {
+    const multicall2ABI = contracts.Multicall2ABI()
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
       multicallAddress.toLowerCase(),
-      Multicall2,
+      multicall2ABI,
       provider.provider(Number(chainId)),
     )
     const abiInterface = new ethers.utils.Interface(abi)

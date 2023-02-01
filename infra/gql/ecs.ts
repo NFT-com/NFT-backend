@@ -76,6 +76,7 @@ const createEcsLoadBalancer = (
   infraOutput: SharedInfraOutput,
 ): aws.lb.LoadBalancer => {
   return new aws.lb.LoadBalancer('lb_gql_ecs', {
+    idleTimeout: 120, // Increase timeout for collection leaderboard
     ipAddressType: 'ipv4',
     name: getResourceName('gql-ecs'),
     securityGroups: [infraOutput.webSGId],
