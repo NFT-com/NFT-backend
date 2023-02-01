@@ -58,4 +58,23 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
       .getMany()
   }
 
+  public findSaleListingBidsByNFT = (
+    contract: string,
+    tokenId: string,
+    whereQuery: any,
+  ): Promise<NFTPortTransaction[]> => {
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
+      .createQueryBuilder('transaction')
+    return queryBuilder
+      .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+        nft: {
+          contractAddress: ethers.utils.getAddress(contract),
+          tokenId: BigNumber.from(tokenId).toHexString(),
+        },
+      })
+      .andWhere(whereQuery)
+      .cache(true)
+      .getMany()
+  }
+
 }
