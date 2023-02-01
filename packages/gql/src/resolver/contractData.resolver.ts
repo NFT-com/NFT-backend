@@ -153,7 +153,8 @@ export const getTxByContract = async (
     'authorization': AUTH_HEADER,
   }
   const url = `${process.env.STREAM_BASE_URL}/syncTxsFromNFTPort`
-  await axios.post(url, payload, { headers })
+  const res = await axios.post(url, payload, { headers })
+  logger.info(`Response from stream : ${JSON.stringify(res)}`)
 
   const cacheKey = `${CacheKeys.GET_TX_BY_CONTRACT}_${ethers.utils.getAddress(contractAddress)}`
   const cachedData = await cache.get(cacheKey)
@@ -311,7 +312,8 @@ export const getTxByNFT = async (
     'authorization': AUTH_HEADER,
   }
   const url = `${process.env.STREAM_BASE_URL}/syncTxsFromNFTPort`
-  await axios.post(url, payload, { headers })
+  const res = await axios.post(url, payload, { headers })
+  logger.info(`Response from stream : ${JSON.stringify(res)}`)
 
   const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}`
   const cachedData = await cache.get(cacheKey)
