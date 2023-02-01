@@ -295,7 +295,7 @@ describe('contract data resolver', () => {
         },
       })
       expect(result.data.getTxByNFT.items.length).toEqual(2)
-      expect(mockedAxios.get).toHaveBeenCalled()
+      expect(mockedAxios.post).toHaveBeenCalled()
     })
   })
 })
