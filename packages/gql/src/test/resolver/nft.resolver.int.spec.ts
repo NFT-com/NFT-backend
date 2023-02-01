@@ -117,6 +117,11 @@ describe('nft resolver', () => {
         { id: '5', name: 'goerli' },
       )
 
+      await repositories.wallet.save({
+        ...testMockWallet,
+        userId: testMockUser.id,
+      })
+
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'NFT.com Profile',
@@ -552,7 +557,7 @@ describe('nft resolver', () => {
             listingsStatus: defs.ActivityStatus.Valid,
           },
         })
-
+        
         expect(result.data.nft.listings.items).toHaveLength(1)
         expect(result.data.nft.collection.contract).toBeDefined()
         expect(result.data.nft.collection.name).toBeDefined()
