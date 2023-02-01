@@ -211,7 +211,12 @@ export const getTxByContract = async (
               priceDetails = parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
               activity = {
                 ...activity,
+                tokenId: asset.standard.tokenId,
                 priceDetails,
+                nft: {
+                  contractAddress: asset.standard.contractAddress,
+                  tokenId: asset.standard.tokenId,
+                },
               }
               txActivities.push(activity)
             }
@@ -242,7 +247,12 @@ export const getTxByContract = async (
               priceDetails = parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
               activity = {
                 ...activity,
+                tokenId: asset.standard.tokenId,
                 priceDetails,
+                nft: {
+                  contractAddress: asset.standard.contractAddress,
+                  tokenId: asset.standard.tokenId,
+                },
               }
               txActivities.push(activity)
             }
@@ -358,6 +368,7 @@ export const getTxByNFT = async (
         let activity: gql.NFTPortTxByNftTransactions = {
           type: activityDAO.activityType.toLowerCase(),
           contractAddress: ethers.utils.getAddress(contractAddress),
+          tokenId: BigNumber.from(tokenId).toHexString(),
           nft: {
             contractAddress: contractAddress,
             tokenId: BigNumber.from(tokenId).toHexString(),
