@@ -1,4 +1,4 @@
-import {  In, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import {  In, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { NFT, TxActivity } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult, ProtocolType } from '@nftcom/shared/defs'
@@ -108,9 +108,9 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         .leftJoinAndMapOne('activity.order', 'TxOrder',
           'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
         .cache(true)
         .getManyAndCount()
     } else {
@@ -148,9 +148,9 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         .leftJoinAndMapOne('activity.order', 'TxOrder',
           'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
         .cache(true)
         .getMany()
     } else {
@@ -196,9 +196,9 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         .leftJoinAndMapOne('activity.order', 'TxOrder',
           'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
         .cache(true)
         .getMany()
     } else {
@@ -225,7 +225,11 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   public findActivitiesForNFTs = (
     nfts: NFT[],
     activityType: ActivityType,
-    notExpired?: boolean,
+    opts?: {
+      notExpired?: boolean
+      expiredOnly?: boolean
+      activityStatus?: ActivityStatus
+    },
   ): Promise<TxActivity[]> => {
     const nftIds = nfts.map((nft: NFT) => `ethereum/${nft.contract}/${nft.tokenId}`)
 
@@ -235,8 +239,8 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return queryBuilder
       .where({
         activityType,
-        status: ActivityStatus.Valid,
-        expiration: notExpired ? MoreThan(new Date()) : undefined,
+        status: opts.activityStatus || ActivityStatus.Valid,
+        expiration: opts.notExpired ? MoreThan(new Date()) : opts.expiredOnly ? LessThanOrEqual(new Date()) : undefined,
       })
       .andWhere('activity.nftId && ARRAY[:...nftIds]', { nftIds })
       .orderBy({ 'activity.updatedAt': 'DESC' })

@@ -7,6 +7,8 @@ import { IHederaConsensusService } from '../defs/hedera'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
+const { HCS_ACCOUNT_ID, HCS_ENABLED, HCS_PRIVATE_KEY, HCS_TOPIC_ID } = process.env
+
 class _HederaConsensusService implements IHederaConsensusService {
 
   HCS: SubscriptionHandle
@@ -15,7 +17,7 @@ class _HederaConsensusService implements IHederaConsensusService {
   mirrorNetwork: string
 
   constructor() {
-    if (!process.env.HCS_ENABLED) {
+    if (HCS_ENABLED.toLowerCase() !== 'true') {
       return
     }
 
@@ -27,11 +29,11 @@ class _HederaConsensusService implements IHederaConsensusService {
       this.mirrorNetwork = 'hcs.testnet.mirrornode.hedera.com:5600'
     }
 
-    this.topicId = process.env.HCS_TOPIC_ID
+    this.topicId = HCS_TOPIC_ID
   }
 
   subscribe(): void {
-    if (!process.env.HCS_ENABLED) {
+    if (HCS_ENABLED.toLowerCase() !== 'true') {
       return
     }
 
@@ -51,7 +53,7 @@ class _HederaConsensusService implements IHederaConsensusService {
   }
 
   unsubscribe(): void {
-    if (!process.env.HCS_ENABLED) {
+    if (HCS_ENABLED.toLowerCase() !== 'true') {
       return
     }
 
@@ -63,13 +65,13 @@ class _HederaConsensusService implements IHederaConsensusService {
   }
 
   async submitMessage(message: string): Promise<void> {
-    if (!process.env.HCS_ENABLED) {
+    if (HCS_ENABLED.toLowerCase() !== 'true') {
       return
     }
 
     // build client
-    const accountId = process.env.HCS_ACCOUNT_ID
-    const privateKey = process.env.HCS_PRIVATE_KEY
+    const accountId = HCS_ACCOUNT_ID
+    const privateKey = HCS_PRIVATE_KEY
 
     this.client.setOperator(accountId, privateKey)
 

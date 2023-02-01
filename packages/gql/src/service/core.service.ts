@@ -21,9 +21,8 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
-import { _logger, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import { _logger,contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 import { ProfileTask } from '@nftcom/shared/defs'
-import Multicall2 from '@nftcom/shared/helper/abis/Multicall2.json'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -541,8 +540,6 @@ export const blacklistProfilePatterns = [
   /^garyv$/,
   /^veefriends$/,
   /^loreal$/,
-  /^supernormal$/,
-  /^andrewchoi$/,
   /^cryptodads$/,
   /^nftviking$/,
   /^cryptomoms$/,
@@ -559,7 +556,6 @@ export const blacklistProfilePatterns = [
   /^unstoppabledomains$/,
   /^unstoppableeth$/,
   /^orangecomet$/,
-  /^saintrobotica$/,
   /^lostminers$/,
   /^macroverse$/,
   /^allurebridals$/,
@@ -697,8 +693,9 @@ export const reservedProfiles = {
   '0xECDD2F733bD20E56865750eBcE33f17Da0bEE461': ['cryptodads'],
   '0x9A7364b902557850ed11cAb9eF4C61710fc51692': ['nftviking'],
   '0x99654fd49C0E51b8029d2ba7DE5b99734aB7AFEC': ['cryptomoms'],
-  '0x078928DDB9AF4B363880C29F926CFd0F82E86D69': ['supernormal', 'zipcy'],
-  '0x1fFA64E82C677B550aa239Ef81Aa57A9658C691a': ['andrewchoi'],
+  '0x89f862f870de542c2d91095CCBbCE86cA112A72a': ['supernormal', 'zipcy', 'andrewchoi'],
+  '0xd75aB5D7B1F65eEFc8B6A08EDF08e6FFbB014408': ['neotokyo', 'neocitizens', 'neoidentities'],
+  '0xd2E2E23b9f82e1351cB38987DA181c22D0492AAB': ['deadheads', 'saintrobotica'],
 }
 
 export const OFAC = {
@@ -936,6 +933,7 @@ export const createProfileFromEvent = async (
       repositories: repositories,
       user: null,
       wallet,
+      loaders: null,
     }
     const profile = await createProfile(ctx, {
       status: defs.ProfileStatus.Owned,
@@ -1349,11 +1347,12 @@ export const fetchDataUsingMulticall = async (
   chainId: string,
 ): Promise<Array<Result | undefined>> => {
   try {
+    const multicall2ABI = contracts.Multicall2ABI()
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
       multicallAddress.toLowerCase(),
-      Multicall2,
+      multicall2ABI,
       provider.provider(Number(chainId)),
     )
     const abiInterface = new ethers.utils.Interface(abi)
