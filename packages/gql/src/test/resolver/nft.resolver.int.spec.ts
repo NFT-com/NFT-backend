@@ -552,11 +552,7 @@ describe('nft resolver', () => {
             listingsStatus: defs.ActivityStatus.Valid,
           },
         })
-
-        // to be removed
-        console.log('nft', result.data.nft)
-        console.log('listing', result.data.nft.listing)
-
+        
         expect(result.data.nft.listings.items).toHaveLength(1)
         expect(result.data.nft.collection.contract).toBeDefined()
         expect(result.data.nft.collection.name).toBeDefined()
