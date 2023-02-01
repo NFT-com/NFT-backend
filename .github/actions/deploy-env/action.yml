@@ -124,4 +124,5 @@ runs:
         NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
         DATADOG_API_KEY: ${{ fromJSON(inputs.secrets).DATADOG_API_KEY }}
         OFAC_API_KEY: ${{ fromJSON(inputs.secrets).OFAC_API_KEY }}
+        STREAM_BASE_URL: ${{ fromJSON(inputs.secrets).STREAM_BASE_URL }}
       run: npm run deploy:gql

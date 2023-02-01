@@ -1,0 +1,74 @@
+import { Column, Entity, Index } from 'typeorm'
+
+import {
+  NFTPortMarketplace,
+  NFTPortNFTType,
+  NFTPortPriceType,
+} from '@nftcom/shared/defs'
+
+import { BaseEntity } from '.'
+
+@Entity()
+@Index(['type', 'transactionDate', 'contractAddress'])
+@Index(['marketplace'])
+export class NFTPortTransaction extends BaseEntity {
+
+  // transaction type - list, cancel_list, mint, sale, burn, transfer, bid, cancel_bid
+  @Column({ nullable: false })
+  type: string
+
+  @Column({ nullable: true })
+  listerAddress: string
+
+  @Column({ nullable: true })
+  ownerAddress: string
+
+  @Column({ nullable: true })
+  contractAddress: string
+
+  @Column({ nullable: true })
+  tokenId: string
+
+  @Column({ nullable: true })
+  quantity: number
+
+  @Column({ nullable: true })
+  transactionHash: string
+
+  @Column({ nullable: true })
+  blockHash: string
+
+  @Column({ nullable: true })
+  blockNumber: string
+
+  @Column({ nullable: true })
+  transferFrom: string
+
+  @Column({ nullable: true })
+  transferTo: string
+
+  @Column({ nullable: true })
+  buyerAddress: string
+
+  @Column({ nullable: true })
+  sellerAddress: string
+
+  @Column({ type: 'enum', enum: NFTPortMarketplace, nullable: true })
+  marketplace: NFTPortMarketplace
+
+  @Column({ nullable: true })
+  bidderAddress : string
+
+  @Column({ type: 'json', nullable: true })
+  nft: NFTPortNFTType
+
+  @Column({ type: 'json', nullable: true })
+  priceDetails: NFTPortPriceType
+
+  @Column({ nullable: false, type: 'timestamp with time zone' })
+  transactionDate: Date
+
+  @Column({ nullable: true })
+  chainId: string
+
+}

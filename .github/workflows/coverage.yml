@@ -93,6 +93,7 @@ jobs:
         envkey_AUTH_EXPIRE_BY_DAYS: ${{ secrets.AUTH_EXPIRE_BY_DAYS }}
         envkey_MULTICALL_CONTRACT: ${{ secrets.MULTICALL_CONTRACT }}
         envkey_OFAC_API_KEY: ${{ secrets.OFAC_API_KEY }}
+        envkey_STREAM_BASE_URL: ${{ secrets.STREAM_BASE_URL }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
