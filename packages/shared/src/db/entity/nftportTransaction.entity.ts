@@ -11,6 +11,7 @@ import { BaseEntity } from '.'
 @Entity()
 @Index(['type', 'transactionDate', 'contractAddress'])
 @Index(['marketplace'])
+@Index(['type', 'contractAddress','tokenId','transactionHash','blockNumber','blockHash','chainId'])
 export class NFTPortTransaction extends BaseEntity {
 
   // transaction type - list, cancel_list, mint, sale, burn, transfer, bid, cancel_bid

@@ -352,6 +352,7 @@ export const fetchTxsFromNFTPort = async (
       },
     })
     let stopSavingTxs = false
+    let exit = false
     if (res?.transactions) {
       if (latestTx) {
         stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
@@ -361,31 +362,37 @@ export const fetchTxsFromNFTPort = async (
       if (res?.continuation && !stopSavingTxs) {
         let continuation = res?.continuation
         // eslint-disable-next-line no-constant-condition
-        while (true) {
-          res = await fetchData(endpoint, args, {
-            queryParams: {
-              chain,
-              type: filteredType,
-              continuation,
-              page_size: 50,
-              cacheSeconds: 60 * 10,
-            },
-          })
-          if (res?.transactions) {
-            if (latestTx) {
-              stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
-            }
-            await saveTransactionsToEntity(res.transactions, chainId)
-            // We should prevent calling API for already saved data
-            if (stopSavingTxs) {
-              break
-            } else if (res?.continuation) {
-              continuation = res?.continuation
+        while (!exit) {
+          try {
+            res = await fetchData(endpoint, args, {
+              queryParams: {
+                chain,
+                type: filteredType,
+                continuation,
+                page_size: 50,
+                cacheSeconds: 60 * 10,
+              },
+            })
+            if (res?.transactions) {
+              if (latestTx) {
+                stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
+              }
+              await saveTransactionsToEntity(res.transactions, chainId)
+              // We should prevent calling API for already saved data
+              if (stopSavingTxs) {
+                exit = true
+              } else if (res?.continuation) {
+                continuation = res?.continuation
+              } else {
+                exit = true
+              }
             } else {
-              break
+              exit = true
             }
-          } else {
-            break
+          } catch (err) {
+            logger.error(`Error in fetchTxsFromNFTPort: ${err}`)
+            Sentry.captureMessage(`Error in fetchTxsFromNFTPort: ${err}`)
+            exit = true
           }
         }
       }
