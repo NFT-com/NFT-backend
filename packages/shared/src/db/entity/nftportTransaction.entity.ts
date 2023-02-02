@@ -60,6 +60,10 @@ export class NFTPortTransaction extends BaseEntity {
   @Column({ nullable: true })
   bidderAddress : string
 
+  /*
+   *  @Index() -- Manually added to migration indexNFTPortTxNFT1675360976823
+   *  because Typeorm does not support GIN index required for json types
+  */
   @Column({ type: 'json', nullable: true })
   nft: NFTPortNFTType
 

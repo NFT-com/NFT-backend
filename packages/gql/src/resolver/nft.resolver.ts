@@ -412,6 +412,7 @@ const getMyNFTs = async (
         true,
         CacheKeys.PROFILE_SORTED_NFTS,
         query,
+        args?.input.invalidateCache,
       )
     } else if (!args?.input?.ownedByWallet && args?.input?.profileId) {
       const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
@@ -429,6 +430,7 @@ const getMyNFTs = async (
         true,
         CacheKeys.PROFILE_SORTED_NFTS,
         query,
+        args?.input.invalidateCache,
       )
     } else if (args?.input?.ownedByWallet && !args?.input?.profileId) {
       return core.paginatedEntitiesBy(
@@ -477,6 +479,7 @@ const getMyNFTs = async (
           true,
           CacheKeys.PROFILE_SORTED_NFTS,
           query,
+          args?.input.invalidateCache,
         )
       }
     }
