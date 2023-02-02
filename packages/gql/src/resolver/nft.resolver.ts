@@ -234,6 +234,9 @@ const returnProfileNFTs = async (
     } else {
       cacheKey = `${cacheKeyStr}_${chainId}_${profileId}`
     }
+    if (invalidateCache) {
+      await cache.del([cacheKeyStr])
+    }
     const profile = await ctx.repositories.profile.findById(profileId)
     if (!profile) return
     const cachedData = await cache.get(cacheKey)
@@ -300,11 +303,6 @@ const returnProfileNFTs = async (
         }
       }
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
-    }
-
-    if (invalidateCache) {
-      await cache.del([cacheKeyStr])
-      nfts = []
     }
     // check profile owner and if owner is changed, we invalidate cached data
     const owner = await profileOwner(profile.url, chainId)
