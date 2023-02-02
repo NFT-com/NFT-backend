@@ -14,3 +14,5 @@ export const LARGE_COLLECTIONS = [
   '0x495f947276749Ce646f68AC8c248420045cb7b5e', // OpenSea Shared Storefront
   '0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405', // Foundation (FND)
 ]
+
+export const GK_EXPIRATION_YEAR = 3021

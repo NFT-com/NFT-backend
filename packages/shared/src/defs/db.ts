@@ -101,7 +101,7 @@ export enum ExchangeType {
   OpenSea = 'OpenSea',
   LooksRare = 'LooksRare',
   X2Y2 = 'X2Y2',
-  NFTCOM = 'NFTCOM'
+  NFTCOM = 'NFTCOM',
 }
 
 export enum ProtocolType {
@@ -109,6 +109,27 @@ export enum ProtocolType {
   LooksRare = 'LooksRare',
   X2Y2 = 'X2Y2',
   NFTCOM = 'NFTCOM'
+}
+
+export type NFTPortNFTType = {
+  contractType: string
+  contractAddress: string
+  tokenId: string
+}
+
+export type NFTPortPriceType = {
+  assetType: string
+  contractAddress: string
+  price: string
+  priceUSD: string
+}
+
+export enum NFTPortMarketplace {
+  OpenSea = 'OpenSea',
+  LooksRare = 'LooksRare',
+  X2Y2 = 'X2Y2',
+  Rarible = 'Rarible',
+  Cryptopunks = 'Cryptopunks',
 }
 
 export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
