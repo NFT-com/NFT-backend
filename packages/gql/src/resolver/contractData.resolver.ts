@@ -339,6 +339,7 @@ export const getTxByNFT = async (
     // Execute trigger to sync transactions from NFTPort
     const payload = {
       'address': contractAddress,
+      'tokenId': tokenId,
     }
     await executeSyncNFTPorTxs(payload)
 
