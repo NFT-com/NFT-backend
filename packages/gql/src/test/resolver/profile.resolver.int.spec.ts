@@ -630,6 +630,7 @@ describe('profile resolver', () => {
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
         visibleNFTs: 10,
+        expireAt: new Date('3021-01-01T00:00:00'),
       })
 
       await repositories.profile.save({
@@ -642,6 +643,7 @@ describe('profile resolver', () => {
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
         visibleNFTs: 1,
+        expireAt: new Date('3021-01-01T00:00:00'),
       })
 
       await repositories.profile.save({
@@ -654,6 +656,7 @@ describe('profile resolver', () => {
         layoutType: defs.ProfileLayoutType.Default,
         chainId: '5',
         visibleNFTs: 2,
+        expireAt: new Date('3021-01-01T00:00:00'),
       })
     })
 
@@ -713,6 +716,31 @@ describe('profile resolver', () => {
       expect(result.data.latestProfiles.items.length).toEqual(3)
       expect(result.data.latestProfiles.pageInfo.firstCursor).toEqual('0')
       expect(result.data.latestProfiles.pageInfo.lastCursor).toEqual('2')
+    })
+
+    it('should include isGKMinted', async () => {
+      const gqlCall = async (): Promise<any> => {
+        return testServer.executeOperation({
+          query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id isGKMinted expireAt } } }',
+          variables: {
+            input: {
+              chainId: '5',
+              pageInput: {
+                first: 3,
+              },
+            },
+          },
+        })
+      }
+
+      const result = await gqlCall()
+      expect(result.data.latestProfiles.items.filter((profile) => profile.isGKMinted).length).toEqual(3)
+      
+      await repositories.profile.updateOneById(result.data.latestProfiles.items[0].id, {
+        expireAt: new Date('3020-12-12T23:59:59'),
+      })
+      const result2 = await gqlCall()
+      expect(result2.data.latestProfiles.items.filter((profile) => profile.isGKMinted).length).toEqual(2)
     })
   })
 

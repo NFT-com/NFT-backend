@@ -1,6 +1,7 @@
 import { Column, Entity, Index, Unique } from 'typeorm'
 
 import {
+  GK_EXPIRATION_YEAR,
   ProfileDisplayType,
   ProfileLayoutType,
   ProfileStatus,
@@ -100,5 +101,9 @@ export class Profile extends BaseEntity {
 
   @Column({ nullable: true, type: 'timestamp with time zone' })
   expireAt: Date
+
+  get isGKMinted(): boolean {
+    return this.expireAt?.getFullYear() >= GK_EXPIRATION_YEAR
+  }
 
 }

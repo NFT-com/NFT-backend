@@ -83,27 +83,27 @@ type NFTPortStatistics {
 }
 
 type NFTPortTxByContractPriceDetails {
-  asset_type: String
-  contract_address: String
+  assetType: String
+  contractAddress: String
   price: String
-  price_usd: Float
+  priceUSD: String
 }
 
 type NFTPortTxByContractRoyalties {
-  account_address: String
-  royalty_share: String
+  accountAddress: String
+  royaltyShare: String
 }
 
 type NFTPortTxByContractCreators {
-  account_address: String
-  creator_share: String
+  accountAddress: String
+  creatorShare: String
 }
 
 type NFTPortTxByContractNft {
-  contract_type: String
-  contract_address: String
-  token_id: String
-  metadata_url: String
+  contractType: String
+  contractAddress: String
+  tokenId: String
+  metadataUrl: String
   total: Int
   signatures: [String]
   royalties: [NFTPortTxByContractRoyalties]
@@ -113,22 +113,21 @@ type NFTPortTxByContractNft {
 type NFTPortTxByContractTransactions {
   index: Int
   type: String
-  owner_address: String
-  contract_address: String
-  token_id: String
+  ownerAddress: String
+  contractAddress: String
+  tokenId: String
   quantity: Int
-  transaction_hash: String
-  block_hash: String
-  block_number: Int
-  transaction_date: String
-  transfer_from: String
-  transfer_to: String
-  buyer_address: String
-  seller_address: String
+  transactionHash: String
+  blockHash: String
+  blockNumber: String
+  transactionDate: DateTime
+  transferFrom: String
+  transferTo: String
+  buyerAddress: String
+  sellerAddress: String
   marketplace: String
   protocolData: TxProtocolData
-  price_details: NFTPortTxByContractPriceDetails
-  timestamp: DateTime
+  priceDetails: NFTPortTxByContractPriceDetails
   nft: NFTPortTxByContractNft
 }
 
@@ -139,46 +138,45 @@ type GetTxByContract {
 }
 
 type NFTPortTxByNFTPriceDetails {
-  asset_type: String
+  assetType: String
   price: String
-  contract_address: String
-  price_usd: Float
+  contractAddress: String
+  priceUSD: String
 }
 
 type NFTPortTxByNFTListingDetails {
-  asset_type: String
-  contract_address: String
+  assetType: String
+  contractAddress: String
   price: String
-  price_usd: Float
+  priceUSD: String
 }
 
 type NFTPortTxByNFTNft {
-  contract_type: String
-  contract_address: String
-  token_id: String
+  contractType: String
+  contractAddress: String
+  tokenId: String
 }
 
 type NFTPortTxByNFTTransactions {
   index: Int
   type: String
-  lister_address: String
+  listerAddress: String
   quantity: Int
-  transaction_date: String
+  transactionDate: DateTime
   marketplace: String
-  owner_address: String
-  contract_address: String
-  token_id: String
-  transaction_hash: String
-  block_hash: String
-  block_number: Int
-  transfer_from: String
-  transfer_to: String
-  buyer_address: String
-  seller_address: String
-  price_details: NFTPortTxByNFTPriceDetails
-  listing_details: NFTPortTxByNFTListingDetails
+  ownerAddress: String
+  contractAddress: String
+  tokenId: String
+  transactionHash: String
+  blockHash: String
+  blockNumber: String
+  transferFrom: String
+  transferTo: String
+  buyerAddress: String
+  sellerAddress: String
+  priceDetails: NFTPortTxByNFTPriceDetails
+  listingDetails: NFTPortTxByNFTListingDetails
   protocolData: TxProtocolData
-  timestamp: DateTime
   nft: NFTPortTxByNFTNft
 }
 

@@ -43,7 +43,7 @@ export const testMockWallet: Wallet = {
   chainId: '5',
   chainName: 'goerli',
   network: 'ethereum',
-  createdAt: 'test-timestamp',
+  createdAt: '2022-02-25T15:19:57.290Z',
 }
 
 export const testMockProfiles: Profile = {

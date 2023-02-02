@@ -6,7 +6,7 @@ import { getContractSalesStatistics, getNFTDetails } from '@nftcom/gql/resolver/
 import { testMockWallet, testMockWatchlistUser } from '@nftcom/gql/test/util/constants'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
 import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'
-import { db } from '@nftcom/shared/db'
+import { db,defs } from '@nftcom/shared'
 
 jest.setTimeout(300000)
 jest.retryTimes(2)
@@ -147,6 +147,53 @@ describe('contract data resolver', () => {
         testMockWatchlistUser,
         testMockWallet,
       )
+      await repositories.nftPortTransaction.save({
+        type: 'mint',
+        ownerAddress: '0x4794c458651e2e764e2d88fa2c9d9fd0383ae558',
+        contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+        tokenId: '0x241c',
+        quantity: 1,
+        transactionHash: '0x762cd78a0cdc579e0870b6374ae822bc20f746994d58eb5945e907b4f928d87d',
+        blockHash: '0x287aad8bc31bb89737f6a334154032ee4127e51448dd177e72d42f7009251799',
+        blockNumber: '15460244',
+        transactionDate: new Date('2022-09-02T16:36:59'),
+        chainId: '1',
+      })
+      await repositories.nftPortTransaction.save({
+        type: 'transfer',
+        transferFrom: '0x661e73048ae97e51285cad5d6a6f502c3ace1b98',
+        transferTo: '0xe70c5207f6389129ac44054e2403210e6377c778',
+        contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+        tokenId: '0x1218',
+        quantity: 1,
+        transactionHash: '0xbfc5b85394d0348c9456ad1c281ba6a8c9fb75ab90b6aab179d6b07d57402c77',
+        blockHash: '0x7b7465cd17491ff3ce9119b219a282889d51b54e0693dc6e6226e5aac7a31082',
+        blockNumber: '15455056',
+        transactionDate: new Date('2022-09-01T20:51:48'),
+        chainId: '1',
+      })
+      await repositories.nftPortTransaction.save({
+        type: 'sale',
+        buyerAddress: '0xe70c5207f6389129ac44054e2403210e6377c778',
+        sellerAddress: '0x661e73048ae97e51285cad5d6a6f502c3ace1b98',
+        nft: {
+          contractType: 'ERC721',
+          contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+          tokenId: '0x1218',
+        },
+        quantity: 1,
+        priceDetails: {
+          assetType: 'ETH',
+          price: '0.03',
+          priceUSD: '47.33039780304282',
+        },
+        transactionHash: '0xbfc5b85394d0348c9456ad1c281ba6a8c9fb75ab90b6aab179d6b07d57402c77',
+        blockHash: '0x7b7465cd17491ff3ce9119b219a282889d51b54e0693dc6e6226e5aac7a31082',
+        blockNumber: '15455056',
+        transactionDate: new Date('2022-09-01T20:51:48'),
+        marketplace: defs.NFTPortMarketplace.OpenSea,
+        chainId: '1',
+      })
     })
     afterAll(async () => {
       await clearDB(repositories)
@@ -154,56 +201,7 @@ describe('contract data resolver', () => {
     })
 
     it('should return transactions by contract', async () => {
-      const transactions = {
-        'response': 'OK',
-        'transactions': [
-          {
-            'type': 'mint',
-            'owner_address': '0x4794c458651e2e764e2d88fa2c9d9fd0383ae558',
-            'contract_address': '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
-            'token_id': '9244',
-            'quantity': 1,
-            'transaction_hash': '0x762cd78a0cdc579e0870b6374ae822bc20f746994d58eb5945e907b4f928d87d',
-            'block_hash': '0x287aad8bc31bb89737f6a334154032ee4127e51448dd177e72d42f7009251799',
-            'block_number': 15460244,
-            'transaction_date': '2022-09-02T16:36:59',
-          },
-          {
-            'type': 'transfer',
-            'transfer_from': '0x661e73048ae97e51285cad5d6a6f502c3ace1b98',
-            'transfer_to': '0xe70c5207f6389129ac44054e2403210e6377c778',
-            'contract_address': '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
-            'token_id': '4632',
-            'quantity': 1,
-            'transaction_hash': '0xbfc5b85394d0348c9456ad1c281ba6a8c9fb75ab90b6aab179d6b07d57402c77',
-            'block_hash': '0x7b7465cd17491ff3ce9119b219a282889d51b54e0693dc6e6226e5aac7a31082',
-            'block_number': 15455056,
-            'transaction_date': '2022-09-01T20:51:48',
-          },
-          {
-            'type': 'sale',
-            'buyer_address': '0xe70c5207f6389129ac44054e2403210e6377c778',
-            'seller_address': '0x661e73048ae97e51285cad5d6a6f502c3ace1b98',
-            'nft': {
-              'contract_type': 'ERC721',
-              'contract_address': '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
-              'token_id': '4632',
-            },
-            'quantity': 1,
-            'price_details': {
-              'asset_type': 'ETH',
-              'price': 0.03,
-              'price_usd': 47.33039780304282,
-            },
-            'transaction_hash': '0xbfc5b85394d0348c9456ad1c281ba6a8c9fb75ab90b6aab179d6b07d57402c77',
-            'block_hash': '0x7b7465cd17491ff3ce9119b219a282889d51b54e0693dc6e6226e5aac7a31082',
-            'block_number': 15455056,
-            'transaction_date': '2022-09-01T20:51:48',
-            'marketplace': 'opensea',
-          },
-        ],
-      }
-      mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: transactions }))
+      mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' }  }))
 
       const result = await testServer.executeOperation({
         query: `query GetTxByContract($input: TransactionsByContractInput) {
@@ -227,7 +225,7 @@ describe('contract data resolver', () => {
       })
       expect(result.data.getTxByContract.items.length).toEqual(3)
 
-      expect(mockedAxios.get).toHaveBeenCalled()
+      expect(mockedAxios.post).toHaveBeenCalled()
     })
   })
 
@@ -238,6 +236,31 @@ describe('contract data resolver', () => {
         testMockWatchlistUser,
         testMockWallet,
       )
+      await repositories.nftPortTransaction.save({
+        type: 'mint',
+        ownerAddress: '0x185d8Ca57797f5BCBac2DB01126403c26F504CA4',
+        contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+        tokenId: '0x0271',
+        quantity: 1,
+        transactionHash: '0x65c838c83d5e287d342445c85ccbb0347e53a1d4cb6ba2cc5956179777da4d9f',
+        blockHash: '0xaedd36209614d291fe2892cd821c75baef4635bfc568f9830ae0d76aaecea229',
+        blockNumber: '14682058',
+        transactionDate: new Date('2022-04-29T23:10:10'),
+        chainId: '1',
+      })
+      await repositories.nftPortTransaction.save({
+        type: 'transfer',
+        transferFrom: '0x185d8Ca57797f5BCBac2DB01126403c26F504CA4',
+        transferTo: '0x17caBb6Dc7de7e3e562b0993086915C2c0209860',
+        contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+        tokenId: '0x0271',
+        quantity: 1,
+        transactionHash: '0x6288f7ca97136d2833165b2a552eb67e730afaca80464ab80104bfc1e79e207f',
+        blockHash: '0x6fbdd30922014e55518caf336f8f06a255913db09b50f5623c660887288f958c',
+        blockNumber: '14864290',
+        transactionDate: new Date('2022-05-29T03:52:32'),
+        chainId: '1',
+      })
     })
     afterAll(async () => {
       await clearDB(repositories)
@@ -245,42 +268,14 @@ describe('contract data resolver', () => {
     })
 
     it('should return transactions by NFT', async () => {
-      const transactions = {
-        'response': 'OK',
-        'transactions': [
-          {
-            'type': 'transfer',
-            'transfer_from': '0x185d8ca57797f5bcbac2db01126403c26f504ca4',
-            'transfer_to': '0x17cabb6dc7de7e3e562b0993086915c2c0209860',
-            'contract_address': '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
-            'token_id': '625',
-            'quantity': 1,
-            'transaction_hash': '0x6288f7ca97136d2833165b2a552eb67e730afaca80464ab80104bfc1e79e207f',
-            'block_hash': '0x6fbdd30922014e55518caf336f8f06a255913db09b50f5623c660887288f958c',
-            'block_number': 14864290,
-            'transaction_date': '2022-05-29T03:52:32',
-          },
-          {
-            'type': 'mint',
-            'owner_address': '0x185d8ca57797f5bcbac2db01126403c26f504ca4',
-            'contract_address': '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
-            'token_id': '625',
-            'quantity': 1,
-            'transaction_hash': '0x65c838c83d5e287d342445c85ccbb0347e53a1d4cb6ba2cc5956179777da4d9f',
-            'block_hash': '0xaedd36209614d291fe2892cd821c75baef4635bfc568f9830ae0d76aaecea229',
-            'block_number': 14682058,
-            'transaction_date': '2022-04-29T23:10:10',
-          },
-        ],
-      }
-      mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: transactions }))
+      mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' }  }))
 
       const result = await testServer.executeOperation({
         query: `query GetTxByNFT($input: TransactionsByNFTInput) {
                 getTxByNFT(input: $input) {
                   items {
                     index
-                    price_details {
+                    priceDetails {
                       price
                     }
                   }
@@ -300,7 +295,7 @@ describe('contract data resolver', () => {
         },
       })
       expect(result.data.getTxByNFT.items.length).toEqual(2)
-      expect(mockedAxios.get).toHaveBeenCalled()
+      expect(mockedAxios.post).toHaveBeenCalled()
     })
   })
 })

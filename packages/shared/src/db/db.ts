@@ -61,6 +61,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.TxTransaction,
     entity.Wallet,
     entity.IncentiveAction,
+    entity.NFTPortTransaction,
   ]
 
   const defaultDataSource = new DataSource({
@@ -162,6 +163,7 @@ export type Repository = {
   txTransaction: repo.TxTransactionRepository
   wallet: repo.WalletRepository
   incentiveAction: repo.IncentiveActionRepository
+  nftPortTransaction: repo.NFTPortTransactionRepository
 }
 
 export const newRepositories = (): Repository => ({
@@ -184,4 +186,5 @@ export const newRepositories = (): Repository => ({
   txTransaction: new repo.TxTransactionRepository(),
   wallet: new repo.WalletRepository(),
   incentiveAction: new repo.IncentiveActionRepository(),
+  nftPortTransaction: new repo.NFTPortTransactionRepository(),
 })

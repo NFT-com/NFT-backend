@@ -76,6 +76,7 @@ const createEcsLoadBalancer = (
   infraOutput: SharedInfraOutput,
 ): aws.lb.LoadBalancer => {
   return new aws.lb.LoadBalancer('lb_gql_ecs', {
+    idleTimeout: 120, // Increase timeout for collection leaderboard
     ipAddressType: 'ipv4',
     name: getResourceName('gql-ecs'),
     securityGroups: [infraOutput.webSGId],
@@ -487,6 +488,10 @@ const createEcsTaskDefinition = (
                 {
                   Name: 'OFAC_API_KEY',
                   Value: process.env.OFAC_API_KEY,
+                },
+                {
+                  Name: 'STREAM_BASE_URL',
+                  Value: process.env.STREAM_BASE_URL,
                 },
               ],
               dependsOn: [
