@@ -32,7 +32,7 @@ import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   getUserWalletFromNFT,
-  initiateWeb3,
+  initiateWeb3, profileOwner,
   saveNewNFT, updateCollectionForAssociatedContract,
   updateNFTMetadata, updateNFTOwnershipAndMetadata, updateNFTsForAssociatedAddresses,
   updateWalletNFTs,
@@ -229,13 +229,28 @@ const returnProfileNFTs = async (
     let nfts: gql.NFT[] = []
     let cacheKey
     if (query && query?.length) {
-      cacheKey =  `${cacheKeyStr}_${chainId}_${profileId}_${query}`
+      cacheKey = `${cacheKeyStr}_${chainId}_${profileId}_${query}`
     } else {
       cacheKey = `${cacheKeyStr}_${chainId}_${profileId}`
     }
+    const profile = await ctx.repositories.profile.findById(profileId)
+    if (!profile) return
     const cachedData = await cache.get(cacheKey)
     if (cachedData) {
       nfts = JSON.parse(cachedData) as gql.NFT[]
+      // check profile owner and if owner is changed, we invalidate cachedData
+      const owner = await profileOwner(profile.url, chainId)
+      if (!owner) {
+        await cache.del([cacheKeyStr])
+        nfts = []
+      }
+      if (profile.ownerWalletId) {
+        const wallet = await ctx.repositories.wallet.findById(profile.ownerWalletId)
+        if (wallet && ethers.utils.getAddress(wallet.address) !== ethers.utils.getAddress(owner)) {
+          await cache.del([cacheKeyStr])
+          nfts = []
+        }
+      }
     } else {
       const filter: Partial<entity.Edge> = helper.removeEmpty({
         thisEntityType: defs.EntityType.Profile,

@@ -14,7 +14,7 @@ import { pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import {
   contentTypeFromExt,
-  extensionFromFilename,
+  extensionFromFilename, fetchDataUsingMulticall,
   fetchWithTimeout, generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
@@ -2302,4 +2302,31 @@ export const queryNFTsForProfile = async (
     }),
   )
   return nfts
+}
+
+export const profileOwner = async (
+  profileUrl: string,
+  chainId: string,
+): Promise<string | undefined> => {
+  try {
+    const cacheKey = `${CacheKeys.PROFILE_OWNER}_${profileUrl}_${chainId}`
+    const cachedData = await cache.get(cacheKey)
+    if (cachedData) return JSON.parse(cachedData)
+    const calls = []
+    calls.push({
+      contract: contracts.nftProfileAddress(chainId),
+      name: 'profileOwner',
+      params: [profileUrl],
+    })
+    const abi = contracts.NftProfileABI()
+    const res = await fetchDataUsingMulticall(calls, abi, chainId)
+    if (!res.length) return undefined
+    if (!res[0].length) return undefined
+    await cache.set(cacheKey, JSON.stringify(res[0][0]), 'EX', 2 * 60) // 2 min
+    return res[0][0]
+  } catch (err) {
+    logger.error(`Error in profileOwner: ${err}`)
+    Sentry.captureMessage(`Error in profileOwner: ${err}`)
+    return undefined
+  }
 }
