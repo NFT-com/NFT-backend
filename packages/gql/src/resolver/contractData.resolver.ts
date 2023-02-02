@@ -173,7 +173,7 @@ export const getTxByContract = async (
     const cachedData = await cache.get(cacheKey)
     let indexedActivities: Array<gql.NFTPortTxByContractTransactions> = []
 
-    if (cachedData) {
+    if (cachedData && JSON.parse(cachedData)?.length > 0) {
       indexedActivities = JSON.parse(cachedData)
     } else {
       const chainId = chain === 'ethereum' ? '1' : '137'
@@ -347,7 +347,7 @@ export const getTxByNFT = async (
     const cachedData = await cache.get(cacheKey)
     let indexedActivities: Array<gql.NFTPortTxByNftTransactions> = []
 
-    if (cachedData) {
+    if (cachedData && JSON.parse(cachedData)?.length > 0) {
       indexedActivities = JSON.parse(cachedData)
     } else {
       const chainId = chain === 'ethereum' ? '1' : '137'
@@ -457,7 +457,7 @@ export const getTxByNFT = async (
         cacheKey,
         JSON.stringify(indexedActivities),
         'EX',
-        10 * 60, // 10 min
+        3 * 60, // 3 min
       )
     }
 
