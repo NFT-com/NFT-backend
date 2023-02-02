@@ -565,7 +565,7 @@ const refreshMyNFTs = (
         wallets.map((wallet: entity.Wallet) => {
           checkNFTContractAddresses(user.id, wallet.id, wallet.address, wallet.chainId)
             .then(() => {
-              updateWalletNFTs(user.id, wallet.id, wallet.address, wallet.chainId)
+              updateWalletNFTs(user.id, wallet, wallet.chainId)
             })
         }),
       ).then(() => {
@@ -825,7 +825,7 @@ export const refreshNft = async (
           logger.error('Failed to create new user and wallet for NFT ownership')
           return nft
         } else {
-          const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId)
+          const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
           await seService.indexNFTs([refreshedNFT])
 
           await cache.set(

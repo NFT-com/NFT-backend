@@ -313,6 +313,7 @@ export const filterNFTsWithAlchemy = async (
           repositories.nft.updateOneById(nft?.id, {
             userId: user?.id,
             walletId: wallet?.id,
+            owner: wallet?.address,
           })
         }),
       )
@@ -823,7 +824,7 @@ const uploadImageToS3 = async (
 export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
-  walletId: string,
+  wallet: entity.Wallet,
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
   try {
@@ -835,13 +836,7 @@ export const updateNFTOwnershipAndMetadata = async (
       },
     })
 
-    let walletChainId: string = await cache.get(`chainId_${walletId}`)
-
-    if (!walletChainId) {
-      const wallet = await repositories.wallet.findById(walletId)
-      walletChainId = wallet?.chainId || process.env.CHAIN_ID
-      await cache.set(`chainId_${walletId}`, walletChainId)
-    }
+    const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
 
     let type, name, description, image
     let traits = []
@@ -891,7 +886,8 @@ export const updateNFTOwnershipAndMetadata = async (
       const savedNFT = await repositories.nft.save({
         chainId: walletChainId,
         userId,
-        walletId,
+        walletId: wallet.id,
+        owner: wallet.address,
         contract: ethers.utils.getAddress(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
         type,
@@ -905,7 +901,7 @@ export const updateNFTOwnershipAndMetadata = async (
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
-      if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+      if (existingNFT.userId !== userId || existingNFT.walletId !== wallet.id) {
         // we remove edge of previous profile
         // logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
@@ -934,7 +930,8 @@ export const updateNFTOwnershipAndMetadata = async (
 
         const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
           userId,
-          walletId,
+          walletId: wallet.id,
+          owner: wallet.address,
           type,
           profileId: null,
           metadata: {
@@ -959,7 +956,8 @@ export const updateNFTOwnershipAndMetadata = async (
         ) {
           const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
             userId,
-            walletId,
+            walletId: wallet.id,
+            owner: wallet.address,
             type,
             metadata: {
               name,
@@ -1049,18 +1047,16 @@ export const indexCollectionsOnSearchEngine = async (
 /**
  * update wallet NFTs using data from alchemy api
  * @param userId
- * @param walletId
- * @param walletAddress
+ * @param wallet
  * @param chainId
  */
 export const updateWalletNFTs = async (
   userId: string,
-  walletId: string,
-  walletAddress: string,
+  wallet: entity.Wallet,
   chainId: string,
 ): Promise<void> => {
   try {
-    const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
+    const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
     const chunks: OwnedNFT[][] = Lodash.chunk(
       ownedNFTs,
       20,
@@ -1071,7 +1067,7 @@ export const updateWalletNFTs = async (
         try {
           await Promise.allSettled(
             chunk.map(async (nft) => {
-              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
+              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
               if (savedNFT) savedNFTs.push(savedNFT)
             }),
           )
@@ -1610,8 +1606,7 @@ export const updateNFTsForAssociatedWallet = async (
       )
       await updateWalletNFTs(
         wallet.userId,
-        wallet.id,
-        wallet.address,
+        wallet,
         wallet.chainId,
       )
       // save NFT edges for profile...
@@ -2157,6 +2152,7 @@ export const saveNewNFT = async (
       chainId: chainId,
       userId: wallet.userId,
       walletId: wallet.id,
+      owner: wallet.address,
       contract: ethers.utils.getAddress(contract),
       tokenId: BigNumber.from(tokenId).toHexString(),
       type,

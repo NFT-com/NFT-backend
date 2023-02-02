@@ -394,7 +394,7 @@ describe('nft service', () => {
         },
       }
       nftService.initiateWeb3('5')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '5')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet, '5')
 
       // Previous edges should be removed
       const edges = await repositories.edge.findAll()
@@ -411,7 +411,7 @@ describe('nft service', () => {
         },
       }
       nftService.initiateWeb3('1')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet, '1')
 
       const updatedNFT = await repositories.nft.findById(nftB.id)
       expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
@@ -428,7 +428,7 @@ describe('nft service', () => {
         },
       }
       nftService.initiateWeb3('1')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet2.id, '1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet2, '1')
 
       const updatedNFT = await repositories.nft.findById(nftC.id)
       expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
