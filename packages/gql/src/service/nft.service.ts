@@ -301,19 +301,10 @@ export const filterNFTsWithAlchemy = async (
       }),
     )
     for (const [owner, nftsToUpdate] of newOwnerNFTs) {
-      // save User, Wallet for new owner addresses if it's not in our DB ...
-      const wallet = await saveUsersForAssociatedAddress(nftsToUpdate[0]?.chainId, owner, repositories)
-      const user = await repositories.user.findOne({
-        where: {
-          username: 'ethereum-' + ethers.utils.getAddress(owner),
-        },
-      })
       await Promise.allSettled(
         nftsToUpdate.map((nft) => {
           repositories.nft.updateOneById(nft?.id, {
-            userId: user?.id,
-            walletId: wallet?.id,
-            owner: wallet?.address,
+            owner: helper.checkSum(owner),
           })
         }),
       )
@@ -887,7 +878,7 @@ export const updateNFTOwnershipAndMetadata = async (
         chainId: walletChainId,
         userId,
         walletId: wallet.id,
-        owner: wallet.address,
+        owner: helper.checkSum(wallet.address),
         contract: ethers.utils.getAddress(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
         type,
@@ -931,7 +922,7 @@ export const updateNFTOwnershipAndMetadata = async (
         const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId: wallet.id,
-          owner: wallet.address,
+          owner: helper.checkSum(wallet.address),
           type,
           profileId: null,
           metadata: {
@@ -957,7 +948,7 @@ export const updateNFTOwnershipAndMetadata = async (
           const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId: wallet.id,
-            owner: wallet.address,
+            owner: helper.checkSum(wallet.address),
             type,
             metadata: {
               name,
@@ -2152,7 +2143,7 @@ export const saveNewNFT = async (
       chainId: chainId,
       userId: wallet.userId,
       walletId: wallet.id,
-      owner: wallet.address,
+      owner: helper.checkSum(wallet.address),
       contract: ethers.utils.getAddress(contract),
       tokenId: BigNumber.from(tokenId).toHexString(),
       type,
