@@ -314,7 +314,7 @@ const toSaveTxsBeStopped = (
   txs : any[],
   transactionDate: Date,
 ): boolean => {
-  const tx = txs.find((tx) => new Date(tx.transactionDate) < transactionDate)
+  const tx = txs.find((tx) => new Date(tx.transaction_date) < transactionDate)
   return !!tx
 }
 

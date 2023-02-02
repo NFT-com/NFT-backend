@@ -1,10 +1,11 @@
 import { testDBConfig } from '@nftcom/gql/config'
 import {
+  fetchTxsFromNFTPort,
   retrieveContractNFTs,
   retrieveNFTDetailsNFTPort, saveTransactionsToEntity,
 } from '@nftcom/gql/service/nftport.service'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
-import { db } from '@nftcom/shared/'
+import { db, defs } from '@nftcom/shared/'
 
 jest.setTimeout(150000)
 
@@ -134,6 +135,42 @@ describe('nftport', () => {
       await saveTransactionsToEntity(transactions, '1')
       const nftPortTxs = await repositories.nftPortTransaction.findAll()
       expect(nftPortTxs.length).toEqual(2)
+    })
+  })
+
+  describe('fetchTxsFromNFTPort', () => {
+    beforeAll(async () => {
+      await repositories.nftPortTransaction.save({
+        type: 'sale',
+        buyerAddress: '0xE70C5207f6389129Ac44054E2403210E6377C778',
+        sellerAddress: '0x661e73048AE97E51285cad5d6A6f502C3aCE1b98',
+        nft: {
+          contractType: 'ERC721',
+          contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+          tokenId: '0x1218',
+        },
+        quantity: 1,
+        priceDetails: {
+          assetType: 'ETH',
+          price: '0.03',
+          priceUSD: '47.33039780304282',
+        },
+        transactionHash: '0xbfc5b85394d0348c9456ad1c281ba6a8c9fb75ab90b6aab179d6b07d57402c77',
+        blockHash: '0x7b7465cd17491ff3ce9119b219a282889d51b54e0693dc6e6226e5aac7a31082',
+        blockNumber: '15455056',
+        transactionDate: new Date('2099-09-01T20:51:48'),
+        marketplace: defs.NFTPortMarketplace.OpenSea,
+        chainId: '1',
+      })
+    })
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('it should save only the most recent transactions to nft_port_transaction', async () => {
+      await fetchTxsFromNFTPort('txByContract', 'ethereum', ['all'], '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d')
+      const nftPortTxs = await repositories.nftPortTransaction.findAll()
+      expect(nftPortTxs.length).toEqual(51)
     })
   })
 })
