@@ -1,9 +1,15 @@
+import { testDBConfig } from '@nftcom/gql/config'
 import {
   retrieveContractNFTs,
-  retrieveNFTDetailsNFTPort,
+  retrieveNFTDetailsNFTPort, saveTransactionsToEntity,
 } from '@nftcom/gql/service/nftport.service'
+import { clearDB } from '@nftcom/gql/test/util/helpers'
+import { db } from '@nftcom/shared/'
 
 jest.setTimeout(150000)
+
+const repositories = db.newRepositories()
+let connection
 
 jest.mock('@nftcom/cache', () => ({
   redisConfig: {},
@@ -31,6 +37,15 @@ const validateNFTsResponse = (res: any): void => {
 }
 
 describe('nftport', () => {
+  beforeAll(async () => {
+    connection = await db.connectTestDB(testDBConfig)
+  })
+
+  afterAll(async () => {
+    if (!connection) return
+    await connection.destroy()
+  })
+
   describe('retrieveNFTDetailsNFTPort', () => {
     it('it should retrieve undefined', async () => {
       const contract = '0xd98335861E2FAe4cF42bB3A2E7830740175e7c41'
@@ -69,6 +84,56 @@ describe('nftport', () => {
       const contract = '0xA3F5998047579334607c47a6a2889BF87A17Fc02'
       const res = await retrieveContractNFTs(contract,  '1')
       validateNFTsResponse(res)
+    })
+  })
+
+  describe('saveTransactionsToEntity', () => {
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+    it('it should save transactions to nft_port_transaction', async () => {
+      const transactions = [
+        {
+          type: 'sale',
+          buyer_address: '0xe70c5207f6389129ac44054e2403210e6377c778',
+          seller_address: '0x661e73048ae97e51285cad5d6a6f502c3ace1b98',
+          nft: {
+            contract_type: 'ERC721',
+            contract_address: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
+            token_id: '4632',
+          },
+          quantity: 1,
+          price_details: {
+            asset_type: 'ETH',
+            price: 0.03,
+            price_usd: 47.33039780304282,
+          },
+          transaction_hash: '0xbfc5b85394d0348c9456ad1c281ba6a8c9fb75ab90b6aab179d6b07d57402c77',
+          block_hash: '0x7b7465cd17491ff3ce9119b219a282889d51b54e0693dc6e6226e5aac7a31082',
+          block_number: 15455056,
+          transaction_date: '2022-09-01T20:51:48',
+          marketplace: 'opensea',
+        },
+        {
+          type: 'list',
+          lister_address: '0xab81377a955fd33034db726bebc7b610bfbdb156',
+          nft: {
+            contract_type: 'ERC721',
+            contract_address: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
+            token_id: '4632',
+          },
+          quantity: 1,
+          price_details: {
+            asset_type: 'ETH',
+            price: 0.03,
+          },
+          transaction_date: '2022-01-01T12:51:48',
+          marketplace: 'opensea',
+        },
+      ]
+      await saveTransactionsToEntity(transactions, '1')
+      const nftPortTxs = await repositories.nftPortTransaction.findAll()
+      expect(nftPortTxs.length).toEqual(2)
     })
   })
 })

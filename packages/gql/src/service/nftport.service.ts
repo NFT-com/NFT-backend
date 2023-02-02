@@ -145,156 +145,163 @@ const marketplaceString = (
 /*
  * Keep NFTPort transactions to matching table
  */
-const saveTransactionsToEntity = async (
+export const saveTransactionsToEntity = async (
   transactions: any[],
   chainId: string,
 ): Promise<void> => {
   try {
     await Promise.allSettled(
       transactions.map(async (tx) => {
-        if (tx.type.includes('transfer') || tx.type.includes('mint') || tx.type.includes('burn')) {
-          const isExisting = await repositories.nftPortTransaction.findOne({
-            where: {
+        try {
+          if (tx.type.includes('transfer') || tx.type.includes('mint') || tx.type.includes('burn')) {
+            const isExisting = await repositories.nftPortTransaction.findOne({
+              where: {
+                type: tx.type,
+                contractAddress: ethers.utils.getAddress(tx.contract_address),
+                tokenId: BigNumber.from(tx.token_id).toHexString(),
+                transactionHash: tx.transaction_hash,
+                blockNumber: tx.block_number,
+                blockHash: tx.block_hash,
+                chainId,
+              },
+            })
+            if (!isExisting) {
+              await repositories.nftPortTransaction.save({
+                type: tx.type,
+                ownerAddress: tx.owner_address ? ethers.utils.getAddress(tx.owner_address) : null,
+                transferFrom: tx.transfer_from ? ethers.utils.getAddress(tx.transfer_from) : null,
+                transferTo: tx.transfer_to ? ethers.utils.getAddress(tx.transfer_to) : null,
+                contractAddress: ethers.utils.getAddress(tx.contract_address),
+                tokenId: BigNumber.from(tx.token_id).toHexString(),
+                quantity: Number(tx.quantity),
+                transactionHash: tx.transaction_hash,
+                blockNumber: tx.block_number,
+                blockHash: tx.block_hash,
+                transactionDate: new Date(tx.transaction_date),
+                chainId,
+              })
+            }
+          } else if (tx.type.includes('sale')) {
+            const whereQuery = {
               type: tx.type,
-              contractAddress: ethers.utils.getAddress(tx.contract_address),
-              tokenId: BigNumber.from(tx.token_id).toHexString(),
+              buyerAddress: ethers.utils.getAddress(tx.buyer_address),
+              sellerAddress: ethers.utils.getAddress(tx.seller_address),
               transactionHash: tx.transaction_hash,
               blockNumber: tx.block_number,
               blockHash: tx.block_hash,
+              marketplace: marketplaceString(tx.marketplace) ?? IsNull(),
               chainId,
-            },
-          })
-          if (!isExisting) {
-            await repositories.nftPortTransaction.save({
+            }
+            const txs = await repositories.nftPortTransaction.findSaleListingBidsByNFT(
+              tx.nft.contract_address,
+              tx.nft.token_id,
+              whereQuery,
+            )
+            if (!txs.length) {
+              await repositories.nftPortTransaction.save({
+                type: tx.type,
+                buyerAddress: tx.buyer_address ? ethers.utils.getAddress(tx.buyer_address) : null,
+                sellerAddress: tx.seller_address ? ethers.utils.getAddress(tx.seller_address) : null,
+                nft: {
+                  contractType: tx.nft.contract_type,
+                  contractAddress: ethers.utils.getAddress(tx.nft.contract_address),
+                  tokenId: BigNumber.from(tx.nft.token_id).toHexString(),
+                },
+                quantity: Number(tx.quantity),
+                priceDetails: {
+                  assetType: tx.price_details.asset_type,
+                  contractAddress: tx.price_details.contract_address ?
+                    ethers.utils.getAddress(tx.price_details.contract_address) : null,
+                  price: tx.price_details.price ? tx.price_details.price.toString() : null,
+                  priceUSD: tx.price_details.price_usd ? tx.price_details.price_usd.toString() : null,
+                },
+                transactionHash: tx.transaction_hash,
+                blockNumber: tx.block_number,
+                blockHash: tx.block_hash,
+                transactionDate: new Date(tx.transaction_date),
+                marketplace: marketplaceString(tx.marketplace),
+                chainId,
+              })
+            }
+          } else if (tx.type.includes('list')) {
+            const whereQuery = {
               type: tx.type,
-              ownerAddress: tx.owner_address ? ethers.utils.getAddress(tx.owner_address) : null,
-              transferFrom: tx.transfer_from ? ethers.utils.getAddress(tx.transfer_from) : null,
-              transferTo: tx.transfer_to ? ethers.utils.getAddress(tx.transfer_to) : null,
-              contractAddress: ethers.utils.getAddress(tx.contract_address),
-              tokenId: BigNumber.from(tx.token_id).toHexString(),
-              quantity: Number(tx.quantity),
-              transactionHash: tx.transaction_hash,
-              blockNumber: tx.block_number,
-              blockHash: tx.block_hash,
+              listerAddress: ethers.utils.getAddress(tx.lister_address),
               transactionDate: new Date(tx.transaction_date),
+              marketplace: marketplaceString(tx.marketplace) ?? IsNull(),
               chainId,
-            })
-          }
-        } else if (tx.type.includes('sale')) {
-          const whereQuery = {
-            type: tx.type,
-            buyerAddress: ethers.utils.getAddress(tx.buyer_address),
-            sellerAddress: ethers.utils.getAddress(tx.seller_address),
-            transactionHash: tx.transaction_hash,
-            blockNumber: tx.block_number,
-            blockHash: tx.block_hash,
-            marketplace: marketplaceString(tx.marketplace) ?? IsNull(),
-            chainId,
-          }
-          const txs = await repositories.nftPortTransaction.findSaleListingBidsByNFT(
-            tx.nft.contract_address,
-            tx.nft.tokenId,
-            whereQuery,
-          )
-          if (!txs.length) {
-            await repositories.nftPortTransaction.save({
+            }
+            const txs = await repositories.nftPortTransaction.findSaleListingBidsByNFT(
+              tx.nft.contract_address,
+              tx.nft.token_id,
+              whereQuery,
+            )
+            if (!txs.length) {
+              await repositories.nftPortTransaction.save({
+                type: tx.type,
+                listerAddress: tx.lister_address ? ethers.utils.getAddress(tx.lister_address) : null,
+                nft: {
+                  contractType: tx.nft.contract_type,
+                  contractAddress: ethers.utils.getAddress(tx.nft.contract_address),
+                  tokenId: BigNumber.from(tx.nft.token_id).toHexString(),
+                },
+                quantity: Number(tx.quantity),
+                priceDetails: {
+                  assetType: tx.price_details.asset_type,
+                  contractAddress: tx.price_details.contract_address ?
+                    ethers.utils.getAddress(tx.price_details.contract_address) : null,
+                  price: tx.price_details.price ? tx.price_details.price.toString() : null,
+                  priceUSD: tx.price_details.price_usd ? tx.price_details.price_usd.toString() : null,
+                },
+                transactionHash: tx.transaction_hash ?? null,
+                blockNumber: tx.block_number ?? null,
+                blockHash: tx.block_hash ?? null,
+                transactionDate: new Date(tx.transaction_date),
+                marketplace: marketplaceString(tx.marketplace),
+                chainId,
+              })
+            }
+          } else if (tx.type.includes('bid')) {
+            const whereQuery = {
               type: tx.type,
-              buyerAddress: tx.buyer_address ? ethers.utils.getAddress(tx.buyer_address) : null,
-              sellerAddress: tx.seller_address ? ethers.utils.getAddress(tx.seller_address) : null,
-              nft: {
-                contractType: tx.nft.contract_type,
-                contractAddress: ethers.utils.getAddress(tx.nft.contract_address),
-                tokenId: BigNumber.from(tx.nft.token_id).toHexString(),
-              },
-              quantity: Number(tx.quantity),
-              priceDetails: {
-                assetType: tx.price_details.asset_type,
-                contractAddress: ethers.utils.getAddress(tx.price_details.contract_address),
-                price: tx.price_details.price.toString(),
-                priceUSD: tx.price_details.price_usd.toString(),
-              },
-              transactionHash: tx.transaction_hash,
-              blockNumber: tx.block_number,
-              blockHash: tx.block_hash,
+              bidderAddress: ethers.utils.getAddress(tx.bidder_address),
               transactionDate: new Date(tx.transaction_date),
-              marketplace: marketplaceString(tx.marketplace),
+              marketplace: marketplaceString(tx.marketplace) ?? IsNull(),
               chainId,
-            })
+            }
+            const txs = await repositories.nftPortTransaction.findSaleListingBidsByNFT(
+              tx.nft.contract_address,
+              tx.nft.token_id,
+              whereQuery,
+            )
+            if (!txs.length) {
+              await repositories.nftPortTransaction.save({
+                type: tx.type,
+                bidderAddress: tx.bidder_address ? ethers.utils.getAddress(tx.bidder_address) : null,
+                nft: {
+                  contractType: tx.nft.contract_type,
+                  contractAddress: ethers.utils.getAddress(tx.nft.contract_address),
+                  tokenId: BigNumber.from(tx.nft.token_id).toHexString(),
+                },
+                quantity: Number(tx.quantity),
+                priceDetails: {
+                  assetType: tx.price_details.asset_type,
+                  contractAddress: tx.price_details.contract_address ?
+                    ethers.utils.getAddress(tx.price_details.contract_address) : null,
+                  price: tx.price_details.price ? tx.price_details.price.toString() : null,
+                  priceUSD: tx.price_details.price_usd ? tx.price_details.price_usd.toString() : null,
+                },
+                transactionHash: tx.transaction_hash ?? null,
+                blockNumber: tx.block_number ?? null,
+                blockHash: tx.block_hash ?? null,
+                transactionDate: new Date(tx.transaction_date),
+                marketplace: marketplaceString(tx.marketplace),
+                chainId,
+              })
+            }
           }
-        } else if (tx.type.includes('list')) {
-          const whereQuery = {
-            type: tx.type,
-            listerAddress: ethers.utils.getAddress(tx.lister_address),
-            transactionDate: new Date(tx.transaction_date),
-            marketplace: marketplaceString(tx.marketplace) ?? IsNull(),
-            chainId,
-          }
-          const txs = await repositories.nftPortTransaction.findSaleListingBidsByNFT(
-            tx.nft.contract_address,
-            tx.nft.token_id,
-            whereQuery,
-          )
-          if (!txs.length) {
-            await repositories.nftPortTransaction.save({
-              type: tx.type,
-              listerAddress: tx.lister_address ? ethers.utils.getAddress(tx.lister_address) : null,
-              nft: {
-                contractType: tx.nft.contract_type,
-                contractAddress: ethers.utils.getAddress(tx.nft.contract_address),
-                tokenId: BigNumber.from(tx.nft.token_id).toHexString(),
-              },
-              quantity: Number(tx.quantity),
-              priceDetails: {
-                assetType: tx.price_details.asset_type,
-                contractAddress: ethers.utils.getAddress(tx.price_details.contract_address),
-                price: tx.price_details.price.toString(),
-                priceUSD: tx.price_details.price_usd.toString(),
-              },
-              transactionHash: tx.transaction_hash ?? null,
-              blockNumber: tx.block_number ?? null,
-              blockHash: tx.block_hash ?? null,
-              transactionDate: new Date(tx.transaction_date),
-              marketplace: marketplaceString(tx.marketplace),
-              chainId,
-            })
-          }
-        } else if (tx.type.includes('bid')) {
-          const whereQuery = {
-            type: tx.type,
-            bidderAddress: ethers.utils.getAddress(tx.bidder_address),
-            transactionDate: new Date(tx.transaction_date),
-            marketplace: marketplaceString(tx.marketplace) ?? IsNull(),
-            chainId,
-          }
-          const txs = await repositories.nftPortTransaction.findSaleListingBidsByNFT(
-            tx.nft.contract_address,
-            tx.nft.token_id,
-            whereQuery,
-          )
-          if (!txs.length) {
-            await repositories.nftPortTransaction.save({
-              type: tx.type,
-              bidderAddress: tx.bidder_address ? ethers.utils.getAddress(tx.bidder_address) : null,
-              nft: {
-                contractType: tx.nft.contract_type,
-                contractAddress: ethers.utils.getAddress(tx.nft.contract_address),
-                tokenId: BigNumber.from(tx.nft.token_id).toHexString(),
-              },
-              quantity: Number(tx.quantity),
-              priceDetails: {
-                assetType: tx.price_details.asset_type,
-                contractAddress: ethers.utils.getAddress(tx.price_details.contract_address),
-                price: tx.price_details.price.toString(),
-                priceUSD: tx.price_details.price_usd.toString(),
-              },
-              transactionHash: tx.transaction_hash,
-              blockNumber: tx.block_number,
-              blockHash: tx.block_hash,
-              transactionDate: new Date(tx.transaction_date),
-              marketplace: marketplaceString(tx.marketplace),
-              chainId,
-            })
-          }
+        } catch (err) {
+          logger.error(`err in saveTransactionsToEntity: ${err}`)
         }
       }),
     )
