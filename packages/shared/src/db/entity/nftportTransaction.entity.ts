@@ -11,6 +11,7 @@ import { BaseEntity } from '.'
 @Entity()
 @Index(['type', 'transactionDate', 'contractAddress'])
 @Index(['marketplace'])
+@Index(['type', 'contractAddress','tokenId','transactionHash','blockNumber','blockHash','chainId'])
 export class NFTPortTransaction extends BaseEntity {
 
   // transaction type - list, cancel_list, mint, sale, burn, transfer, bid, cancel_bid
@@ -59,6 +60,10 @@ export class NFTPortTransaction extends BaseEntity {
   @Column({ nullable: true })
   bidderAddress : string
 
+  /*
+   *  @Index() -- Manually added to migration indexNFTPortTxNFT1675360976823
+   *  because Typeorm does not support GIN index required for json types
+  */
   @Column({ type: 'json', nullable: true })
   nft: NFTPortNFTType
 
