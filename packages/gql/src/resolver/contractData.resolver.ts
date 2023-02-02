@@ -178,7 +178,11 @@ export const getTxByContract = async (
     } else {
       const chainId = chain === 'ethereum' ? '1' : '137'
       let txActivities: Array<gql.NFTPortTxByContractTransactions> = []
-      const nftPortTxs = await repositories.nftPortTransaction.findTransactionsByCollection(contractAddress, chainId)
+      const nftPortTxs = await repositories.nftPortTransaction.findTransactionsByCollection(
+        type || ['all'],
+        contractAddress,
+        chainId,
+      )
       const activityTypes = parseTypesToActivityTypes(type || ['all'])
       let activities = await repositories.txActivity.findActivitiesForCollection(
         ethers.utils.getAddress(contractAddress),
@@ -348,7 +352,12 @@ export const getTxByNFT = async (
     } else {
       const chainId = chain === 'ethereum' ? '1' : '137'
       let txActivities: Array<gql.NFTPortTxByNftTransactions> = []
-      const nftPortTxs = await repositories.nftPortTransaction.findTransactionsByNFT(contractAddress, tokenId, chainId)
+      const nftPortTxs = await repositories.nftPortTransaction.findTransactionsByNFT(
+        type || ['all'],
+        contractAddress,
+        tokenId,
+        chainId,
+      )
       const activityTypes = parseTypesToActivityTypes(type || ['all'])
       let activities = await repositories.txActivity.findActivitiesForNFT(
         ethers.utils.getAddress(contractAddress),
