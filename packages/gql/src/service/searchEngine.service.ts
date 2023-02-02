@@ -72,7 +72,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     if (!nfts.length) return true
     try {
       const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
-        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, true))
+        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
         .reduce((map, txActivity: TxActivityDAO) => {
           if (helper.isNotEmpty(txActivity.order?.protocolData)) {
             const nftIdParts = txActivity.nftId[0].split('/')
@@ -193,6 +193,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
       }))
       return client.insertDocuments('nfts', nftsToIndex)
     } catch (err) {
+      console.log(err, 'Error in IndexNFTs')
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err
     }
