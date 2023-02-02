@@ -310,6 +310,14 @@ export const saveTransactionsToEntity = async (
   }
 }
 
+const toSaveTxsBeStopped = (
+  txs : any[],
+  transactionDate: Date,
+): boolean => {
+  const tx = txs.find((tx) => new Date(tx.transactionDate) < transactionDate)
+  return !!tx
+}
+
 export const fetchTxsFromNFTPort = async (
   endpoint: string,
   chain: string,
@@ -328,6 +336,12 @@ export const fetchTxsFromNFTPort = async (
     }
     if (chain === 'goerli') return
     const chainId = '1'
+    // pull latest tx for collection ofr NFT from table
+    const latestTx = await repositories.nftPortTransaction.getLatestTxForCollectionOrNFT(
+      chainId,
+      contractAddress,
+      tokenId,
+    )
     // fetch txs from NFTPort client we built
     let res = await fetchData(endpoint, args, {
       queryParams: {
@@ -337,9 +351,14 @@ export const fetchTxsFromNFTPort = async (
         cacheSeconds: 60 * 10,
       },
     })
+    let stopSavingTxs = false
     if (res?.transactions) {
+      if (latestTx) {
+        stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
+      }
       await saveTransactionsToEntity(res.transactions, chainId)
-      if (res?.continuation) {
+      // We should prevent calling API for already saved data
+      if (res?.continuation && !stopSavingTxs) {
         let continuation = res?.continuation
         // eslint-disable-next-line no-constant-condition
         while (true) {
@@ -353,8 +372,14 @@ export const fetchTxsFromNFTPort = async (
             },
           })
           if (res?.transactions) {
+            if (latestTx) {
+              stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
+            }
             await saveTransactionsToEntity(res.transactions, chainId)
-            if (res?.continuation) {
+            // We should prevent calling API for already saved data
+            if (stopSavingTxs) {
+              break
+            } else if (res?.continuation) {
               continuation = res?.continuation
             } else {
               break

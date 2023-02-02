@@ -77,4 +77,48 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
       .getMany()
   }
 
+  public getLatestTxForCollectionOrNFT = (
+    chainId: string,
+    contract: string,
+    tokenId?: string,
+  ): Promise<NFTPortTransaction> => {
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
+      .createQueryBuilder('transaction')
+    if (tokenId) {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
+          contractAddress: ethers.utils.getAddress(contract),
+          tokenId: BigNumber.from(tokenId).toHexString(),
+        })
+        .andWhere({
+          chainId,
+        })
+        .orderBy('transaction.transactionDate', 'DESC')
+        .cache(true)
+        .getOne()
+    } else {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress', {
+          contractAddress: ethers.utils.getAddress(contract),
+        })
+        .andWhere({
+          chainId,
+        })
+        .orderBy('transaction.transactionDate', 'DESC')
+        .cache(true)
+        .getOne()
+    }
+  }
+
 }
