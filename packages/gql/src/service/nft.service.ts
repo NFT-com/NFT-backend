@@ -2114,8 +2114,9 @@ export const getUserWalletFromNFT = async (
         // We don't save multiple owners for now, so we don't keep this NFT too
         return undefined
       } else {
-        // save User, Wallet for new owner addresses if it's not in our DB ...
-        return await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
+        const fallbackWallet = new entity.Wallet()
+        fallbackWallet.address = helper.checkSum(owners[0])
+        return await repositories.wallet.findById(owners[0]) || Promise.resolve(fallbackWallet)
       }
     }
   } catch (err) {

@@ -822,7 +822,7 @@ export const refreshNft = async (
 
         const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
         if (!wallet) {
-          logger.error('Failed to create new user and wallet for NFT ownership')
+          logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
           return nft
         } else {
           const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
