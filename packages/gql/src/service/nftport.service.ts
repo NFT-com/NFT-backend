@@ -391,6 +391,7 @@ export const fetchTxsFromNFTPort = async (
             }
           } catch (err) {
             logger.error(`Error in fetchTxsFromNFTPort: ${err}`)
+            Sentry.captureMessage(`Error in fetchTxsFromNFTPort: ${err}`)
             exit = true
           }
         }
