@@ -58,6 +58,7 @@ input NFTsInput {
   chainId: String
   ownedByWallet: Boolean
   query: String
+  invalidateCache: Boolean
 }
 
 input CurationInput {

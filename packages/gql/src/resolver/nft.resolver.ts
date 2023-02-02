@@ -224,6 +224,7 @@ const returnProfileNFTs = async (
   includeHidden: boolean,
   cacheKeyStr: string,
   query: string,
+  invalidateCache?: boolean,
 ): Promise<any> => {
   try {
     let nfts: gql.NFT[] = []
@@ -301,6 +302,10 @@ const returnProfileNFTs = async (
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 60 * 10) // 10 min
     }
 
+    if (invalidateCache) {
+      await cache.del([cacheKeyStr])
+      nfts = []
+    }
     // check profile owner and if owner is changed, we invalidate cached data
     const owner = await profileOwner(profile.url, chainId)
     if (owner && !profile.ownerWalletId) {
@@ -372,6 +377,7 @@ const getMyNFTs = async (
     pageInput: Joi.any(),
     types: Joi.array().optional(),
     query: Joi.string().optional(),
+    invalidateCache: Joi.boolean().optional(),
   })
   const { input } = args
   joi.validateSchema(schema, input)
