@@ -311,9 +311,12 @@ export const filterNFTsWithAlchemy = async (
     )
     for (const [owner, nftsToUpdate] of newOwnerNFTs) {
       const csOwner = checkSumOwner(owner)
+      const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
       await Promise.allSettled(
         nftsToUpdate.map((nft) => {
           repositories.nft.updateOneById(nft?.id, {
+            userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
+            walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
             owner: csOwner,
           })
         }),
@@ -2127,9 +2130,10 @@ export const getUserWalletFromNFT = async (
         // We don't save multiple owners for now, so we don't keep this NFT too
         return undefined
       } else {
+        const csOwner = checkSumOwner(owners[0])
         const fallbackWallet = new entity.Wallet()
-        fallbackWallet.address = helper.checkSum(owners[0])
-        return await repositories.wallet.findById(owners[0]) || Promise.resolve(fallbackWallet)
+        fallbackWallet.address = csOwner
+        return await repositories.wallet.findByChainAddress(chainId, csOwner) || fallbackWallet
       }
     }
   } catch (err) {
