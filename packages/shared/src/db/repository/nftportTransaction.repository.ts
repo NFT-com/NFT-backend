@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from 'ethers'
-import { SelectQueryBuilder } from 'typeorm'
+import { In, SelectQueryBuilder } from 'typeorm'
 
 import { NFTPortTransaction } from '@nftcom/shared/db/entity'
 
@@ -12,50 +12,90 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
   }
 
   public findTransactionsByCollection = (
+    types: string[],
     contract: string,
     chainId: string,
   ): Promise<NFTPortTransaction[]> => {
     const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
       .createQueryBuilder('transaction')
-    return queryBuilder
-      .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
-        nft: {
+    if (types.findIndex((type) => type === 'all') !== -1) {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress', {
           contractAddress: ethers.utils.getAddress(contract),
-        },
-      })
-      .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress', {
-        contractAddress: ethers.utils.getAddress(contract),
-      })
-      .andWhere({
-        chainId,
-      })
-      .cache(true)
-      .getMany()
+        })
+        .andWhere({
+          chainId,
+        })
+        .cache(true)
+        .getMany()
+    } else {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress', {
+          contractAddress: ethers.utils.getAddress(contract),
+        })
+        .andWhere({
+          type: In(types),
+          chainId,
+        })
+        .cache(true)
+        .getMany()
+    }
   }
 
   public findTransactionsByNFT = (
+    types: string[],
     contract: string,
     tokenId: string,
     chainId: string,
   ): Promise<NFTPortTransaction[]> => {
     const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
       .createQueryBuilder('transaction')
-    return queryBuilder
-      .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
-        nft: {
+    if (types.findIndex((type) => type === 'all') !== -1) {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
           contractAddress: ethers.utils.getAddress(contract),
           tokenId: BigNumber.from(tokenId).toHexString(),
-        },
-      })
-      .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
-        contractAddress: ethers.utils.getAddress(contract),
-        tokenId: BigNumber.from(tokenId).toHexString(),
-      })
-      .andWhere({
-        chainId,
-      })
-      .cache(true)
-      .getMany()
+        })
+        .andWhere({
+          chainId,
+        })
+        .cache(true)
+        .getMany()
+    } else {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
+          contractAddress: ethers.utils.getAddress(contract),
+          tokenId: BigNumber.from(tokenId).toHexString(),
+        })
+        .andWhere({
+          type: In(types),
+          chainId,
+        })
+        .cache(true)
+        .getMany()
+    }
   }
 
   public findSaleListingBidsByNFT = (
