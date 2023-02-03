@@ -63,8 +63,9 @@ export class NFTPortTransaction extends BaseEntity {
   /*
    *  @Index() -- Manually added to migration indexNFTPortTxNFT1675360976823
    *  because Typeorm does not support GIN index required for json types
+   *  array is set to false, otherwise, typeorm will assume it to be json[] and not allow jsonb_set operations
   */
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', array: false, nullable: true })
   nft: NFTPortNFTType
 
   @Column({ type: 'json', nullable: true })
