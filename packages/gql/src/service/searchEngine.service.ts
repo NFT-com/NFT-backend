@@ -193,7 +193,6 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
       }))
       return client.insertDocuments('nfts', nftsToIndex)
     } catch (err) {
-      console.log(err, 'Error in IndexNFTs')
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err
     }
