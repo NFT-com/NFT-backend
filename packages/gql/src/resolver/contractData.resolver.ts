@@ -169,7 +169,12 @@ export const getTxByContract = async (
     }
     await executeSyncNFTPorTxs(payload)
 
-    const cacheKey = `${CacheKeys.GET_TX_BY_CONTRACT}_${ethers.utils.getAddress(contractAddress)}`
+    let cacheKey
+    if (type && type.length) {
+      cacheKey = `${CacheKeys.GET_TX_BY_CONTRACT}_${ethers.utils.getAddress(contractAddress)}_${type.join()}`
+    } else {
+      cacheKey = `${CacheKeys.GET_TX_BY_CONTRACT}_${ethers.utils.getAddress(contractAddress)}_all`
+    }
     const cachedData = await cache.get(cacheKey)
     let indexedActivities: Array<gql.NFTPortTxByContractTransactions> = []
 
@@ -343,7 +348,12 @@ export const getTxByNFT = async (
     }
     await executeSyncNFTPorTxs(payload)
 
-    const cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}`
+    let cacheKey
+    if (type && type.length) {
+      cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}_${type.join()}`
+    } else {
+      cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}_all`
+    }
     const cachedData = await cache.get(cacheKey)
     let indexedActivities: Array<gql.NFTPortTxByNftTransactions> = []
 

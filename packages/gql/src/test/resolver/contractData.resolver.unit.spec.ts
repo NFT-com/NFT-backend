@@ -200,7 +200,7 @@ describe('contract data resolver', () => {
       await testServer.stop()
     })
 
-    it('should return transactions by contract', async () => {
+    it('should return transactions with specific types by contract', async () => {
       mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' }  }))
 
       const result = await testServer.executeOperation({
@@ -208,6 +208,7 @@ describe('contract data resolver', () => {
                 getTxByContract(input: $input) {
                   items {
                     index
+                    type
                   }
                   totalItems
                 }
@@ -216,14 +217,14 @@ describe('contract data resolver', () => {
           input: {
             contractAddress: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
             chain: 'ethereum',
-            type: ['all'],
+            type: ['sale', 'mint'],
             pageInput: {
               first: 50,
             },
           },
         },
       })
-      expect(result.data.getTxByContract.items.length).toEqual(3)
+      expect(result.data.getTxByContract.items.length).toEqual(2)
 
       expect(mockedAxios.post).toHaveBeenCalled()
     })
