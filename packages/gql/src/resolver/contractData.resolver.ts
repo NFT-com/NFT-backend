@@ -349,7 +349,6 @@ export const getTxByNFT = async (
     await executeSyncNFTPorTxs(payload)
 
     let cacheKey
-    logger.info(`Types : ${type.join()}`)
     if (type && type.length) {
       cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}_${type.join()}`
     } else {
