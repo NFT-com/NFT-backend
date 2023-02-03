@@ -42,6 +42,7 @@ type NFT {
 #  user: User
   rarity: String
   wallet: Wallet
+  owner: String
   collection: Collection
   createdAt: DateTime!
   memo: String
