@@ -821,16 +821,11 @@ export const refreshNft = async (
         }
 
         const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
-        let refreshedNFT
         if (!wallet) {
           logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
-          const currentWallet = await repositories.wallet.findById(nft.walletId)
-          refreshedNFT = await updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
           return nft
         } else {
-          refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
-        }
-        if (refreshedNFT) {
+          const refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
           await seService.indexNFTs([refreshedNFT])
 
           await cache.set(
@@ -841,7 +836,6 @@ export const refreshNft = async (
           )
           return refreshedNFT
         }
-        return nft
       } else {
         return Promise.reject(appError.buildNotFound(
           nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
