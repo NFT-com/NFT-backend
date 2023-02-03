@@ -1,5 +1,4 @@
-import { _logger, helper } from '@nftcom/shared'
-
+import { _logger, helper } from '../helper'
 import { newRepositories } from './db'
 import { NFT, TxActivity, TxOrder } from './entity'
 
