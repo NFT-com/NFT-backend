@@ -275,7 +275,6 @@ describe('nft service', () => {
 
       // ERC1155 NFT should be removed
       const updatedNFTs = await repositories.nft.findAll()
-      console.log(updatedNFTs)
       expect(updatedNFTs.length).toEqual(2)
       // Owner of ERC721 NFT should be updated
       expect(updatedNFTs[1].walletId).toBeNull()
