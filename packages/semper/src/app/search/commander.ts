@@ -116,9 +116,7 @@ class Commander {
     if (collection?.length) {
       await this.client.collections('nfts').documents().delete({ 'filter_by': `contractAddr:=${contractAddr}` })
       try {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        await this.client.collections('nfts').documents().import(collection, { action: 'upsert', batchSize: collection.length })
+        await addDocumentsToTypesense(this.client, 'nfts', collection)
       } catch (e) {
         logger.error('unable to import collection:', e)
       }
