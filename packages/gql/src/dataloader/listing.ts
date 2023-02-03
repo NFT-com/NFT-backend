@@ -43,7 +43,7 @@ export const listingsByNFT = new DataLoader<entity.NFT & { args: any }, Pageable
   async (keys) => {
     const listings = await repositories.txActivity
       .findActivitiesForNFTs([...keys], defs.ActivityType.Listing, { notExpired: true })
-    const wallets = await wallet.loadMany(keys.map((k) => k.walletId)) as entity.Wallet[]
+    const wallets = await wallet.loadMany(keys.map((k) => k.walletId).filter((x) => !!x)) as entity.Wallet[]
     return keys.map(nftsToListingsFn(listings, wallets))
   }, {
     cache: false,
@@ -58,7 +58,7 @@ export const listingsByNFTCancelled = new DataLoader<entity.NFT & { args: any },
         defs.ActivityType.Listing,
         { activityStatus: defs.ActivityStatus.Cancelled, notExpired: true },
       )
-    const wallets = await wallet.loadMany(keys.map((k) => k.walletId)) as entity.Wallet[]
+    const wallets = await wallet.loadMany(keys.map((k) => k.walletId).filter((x) => !!x)) as entity.Wallet[]
     return keys.map(nftsToListingsFn(listings, wallets))
   }, {
     cache: false,
@@ -73,7 +73,7 @@ export const listingsByNFTExecuted = new DataLoader<entity.NFT & { args: any }, 
         defs.ActivityType.Listing,
         { activityStatus: defs.ActivityStatus.Executed, notExpired: true },
       )
-    const wallets = await wallet.loadMany(keys.map((k) => k.walletId)) as entity.Wallet[]
+    const wallets = await wallet.loadMany(keys.map((k) => k.walletId).filter((x) => !!x)) as entity.Wallet[]
     return keys.map(nftsToListingsFn(listings, wallets))
   }, {
     cache: false,
@@ -88,7 +88,7 @@ export const listingsByNFTExpired = new DataLoader<entity.NFT & { args: any }, P
         defs.ActivityType.Listing,
         { expiredOnly: true },
       )
-    const wallets = await wallet.loadMany(keys.map((k) => k.walletId)) as entity.Wallet[]
+    const wallets = await wallet.loadMany(keys.map((k) => k.walletId).filter((x) => !!x)) as entity.Wallet[]
     return keys.map(nftsToListingsFn(listings, wallets))
   }, {
     cache: false,
@@ -104,7 +104,7 @@ new DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string>(
         defs.ActivityType.Listing,
         { activityStatus: defs.ActivityStatus.Cancelled, expiredOnly: true },
       )
-    const wallets = await wallet.loadMany(keys.map((k) => k.walletId)) as entity.Wallet[]
+    const wallets = await wallet.loadMany(keys.map((k) => k.walletId).filter((x) => !!x)) as entity.Wallet[]
     return keys.map(nftsToListingsFn(listings, wallets))
   }, {
     cache: false,
@@ -120,7 +120,7 @@ new DataLoader<entity.NFT & { args: any }, Pageable<entity.TxActivity>, string>(
         defs.ActivityType.Listing,
         { activityStatus: defs.ActivityStatus.Executed, expiredOnly: true },
       )
-    const wallets = await wallet.loadMany(keys.map((k) => k.walletId)) as entity.Wallet[]
+    const wallets = await wallet.loadMany(keys.map((k) => k.walletId).filter((x) => !!x)) as entity.Wallet[]
     return keys.map(nftsToListingsFn(listings, wallets))
   }, {
     cache: false,
