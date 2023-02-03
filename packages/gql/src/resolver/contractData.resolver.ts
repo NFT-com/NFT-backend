@@ -368,7 +368,6 @@ export const getTxByNFT = async (
         tokenId,
         chainId,
       )
-      logger.info(`txs length from nftport: ${nftPortTxs.length}`)
       const activityTypes = parseTypesToActivityTypes(type || ['all'])
       let activities = await repositories.txActivity.findActivitiesForNFT(
         ethers.utils.getAddress(contractAddress),
