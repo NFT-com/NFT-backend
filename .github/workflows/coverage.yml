@@ -94,7 +94,6 @@ jobs:
         envkey_MULTICALL_CONTRACT: ${{ secrets.MULTICALL_CONTRACT }}
         envkey_OFAC_API_KEY: ${{ secrets.OFAC_API_KEY }}
         envkey_STREAM_BASE_URL: ${{ secrets.STREAM_BASE_URL }}
-        envkey_FALLBACK_IMAGE_URL: ${{ secrets.FALLBACK_IMAGE_URL }}
         file_name: packages/gql/.env
         fail_on_empty: false
 
