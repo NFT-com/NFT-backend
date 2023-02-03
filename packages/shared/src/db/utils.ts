@@ -20,16 +20,24 @@ export const getNFTsFromTxOrders = async (orders: TxOrder[]): Promise<NFT[]> => 
           } catch (err) {
             logger.error(`Contract: ${idParts[1]} is invalid for nft id: ${nftId}. Err: ${err}`)
           }
-          const nft = await repositories.nft.findOne({
-            where: {
-              contract: csContract,
-              tokenId: idParts[2],
-            },
-          })
 
-          if (nft) {
-            nfts.push(nft)
+          if (csContract) {
+            try {
+              const nft = await repositories.nft.findOne({
+                where: {
+                  contract: csContract,
+                  tokenId: idParts[2],
+                },
+              })
+    
+              if (nft) {
+                nfts.push(nft)
+              }
+            } catch (err) {
+              logger.log(`Error in finding NFT: ${err}`)
+            }
           }
+        
           nftsSeen[nftId] = true
         }
       }
@@ -52,15 +60,22 @@ export const getNFTsFromTxActivities = async (activities: TxActivity[]): Promise
           } catch (err) {
             logger.error(`Contract: ${idParts[1]} is invalid for nft id: ${nftId}. Err: ${err}`)
           }
-          const nft = await repositories.nft.findOne({
-            where: {
-              contract: csContract,
-              tokenId: idParts[2],
-            },
-          })
 
-          if (nft) {
-            nfts.push(nft)
+          if (csContract) {
+            try {
+              const nft = await repositories.nft.findOne({
+                where: {
+                  contract: csContract,
+                  tokenId: idParts[2],
+                },
+              })
+    
+              if (nft) {
+                nfts.push(nft)
+              }
+            } catch (err) {
+              logger.log(`Error in finding NFT: ${err}`)
+            }
           }
           nftsSeen[nftId] = true
         }
