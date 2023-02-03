@@ -349,6 +349,7 @@ export const getTxByNFT = async (
     await executeSyncNFTPorTxs(payload)
 
     let cacheKey
+    logger.info(`Types : ${type.join()}`)
     if (type && type.length) {
       cacheKey = `${CacheKeys.GET_TX_BY_NFT}_${ethers.utils.getAddress(contractAddress)}_${BigNumber.from(tokenId).toHexString()}_${type.join()}`
     } else {
@@ -368,6 +369,7 @@ export const getTxByNFT = async (
         tokenId,
         chainId,
       )
+      logger.info(`txs length from nftport: ${nftPortTxs.length}`)
       const activityTypes = parseTypesToActivityTypes(type || ['all'])
       let activities = await repositories.txActivity.findActivitiesForNFT(
         ethers.utils.getAddress(contractAddress),
