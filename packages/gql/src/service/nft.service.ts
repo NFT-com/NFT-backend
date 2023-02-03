@@ -650,7 +650,13 @@ export const getNftName = (
   contractMetadata: any = undefined,
   tokenId: string = undefined,
 ): string => {
-  return nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK ? nftPortDetails?.nft?.metadata?.name : nftMetadata?.title || nftPortDetails?.nft?.metadata?.name || `${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName} #${tokenId}`
+  return nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK
+    ? nftPortDetails?.nft?.metadata?.name
+    : nftMetadata?.title
+    || nftPortDetails?.nft?.metadata?.name
+    || (tokenId
+      ? [`${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName}`, BigNumber.from(tokenId).toString()].join(' ')
+      : '')
 }
 
 export const getNftDescription = (
