@@ -312,7 +312,7 @@ export const getTxByContract = async (
         cacheKey,
         JSON.stringify(indexedActivities),
         'EX',
-        10 * 60, // 10 min
+        3 * 60, // 10 min
       )
     }
 
