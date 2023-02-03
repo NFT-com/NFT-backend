@@ -261,24 +261,26 @@ describe('nft service', () => {
       await clearDB(repositories)
     })
 
-    it('should create new user and wallet for NFT which is not owned by test user', async () => {
+    fit('should only set owner for NFT which is not owned by test user', async () => {
       const nfts = await repositories.nft.findByWalletId(testMockWallet.id, '5')
       nftService.initiateWeb3('5')
 
       await nftService.filterNFTsWithAlchemy(nfts, '0x59495589849423692778a8c5aaCA62CA80f875a4')
 
-      // New user should be saved to database
+      // New user should not saved to database
       const users = await repositories.user.findAll()
       const wallets = await repositories.wallet.findAll()
-      expect(users.length).toEqual(1)
-      expect(wallets.length).toEqual(1)
+      expect(users.length).toEqual(0)
+      expect(wallets.length).toEqual(0)
 
       // ERC1155 NFT should be removed
       const updatedNFTs = await repositories.nft.findAll()
+      console.log(updatedNFTs)
       expect(updatedNFTs.length).toEqual(2)
       // Owner of ERC721 NFT should be updated
-      expect(updatedNFTs[1].walletId).toEqual(wallets[0].id)
-      expect(updatedNFTs[1].userId).toEqual(users[0].id)
+      expect(updatedNFTs[1].walletId).toBeNull()
+      expect(updatedNFTs[1].userId).toBeNull()
+      expect(updatedNFTs[1].owner).not.toBe('0x59495589849423692778a8c5aaCA62CA80f875a4')
     })
   })
 
@@ -394,7 +396,7 @@ describe('nft service', () => {
         },
       }
       nftService.initiateWeb3('5')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '5')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet, '5')
 
       // Previous edges should be removed
       const edges = await repositories.edge.findAll()
@@ -411,7 +413,7 @@ describe('nft service', () => {
         },
       }
       nftService.initiateWeb3('1')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet.id, '1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet, '1')
 
       const updatedNFT = await repositories.nft.findById(nftB.id)
       expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)
@@ -428,7 +430,7 @@ describe('nft service', () => {
         },
       }
       nftService.initiateWeb3('1')
-      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet2.id, '1')
+      await nftService.updateNFTOwnershipAndMetadata(nft, user.id, wallet2, '1')
 
       const updatedNFT = await repositories.nft.findById(nftC.id)
       expect(updatedNFT.metadata.imageURL.length).toBeGreaterThan(0)

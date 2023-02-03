@@ -72,7 +72,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     if (!nfts.length) return true
     try {
       const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
-        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, true))
+        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
         .reduce((map, txActivity: TxActivityDAO) => {
           if (helper.isNotEmpty(txActivity.order?.protocolData)) {
             const nftIdParts = txActivity.nftId[0].split('/')
