@@ -2311,20 +2311,17 @@ export const queryNFTsForProfile = async (
   return nfts
 }
 
+// no cache to have instant updates
 export const profileOwner = async (
   profileUrl: string,
   chainId: string,
 ): Promise<string | undefined> => {
   try {
-    const cacheKey = `${CacheKeys.PROFILE_OWNER}_${profileUrl}_${chainId}`
-    const cachedData = await cache.get(cacheKey)
-    if (cachedData) return JSON.parse(cachedData)
     const nftProfileContract = typechain.NftProfile__factory.connect(
       contracts.nftProfileAddress(chainId),
       provider.provider(Number(chainId)),
     )
     const owner = await nftProfileContract.profileOwner(profileUrl)
-    await cache.set(cacheKey, JSON.stringify(owner), 'EX', 2 * 60) // 2 min
     return owner
   } catch (err) {
     logger.error(`Error in profileOwner: ${err}`)
