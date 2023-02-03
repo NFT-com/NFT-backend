@@ -20,7 +20,7 @@ const lookupEnvKeyOrThrow = (key: string): string => {
   throw new Error(`Environment variable ${key} is required`)
 }
 
-export const serverPort = 10010
+export const serverPort = parseInt(process.env.PORT) || 8080
 export const nodeEnv = process.env.NODE_ENV
 export const authMessage = lookupEnvKeyOrThrow('AUTH_MESSAGE')
 export const sgAPIKey = lookupEnvKeyOrThrow('SG_API_KEY')
