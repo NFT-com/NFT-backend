@@ -119,6 +119,15 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
+const checkSumOwner = (owner: string): string | undefined => {
+  try {
+    return helper.checkSum(owner)
+  } catch (err) {
+    logger.error(err, `Unable to checkSum owner: ${owner}`)
+  }
+  return
+}
+
 export const initiateWeb3 = (cid?: string): void => {
   chainId = cid || process.env.CHAIN_ID // attach default value
   alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
@@ -301,18 +310,14 @@ export const filterNFTsWithAlchemy = async (
       }),
     )
     for (const [owner, nftsToUpdate] of newOwnerNFTs) {
-      // save User, Wallet for new owner addresses if it's not in our DB ...
-      const wallet = await saveUsersForAssociatedAddress(nftsToUpdate[0]?.chainId, owner, repositories)
-      const user = await repositories.user.findOne({
-        where: {
-          username: 'ethereum-' + ethers.utils.getAddress(owner),
-        },
-      })
+      const csOwner = checkSumOwner(owner)
+      const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
       await Promise.allSettled(
         nftsToUpdate.map((nft) => {
           repositories.nft.updateOneById(nft?.id, {
-            userId: user?.id,
-            walletId: wallet?.id,
+            userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
+            walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
+            owner: csOwner,
           })
         }),
       )
@@ -823,7 +828,7 @@ const uploadImageToS3 = async (
 export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
-  walletId: string,
+  wallet: entity.Wallet,
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
   try {
@@ -835,13 +840,7 @@ export const updateNFTOwnershipAndMetadata = async (
       },
     })
 
-    let walletChainId: string = await cache.get(`chainId_${walletId}`)
-
-    if (!walletChainId) {
-      const wallet = await repositories.wallet.findById(walletId)
-      walletChainId = wallet?.chainId || process.env.CHAIN_ID
-      await cache.set(`chainId_${walletId}`, walletChainId)
-    }
+    const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
 
     let type, name, description, image
     let traits = []
@@ -888,10 +887,12 @@ export const updateNFTOwnershipAndMetadata = async (
 
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
+      const csOwner = checkSumOwner(wallet.address)
       const savedNFT = await repositories.nft.save({
         chainId: walletChainId,
         userId,
-        walletId,
+        walletId: wallet.id,
+        owner: csOwner,
         contract: ethers.utils.getAddress(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
         type,
@@ -905,7 +906,7 @@ export const updateNFTOwnershipAndMetadata = async (
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
-      if (existingNFT.userId !== userId || existingNFT.walletId !== walletId) {
+      if (existingNFT.userId !== userId || existingNFT.walletId !== wallet.id) {
         // we remove edge of previous profile
         // logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
@@ -932,9 +933,11 @@ export const updateNFTOwnershipAndMetadata = async (
           }
         }
 
+        const csOwner = checkSumOwner(wallet.address)
         const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
           userId,
-          walletId,
+          walletId: wallet.id,
+          owner: csOwner,
           type,
           profileId: null,
           metadata: {
@@ -957,9 +960,11 @@ export const updateNFTOwnershipAndMetadata = async (
           existingNFT.metadata.imageURL !== image ||
           !isTraitSame
         ) {
+          const csOwner = checkSumOwner(wallet.address)
           const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
             userId,
-            walletId,
+            walletId: wallet.id,
+            owner: csOwner,
             type,
             metadata: {
               name,
@@ -1049,18 +1054,16 @@ export const indexCollectionsOnSearchEngine = async (
 /**
  * update wallet NFTs using data from alchemy api
  * @param userId
- * @param walletId
- * @param walletAddress
+ * @param wallet
  * @param chainId
  */
 export const updateWalletNFTs = async (
   userId: string,
-  walletId: string,
-  walletAddress: string,
+  wallet: entity.Wallet,
   chainId: string,
 ): Promise<void> => {
   try {
-    const ownedNFTs = await getNFTsFromAlchemy(walletAddress)
+    const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
     const chunks: OwnedNFT[][] = Lodash.chunk(
       ownedNFTs,
       20,
@@ -1071,7 +1074,7 @@ export const updateWalletNFTs = async (
         try {
           await Promise.allSettled(
             chunk.map(async (nft) => {
-              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, walletId, chainId)
+              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
               if (savedNFT) savedNFTs.push(savedNFT)
             }),
           )
@@ -1610,8 +1613,7 @@ export const updateNFTsForAssociatedWallet = async (
       )
       await updateWalletNFTs(
         wallet.userId,
-        wallet.id,
-        wallet.address,
+        wallet,
         wallet.chainId,
       )
       // save NFT edges for profile...
@@ -2128,8 +2130,10 @@ export const getUserWalletFromNFT = async (
         // We don't save multiple owners for now, so we don't keep this NFT too
         return undefined
       } else {
-        // save User, Wallet for new owner addresses if it's not in our DB ...
-        return await saveUsersForAssociatedAddress(chainId, owners[0], repositories)
+        const csOwner = checkSumOwner(owners[0])
+        const fallbackWallet = new entity.Wallet()
+        fallbackWallet.address = csOwner
+        return await repositories.wallet.findByChainAddress(chainId, csOwner) || fallbackWallet
       }
     }
   } catch (err) {
@@ -2153,10 +2157,12 @@ export const saveNewNFT = async (
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata
+    const csOwner = checkSumOwner(wallet.address)
     const savedNFT = await repositories.nft.save({
       chainId: chainId,
       userId: wallet.userId,
       walletId: wallet.id,
+      owner: csOwner,
       contract: ethers.utils.getAddress(contract),
       tokenId: BigNumber.from(tokenId).toHexString(),
       type,
