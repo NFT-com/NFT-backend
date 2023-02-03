@@ -493,6 +493,10 @@ const createEcsTaskDefinition = (
                   Name: 'STREAM_BASE_URL',
                   Value: process.env.STREAM_BASE_URL,
                 },
+                {
+                  Name: 'FALLBACK_IMAGE_URL',
+                  Value: process.env.FALLBACK_IMAGE_URL,
+                },
               ],
               dependsOn: [
                 {
