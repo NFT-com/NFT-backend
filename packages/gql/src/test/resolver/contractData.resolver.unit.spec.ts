@@ -194,13 +194,31 @@ describe('contract data resolver', () => {
         marketplace: defs.NFTPortMarketplace.OpenSea,
         chainId: '1',
       })
+
+      await repositories.nftPortTransaction.save({
+        type: 'list',
+        listerAddress: '0xa89c94db9e4792ebef380b959f18a2e45814ca4a',
+        nft: {
+          contractType: 'ERC721',
+          contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D',
+          tokenId: '0x0205',
+        },
+        quantity: 1,
+        priceDetails: {
+          assetType: 'ETH',
+          price: '0.065',
+        },
+        transactionDate: new Date('2023-02-02T18:23:30.027'),
+        marketplace: defs.NFTPortMarketplace.OpenSea,
+        chainId: '1',
+      })
     })
     afterAll(async () => {
       await clearDB(repositories)
       await testServer.stop()
     })
 
-    it('should return transactions by contract', async () => {
+    it('should return transactions with specific types by contract', async () => {
       mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' }  }))
 
       const result = await testServer.executeOperation({
@@ -208,6 +226,7 @@ describe('contract data resolver', () => {
                 getTxByContract(input: $input) {
                   items {
                     index
+                    type
                   }
                   totalItems
                 }
@@ -216,14 +235,14 @@ describe('contract data resolver', () => {
           input: {
             contractAddress: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
             chain: 'ethereum',
-            type: ['all'],
+            type: ['list'],
             pageInput: {
               first: 50,
             },
           },
         },
       })
-      expect(result.data.getTxByContract.items.length).toEqual(3)
+      expect(result.data.getTxByContract.items.length).toEqual(1)
 
       expect(mockedAxios.post).toHaveBeenCalled()
     })

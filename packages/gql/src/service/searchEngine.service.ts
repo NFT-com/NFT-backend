@@ -6,6 +6,7 @@ import { db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
+import { getNftName } from './nft.service'
 
 type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
 
@@ -171,7 +172,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         const gkExpirationYear = 3021
         return {
           id: nft.id,
-          nftName: nft.metadata?.name || `#${tokenId}`,
+          nftName: nft.metadata?.name || getNftName(nft.metadata, undefined, { contractMetadata: { name: collection?.name } }, tokenId) || `#${tokenId}`,
           nftType: nft.type,
           tokenId,
           traits,
