@@ -826,7 +826,6 @@ export const refreshNft = async (
           logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
           const currentWallet = await repositories.wallet.findById(nft.walletId)
           refreshedNFT = await updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
-          return nft
         } else {
           refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
         }
