@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from 'ethers'
-import { In, SelectQueryBuilder } from 'typeorm'
+import { SelectQueryBuilder } from 'typeorm'
 
 import { NFTPortTransaction } from '@nftcom/shared/db/entity'
 
@@ -35,16 +35,17 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
         .getMany()
     } else {
       return queryBuilder
-        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft and transaction.type IN (:...types)', {
           nft: {
             contractAddress: ethers.utils.getAddress(contract),
           },
+          types,
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress', {
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.type IN (:...types)', {
           contractAddress: ethers.utils.getAddress(contract),
+          types,
         })
         .andWhere({
-          type: In(types),
           chainId,
         })
         .cache(true)
@@ -79,18 +80,19 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
         .getMany()
     } else {
       return queryBuilder
-        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft and transaction.type IN (:...types)', {
           nft: {
             contractAddress: ethers.utils.getAddress(contract),
             tokenId: BigNumber.from(tokenId).toHexString(),
           },
+          types,
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId and transaction.type IN (:...types)', {
           contractAddress: ethers.utils.getAddress(contract),
           tokenId: BigNumber.from(tokenId).toHexString(),
+          types,
         })
         .andWhere({
-          type: In(types),
           chainId,
         })
         .cache(true)

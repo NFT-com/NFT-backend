@@ -1,6 +1,7 @@
 import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
+import { getNftName } from '@nftcom/gql/service/nft.service'
 import { defs, helper } from '@nftcom/shared'
 
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
@@ -176,7 +177,7 @@ export const mapCollectionData = async (
       const gkExpirationYear = 3021
       result.push({
         id: nft.id,
-        nftName: nft.metadata?.name ? `${nft.metadata?.name}` : `#${tokenId}`,
+        nftName: nft.metadata?.name || getNftName(nft.metadata, undefined, { contractMetadata: { name: nft.collection?.name } }, tokenId) || `#${tokenId}`,
         nftType: nft.type,
         tokenId,
         traits,
