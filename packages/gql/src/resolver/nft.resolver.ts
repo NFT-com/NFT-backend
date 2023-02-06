@@ -1275,7 +1275,7 @@ export default {
     },
     wallet: async (parent, _args, ctx) => {
       const { loaders: { wallet } } = ctx
-      return wallet.load(parent.walletId)
+      return parent.walletId ? wallet.load(parent.walletId) : null
     },
     isOwnedByMe: core.resolveEntityOwnership<gql.NFT>(
       'userId',
