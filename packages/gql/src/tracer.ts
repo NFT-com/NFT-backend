@@ -21,7 +21,6 @@ function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
       if (filterFn(spanName, spanKind, attr)) {
         return { decision: opentelemetry.SamplingDecision.NOT_RECORD }
       }
-      console.log({ ctx, tid, spanName, spanKind, attr, links }, 'going to parent sampler')
       return parent.shouldSample(ctx, tid, spanName, spanKind, attr, links)
     },
     toString() {
