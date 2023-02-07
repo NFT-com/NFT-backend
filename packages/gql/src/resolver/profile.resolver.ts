@@ -26,7 +26,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility, getCollectionInfo,
+  changeNFTsVisibility, executeUpdateNFTsForProfile, getCollectionInfo,
   getOwnersOfGenesisKeys, queryNFTsForProfile, saveProfileScore, saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -221,30 +221,6 @@ const getProfileByURLPassive = (
 
 type FnProfileToProfile = (profile: entity.Profile) => Promise<entity.Profile>
 
-const executeUpdateNFTsForProfile = async (
-  profile: entity.Profile,
-  chainId: string,
-): Promise<void> => {
-  try {
-    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
-    if (recentlyRefreshed) {
-      // remove profile from cache which store recently refreshed
-      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profile.id])
-    }
-    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profile.id)
-    if (inProgress) {
-      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profile.id])
-    }
-    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profile.id)
-    if (!inQueue) {
-      // add to NFT cache list
-      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
-    }
-  } catch (err) {
-    logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
-  }
-}
-
 /**
  * Takes a profile, checks the on-chain owner, and updates the entity if it is not the same.
  * When updating, we also clear all customization options.
@@ -291,7 +267,7 @@ const maybeUpdateProfileOwnership = (
               thatEntityType: defs.EntityType.NFT,
               thisEntityId: profile.id,
             })))
-            .then(fp.tap(() => executeUpdateNFTsForProfile(profile, chainId)))
+            .then(fp.tap(() => executeUpdateNFTsForProfile(profile.id, chainId)))
         } else {
           return profile
         }

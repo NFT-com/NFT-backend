@@ -1180,6 +1180,32 @@ export const getOwnersOfGenesisKeys = async (
   }
 }
 
+export const executeUpdateNFTsForProfile = async (
+  profileId: string,
+  chainId: string,
+): Promise<void> => {
+  try {
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileId)
+    if (recentlyRefreshed) {
+      // remove profile from cache which store recently refreshed
+      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profileId])
+    }
+    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profileId)
+    if (inProgress) {
+      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
+    }
+    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profileId)
+    if (!inQueue) {
+      // add to NFT cache list
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
+    }
+  } catch (err) {
+    logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
+    Sentry.captureMessage(`Error in executeUpdateNFTsForProfile: ${err}`)
+    throw err
+  }
+}
+
 export const getOwnersOfNFTProfile = async (
   chainId: string,
 ): Promise<string[]> => {
