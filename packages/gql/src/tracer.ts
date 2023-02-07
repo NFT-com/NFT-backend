@@ -32,9 +32,7 @@ function filterSampler(filterFn: FilterFunction, parent: Sampler): Sampler {
 function ignoreSpan(_spanName: string, spanKind: SpanKind, attributes: Attributes): boolean {
   return attributes[SemanticAttributes.HTTP_METHOD] === 'OPTIONS'
     || (attributes[SemanticAttributes.HTTP_TARGET]
-        && ['/.well-known/apollo/server-health', '/favicon.ico'].includes(attributes[SemanticAttributes.HTTP_TARGET].toString()))
-        || (attributes[SemanticAttributes.HTTP_ROUTE]
-          && ['/.well-known/apollo/server-health', '/'].includes(attributes[SemanticAttributes.HTTP_ROUTE].toString()))
+        && ['/.well-known/apollo/server-health', '/favicon.ico', '/'].includes(attributes[SemanticAttributes.HTTP_TARGET] as string | undefined))
     || (attributes[SemanticAttributes.HTTP_URL]
         && attributes[SemanticAttributes.HTTP_URL].toString().includes('sentry.io'))
 }
