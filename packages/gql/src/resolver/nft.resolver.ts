@@ -241,7 +241,6 @@ const returnProfileNFTs = async (
     if (!profile) return
     let cachedData = await cache.get(cacheKey)
     if (cachedData) {
-      nfts = JSON.parse(cachedData) as gql.NFT[]
       // check profile owner and if owner is changed, we invalidate cached data
       const owner = await profileOwner(profile.url, chainId)
       if (owner && !profile.ownerWalletId) {
@@ -256,7 +255,9 @@ const returnProfileNFTs = async (
       }
     }
     cachedData = await cache.get(cacheKey)
-    if (!cachedData) {
+    if (cachedData) {
+      nfts = JSON.parse(cachedData) as gql.NFT[]
+    } else {
       const filter: Partial<entity.Edge> = helper.removeEmpty({
         thisEntityType: defs.EntityType.Profile,
         thisEntityId: profileId,
