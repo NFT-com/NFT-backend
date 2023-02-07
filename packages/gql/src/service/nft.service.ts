@@ -667,14 +667,16 @@ export const getNftDescription = (
   return nftMetadata?.description || nftMetadata?.metadata?.bio || nftPortDetails?.nft?.metadata?.description
 }
 
+const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.com/optimizedLoader2.webp'
 export const getNftImage = (
   metadata: any,
   nftPortDetails: any = undefined,
 ): string => {
-  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK) ? nftPortDetails?.nft?.cached_file_url :
-    metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
+  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK)
+    ? nftPortDetails?.nft?.cached_file_url
+    : metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
       metadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
-        (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : '')
+        (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : FALLBACK_IMAGE_URL)
 }
 
 export const getNftType = (
