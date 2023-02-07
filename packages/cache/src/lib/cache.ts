@@ -12,6 +12,7 @@ export enum CacheKeys {
   REFRESHED_COLLECTION_RARITY= 'refreshed_collection_rarity',
   UPDATED_NFTS_PROFILE = 'updated_nfts_profile',
   UPDATE_NFTS_PROFILE = 'update_nfts_profile',
+  PROFILES_IN_PROGRESS = 'profiles_in_progress',
   UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
   GENESIS_KEY_OWNERS = 'genesis_key_owners',
   NFT_PROFILE_OWNERS = 'nft_profile_owners',
@@ -30,6 +31,7 @@ export enum CacheKeys {
   PROFILE_GK_OWNERS = 'profile_gk_owners',
   GET_TX_BY_CONTRACT = 'get_tx_by_contract',
   GET_TX_BY_NFT = 'get_tx_by_nft',
+  PROFILE_OWNER = 'profile_owner',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
