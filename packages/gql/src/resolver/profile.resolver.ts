@@ -225,19 +225,23 @@ const executeUpdateNFTsForProfile = async (
   profile: entity.Profile,
   chainId: string,
 ): Promise<void> => {
-  const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
-  if (recentlyRefreshed) {
-    // remove profile from cache which store recently refreshed
-    await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profile.id])
-  }
-  const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profile.id)
-  if (inProgress) {
-    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profile.id])
-  }
-  const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profile.id)
-  if (!inQueue) {
-    // add to NFT cache list
-    await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+  try {
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
+    if (recentlyRefreshed) {
+      // remove profile from cache which store recently refreshed
+      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profile.id])
+    }
+    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profile.id)
+    if (inProgress) {
+      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profile.id])
+    }
+    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profile.id)
+    if (!inQueue) {
+      // add to NFT cache list
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+    }
+  } catch (err) {
+    logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
   }
 }
 
