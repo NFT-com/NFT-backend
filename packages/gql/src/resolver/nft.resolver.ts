@@ -239,25 +239,24 @@ const returnProfileNFTs = async (
     }
     const profile = await ctx.repositories.profile.findById(profileId)
     if (!profile) return
-    const cachedData = await cache.get(cacheKey)
+    let cachedData = await cache.get(cacheKey)
     if (cachedData) {
       nfts = JSON.parse(cachedData) as gql.NFT[]
       // check profile owner and if owner is changed, we invalidate cached data
       const owner = await profileOwner(profile.url, chainId)
       if (owner && !profile.ownerWalletId) {
         await cache.del([cacheKey])
-        nfts = []
       } else if (owner && profile.ownerWalletId) {
         const wallet = await ctx.repositories.wallet.findById(profile.ownerWalletId)
         if (wallet && ethers.utils.getAddress(wallet.address) !== ethers.utils.getAddress(owner)) {
           await cache.del([cacheKey])
-          nfts = []
         }
       } else if (!owner && profile.ownerWalletId) {
         await cache.del([cacheKey])
-        nfts = []
       }
-    } else {
+    }
+    cachedData = await cache.get(cacheKey)
+    if (!cachedData) {
       const filter: Partial<entity.Edge> = helper.removeEmpty({
         thisEntityType: defs.EntityType.Profile,
         thisEntityId: profileId,
