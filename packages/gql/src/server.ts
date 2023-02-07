@@ -111,8 +111,13 @@ export const createContext = async (ctx): Promise<Context> => {
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
-    walletLoader.clear(wallet.id).prime(wallet.id, wallet)
-    user = await repositories.user.findById(wallet?.userId)
+    if (wallet && wallet.id) {
+      walletLoader.clear(wallet.id).prime(wallet.id, wallet)
+      user = await repositories.user.findById(wallet?.userId)
+    } else {
+      logger.warn({ address, chainId, network, wallet },
+        'User attempting to authenticate, but wallet missing from the database.')
+    }
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden
     return Promise.reject(userError.buildAuthInvalid())
