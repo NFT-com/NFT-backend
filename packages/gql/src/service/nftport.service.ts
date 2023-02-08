@@ -9,7 +9,7 @@ import { _logger, db, defs } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
-const NFTPORT_TIME_OUT = 2 * 1000
+const NFTPORT_TIME_OUT = 10 * 1000
 const NFTPORT_SAVE_AMOUNT_LIMIT = 10000
 
 const logger = _logger.Factory(_logger.Context.NFTPort)
