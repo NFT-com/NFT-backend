@@ -192,6 +192,9 @@ type TxNFTCOMProtocolData {
   salt: Int
   start: Int
   end: Int
+  private: Boolean
+  listingOrderId: String
+  bidOrderId: String
 }
 
 
