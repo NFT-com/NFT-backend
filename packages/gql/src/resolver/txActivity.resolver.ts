@@ -386,7 +386,11 @@ export default {
         return 'TxX2Y2ProtocolData'
       }
 
-      return 'TxSeaportProtocolData'
+      if (obj.offer) {
+        return 'TxSeaportProtocolData'
+      }
+
+      return 'TxNFTCOMProtocolData'
     },
   },
 }
