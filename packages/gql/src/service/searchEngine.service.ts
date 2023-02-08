@@ -128,7 +128,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           })
         }
         const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
-        const ownerAddr = wallet?.address || ''
+        const ownerAddr = nft.owner || wallet?.address || ''
         const listings = []
         if (txActivityListings) {
           if (!ownerAddr) {

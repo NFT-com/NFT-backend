@@ -10,11 +10,13 @@ const repositories = db.newRepositories()
 
 const TEST_WALLET_ID = 'test'
 const nftsToListingsFn = (listings: entity.TxActivity[], wallets: entity.Wallet[]) => {
-  return ({ contract, tokenId, walletId, args: { listingsOwner, listingsPageInput } })
+  return ({ contract, tokenId, walletId, owner, args: { listingsOwner, listingsPageInput } })
   : Pageable<entity.TxActivity>  => {
     let listingsOwnerAddress: string = listingsOwner
     if (!listingsOwnerAddress) {
-      if (walletId && walletId !== TEST_WALLET_ID) {
+      if (owner) {
+        listingsOwnerAddress = owner
+      } else if (walletId && walletId !== TEST_WALLET_ID) {
         const wallet: entity.Wallet = wallets.find((wallet) => wallet.id === walletId)
         listingsOwnerAddress = wallet?.address
       }
