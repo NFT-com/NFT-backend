@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers'
-import { arrayify, getAddress, hexlify, stripZeros, zeroPad } from 'ethers/lib/utils'
+import { AbiCoder } from 'ethers/lib/utils'
 import Web3 from 'web3'
 import { AbiItem } from 'web3-utils'
 
@@ -111,8 +111,9 @@ const main = async (): Promise<void> => {
     const ownersOf = await multicallContract.methods['aggregate'](
       multicallArgs,
     ).call()
+    const abiCoder = new AbiCoder()
     for (const data of ownersOf.returnData as string) {
-      console.log(getAddress(hexlify(zeroPad(stripZeros(arrayify(data)), 20))))
+      console.log(abiCoder.decode(['address'], data)[0])
     }
   } catch (err) {
     // If current provider is not available, try another one from the list
