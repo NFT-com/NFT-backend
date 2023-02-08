@@ -179,9 +179,27 @@ type TxX2Y2ProtocolData {
   data: String
 }
 
+type TxNFTCOMProtocolData {
+  makeAsset: [MarketplaceAsset]
+  takeAsset: [MarketplaceAsset]
+  swapTransactionId: String
+  acceptedAt: Int
+  rejectedAt: Int
+  listingId: String
+  buyNowTaker: String
+  auctionType: AuctionType
+  signature: Signature
+  salt: Int
+  start: Int
+  end: Int
+  private: Boolean
+  listingOrderId: String
+  bidOrderId: String
+}
 
 
-union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxX2Y2ProtocolData
+
+union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxX2Y2ProtocolData | TxNFTCOMProtocolData
 
 type TxActivity {
   id: ID!
