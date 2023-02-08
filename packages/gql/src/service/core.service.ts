@@ -541,8 +541,6 @@ export const blacklistProfilePatterns = [
   /^veefriends$/,
   /^loreal$/,
   /^nftviking$/,
-  /^dogepound$/,
-  /^johnlemon$/,
   /^rocnation$/,
   /^cockpunch$/,
   /^timferriss$/,
@@ -694,6 +692,7 @@ export const reservedProfiles = {
   '0xd2E2E23b9f82e1351cB38987DA181c22D0492AAB': ['deadheads', 'saintrobotica'],
   '0xdf2E60Af57C411F848B1eA12B10a404d194bce27': ['mooncats'],
   '0xbef4Eb89D92c198E2d02F36989fEb4EB12f0d0c8': ['cryptodads', 'cryptomoms'],
+  '0x16BAcD96aA34857cCbC676910985CC319865cCC8': ['dogepound', 'johnlemon'],
 }
 
 export const OFAC = {
