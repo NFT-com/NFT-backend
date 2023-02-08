@@ -386,6 +386,10 @@ export default {
         return 'TxX2Y2ProtocolData'
       }
 
+      if (obj.salt) {
+        return 'TxNFTCOMProtocolData'
+      }
+
       return 'TxSeaportProtocolData'
     },
   },
