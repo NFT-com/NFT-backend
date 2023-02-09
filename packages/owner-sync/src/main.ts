@@ -1,9 +1,24 @@
 import { BigNumber } from 'ethers'
 import { AbiCoder } from 'ethers/lib/utils'
+import { Pool } from 'pg'
 import Web3 from 'web3'
+import { Contract } from 'web3-eth-contract'
 import { AbiItem } from 'web3-utils'
 
-// We assign a default web3 provider
+const pgClient = new Pool({
+  user: process.env.DB_USERNAME || 'app',
+  password: process.env.DB_PASSWORD || 'password',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_DATABASE || 'app',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  ssl: {
+    rejectUnauthorized: false,
+  },
+  max: 100,
+  application_name: 'semper',
+})
+
+// Assign a default web3 provider
 let web3 = new Web3(new Web3.providers.HttpProvider('https://eth.llamarpc.com'))
 
 // List of our web3 providers
@@ -35,11 +50,23 @@ const providerSelector = async (): Promise<boolean> => {
   return false
 }
 
-const getOwnersForContract = async (nftAbi: AbiItem[], nftAddress: string, multicallContract): Promise<void> => {
+const chunk = (arr: any[], size: number): any[] => {
+  const chunks: any[] = []
+  while (arr.length) {
+    chunks.push(arr.splice(0, size))
+  }
+  return chunks
+}
+
+const getOwnersForContract = async (
+  nftAbi: AbiItem[], nftAddress: string, multicallContract: Contract): Promise<void> => {
   const nftContract = new web3.eth.Contract(nftAbi, nftAddress)
 
-  const multicallArgs = ['0x02cd', '0x0e36', '0x0545'].map((tokenIdHex) => {
-    const callData = nftContract.methods['ownerOf'](BigNumber.from(tokenIdHex).toBigInt()).encodeABI()
+  // Get tokenIds from nftAddress
+  const client = await pgClient.connect()
+  const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text', [nftAddress])).rows
+  const multicallArgs = tokenIds.map(({ tokenId }) => {
+    const callData = nftContract.methods['ownerOf'](BigNumber.from(tokenId).toBigInt()).encodeABI()
     return {
       target: nftAddress,
       callData: callData,
@@ -48,25 +75,30 @@ const getOwnersForContract = async (nftAbi: AbiItem[], nftAddress: string, multi
   // call multicall. The multicallArgs will call the NFT contract
   // and return the ownersOf token id 1,2,3
   try {
-    const ownersOf = await multicallContract.methods['aggregate'](
-      multicallArgs,
-    ).call()
     const abiCoder = new AbiCoder()
-    for (const data of ownersOf.returnData as string) {
-      console.log(abiCoder.decode(['address'], data)[0])
+    let i = 0
+    for (const batch of chunk(multicallArgs, 1000)) {
+      const ownersOf = await multicallContract.methods['aggregate'](
+        batch,
+      ).call()
+      for (const data of ownersOf.returnData) {
+        await client.query(
+          'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
+          [abiCoder.decode(['address'], data)[0], nftAddress, tokenIds[i++].tokenId])
+      }
     }
   } catch (err) {
     // If current provider is not available, try another one from the list
     const res = JSON.stringify(err, Object.getOwnPropertyNames(err))
     if (res.includes('Invalid JSON RPC response'))
       (await providerSelector()) ? getOwnersForContract(nftAbi, nftAddress, multicallContract) : console.log('No providers available')
-    console.log(err)
+    console.log(res)
+  } finally {
+    client.release()
   }
 }
 
 const main = async (): Promise<void> => {
-  // address of ERC721 NFT
-  const nftAddress = '0xfb9e9e7150cCebFe42D58de1989C5283d0EAAB2e'
   // ERC721 abi to interact with contract
   const nftAbi: AbiItem[] = [
     {
@@ -123,7 +155,15 @@ const main = async (): Promise<void> => {
     multicallAddress,
   )
 
-  await getOwnersForContract(nftAbi, nftAddress, multicallContract)
+  // Get all nftAddresses to update, then loop (or process in batches/waves/async queue)
+  const contracts = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\''))
+    .rows
+    .map((r) => r.contract) as string[]
+  // address of ERC721 NFT
+  for (const nftAddress of contracts) {
+    await getOwnersForContract(nftAbi, nftAddress, multicallContract)
+  }
 }
 
 main()
+  .then(() => pgClient.end())
