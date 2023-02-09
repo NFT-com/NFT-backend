@@ -544,13 +544,11 @@ export const blacklistProfilePatterns = [
   /^rocnation$/,
   /^cockpunch$/,
   /^timferriss$/,
-  /^ud$/,
   /^udp$/,
   /^premintxyz$/,
   /^nftwineclub$/,
   /^wineclub$/,
   /^unstoppabledomains$/,
-  /^unstoppableeth$/,
   /^orangecomet$/,
   /^lostminers$/,
   /^macroverse$/,
@@ -688,11 +686,12 @@ export const reservedProfiles = {
   '0xECDD2F733bD20E56865750eBcE33f17Da0bEE461': ['cryptodads'],
   '0x9A7364b902557850ed11cAb9eF4C61710fc51692': ['nftviking'],
   '0x89f862f870de542c2d91095CCBbCE86cA112A72a': ['supernormal', 'zipcy', 'andrewchoi'],
-  '0xd75aB5D7B1F65eEFc8B6A08EDF08e6FFbB014408': ['neotokyo', 'neocitizens', 'neoidentities'],
+  '0xd75aB5D7B1F65eEFc8B6A08EDF08e6FFbB014408': ['neocitizens', 'neoidentities'],
   '0xd2E2E23b9f82e1351cB38987DA181c22D0492AAB': ['deadheads', 'saintrobotica'],
   '0xdf2E60Af57C411F848B1eA12B10a404d194bce27': ['mooncats'],
   '0xbef4Eb89D92c198E2d02F36989fEb4EB12f0d0c8': ['cryptodads', 'cryptomoms'],
   '0x16BAcD96aA34857cCbC676910985CC319865cCC8': ['dogepound', 'johnlemon'],
+  '0x433e8B0b56c25Cb43099dFF2Ee6a626325654014': ['unstoppableeth', 'udpolygon', 'ud', 'udeth'],
 }
 
 export const OFAC = {
