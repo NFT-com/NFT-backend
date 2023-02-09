@@ -374,6 +374,7 @@ export const start = async (): Promise<void> => {
   app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
   app.use(cors())
   app.use(errorHandler)
+  app.disable('x-powered-by')
 
   await server.start()
   server.applyMiddleware({ app })
