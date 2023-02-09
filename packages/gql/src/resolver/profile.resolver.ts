@@ -26,7 +26,7 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility, getCollectionInfo,
+  changeNFTsVisibility, executeUpdateNFTsForProfile, getCollectionInfo,
   getOwnersOfGenesisKeys, queryNFTsForProfile, saveProfileScore, saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
@@ -267,6 +267,7 @@ const maybeUpdateProfileOwnership = (
               thatEntityType: defs.EntityType.NFT,
               thisEntityId: profile.id,
             })))
+            .then(fp.tap(() => executeUpdateNFTsForProfile(profile.id, chainId)))
         } else {
           return profile
         }

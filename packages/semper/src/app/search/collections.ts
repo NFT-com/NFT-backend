@@ -134,7 +134,7 @@ export const mapCollectionData = async (
         })
       }
       const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
-      const ownerAddr = nft.wallet?.address || ''
+      const ownerAddr = nft.owner || nft.wallet?.address || ''
       const listings = []
       if (txActivityListings) {
         if (!ownerAddr) {

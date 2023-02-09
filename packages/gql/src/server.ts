@@ -193,7 +193,7 @@ export const start = async (): Promise<void> => {
     autoLogging: {
       ignore: (req) => {
         return (
-          req.url === '/.well-known/apollo/server-health'
+          ['/.well-known/apollo/server-health', '/favicon.ico', '/'].includes(req.url)
           || req.method === 'OPTIONS'
         )
       },
