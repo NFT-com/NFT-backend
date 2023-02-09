@@ -111,8 +111,13 @@ export const createContext = async (ctx): Promise<Context> => {
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
-    walletLoader.clear(wallet.id).prime(wallet.id, wallet)
-    user = await repositories.user.findById(wallet?.userId)
+    if (wallet && wallet.id) {
+      walletLoader.clear(wallet.id).prime(wallet.id, wallet)
+      user = await repositories.user.findById(wallet?.userId)
+    } else {
+      logger.warn({ address, chainId, network, wallet },
+        'User attempting to authenticate, but wallet missing from the database.')
+    }
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden
     return Promise.reject(userError.buildAuthInvalid())
@@ -188,7 +193,7 @@ export const start = async (): Promise<void> => {
     autoLogging: {
       ignore: (req) => {
         return (
-          req.url === '/.well-known/apollo/server-health'
+          ['/.well-known/apollo/server-health', '/favicon.ico', '/'].includes(req.url)
           || req.method === 'OPTIONS'
         )
       },
@@ -369,6 +374,7 @@ export const start = async (): Promise<void> => {
   app.use(graphqlUploadExpress({ maxFileSize: 1000000 * 10, maxFiles: 2 })) // maxFileSize: 10 mb
   app.use(cors())
   app.use(errorHandler)
+  app.disable('x-powered-by')
 
   await server.start()
   server.applyMiddleware({ app })

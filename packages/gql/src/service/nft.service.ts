@@ -15,7 +15,8 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import {
   contentTypeFromExt,
   extensionFromFilename,
-  fetchWithTimeout, generateSVGFromBase64String,
+  fetchWithTimeout,
+  generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -1179,6 +1180,32 @@ export const getOwnersOfGenesisKeys = async (
   }
 }
 
+export const executeUpdateNFTsForProfile = async (
+  profileId: string,
+  chainId: string,
+): Promise<void> => {
+  try {
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileId)
+    if (recentlyRefreshed) {
+      // remove profile from cache which store recently refreshed
+      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profileId])
+    }
+    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profileId)
+    if (inProgress) {
+      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
+    }
+    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profileId)
+    if (!inQueue) {
+      // add to NFT cache list
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
+    }
+  } catch (err) {
+    logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
+    Sentry.captureMessage(`Error in executeUpdateNFTsForProfile: ${err}`)
+    throw err
+  }
+}
+
 export const getOwnersOfNFTProfile = async (
   chainId: string,
 ): Promise<string[]> => {
@@ -2316,4 +2343,23 @@ export const queryNFTsForProfile = async (
     }),
   )
   return nfts
+}
+
+// no cache to have instant updates
+export const profileOwner = async (
+  profileUrl: string,
+  chainId: string,
+): Promise<string | undefined> => {
+  try {
+    const nftProfileContract = typechain.NftProfile__factory.connect(
+      contracts.nftProfileAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    const owner = await nftProfileContract.profileOwner(profileUrl)
+    return owner
+  } catch (err) {
+    logger.error(`Error in profileOwner: ${err}`)
+    Sentry.captureMessage(`Error in profileOwner: ${err}`)
+    return undefined
+  }
 }

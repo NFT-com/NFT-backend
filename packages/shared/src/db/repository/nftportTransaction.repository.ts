@@ -163,4 +163,46 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
     }
   }
 
+  public countForCollectionOrNFT = (
+    chainId: string,
+    contract: string,
+    tokenId?: string,
+  ): Promise<number> => {
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
+      .createQueryBuilder('transaction')
+    if (tokenId) {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
+          contractAddress: ethers.utils.getAddress(contract),
+          tokenId: BigNumber.from(tokenId).toHexString(),
+        })
+        .andWhere({
+          chainId,
+        })
+        .cache(true)
+        .getCount()
+    } else {
+      return queryBuilder
+        .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
+          nft: {
+            contractAddress: ethers.utils.getAddress(contract),
+          },
+        })
+        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress', {
+          contractAddress: ethers.utils.getAddress(contract),
+        })
+        .andWhere({
+          chainId,
+        })
+        .cache(true)
+        .getCount()
+    }
+  }
+
 }

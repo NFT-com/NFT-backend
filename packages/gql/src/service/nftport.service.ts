@@ -9,6 +9,8 @@ import { _logger, db, defs } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const NFTPORT_API_BASE_URL = 'https://api.nftport.xyz/v0'
+const NFTPORT_TIME_OUT = 30 * 1000
+const NFTPORT_SAVE_AMOUNT_LIMIT = 10000
 
 const logger = _logger.Factory(_logger.Context.NFTPort)
 const repositories = db.newRepositories()
@@ -358,37 +360,62 @@ export const fetchTxsFromNFTPort = async (
         stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
       }
       await saveTransactionsToEntity(res.transactions, chainId)
+      const savedCount = await repositories.nftPortTransaction.countForCollectionOrNFT(
+        chainId,
+        contractAddress,
+        tokenId,
+      )
       // We should prevent calling API for already saved data
-      if (res?.continuation && !stopSavingTxs) {
+      if (res?.continuation && !stopSavingTxs && savedCount < NFTPORT_SAVE_AMOUNT_LIMIT) {
         let continuation = res?.continuation
-        // eslint-disable-next-line no-constant-condition
         while (!exit) {
           try {
-            res = await fetchData(endpoint, args, {
-              queryParams: {
-                chain,
-                type: filteredType,
-                continuation,
-                page_size: 50,
-                cacheSeconds: 60 * 10,
-              },
-            })
-            if (res?.transactions) {
-              if (latestTx) {
-                stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
-              }
-              await saveTransactionsToEntity(res.transactions, chainId)
-              // We should prevent calling API for already saved data
-              if (stopSavingTxs) {
-                exit = true
-              } else if (res?.continuation) {
-                continuation = res?.continuation
+            const call = async (): Promise<any> => {
+              res = await fetchData(endpoint, args, {
+                queryParams: {
+                  chain,
+                  type: filteredType,
+                  continuation,
+                  page_size: 50,
+                  cacheSeconds: 60 * 10,
+                },
+              })
+              if (res?.transactions) {
+                if (latestTx) {
+                  stopSavingTxs = toSaveTxsBeStopped(res.transactions, latestTx.transactionDate)
+                }
+                await saveTransactionsToEntity(res.transactions, chainId)
+                const savedCount = await repositories.nftPortTransaction.countForCollectionOrNFT(
+                  chainId,
+                  contractAddress,
+                  tokenId,
+                )
+                // We prevent saving more than 10K transactions
+                if (savedCount >= NFTPORT_SAVE_AMOUNT_LIMIT) {
+                  exit = true
+                }
+                // We should prevent calling API for already saved data
+                if (stopSavingTxs) {
+                  exit = true
+                } else if (res?.continuation) {
+                  continuation = res?.continuation
+                } else {
+                  exit = true
+                }
               } else {
                 exit = true
               }
-            } else {
-              exit = true
             }
+            const timer = async (): Promise<any> => {
+              await new Promise((resolve) => {
+                setTimeout(resolve, NFTPORT_TIME_OUT)
+              })
+              if (tokenId)
+                throw Error(`Timeout reached in fetchTxsFromNFTPort: contract ${contractAddress}, tokenId ${BigNumber.from(tokenId).toString()}`)
+              else
+                throw Error(`Timeout reached in fetchTxsFromNFTPort: contract ${contractAddress}`)
+            }
+            return await Promise.race([call(), timer()])
           } catch (err) {
             logger.error(`Error in fetchTxsFromNFTPort: ${err}`)
             Sentry.captureMessage(`Error in fetchTxsFromNFTPort: ${err}`)
