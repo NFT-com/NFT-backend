@@ -12,9 +12,7 @@ import { defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 type TxActivityDAO = entity.TxActivity & {
-  order: entity.TxOrder
   transaction: entity.TxTransaction
-  cancel: entity.TxCancel
 }
 
 interface UpdatedIds {
@@ -376,7 +374,7 @@ const fulfillActivitiesNFTId = async (
       }),
     )
     return {
-      message: `Updated NftId of ${count} tx activities`,
+      message: `Updated nftId of ${count} tx activities for NFTCOM`,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in fulfillActivitiesNFTId: ${err}`)
