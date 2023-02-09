@@ -300,18 +300,24 @@ input TxActivitiesInput {
   expirationType: ActivityExpiration
 }
 
+type FulfillActivitiesNFTIdOutput {
+  message: String
+}
+
 extend type Query {
   getActivities(input: TxActivitiesInput): TxActivitiesOutput!
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
-  "AUTHETICATED"
+  "AUTHENTICATED"
   getActivitiesByWalletAddress(walletAddress: String, chainId: String): [TxActivity]
-  "AUTHETICATED"
+  "AUTHENTICATED"
   getActivitiesByWalletAddressAndType(input: TxWalletAddressAndTypeInput): [TxActivity]
 }
 
 extend type Mutation {
-  "AUTHETICATED"
+  "AUTHENTICATED"
   updateReadByIds(ids: [String]!): UpdateReadOutput!
-  "AUTHETICATED"
+  "AUTHENTICATED"
   updateStatusByIds(ids: [String]!, status: ActivityStatus): UpdateReadOutput!
+  "AUTHENTICATED"
+  fulfillActivitiesNFTId(count: Int!): FulfillActivitiesNFTIdOutput!
 }

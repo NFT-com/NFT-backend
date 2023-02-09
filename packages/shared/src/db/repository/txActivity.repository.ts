@@ -302,4 +302,27 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .execute()
   }
 
+  public findActivitiesWithEmptyNFT = (
+    activityType: ActivityType,
+  ): Promise<TxActivity[]> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
+      .createQueryBuilder('activity')
+
+    const queryObj = {
+      activityType,
+      nftId: [],
+    }
+    return queryBuilder
+      .where(queryObj)
+      .orderBy({ 'activity.updatedAt': 'DESC' })
+      .leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+        'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+      .cache(true)
+      .getMany()
+  }
+
 }
