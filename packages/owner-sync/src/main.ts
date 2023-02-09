@@ -35,6 +35,35 @@ const providerSelector = async (): Promise<boolean> => {
   return false
 }
 
+const getOwnersForContract = async (nftAbi: AbiItem[], nftAddress: string, multicallContract): Promise<void> => {
+  const nftContract = new web3.eth.Contract(nftAbi, nftAddress)
+
+  const multicallArgs = ['0x02cd', '0x0e36', '0x0545'].map((tokenIdHex) => {
+    const callData = nftContract.methods['ownerOf'](BigNumber.from(tokenIdHex).toBigInt()).encodeABI()
+    return {
+      target: nftAddress,
+      callData: callData,
+    }
+  })
+  // call multicall. The multicallArgs will call the NFT contract
+  // and return the ownersOf token id 1,2,3
+  try {
+    const ownersOf = await multicallContract.methods['aggregate'](
+      multicallArgs,
+    ).call()
+    const abiCoder = new AbiCoder()
+    for (const data of ownersOf.returnData as string) {
+      console.log(abiCoder.decode(['address'], data)[0])
+    }
+  } catch (err) {
+    // If current provider is not available, try another one from the list
+    const res = JSON.stringify(err, Object.getOwnPropertyNames(err))
+    if (res.includes('Invalid JSON RPC response'))
+      (await providerSelector()) ? getOwnersForContract(nftAbi, nftAddress, multicallContract) : console.log('No providers available')
+    console.log(err)
+  }
+}
+
 const main = async (): Promise<void> => {
   // address of ERC721 NFT
   const nftAddress = '0xfb9e9e7150cCebFe42D58de1989C5283d0EAAB2e'
@@ -60,17 +89,6 @@ const main = async (): Promise<void> => {
       type: 'function',
     },
   ]
-
-  // interact with contract
-  const nftContract = new web3.eth.Contract(nftAbi, nftAddress)
-
-  const multicallArgs = ['0x02cd', '0x0e36', '0x0545'].map((tokenIdHex) => {
-    const callData = nftContract.methods['ownerOf'](BigNumber.from(tokenIdHex).toBigInt()).encodeABI()
-    return {
-      target: nftAddress,
-      callData: callData,
-    }
-  })
 
   // address of multicall contract for ETH mainnet
   const multicallAddress = '0xeefba1e63905ef1d7acba5a8513c70307c1ce441'
@@ -105,23 +123,7 @@ const main = async (): Promise<void> => {
     multicallAddress,
   )
 
-  // call multicall. The multicallArgs will call the NFT contract
-  // and return the ownersOf token id 1,2,3
-  try {
-    const ownersOf = await multicallContract.methods['aggregate'](
-      multicallArgs,
-    ).call()
-    const abiCoder = new AbiCoder()
-    for (const data of ownersOf.returnData as string) {
-      console.log(abiCoder.decode(['address'], data)[0])
-    }
-  } catch (err) {
-    // If current provider is not available, try another one from the list
-    const res = JSON.stringify(err, Object.getOwnPropertyNames(err))
-    if (res.includes('Invalid JSON RPC response'))
-      (await providerSelector()) ? main() : console.log('No providers available')
-    console.log(err)
-  }
+  await getOwnersForContract(nftAbi, nftAddress, multicallContract)
 }
 
 main()
