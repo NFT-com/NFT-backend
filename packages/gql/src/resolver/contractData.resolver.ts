@@ -293,6 +293,16 @@ export const getTxByContract = async (
             marketplace: activityDAO.transaction.protocol,
           }
           txActivities.push(activity)
+        } else if (activityDAO.activityType === 'Sale') {
+          activity = {
+            ...activity,
+            transactionHash: activityDAO.transaction.transactionHash,
+            protocolData: activityDAO.transaction.protocolData,
+            marketplace: activityDAO.transaction.protocol,
+            sellerAddress: activityDAO.transaction.maker,
+            buyerAddress: activityDAO.transaction.taker,
+          }
+          txActivities.push(activity)
         }
       }
       // 2. return NFTPort result
@@ -446,6 +456,15 @@ export const getTxByNFT = async (
             transactionHash: activityDAO.transaction.transactionHash,
             protocolData: activityDAO.transaction.protocolData,
             marketplace: activityDAO.transaction.protocol,
+          }
+        } else if (activityDAO.activityType === 'Sale') {
+          activity = {
+            ...activity,
+            transactionHash: activityDAO.transaction.transactionHash,
+            protocolData: activityDAO.transaction.protocolData,
+            marketplace: activityDAO.transaction.protocol,
+            sellerAddress: activityDAO.transaction.maker,
+            buyerAddress: activityDAO.transaction.taker,
           }
         }
         txActivities.push(activity)
