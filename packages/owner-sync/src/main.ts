@@ -1,8 +1,6 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, Contract, ethers } from 'ethers'
 import { AbiCoder } from 'ethers/lib/utils'
 import { Pool } from 'pg'
-import Web3 from 'web3'
-import { Contract } from 'web3-eth-contract'
 import { AbiItem } from 'web3-utils'
 
 const pgClient = new Pool({
@@ -19,36 +17,9 @@ const pgClient = new Pool({
 })
 
 // Assign a default web3 provider
-let web3 = new Web3(new Web3.providers.HttpProvider('https://eth.llamarpc.com'))
-
-// List of our web3 providers
-const providers = [
-  new Web3(new Web3.providers.HttpProvider('https://eth.llamarpc.com')),
-  new Web3(new Web3.providers.HttpProvider('https://rpc.ankr.com/eth')),
-  new Web3(new Web3.providers.HttpProvider('https://cloudflare-eth.com/')),
-  new Web3(new Web3.providers.HttpProvider('https://rpc.flashbots.net/')),
-  new Web3(new Web3.providers.HttpProvider('https://eth-mainnet.public.blastapi.io')),
-  new Web3(new Web3.providers.HttpProvider('https://nodes.mewapi.io/rpc/eth')),
-  new Web3(new Web3.providers.HttpProvider('https://eth-mainnet.gateway.pokt.network/v1/5f3453978e354ab992c4da79')),
-  new Web3(new Web3.providers.HttpProvider('https://eth-mainnet.nodereal.io/v1/1659dfb40aa24bbb8153a677b98064d7')),
-  new Web3(new Web3.providers.HttpProvider('https://ethereum.publicnode.com')),
-]
-
-// Selects the first web3 provider available from our list
-const providerSelector = async (): Promise<boolean> => {
-  let selectedProvider: Web3 | null = null
-  for (let i = 1; i < providers.length; i++) {
-    await providers[i].eth.getBlockNumber()
-      .then(() => { selectedProvider = providers[i] })
-      .catch(() => { console.log(`Provider ${providers[i]} not available`) })
-    if (selectedProvider) {
-      web3 = selectedProvider
-      providers.concat(providers.splice(0, i))
-      return true
-    }
-  }
-  return false
-}
+const provider = new ethers.providers.StaticJsonRpcProvider(process.env.ALCHEMY_API_URL)
+const wallet = ethers.Wallet.createRandom()
+const signer = wallet.connect(provider)
 
 const chunk = (arr: any[], size: number): any[] => {
   const chunks: any[] = []
@@ -59,14 +30,13 @@ const chunk = (arr: any[], size: number): any[] => {
 }
 
 const getOwnersForContract = async (
-  nftAbi: AbiItem[], nftAddress: string, multicallContract: Contract): Promise<void> => {
-  const nftContract = new web3.eth.Contract(nftAbi, nftAddress)
-
+  nftAbi: any[], nftAddress: string, multicallContract: Contract): Promise<void> => {
   // Get tokenIds from nftAddress
   const client = await pgClient.connect()
   const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text', [nftAddress])).rows
+  const nftInterface = new ethers.utils.Interface(nftAbi)
   const multicallArgs = tokenIds.map(({ tokenId }) => {
-    const callData = nftContract.methods['ownerOf'](BigNumber.from(tokenId).toBigInt()).encodeABI()
+    const callData = nftInterface.encodeFunctionData('ownerOf', [BigNumber.from(tokenId)])
     return {
       target: nftAddress,
       callData: callData,
@@ -76,26 +46,22 @@ const getOwnersForContract = async (
   // and return the ownersOf token id 1,2,3
   try {
     const abiCoder = new AbiCoder()
-    let i = 0
-    for (const batch of chunk(multicallArgs, 1000)) {
-      const ownersOf = await multicallContract.methods['aggregate'](
-        batch,
-      ).call()
+    // let i = 0
+    for (const batch of chunk(multicallArgs, 1)) {
+      const ownersOf = await multicallContract.aggregate(batch)
+      console.log({ ownersOf })
       for (const data of ownersOf.returnData) {
-        await client.query(
-          'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
-          [abiCoder.decode(['address'], data)[0], nftAddress, tokenIds[i++].tokenId])
+        console.log({ ownersOfdecoded: nftInterface.decodeFunctionResult('ownerOf', ownersOf) })
+        console.log({ data, decoded: abiCoder.decode(['address'], data)[0] })
+        // await client.query(
+        //   'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
+        //   [abiCoder.decode(['address'], data)[0], nftAddress, tokenIds[i++].tokenId])
       }
     }
   } catch (err) {
-    // If current provider is not available, try another one from the list
-    const res = JSON.stringify(err, Object.getOwnPropertyNames(err))
-    if (res.includes('Invalid JSON RPC response'))
-      (await providerSelector()) ? getOwnersForContract(nftAbi, nftAddress, multicallContract) : console.log('No providers available')
-    console.log(res)
-  } finally {
-    client.release()
+    console.log({ err, nftAddress })
   }
+  client.release()
 }
 
 const main = async (): Promise<void> => {
@@ -123,47 +89,26 @@ const main = async (): Promise<void> => {
   ]
 
   // address of multicall contract for ETH mainnet
-  const multicallAddress = '0xeefba1e63905ef1d7acba5a8513c70307c1ce441'
+  const multicallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'
   // multicall abi to interact with contract
-  const multicallAbi: AbiItem[] = [
-    {
-      constant: false,
-      inputs: [
-        {
-          components: [
-            { name: 'target', type: 'address' },
-            { name: 'callData', type: 'bytes' },
-          ],
-          name: 'calls',
-          type: 'tuple[]',
-        },
-      ],
-      name: 'aggregate',
-      outputs: [
-        { name: 'blockNumber', type: 'uint256' },
-        { name: 'returnData', type: 'bytes[]' },
-      ],
-      payable: false,
-      stateMutability: 'nonpayable',
-      type: 'function',
-    },
-  ]
+  const multicallAbi = [{ 'inputs': [{ 'components': [{ 'internalType': 'address', 'name': 'target', 'type': 'address' }, { 'internalType': 'bytes', 'name': 'callData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Call[]', 'name': 'calls', 'type': 'tuple[]' }], 'name': 'aggregate', 'outputs': [{ 'internalType': 'uint256', 'name': 'blockNumber', 'type': 'uint256' }, { 'internalType': 'bytes[]', 'name': 'returnData', 'type': 'bytes[]' }], 'stateMutability': 'payable', 'type': 'function' }, { 'inputs': [{ 'components': [{ 'internalType': 'address', 'name': 'target', 'type': 'address' }, { 'internalType': 'bool', 'name': 'allowFailure', 'type': 'bool' }, { 'internalType': 'bytes', 'name': 'callData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Call3[]', 'name': 'calls', 'type': 'tuple[]' }], 'name': 'aggregate3', 'outputs': [{ 'components': [{ 'internalType': 'bool', 'name': 'success', 'type': 'bool' }, { 'internalType': 'bytes', 'name': 'returnData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Result[]', 'name': 'returnData', 'type': 'tuple[]' }], 'stateMutability': 'payable', 'type': 'function' }, { 'inputs': [{ 'components': [{ 'internalType': 'address', 'name': 'target', 'type': 'address' }, { 'internalType': 'bool', 'name': 'allowFailure', 'type': 'bool' }, { 'internalType': 'uint256', 'name': 'value', 'type': 'uint256' }, { 'internalType': 'bytes', 'name': 'callData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Call3Value[]', 'name': 'calls', 'type': 'tuple[]' }], 'name': 'aggregate3Value', 'outputs': [{ 'components': [{ 'internalType': 'bool', 'name': 'success', 'type': 'bool' }, { 'internalType': 'bytes', 'name': 'returnData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Result[]', 'name': 'returnData', 'type': 'tuple[]' }], 'stateMutability': 'payable', 'type': 'function' }, { 'inputs': [{ 'components': [{ 'internalType': 'address', 'name': 'target', 'type': 'address' }, { 'internalType': 'bytes', 'name': 'callData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Call[]', 'name': 'calls', 'type': 'tuple[]' }], 'name': 'blockAndAggregate', 'outputs': [{ 'internalType': 'uint256', 'name': 'blockNumber', 'type': 'uint256' }, { 'internalType': 'bytes32', 'name': 'blockHash', 'type': 'bytes32' }, { 'components': [{ 'internalType': 'bool', 'name': 'success', 'type': 'bool' }, { 'internalType': 'bytes', 'name': 'returnData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Result[]', 'name': 'returnData', 'type': 'tuple[]' }], 'stateMutability': 'payable', 'type': 'function' }, { 'inputs': [], 'name': 'getBasefee', 'outputs': [{ 'internalType': 'uint256', 'name': 'basefee', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [{ 'internalType': 'uint256', 'name': 'blockNumber', 'type': 'uint256' }], 'name': 'getBlockHash', 'outputs': [{ 'internalType': 'bytes32', 'name': 'blockHash', 'type': 'bytes32' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getBlockNumber', 'outputs': [{ 'internalType': 'uint256', 'name': 'blockNumber', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getChainId', 'outputs': [{ 'internalType': 'uint256', 'name': 'chainid', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getCurrentBlockCoinbase', 'outputs': [{ 'internalType': 'address', 'name': 'coinbase', 'type': 'address' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getCurrentBlockDifficulty', 'outputs': [{ 'internalType': 'uint256', 'name': 'difficulty', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getCurrentBlockGasLimit', 'outputs': [{ 'internalType': 'uint256', 'name': 'gaslimit', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getCurrentBlockTimestamp', 'outputs': [{ 'internalType': 'uint256', 'name': 'timestamp', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [{ 'internalType': 'address', 'name': 'addr', 'type': 'address' }], 'name': 'getEthBalance', 'outputs': [{ 'internalType': 'uint256', 'name': 'balance', 'type': 'uint256' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [], 'name': 'getLastBlockHash', 'outputs': [{ 'internalType': 'bytes32', 'name': 'blockHash', 'type': 'bytes32' }], 'stateMutability': 'view', 'type': 'function' }, { 'inputs': [{ 'internalType': 'bool', 'name': 'requireSuccess', 'type': 'bool' }, { 'components': [{ 'internalType': 'address', 'name': 'target', 'type': 'address' }, { 'internalType': 'bytes', 'name': 'callData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Call[]', 'name': 'calls', 'type': 'tuple[]' }], 'name': 'tryAggregate', 'outputs': [{ 'components': [{ 'internalType': 'bool', 'name': 'success', 'type': 'bool' }, { 'internalType': 'bytes', 'name': 'returnData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Result[]', 'name': 'returnData', 'type': 'tuple[]' }], 'stateMutability': 'payable', 'type': 'function' }, { 'inputs': [{ 'internalType': 'bool', 'name': 'requireSuccess', 'type': 'bool' }, { 'components': [{ 'internalType': 'address', 'name': 'target', 'type': 'address' }, { 'internalType': 'bytes', 'name': 'callData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Call[]', 'name': 'calls', 'type': 'tuple[]' }], 'name': 'tryBlockAndAggregate', 'outputs': [{ 'internalType': 'uint256', 'name': 'blockNumber', 'type': 'uint256' }, { 'internalType': 'bytes32', 'name': 'blockHash', 'type': 'bytes32' }, { 'components': [{ 'internalType': 'bool', 'name': 'success', 'type': 'bool' }, { 'internalType': 'bytes', 'name': 'returnData', 'type': 'bytes' }], 'internalType': 'struct Multicall3.Result[]', 'name': 'returnData', 'type': 'tuple[]' }], 'stateMutability': 'payable', 'type': 'function' }]
 
-  // interact with multicall contract
-  const multicallContract = new web3.eth.Contract(
-    multicallAbi,
-    multicallAddress,
-  )
+  const multicallContract = new Contract(multicallAddress, multicallAbi, signer)
 
   // Get all nftAddresses to update, then loop (or process in batches/waves/async queue)
-  const contracts = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\''))
-    .rows
-    .map((r) => r.contract) as string[]
+  // const contracts = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\' AND "owner" IS NULL'))
+  //   .rows
+  //   .map((r) => r.contract) as string[]
   // address of ERC721 NFT
-  for (const nftAddress of contracts) {
+  for (const nftAddress of ['0x8fB5a7894AB461a59ACdfab8918335768e411414']) {
     await getOwnersForContract(nftAbi, nftAddress, multicallContract)
   }
 }
 
 main()
   .then(() => pgClient.end())
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
