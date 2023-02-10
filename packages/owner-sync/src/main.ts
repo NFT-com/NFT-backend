@@ -3,6 +3,8 @@ import { AbiCoder } from 'ethers/lib/utils'
 import { Pool } from 'pg'
 import { AbiItem } from 'web3-utils'
 
+import { core } from '@nftcom/gql/service'
+
 const pgClient = new Pool({
   user: process.env.DB_USERNAME || 'app',
   password: process.env.DB_PASSWORD || 'password',
@@ -17,8 +19,8 @@ const pgClient = new Pool({
 })
 
 // Assign a default web3 provider
-const provider = new ethers.providers.StaticJsonRpcProvider(process.env.ALCHEMY_API_URL)
-const wallet = ethers.Wallet.createRandom()
+const provider = new ethers.providers.AlchemyProvider(1, process.env.ALCHEMY_API_KEY)
+const wallet = new ethers.Wallet('a2f890d2f7023d5eeba7f5c600bd50650ca59bd7e7007af8e016cd7abdc9af5d', provider)
 const signer = wallet.connect(provider)
 
 const chunk = (arr: any[], size: number): any[] => {
@@ -30,17 +32,22 @@ const chunk = (arr: any[], size: number): any[] => {
 }
 
 const getOwnersForContract = async (
-  nftAbi: any[], nftAddress: string, multicallContract: Contract): Promise<void> => {
+  nftAbi: any[], nftAddress: string, _multicallContract: Contract): Promise<void> => {
   // Get tokenIds from nftAddress
   const client = await pgClient.connect()
   const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text', [nftAddress])).rows
   const nftInterface = new ethers.utils.Interface(nftAbi)
   const multicallArgs = tokenIds.map(({ tokenId }) => {
-    const callData = nftInterface.encodeFunctionData('ownerOf', [BigNumber.from(tokenId)])
     return {
-      target: nftAddress,
-      callData: callData,
+      contract: nftAddress,
+      name: 'ownerOf',
+      params: [BigNumber.from(tokenId)],
     }
+    // const callData = nftInterface.encodeFunctionData('ownerOf', [BigNumber.from(tokenId)])
+    // return [
+    //   nftAddress,
+    //   callData,
+    // ]
   })
   // call multicall. The multicallArgs will call the NFT contract
   // and return the ownersOf token id 1,2,3
@@ -48,10 +55,11 @@ const getOwnersForContract = async (
     const abiCoder = new AbiCoder()
     // let i = 0
     for (const batch of chunk(multicallArgs, 1)) {
-      const ownersOf = await multicallContract.aggregate(batch)
+      // const ownersOf = await multicallContract.tryAggregate(false, batch)
+      const ownersOf = await core.fetchDataUsingMulticall(batch, nftAbi, '1')
       console.log({ ownersOf })
-      for (const data of ownersOf.returnData) {
-        console.log({ ownersOfdecoded: nftInterface.decodeFunctionResult('ownerOf', ownersOf) })
+      for (const data of ownersOf) {
+        console.log({ ownersOfdecoded: nftInterface.decodeFunctionResult('ownerOf', data) })
         console.log({ data, decoded: abiCoder.decode(['address'], data)[0] })
         // await client.query(
         //   'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
