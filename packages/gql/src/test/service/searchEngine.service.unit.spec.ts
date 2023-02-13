@@ -31,7 +31,7 @@ describe('search engine service', () => {
           },
         },
         collection: {
-          findById: (_: string) => {
+          findOne: (_: any) => {
             return Promise.resolve(new Collection())
           },
         },
