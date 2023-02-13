@@ -17,7 +17,7 @@ export const getRandomFloat = (min, max, decimals): number => {
 }
 
 export const chainFromId = (chainId: string): string | undefined => {
-  switch(chainId) {
+  switch (chainId) {
   case '1':
     return 'ethereum'
   case '5':

@@ -96,10 +96,9 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           loaders: null,
         }
 
-        const collection = await core.resolveEntityById<entity.NFT, entity.Collection>(
+        const collection = await core.resolveCollectionById<entity.NFT, entity.Collection>(
           'contract',
           defs.EntityType.NFT,
-          defs.EntityType.Collection,
         )(nft, null, ctx)
 
         const wallet = await core.resolveEntityById<entity.NFT, entity.Wallet>(
@@ -128,7 +127,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           })
         }
         const txActivityListings = listingMap[`${nft.contract}-${nft.tokenId}`]
-        const ownerAddr = wallet?.address || ''
+        const ownerAddr = nft.owner || wallet?.address || ''
         const listings = []
         if (txActivityListings) {
           if (!ownerAddr) {

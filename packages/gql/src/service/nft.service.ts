@@ -15,7 +15,8 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import {
   contentTypeFromExt,
   extensionFromFilename,
-  fetchWithTimeout, generateSVGFromBase64String,
+  fetchWithTimeout,
+  generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -223,18 +224,20 @@ export const getOwnersForNFT = async (
 ): Promise<string[]> => {
   try {
     initiateWeb3(nft.chainId)
-    const contract = ethers.utils.getAddress(nft.contract)
-    const key = `getOwnersForNFT_${nft.chainId}_${contract}_${nft.tokenId}`
-    const cachedData = await cache.get(key)
 
-    if (cachedData) {
-      return JSON.parse(cachedData) as string[]
+    const key = `getOwnersForNFT-${nft.contract}-${nft.tokenId}`
+    const cachedGetOwnersForNFT: string = await cache.get(key)
+
+    if (cachedGetOwnersForNFT) {
+      return JSON.parse(cachedGetOwnersForNFT)
     } else {
+      const contract = ethers.utils.getAddress(nft.contract)
+      
       const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
       const response = await axios.get(baseUrl)
 
       if (response && response?.data && response.data?.owners) {
-        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
+        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 10)
         return response.data.owners as string[]
       } else {
         return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
@@ -1175,6 +1178,32 @@ export const getOwnersOfGenesisKeys = async (
   } catch (err) {
     logger.error(`Error in getOwnersOfGenesisKeys: ${err}`)
     Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
+    throw err
+  }
+}
+
+export const executeUpdateNFTsForProfile = async (
+  profileId: string,
+  chainId: string,
+): Promise<void> => {
+  try {
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileId)
+    if (recentlyRefreshed) {
+      // remove profile from cache which store recently refreshed
+      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profileId])
+    }
+    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profileId)
+    if (inProgress) {
+      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
+    }
+    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profileId)
+    if (!inQueue) {
+      // add to NFT cache list
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
+    }
+  } catch (err) {
+    logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
+    Sentry.captureMessage(`Error in executeUpdateNFTsForProfile: ${err}`)
     throw err
   }
 }
@@ -2316,4 +2345,23 @@ export const queryNFTsForProfile = async (
     }),
   )
   return nfts
+}
+
+// no cache to have instant updates
+export const profileOwner = async (
+  profileUrl: string,
+  chainId: string,
+): Promise<string | undefined> => {
+  try {
+    const nftProfileContract = typechain.NftProfile__factory.connect(
+      contracts.nftProfileAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    const owner = await nftProfileContract.profileOwner(profileUrl)
+    return owner
+  } catch (err) {
+    logger.error(`Error in profileOwner: ${err}`)
+    Sentry.captureMessage(`Error in profileOwner: ${err}`)
+    return undefined
+  }
 }
