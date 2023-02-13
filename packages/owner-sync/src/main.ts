@@ -1,5 +1,4 @@
 import { BigNumber, Contract, ethers } from 'ethers'
-import { AbiCoder } from 'ethers/lib/utils'
 import { Pool } from 'pg'
 import { AbiItem } from 'web3-utils'
 
@@ -36,35 +35,24 @@ const getOwnersForContract = async (
   // Get tokenIds from nftAddress
   const client = await pgClient.connect()
   const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text', [nftAddress])).rows
-  const nftInterface = new ethers.utils.Interface(nftAbi)
   const multicallArgs = tokenIds.map(({ tokenId }) => {
     return {
       contract: nftAddress,
       name: 'ownerOf',
       params: [BigNumber.from(tokenId)],
     }
-    // const callData = nftInterface.encodeFunctionData('ownerOf', [BigNumber.from(tokenId)])
-    // return [
-    //   nftAddress,
-    //   callData,
-    // ]
   })
-  // call multicall. The multicallArgs will call the NFT contract
-  // and return the ownersOf token id 1,2,3
+
   try {
-    const abiCoder = new AbiCoder()
-    // let i = 0
-    for (const batch of chunk(multicallArgs, 1)) {
-      // const ownersOf = await multicallContract.tryAggregate(false, batch)
+    let i = 0
+    for (const batch of chunk(multicallArgs, 1000)) {
       const ownersOf = await core.fetchDataUsingMulticall(batch, nftAbi, '1')
-      console.log({ ownersOf })
       for (const data of ownersOf) {
-        console.log({ ownersOfdecoded: nftInterface.decodeFunctionResult('ownerOf', data) })
-        console.log({ data, decoded: abiCoder.decode(['address'], data)[0] })
-        // await client.query(
-        //   'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
-        //   [abiCoder.decode(['address'], data)[0], nftAddress, tokenIds[i++].tokenId])
+        await client.query(
+          'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
+          [data[0], nftAddress, tokenIds[i++].tokenId])
       }
+      console.log('*'.repeat(10) + ' BATCH OF 1000 COMPLETED ' + '*'.repeat(10))
     }
   } catch (err) {
     console.log({ err, nftAddress })
@@ -104,11 +92,11 @@ const main = async (): Promise<void> => {
   const multicallContract = new Contract(multicallAddress, multicallAbi, signer)
 
   // Get all nftAddresses to update, then loop (or process in batches/waves/async queue)
-  // const contracts = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\' AND "owner" IS NULL'))
-  //   .rows
-  //   .map((r) => r.contract) as string[]
+  const contracts = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\' AND "owner" IS NULL'))
+    .rows
+    .map((r) => r.contract) as string[]
   // address of ERC721 NFT
-  for (const nftAddress of ['0x8fB5a7894AB461a59ACdfab8918335768e411414']) {
+  for (const nftAddress of contracts) {
     await getOwnersForContract(nftAbi, nftAddress, multicallContract)
   }
 }
