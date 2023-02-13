@@ -224,24 +224,15 @@ export const getOwnersForNFT = async (
 ): Promise<string[]> => {
   try {
     initiateWeb3(nft.chainId)
+    const contract = ethers.utils.getAddress(nft.contract)
+    
+    const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
+    const response = await axios.get(baseUrl)
 
-    const key = `getOwnersForNFT-${nft.contract}-${nft.tokenId}`
-    const cachedGetOwnersForNFT: string = await cache.get(key)
-
-    if (cachedGetOwnersForNFT) {
-      return JSON.parse(cachedGetOwnersForNFT)
+    if (response && response?.data && response.data?.owners) {
+      return response.data.owners as string[]
     } else {
-      const contract = ethers.utils.getAddress(nft.contract)
-      
-      const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
-      const response = await axios.get(baseUrl)
-
-      if (response && response?.data && response.data?.owners) {
-        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 10)
-        return response.data.owners as string[]
-      } else {
-        return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
-      }
+      return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
     }
   } catch (err) {
     logger.error(`Error in getOwnersForNFT: ${err}`)
