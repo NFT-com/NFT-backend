@@ -96,10 +96,9 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           loaders: null,
         }
 
-        const collection = await core.resolveEntityById<entity.NFT, entity.Collection>(
+        const collection = await core.resolveCollectionById<entity.NFT, entity.Collection>(
           'contract',
           defs.EntityType.NFT,
-          defs.EntityType.Collection,
         )(nft, null, ctx)
 
         const wallet = await core.resolveEntityById<entity.NFT, entity.Wallet>(
