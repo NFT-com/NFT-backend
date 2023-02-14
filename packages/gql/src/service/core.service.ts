@@ -554,6 +554,28 @@ export const blacklistProfilePatterns = [
   /^macroverse$/,
   /^allurebridals$/,
   /^thealopecians$/,
+  /^gogalagames$/,
+  /^mirandus$/,
+  /^superior$/,
+  /^townstar$/,
+  /^goldmasksociety$/,
+  /^goldmask$/,
+  /^hooligansfc$/,
+  /^hooligans$/,
+  /^pacers$/,
+  /^landvault$/,
+  /^lildurk$/,
+  /^NXTG3NZ$/,
+  /^mattjames$/,
+  /^neotokyocode$/,
+  /^pac12$/,
+  /^pac12conference$/,
+  /^miafest$/,
+  /^miafestival$/,
+  /^madeinamerica$/,
+  /^officialmiguel$/,
+  /^thisismiguel$/,
+  /^s1c$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
@@ -692,8 +714,9 @@ export const reservedProfiles = {
   '0xbef4Eb89D92c198E2d02F36989fEb4EB12f0d0c8': ['cryptodads', 'cryptomoms'],
   '0x16BAcD96aA34857cCbC676910985CC319865cCC8': ['dogepound', 'johnlemon'],
   '0x433e8B0b56c25Cb43099dFF2Ee6a626325654014': ['unstoppableeth', 'udpolygon', 'ud', 'udeth'],
-  '0x893f5090014182A731800fd9Eab839386E25cAb8': ['gavin123123123123', 'test123123123123', 'joe123123123123123', 'cool123123123123'], // test account
   '0xC46ba8aeA15674D31f1300ED8d4C199D0AA1a8b8': ['allurebridals', 'nftdress', 'bridal', 'weddingdresses'],
+  '0x738e3f60c8F476C067d49f25B21580f88eBea81A': ['macroverse', 'deadtown', 'bushidos', 'gsa'],
+  '0x05B05b131b76Cc4b09f2689Bb567c48132934Bf4': ['lostminers', 'blockpax', 'wonders'],
 }
 
 export const OFAC = {
