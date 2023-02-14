@@ -32,7 +32,7 @@ import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   getUserWalletFromNFT,
-  initiateWeb3,
+  initiateWeb3, profileOwner,
   saveNewNFT, updateCollectionForAssociatedContract,
   updateNFTMetadata, updateNFTOwnershipAndMetadata, updateNFTsForAssociatedAddresses,
   updateWalletNFTs,
@@ -224,16 +224,37 @@ const returnProfileNFTs = async (
   includeHidden: boolean,
   cacheKeyStr: string,
   query: string,
+  invalidateCache?: boolean,
 ): Promise<any> => {
   try {
     let nfts: gql.NFT[] = []
     let cacheKey
     if (query && query?.length) {
-      cacheKey =  `${cacheKeyStr}_${chainId}_${profileId}_${query}`
+      cacheKey = `${cacheKeyStr}_${chainId}_${profileId}_${query}`
     } else {
       cacheKey = `${cacheKeyStr}_${chainId}_${profileId}`
     }
-    const cachedData = await cache.get(cacheKey)
+    if (invalidateCache) {
+      await cache.del([cacheKey])
+    }
+    const profile = await ctx.repositories.profile.findById(profileId)
+    if (!profile) return
+    let cachedData = await cache.get(cacheKey)
+    if (cachedData) {
+      // check profile owner and if owner is changed, we invalidate cached data
+      const owner = await profileOwner(profile.url, chainId)
+      if (owner && !profile.ownerWalletId) {
+        await cache.del([cacheKey])
+      } else if (owner && profile.ownerWalletId) {
+        const wallet = await ctx.repositories.wallet.findById(profile.ownerWalletId)
+        if (wallet && ethers.utils.getAddress(wallet.address) !== ethers.utils.getAddress(owner)) {
+          await cache.del([cacheKey])
+        }
+      } else if (!owner && profile.ownerWalletId) {
+        await cache.del([cacheKey])
+      }
+    }
+    cachedData = await cache.get(cacheKey)
     if (cachedData) {
       nfts = JSON.parse(cachedData) as gql.NFT[]
     } else {
@@ -354,6 +375,7 @@ const getMyNFTs = async (
     pageInput: Joi.any(),
     types: Joi.array().optional(),
     query: Joi.string().optional(),
+    invalidateCache: Joi.boolean().optional(),
   })
   const { input } = args
   joi.validateSchema(schema, input)
@@ -388,6 +410,7 @@ const getMyNFTs = async (
         true,
         CacheKeys.PROFILE_SORTED_NFTS,
         query,
+        args?.input.invalidateCache,
       )
     } else if (!args?.input?.ownedByWallet && args?.input?.profileId) {
       const profile = await ctx.repositories.profile.findById(args?.input?.profileId)
@@ -405,6 +428,7 @@ const getMyNFTs = async (
         true,
         CacheKeys.PROFILE_SORTED_NFTS,
         query,
+        args?.input.invalidateCache,
       )
     } else if (args?.input?.ownedByWallet && !args?.input?.profileId) {
       return core.paginatedEntitiesBy(
@@ -453,6 +477,7 @@ const getMyNFTs = async (
           true,
           CacheKeys.PROFILE_SORTED_NFTS,
           query,
+          args?.input.invalidateCache,
         )
       }
     }
@@ -795,58 +820,46 @@ export const refreshNft = async (
 
     initiateWeb3(chainId)
 
-    const cacheKey = `${CacheKeys.REFRESH_NFT}_${chainId}_${args?.id}`
-    const cachedData = await cache.get(cacheKey)
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    } else {
-      let nft = await repositories.nft.findOne({
-        where: {
-          id: args?.id,
-          chainId,
+    let nft = await repositories.nft.findOne({
+      where: {
+        id: args?.id,
+        chainId,
+      },
+    })
+
+    if (nft) {
+      // fix (short-term) : trait value
+      nft = stringifyTraits(nft)
+
+      const obj = {
+        contract: {
+          address: nft.contract,
         },
-      })
-
-      if (nft) {
-        // fix (short-term) : trait value
-        nft = stringifyTraits(nft)
-
-        const obj = {
-          contract: {
-            address: nft.contract,
-          },
-          id: {
-            tokenId: nft.tokenId,
-          },
-        }
-
-        const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
-        let refreshedNFT
-        if (!wallet) {
-          logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
-          const currentWallet = await repositories.wallet.findById(nft.walletId)
-          refreshedNFT = await updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
-        } else {
-          refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
-        }
-        if (refreshedNFT) {
-          await seService.indexNFTs([refreshedNFT])
-
-          await cache.set(
-            cacheKey,
-            JSON.stringify(refreshedNFT),
-            'EX',
-            5 * 60, // 5 minutes
-          )
-          return refreshedNFT
-        }
-        return nft
-      } else {
-        return Promise.reject(appError.buildNotFound(
-          nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-          nftError.ErrorType.NFTNotFound,
-        ))
+        id: {
+          tokenId: nft.tokenId,
+        },
       }
+
+      const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+      let refreshedNFT
+      if (!wallet) {
+        logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
+        const currentWallet = await repositories.wallet.findById(nft.walletId)
+        refreshedNFT = await updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
+      } else {
+        refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
+      }
+      if (refreshedNFT) {
+        await seService.indexNFTs([refreshedNFT])
+
+        return refreshedNFT
+      }
+      return nft
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      ))
     }
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNft: ${err}`)

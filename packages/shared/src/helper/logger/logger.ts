@@ -4,6 +4,7 @@ import * as util from 'util'
 
 import { context, trace } from '@opentelemetry/api'
 
+import { fromString,toNumberString } from './dd-fns'
 import { LoggerContext, LogLevel } from './types'
 
 export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({
@@ -17,11 +18,16 @@ export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({
       const span = trace.getSpan(context.active())
       if (span) {
         const context = span.spanContext()
+        const traceIdEnd = context.traceId.slice(context.traceId.length / 2)
         input = {
           ...input,
           trace_id: context.traceId,
           trace_flags: context.traceFlags,
           span_id: context.spanId,
+          dd: {
+            trace_id: toNumberString(fromString(traceIdEnd, 16)),
+            span_id: toNumberString(fromString(context.spanId, 16)),
+          },
         }
       }
       return input
