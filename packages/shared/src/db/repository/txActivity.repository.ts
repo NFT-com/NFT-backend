@@ -321,4 +321,23 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .getMany()
   }
 
+  public findActivitiesByRecipient = (
+    activityType: ActivityType,
+    recipient: string,
+  ): Promise<TxActivity[]> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
+      .createQueryBuilder('activity')
+
+    const queryObj = {
+      activityType,
+    }
+    return queryBuilder
+      .where(queryObj)
+      .orderBy({ 'activity.updatedAt': 'DESC' })
+      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+        'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.taker = :recipient', { recipient })
+      .cache(true)
+      .getMany()
+  }
+
 }
