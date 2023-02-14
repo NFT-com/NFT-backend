@@ -3,7 +3,7 @@ import cryptoRandomString from 'crypto-random-string'
 import { addDays } from 'date-fns'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
-import { isNil, maxBy } from 'lodash'
+import { isNil } from 'lodash'
 import fetch from 'node-fetch'
 import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
 
@@ -1163,16 +1163,20 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
-  const edges: entity.Edge[] = (await repositories.edge
-    .find({ where: {
-      thisEntityType: defs.EntityType.Profile,
-      thatEntityType: defs.EntityType.NFT,
-      thisEntityId: profileId,
-      edgeType: defs.EdgeType.Displays,
-    } }))
-    .filter((edge: entity.Edge) => edge.weight !== null)
+  const edges = await repositories.edge.find({ where: {
+    thisEntityType: defs.EntityType.Profile,
+    thatEntityType: defs.EntityType.NFT,
+    thisEntityId: profileId,
+    edgeType: defs.EdgeType.Displays,
+  } })
   if (!edges.length) return
-  const biggest = (maxBy(edges, (edge) => edge.weight)).weight
+  const filterEdges = edges.filter((edge) => edge.weight !== null)
+  if (!filterEdges.length) return
+  let biggest = filterEdges[0].weight
+  for (let i = 1; i < filterEdges.length; i++) {
+    if (biggest < filterEdges[i].weight)
+      biggest = filterEdges[i].weight
+  }
   return biggest
 }
 
