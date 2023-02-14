@@ -2,6 +2,7 @@ import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
+import { differenceBy } from 'lodash'
 import * as typeorm from 'typeorm'
 import { IsNull } from 'typeorm'
 
@@ -1264,23 +1265,10 @@ export const saveEdgesWithWeight = async (
   hide: boolean,
 ): Promise<void> => {
   try {
-    const nftsToBeAdded = []
     const edgesWithWeight = []
     // filter nfts are not added to edge yet...
-    await Promise.allSettled(
-      nfts.map(async (nft: entity.NFT) => {
-        const displayEdge = await repositories.edge.findOne({
-          where: {
-            thisEntityType: defs.EntityType.Profile,
-            thatEntityType: defs.EntityType.NFT,
-            thisEntityId: profileId,
-            thatEntityId: nft.id,
-            edgeType: defs.EdgeType.Displays,
-          },
-        })
-        if (!displayEdge) nftsToBeAdded.push(nft)
-      }),
-    )
+    const displayedNFTs = await repositories.nft.findByProfileEdgeDisplayed(profileId)
+    const nftsToBeAdded = differenceBy(nfts, displayedNFTs, 'id')
     // generate weights for nfts...
     let weight = await getLastWeight(repositories, profileId)
     for (let i = 0; i < nftsToBeAdded.length; i++) {
@@ -1566,7 +1554,7 @@ export const updateEdgesWeightForProfile = async (
 ): Promise<void> => {
   try {
     const nfts = await nftsByWalletId.load(walletId)
-    console.log('NFTS', nfts, { walletId })
+    logger.debug('NFTS', nfts, { walletId })
     if (!nfts.length) return
     await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
