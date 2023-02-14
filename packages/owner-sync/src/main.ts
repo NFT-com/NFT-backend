@@ -52,7 +52,7 @@ const getOwnersForContract = async (
           'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
           [data[0], nftAddress, tokenIds[i++].tokenId])
       }
-      console.log('*'.repeat(10) + ' BATCH OF 1000 COMPLETED ' + '*'.repeat(10))
+      console.log('*'.repeat(10) + ` BATCH OF ${batch.length} COMPLETED ` + '*'.repeat(10))
     }
   } catch (err) {
     console.log({ err, nftAddress })
