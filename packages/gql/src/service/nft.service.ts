@@ -1267,7 +1267,7 @@ export const saveEdgesWithWeight = async (
   try {
     const edgesWithWeight = []
     // filter nfts are not added to edge yet...
-    const displayedNFTs = await repositories.nft.findByProfileEdgeDisplayed(profileId)
+    const displayedNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId)
     const nftsToBeAdded = differenceBy(nfts, displayedNFTs, 'id')
     // generate weights for nfts...
     let weight = await getLastWeight(repositories, profileId)
