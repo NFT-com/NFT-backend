@@ -1,8 +1,10 @@
+import { queue } from 'async'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { Pool } from 'pg'
 import { AbiItem } from 'web3-utils'
 
 import { core } from '@nftcom/gql/service'
+import { defs } from '@nftcom/shared'
 
 const pgClient = new Pool({
   user: process.env.DB_USERNAME || 'app',
@@ -92,15 +94,26 @@ const main = async (): Promise<void> => {
   const multicallContract = new Contract(multicallAddress, multicallAbi, signer)
 
   // Get all nftAddresses to update, then loop (or process in batches/waves/async queue)
-  const contracts = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\' AND "owner" IS NULL'))
+  const contracts: string[] = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\' AND "owner" IS NULL'))
     .rows
-    .map((r) => r.contract) as string[]
-  // address of ERC721 NFT
-  for (const nftAddresses of chunk(contracts, 100)) {
-    await Promise.allSettled(nftAddresses.map(async (nftAddress) => {
-      await getOwnersForContract(nftAbi, nftAddress, multicallContract)
-    }))
-  }
+    .filter((c) => !defs.LARGE_COLLECTIONS.includes(c.contract))
+    .map((c) => c.contract)
+  contracts.unshift(...defs.LARGE_COLLECTIONS)
+
+  const q = queue(async (contractAddress: string) => {
+    await getOwnersForContract(nftAbi, contractAddress, multicallContract)
+    return { contractAddress, remaining: q.length() }
+  }, 200)
+
+  q.push(contracts, (err, task) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    console.info(task)
+  })
+
+  await q.drain()
 }
 
 main()
