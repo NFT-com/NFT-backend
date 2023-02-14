@@ -1068,7 +1068,7 @@ export const updateWalletNFTs = async (
     const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
     const chunks: OwnedNFT[][] = Lodash.chunk(
       ownedNFTs,
-      20,
+      10,
     )
     const savedNFTs: entity.NFT[] = []
     await Promise.allSettled(

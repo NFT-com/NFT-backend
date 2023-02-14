@@ -86,7 +86,8 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           }
           return map
         }, {})
-      const nftsToIndex = await Promise.all(nfts.map(async (nft) => {
+      const nftsToIndex = []
+      for (const nft of nfts) {
         const ctx = {
           chain: null,
           network: null,
@@ -169,7 +170,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         }
 
         const gkExpirationYear = 3021
-        return {
+        nftsToIndex.push({
           id: nft.id,
           nftName: nft.metadata?.name || getNftName(nft.metadata, undefined, { contractMetadata: { name: collection?.name } }, tokenId) || `#${tokenId}`,
           nftType: nft.type,
@@ -189,9 +190,9 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           hasListings: listings.length ? 1 : 0,
           listedFloor: 0.0,
           score: _calculateNFTScore(collection, !!listings.length) || 0,
-        }
-      }))
-      return client.insertDocuments('nfts', nftsToIndex)
+        })
+      }
+      return nftsToIndex.length && client.insertDocuments('nfts', nftsToIndex) || true
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err
