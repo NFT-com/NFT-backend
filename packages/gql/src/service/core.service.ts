@@ -1163,13 +1163,13 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
-  const edges: entity.Edge[] = await repositories.edge
+  const edges: entity.Edge[] = (await repositories.edge
     .find({ where: {
       thisEntityType: defs.EntityType.Profile,
       thatEntityType: defs.EntityType.NFT,
       thisEntityId: profileId,
       edgeType: defs.EdgeType.Displays,
-    } })
+    } }))
     .filter((edge: entity.Edge) => edge.weight !== null)
   if (!edges.length) return
   const biggest = (maxBy(edges, (edge) => edge.weight)).weight
