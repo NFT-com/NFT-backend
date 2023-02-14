@@ -36,7 +36,7 @@ const getOwnersForContract = async (
   nftAbi: any[], nftAddress: string, _multicallContract: Contract): Promise<void> => {
   // Get tokenIds from nftAddress
   const client = await pgClient.connect()
-  const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text', [nftAddress])).rows
+  const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text AND "owner" IS NULL', [nftAddress])).rows
   const multicallArgs = tokenIds.map(({ tokenId }) => {
     return {
       contract: nftAddress,
