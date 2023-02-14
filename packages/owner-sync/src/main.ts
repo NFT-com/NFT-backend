@@ -96,8 +96,10 @@ const main = async (): Promise<void> => {
     .rows
     .map((r) => r.contract) as string[]
   // address of ERC721 NFT
-  for (const nftAddress of contracts) {
-    await getOwnersForContract(nftAbi, nftAddress, multicallContract)
+  for (const nftAddresses of chunk(contracts, 100)) {
+    await Promise.allSettled(nftAddresses.map(async (nftAddress) => {
+      await getOwnersForContract(nftAbi, nftAddress, multicallContract)
+    }))
   }
 }
 
