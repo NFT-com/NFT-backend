@@ -1066,6 +1066,7 @@ export const updateWalletNFTs = async (
 ): Promise<void> => {
   try {
     const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
+    logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
     const chunks: OwnedNFT[][] = Lodash.chunk(
       ownedNFTs,
       10,
@@ -1081,11 +1082,12 @@ export const updateWalletNFTs = async (
             }),
           )
         } catch (err) {
-          logger.error(`Error in updateWalletNFTs: ${err}`)
+          logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Error in updateWalletNFTs: ${err}`)
           Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
         }
       }))
     if (savedNFTs.length) {
+      logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `Updating collection and Syncing search index for wallet ${wallet.address}`)
       await updateCollectionForNFTs(savedNFTs)
       await indexNFTsOnSearchEngine(savedNFTs)
     }
