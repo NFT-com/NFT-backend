@@ -820,58 +820,46 @@ export const refreshNft = async (
 
     initiateWeb3(chainId)
 
-    const cacheKey = `${CacheKeys.REFRESH_NFT}_${chainId}_${args?.id}`
-    const cachedData = await cache.get(cacheKey)
-    if (cachedData) {
-      return JSON.parse(cachedData)
-    } else {
-      let nft = await repositories.nft.findOne({
-        where: {
-          id: args?.id,
-          chainId,
+    let nft = await repositories.nft.findOne({
+      where: {
+        id: args?.id,
+        chainId,
+      },
+    })
+
+    if (nft) {
+      // fix (short-term) : trait value
+      nft = stringifyTraits(nft)
+
+      const obj = {
+        contract: {
+          address: nft.contract,
         },
-      })
-
-      if (nft) {
-        // fix (short-term) : trait value
-        nft = stringifyTraits(nft)
-
-        const obj = {
-          contract: {
-            address: nft.contract,
-          },
-          id: {
-            tokenId: nft.tokenId,
-          },
-        }
-
-        const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
-        let refreshedNFT
-        if (!wallet) {
-          logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
-          const currentWallet = await repositories.wallet.findById(nft.walletId)
-          refreshedNFT = await updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
-        } else {
-          refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
-        }
-        if (refreshedNFT) {
-          await seService.indexNFTs([refreshedNFT])
-
-          await cache.set(
-            cacheKey,
-            JSON.stringify(refreshedNFT),
-            'EX',
-            5 * 60, // 5 minutes
-          )
-          return refreshedNFT
-        }
-        return nft
-      } else {
-        return Promise.reject(appError.buildNotFound(
-          nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
-          nftError.ErrorType.NFTNotFound,
-        ))
+        id: {
+          tokenId: nft.tokenId,
+        },
       }
+
+      const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+      let refreshedNFT
+      if (!wallet) {
+        logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
+        const currentWallet = await repositories.wallet.findById(nft.walletId)
+        refreshedNFT = await updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
+      } else {
+        refreshedNFT = await updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
+      }
+      if (refreshedNFT) {
+        await seService.indexNFTs([refreshedNFT])
+
+        return refreshedNFT
+      }
+      return nft
+    } else {
+      return Promise.reject(appError.buildNotFound(
+        nftError.buildNFTNotFoundMsg('NFT: ' + args?.id),
+        nftError.ErrorType.NFTNotFound,
+      ))
     }
   } catch (err) {
     Sentry.captureMessage(`Error in refreshNft: ${err}`)
