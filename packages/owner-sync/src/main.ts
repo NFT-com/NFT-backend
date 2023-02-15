@@ -1,10 +1,12 @@
 import { queue } from 'async'
 import { BigNumber, Contract, ethers } from 'ethers'
+import { toLower } from 'lodash'
 import { Pool } from 'pg'
 import { AbiItem } from 'web3-utils'
 
 import { core } from '@nftcom/gql/service'
-import { defs } from '@nftcom/shared'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { defs, entity } from '@nftcom/shared'
 
 const pgClient = new Pool({
   user: process.env.DB_USERNAME || 'app',
@@ -32,14 +34,15 @@ const chunk = (arr: any[], size: number): any[] => {
   return chunks
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getOwnersForContract = async (
   nftAbi: any[], nftAddress: string, _multicallContract: Contract): Promise<void> => {
   // Get tokenIds from nftAddress
   const client = await pgClient.connect()
-  const tokenIds = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text AND "owner" IS NULL', [nftAddress])).rows
-  const multicallArgs = tokenIds.map(({ tokenId }) => {
+  const tokenIds: entity.NFT[] = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text AND "owner" IS NULL', [nftAddress])).rows
+  const multicallArgs = tokenIds.map(({ tokenId, contract }) => {
     return {
-      contract: nftAddress,
+      contract,
       name: 'ownerOf',
       params: [BigNumber.from(tokenId)],
     }
@@ -50,14 +53,52 @@ const getOwnersForContract = async (
     for (const batch of chunk(multicallArgs, 1000)) {
       const ownersOf = await core.fetchDataUsingMulticall(batch, nftAbi, '1')
       for (const data of ownersOf) {
+        if (!data) continue
         await client.query(
           'UPDATE nft SET owner = $1::text WHERE "contract" = $2::text AND "tokenId" = $3::text',
-          [data[0], nftAddress, tokenIds[i++].tokenId])
+          [data[0], tokenIds[i++].contract, tokenIds[i++].tokenId])
       }
       console.log('*'.repeat(10) + ` BATCH OF ${batch.length} COMPLETED ` + '*'.repeat(10))
     }
   } catch (err) {
-    console.log({ err, nftAddress })
+    console.log(err)
+  }
+  client.release()
+}
+
+const getOwnersForNFTs = async (
+  nftAbi: any[], nfts: Partial<entity.NFT>[], _multicallContract: Contract): Promise<void> => {
+  const client = await pgClient.connect()
+  const multicallArgs = nfts.map(({ tokenId, contract }) => {
+    const callData = {
+      contract,
+      name: 'ownerOf',
+      params: [BigNumber.from(tokenId)],
+    }
+    console.log({ tokenId: BigNumber.from(tokenId), contract, callData })
+    return callData
+  })
+
+  try {
+    const ownersOf = await core.fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
+    const vals = []
+    for (let i = 0; i < ownersOf.length; i++) {
+      const data = ownersOf[0]
+      if (!data) continue
+      vals.push(`(${nfts[i].id}, ${data[0]})`)
+    }
+    console.log(vals)
+    process.exit()
+    await client.query(`
+      UPDATE nft SET owner = vals.owner
+      FROM (
+        VALUES
+        ${vals.join(', ')}
+      ) AS vals ("id", "owner")
+      WHERE nft."id" = vals."id"`)
+    console.log('*'.repeat(10) + ` BATCH OF ${ownersOf.length} COMPLETED ` + '*'.repeat(10))
+  } catch (err) {
+    console.log(err)
   }
   client.release()
 }
@@ -93,19 +134,36 @@ const main = async (): Promise<void> => {
 
   const multicallContract = new Contract(multicallAddress, multicallAbi, signer)
 
+  const spamFromAlchemy: string[] = await (await fetch(`https://eth-mainnet.g.alchemy.com/nft/v2/${process.env.ALCHEMY_API_KEY}/getSpamContracts`, {
+    headers: {
+      accept: 'application/json',
+    },
+  }))
+    .json()
   // Get all nftAddresses to update, then loop (or process in batches/waves/async queue)
-  const contracts: string[] = (await pgClient.query('SELECT DISTINCT("contract") FROM nft WHERE "type" = \'ERC721\' AND "owner" IS NULL'))
+  const nfts: Partial<entity.NFT>[] = (await pgClient.query(`
+  SELECT "id", "contract", "tokenId"
+  FROM nft 
+  WHERE 
+    "type" = 'ERC721' 
+    AND "owner" IS NULL
+    AND "contract" NOT IN (
+      SELECT "contract" FROM collection WHERE "isSpam" = true
+    )
+  `))
     .rows
-    .filter((c) => !defs.LARGE_COLLECTIONS.includes(c.contract))
-    .map((c) => c.contract)
-  contracts.unshift(...defs.LARGE_COLLECTIONS)
+    .filter((nft) => !spamFromAlchemy.includes(toLower(nft.contract)))
+  //   .filter((c) => !defs.LARGE_COLLECTIONS.includes(c.contract))
+  //   .map((c) => c.contract)
+  // contracts.unshift(...defs.LARGE_COLLECTIONS)
 
-  const q = queue(async (contractAddress: string) => {
-    await getOwnersForContract(nftAbi, contractAddress, multicallContract)
-    return { contractAddress, remaining: q.length() }
-  }, 200)
+  const q = queue(async (nfts: Partial<entity.NFT>[]) => {
+    await getOwnersForNFTs(nftAbi, nfts, multicallContract)
+    // await getOwnersForContract(nftAbi, contractAddress, multicallContract)
+    return { contractAddresses: new Set(nfts.map((n) => n.contract)), remaining: q.length() }
+  }, 1)
 
-  q.push(contracts, (err, task) => {
+  q.push(chunk(nfts, 1000), (err, task) => {
     if (err) {
       console.error(err)
       return

@@ -1364,7 +1364,7 @@ export const fetchDataUsingMulticall = async (
 
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
-      if (result.returnData === '0x') {
+      if (!result || result.returnData === '0x') {
         return undefined
       } else {
         return abiInterface.decodeFunctionResult(
