@@ -21,7 +21,7 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
-import { _logger,contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
@@ -889,6 +889,89 @@ export const sendSlackMessage = (
   }
 }
 
+export type Call = {
+  contract: string
+  name: string
+  params?: any[]
+}
+
+/**
+ * Fetches information about pools and return as `Pair` array using multicall contract.
+ * @param calls 'Call' array
+ * @param abi
+ * @param chainId
+ * based on:
+ * - https://github.com/mds1/multicall#deployments
+ * - https://github.com/sushiswap/sushiswap-sdk/blob/canary/src/constants/addresses.ts#L323
+ * - https://github.com/joshstevens19/ethereum-multicall#multicall-contracts
+ */
+
+export const fetchDataUsingMulticall = async (
+  calls: Array<Call>,
+  abi: any[],
+  chainId: string,
+): Promise<Array<Result | undefined>> => {
+  try {
+    const multicall2ABI = contracts.Multicall2ABI()
+    // 1. create contract using multicall contract address and abi...
+    const multicallAddress = process.env.MULTICALL_CONTRACT
+    const multicallContract = new Contract(
+      multicallAddress.toLowerCase(),
+      multicall2ABI,
+      provider.provider(Number(chainId)),
+    )
+    const abiInterface = new ethers.utils.Interface(abi)
+    const callData = calls.map((call) => [
+      call.contract.toLowerCase(),
+      abiInterface.encodeFunctionData(call.name, call.params),
+    ])
+    // 2. get bytes array from multicall contract by process aggregate method...
+    const results: { success: boolean; returnData: string }[] =
+      await multicallContract.tryAggregate(false, callData)
+
+    // 3. decode bytes array to useful data array...
+    return results.map((result, i) => {
+      if (result.returnData === '0x') {
+        return undefined
+      } else {
+        return abiInterface.decodeFunctionResult(
+          calls[i].name,
+          result.returnData,
+        )
+      }
+    })
+  } catch (error) {
+    logger.error(
+      `Failed to fetch data using multicall: ${error}`,
+    )
+    return []
+  }
+}
+
+const getDurationFromNow = (unixTimestamp: number): string => {
+  const now = new Date().getTime() / 1000
+  const diff = unixTimestamp - now
+
+  if (diff < 0) {
+    return 'in the past'
+  }
+
+  const seconds = Math.floor(diff % 60)
+  const minutes = Math.floor((diff / 60) % 60)
+  const hours = Math.floor((diff / 3600) % 24)
+  const days = Math.floor(diff / (3600 * 24))
+
+  const dayStr = days > 0 ? `${days} day${days > 1 ? 's' : ''}` : ''
+  const hourStr = hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}` : ''
+  const minuteStr = minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : ''
+  const secondStr = seconds > 0 ? `${seconds} second${seconds > 1 ? 's' : ''}` : ''
+
+  const timeArr = [dayStr, hourStr, minuteStr, secondStr].filter((str) => str !== '')
+  const timeStr = timeArr.slice(0, 2).join(', ') + ' and ' + timeArr.slice(2).join(', ')
+
+  return `in ${timeStr}`
+}
+
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
@@ -916,8 +999,17 @@ export const createProfile = (
     }))
     .then(() => {
       return ctx.repositories.profile.save(profile)
-        .then((savedProfile: entity.Profile) => {
-          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}`)
+        .then(async (savedProfile: entity.Profile) => {
+          const abi = contracts.NftProfileABI()
+          const calls = [{
+            contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
+            name: 'getExpiryTimeline',
+            params: [[profile.url]],
+          }]
+          const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
+          const timestamp = Number(res[0][0][0])
+          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
+          
           if (!noAvatar) {
             return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
               .then((imageURL: string) =>
@@ -1369,65 +1461,6 @@ export const paginateEntityArray =
     lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
     lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
   })
-}
-
-export type Call = {
-  contract: string
-  name: string
-  params?: any[]
-}
-
-/**
- * Fetches information about pools and return as `Pair` array using multicall contract.
- * @param calls 'Call' array
- * @param abi
- * @param chainId
- * based on:
- * - https://github.com/mds1/multicall#deployments
- * - https://github.com/sushiswap/sushiswap-sdk/blob/canary/src/constants/addresses.ts#L323
- * - https://github.com/joshstevens19/ethereum-multicall#multicall-contracts
- */
-
-export const fetchDataUsingMulticall = async (
-  calls: Array<Call>,
-  abi: any[],
-  chainId: string,
-): Promise<Array<Result | undefined>> => {
-  try {
-    const multicall2ABI = contracts.Multicall2ABI()
-    // 1. create contract using multicall contract address and abi...
-    const multicallAddress = process.env.MULTICALL_CONTRACT
-    const multicallContract = new Contract(
-      multicallAddress.toLowerCase(),
-      multicall2ABI,
-      provider.provider(Number(chainId)),
-    )
-    const abiInterface = new ethers.utils.Interface(abi)
-    const callData = calls.map((call) => [
-      call.contract.toLowerCase(),
-      abiInterface.encodeFunctionData(call.name, call.params),
-    ])
-    // 2. get bytes array from multicall contract by process aggregate method...
-    const results: { success: boolean; returnData: string }[] =
-      await multicallContract.tryAggregate(false, callData)
-
-    // 3. decode bytes array to useful data array...
-    return results.map((result, i) => {
-      if (result.returnData === '0x') {
-        return undefined
-      } else {
-        return abiInterface.decodeFunctionResult(
-          calls[i].name,
-          result.returnData,
-        )
-      }
-    })
-  } catch (error) {
-    logger.error(
-      `Failed to fetch data using multicall: ${error}`,
-    )
-    return []
-  }
 }
 
 export const sendEmailVerificationCode = async (
