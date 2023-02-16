@@ -1000,15 +1000,19 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then(async (savedProfile: entity.Profile) => {
-          const abi = contracts.NftProfileABI()
-          const calls = [{
-            contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
-            name: 'getExpiryTimeline',
-            params: [[profile.url]],
-          }]
-          const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
-          const timestamp = Number(res[0][0][0])
-          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
+          const key = `expiry_details_${profile.url}`
+          const cachedData = await cache.get(key)
+          if (!cachedData) {
+            const abi = contracts.NftProfileABI()
+            const calls = [{
+              contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
+              name: 'getExpiryTimeline',
+              params: [[profile.url]],
+            }]
+            const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
+            const timestamp = Number(res[0][0][0])
+            sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
+          }
           
           if (!noAvatar) {
             return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
