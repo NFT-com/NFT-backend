@@ -876,7 +876,7 @@ export const sendSlackMessage = (
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.SLACK_TOKEN || 'xoxb-1244990975748-4838087097584-3PWepj8fCBfANceAYqUsTUB7'}`,
+          Authorization: `Bearer ${process.env.SLACK_TOKEN}`,
         },
         body: JSON.stringify({
           channel,
