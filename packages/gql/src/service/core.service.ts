@@ -552,7 +552,6 @@ export const blacklistProfilePatterns = [
   /^orangecomet$/,
   /^lostminers$/,
   /^macroverse$/,
-  /^allurebridals$/,
   /^thealopecians$/,
   /^gogalagames$/,
   /^mirandus$/,
