@@ -191,7 +191,7 @@ export const mapCollectionData = async (
         status: '', //  HasOffers, BuyNow, New, OnAuction
         rarity: parseFloat(nft.rarity) || 0.0,
         isProfile: nft.contract === PROFILE_CONTRACT,
-        isProfileGKMinted: profile?.expireAt.getFullYear() >= gkExpirationYear,
+        isProfileGKMinted: profile?.expireAt ? profile?.expireAt.getFullYear() >= gkExpirationYear : false,
         issuance: nft.collection?.issuanceDate ? new Date(nft.collection?.issuanceDate).getTime() : 0,
         hasListings: listings.length ? 1 : 0,
         score: calculateNFTScore(nft.collection, !!listings.length),
