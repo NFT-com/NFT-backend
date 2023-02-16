@@ -917,6 +917,7 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then((savedProfile: entity.Profile) => {
+          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}`)
           if (!noAvatar) {
             return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
               .then((imageURL: string) =>
