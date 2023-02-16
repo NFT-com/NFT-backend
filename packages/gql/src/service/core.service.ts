@@ -960,7 +960,7 @@ const getDurationFromNow = (unixTimestamp: number): string => {
   const minutes = Math.floor((diff / 60) % 60)
   const hours = Math.floor((diff / 3600) % 24)
   const days = Math.floor(diff / (3600 * 24))
-  const years = new Date(unixTimestamp * 1000).getFullYear() - new Date().getFullYear()
+  const years = Math.floor(diff / (3600 * 24 * 365))
 
   const yearStr = years > 0 ? `${years} year${years > 1 ? 's' : ''}` : ''
   const dayStr = days > 0 ? `${days} day${days > 1 ? 's' : ''}` : ''
