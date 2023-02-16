@@ -7,7 +7,7 @@ import { CollectionSchema, CollectionUpdateSchema } from 'typesense/lib/Typesens
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections'
 
 import { searchEngineService } from '@nftcom/gql/service'
-import { _logger, defs,helper, utils } from '@nftcom/shared'
+import { _logger, defs,entity,helper, utils } from '@nftcom/shared'
 import { db } from '@nftcom/shared'
 
 import { mapCollectionData } from './collections'
@@ -79,6 +79,21 @@ const addDocumentsToTypesense = async (
   }
 }
 
+const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
+  '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
+const transactionIsBuyNow = (order: entity.TxOrder): boolean => {
+  return order.exchange === defs.ExchangeType.X2Y2
+    || (order.exchange === defs.ExchangeType.OpenSea
+      && !!order.protocolData?.consideration?.length)
+    || (order.exchange === defs.ExchangeType.LooksRare
+      && order.protocolData?.strategy !== LR_DUTCH_AUCTION)
+    || (order.exchange === defs.ExchangeType.NFTCOM
+      && order.protocolData.auctionType === defs.AuctionType.FixedPrice)
+}
+const nonceIsLarger = (n1, n2): boolean => {
+  return n1 - n2 > 0
+}
+
 const schemas = [collections, nfts]
 
 class Commander {
@@ -96,6 +111,18 @@ class Commander {
 
   retrieveListings = async (sinceUpdatedAt?: Date): Promise<any>  => {
     return (await this.repositories.txActivity.findActivitiesNotExpired(defs.ActivityType.Listing, sinceUpdatedAt))
+      .reduce((txActivities: TxActivityDAO[], txActivity: TxActivityDAO) => {
+        const isBuyNow = transactionIsBuyNow(txActivity.order)
+        if (isBuyNow && txActivity.order?.exchange) {
+          const existingIdx = txActivities.findIndex((tx) => tx.order?.exchange === txActivity.order?.exchange)
+          if (existingIdx > -1 && nonceIsLarger(txActivity.order.nonce, txActivities[existingIdx].order.nonce)) {
+            txActivities[existingIdx] = txActivity
+          } else {
+            txActivities.push(txActivity)
+          }
+        }
+        return txActivities
+      }, [])
       .reduce((map, txActivity: TxActivityDAO) => {
         if (helper.isNotEmpty(txActivity.order.protocolData) && txActivity.nftId.length) {
           const nftIdParts = txActivity.nftId[0].split('/')
