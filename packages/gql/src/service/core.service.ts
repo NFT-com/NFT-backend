@@ -864,6 +864,36 @@ export const generateCompositeImage = async (
   }
 }
 
+export const sendSlackMessage = (
+  channel: string,
+  text: string,
+): Promise<void> => {
+  const url = 'https://slack.com/api/chat.postMessage'
+  try {
+    // only in prod
+    if (process.env.ASSET_BUCKET == 'nftcom-prod-assets') {
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.SLACK_TOKEN || 'xoxb-1244990975748-4838087097584-3PWepj8fCBfANceAYqUsTUB7'}`,
+        },
+        body: JSON.stringify({
+          channel,
+          text,
+          username: 'NFT.com Bot',
+          pretty: 1,
+          mrkdwn: true,
+        }),
+      })
+    }
+    return
+  } catch (err) {
+    logger.error('error: ', err)
+    return
+  }
+}
+
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
