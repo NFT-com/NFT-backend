@@ -988,10 +988,6 @@ export const getSymbolInUsd = async (symbol: string): Promise<number> => {
   }
 }
 
-export const getEthUsd = async (): Promise<number> => {
-  return await getSymbolInUsd('ETH')
-}
-
 const getDurationFromNow = (unixTimestamp: number): string => {
   const now = new Date().getTime() / 1000
   const diff = unixTimestamp - now

@@ -4,7 +4,7 @@ import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
-import { getEthUsd } from '@nftcom/gql/service/core.service'
+import { getSymbolInUsd } from '@nftcom/gql/service/core.service'
 import { _logger, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -45,7 +45,7 @@ const fetchEthUsd = async (
   __: unknown,
   ___: Context,
 ): Promise<number> => {
-  return await getEthUsd()
+  return await getSymbolInUsd('ETH')
 }
 
 export default {
