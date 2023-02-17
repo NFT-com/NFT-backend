@@ -544,7 +544,7 @@ const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
 const transactionIsBuyNow = (order: entity.TxOrder): boolean => {
   return order.exchange === defs.ExchangeType.X2Y2
     || (order.exchange === defs.ExchangeType.OpenSea
-      && !!order.protocolData?.consideration?.length)
+      && !!order.protocolData?.parameters?.consideration?.length)
     || (order.exchange === defs.ExchangeType.LooksRare
       && order.protocolData?.strategy !== LR_DUTCH_AUCTION)
     || (order.exchange === defs.ExchangeType.NFTCOM
