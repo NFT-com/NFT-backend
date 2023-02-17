@@ -948,34 +948,6 @@ export const fetchDataUsingMulticall = async (
   }
 }
 
-export const getEthUsd = async (): Promise<number> => {
-  try {
-    const key = 'CACHED_ETH_USD'
-    const cachedData = await cache.get(key)
-    if (cachedData) {
-      return Number(cachedData)
-    } else {
-      const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')
-      const cgResult = await cgResponse.json()
-      const cgEthUsd = cgResult?.data?.['ethereum']?.['usd']
-
-      if (cgEthUsd) {
-        await cache.set(key, cgEthUsd, 'EX', 60 * 5) // 5 min
-        return Number(cgEthUsd)
-      } else {
-        const cbResopnse = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot')
-        const cbResult = await cbResopnse.json()
-        const cbEthUsd = cbResult?.data?.['amount']
-        await cache.set(key, cbEthUsd, 'EX', 60 * 10) // 10 min
-        return Number(cbEthUsd)
-      }
-    }
-  } catch (err) {
-    logger.error('error: ', err)
-    return 0
-  }
-}
-
 const toCGId = (symbol: string): string => {
   return {
     'ETH': 'ethereum',
@@ -1014,6 +986,10 @@ export const getSymbolInUsd = async (symbol: string): Promise<number> => {
     logger.error('error: ', err)
     return 0
   }
+}
+
+export const getEthUsd = async (): Promise<number> => {
+  return await getSymbolInUsd('ETH')
 }
 
 const getDurationFromNow = (unixTimestamp: number): string => {
