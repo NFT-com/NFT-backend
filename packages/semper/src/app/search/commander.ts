@@ -94,11 +94,9 @@ class Commander {
     this.pgClient = pgClient
   }
 
-  retrieveListings = async (opts?: { nftContract?: string; sinceUpdatedAt?: Date }): Promise<any>  => {
-    const { nftContract, sinceUpdatedAt } = opts
+  retrieveListings = async (sinceUpdatedAt?: Date): Promise<any>  => {
     return txActivityService.listingMapFrom(await this.repositories.txActivity
-      .findActivitiesNotExpired(
-        defs.ActivityType.Listing, { nftContract, updatedAt: sinceUpdatedAt }) as TxActivityDAO[])
+      .findActivitiesNotExpired(defs.ActivityType.Listing, sinceUpdatedAt) as TxActivityDAO[])
   }
 
   reindexNFTsByContract = async (contractAddr: string, listingMap?: any): Promise<void> => {
@@ -340,7 +338,7 @@ class Commander {
     }
 
     const listings = []
-    const listingMap = await this.retrieveListings({ sinceUpdatedAt: new Date(timestamp) })
+    const listingMap = await this.retrieveListings(new Date(timestamp))
     for (const key in listingMap) {
       listings.push(...listingMap[key])
     }
