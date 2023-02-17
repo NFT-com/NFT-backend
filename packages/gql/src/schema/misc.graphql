@@ -6,7 +6,7 @@ type FileUploadOutput {
 }
 
 extend type Query {
-  fetchEthUsd: String!
+  fetchEthUsd: Float!
 }
 
 extend type Mutation {
