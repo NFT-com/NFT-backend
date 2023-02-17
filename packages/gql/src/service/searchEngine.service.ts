@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
 import { getNftName } from './nft.service'
-import { listingMapFrom, TxActivityDAO } from './txActivity.service'
+import { getListingCurrencyAddress, getListingPrice, listingMapFrom, TxActivityDAO } from './txActivity.service'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
@@ -15,43 +15,6 @@ const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
 
 const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
   '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
-
-const getListingPrice = (listing: TxActivityDAO): BigNumber => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.price || 0)
-  }
-  case (defs.ProtocolType.Seaport): {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration
-      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
-  }
-  case (defs.ProtocolType.NFTCOM): {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
-  }
-  }
-}
-
-const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
-    const order = listing?.order?.protocolData
-    return order?.currencyAddress ?? order?.['currency']
-  }
-  case (defs.ProtocolType.Seaport): {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration?.[0]?.token
-  }
-  case (defs.ProtocolType.NFTCOM): {
-    const order = listing?.order?.protocolData
-    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
-  }
-  }
-}
 
 const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 3)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {

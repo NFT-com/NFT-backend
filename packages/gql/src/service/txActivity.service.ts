@@ -1,12 +1,17 @@
-import { BigNumber } from 'ethers'
+import axios from 'axios'
+import { BigNumber as BN } from 'bignumber.js'
+import { BigNumber, utils } from 'ethers'
 
 import { cache, CacheKeys } from '@nftcom/cache'
+import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { X2Y2Order } from '@nftcom/gql/service/x2y2.service'
-import { db, defs, entity, helper, repository } from '@nftcom/shared'
+import { _logger, db, defs, entity, helper, repository } from '@nftcom/shared'
+
+const logger = _logger.Factory('txActivity.service', _logger.Context.TxActivity)
 
 type Order = SeaportOrder | LooksRareOrder | X2Y2Order
 
@@ -494,6 +499,45 @@ export const triggerNFTOrderRefreshQueue = async (
   return Promise.resolve(cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, ...nftRefreshKeys))
 }
 
+export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+
+export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
+  switch(listing?.order?.protocol) {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.price || 0)
+  }
+  case (defs.ProtocolType.Seaport): {
+    const order = listing?.order?.protocolData
+    return order?.parameters?.consideration
+      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
+  }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
+  }
+  }
+}
+
+export const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
+  switch(listing?.order?.protocol) {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
+    const order = listing?.order?.protocolData
+    return order?.currencyAddress ?? order?.['currency']
+  }
+  case (defs.ProtocolType.Seaport): {
+    const order = listing?.order?.protocolData
+    return order?.parameters?.consideration?.[0]?.token
+  }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
+  }
+  }
+}
+
 const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
   '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
 
@@ -511,21 +555,56 @@ const nonceIsLarger = (n1, n2): boolean => {
   return n1 - n2 > 0
 }
 
-export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
-export const listingMapFrom = (txActivities: TxActivityDAO[]): { [k:string]: TxActivityDAO[] } => {
-  return txActivities
-    .reduce((txActivities: TxActivityDAO[], txActivity) => {
-      const isBuyNow = transactionIsBuyNow(txActivity.order)
-      if (isBuyNow && txActivity.order?.exchange) {
-        const existingIdx = txActivities.findIndex((tx) => tx.order?.exchange === txActivity.order?.exchange)
-        if (existingIdx > -1 && nonceIsLarger(txActivity.order.nonce, txActivities[existingIdx].order.nonce)) {
-          txActivities[existingIdx] = txActivity
-        } else {
-          txActivities.push(txActivity)
-        }
+const priceIsLower = async (l1, l2): Promise<boolean> => {
+  const priceL1 = new BN(utils.formatUnits(
+    getListingPrice(l1),
+    await getDecimalsForContract(l1.nftContract),
+  ))
+  const currencyL1 = await getSymbolForContract(getListingCurrencyAddress(l1))
+
+  const priceL2 = new BN(utils.formatUnits(
+    getListingPrice(l2),
+    await getDecimalsForContract(l2.nftContract),
+  ))
+  const currencyL2 = await getSymbolForContract(getListingCurrencyAddress(l2))
+
+  let [priceUsdL1, priceUsdL2] = [0, 0]
+  try {
+    const coins: { id: string; symbol: string; name: string }[] = (await axios.get('https://api.coingecko.com/api/v3/coins/list')).data
+    const l1Id = coins.find((c) => c.symbol === currencyL1.toLowerCase()).id
+    const l2Id = coins.find((c) => c.symbol === currencyL2.toLowerCase()).id
+    const prices = (await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${Array.from(new Set([l1Id, l2Id])).join(',')}&vs_currencies=usd`)).data
+    priceUsdL1 = prices[l1Id]?.['usd'] || 0
+    priceUsdL2 = prices[l2Id]?.['usd'] || 0
+  } catch (err) {
+    logger.warn(err, 'unable to get prices from coingecko')
+  }
+
+  return priceL1.multipliedBy(priceUsdL1).toNumber() < priceL2.multipliedBy(priceUsdL2).toNumber()
+}
+
+export const listingMapFrom = async (txActivities: TxActivityDAO[]): Promise<{ [k:string]: TxActivityDAO[] }> => {
+  return (await txActivities.reduce(async (agg, txActivity) => {
+    const listings = await agg
+    const isBuyNow = transactionIsBuyNow(txActivity.order)
+    if (isBuyNow && txActivity.order?.exchange) {
+      const existingIdx = listings.findIndex((tx) => tx.order?.exchange === txActivity.order?.exchange)
+      if (
+        existingIdx > -1
+        && (
+          nonceIsLarger(txActivity.order.nonce, listings[existingIdx].order.nonce)
+        || (
+          txActivity.order.nonce === listings[existingIdx].order.nonce
+          && (await priceIsLower(txActivity, listings[existingIdx]))
+        ))
+      ) {
+        listings[existingIdx] = txActivity
+      } else {
+        listings.push(txActivity)
       }
-      return txActivities
-    }, [])
+    }
+    return listings
+  }, Promise.resolve([] as TxActivityDAO[])))
     .reduce((map, txActivity: TxActivityDAO) => {
       if (helper.isNotEmpty(txActivity.order?.protocolData)) {
         const nftIdParts = txActivity.nftId[0].split('/')
