@@ -21,7 +21,7 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
-import { _logger,contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
 import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
@@ -540,7 +540,6 @@ export const blacklistProfilePatterns = [
   /^garyv$/,
   /^veefriends$/,
   /^loreal$/,
-  /^nftviking$/,
   /^rocnation$/,
   /^cockpunch$/,
   /^timferriss$/,
@@ -550,10 +549,29 @@ export const blacklistProfilePatterns = [
   /^wineclub$/,
   /^unstoppabledomains$/,
   /^orangecomet$/,
-  /^lostminers$/,
-  /^macroverse$/,
-  /^allurebridals$/,
   /^thealopecians$/,
+  /^gogalagames$/,
+  /^mirandus$/,
+  /^superior$/,
+  /^townstar$/,
+  /^goldmasksociety$/,
+  /^goldmask$/,
+  /^hooligansfc$/,
+  /^hooligans$/,
+  /^pacers$/,
+  /^landvault$/,
+  /^lildurk$/,
+  /^NXTG3NZ$/,
+  /^mattjames$/,
+  /^neotokyocode$/,
+  /^pac12$/,
+  /^pac12conference$/,
+  /^miafest$/,
+  /^miafestival$/,
+  /^madeinamerica$/,
+  /^officialmiguel$/,
+  /^thisismiguel$/,
+  /^s1c$/,
 ]
 
 // global object of reserved profiles mapped to the insider address.
@@ -683,7 +701,6 @@ export const reservedProfiles = {
   '0xb8C11BEda7142ae7986726247f548Eb0C3CDE474': ['mooncatpop'],
   '0x09C61c41C8C5D378CAd80523044C065648Eaa654': ['mooncatpopvm'],
   '0x1e9385eE28c5C7d33F3472f732Fb08CE3ceBce1F': ['lootprintsformc'],
-  '0xECDD2F733bD20E56865750eBcE33f17Da0bEE461': ['cryptodads'],
   '0x9A7364b902557850ed11cAb9eF4C61710fc51692': ['nftviking'],
   '0x89f862f870de542c2d91095CCBbCE86cA112A72a': ['supernormal', 'zipcy', 'andrewchoi'],
   '0xd75aB5D7B1F65eEFc8B6A08EDF08e6FFbB014408': ['neocitizens', 'neoidentities'],
@@ -693,6 +710,8 @@ export const reservedProfiles = {
   '0x16BAcD96aA34857cCbC676910985CC319865cCC8': ['dogepound', 'johnlemon'],
   '0x433e8B0b56c25Cb43099dFF2Ee6a626325654014': ['unstoppableeth', 'udpolygon', 'ud', 'udeth'],
   '0xC46ba8aeA15674D31f1300ED8d4C199D0AA1a8b8': ['allurebridals', 'nftdress', 'bridal', 'weddingdresses'],
+  '0x738e3f60c8F476C067d49f25B21580f88eBea81A': ['macroverse', 'deadtown', 'bushidos', 'gsa'],
+  '0x05B05b131b76Cc4b09f2689Bb567c48132934Bf4': ['lostminers', 'blockpax', 'wonders'],
 }
 
 export const OFAC = {
@@ -840,6 +859,149 @@ export const generateCompositeImage = async (
   }
 }
 
+export const sendSlackMessage = (
+  channel: string,
+  text: string,
+): Promise<void> => {
+  const url = 'https://slack.com/api/chat.postMessage'
+  try {
+    // only in prod
+    if (process.env.ASSET_BUCKET == 'nftcom-prod-assets') {
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.SLACK_TOKEN}`,
+        },
+        body: JSON.stringify({
+          channel,
+          text,
+          username: 'NFT.com Bot',
+          pretty: 1,
+          mrkdwn: true,
+        }),
+      })
+    }
+    return
+  } catch (err) {
+    logger.error('error: ', err)
+    return
+  }
+}
+
+export type Call = {
+  contract: string
+  name: string
+  params?: any[]
+}
+
+/**
+ * Fetches information about pools and return as `Pair` array using multicall contract.
+ * @param calls 'Call' array
+ * @param abi
+ * @param chainId
+ * based on:
+ * - https://github.com/mds1/multicall#deployments
+ * - https://github.com/sushiswap/sushiswap-sdk/blob/canary/src/constants/addresses.ts#L323
+ * - https://github.com/joshstevens19/ethereum-multicall#multicall-contracts
+ */
+
+export const fetchDataUsingMulticall = async (
+  calls: Array<Call>,
+  abi: any[],
+  chainId: string,
+): Promise<Array<Result | undefined>> => {
+  try {
+    const multicall2ABI = contracts.Multicall2ABI()
+    // 1. create contract using multicall contract address and abi...
+    const multicallAddress = process.env.MULTICALL_CONTRACT
+    const multicallContract = new Contract(
+      multicallAddress.toLowerCase(),
+      multicall2ABI,
+      provider.provider(Number(chainId)),
+    )
+    const abiInterface = new ethers.utils.Interface(abi)
+    const callData = calls.map((call) => [
+      call.contract.toLowerCase(),
+      abiInterface.encodeFunctionData(call.name, call.params),
+    ])
+    // 2. get bytes array from multicall contract by process aggregate method...
+    const results: { success: boolean; returnData: string }[] =
+      await multicallContract.tryAggregate(false, callData)
+
+    // 3. decode bytes array to useful data array...
+    return results.map((result, i) => {
+      if (result.returnData === '0x') {
+        return undefined
+      } else {
+        return abiInterface.decodeFunctionResult(
+          calls[i].name,
+          result.returnData,
+        )
+      }
+    })
+  } catch (error) {
+    logger.error(
+      `Failed to fetch data using multicall: ${error}`,
+    )
+    return []
+  }
+}
+
+export const getEthUsd = async (): Promise<number> => {
+  try {
+    const key = 'CACHED_ETH_USD'
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return Number(cachedData)
+    } else {
+      const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')
+      const cgResult = await cgResponse.json()
+      const cgEthUsd = cgResult?.data?.['ethereum']?.['usd']
+
+      if (cgEthUsd) {
+        await cache.set(key, cgEthUsd, 'EX', 60 * 5) // 5 min
+        return Number(cgEthUsd)
+      } else {
+        const cbResopnse = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot')
+        const cbResult = await cbResopnse.json()
+        const cbEthUsd = cbResult?.data?.['amount']
+        await cache.set(key, cbEthUsd, 'EX', 60 * 10) // 10 min
+        return Number(cbEthUsd)
+      }
+    }
+  } catch (err) {
+    logger.error('error: ', err)
+    return 0
+  }
+}
+
+const getDurationFromNow = (unixTimestamp: number): string => {
+  const now = new Date().getTime() / 1000
+  const diff = unixTimestamp - now
+
+  if (diff < 0) {
+    return 'in the past'
+  }
+
+  const seconds = Math.floor(diff % 60)
+  const minutes = Math.floor((diff / 60) % 60)
+  const hours = Math.floor((diff / 3600) % 24)
+  const days = Math.floor(diff / (3600 * 24) % 365)
+  const years = Math.floor(diff / (3600 * 24 * 365))
+
+  const yearStr = years > 0 ? `${years} year${years > 1 ? 's' : ''}` : ''
+  const dayStr = days > 0 ? `${days} day${days > 1 ? 's' : ''}` : ''
+  const hourStr = hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}` : ''
+  const minuteStr = minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : ''
+  const secondStr = seconds > 0 ? `${seconds} second${seconds > 1 ? 's' : ''}` : ''
+
+  const timeArr = [yearStr, dayStr, hourStr, minuteStr, secondStr].filter((str) => str !== '')
+  const timeStr = timeArr.slice(0, 2).join(', ') + ' and ' + timeArr.slice(2).join(', ')
+
+  return `in ${timeStr}`
+}
+
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
@@ -867,7 +1029,17 @@ export const createProfile = (
     }))
     .then(() => {
       return ctx.repositories.profile.save(profile)
-        .then((savedProfile: entity.Profile) => {
+        .then(async (savedProfile: entity.Profile) => {
+          const abi = contracts.NftProfileABI()
+          const calls = [{
+            contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
+            name: 'getExpiryTimeline',
+            params: [[profile.url]],
+          }]
+          const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
+          const timestamp = Number(res[0][0][0])
+          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
+          
           if (!noAvatar) {
             return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
               .then((imageURL: string) =>
@@ -1319,65 +1491,6 @@ export const paginateEntityArray =
     lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
     lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
   })
-}
-
-export type Call = {
-  contract: string
-  name: string
-  params?: any[]
-}
-
-/**
- * Fetches information about pools and return as `Pair` array using multicall contract.
- * @param calls 'Call' array
- * @param abi
- * @param chainId
- * based on:
- * - https://github.com/mds1/multicall#deployments
- * - https://github.com/sushiswap/sushiswap-sdk/blob/canary/src/constants/addresses.ts#L323
- * - https://github.com/joshstevens19/ethereum-multicall#multicall-contracts
- */
-
-export const fetchDataUsingMulticall = async (
-  calls: Array<Call>,
-  abi: any[],
-  chainId: string,
-): Promise<Array<Result | undefined>> => {
-  try {
-    const multicall2ABI = contracts.Multicall2ABI()
-    // 1. create contract using multicall contract address and abi...
-    const multicallAddress = process.env.MULTICALL_CONTRACT
-    const multicallContract = new Contract(
-      multicallAddress.toLowerCase(),
-      multicall2ABI,
-      provider.provider(Number(chainId)),
-    )
-    const abiInterface = new ethers.utils.Interface(abi)
-    const callData = calls.map((call) => [
-      call.contract.toLowerCase(),
-      abiInterface.encodeFunctionData(call.name, call.params),
-    ])
-    // 2. get bytes array from multicall contract by process aggregate method...
-    const results: { success: boolean; returnData: string }[] =
-      await multicallContract.tryAggregate(false, callData)
-
-    // 3. decode bytes array to useful data array...
-    return results.map((result, i) => {
-      if (result.returnData === '0x') {
-        return undefined
-      } else {
-        return abiInterface.decodeFunctionResult(
-          calls[i].name,
-          result.returnData,
-        )
-      }
-    })
-  } catch (error) {
-    logger.error(
-      `Failed to fetch data using multicall: ${error}`,
-    )
-    return []
-  }
 }
 
 export const sendEmailVerificationCode = async (

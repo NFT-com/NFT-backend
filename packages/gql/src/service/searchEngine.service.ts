@@ -7,8 +7,7 @@ import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
 import { getNftName } from './nft.service'
-
-type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+import { listingMapFrom, TxActivityDAO } from './txActivity.service'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
@@ -72,21 +71,11 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
     try {
-      const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
-        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
-        .reduce((map, txActivity: TxActivityDAO) => {
-          if (helper.isNotEmpty(txActivity.order?.protocolData)) {
-            const nftIdParts = txActivity.nftId[0].split('/')
-            const k = `${nftIdParts[1]}-${nftIdParts[2]}`
-            if (map[k]?.length) {
-              map[k].push(txActivity)
-            } else {
-              map[k] = [txActivity]
-            }
-          }
-          return map
-        }, {})
-      const nftsToIndex = await Promise.all(nfts.map(async (nft) => {
+      const listingMap: { [k:string]: TxActivityDAO[] } = listingMapFrom(
+        await repos.txActivity.findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
+        
+      const nftsToIndex = []
+      for (const nft of nfts) {
         const ctx = {
           chain: null,
           network: null,
@@ -169,7 +158,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         }
 
         const gkExpirationYear = 3021
-        return {
+        nftsToIndex.push({
           id: nft.id,
           nftName: nft.metadata?.name || getNftName(nft.metadata, undefined, { contractMetadata: { name: collection?.name } }, tokenId) || `#${tokenId}`,
           nftType: nft.type,
@@ -184,14 +173,14 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           status: '', //  HasOffers, BuyNow, New, OnAuction
           rarity: parseFloat(nft.rarity) || 0.0,
           isProfile: nft.contract === PROFILE_CONTRACT,
-          isProfileGKMinted: profile?.expireAt.getFullYear() >= gkExpirationYear,
+          isProfileGKMinted: profile?.expireAt ? profile?.expireAt.getFullYear() >= gkExpirationYear : false,
           issuance: collection?.issuanceDate?.getTime() || 0,
           hasListings: listings.length ? 1 : 0,
           listedFloor: 0.0,
           score: _calculateNFTScore(collection, !!listings.length) || 0,
-        }
-      }))
-      return client.insertDocuments('nfts', nftsToIndex)
+        })
+      }
+      return nftsToIndex.length && client.insertDocuments('nfts', nftsToIndex) || true
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err

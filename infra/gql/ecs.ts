@@ -462,6 +462,10 @@ const createEcsTaskDefinition = (
                   Value: process.env.ASSET_BUCKET_ROLE,
                 },
                 {
+                  Name: 'SLACK_TOKEN',
+                  Value: process.env.SLACK_TOKEN,
+                },
+                {
                   Name: 'REDIS_HOST',
                   Value: process.env.REDIS_HOST,
                 },
