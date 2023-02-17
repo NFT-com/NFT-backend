@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
-import { db, provider } from '@nftcom/shared'
+import { db } from '@nftcom/shared'
 import { TxActivity, TxOrder, TxTransaction } from '@nftcom/shared/db/entity'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
@@ -204,9 +204,6 @@ describe('transaction activity resolver', () => {
 
   describe('transaction activity with filters', () => {
     it.only('should query activities with filters', async () => {
-      const chainProvider = provider.provider('1')
-      const tx = await chainProvider.getTransaction('0xdcd0f7daa5f234c5a92c3f6eec626a382d6f4b6828082b60a4b7f68a1087eef9')
-      console.log(tx)
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {

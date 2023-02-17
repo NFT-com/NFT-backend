@@ -77,7 +77,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   }
 
   // activities for filters - pageable result
-  public findActivities = (query: PageableQuery<TxActivity>, protocol?: ProtocolType)
+  public findActivities = async (query: PageableQuery<TxActivity>, protocol?: ProtocolType)
   : Promise<PageableResult<TxActivity>> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
@@ -317,25 +317,6 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .orderBy({ 'activity.updatedAt': 'DESC' })
       .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
         'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
-      .cache(true)
-      .getMany()
-  }
-
-  public findActivitiesByRecipient = (
-    activityType: ActivityType,
-    recipient: string,
-  ): Promise<TxActivity[]> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
-
-    const queryObj = {
-      activityType,
-    }
-    return queryBuilder
-      .where(queryObj)
-      .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.taker = :recipient', { recipient })
       .cache(true)
       .getMany()
   }
