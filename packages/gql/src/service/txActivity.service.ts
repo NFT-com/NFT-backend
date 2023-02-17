@@ -590,7 +590,11 @@ export const listingMapFrom = async (txActivities: TxActivityDAO[]): Promise<{ [
     const listings = await agg
     const isBuyNow = transactionIsBuyNow(txActivity.order)
     if (isBuyNow && txActivity.order?.exchange) {
-      const existingIdx = listings.findIndex((tx) => tx.order?.exchange === txActivity.order?.exchange)
+      const existingIdx = listings.findIndex((tx) => {
+        return tx.order?.exchange
+        && txActivity.order?.exchange
+        && tx.order.exchange === txActivity.order.exchange
+      })
       if (
         existingIdx > -1
         && (
