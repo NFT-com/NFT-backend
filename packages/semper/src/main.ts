@@ -57,7 +57,7 @@ const main = async (): Promise<void> => {
   // await commander.erase()
   // await commander.update('collections', ['issuance'], [])
   // await commander.update('nfts', ['isProfileGKMinted'], ['isProfileGKMinted'])
-  // await commander.reindexNFTsByContract('0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D', await commander.retrieveListings())
+  // await commander.reindexNFTsByContract('0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D', await commander.retrieveListings({ nftContract: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D' }))
 
   await db.disconnect()
 }
