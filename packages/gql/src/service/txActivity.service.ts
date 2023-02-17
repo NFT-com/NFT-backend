@@ -8,11 +8,9 @@ import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { X2Y2Order } from '@nftcom/gql/service/x2y2.service'
-import { _logger, db, defs, entity, helper, repository } from '@nftcom/shared'
+import { db, defs, entity, helper, repository } from '@nftcom/shared'
 
 import { getSymbolInUsd } from './core.service'
-
-const logger = _logger.Factory('txActivity.service', _logger.Context.TxActivity)
 
 type Order = SeaportOrder | LooksRareOrder | X2Y2Order
 
@@ -579,14 +577,8 @@ const priceIsLower = async (l1, l2): Promise<boolean> => {
     return priceL1.isLessThan(priceL2)
   }
 
-  let [priceUsdL1, priceUsdL2] = [0, 0]
-  try {
-    priceUsdL1 = await getSymbolInUsd(currencyL1)
-    priceUsdL2 = await getSymbolInUsd(currencyL2)
-  } catch (err) {
-    logger.warn(err, 'unable to get prices from coingecko')
-  }
-
+  const priceUsdL1 = await getSymbolInUsd(currencyL1)
+  const priceUsdL2 = await getSymbolInUsd(currencyL2)
   return priceL1.multipliedBy(priceUsdL1).isLessThan(priceL2.multipliedBy(priceUsdL2))
 }
 
