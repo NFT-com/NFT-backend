@@ -556,17 +556,19 @@ const nonceIsLarger = (n1, n2): boolean => {
 }
 
 const priceIsLower = async (l1, l2): Promise<boolean> => {
+  const addrCurrL1 = getListingCurrencyAddress(l1)
   const priceL1 = new BN(utils.formatUnits(
     getListingPrice(l1),
-    await getDecimalsForContract(l1.nftContract),
+    await getDecimalsForContract(addrCurrL1),
   ))
-  const currencyL1 = await getSymbolForContract(getListingCurrencyAddress(l1))
+  const currencyL1 = await getSymbolForContract(addrCurrL1)
 
+  const addrCurrL2 = getListingCurrencyAddress(l1)
   const priceL2 = new BN(utils.formatUnits(
     getListingPrice(l2),
-    await getDecimalsForContract(l2.nftContract),
+    await getDecimalsForContract(addrCurrL2),
   ))
-  const currencyL2 = await getSymbolForContract(getListingCurrencyAddress(l2))
+  const currencyL2 = await getSymbolForContract(addrCurrL2)
 
   let [priceUsdL1, priceUsdL2] = [0, 0]
   try {
