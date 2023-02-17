@@ -884,7 +884,7 @@ export const sendSlackMessage = (
     }
     return
   } catch (err) {
-    logger.error('error: ', err)
+    logger.error('error in sendSlackMessage: ', err)
     return
   }
 }
@@ -1017,7 +1017,6 @@ const getDurationFromNow = (unixTimestamp: number): string => {
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
-  noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
     .then(fp.thruIfEmpty(() => {
@@ -1042,30 +1041,33 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then(async (savedProfile: entity.Profile) => {
-          const abi = contracts.NftProfileABI()
-          const calls = [{
-            contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
-            name: 'getExpiryTimeline',
-            params: [[profile.url]],
-          }]
-          const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
-          const timestamp = Number(res[0][0][0])
-          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
-          
-          if (!noAvatar) {
-            return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
-              .then((imageURL: string) =>
-                ctx.repositories.profile.updateOneById(
-                  savedProfile.id,
-                  {
-                    photoURL: imageURL,
-                    bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-                    description: `NFT.com profile for ${savedProfile.url}`,
-                  },
-                ))
-          } else {
-            return savedProfile
+          try {
+            const abi = contracts.NftProfileABI()
+            const calls = [{
+              contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
+              name: 'getExpiryTimeline',
+              params: [[profile.url]],
+            }]
+            const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
+            const timestamp = Number(res[0][0][0])
+            sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
+          } catch (err) {
+            logger.error('error while creating profile and sending message: ', err)
           }
+          
+          if (!savedProfile.photoURL) {
+            const imageURL = await generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
+            return ctx.repositories.profile.updateOneById(
+              savedProfile.id,
+              {
+                photoURL: imageURL,
+                bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+                description: `NFT.com profile for ${savedProfile.url}`,
+              },
+            )
+          }
+
+          return savedProfile
         })
     })
 }
@@ -1076,7 +1078,6 @@ export const createProfileFromEvent = async (
   tokenId: BigNumber,
   repositories: db.Repository,
   profileUrl: string,
-  noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   try {
     let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
@@ -1123,7 +1124,7 @@ export const createProfileFromEvent = async (
       ownerWalletId: wallet.id,
       ownerUserId: wallet.userId,
       chainId: chainId || process.env.CHAIN_ID,
-    }, noAvatar)
+    })
     logger.info('Save incentive action for CREATE_NFT_PROFILE')
     // save incentive action for CREATE_NFT_PROFILE
     const createProfileAction = await repositories.incentiveAction.findOne({
