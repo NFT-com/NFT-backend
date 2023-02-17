@@ -575,7 +575,8 @@ const priceIsLower = async (l1, l2): Promise<boolean> => {
     const coins: { id: string; symbol: string; name: string }[] = (await axios.get('https://api.coingecko.com/api/v3/coins/list')).data
     const l1Id = coins.find((c) => c.symbol === currencyL1.toLowerCase()).id
     const l2Id = coins.find((c) => c.symbol === currencyL2.toLowerCase()).id
-    const prices = (await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${Array.from(new Set([l1Id, l2Id])).join(',')}&vs_currencies=usd`)).data
+    const uniqueDefinedCoins = Array.from(new Set([l1Id, l2Id])).filter((c) => !!c)
+    const prices = (await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${uniqueDefinedCoins.join(',')}&vs_currencies=usd`)).data
     priceUsdL1 = prices[l1Id]?.['usd'] || 0
     priceUsdL2 = prices[l2Id]?.['usd'] || 0
   } catch (err) {
