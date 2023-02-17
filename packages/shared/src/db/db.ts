@@ -125,7 +125,9 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
       `${__dirname}/migration/*.ts`,
       `${__dirname}/migration/*.js`,
     ],
-    ssl: false,
+    ssl: {
+      rejectUnauthorized: false,
+    },
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
   }).initialize()
