@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { BigNumber as BN } from 'bignumber.js'
 import { BigNumber, utils } from 'ethers'
 
@@ -10,6 +9,8 @@ import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { X2Y2Order } from '@nftcom/gql/service/x2y2.service'
 import { _logger, db, defs, entity, helper, repository } from '@nftcom/shared'
+
+import { getSymbolInUsd } from './core.service'
 
 const logger = _logger.Factory('txActivity.service', _logger.Context.TxActivity)
 
@@ -538,6 +539,10 @@ export const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   }
 }
 
+const isSupportedCurrency = async (txActivity: TxActivityDAO): Promise<boolean> => {
+  return ['ETH', 'WETH', 'USDC'].includes(await getSymbolForContract(getListingCurrencyAddress(txActivity)))
+}
+
 const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
   '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
 
@@ -570,27 +575,29 @@ const priceIsLower = async (l1, l2): Promise<boolean> => {
   ))
   const currencyL2 = await getSymbolForContract(addrCurrL2)
 
+  if (currencyL1 === currencyL2) {
+    return priceL1.isLessThan(priceL2)
+  }
+
   let [priceUsdL1, priceUsdL2] = [0, 0]
   try {
-    const coins: { id: string; symbol: string; name: string }[] = (await axios.get('https://api.coingecko.com/api/v3/coins/list')).data
-    const l1Id = coins.find((c) => c.symbol === currencyL1.toLowerCase()).id
-    const l2Id = coins.find((c) => c.symbol === currencyL2.toLowerCase()).id
-    const uniqueDefinedCoins = Array.from(new Set([l1Id, l2Id])).filter((c) => !!c)
-    const prices = (await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${uniqueDefinedCoins.join(',')}&vs_currencies=usd`)).data
-    priceUsdL1 = prices[l1Id]?.['usd'] || 0
-    priceUsdL2 = prices[l2Id]?.['usd'] || 0
+    priceUsdL1 = await getSymbolInUsd(currencyL1)
+    priceUsdL2 = await getSymbolInUsd(currencyL2)
   } catch (err) {
     logger.warn(err, 'unable to get prices from coingecko')
   }
 
-  return priceL1.multipliedBy(priceUsdL1).toNumber() < priceL2.multipliedBy(priceUsdL2).toNumber()
+  return priceL1.multipliedBy(priceUsdL1).isLessThan(priceL2.multipliedBy(priceUsdL2))
 }
 
 export const listingMapFrom = async (txActivities: TxActivityDAO[]): Promise<{ [k:string]: TxActivityDAO[] }> => {
   return (await txActivities.reduce(async (agg, txActivity) => {
     const listings = await agg
-    const isBuyNow = transactionIsBuyNow(txActivity.order)
-    if (isBuyNow && txActivity.order?.exchange) {
+    if (
+      (await isSupportedCurrency(txActivity))
+      && transactionIsBuyNow(txActivity.order)
+      && txActivity.order?.exchange
+    ) {
       const existingIdx = listings.findIndex((tx) => {
         return tx.order?.exchange
         && txActivity.order?.exchange
