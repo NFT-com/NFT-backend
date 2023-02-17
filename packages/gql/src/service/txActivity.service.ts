@@ -493,3 +493,49 @@ export const triggerNFTOrderRefreshQueue = async (
   }
   return Promise.resolve(cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, ...nftRefreshKeys))
 }
+
+const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
+  '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
+
+const transactionIsBuyNow = (order: entity.TxOrder): boolean => {
+  return order.exchange === defs.ExchangeType.X2Y2
+    || (order.exchange === defs.ExchangeType.OpenSea
+      && !!order.protocolData?.consideration?.length)
+    || (order.exchange === defs.ExchangeType.LooksRare
+      && order.protocolData?.strategy !== LR_DUTCH_AUCTION)
+    || (order.exchange === defs.ExchangeType.NFTCOM
+      && order.protocolData.auctionType === defs.AuctionType.FixedPrice)
+}
+
+const nonceIsLarger = (n1, n2): boolean => {
+  return n1 - n2 > 0
+}
+
+export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+export const listingMapFrom = (txActivities: TxActivityDAO[]): { [k:string]: TxActivityDAO[] } => {
+  return txActivities
+    .reduce((txActivities: TxActivityDAO[], txActivity) => {
+      const isBuyNow = transactionIsBuyNow(txActivity.order)
+      if (isBuyNow && txActivity.order?.exchange) {
+        const existingIdx = txActivities.findIndex((tx) => tx.order?.exchange === txActivity.order?.exchange)
+        if (existingIdx > -1 && nonceIsLarger(txActivity.order.nonce, txActivities[existingIdx].order.nonce)) {
+          txActivities[existingIdx] = txActivity
+        } else {
+          txActivities.push(txActivity)
+        }
+      }
+      return txActivities
+    }, [])
+    .reduce((map, txActivity: TxActivityDAO) => {
+      if (helper.isNotEmpty(txActivity.order?.protocolData)) {
+        const nftIdParts = txActivity.nftId[0].split('/')
+        const k = `${nftIdParts[1]}-${nftIdParts[2]}`
+        if (map[k]?.length) {
+          map[k].push(txActivity)
+        } else {
+          map[k] = [txActivity]
+        }
+      }
+      return map
+    }, {})
+}

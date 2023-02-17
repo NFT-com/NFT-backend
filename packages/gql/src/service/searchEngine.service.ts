@@ -7,8 +7,7 @@ import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
 import { getNftName } from './nft.service'
-
-type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+import { listingMapFrom, TxActivityDAO } from './txActivity.service'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
@@ -16,9 +15,6 @@ const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
 
 const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
   '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
-
-const LR_DUTCH_AUCTION = TYPESENSE_HOST.startsWith('dev') ?
-  '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
 
 const getListingPrice = (listing: TxActivityDAO): BigNumber => {
   switch(listing?.order?.protocol) {
@@ -56,18 +52,7 @@ const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   }
   }
 }
-const transactionIsBuyNow = (order: entity.TxOrder): boolean => {
-  return order.exchange === defs.ExchangeType.X2Y2
-    || (order.exchange === defs.ExchangeType.OpenSea
-      && !!order.protocolData?.consideration?.length)
-    || (order.exchange === defs.ExchangeType.LooksRare
-      && order.protocolData?.strategy !== LR_DUTCH_AUCTION)
-    || (order.exchange === defs.ExchangeType.NFTCOM
-      && order.protocolData.auctionType === defs.AuctionType.FixedPrice)
-}
-const nonceIsLarger = (n1, n2): boolean => {
-  return n1 - n2 > 0
-}
+
 const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 3)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
   const _calculateNFTScore = (collection: entity.Collection, hasListings: boolean): number => {
@@ -86,32 +71,9 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
     try {
-      const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
-        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
-        .reduce((txActivities: TxActivityDAO[], txActivity) => {
-          const isBuyNow = transactionIsBuyNow(txActivity.order)
-          if (isBuyNow && txActivity.order?.exchange) {
-            const existingIdx = txActivities.findIndex((tx) => tx.order?.exchange === txActivity.order?.exchange)
-            if (existingIdx > -1 && nonceIsLarger(txActivity.order.nonce, txActivities[existingIdx].order.nonce)) {
-              txActivities[existingIdx] = txActivity
-            } else {
-              txActivities.push(txActivity)
-            }
-          }
-          return txActivities
-        }, [])
-        .reduce((map, txActivity: TxActivityDAO) => {
-          if (helper.isNotEmpty(txActivity.order?.protocolData)) {
-            const nftIdParts = txActivity.nftId[0].split('/')
-            const k = `${nftIdParts[1]}-${nftIdParts[2]}`
-            if (map[k]?.length) {
-              map[k].push(txActivity)
-            } else {
-              map[k] = [txActivity]
-            }
-          }
-          return map
-        }, {})
+      const listingMap: { [k:string]: TxActivityDAO[] } = listingMapFrom(
+        await repos.txActivity.findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
+        
       const nftsToIndex = []
       for (const nft of nfts) {
         const ctx = {
