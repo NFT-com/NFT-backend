@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
-import { db } from '@nftcom/shared'
-import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
+import { db, provider } from '@nftcom/shared'
+import { TxActivity, TxOrder, TxTransaction } from '@nftcom/shared/db/entity'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { testMockUser, testMockWallet } from '../util/constants'
@@ -35,13 +35,26 @@ describe('transaction activity resolver', () => {
       activity.activityTypeId = orderHash
       activity.status = ActivityStatus.Valid
       activity.timestamp = new Date(timestamp + (10000 * i))
-      const currentDate: Date = new Date()
+      let currentDate: Date = new Date()
       currentDate.setDate(currentDate.getDate() - 1)
       activity.expiration = currentDate
       activity.walletAddress = testMockWallet.address
       activity.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.nftId = ['ethereum/test-nft-contract/test-token-id']
       activity.chainId = '5'
+
+      let activityA = new TxActivity()
+      activityA.activityType = ActivityType.Sale
+      activityA.activityTypeId = orderHash
+      activityA.status = ActivityStatus.Valid
+      activityA.timestamp = new Date(timestamp + (10000 * i))
+      currentDate = new Date()
+      currentDate.setDate(currentDate.getDate() - 1)
+      activityA.expiration = currentDate
+      activityA.walletAddress = testMockWallet.address
+      activityA.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
+      activityA.nftId = ['ethereum/test-nft-contract/test-token-id']
+      activityA.chainId = '5'
 
       let activityType
       switch (table) {
@@ -57,10 +70,29 @@ describe('transaction activity resolver', () => {
         activityType.protocol = ProtocolType.Seaport
         activityType.protocolData = {}
         activityType.chainId = '5'
-  
+
         activity = await repositories.txActivity.save(activity)
         activityType.activity = activity
         activityType = await repositories.txOrder.save(activityType)
+        break
+      case 'txTransaction':
+        // purchase
+        activityType = new TxTransaction()
+        activityType.id = orderHash
+        activityType.activity = activityA
+        activityType.exchange = ExchangeType.NFTCOM
+        activityType.transactionType = ActivityType.Sale
+        activityType.protocol = ProtocolType.NFTCOM
+        activityType.protocolData = []
+        activityType.transactionHash = '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185'
+        activityType.blockNumber = 16594516
+        activityType.maker = '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'
+        activityType.taker = '0x893f5090014182A731800fd9Eab839386E25cAb8'
+        activityType.chainId = '5'
+
+        activityA = await repositories.txActivity.save(activityA)
+        activityType.activity = activityA
+        activityType = await repositories.txTransaction.save(activityType)
         break
       default:
         return
@@ -97,19 +129,19 @@ describe('transaction activity resolver', () => {
         }`,
         variables: { activityType: 'Listing', chainId: '5' },
       })
-    
+
       const orderData = testData.filter(data => data?.table === 'txOrder')
       const orderIds = orderData.map(order => order.activityType.id)
       const activities = result.data?.getActivitiesByType.filter(
         activity => activity.order && orderIds.includes(activity.order.id))
-  
+
       for (const activity of activities) {
         expect(activity.activityType).toBe(ActivityType.Listing)
         expect(activity.order.exchange).toBe(ExchangeType.OpenSea)
       }
       expect(activities.length).toBe(orderData.length)
     })
-  
+
     it('should query activity by wallet address', async () => {
       const result = await testServer.executeOperation({
         query: `query Query($walletAddress: String, $chainId: String) { 
@@ -126,7 +158,7 @@ describe('transaction activity resolver', () => {
         }`,
         variables: { walletAddress: testData[0].activity.walletAddress, chainId: '5' },
       })
-  
+
       const testDataIds = testData.map(td => td && td.activity.id)
       const activities = result.data?.getActivitiesByWalletAddress.filter(
         activity => testDataIds.includes(activity.id))
@@ -141,7 +173,7 @@ describe('transaction activity resolver', () => {
       }
       expect(activities.length).toBe(testData.filter(td => td !== undefined).length)
     })
-  
+
     it('should query activity by wallet address and type', async () => {
       const result = await testServer.executeOperation({
         query: `query Query($input: TxWalletAddressAndTypeInput) { 
@@ -171,7 +203,10 @@ describe('transaction activity resolver', () => {
   })
 
   describe('transaction activity with filters', () => {
-    it('should query activities with filters', async () => {
+    it.only('should query activities with filters', async () => {
+      const chainProvider = provider.provider('1')
+      const tx = await chainProvider.getTransaction('0xdcd0f7daa5f234c5a92c3f6eec626a382d6f4b6828082b60a4b7f68a1087eef9')
+      console.log(tx)
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -190,16 +225,17 @@ describe('transaction activity resolver', () => {
           }
         }`,
         variables: { input: {
-          activityType: 'Listing',
+          activityType: 'Sale',
           pageInput: {
             first: 0,
             last: null,
           },
           chainId: '5',
           expirationType: 'Both',
+          walletAddress: '0x893f5090014182A731800fd9Eab839386E25cAb8',
         } },
       })
-  
+
       expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Listing)
       expect(result.data.getActivities?.items?.[0].order).toBeDefined()
       expect(result.data.getActivities.totalItems).toBe(1)
@@ -234,7 +270,7 @@ describe('transaction activity resolver', () => {
           expirationType: 'Both',
         } },
       })
-   
+
       expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Listing)
       expect(result.data.getActivities?.items?.[0].order).toBeNull()
       expect(result.data.getActivities.totalItems).toBe(1)
@@ -265,7 +301,7 @@ describe('transaction activity resolver', () => {
           expirationType: 'Active',
         } },
       })
-   
+
       expect(result.data.getActivities?.items).toHaveLength(0)
       expect(result.data.getActivities.totalItems).toBe(0)
     })
@@ -295,7 +331,7 @@ describe('transaction activity resolver', () => {
           expirationType: 'Expired',
         } },
       })
-   
+
       expect(result.data.getActivities?.items).toHaveLength(1)
       expect(result.data.getActivities.totalItems).toBe(1)
     })
@@ -325,11 +361,11 @@ describe('transaction activity resolver', () => {
           expirationType: 'Both',
         } },
       })
-   
+
       expect(result.data.getActivities?.items).toHaveLength(1)
       expect(result.data.getActivities.totalItems).toBe(1)
     })
-  
+
     it('should fail if input is missing', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
@@ -355,7 +391,7 @@ describe('transaction activity resolver', () => {
         }`,
         variables: { },
       })
-  
+
       expect(result.errors).toBeDefined()
     })
 
@@ -387,7 +423,7 @@ describe('transaction activity resolver', () => {
       expect(result.errors).toBeDefined()
     })
   })
-  
+
   describe('transaction activity mutations', () => {
     it('should update activities read property', async () => {
       const activityIds: string[] = testData
@@ -406,7 +442,7 @@ describe('transaction activity resolver', () => {
         }`,
         variables: { ids: [...activityIds, 'test-failed-id'] },
       })
-  
+
       expect(result.data.updateReadByIds.updatedIdsSuccess.length).toEqual(activityIds.length)
       expect(result.data.updateReadByIds.updatedIdsSuccess)
         .toEqual(expect.arrayContaining(activityIds))
@@ -432,7 +468,7 @@ describe('transaction activity resolver', () => {
         }`,
       variables: { ids: [...activityIds, 'test-failed-id'], status: 'Executed' },
     })
-      
+
     expect(result.data.updateStatusByIds.updatedIdsSuccess.length).toEqual(activityIds.length)
     expect(result.data.updateStatusByIds.updatedIdsSuccess)
       .toEqual(expect.arrayContaining(activityIds))
