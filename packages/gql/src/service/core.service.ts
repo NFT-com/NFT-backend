@@ -976,7 +976,7 @@ export const getEthUsd = async (): Promise<number> => {
   }
 }
 
-const toGCId = (symbol: string): string => {
+const toCGId = (symbol: string): string => {
   return {
     'ETH': 'ethereum',
     'WETH': 'weth',
@@ -995,7 +995,7 @@ export const getSymbolInUsd = async (symbol: string): Promise<number> => {
     if (cachedData) {
       return Number(cachedData)
     } else {
-      const cgResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${toGCId(symbol)}&vs_currencies=usd`)
+      const cgResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${toCGId(symbol)}&vs_currencies=usd`)
       const cgResult = await cgResponse.json()
       const cgEthUsd = cgResult?.data?.['ethereum']?.['usd']
 
