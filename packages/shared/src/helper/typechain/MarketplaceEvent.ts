@@ -89,6 +89,7 @@ export interface MarketplaceEventInterface extends utils.Interface {
     "initialize()": FunctionFragment;
     "marketPlace()": FunctionFragment;
     "owner()": FunctionFragment;
+    "proxiableUUID()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setMarketPlace(address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
@@ -128,6 +129,10 @@ export interface MarketplaceEventInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "proxiableUUID",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
@@ -157,6 +162,10 @@ export interface MarketplaceEventInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "proxiableUUID",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
@@ -178,11 +187,13 @@ export interface MarketplaceEventInterface extends utils.Interface {
     "AdminChanged(address,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
     "BuyNowInfo(bytes32,address)": EventFragment;
+    "Initialized(uint8)": EventFragment;
     "Match(bytes32,bytes32,uint8,tuple,tuple,bool)": EventFragment;
     "Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)": EventFragment;
     "Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])": EventFragment;
     "Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)": EventFragment;
     "Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])": EventFragment;
+    "NewMarketplace(address)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "Upgraded(address)": EventFragment;
   };
@@ -190,11 +201,13 @@ export interface MarketplaceEventInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BuyNowInfo"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Match"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Match2A"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Match2B"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Match3A"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Match3B"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewMarketplace"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
 }
@@ -216,6 +229,10 @@ export type BuyNowInfoEvent = TypedEvent<
 >;
 
 export type BuyNowInfoEventFilter = TypedEventFilter<BuyNowInfoEvent>;
+
+export type InitializedEvent = TypedEvent<[number], { version: number }>;
+
+export type InitializedEventFilter = TypedEventFilter<InitializedEvent>;
 
 export type MatchEvent = TypedEvent<
   [string, string, number, SigStructOutput, SigStructOutput, boolean],
@@ -291,6 +308,10 @@ export type Match3BEvent = TypedEvent<
 
 export type Match3BEventFilter = TypedEventFilter<Match3BEvent>;
 
+export type NewMarketplaceEvent = TypedEvent<[string], { marketPlace: string }>;
+
+export type NewMarketplaceEventFilter = TypedEventFilter<NewMarketplaceEvent>;
+
 export type OwnershipTransferredEvent = TypedEvent<
   [string, string],
   { previousOwner: string; newOwner: string }
@@ -359,6 +380,8 @@ export interface MarketplaceEvent extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
+    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
+
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -413,6 +436,8 @@ export interface MarketplaceEvent extends BaseContract {
 
   owner(overrides?: CallOverrides): Promise<string>;
 
+  proxiableUUID(overrides?: CallOverrides): Promise<string>;
+
   renounceOwnership(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -465,6 +490,8 @@ export interface MarketplaceEvent extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<string>;
 
+    proxiableUUID(overrides?: CallOverrides): Promise<string>;
+
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
 
     setMarketPlace(
@@ -512,6 +539,9 @@ export interface MarketplaceEvent extends BaseContract {
       makerStructHash?: BytesLike | null,
       takerAddress?: null
     ): BuyNowInfoEventFilter;
+
+    "Initialized(uint8)"(version?: null): InitializedEventFilter;
+    Initialized(version?: null): InitializedEventFilter;
 
     "Match(bytes32,bytes32,uint8,tuple,tuple,bool)"(
       makerStructHash?: BytesLike | null,
@@ -606,6 +636,11 @@ export interface MarketplaceEvent extends BaseContract {
       buyerTakerOrderAssetClass?: null
     ): Match3BEventFilter;
 
+    "NewMarketplace(address)"(
+      marketPlace?: string | null
+    ): NewMarketplaceEventFilter;
+    NewMarketplace(marketPlace?: string | null): NewMarketplaceEventFilter;
+
     "OwnershipTransferred(address,address)"(
       previousOwner?: string | null,
       newOwner?: string | null
@@ -647,6 +682,8 @@ export interface MarketplaceEvent extends BaseContract {
     marketPlace(overrides?: CallOverrides): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -702,6 +739,8 @@ export interface MarketplaceEvent extends BaseContract {
     marketPlace(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }

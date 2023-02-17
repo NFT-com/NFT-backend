@@ -78,26 +78,38 @@ export interface NftMarketplaceInterface extends utils.Interface {
   functions: {
     "MAX_PROTOCOL_FEE()": FunctionFragment;
     "MAX_ROYALTY()": FunctionFragment;
+    "aggregator(address)": FunctionFragment;
     "approveOrder_((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "buyNow((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),uint8,bytes32,bytes32)": FunctionFragment;
     "cancel((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "cancelledOrFinalized(bytes32)": FunctionFragment;
+    "changeProfileFee(uint48)": FunctionFragment;
     "changeProtocolFee(uint256)": FunctionFragment;
+    "editAggregator(address,bool)": FunctionFragment;
     "executeSwap((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),(address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8),uint8[2],bytes32[2],bytes32[2])": FunctionFragment;
+    "funToken()": FunctionFragment;
+    "funTokenDiscount()": FunctionFragment;
     "incrementNonce()": FunctionFragment;
-    "initialize(address,address,address,address,address,address,address)": FunctionFragment;
+    "initialize(address,address,address,address,address,address,address,address)": FunctionFragment;
     "marketplaceEvent()": FunctionFragment;
     "modifyWhitelist(address,bool)": FunctionFragment;
     "nftBuyContract()": FunctionFragment;
-    "nftToken()": FunctionFragment;
+    "nftProfile()": FunctionFragment;
     "nonces(address)": FunctionFragment;
-    "orderApproved(bytes32)": FunctionFragment;
+    "orderApproved((address,((bytes4,bytes),bytes)[],address,((bytes4,bytes),bytes)[],uint256,uint256,uint256,uint256,uint8))": FunctionFragment;
     "owner()": FunctionFragment;
+    "profileFee()": FunctionFragment;
     "protocolFee()": FunctionFragment;
+    "proxiableUUID()": FunctionFragment;
     "proxies(bytes4)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "royaltyInfo(address)": FunctionFragment;
+    "setFunToken(address)": FunctionFragment;
+    "setFunTokenDiscount(uint48)": FunctionFragment;
+    "setNftBuyContract(address)": FunctionFragment;
+    "setNftProfile(address)": FunctionFragment;
     "setRoyalty(address,address,uint256)": FunctionFragment;
+    "setRoyaltyOwnerAdmin(address,address,uint256)": FunctionFragment;
     "setTransferProxy(bytes4,address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "upgradeTo(address)": FunctionFragment;
@@ -115,6 +127,7 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "MAX_ROYALTY",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "aggregator", values: [string]): string;
   encodeFunctionData(
     functionFragment: "approveOrder_",
     values: [LibSignature.OrderStruct]
@@ -132,8 +145,16 @@ export interface NftMarketplaceInterface extends utils.Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "changeProfileFee",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "changeProtocolFee",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "editAggregator",
+    values: [string, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "executeSwap",
@@ -145,13 +166,18 @@ export interface NftMarketplaceInterface extends utils.Interface {
       [BytesLike, BytesLike]
     ]
   ): string;
+  encodeFunctionData(functionFragment: "funToken", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "funTokenDiscount",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "incrementNonce",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
-    values: [string, string, string, string, string, string, string]
+    values: [string, string, string, string, string, string, string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "marketplaceEvent",
@@ -165,15 +191,26 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "nftBuyContract",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "nftToken", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "nftProfile",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "nonces", values: [string]): string;
   encodeFunctionData(
     functionFragment: "orderApproved",
-    values: [BytesLike]
+    values: [LibSignature.OrderStruct]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "profileFee",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "protocolFee",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "proxiableUUID",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "proxies", values: [BytesLike]): string;
@@ -182,8 +219,25 @@ export interface NftMarketplaceInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "royaltyInfo", values: [string]): string;
+  encodeFunctionData(functionFragment: "setFunToken", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "setFunTokenDiscount",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setNftBuyContract",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setNftProfile",
+    values: [string]
+  ): string;
   encodeFunctionData(
     functionFragment: "setRoyalty",
+    values: [string, string, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setRoyaltyOwnerAdmin",
     values: [string, string, BigNumberish]
   ): string;
   encodeFunctionData(
@@ -220,6 +274,7 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "MAX_ROYALTY",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "aggregator", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "approveOrder_",
     data: BytesLike
@@ -231,11 +286,24 @@ export interface NftMarketplaceInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "changeProfileFee",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "changeProtocolFee",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "editAggregator",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "executeSwap",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "funToken", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "funTokenDiscount",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -255,15 +323,20 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "nftBuyContract",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "nftToken", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "nftProfile", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "orderApproved",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "profileFee", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "protocolFee",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "proxiableUUID",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "proxies", data: BytesLike): Result;
@@ -275,7 +348,27 @@ export interface NftMarketplaceInterface extends utils.Interface {
     functionFragment: "royaltyInfo",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "setFunToken",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setFunTokenDiscount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setNftBuyContract",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setNftProfile",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "setRoyalty", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "setRoyaltyOwnerAdmin",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "setTransferProxy",
     data: BytesLike
@@ -307,11 +400,14 @@ export interface NftMarketplaceInterface extends utils.Interface {
     "Approval(bytes32,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
     "Cancel(bytes32,address)": EventFragment;
+    "EditAggregator(address,bool)": EventFragment;
+    "FunTokenDiscount(uint48)": EventFragment;
+    "Initialized(uint8)": EventFragment;
     "NonceIncremented(address,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
-    "ProtocolFeeChange(uint256)": EventFragment;
+    "ProtocolFeeChange(uint256,uint256)": EventFragment;
     "ProxyChange(bytes4,address)": EventFragment;
-    "RoyaltyInfoChange(address,address,uint256)": EventFragment;
+    "RoyaltyInfoChange(address,address,uint256,address)": EventFragment;
     "Transfer(tuple,address,address)": EventFragment;
     "Upgraded(address)": EventFragment;
     "WhitelistChange(address,bool)": EventFragment;
@@ -321,6 +417,9 @@ export interface NftMarketplaceInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Cancel"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "EditAggregator"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "FunTokenDiscount"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NonceIncremented"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ProtocolFeeChange"): EventFragment;
@@ -356,6 +455,22 @@ export type CancelEvent = TypedEvent<
 
 export type CancelEventFilter = TypedEventFilter<CancelEvent>;
 
+export type EditAggregatorEvent = TypedEvent<
+  [string, boolean],
+  { aggregator: string; status: boolean }
+>;
+
+export type EditAggregatorEventFilter = TypedEventFilter<EditAggregatorEvent>;
+
+export type FunTokenDiscountEvent = TypedEvent<[number], { discount: number }>;
+
+export type FunTokenDiscountEventFilter =
+  TypedEventFilter<FunTokenDiscountEvent>;
+
+export type InitializedEvent = TypedEvent<[number], { version: number }>;
+
+export type InitializedEventFilter = TypedEventFilter<InitializedEvent>;
+
 export type NonceIncrementedEvent = TypedEvent<
   [string, BigNumber],
   { maker: string; newNonce: BigNumber }
@@ -373,8 +488,8 @@ export type OwnershipTransferredEventFilter =
   TypedEventFilter<OwnershipTransferredEvent>;
 
 export type ProtocolFeeChangeEvent = TypedEvent<
-  [BigNumber],
-  { fee: BigNumber }
+  [BigNumber, BigNumber],
+  { publicFee: BigNumber; profileFee: BigNumber }
 >;
 
 export type ProtocolFeeChangeEventFilter =
@@ -388,8 +503,8 @@ export type ProxyChangeEvent = TypedEvent<
 export type ProxyChangeEventFilter = TypedEventFilter<ProxyChangeEvent>;
 
 export type RoyaltyInfoChangeEvent = TypedEvent<
-  [string, string, BigNumber],
-  { token: string; owner: string; percent: BigNumber }
+  [string, string, BigNumber, string],
+  { token: string; owner: string; percent: BigNumber; setter: string }
 >;
 
 export type RoyaltyInfoChangeEventFilter =
@@ -445,6 +560,8 @@ export interface NftMarketplace extends BaseContract {
 
     MAX_ROYALTY(overrides?: CallOverrides): Promise<[number]>;
 
+    aggregator(arg0: string, overrides?: CallOverrides): Promise<[boolean]>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -468,8 +585,19 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
+    changeProfileFee(
+      _newProfile: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     changeProtocolFee(
-      _fee: BigNumberish,
+      _newPublic: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    editAggregator(
+      _aggregator: string,
+      _status: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -482,6 +610,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    funToken(overrides?: CallOverrides): Promise<[string]>;
+
+    funTokenDiscount(overrides?: CallOverrides): Promise<[number]>;
+
     incrementNonce(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -491,9 +623,10 @@ export interface NftMarketplace extends BaseContract {
       _erc20TransferProxy: string,
       _cryptoKittyProxy: string,
       _stakingContract: string,
-      _nftToken: string,
+      _funToken: string,
       _validationLogic: string,
       _marketplaceEvent: string,
+      _nftProfile: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -507,18 +640,22 @@ export interface NftMarketplace extends BaseContract {
 
     nftBuyContract(overrides?: CallOverrides): Promise<[string]>;
 
-    nftToken(overrides?: CallOverrides): Promise<[string]>;
+    nftProfile(overrides?: CallOverrides): Promise<[string]>;
 
     nonces(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     orderApproved(
-      hash: BytesLike,
+      order: LibSignature.OrderStruct,
       overrides?: CallOverrides
     ): Promise<[boolean] & { approved: boolean }>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
+    profileFee(overrides?: CallOverrides): Promise<[number]>;
+
     protocolFee(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
 
     proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
@@ -531,7 +668,34 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string, BigNumber] & { owner: string; percent: BigNumber }>;
 
+    setFunToken(
+      _funToken: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setFunTokenDiscount(
+      _discount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setNftBuyContract(
+      _nftBuyContract: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setNftProfile(
+      _nftProfile: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setRoyaltyOwnerAdmin(
       nftContract: string,
       recipient: string,
       amount: BigNumberish,
@@ -577,6 +741,8 @@ export interface NftMarketplace extends BaseContract {
 
   MAX_ROYALTY(overrides?: CallOverrides): Promise<number>;
 
+  aggregator(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
   approveOrder_(
     order: LibSignature.OrderStruct,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -600,8 +766,19 @@ export interface NftMarketplace extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
+  changeProfileFee(
+    _newProfile: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   changeProtocolFee(
-    _fee: BigNumberish,
+    _newPublic: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  editAggregator(
+    _aggregator: string,
+    _status: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -614,6 +791,10 @@ export interface NftMarketplace extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  funToken(overrides?: CallOverrides): Promise<string>;
+
+  funTokenDiscount(overrides?: CallOverrides): Promise<number>;
+
   incrementNonce(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -623,9 +804,10 @@ export interface NftMarketplace extends BaseContract {
     _erc20TransferProxy: string,
     _cryptoKittyProxy: string,
     _stakingContract: string,
-    _nftToken: string,
+    _funToken: string,
     _validationLogic: string,
     _marketplaceEvent: string,
+    _nftProfile: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -639,15 +821,22 @@ export interface NftMarketplace extends BaseContract {
 
   nftBuyContract(overrides?: CallOverrides): Promise<string>;
 
-  nftToken(overrides?: CallOverrides): Promise<string>;
+  nftProfile(overrides?: CallOverrides): Promise<string>;
 
   nonces(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-  orderApproved(hash: BytesLike, overrides?: CallOverrides): Promise<boolean>;
+  orderApproved(
+    order: LibSignature.OrderStruct,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   owner(overrides?: CallOverrides): Promise<string>;
 
+  profileFee(overrides?: CallOverrides): Promise<number>;
+
   protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+  proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
   proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -660,7 +849,34 @@ export interface NftMarketplace extends BaseContract {
     overrides?: CallOverrides
   ): Promise<[string, BigNumber] & { owner: string; percent: BigNumber }>;
 
+  setFunToken(
+    _funToken: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setFunTokenDiscount(
+    _discount: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setNftBuyContract(
+    _nftBuyContract: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setNftProfile(
+    _nftProfile: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setRoyalty(
+    nftContract: string,
+    recipient: string,
+    amount: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setRoyaltyOwnerAdmin(
     nftContract: string,
     recipient: string,
     amount: BigNumberish,
@@ -706,6 +922,8 @@ export interface NftMarketplace extends BaseContract {
 
     MAX_ROYALTY(overrides?: CallOverrides): Promise<number>;
 
+    aggregator(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: CallOverrides
@@ -729,8 +947,19 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    changeProfileFee(
+      _newProfile: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     changeProtocolFee(
-      _fee: BigNumberish,
+      _newPublic: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    editAggregator(
+      _aggregator: string,
+      _status: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -743,6 +972,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    funToken(overrides?: CallOverrides): Promise<string>;
+
+    funTokenDiscount(overrides?: CallOverrides): Promise<number>;
+
     incrementNonce(overrides?: CallOverrides): Promise<void>;
 
     initialize(
@@ -750,9 +983,10 @@ export interface NftMarketplace extends BaseContract {
       _erc20TransferProxy: string,
       _cryptoKittyProxy: string,
       _stakingContract: string,
-      _nftToken: string,
+      _funToken: string,
       _validationLogic: string,
       _marketplaceEvent: string,
+      _nftProfile: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -766,15 +1000,22 @@ export interface NftMarketplace extends BaseContract {
 
     nftBuyContract(overrides?: CallOverrides): Promise<string>;
 
-    nftToken(overrides?: CallOverrides): Promise<string>;
+    nftProfile(overrides?: CallOverrides): Promise<string>;
 
     nonces(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    orderApproved(hash: BytesLike, overrides?: CallOverrides): Promise<boolean>;
+    orderApproved(
+      order: LibSignature.OrderStruct,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
+    profileFee(overrides?: CallOverrides): Promise<number>;
+
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
     proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -785,7 +1026,31 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string, BigNumber] & { owner: string; percent: BigNumber }>;
 
+    setFunToken(_funToken: string, overrides?: CallOverrides): Promise<void>;
+
+    setFunTokenDiscount(
+      _discount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setNftBuyContract(
+      _nftBuyContract: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setNftProfile(
+      _nftProfile: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setRoyaltyOwnerAdmin(
       nftContract: string,
       recipient: string,
       amount: BigNumberish,
@@ -854,6 +1119,21 @@ export interface NftMarketplace extends BaseContract {
     ): CancelEventFilter;
     Cancel(structHash?: null, maker?: string | null): CancelEventFilter;
 
+    "EditAggregator(address,bool)"(
+      aggregator?: string | null,
+      status?: null
+    ): EditAggregatorEventFilter;
+    EditAggregator(
+      aggregator?: string | null,
+      status?: null
+    ): EditAggregatorEventFilter;
+
+    "FunTokenDiscount(uint48)"(discount?: null): FunTokenDiscountEventFilter;
+    FunTokenDiscount(discount?: null): FunTokenDiscountEventFilter;
+
+    "Initialized(uint8)"(version?: null): InitializedEventFilter;
+    Initialized(version?: null): InitializedEventFilter;
+
     "NonceIncremented(address,uint256)"(
       maker?: string | null,
       newNonce?: null
@@ -872,8 +1152,14 @@ export interface NftMarketplace extends BaseContract {
       newOwner?: string | null
     ): OwnershipTransferredEventFilter;
 
-    "ProtocolFeeChange(uint256)"(fee?: null): ProtocolFeeChangeEventFilter;
-    ProtocolFeeChange(fee?: null): ProtocolFeeChangeEventFilter;
+    "ProtocolFeeChange(uint256,uint256)"(
+      publicFee?: null,
+      profileFee?: null
+    ): ProtocolFeeChangeEventFilter;
+    ProtocolFeeChange(
+      publicFee?: null,
+      profileFee?: null
+    ): ProtocolFeeChangeEventFilter;
 
     "ProxyChange(bytes4,address)"(
       assetType?: BytesLike | null,
@@ -884,15 +1170,17 @@ export interface NftMarketplace extends BaseContract {
       proxy?: null
     ): ProxyChangeEventFilter;
 
-    "RoyaltyInfoChange(address,address,uint256)"(
+    "RoyaltyInfoChange(address,address,uint256,address)"(
       token?: string | null,
       owner?: string | null,
-      percent?: null
+      percent?: null,
+      setter?: string | null
     ): RoyaltyInfoChangeEventFilter;
     RoyaltyInfoChange(
       token?: string | null,
       owner?: string | null,
-      percent?: null
+      percent?: null,
+      setter?: string | null
     ): RoyaltyInfoChangeEventFilter;
 
     "Transfer(tuple,address,address)"(
@@ -924,6 +1212,8 @@ export interface NftMarketplace extends BaseContract {
 
     MAX_ROYALTY(overrides?: CallOverrides): Promise<BigNumber>;
 
+    aggregator(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -947,8 +1237,19 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    changeProfileFee(
+      _newProfile: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     changeProtocolFee(
-      _fee: BigNumberish,
+      _newPublic: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    editAggregator(
+      _aggregator: string,
+      _status: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -961,6 +1262,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    funToken(overrides?: CallOverrides): Promise<BigNumber>;
+
+    funTokenDiscount(overrides?: CallOverrides): Promise<BigNumber>;
+
     incrementNonce(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -970,9 +1275,10 @@ export interface NftMarketplace extends BaseContract {
       _erc20TransferProxy: string,
       _cryptoKittyProxy: string,
       _stakingContract: string,
-      _nftToken: string,
+      _funToken: string,
       _validationLogic: string,
       _marketplaceEvent: string,
+      _nftProfile: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -986,18 +1292,22 @@ export interface NftMarketplace extends BaseContract {
 
     nftBuyContract(overrides?: CallOverrides): Promise<BigNumber>;
 
-    nftToken(overrides?: CallOverrides): Promise<BigNumber>;
+    nftProfile(overrides?: CallOverrides): Promise<BigNumber>;
 
     nonces(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     orderApproved(
-      hash: BytesLike,
+      order: LibSignature.OrderStruct,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
+    profileFee(overrides?: CallOverrides): Promise<BigNumber>;
+
     protocolFee(overrides?: CallOverrides): Promise<BigNumber>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
 
     proxies(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -1007,7 +1317,34 @@ export interface NftMarketplace extends BaseContract {
 
     royaltyInfo(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
+    setFunToken(
+      _funToken: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setFunTokenDiscount(
+      _discount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setNftBuyContract(
+      _nftBuyContract: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setNftProfile(
+      _nftProfile: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setRoyaltyOwnerAdmin(
       nftContract: string,
       recipient: string,
       amount: BigNumberish,
@@ -1054,6 +1391,11 @@ export interface NftMarketplace extends BaseContract {
 
     MAX_ROYALTY(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    aggregator(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     approveOrder_(
       order: LibSignature.OrderStruct,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1077,8 +1419,19 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    changeProfileFee(
+      _newProfile: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     changeProtocolFee(
-      _fee: BigNumberish,
+      _newPublic: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    editAggregator(
+      _aggregator: string,
+      _status: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1091,6 +1444,10 @@ export interface NftMarketplace extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    funToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    funTokenDiscount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     incrementNonce(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -1100,9 +1457,10 @@ export interface NftMarketplace extends BaseContract {
       _erc20TransferProxy: string,
       _cryptoKittyProxy: string,
       _stakingContract: string,
-      _nftToken: string,
+      _funToken: string,
       _validationLogic: string,
       _marketplaceEvent: string,
+      _nftProfile: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1116,7 +1474,7 @@ export interface NftMarketplace extends BaseContract {
 
     nftBuyContract(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    nftToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    nftProfile(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     nonces(
       arg0: string,
@@ -1124,13 +1482,17 @@ export interface NftMarketplace extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     orderApproved(
-      hash: BytesLike,
+      order: LibSignature.OrderStruct,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    profileFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     protocolFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     proxies(
       arg0: BytesLike,
@@ -1146,7 +1508,34 @@ export interface NftMarketplace extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    setFunToken(
+      _funToken: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setFunTokenDiscount(
+      _discount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setNftBuyContract(
+      _nftBuyContract: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setNftProfile(
+      _nftProfile: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setRoyalty(
+      nftContract: string,
+      recipient: string,
+      amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setRoyaltyOwnerAdmin(
       nftContract: string,
       recipient: string,
       amount: BigNumberish,
