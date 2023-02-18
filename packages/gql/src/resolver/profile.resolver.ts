@@ -1022,7 +1022,7 @@ const clearGKIconVisible = async (
     const owners = await getOwnersOfGenesisKeys(chainId)
     const ownerWalletIds: string[] = []
     await Promise.allSettled(
-      owners.map(async (owner) => {
+      Object.keys(owners).map(async (owner) => {
         const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
           chainId,
           ethers.utils.getAddress(owner),
