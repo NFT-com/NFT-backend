@@ -1878,8 +1878,8 @@ export const updateGKIconVisibleStatus = async (
   try {
     const gkOwners = await getOwnersOfGenesisKeys(chainId)
     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
-    if (index === -1) {
+    const exists = gkOwners[checkSumOwner(wallet.address)]
+    if (exists) {
       await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
     } else {
       return
