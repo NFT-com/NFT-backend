@@ -93,7 +93,9 @@ export class NFTRepository extends BaseRepository<NFT> {
     `, [collectionAddress])
   }
 
-  findByEdgeProfileDisplays(profileId: string, shouldIncludeHidden=false): Promise<ProfileSearchNFT[]> {
+  findByEdgeProfileDisplays(
+    profileId: string, shouldIncludeHidden=false, nftFilter?: NFT[],
+  ): Promise<ProfileSearchNFT[]> {
     const queryRunner = db.getDataSource(true).createQueryRunner()
     return queryRunner.query(`
     SELECT
@@ -108,6 +110,7 @@ export class NFTRepository extends BaseRepository<NFT> {
       edge."thisEntityType" = 'Profile'
       AND edge."thisEntityId" = $1
       AND edge."thatEntityType" = 'NFT'
+      ${nftFilter.length ? `AND edge.thatEntityId IN (${nftFilter.map(n => `'${n.id}'`).join(', ')})` : ''}
       AND edge."edgeType" = 'Displays'
       ${shouldIncludeHidden ? '' : 'AND edge."hide" = false'}
       AND collection."isSpam" = false
