@@ -339,6 +339,7 @@ const getActivities = async (
   if (cachedData) {
     indexedActivities = JSON.parse(cachedData) as gql.TxActivity[]
   } else {
+    // query activities
     const orderBy = <defs.OrderBy>{ ['activity.updatedAt']: 'DESC' }
     const activities = await repositories.txActivity.findActivities({
       filters: safefilters,
@@ -347,23 +348,26 @@ const getActivities = async (
       take: 0,
     })
     const filteredActivities = activities[0]
+    // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
     if (safefilters[0].walletAddress &&
-      (!safefilters[0].activityType || safefilters[0].activityType === ActivityType.Sale))
+      (!safefilters[0].activityType || safefilters[0].activityType === ActivityType.Sale ||
+        safefilters[0].activityType === ActivityType.Transfer ||
+        safefilters[0].activityType === ActivityType.Swap
+      ))
     {
-      asRecipientTxs = await repositories.txTransaction.findRecipientActivitiesForSale(
+      asRecipientTxs = await repositories.txTransaction.findRecipientTxs(
+        safefilters[0].activityType,
         safefilters[0].walletAddress,
         ActivityStatus.Valid,
       )
     }
 
-    const activityIds = []
     asRecipientTxs.map((tx) => {
-      activityIds.push(tx.activity.id)
+      filteredActivities.push(tx.activity)
     })
 
-    const recipientActivities = await repositories.txActivity.activitiesWithTransaction(activityIds)
-    filteredActivities.push(...recipientActivities)
+    // sort and return
     const sortedActivities = _lodash.orderBy(filteredActivities, ['updatedAt'], ['desc'])
     let index = 0
     sortedActivities.map((activity) => {

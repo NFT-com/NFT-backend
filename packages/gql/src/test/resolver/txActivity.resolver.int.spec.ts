@@ -13,7 +13,13 @@ jest.retryTimes(2)
 
 jest.mock('@nftcom/cache', () => ({
   redisConfig: {},
-  cache: jest.fn(),
+  cache: {
+    get: jest.fn(),
+    set: jest.fn(),
+  },
+  CacheKeys: {
+    GET_ACTIVITIES: 'get_activities',
+  },
   createCacheConnection: jest.fn(),
 }))
 
@@ -45,13 +51,13 @@ describe('transaction activity resolver', () => {
 
       let activityA = new TxActivity()
       activityA.activityType = ActivityType.Sale
-      activityA.activityTypeId = orderHash
+      activityA.activityTypeId = '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185:orderHash'
       activityA.status = ActivityStatus.Valid
       activityA.timestamp = new Date(timestamp + (10000 * i))
       currentDate = new Date()
       currentDate.setDate(currentDate.getDate() - 1)
       activityA.expiration = currentDate
-      activityA.walletAddress = testMockWallet.address
+      activityA.walletAddress = '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'
       activityA.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activityA.nftId = ['ethereum/test-nft-contract/test-token-id']
       activityA.chainId = '5'
@@ -84,10 +90,10 @@ describe('transaction activity resolver', () => {
         activityType.transactionType = ActivityType.Sale
         activityType.protocol = ProtocolType.NFTCOM
         activityType.protocolData = []
-        activityType.transactionHash = '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185'
+        activityType.transactionHash = '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185:orderHash'
         activityType.blockNumber = 16594516
         activityType.maker = '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'
-        activityType.taker = '0x893f5090014182A731800fd9Eab839386E25cAb8'
+        activityType.taker = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
         activityType.chainId = '5'
 
         activityA = await repositories.txActivity.save(activityA)
@@ -171,7 +177,7 @@ describe('transaction activity resolver', () => {
           fail(`Invalid activity type for test: ${activity.activityType}`)
         }
       }
-      expect(activities.length).toBe(testData.filter(td => td !== undefined).length)
+      expect(activities.length).toBe(1)
     })
 
     it('should query activity by wallet address and type', async () => {
@@ -203,7 +209,7 @@ describe('transaction activity resolver', () => {
   })
 
   describe('transaction activity with filters', () => {
-    it.only('should query activities with filters', async () => {
+    it('should query activities with filters', async () => {
       const result = await testServer.executeOperation({
         query: `query GetActivities($input: TxActivitiesInput) {
           getActivities(input: $input) {
@@ -211,6 +217,9 @@ describe('transaction activity resolver', () => {
               id
               activityType
               order {
+                id
+              }
+              transaction {
                 id
               }
             }
@@ -222,20 +231,20 @@ describe('transaction activity resolver', () => {
           }
         }`,
         variables: { input: {
-          activityType: 'Sale',
           pageInput: {
-            first: 0,
+            first: 20,
             last: null,
           },
           chainId: '5',
           expirationType: 'Both',
-          walletAddress: '0x893f5090014182A731800fd9Eab839386E25cAb8',
+          walletAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
         } },
       })
 
-      expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Listing)
-      expect(result.data.getActivities?.items?.[0].order).toBeDefined()
-      expect(result.data.getActivities.totalItems).toBe(1)
+      expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Sale)
+      expect(result.data.getActivities?.items?.[0].transaction).toBeDefined()
+      expect(result.data.getActivities?.items?.[1].order).toBeDefined()
+      expect(result.data.getActivities.totalItems).toBe(2)
     })
 
     it('should skip relations', async () => {

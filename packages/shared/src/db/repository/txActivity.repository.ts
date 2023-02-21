@@ -338,20 +338,4 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .getMany()
   }
 
-  public activitiesWithTransaction = (
-    ids: string[],
-  ): Promise<TxActivity[]> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
-    return queryBuilder
-      .where({
-        id: In(ids),
-      })
-      .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
-      .cache(true)
-      .getMany()
-  }
-
 }
