@@ -236,31 +236,36 @@ const maybeUpdateProfileOwnership = (
       ctx.repositories.wallet.findById(profile.ownerWalletId),
     ])
       .then(([trueOwner, wallet]: [string, entity.Wallet]) => {
-        if (profile.ownerWalletId && ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
+        if (ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
           logger.log(`maybeUpdateProfileOwnership - trueOwner: ${trueOwner}, wallet.address: ${wallet.address}, wallet.id: ${wallet.id}, profile.tokenId: ${profile.tokenId}, profile.id: ${profile.id}`)
           return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
             .then((wallet: entity.Wallet | undefined) => {
               if (!wallet) {
+                logger.log('maybeUpdateProfileOwnership - null wallet')
                 return Promise.all([undefined, undefined])
               } else {
+                logger.log('maybeUpdateProfileOwnership - wallet valid')
                 return Promise.all([
                   ctx.repositories.user.findById(wallet.userId),
                   Promise.resolve(wallet),
                 ])
               }
             })
-            .then(([user, wallet]) => ctx.repositories.profile.save({
-              id: profile.id,
-              url: profile.url,
-              ownerUserId: user ? user.id : null,
-              ownerWalletId: wallet ? wallet.id : null,
-              tokenId: profile.tokenId,
-              status: profile.status,
-              chainId,
-              nftsLastUpdated: null,
-              displayType: defs.ProfileDisplayType.NFT,
-              layoutType: defs.ProfileLayoutType.Default,
-            }))
+            .then(([user, wallet]) => {
+              logger.log(`maybeUpdateProfileOwnership part 1 - user: ${user}, wallet: ${wallet}`)
+              return ctx.repositories.profile.save({
+                id: profile.id,
+                url: profile.url,
+                ownerUserId: user ? user.id : null,
+                ownerWalletId: wallet ? wallet.id : null,
+                tokenId: profile.tokenId,
+                status: profile.status,
+                chainId,
+                nftsLastUpdated: null,
+                displayType: defs.ProfileDisplayType.NFT,
+                layoutType: defs.ProfileLayoutType.Default,
+              })
+            })
             .then(fp.tap(() => ctx.repositories.edge.hardDelete({
               edgeType: defs.EdgeType.Displays,
               thisEntityType: defs.EntityType.Profile,
@@ -272,6 +277,10 @@ const maybeUpdateProfileOwnership = (
           logger.log(`maybeUpdateProfileOwnership part 2 - profile: ${JSON.stringify(profile)}`)
           return profile
         }
+      })
+      .catch((e) => {
+        logger.log(`maybeUpdateProfileOwnership part 3 - error: ${JSON.stringify(e)}`)
+        return profile
       })
   }
 }
@@ -303,6 +312,26 @@ const getProfileByURL = (
     },
   })
     .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chain.id)))
+    .then((profile) => {
+      if (profile) {
+        if (!profile.photoURL) {
+          return generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE).then(imageURL => {
+            logger.debug(`getProfileByURL: composite Image for Profile ${ profile.url } was generated`)
+
+            const updateObj = {
+              photoURL: imageURL,
+            }
+
+            if (!profile.bannerURL) updateObj['bannerURL'] = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
+            if (!profile.description) updateObj['description'] = `NFT.com profile for ${profile.url}`
+
+            logger.log(`getProfileByURL: updating profile ${ profile.url } with ${ JSON.stringify(updateObj) }`)
+            return ctx.repositories.profile.updateOneById(profile.id, updateObj)
+          })
+        }
+      }
+      return profile
+    })
     .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
       .then(fp.rejectIfEmpty(appError.buildExists(
         profileError.buildProfileNotFoundMsg(args.url),

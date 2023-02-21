@@ -1083,6 +1083,7 @@ export const createProfileFromEvent = async (
     let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
     let user
     if (!wallet) {
+      logger.log('createProfileFromEvent: wallet not found, creating new wallet and user: ', owner, chainId)
       const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
       user = await repositories.user.findOne({
         where: {
@@ -1092,6 +1093,7 @@ export const createProfileFromEvent = async (
       })
 
       if (!user) {
+        logger.log('createProfileFromEvent: user not found, creating new user: ', owner, chainId)
         user = await repositories.user.save({
           // defaults
           username: 'ethereum-' + ethers.utils.getAddress(owner),
