@@ -1125,7 +1125,7 @@ export const createProfileFromEvent = async (
       ownerUserId: wallet.userId,
       chainId: chainId || process.env.CHAIN_ID,
     })
-    logger.info('Save incentive action for CREATE_NFT_PROFILE')
+    logger.log('Save incentive action for CREATE_NFT_PROFILE')
     // save incentive action for CREATE_NFT_PROFILE
     const createProfileAction = await repositories.incentiveAction.findOne({
       where: {
@@ -1141,7 +1141,7 @@ export const createProfileFromEvent = async (
         task: defs.ProfileTask.CREATE_NFT_PROFILE,
         point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
       })
-      logger.info('Saved incentive action for CREATE_NFT_PROFILE')
+      logger.log('Saved incentive action for CREATE_NFT_PROFILE')
     }
     user = await repositories.user.findOne({
       where: {
@@ -1149,7 +1149,7 @@ export const createProfileFromEvent = async (
         username: 'ethereum-' + ethers.utils.getAddress(owner),
       },
     })
-    logger.info('Save incentive action for REFER_NETWORK')
+    logger.log('Save incentive action for REFER_NETWORK')
     //save incentive action for REFER_NETWORK
     if (user && user.referredBy) {
       const referredInfo = user.referredBy.split('::')
@@ -1171,7 +1171,7 @@ export const createProfileFromEvent = async (
               task: defs.ProfileTask.REFER_NETWORK,
               point: defs.ProfileTaskPoint.REFER_NETWORK,
             })
-            logger.info('Saved incentive action for REFER_NETWORK')
+            logger.log('Saved incentive action for REFER_NETWORK')
           }
         }
       }

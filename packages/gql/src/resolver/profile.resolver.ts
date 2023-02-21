@@ -236,8 +236,8 @@ const maybeUpdateProfileOwnership = (
       ctx.repositories.wallet.findById(profile.ownerWalletId),
     ])
       .then(([trueOwner, wallet]: [string, entity.Wallet]) => {
-        if (ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
-          logger.log(`&&& maybeUpdateProfileOwnership: trueOwner: ${trueOwner}, wallet.address: ${wallet.address}, wallet.id: ${wallet.id}, profile.tokenId: ${profile.tokenId}, profile.id: ${profile.id}`)
+        if (profile.ownerWalletId && ethers.utils.getAddress(trueOwner) !== ethers.utils.getAddress(wallet.address)) {
+          logger.log(`maybeUpdateProfileOwnership - trueOwner: ${trueOwner}, wallet.address: ${wallet.address}, wallet.id: ${wallet.id}, profile.tokenId: ${profile.tokenId}, profile.id: ${profile.id}`)
           return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
             .then((wallet: entity.Wallet | undefined) => {
               if (!wallet) {
@@ -269,6 +269,7 @@ const maybeUpdateProfileOwnership = (
             })))
             .then(fp.tap(() => executeUpdateNFTsForProfile(profile.id, chainId)))
         } else {
+          logger.log(`maybeUpdateProfileOwnership part 2 - profile: ${JSON.stringify(profile)}`)
           return profile
         }
       })
