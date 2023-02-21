@@ -94,7 +94,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   }
 
   // activities for filters - pageable result
-  public findActivities = async (query: PageableQuery<TxActivity>, protocol?: ProtocolType)
+  public findActivities = (query: PageableQuery<TxActivity>, protocol?: ProtocolType)
   : Promise<PageableResult<TxActivity>> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
