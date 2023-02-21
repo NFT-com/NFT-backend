@@ -1,8 +1,23 @@
 import * as _lodash from 'lodash'
-import {  In, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import {
+  In,
+  LessThanOrEqual,
+  MoreThan,
+  MoreThanOrEqual,
+  Not,
+  SelectQueryBuilder,
+  UpdateResult,
+} from 'typeorm'
 
 import { NFT, TxActivity, TxTransaction } from '@nftcom/shared/db/entity'
-import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult, ProtocolType } from '@nftcom/shared/defs'
+import {
+  ActivityFilters,
+  ActivityStatus,
+  ActivityType,
+  PageableQuery,
+  PageableResult,
+  ProtocolType,
+} from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 import { TxTransactionRepository } from './index'
@@ -11,6 +26,7 @@ interface EntityNameAndType {
   name: string
   type: string
 }
+
 export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   constructor() {
@@ -125,13 +141,25 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     }
 
     const repositories = new TxTransactionRepository()
-    let saleTxs: TxTransaction[] = []
-    if (remainingFilters[0].walletAddress) {
-      saleTxs = await repositories.findSaleActivities(remainingFilters[0].walletAddress)
+
+    let asRecipientTxs: TxTransaction[] = []
+    if (remainingFilters[0].walletAddress &&
+      (!remainingFilters[0].activityType || remainingFilters[0].activityType === ActivityType.Sale))
+    {
+      asRecipientTxs = await repositories.findRecipientActivitiesForSale(
+        remainingFilters[0].walletAddress,
+        ActivityStatus.Valid,
+        protocol,
+      )
     }
 
-    saleTxs.map((tx) => {
-      filteredActivities.push(tx.activity)
+    asRecipientTxs.map((tx) => {
+      const activityWithTx = tx.activity
+      // activityWithTx = {
+      //   transaction: tx,
+      //   ...tx.activity,
+      // }
+      filteredActivities.push(activityWithTx)
     })
 
     const sortedActivities = _lodash.orderBy(filteredActivities, ['createdAt'], ['desc'])
