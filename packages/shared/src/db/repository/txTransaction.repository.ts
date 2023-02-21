@@ -23,8 +23,6 @@ export class TxTransactionRepository extends BaseRepository<TxTransaction> {
         .where({ transactionType: ActivityType.Sale, taker: address, protocol })
         .orderBy({ 'tx.createdAt': 'DESC' })
         .leftJoinAndSelect('tx.activity', 'activity', 'activity.status = :status', { status })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
         .cache(true)
         .getMany()
     } else {
@@ -32,8 +30,6 @@ export class TxTransactionRepository extends BaseRepository<TxTransaction> {
         .where({ transactionType: ActivityType.Sale, taker: address })
         .orderBy({ 'tx.createdAt': 'DESC' })
         .leftJoinAndSelect('tx.activity', 'activity', 'activity.status = :status', { status })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
         .cache(true)
         .getMany()
     }
