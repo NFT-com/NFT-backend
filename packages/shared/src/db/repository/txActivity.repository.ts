@@ -1,9 +1,11 @@
+import * as _lodash from 'lodash'
 import {  In, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
-import { NFT, TxActivity } from '@nftcom/shared/db/entity'
+import { NFT, TxActivity, TxTransaction } from '@nftcom/shared/db/entity'
 import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
+import { TxTransactionRepository } from './index'
 
 interface EntityNameAndType {
   name: string
@@ -101,31 +103,65 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         .andWhere('activity.nftId @> ARRAY[:...nftId]', { nftId: nftIds })
     }
 
+    let filteredActivities
     if (protocol) {
-      return queryBuilder
-        .orderBy(query.orderBy)
-        .take(query.take)
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
+      filteredActivities = await queryBuilder.leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
           'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
         .leftJoinAndMapOne('activity.cancel', 'TxCancel',
           'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
         .cache(true)
-        .getManyAndCount()
+        .getMany()
     } else {
-      return queryBuilder
-        .orderBy(query.orderBy)
-        .take(query.take)
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+      filteredActivities = await queryBuilder.leftJoinAndMapOne('activity.order', 'TxOrder',
+        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
         .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
           'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
         .leftJoinAndMapOne('activity.cancel', 'TxCancel',
           'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
         .cache(true)
-        .getManyAndCount()
+        .getMany()
     }
+
+    const repositories = new TxTransactionRepository()
+    let saleTxs: TxTransaction[] = []
+    if (remainingFilters[0].walletAddress) {
+      saleTxs = await repositories.findSaleActivities(remainingFilters[0].walletAddress)
+    }
+
+    saleTxs.map((tx) => {
+      filteredActivities.push(tx.activity)
+    })
+
+    const sortedActivities = _lodash.orderBy(filteredActivities, ['createdAt'], ['desc'])
+    return [sortedActivities.slice(0, query.take), sortedActivities.length]
+
+    // if (protocol) {
+    //   return queryBuilder
+    //     .orderBy(query.orderBy)
+    //     .take(query.take)
+    //     .leftJoinAndMapOne('activity.order', 'TxOrder',
+    //       'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
+    //     .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+    //       'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
+    //     .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+    //       'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
+    //     .cache(true)
+    //     .getManyAndCount()
+    // } else {
+    //   return queryBuilder
+    //     .orderBy(query.orderBy)
+    //     .take(query.take)
+    //     .leftJoinAndMapOne('activity.order', 'TxOrder',
+    //       'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+    //     .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
+    //       'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+    //     .leftJoinAndMapOne('activity.cancel', 'TxCancel',
+    //       'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+    //     .cache(true)
+    //     .getManyAndCount()
+    // }
   }
 
   // activities for collection
