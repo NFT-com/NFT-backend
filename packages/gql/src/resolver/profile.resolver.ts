@@ -279,7 +279,7 @@ const maybeUpdateProfileOwnership = (
         }
       })
       .catch((e) => {
-        logger.log(`maybeUpdateProfileOwnership part 3 - error: ${JSON.stringify(e)}`)
+        logger.log(`[ERROR] maybeUpdateProfileOwnership part 3 - error: ${JSON.stringify(e)}`)
         return profile
       })
   }
