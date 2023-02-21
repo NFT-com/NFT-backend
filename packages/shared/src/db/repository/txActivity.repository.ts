@@ -269,13 +269,19 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   public findActivitiesNotExpired = (
     activityType: ActivityType,
-    updatedAt?: Date,
+    opts: {
+      nftContract?: string
+      updatedAt?: Date
+    },
   ): Promise<TxActivity[]> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
 
+    const { nftContract, updatedAt } = opts
+
     const queryObj = {
       activityType,
+      nftContract,
       status: ActivityStatus.Valid,
       expiration: MoreThan(new Date()),
       updatedAt: MoreThanOrEqual(updatedAt),

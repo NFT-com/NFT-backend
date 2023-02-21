@@ -884,7 +884,7 @@ export const sendSlackMessage = (
     }
     return
   } catch (err) {
-    logger.error('error: ', err)
+    logger.error('error in sendSlackMessage: ', err)
     return
   }
 }
@@ -948,14 +948,26 @@ export const fetchDataUsingMulticall = async (
   }
 }
 
-export const getEthUsd = async (): Promise<number> => {
+const toCGId = (symbol: string): string => {
+  return {
+    'ETH': 'ethereum',
+    'WETH': 'weth',
+    'USDC': 'usdc-coin',
+  }[symbol]
+}
+
+const toCBSymbol = (symbol: string): string => {
+  return symbol === 'WETH' ? 'ETH' : symbol
+}
+
+export const getSymbolInUsd = async (symbol: string): Promise<number> => {
   try {
-    const key = 'CACHED_ETH_USD'
+    const key = `CACHED_${symbol}_USD`
     const cachedData = await cache.get(key)
     if (cachedData) {
       return Number(cachedData)
     } else {
-      const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')
+      const cgResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${toCGId(symbol)}&vs_currencies=usd`)
       const cgResult = await cgResponse.json()
       const cgEthUsd = cgResult?.data?.['ethereum']?.['usd']
 
@@ -963,7 +975,7 @@ export const getEthUsd = async (): Promise<number> => {
         await cache.set(key, cgEthUsd, 'EX', 60 * 5) // 5 min
         return Number(cgEthUsd)
       } else {
-        const cbResopnse = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot')
+        const cbResopnse = await fetch(`https://api.coinbase.com/v2/prices/${toCBSymbol(symbol)}-USD/spot`)
         const cbResult = await cbResopnse.json()
         const cbEthUsd = cbResult?.data?.['amount']
         await cache.set(key, cbEthUsd, 'EX', 60 * 10) // 10 min
@@ -1005,7 +1017,6 @@ const getDurationFromNow = (unixTimestamp: number): string => {
 export const createProfile = (
   ctx: Context,
   profile: Partial<entity.Profile>,
-  noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
     .then(fp.thruIfEmpty(() => {
@@ -1030,30 +1041,33 @@ export const createProfile = (
     .then(() => {
       return ctx.repositories.profile.save(profile)
         .then(async (savedProfile: entity.Profile) => {
-          const abi = contracts.NftProfileABI()
-          const calls = [{
-            contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
-            name: 'getExpiryTimeline',
-            params: [[profile.url]],
-          }]
-          const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
-          const timestamp = Number(res[0][0][0])
-          sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
-          
-          if (!noAvatar) {
-            return generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
-              .then((imageURL: string) =>
-                ctx.repositories.profile.updateOneById(
-                  savedProfile.id,
-                  {
-                    photoURL: imageURL,
-                    bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-                    description: `NFT.com profile for ${savedProfile.url}`,
-                  },
-                ))
-          } else {
-            return savedProfile
+          try {
+            const abi = contracts.NftProfileABI()
+            const calls = [{
+              contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
+              name: 'getExpiryTimeline',
+              params: [[profile.url]],
+            }]
+            const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
+            const timestamp = Number(res[0][0][0])
+            sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
+          } catch (err) {
+            logger.error('error while creating profile and sending message: ', err)
           }
+          
+          if (!savedProfile.photoURL) {
+            const imageURL = await generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
+            return ctx.repositories.profile.updateOneById(
+              savedProfile.id,
+              {
+                photoURL: imageURL,
+                bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+                description: `NFT.com profile for ${savedProfile.url}`,
+              },
+            )
+          }
+
+          return savedProfile
         })
     })
 }
@@ -1064,12 +1078,12 @@ export const createProfileFromEvent = async (
   tokenId: BigNumber,
   repositories: db.Repository,
   profileUrl: string,
-  noAvatar?: boolean,
 ): Promise<entity.Profile> => {
   try {
     let wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(owner))
     let user
     if (!wallet) {
+      logger.log('createProfileFromEvent: wallet not found, creating new wallet and user: ', owner, chainId)
       const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
       user = await repositories.user.findOne({
         where: {
@@ -1079,6 +1093,7 @@ export const createProfileFromEvent = async (
       })
 
       if (!user) {
+        logger.log('createProfileFromEvent: user not found, creating new user: ', owner, chainId)
         user = await repositories.user.save({
           // defaults
           username: 'ethereum-' + ethers.utils.getAddress(owner),
@@ -1111,8 +1126,8 @@ export const createProfileFromEvent = async (
       ownerWalletId: wallet.id,
       ownerUserId: wallet.userId,
       chainId: chainId || process.env.CHAIN_ID,
-    }, noAvatar)
-    logger.info('Save incentive action for CREATE_NFT_PROFILE')
+    })
+    logger.log('Save incentive action for CREATE_NFT_PROFILE')
     // save incentive action for CREATE_NFT_PROFILE
     const createProfileAction = await repositories.incentiveAction.findOne({
       where: {
@@ -1128,7 +1143,7 @@ export const createProfileFromEvent = async (
         task: defs.ProfileTask.CREATE_NFT_PROFILE,
         point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
       })
-      logger.info('Saved incentive action for CREATE_NFT_PROFILE')
+      logger.log('Saved incentive action for CREATE_NFT_PROFILE')
     }
     user = await repositories.user.findOne({
       where: {
@@ -1136,7 +1151,7 @@ export const createProfileFromEvent = async (
         username: 'ethereum-' + ethers.utils.getAddress(owner),
       },
     })
-    logger.info('Save incentive action for REFER_NETWORK')
+    logger.log('Save incentive action for REFER_NETWORK')
     //save incentive action for REFER_NETWORK
     if (user && user.referredBy) {
       const referredInfo = user.referredBy.split('::')
@@ -1158,7 +1173,7 @@ export const createProfileFromEvent = async (
               task: defs.ProfileTask.REFER_NETWORK,
               point: defs.ProfileTaskPoint.REFER_NETWORK,
             })
-            logger.info('Saved incentive action for REFER_NETWORK')
+            logger.log('Saved incentive action for REFER_NETWORK')
           }
         }
       }

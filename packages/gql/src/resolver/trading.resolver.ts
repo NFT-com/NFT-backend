@@ -480,11 +480,10 @@ const ownedProfileOrGK = async (
 ): Promise<boolean> => {
   try {
     const gkOwners = await getOwnersOfGenesisKeys(chainId)
-    let index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === ethers.utils.getAddress(address))
-    if (index !== -1) return true
+    const exists = gkOwners[ethers.utils.getAddress(address)]
+    if (exists) return true
     const profileOwners = await getOwnersOfNFTProfile(chainId)
-    index = profileOwners.findIndex((owner) => ethers.utils.getAddress(owner) === ethers.utils.getAddress(address))
-    return index !== -1
+    return profileOwners[ethers.utils.getAddress(address)]
   } catch (err) {
     logger.error('error in ownedProfileOrGK: ', err)
     throw err
