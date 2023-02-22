@@ -319,10 +319,8 @@ const createListing = async (
 const filterListings = (
   _: any,
   args: gql.QueryFilterListingsArgs,
-  ctx: Context,
+  _ctx: Context,
 ): Promise<gql.GetOrders> => {
-  const { repositories } = ctx
-  console.log(repositories)
   logger.debug('filterAsks', { input: args?.input })
   const schema = Joi.object().keys({
     auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
@@ -351,8 +349,8 @@ const filterListings = (
     orderKey = 'createdAt'
     orderDirection = 'ASC'
   }
-  console.log(auctionType, pageInput)
-  console.log(orderKey, orderDirection)
+  logger.log(auctionType, pageInput)
+  logger.log(orderKey, orderDirection)
   return null
 }
 
