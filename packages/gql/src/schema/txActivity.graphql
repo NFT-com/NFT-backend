@@ -12,6 +12,7 @@ enum ActivityType {
   Cancel
   Sale
   Transfer
+  Swap
 }
 
 enum ActivityStatus {
@@ -215,6 +216,7 @@ type TxActivity {
   order: TxOrder
   transaction: TxTransaction
   cancel: TxCancel
+  index: Int
 }
 
 type TxCancel {

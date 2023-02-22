@@ -257,7 +257,7 @@ export const retrieveMultipleOrdersX2Y2 = async (
     logger.error(`Error in retrieveMultipleOrdersX2Y2: ${err}`)
     // Sentry.captureMessage(`Error in retrieveOrdersLooksrare: ${err}`)
   }
-  // console.log('response aggregator', responseAggregator)
+  // logger.log('response aggregator', responseAggregator)
   return responseAggregator
 }
 
