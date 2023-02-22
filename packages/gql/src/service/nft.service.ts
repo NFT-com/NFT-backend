@@ -1576,7 +1576,6 @@ export const syncEdgesWithNFTs = async (
   profileId: string,
 ): Promise<void> => {
   try {
-    const seen = {}
     const edges = await repositories.edge.find({
       where: {
         thisEntityType: defs.EntityType.Profile,
@@ -1589,39 +1588,26 @@ export const syncEdgesWithNFTs = async (
     logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
     // Delete edges where NFT does not exist
-    const edgeIdsToDelete = (await nftLoader.loadMany(edges.map((e) => e.thatEntityId)))
+    const disconnectedEdgeIds: string[] = (await nftLoader.loadMany(edges.map((e) => e.thatEntityId)))
       .reduce((disconnectedEdges, nft, i) => {
         if (!nft) disconnectedEdges.push(edges[i].id)
         return disconnectedEdges
       }, [])
-    await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
-    
-    const duplicatedIds: Array<string> = []
-    await Promise.allSettled(
-      edges.map(async (edge) => {
-        // check duplicates in edges
-        const key = [
-          edge.thisEntityId,
-          edge.thatEntityId,
-          edge.edgeType,
-          edge.thisEntityType,
-          edge.thatEntityType,
-        ].join('-')
 
-        if (seen[key]) {
-          duplicatedIds.push(edge.id)
-        } else {
-          seen[key] = true
-        }
+    const edgeCounts = edges.reduce((counts, edge) => {
+      return counts.set(edge.thatEntityId, (counts.get(edge.thatEntityId) || 0) + 1)
+    }, new Map())
+    const duplicatedIds: string[] = edges
+      .filter((edge) => edgeCounts.get(edge.thatEntityId) > 1)
+      .sort((e1, e2) => e1.thatEntityId > e2.thatEntityId ? 1 : -1)
+      .reduce((duplicatedIds, edge, i, arr) => {
+        if (i > 0 && arr[i-1].thatEntityId === edge.thatEntityId) duplicatedIds.push(edge.id)
+        return duplicatedIds
+      }, [])
 
-        const nft = await nftLoader.load(edge.thatEntityId)
-        if (!nft) {
-          await repositories.edge.hardDelete({ id: edge.id })
-        }
-      }),
-    )
-    if (duplicatedIds.length)
-      await repositories.edge.hardDeleteByIds(duplicatedIds)
+    const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
+    if (edgeIdsToDelete.length)
+      await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
   } catch (err) {
     logger.error(`Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
