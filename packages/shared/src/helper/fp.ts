@@ -1,7 +1,7 @@
-import { _logger } from '.'
+import { Context,Factory } from './logger'
 import { isEmpty, isFalse, isNotEmpty, isTrue } from './misc'
 
-const logger = _logger.Factory('fp', _logger.Context.Misc)
+const logger = Factory('fp', Context.Misc)
 
 // T => any
 type FnT2Any<T> = (value: T) => any
@@ -135,7 +135,7 @@ export const tapCatch = <T>(fn: FnT2Any<T>): FnT2T<T> => {
   return (value: T): T => {
     Promise.resolve()
       .then(() => fn(value))
-      .catch((err) => logger.error('ERROR: tapCatch:', { value, err }))
+      .catch((err) => logger.error({ value, err }, 'ERROR: tapCatch'))
     return value
   }
 }
@@ -260,7 +260,7 @@ export const thruCatch = <T, U>(fn: FnT2K<T, U>): FnT2PromiseK<T, U | null> => {
     return Promise.resolve()
       .then(() => fn(value))
       .catch((err) => {
-        logger.error('ERROR: thru_catch:', { value, err })
+        logger.error({ value, err }, 'ERROR: thru_catch')
         return null
       })
   }
