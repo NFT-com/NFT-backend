@@ -241,7 +241,7 @@ describe('transaction activity resolver', () => {
         } },
       })
 
-      expect(result.data.getActivities?.items?.[0].activityType).toBe(ActivityType.Sale)
+      expect(result.data.getActivities?.items?.[0].activityType).toBe('Purchase')
       expect(result.data.getActivities?.items?.[0].transaction).toBeDefined()
       expect(result.data.getActivities?.items?.[1].order).toBeDefined()
       expect(result.data.getActivities.totalItems).toBe(2)
