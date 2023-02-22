@@ -1,8 +1,7 @@
 import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
-import * as Lodash from 'lodash'
-import { differenceBy } from 'lodash'
+import { chunk, differenceBy } from 'lodash'
 import * as typeorm from 'typeorm'
 import { IsNull } from 'typeorm'
 
@@ -1009,7 +1008,7 @@ export const checkNFTContractAddresses = async (
     if (!nfts.length) {
       return
     }
-    const nftsChunks: entity.NFT[][] = Lodash.chunk(
+    const nftsChunks: entity.NFT[][] = chunk(
       nfts,
       20,
     )
@@ -1068,7 +1067,7 @@ export const updateWalletNFTs = async (
   try {
     const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
     logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
-    const chunks: OwnedNFT[][] = Lodash.chunk(
+    const chunks: OwnedNFT[][] = chunk(
       ownedNFTs,
       10,
     )
