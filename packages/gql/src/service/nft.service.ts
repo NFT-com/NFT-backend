@@ -2,6 +2,8 @@ import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import { chunk, differenceBy } from 'lodash'
+import QueryStream from 'pg-query-stream'
+import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
 import { IsNull } from 'typeorm'
 
@@ -32,7 +34,7 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { nft as nftLoader, nftsByWalletId } from '../dataloader'
+import { nft as nftLoader } from '../dataloader'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -46,7 +48,7 @@ const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner
 const TEST_WALLET_ID = 'test'
 
 let alchemyUrl: string
-let chainId: string
+let chainId = process.env.CHAIN_ID
 
 interface OwnedNFT {
   contract: {
@@ -1266,33 +1268,80 @@ export const hideAllNFTs = async (
   }
 }
 
+const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.NFT[]): Promise<void> => {
+  // filter nfts are not added to edge yet...
+  const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
+  const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
+  // generate weights for nfts...
+  let weight = await getLastWeight(repositories, profileId)
+  const edgesWithWeight = []
+  for (let i = 0; i < nftsToBeAdded.length; i++) {
+    const newWeight = generateWeight(weight)
+    edgesWithWeight.push({
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      thisEntityId: profileId,
+      thatEntityId: nftsToBeAdded[i].id,
+      edgeType: defs.EdgeType.Displays,
+      weight: newWeight,
+      hide: hide,
+    })
+    weight = newWeight
+  }
+  // save nfts to edge...
+  await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+}
 export const saveEdgesWithWeight = async (
-  nfts: entity.NFT[],
   profileId: string,
   hide: boolean,
+  { nfts, walletId }: { nfts?: entity.NFT[]; walletId?: string} = {},
 ): Promise<void> => {
   try {
-    const edgesWithWeight = []
-    // filter nfts are not added to edge yet...
-    const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
-    const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
-    // generate weights for nfts...
-    let weight = await getLastWeight(repositories, profileId)
-    for (let i = 0; i < nftsToBeAdded.length; i++) {
-      const newWeight = generateWeight(weight)
-      edgesWithWeight.push({
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        thatEntityId: nftsToBeAdded[i].id,
-        edgeType: defs.EdgeType.Displays,
-        weight: newWeight,
-        hide: hide,
+    if (nfts) {
+      await saveEdgesForNFTs(profileId, hide, nfts)
+    } else if (walletId) {
+      const pgClient = db.getPgClient(true)
+      await new Promise<void>((resolve, reject) => {
+        pgClient.connect((err, client, done) => {
+          if (err) throw err
+          const batch = []
+          const batchSize = 100
+          const query = new QueryStream(
+            `SELECT
+              *
+            FROM
+              nft
+            WHERE
+              "walletId" = $1
+              AND "chainId" = $2`,
+            [walletId, chainId],
+            { batchSize, highWaterMark: 500 },
+          )
+          const stream = client.query(query)
+          stream.on('end', async () => {
+            if (batch.length) {
+              await saveEdgesForNFTs(profileId, hide, batch.splice(0))
+            }
+            done()
+            resolve()
+          })
+          stream.on('error', (err) => {
+            reject(err)
+          })
+          const saveEdges = new Writable({
+            objectMode: true,
+            async write(nft, _encoding, callback) {
+              batch.push(nft)
+              if (batch.length === batchSize) {
+                await saveEdgesForNFTs(profileId, hide, batch.splice(0, batchSize))
+              }
+              callback()
+            },
+          })
+          stream.pipe(saveEdges)
+        })
       })
-      weight = newWeight
     }
-    // save nfts to edge...
-    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
   } catch (err) {
     logger.error(`Error in saveEdgesWithWeight: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesWithWeight: ${err}`)
@@ -1307,9 +1356,9 @@ export const showAllNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: { walletId, chainId } })
-    if (nfts.length) {
-      await saveEdgesWithWeight(nfts, profileId, false)
+    const nftCount = await repositories.nft.count({ walletId, chainId })
+    if (nftCount) {
+      await saveEdgesWithWeight(profileId, false, { walletId })
       // change hide column to false which ones are true...
       const edges = await repositories.edge.find({
         where: {
@@ -1352,7 +1401,7 @@ export const showNFTs = async (
       }),
     )
     if (nfts.length) {
-      await saveEdgesWithWeight(nfts, profileId, false)
+      await saveEdgesWithWeight(profileId, false, { nfts })
       // change hide column to false which ones are true...
       await Promise.allSettled(
         nfts.map(async (nft: entity.NFT) => {
@@ -1560,12 +1609,15 @@ export const updateEdgesWeightForProfile = async (
   walletId: string,
 ): Promise<void> => {
   try {
-    const nfts = await nftsByWalletId.load(walletId)
-    logger.log('NFTS', nfts, { walletId })
-    if (!nfts.length) return
+    const nftCount = repositories.nft.count({
+      walletId: walletId,
+      chainId: chainId,
+    })
+    logger.debug({ nftCount, profileId, walletId }, 'updateEdgesWeightForProfile')
+    if (!nftCount) return
     await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
-    await saveEdgesWithWeight(nfts, profileId, true)
+    await saveEdgesWithWeight(profileId, true, { walletId })
   } catch (err) {
     logger.error(`Error in updateEdgesWeightForProfile: ${err}`)
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
