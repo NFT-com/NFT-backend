@@ -1588,6 +1588,14 @@ export const syncEdgesWithNFTs = async (
 
     logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
+    // Delete edges where NFT does not exist
+    const edgeIdsToDelete = (await nftLoader.loadMany(edges.map((e) => e.thatEntityId)))
+      .reduce((disconnectedEdges, nft, i) => {
+        if (!nft) disconnectedEdges.push(edges[i].id)
+        return disconnectedEdges
+      }, [])
+    await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
+    
     const duplicatedIds: Array<string> = []
     await Promise.allSettled(
       edges.map(async (edge) => {
