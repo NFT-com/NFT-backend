@@ -2,6 +2,7 @@ import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import * as Lodash from 'lodash'
+import { differenceBy } from 'lodash'
 import * as typeorm from 'typeorm'
 import { IsNull } from 'typeorm'
 
@@ -1274,7 +1275,8 @@ export const saveEdgesWithWeight = async (
   try {
     const edgesWithWeight = []
     // filter nfts are not added to edge yet...
-    const nftsToBeAdded = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
+    const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
+    const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
     // generate weights for nfts...
     let weight = await getLastWeight(repositories, profileId)
     for (let i = 0; i < nftsToBeAdded.length; i++) {
