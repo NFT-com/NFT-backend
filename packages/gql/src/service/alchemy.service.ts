@@ -2,7 +2,10 @@ import axios from 'axios'
 import { ethers } from 'ethers'
 
 import { cache } from '@nftcom/cache'
+import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+const logger = _logger.Factory('alchemy.service', _logger.Context.GraphQL)
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
@@ -85,11 +88,11 @@ const getTxReceipts = async (
       const result = res.data.result
       return result?.['receipts']
     } else {
-      console.log(res.data.error)
+      logger.log(res.data.error)
       return []
     }
   } catch (err) {
-    console.log('error in getTxReceipts err: ', err)
+    logger.error('error in getTxReceipts err: ', err)
     return []
   }
 }
@@ -129,6 +132,6 @@ export const getCollectionDeployer = async (
       }
     }
   } catch (err) {
-    console.log('error in getCollectionDeployer: ', err)
+    logger.error('error in getCollectionDeployer: ', err)
   }
 }
