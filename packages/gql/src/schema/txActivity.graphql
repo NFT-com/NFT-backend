@@ -13,6 +13,7 @@ enum ActivityType {
   Sale
   Transfer
   Swap
+  Purchase
 }
 
 enum ActivityStatus {
