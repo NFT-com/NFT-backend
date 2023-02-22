@@ -1594,6 +1594,7 @@ export const syncEdgesWithNFTs = async (
         return disconnectedEdges
       }, [])
 
+    // Delete edges that are duplicate connections on an NFT
     const edgeCounts = edges.reduce((counts, edge) => {
       return counts.set(edge.thatEntityId, (counts.get(edge.thatEntityId) || 0) + 1)
     }, new Map())
