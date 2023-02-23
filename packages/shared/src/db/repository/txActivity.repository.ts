@@ -1,7 +1,23 @@
-import {  In, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
+import * as _lodash from 'lodash'
+import {
+  In,
+  LessThanOrEqual,
+  MoreThan,
+  MoreThanOrEqual,
+  Not,
+  SelectQueryBuilder,
+  UpdateResult,
+} from 'typeorm'
 
 import { NFT, TxActivity } from '@nftcom/shared/db/entity'
-import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult, ProtocolType } from '@nftcom/shared/defs'
+import {
+  ActivityFilters,
+  ActivityStatus,
+  ActivityType,
+  PageableQuery,
+  PageableResult,
+  ProtocolType,
+} from '@nftcom/shared/defs'
 
 import { BaseRepository } from './base.repository'
 
@@ -9,6 +25,7 @@ interface EntityNameAndType {
   name: string
   type: string
 }
+
 export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   constructor() {
@@ -252,13 +269,19 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
 
   public findActivitiesNotExpired = (
     activityType: ActivityType,
-    updatedAt?: Date,
+    opts: {
+      nftContract?: string
+      updatedAt?: Date
+    },
   ): Promise<TxActivity[]> => {
     const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
       .createQueryBuilder('activity')
 
+    const { nftContract, updatedAt } = opts
+
     const queryObj = {
       activityType,
+      nftContract,
       status: ActivityStatus.Valid,
       expiration: MoreThan(new Date()),
       updatedAt: MoreThanOrEqual(updatedAt),

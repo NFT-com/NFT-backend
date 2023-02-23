@@ -1,14 +1,17 @@
 import { BigNumber } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
+import * as _lodash from 'lodash'
 import { In, Not, UpdateResult } from 'typeorm'
 
+import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, txActivityError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
-import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
+import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { defs, entity, helper } from '@nftcom/shared'
+import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 type TxActivityDAO = entity.TxActivity & {
@@ -330,15 +333,60 @@ const getActivities = async (
       .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
   }
 
-  return paginatedActivitiesBy(
-    repositories.txActivity,
-    pageInput,
-    safefilters,
-    [],
-    'createdAt',
-    'DESC',
-  )
-    .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
+  const cacheKey = `${CacheKeys.GET_ACTIVITIES}_${JSON.stringify(safefilters)}`
+  let indexedActivities: gql.TxActivity[] = []
+  const cachedData = await cache.get(cacheKey)
+  if (cachedData) {
+    indexedActivities = JSON.parse(cachedData) as gql.TxActivity[]
+  } else {
+    // query activities
+    const orderBy = <defs.OrderBy>{ ['activity.updatedAt']: 'DESC' }
+    const activities = await repositories.txActivity.findActivities({
+      filters: safefilters,
+      orderBy,
+      relations: [],
+      take: 0,
+    })
+    const filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
+    // find transaction activities for wallet address as recipient
+    let asRecipientTxs: entity.TxTransaction[] = []
+    if (safefilters[0].walletAddress &&
+      (!safefilters[0].activityType || safefilters[0].activityType === ActivityType.Sale ||
+        safefilters[0].activityType === ActivityType.Transfer ||
+        safefilters[0].activityType === ActivityType.Swap
+      ))
+    {
+      asRecipientTxs = await repositories.txTransaction.findRecipientTxs(
+        safefilters[0].activityType,
+        safefilters[0].walletAddress,
+        ActivityStatus.Valid,
+      )
+    }
+
+    asRecipientTxs.map((tx) => {
+      const activity = tx.activity as gql.TxActivity
+      activity.activityType = gql.ActivityType.Purchase
+      filteredActivities.push(activity)
+    })
+
+    // sort and return
+    const sortedActivities = _lodash.orderBy(filteredActivities, ['updatedAt'], ['desc'])
+    let index = 0
+    sortedActivities.map((activity) => {
+      indexedActivities.push({
+        index,
+        ...activity,
+      })
+      index++
+    })
+    await cache.set(
+      cacheKey,
+      JSON.stringify(indexedActivities),
+      'EX',
+      3 * 60, // 3 min
+    )
+  }
+  return paginatedResultFromIndexedArray(indexedActivities, pageInput)
 }
 
 const fulfillActivitiesNFTId = async (

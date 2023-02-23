@@ -9,7 +9,7 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
 import { coins,joi } from '@nftcom/gql/helper'
-import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
+import { getSymbolInUsd, paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -84,13 +84,7 @@ const parsePriceDetailFromAsset = async (
     decimals = 18
   }
 
-  let currentETHPrice
-  try {
-    currentETHPrice = (await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'))
-      .data?.['ethereum']?.['usd']
-  } catch (err) {
-    logger.warn(err, 'unable to get eth price from coingecko')
-  }
+  const currentETHPrice = await getSymbolInUsd('ETH')
 
   logger.info(`decimals: ${decimals}`)
   const price = new BN(value).shiftedBy(-decimals)

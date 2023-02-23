@@ -32,6 +32,7 @@ export enum CacheKeys {
   GET_TX_BY_CONTRACT = 'get_tx_by_contract',
   GET_TX_BY_NFT = 'get_tx_by_nft',
   PROFILE_OWNER = 'profile_owner',
+  GET_ACTIVITIES = 'get_activities',
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {

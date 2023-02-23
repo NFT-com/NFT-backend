@@ -6,8 +6,8 @@ import * as Typesense from 'typesense'
 import { CollectionSchema, CollectionUpdateSchema } from 'typesense/lib/Typesense/Collection'
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections'
 
-import { searchEngineService } from '@nftcom/gql/service'
-import { _logger, defs,helper, utils } from '@nftcom/shared'
+import { searchEngineService, txActivityService } from '@nftcom/gql/service'
+import { _logger, defs, utils } from '@nftcom/shared'
 import { db } from '@nftcom/shared'
 
 import { mapCollectionData } from './collections'
@@ -94,20 +94,11 @@ class Commander {
     this.pgClient = pgClient
   }
 
-  retrieveListings = async (sinceUpdatedAt?: Date): Promise<any>  => {
-    return (await this.repositories.txActivity.findActivitiesNotExpired(defs.ActivityType.Listing, sinceUpdatedAt))
-      .reduce((map, txActivity: TxActivityDAO) => {
-        if (helper.isNotEmpty(txActivity.order.protocolData) && txActivity.nftId.length) {
-          const nftIdParts = txActivity.nftId[0].split('/')
-          const k = `${nftIdParts[1]}-${nftIdParts[2]}`
-          if (map[k]?.length) {
-            map[k].push(txActivity)
-          } else {
-            map[k] = [txActivity]
-          }
-        }
-        return map
-      }, {})
+  retrieveListings = async (opts?: { nftContract?: string; sinceUpdatedAt?: Date }): Promise<any>  => {
+    const { nftContract, sinceUpdatedAt } = opts
+    return txActivityService.listingMapFrom(await this.repositories.txActivity
+      .findActivitiesNotExpired(
+        defs.ActivityType.Listing, { nftContract, updatedAt: sinceUpdatedAt }) as TxActivityDAO[])
   }
 
   reindexNFTsByContract = async (contractAddr: string, listingMap?: any): Promise<void> => {
@@ -349,7 +340,7 @@ class Commander {
     }
 
     const listings = []
-    const listingMap = await this.retrieveListings(new Date(timestamp))
+    const listingMap = await this.retrieveListings({ sinceUpdatedAt: new Date(timestamp) })
     for (const key in listingMap) {
       listings.push(...listingMap[key])
     }

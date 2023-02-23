@@ -1,7 +1,11 @@
 import axios from 'axios'
 import { ethers } from 'ethers'
 
+import { cache } from '@nftcom/cache'
+import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+const logger = _logger.Factory('alchemy.service', _logger.Context.GraphQL)
 
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
@@ -84,11 +88,11 @@ const getTxReceipts = async (
       const result = res.data.result
       return result?.['receipts']
     } else {
-      console.log(res.data.error)
+      logger.log(res.data.error)
       return []
     }
   } catch (err) {
-    console.log('error in getTxReceipts err: ', err)
+    logger.error('error in getTxReceipts err: ', err)
     return []
   }
 }
@@ -98,29 +102,36 @@ export const getCollectionDeployer = async (
   chainId: string,
 ): Promise<string | null> => {
   try {
-    chainId = chainId ?? process.env.CHAIN_ID
-    const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
-    const lastBlock = await getLatestBlockNumber(REQUEST_URL)
-
-    const deployedBlockNumber = await binarySearch(
-      REQUEST_URL,
-      0, // start
-      parseInt(lastBlock, 16) - 1, // end
-      contractAddress,
-    )
-
-    const receipts = await getTxReceipts(REQUEST_URL, deployedBlockNumber)
-    const collectionDeployer = receipts?.find(
-      receipt => receipt?.contractAddress === contractAddress.toLowerCase(),
-    )?.from
-    try {
-      const checksummed = ethers.utils.getAddress(collectionDeployer)
-      return checksummed
-    } catch {
-      Sentry.captureMessage('Error in getCollectionDeployer: invalid checksum', collectionDeployer)
-      return null
+    const cacheKey = `DEPLOYER_ADDRESS_${contractAddress}_${chainId}`
+    const cached = await cache.get(cacheKey)
+    if (cached) {
+      return cached
+    } else {
+      chainId = chainId ?? process.env.CHAIN_ID
+      const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
+      const lastBlock = await getLatestBlockNumber(REQUEST_URL)
+  
+      const deployedBlockNumber = await binarySearch(
+        REQUEST_URL,
+        0, // start
+        parseInt(lastBlock, 16) - 1, // end
+        contractAddress,
+      )
+  
+      const receipts = await getTxReceipts(REQUEST_URL, deployedBlockNumber)
+      const collectionDeployer = receipts?.find(
+        receipt => receipt?.contractAddress === contractAddress.toLowerCase(),
+      )?.from
+      try {
+        const checksummed = ethers.utils.getAddress(collectionDeployer)
+        await cache.set(cacheKey, checksummed)
+        return checksummed
+      } catch {
+        Sentry.captureMessage('Error in getCollectionDeployer: invalid checksum', collectionDeployer)
+        return null
+      }
     }
   } catch (err) {
-    console.log('error in getCollectionDeployer: ', err)
+    logger.error('error in getCollectionDeployer: ', err)
   }
 }
