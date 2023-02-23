@@ -895,6 +895,11 @@ export type Call = {
   params?: any[]
 }
 
+export interface MulticallResponse {
+  success: boolean
+  returnData: string
+}
+
 /**
  * Fetches information about pools and return as `Pair` array using multicall contract.
  * @param calls 'Call' array
@@ -910,15 +915,21 @@ export const fetchDataUsingMulticall = async (
   calls: Array<Call>,
   abi: any[],
   chainId: string,
-): Promise<Array<Result | undefined>> => {
+  returnRawResults?: boolean,
+  customProvider?: ethers.providers.BaseProvider,
+): Promise<Array<Result | MulticallResponse | undefined>> => {
   try {
     const multicall2ABI = contracts.Multicall2ABI()
+    let callProvider = provider.provider(Number(chainId))
+    if (customProvider) {
+      callProvider = customProvider
+    }
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
       multicallAddress.toLowerCase(),
       multicall2ABI,
-      provider.provider(Number(chainId)),
+      callProvider,
     )
     const abiInterface = new ethers.utils.Interface(abi)
     const callData = calls.map((call) => [
@@ -926,9 +937,12 @@ export const fetchDataUsingMulticall = async (
       abiInterface.encodeFunctionData(call.name, call.params),
     ])
     // 2. get bytes array from multicall contract by process aggregate method...
-    const results: { success: boolean; returnData: string }[] =
+    const results: MulticallResponse[] =
       await multicallContract.tryAggregate(false, callData)
 
+    if (returnRawResults) {
+      return results
+    }
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
       if (result.returnData === '0x') {
