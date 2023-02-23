@@ -238,14 +238,13 @@ const maybeUpdateProfileOwnership = (
       .then(([trueOwner, oldOwnerWallet]: [string | undefined, entity.Wallet | undefined]) => {
         if (!trueOwner) throw Error('maybeUpdateProfileOwnership - trueOwner is null')
 
-        logger.log(`maybeUpdateProfileOwnership - trueOwner: ${trueOwner}, oldOwnerWallet.address: ${oldOwnerWallet?.address}, oldOwnerWallet.id: ${oldOwnerWallet?.id}, profile.tokenId: ${profile?.tokenId}, profile.id: ${profile?.id}`)
         return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
           .then((trueOwnerWalletId: entity.Wallet | undefined) => {
             if (!trueOwnerWalletId) {
-              logger.log('maybeUpdateProfileOwnership - null trueOwnerWalletId')
+              logger.log('[ERROR] maybeUpdateProfileOwnership: null trueOwnerWalletId')
               return Promise.all([undefined, undefined])
             } else {
-              logger.log('maybeUpdateProfileOwnership - trueOwnerWalletId valid')
+              logger.log(`maybeUpdateProfileOwnership: for profile/${profile.url} - oldOwnerWallet.address: ${oldOwnerWallet?.address} (walletId = ${oldOwnerWallet?.id}) => trueOwner.address: ${trueOwner} (walletId = ${trueOwnerWalletId})`)
               if (!trueOwnerWalletId.userId) return Promise.all([undefined, undefined])
               return Promise.all([
                 ctx.repositories.user.findById(trueOwnerWalletId.userId),
@@ -277,7 +276,7 @@ const maybeUpdateProfileOwnership = (
           .then(fp.tap(() => executeUpdateNFTsForProfile(profile.id, chainId)))
       })
       .catch((e) => {
-        logger.log(`[ERROR] maybeUpdateProfileOwnership part 3 - error: ${JSON.stringify(e)}`)
+        logger.log(`[ERROR] maybeUpdateProfileOwnership uncaught error - ${JSON.stringify(e)}`)
         return profile
       })
   }
