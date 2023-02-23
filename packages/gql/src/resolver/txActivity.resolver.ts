@@ -347,7 +347,7 @@ const getActivities = async (
       relations: [],
       take: 0,
     })
-    const filteredActivities = activities[0]
+    const filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
     if (safefilters[0].walletAddress &&
@@ -364,7 +364,9 @@ const getActivities = async (
     }
 
     asRecipientTxs.map((tx) => {
-      filteredActivities.push(tx.activity)
+      const activity = tx.activity as gql.TxActivity
+      activity.activityType = gql.ActivityType.Purchase
+      filteredActivities.push(activity)
     })
 
     // sort and return
