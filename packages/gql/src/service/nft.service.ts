@@ -220,6 +220,44 @@ export const getNFTsFromAlchemy = async (
   }
 }
 
+export const getNFTsFromAlchemyPage = async (
+  owner: string,
+  { contracts, withMetadata = true, pageKey }: {
+    contracts?: string[]
+    withMetadata?: boolean
+    pageKey?: string
+  } = {},
+): Promise<[OwnedNFT[], string | undefined]> => {
+  try {
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    let queryParams = `owner=${owner}`
+
+    if (contracts) {
+      queryParams += `&contractAddresses[]=${contracts}`
+    }
+
+    if (withMetadata) {
+      queryParams += `&withMetadata=${withMetadata}`
+    }
+
+    if (pageKey) {
+      queryParams += `&pageKey=${pageKey}`
+    }
+
+    const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
+
+    if (response?.data?.ownedNfts) {
+      return [response.data.ownedNfts as OwnedNFT[], response.data.pageKey]
+    } else {
+      return [[], undefined]
+    }
+  } catch (err) {
+    logger.error(err, 'Error in getNFTsFromAlchemyPage')
+    Sentry.captureMessage(`Error in getNFTsFromAlchemyPage: ${err}`)
+    throw err
+  }
+}
+
 export const getOwnersForNFT = async (
   nft: typeorm.DeepPartial<entity.NFT>,
 ): Promise<string[]> => {
@@ -1066,32 +1104,36 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
-    const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
-    logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
-    const chunks: OwnedNFT[][] = chunk(
-      ownedNFTs,
-      10,
-    )
-    const savedNFTs: entity.NFT[] = []
-    await Promise.allSettled(
-      chunks.map(async (chunk: OwnedNFT[]) => {
-        try {
-          await Promise.allSettled(
-            chunk.map(async (nft) => {
-              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
-              if (savedNFT) savedNFTs.push(savedNFT)
-            }),
-          )
-        } catch (err) {
-          logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Error in updateWalletNFTs: ${err}`)
-          Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
-        }
-      }))
-    if (savedNFTs.length) {
-      logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `Updating collection and Syncing search index for wallet ${wallet.address}`)
-      await updateCollectionForNFTs(savedNFTs)
-      await indexNFTsOnSearchEngine(savedNFTs)
-    }
+    let pageKey = undefined
+    do {
+      const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
+      pageKey = nextPageKey
+      logger.debug({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
+      const chunks: OwnedNFT[][] = chunk(
+        ownedNFTs,
+        20,
+      )
+      const savedNFTs: entity.NFT[] = []
+      await Promise.allSettled(
+        chunks.map(async (chunk: OwnedNFT[]) => {
+          try {
+            await Promise.allSettled(
+              chunk.map(async (nft) => {
+                const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+                if (savedNFT) savedNFTs.push(savedNFT)
+              }),
+            )
+          } catch (err) {
+            logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Error in updateWalletNFTs: ${err}`)
+            Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+          }
+        }))
+      if (savedNFTs.length) {
+        logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `Updating collection and Syncing search index for wallet ${wallet.address}`)
+        await updateCollectionForNFTs(savedNFTs)
+        await indexNFTsOnSearchEngine(savedNFTs)
+      }
+    } while (pageKey)
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
     Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
