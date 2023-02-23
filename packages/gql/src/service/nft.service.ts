@@ -17,6 +17,7 @@ import {
   contentTypeFromExt,
   extensionFromFilename,
   fetchWithTimeout,
+  findDuplicatesByProperty,
   generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
@@ -1714,16 +1715,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
     }, [])
 
   // Delete edges that are duplicate connections on an NFT
-  const edgeCounts = edges.reduce((counts, edge) => {
-    return counts.set(edge.thatEntityId, (counts.get(edge.thatEntityId) || 0) + 1)
-  }, new Map())
-  const duplicatedIds: string[] = edges
-    .filter((edge) => edgeCounts.get(edge.thatEntityId) > 1)
-    .sort((e1, e2) => e1.thatEntityId > e2.thatEntityId ? 1 : -1)
-    .reduce((duplicatedIds, edge, i, arr) => {
-      if (i > 0 && arr[i-1].thatEntityId === edge.thatEntityId) duplicatedIds.push(edge.id)
-      return duplicatedIds
-    }, [])
+  const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map((e) => e.id)
 
   const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
   if (edgeIdsToDelete.length)
