@@ -105,7 +105,7 @@ export class NFTRepository extends BaseRepository<NFT> {
       edge.hide AS "isHide"
     FROM
       edge
-      JOIN nft ON nft.id = edge. "thatEntityId"
+      JOIN nft ON nft.id = edge."thatEntityId"
       JOIN collection ON collection.contract = nft.contract
     WHERE
       edge."thisEntityType" = 'Profile'

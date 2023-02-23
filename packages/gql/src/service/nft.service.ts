@@ -5,7 +5,6 @@ import { chunk, differenceBy } from 'lodash'
 import QueryStream from 'pg-query-stream'
 import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
-import { IsNull } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
@@ -1575,33 +1574,70 @@ export const updateNFTsOrder = async (
   }
 }
 
+const fillEdgesWithWeight = async (profileId, nullEdges: entity.Edge[], weight?: string): Promise<string> => {
+  // fill weight of edges which have null as weight...
+  weight ??= await getLastWeight(repositories, profileId)
+  const edgesWithWeight: EdgeWithWeight[] = []
+  for (let i = 0; i < nullEdges.length; i++) {
+    const newWeight = generateWeight(weight)
+    edgesWithWeight.push({
+      id: nullEdges[i].id,
+      weight: newWeight,
+      hide: nullEdges[i].hide ?? false,
+    })
+    weight = newWeight
+  }
+  await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+  return weight
+}
 export const updateEdgesWithNullWeight = async (
   profileId: string,
 ): Promise<void> => {
-  const nullEdges = await repositories.edge.find({
-    where: {
-      thisEntityType: defs.EntityType.Profile,
-      thatEntityType: defs.EntityType.NFT,
-      thisEntityId: profileId,
-      edgeType: defs.EdgeType.Displays,
-      weight: IsNull(),
-    },
-  })
-  if (nullEdges.length) {
-    // fill weight of edges which have null as weight...
-    let weight = await getLastWeight(repositories, profileId)
-    const edgesWithWeight: EdgeWithWeight[] = []
-    for (let i = 0; i < nullEdges.length; i++) {
-      const newWeight = generateWeight(weight)
-      edgesWithWeight.push({
-        id: nullEdges[i].id,
-        weight: newWeight,
-        hide: nullEdges[i].hide ?? false,
+  const pgClient = db.getPgClient(true)
+  await new Promise<void>((resolve, reject) => {
+    pgClient.connect((err, client, done) => {
+      if (err) throw err
+      const batch = []
+      const batchSize = 100
+      let lastWeight: string = undefined
+      const query = new QueryStream(
+        `SELECT
+          *
+        FROM
+          edge
+        WHERE
+          "thisEntityId" = $1
+          AND "thisEntityType" = '${defs.EntityType.Profile}'
+          AND "thatEntityType" = '${defs.EntityType.NFT}'
+          AND "edgeType" = '${defs.EdgeType.Displays}'
+          AND "weight" IS NULL`,
+        [profileId],
+        { batchSize, highWaterMark: 500 },
+      )
+      const stream = client.query(query)
+      stream.on('end', async () => {
+        if (batch.length) {
+          await fillEdgesWithWeight(profileId, batch.splice(0), lastWeight)
+        }
+        done()
+        resolve()
       })
-      weight = newWeight
-    }
-    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
-  }
+      stream.on('error', (err) => {
+        reject(err)
+      })
+      const fillWeights = new Writable({
+        objectMode: true,
+        async write(nft, _encoding, callback) {
+          batch.push(nft)
+          if (batch.length === batchSize) {
+            lastWeight = await fillEdgesWithWeight(profileId, batch.splice(0, batchSize), lastWeight)
+          }
+          callback()
+        },
+      })
+      stream.pipe(fillWeights)
+    })
+  })
 }
 
 export const updateEdgesWeightForProfile = async (
