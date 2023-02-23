@@ -168,6 +168,44 @@ export const getAlchemyInterceptor = (
   return alchemyInstance
 }
 
+export const getNFTsFromAlchemyPage = async (
+  owner: string,
+  { contracts, withMetadata = true, pageKey }: {
+    contracts?: string[]
+    withMetadata?: boolean
+    pageKey?: string
+  } = {},
+): Promise<[OwnedNFT[], string | undefined]> => {
+  try {
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    let queryParams = `owner=${owner}`
+
+    if (contracts) {
+      queryParams += `&contractAddresses[]=${contracts}`
+    }
+
+    if (withMetadata) {
+      queryParams += `&withMetadata=${withMetadata}`
+    }
+
+    if (pageKey) {
+      queryParams += `&pageKey=${pageKey}`
+    }
+
+    const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
+
+    if (response?.data?.ownedNfts) {
+      return [response.data.ownedNfts as OwnedNFT[], response.data.pageKey]
+    } else {
+      return [[], undefined]
+    }
+  } catch (err) {
+    logger.error(err, 'Error in getNFTsFromAlchemyPage')
+    Sentry.captureMessage(`Error in getNFTsFromAlchemyPage: ${err}`)
+    throw err
+  }
+}
+
 export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
@@ -217,44 +255,6 @@ export const getNFTsFromAlchemy = async (
   } catch (err) {
     logger.error(`Error in getNFTsFromAlchemy: ${err}`)
     Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
-    throw err
-  }
-}
-
-export const getNFTsFromAlchemyPage = async (
-  owner: string,
-  { contracts, withMetadata = true, pageKey }: {
-    contracts?: string[]
-    withMetadata?: boolean
-    pageKey?: string
-  } = {},
-): Promise<[OwnedNFT[], string | undefined]> => {
-  try {
-    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
-    let queryParams = `owner=${owner}`
-
-    if (contracts) {
-      queryParams += `&contractAddresses[]=${contracts}`
-    }
-
-    if (withMetadata) {
-      queryParams += `&withMetadata=${withMetadata}`
-    }
-
-    if (pageKey) {
-      queryParams += `&pageKey=${pageKey}`
-    }
-
-    const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
-
-    if (response?.data?.ownedNfts) {
-      return [response.data.ownedNfts as OwnedNFT[], response.data.pageKey]
-    } else {
-      return [[], undefined]
-    }
-  } catch (err) {
-    logger.error(err, 'Error in getNFTsFromAlchemyPage')
-    Sentry.captureMessage(`Error in getNFTsFromAlchemyPage: ${err}`)
     throw err
   }
 }
@@ -1029,46 +1029,6 @@ export const updateNFTOwnershipAndMetadata = async (
   }
 }
 
-/**
- * Gets all the NFTs in the database owned by this user,
- * and cross-references them with new Alchemy data.
- */
-export const checkNFTContractAddresses = async (
-  userId: string,
-  walletId: string,
-  walletAddress: string,
-  chainId: string,
-): Promise<void> => {
-  try {
-    const nfts = await repositories.nft.find({ where: {
-      userId: userId,
-      walletId: walletId,
-      chainId: chainId,
-    } })
-    if (!nfts.length) {
-      return
-    }
-    const nftsChunks: entity.NFT[][] = chunk(
-      nfts,
-      20,
-    )
-    await Promise.allSettled(
-      nftsChunks.map(async (nftChunk: entity.NFT[]) => {
-        try {
-          await filterNFTsWithAlchemy(nftChunk, walletAddress)
-        } catch (err) {
-          logger.error(`Error in checkNFTContractAddresses: ${err}`)
-          Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
-        }
-      }),
-    )
-  } catch (err) {
-    logger.error(`Error in checkNFTContractAddresses: ${err}`)
-    Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
-    return
-  }
-}
-
 export const indexNFTsOnSearchEngine = async (
   nfts: Array<entity.NFT>,
 ): Promise<void> => {
@@ -1138,6 +1098,46 @@ export const updateWalletNFTs = async (
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
     Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+  }
+}
+
+/**
+ * Gets all the NFTs in the database owned by this user,
+ * and cross-references them with new Alchemy data.
+ */
+export const checkNFTContractAddresses = async (
+  userId: string,
+  walletId: string,
+  walletAddress: string,
+  chainId: string,
+): Promise<void> => {
+  try {
+    const nfts = await repositories.nft.find({ where: {
+      userId: userId,
+      walletId: walletId,
+      chainId: chainId,
+    } })
+    if (!nfts.length) {
+      return
+    }
+    const nftsChunks: entity.NFT[][] = chunk(
+      nfts,
+      20,
+    )
+    await Promise.allSettled(
+      nftsChunks.map(async (nftChunk: entity.NFT[]) => {
+        try {
+          await filterNFTsWithAlchemy(nftChunk, walletAddress)
+        } catch (err) {
+          logger.error(`Error in checkNFTContractAddresses: ${err}`)
+          Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
+        }
+      }),
+    )
+  } catch (err) {
+    logger.error(`Error in checkNFTContractAddresses: ${err}`)
+    Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
+    return
   }
 }
 
@@ -2060,36 +2060,43 @@ export const saveProfileScore = async (
   profile: entity.Profile,
 ): Promise<void> => {
   try {
+    let start = new Date().getTime()
     const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
+
     // get genesis key numbers
     const gkNFTs = await repositories.nft.find({
       where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
     })
+
+    logger.info(`saveProfileScore: Time taken to get gkNFTs: ${new Date().getTime() - start} ms`)
+    start = new Date().getTime()
+
     // get collections
     const nfts = await repositories.nft.find({
       where: { userId: profile.ownerUserId, chainId: profile.chainId },
     })
 
-    const collections = nfts.reduce((acc, nft) => {
-      if (acc.indexOf(nft.contract) === -1) {
-        acc.push(nft.contract)
-      }
-      return acc
-    }, [])
+    logger.info(`saveProfileScore: Time taken to get nfts: ${new Date().getTime() - start} ms`)
+    start = new Date().getTime()
+
+    // get unique nft.contract from nfts with
+    const collections = [...new Set(nfts.map((nft) => nft.contract))]
     
     // get visible items
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityId: profile.id,
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-        hide: false,
-      },
+    const visibleEdgesCount = await repositories.edge.count({
+      thisEntityId: profile.id,
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      edgeType: defs.EdgeType.Displays,
+      hide: false,
     })
+
+    logger.info(`saveProfileScore: Time taken to get visibleEdgesCount: ${new Date().getTime() - start} ms`)
+    start = new Date().getTime()
+
     const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
     const paddedCollections = collections.length.toString().padStart(5, '0')
-    const score = edges.length.toString().concat(paddedCollections).concat(paddedGK)
+    const score = visibleEdgesCount.toString().concat(paddedCollections).concat(paddedGK)
     await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
   } catch (err) {
     logger.error(`Error in saveProfileScore: ${err}`)
