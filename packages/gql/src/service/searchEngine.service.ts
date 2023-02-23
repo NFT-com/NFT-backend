@@ -7,8 +7,7 @@ import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
 import { getNftName } from './nft.service'
-
-type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+import { getListingCurrencyAddress, getListingPrice, listingMapFrom, TxActivityDAO } from './txActivity.service'
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
@@ -16,43 +15,6 @@ const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
 
 const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
   '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
-
-const getListingPrice = (listing: TxActivityDAO): BigNumber => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.price || 0)
-  }
-  case (defs.ProtocolType.Seaport): {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration
-      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
-  }
-  case (defs.ProtocolType.NFTCOM): {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
-  }
-  }
-}
-
-const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
-    const order = listing?.order?.protocolData
-    return order?.currencyAddress ?? order?.['currency']
-  }
-  case (defs.ProtocolType.Seaport): {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration?.[0]?.token
-  }
-  case (defs.ProtocolType.NFTCOM): {
-    const order = listing?.order?.protocolData
-    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
-  }
-  }
-}
 
 const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 3)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
@@ -72,21 +34,11 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
     try {
-      const listingMap: { [k:string]: TxActivityDAO[] } = (await repos.txActivity
-        .findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
-        .reduce((map, txActivity: TxActivityDAO) => {
-          if (helper.isNotEmpty(txActivity.order?.protocolData)) {
-            const nftIdParts = txActivity.nftId[0].split('/')
-            const k = `${nftIdParts[1]}-${nftIdParts[2]}`
-            if (map[k]?.length) {
-              map[k].push(txActivity)
-            } else {
-              map[k] = [txActivity]
-            }
-          }
-          return map
-        }, {})
-      const nftsToIndex = await Promise.all(nfts.map(async (nft) => {
+      const listingMap: { [k:string]: TxActivityDAO[] } = await listingMapFrom(
+        await repos.txActivity.findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
+        
+      const nftsToIndex = []
+      for (const nft of nfts) {
         const ctx = {
           chain: null,
           network: null,
@@ -96,10 +48,9 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           loaders: null,
         }
 
-        const collection = await core.resolveEntityById<entity.NFT, entity.Collection>(
+        const collection = await core.resolveCollectionById<entity.NFT, entity.Collection>(
           'contract',
           defs.EntityType.NFT,
-          defs.EntityType.Collection,
         )(nft, null, ctx)
 
         const wallet = await core.resolveEntityById<entity.NFT, entity.Wallet>(
@@ -170,7 +121,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         }
 
         const gkExpirationYear = 3021
-        return {
+        nftsToIndex.push({
           id: nft.id,
           nftName: nft.metadata?.name || getNftName(nft.metadata, undefined, { contractMetadata: { name: collection?.name } }, tokenId) || `#${tokenId}`,
           nftType: nft.type,
@@ -185,14 +136,14 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           status: '', //  HasOffers, BuyNow, New, OnAuction
           rarity: parseFloat(nft.rarity) || 0.0,
           isProfile: nft.contract === PROFILE_CONTRACT,
-          isProfileGKMinted: profile?.expireAt.getFullYear() >= gkExpirationYear,
+          isProfileGKMinted: profile?.expireAt ? profile?.expireAt.getFullYear() >= gkExpirationYear : false,
           issuance: collection?.issuanceDate?.getTime() || 0,
           hasListings: listings.length ? 1 : 0,
           listedFloor: 0.0,
           score: _calculateNFTScore(collection, !!listings.length) || 0,
-        }
-      }))
-      return client.insertDocuments('nfts', nftsToIndex)
+        })
+      }
+      return nftsToIndex.length && client.insertDocuments('nfts', nftsToIndex) || true
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err

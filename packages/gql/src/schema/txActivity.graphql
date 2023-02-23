@@ -12,6 +12,8 @@ enum ActivityType {
   Cancel
   Sale
   Transfer
+  Swap
+  Purchase
 }
 
 enum ActivityStatus {
@@ -179,9 +181,27 @@ type TxX2Y2ProtocolData {
   data: String
 }
 
+type TxNFTCOMProtocolData {
+  makeAsset: [MarketplaceAsset]
+  takeAsset: [MarketplaceAsset]
+  swapTransactionId: String
+  acceptedAt: Int
+  rejectedAt: Int
+  listingId: String
+  buyNowTaker: String
+  auctionType: AuctionType
+  signature: Signature
+  salt: Int
+  start: Int
+  end: Int
+  private: Boolean
+  listingOrderId: String
+  bidOrderId: String
+}
 
 
-union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxX2Y2ProtocolData
+
+union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxX2Y2ProtocolData | TxNFTCOMProtocolData
 
 type TxActivity {
   id: ID!
@@ -197,6 +217,7 @@ type TxActivity {
   order: TxOrder
   transaction: TxTransaction
   cancel: TxCancel
+  index: Int
 }
 
 type TxCancel {
@@ -282,18 +303,24 @@ input TxActivitiesInput {
   expirationType: ActivityExpiration
 }
 
+type FulfillActivitiesNFTIdOutput {
+  message: String
+}
+
 extend type Query {
   getActivities(input: TxActivitiesInput): TxActivitiesOutput!
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
-  "AUTHETICATED"
+  "AUTHENTICATED"
   getActivitiesByWalletAddress(walletAddress: String, chainId: String): [TxActivity]
-  "AUTHETICATED"
+  "AUTHENTICATED"
   getActivitiesByWalletAddressAndType(input: TxWalletAddressAndTypeInput): [TxActivity]
 }
 
 extend type Mutation {
-  "AUTHETICATED"
+  "AUTHENTICATED"
   updateReadByIds(ids: [String]!): UpdateReadOutput!
-  "AUTHETICATED"
+  "AUTHENTICATED"
   updateStatusByIds(ids: [String]!, status: ActivityStatus): UpdateReadOutput!
+  "AUTHENTICATED"
+  fulfillActivitiesNFTId(count: Int!): FulfillActivitiesNFTIdOutput!
 }

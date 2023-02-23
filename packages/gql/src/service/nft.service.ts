@@ -225,21 +225,14 @@ export const getOwnersForNFT = async (
   try {
     initiateWeb3(nft.chainId)
     const contract = ethers.utils.getAddress(nft.contract)
-    const key = `getOwnersForNFT_${nft.chainId}_${contract}_${nft.tokenId}`
-    const cachedData = await cache.get(key)
+    
+    const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
+    const response = await axios.get(baseUrl)
 
-    if (cachedData) {
-      return JSON.parse(cachedData) as string[]
+    if (response && response?.data && response.data?.owners) {
+      return response.data.owners as string[]
     } else {
-      const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
-      const response = await axios.get(baseUrl)
-
-      if (response && response?.data && response.data?.owners) {
-        await cache.set(key, JSON.stringify(response.data.owners), 'EX', 60 * 60) // 1 hour
-        return response.data.owners as string[]
-      } else {
-        return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
-      }
+      return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
     }
   } catch (err) {
     logger.error(`Error in getOwnersForNFT: ${err}`)
@@ -1073,9 +1066,10 @@ export const updateWalletNFTs = async (
 ): Promise<void> => {
   try {
     const ownedNFTs = await getNFTsFromAlchemy(wallet.address)
+    logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
     const chunks: OwnedNFT[][] = Lodash.chunk(
       ownedNFTs,
-      20,
+      10,
     )
     const savedNFTs: entity.NFT[] = []
     await Promise.allSettled(
@@ -1088,11 +1082,12 @@ export const updateWalletNFTs = async (
             }),
           )
         } catch (err) {
-          logger.error(`Error in updateWalletNFTs: ${err}`)
+          logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Error in updateWalletNFTs: ${err}`)
           Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
         }
       }))
     if (savedNFTs.length) {
+      logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `Updating collection and Syncing search index for wallet ${wallet.address}`)
       await updateCollectionForNFTs(savedNFTs)
       await indexNFTsOnSearchEngine(savedNFTs)
     }
@@ -1153,14 +1148,14 @@ export const refreshNFTMetadata = async (
 
 export const getOwnersOfGenesisKeys = async (
   chainId: string,
-): Promise<string[]> => {
+): Promise<object> => {
   const contract = contracts.genesisKeyAddress(chainId)
   if (chainId !== '1' && chainId !== '5') return []
   try {
     const key = `${CacheKeys.GENESIS_KEY_OWNERS}_${chainId}`
     const cachedData = await cache.get(key)
     if (cachedData) {
-      return JSON.parse(cachedData) as string[]
+      return JSON.parse(cachedData) as object
     }
     // until Alchemy SDK incorporates this
     // TODO: remove in future
@@ -1168,8 +1163,12 @@ export const getOwnersOfGenesisKeys = async (
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
     if (res && res?.data && res.data?.ownerAddresses) {
       const gkOwners = res.data.ownerAddresses as string[]
-      await cache.set(key, JSON.stringify(gkOwners), 'EX', 60)
-      return gkOwners
+      const gkOwnersObj = gkOwners.reduce((acc, curr) => {
+        acc[checkSumOwner(curr)] = true
+        return acc
+      }, {})
+      await cache.set(key, JSON.stringify(gkOwnersObj), 'EX', 60)
+      return gkOwnersObj
     } else {
       return Promise.reject(`No owner found for genesis key on chain ${chainId}`)
     }
@@ -1208,21 +1207,25 @@ export const executeUpdateNFTsForProfile = async (
 
 export const getOwnersOfNFTProfile = async (
   chainId: string,
-): Promise<string[]> => {
+): Promise<object> => {
   const contract = contracts.nftProfileAddress(chainId)
   if (chainId !== '1' && chainId !== '5') return []
   try {
     const key = `${CacheKeys.NFT_PROFILE_OWNERS}_${chainId}`
     const cachedData = await cache.get(key)
     if (cachedData) {
-      return JSON.parse(cachedData) as string[]
+      return JSON.parse(cachedData) as object
     }
 
     const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
     if (res && res?.data && res.data?.ownerAddresses) {
       const profileOwners = res.data.ownerAddresses as string[]
-      await cache.set(key, JSON.stringify(profileOwners), 'EX', 60)
+      const profileOwnersObj = profileOwners.reduce((acc, curr) => {
+        acc[checkSumOwner(curr)] = true
+        return acc
+      }, {})
+      await cache.set(key, JSON.stringify(profileOwnersObj), 'EX', 60)
       return profileOwners
     } else {
       return Promise.reject(`No owner found for NFT profile on chain ${chainId}`)
@@ -1571,7 +1574,7 @@ export const updateEdgesWeightForProfile = async (
 ): Promise<void> => {
   try {
     const nfts = await nftsByWalletId.load(walletId)
-    console.log('NFTS', nfts, { walletId })
+    logger.log('NFTS', nfts, { walletId })
     if (!nfts.length) return
     await updateEdgesWithNullWeight(profileId)
     // save edges for new nfts...
@@ -1875,8 +1878,8 @@ export const updateGKIconVisibleStatus = async (
   try {
     const gkOwners = await getOwnersOfGenesisKeys(chainId)
     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-    const index = gkOwners.findIndex((owner) => ethers.utils.getAddress(owner) === wallet.address)
-    if (index === -1) {
+    const exists = gkOwners[checkSumOwner(wallet.address)]
+    if (exists) {
       await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
     } else {
       return
@@ -1927,20 +1930,13 @@ export const saveProfileScore = async (
       where: { userId: profile.ownerUserId, chainId: profile.chainId },
     })
 
-    const collections: Array<string> = []
-    await Promise.allSettled(
-      nfts.map(async (nft) => {
-        const collection = await repositories.collection.findOne({
-          where: { contract: nft.contract, chainId: profile.chainId },
-        })
-        if (collection) {
-          const isExisting = collections.find((existingCollection) =>
-            existingCollection === collection.contract,
-          )
-          if (!isExisting) collections.push(collection.contract)
-        }
-      }),
-    )
+    const collections = nfts.reduce((acc, nft) => {
+      if (acc.indexOf(nft.contract) === -1) {
+        acc.push(nft.contract)
+      }
+      return acc
+    }, [])
+    
     // get visible items
     const edges = await repositories.edge.find({
       where: {

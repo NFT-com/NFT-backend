@@ -1,9 +1,10 @@
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
 import { BaseEntity,TxActivity } from '.'
 
+@Index(['taker'])
 @Entity()
 export class TxTransaction extends BaseEntity {
 

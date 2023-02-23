@@ -9,7 +9,7 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
 import { Context, gql } from '@nftcom/gql/defs'
 import { coins,joi } from '@nftcom/gql/helper'
-import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
+import { getSymbolInUsd, paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
 import { fetchData } from '@nftcom/nftport-client'
 import { _logger, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -68,9 +68,9 @@ const findNFTFromAssets = (
   )
 }
 
-const parsePriceDetailFromAsset = (
+const parsePriceDetailFromAsset = async (
   asset: defs.MarketplaceAsset,
-): gql.NFTPortTxByNftPriceDetails => {
+): Promise<gql.NFTPortTxByNftPriceDetails> => {
   const res = defaultAbiCoder.decode(['uint256','uint256'], asset.bytes)
   const value = BigNumber.from(res[0]).toHexString()
   logger.info(`hex value: ${value}`)
@@ -84,11 +84,16 @@ const parsePriceDetailFromAsset = (
     decimals = 18
   }
 
+  const currentETHPrice = await getSymbolInUsd('ETH')
+
   logger.info(`decimals: ${decimals}`)
+  const price = new BN(value).shiftedBy(-decimals)
+  const priceUSD = currentETHPrice ? price.multipliedBy(currentETHPrice) : undefined
   return {
     assetType: asset.standard.assetClass,
     contractAddress: asset.standard.contractAddress,
-    price: new BN(value).shiftedBy(-decimals).toFixed(),
+    price: price.toFixed(),
+    priceUSD: priceUSD.toFixed(),
   }
 }
 
@@ -215,9 +220,9 @@ export const getTxByContract = async (
             marketplace: activityDAO.order.protocol,
           }
           let priceDetails = undefined
-          activityDAO.order.protocolData.makeAsset.map((asset, index) => {
+          for (const [index, asset] of activityDAO.order.protocolData.makeAsset.entries()) {
             if (asset.standard.contractAddress === ethers.utils.getAddress(contractAddress)) {
-              priceDetails = parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
+              priceDetails = await parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
               activity = {
                 ...activity,
                 tokenId: asset.standard.tokenId,
@@ -229,7 +234,7 @@ export const getTxByContract = async (
               }
               txActivities.push(activity)
             }
-          })
+          }
           if (!priceDetails) {
             priceDetails = {
               assetType: null,
@@ -251,9 +256,9 @@ export const getTxByContract = async (
             marketplace: activityDAO.order.protocol,
           }
           let priceDetails = undefined
-          activityDAO.order.protocolData.takeAsset.map((asset, index) => {
+          for (const [index, asset] of activityDAO.order.protocolData.takeAsset.entries()) {
             if (asset.standard.contractAddress === ethers.utils.getAddress(contractAddress)) {
-              priceDetails = parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
+              priceDetails = await parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
               activity = {
                 ...activity,
                 tokenId: asset.standard.tokenId,
@@ -265,7 +270,7 @@ export const getTxByContract = async (
               }
               txActivities.push(activity)
             }
-          })
+          }
           if (!priceDetails) {
             priceDetails = {
               assetType: null,
@@ -279,12 +284,37 @@ export const getTxByContract = async (
             txActivities.push(activity)
           }
         } else if (activityDAO.activityType === 'Cancel') {
-          activity = {
-            ...activity,
-            transactionHash: activityDAO.cancel.transactionHash,
-            marketplace: activityDAO.cancel.exchange,
+          const order = await repositories.txOrder.findOne({ where: { orderHash: activityDAO.cancel.foreignKeyId } })
+          let priceDetails = undefined
+          for (const [index, asset] of order.protocolData.makeAsset.entries()) {
+            if (asset.standard.contractAddress === ethers.utils.getAddress(contractAddress)) {
+              priceDetails = await parsePriceDetailFromAsset(order.protocolData.takeAsset[index])
+              activity = {
+                ...activity,
+                transactionHash: activityDAO.cancel.transactionHash,
+                marketplace: activityDAO.cancel.exchange,
+                nft: {
+                  contractAddress: asset.standard.contractAddress,
+                  tokenId: asset.standard.tokenId,
+                },
+              }
+              txActivities.push(activity)
+            }
           }
-          txActivities.push(activity)
+          if (!priceDetails) {
+            priceDetails = {
+              assetType: null,
+              contractAddress: null,
+              price: null,
+            }
+            activity = {
+              ...activity,
+              transactionHash: activityDAO.cancel.transactionHash,
+              marketplace: activityDAO.cancel.exchange,
+              priceDetails,
+            }
+            txActivities.push(activity)
+          }
         } else if (activityDAO.activityType === 'Swap') {
           activity = {
             ...activity,
@@ -293,6 +323,45 @@ export const getTxByContract = async (
             marketplace: activityDAO.transaction.protocol,
           }
           txActivities.push(activity)
+        } else if (activityDAO.activityType === 'Sale') {
+          let priceDetails = undefined
+          for (const [index, asset] of activityDAO.transaction.protocolData.makeAsset.entries()) {
+            if (asset.standard.contractAddress === ethers.utils.getAddress(contractAddress)) {
+              priceDetails = await parsePriceDetailFromAsset(activityDAO.transaction.protocolData.takeAsset[index])
+              activity = {
+                ...activity,
+                tokenId: asset.standard.tokenId,
+                priceDetails,
+                nft: {
+                  contractAddress: asset.standard.contractAddress,
+                  tokenId: asset.standard.tokenId,
+                },
+                transactionHash: activityDAO.transaction.transactionHash,
+                protocolData: activityDAO.transaction.protocolData,
+                marketplace: activityDAO.transaction.protocol,
+                sellerAddress: activityDAO.transaction.maker,
+                buyerAddress: activityDAO.transaction.taker,
+              }
+              txActivities.push(activity)
+            }
+          }
+          if (!priceDetails) {
+            priceDetails = {
+              assetType: null,
+              contractAddress: null,
+              price: null,
+            }
+            activity = {
+              ...activity,
+              transactionHash: activityDAO.transaction.transactionHash,
+              protocolData: activityDAO.transaction.protocolData,
+              marketplace: activityDAO.transaction.protocol,
+              sellerAddress: activityDAO.transaction.maker,
+              buyerAddress: activityDAO.transaction.taker,
+              priceDetails,
+            }
+            txActivities.push(activity)
+          }
         }
       }
       // 2. return NFTPort result
@@ -398,7 +467,7 @@ export const getTxByNFT = async (
           let priceDetails
           const index = findNFTFromAssets(activityDAO.order.protocolData.makeAsset, contractAddress, tokenId)
           if (index !== -1) {
-            priceDetails = parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
+            priceDetails = await parsePriceDetailFromAsset(activityDAO.order.protocolData.takeAsset[index])
           } else {
             priceDetails = {
               assetType: null,
@@ -418,7 +487,7 @@ export const getTxByNFT = async (
           let priceDetails
           const index = findNFTFromAssets(activityDAO.order.protocolData.takeAsset, contractAddress, tokenId)
           if (index !== -1) {
-            priceDetails = parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
+            priceDetails = await parsePriceDetailFromAsset(activityDAO.order.protocolData.makeAsset[index])
           } else {
             priceDetails = {
               assetType: null,
@@ -435,10 +504,23 @@ export const getTxByNFT = async (
             priceDetails,
           }
         } else if (activityDAO.activityType === 'Cancel') {
+          const order = await repositories.txOrder.findOne({ where: { orderHash: activityDAO.cancel.foreignKeyId } })
+          let priceDetails
+          const index = findNFTFromAssets(order.protocolData.makeAsset, contractAddress, tokenId)
+          if (index !== -1) {
+            priceDetails = await parsePriceDetailFromAsset(order.protocolData.takeAsset[index])
+          } else {
+            priceDetails = {
+              assetType: null,
+              contractAddress: null,
+              price: null,
+            }
+          }
           activity = {
             ...activity,
             transactionHash: activityDAO.cancel.transactionHash,
             marketplace: activityDAO.cancel.exchange,
+            priceDetails,
           }
         } else if (activityDAO.activityType === 'Swap') {
           activity = {
@@ -446,6 +528,24 @@ export const getTxByNFT = async (
             transactionHash: activityDAO.transaction.transactionHash,
             protocolData: activityDAO.transaction.protocolData,
             marketplace: activityDAO.transaction.protocol,
+          }
+        } else if (activityDAO.activityType === 'Sale') {
+          const index = findNFTFromAssets(activityDAO.transaction.protocolData.makeAsset, contractAddress, tokenId)
+          const priceDetails = index !== -1
+            ? await parsePriceDetailFromAsset(activityDAO.transaction.protocolData.takeAsset[index])
+            : {
+              assetType: null,
+              contractAddress: null,
+              price: null,
+            }
+          activity = {
+            ...activity,
+            transactionHash: activityDAO.transaction.transactionHash,
+            protocolData: activityDAO.transaction.protocolData,
+            marketplace: activityDAO.transaction.protocol,
+            sellerAddress: activityDAO.transaction.maker,
+            buyerAddress: activityDAO.transaction.taker,
+            priceDetails,
           }
         }
         txActivities.push(activity)

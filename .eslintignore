@@ -7,6 +7,10 @@ dist/*
 layers/*
 packages/*/dist
 packages/gql/src/defs/gql.ts
+packages/gql/script/*
+packages/semper/*
+packages/owner-sync/*
+packages/shared/src/db/migration/*
 perftest/**/*.js
 *.config.js
 *.config.ts

@@ -93,7 +93,7 @@ const getOwnersForNFTs = async (
       UPDATE nft SET owner = vals.owner
       FROM (
         VALUES
-        ${vals.join(', ')}
+        '${vals.join(', ')}'
       ) AS vals ("id", "owner")
       WHERE nft."id" = vals."id"`)
     console.log('*'.repeat(10) + ` BATCH OF ${ownersOf.length} COMPLETED ` + '*'.repeat(10))

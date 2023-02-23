@@ -295,7 +295,7 @@ export interface ProfileAuctionInterface extends utils.Interface {
     "AdminChanged(address,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
     "ExtendLicense(address,string,uint256,uint256,bool)": EventFragment;
-    "MintedProfile(address,string,uint256,uint256,uint256)": EventFragment;
+    "MintedProfile(address,string,uint256,uint256,uint256,address)": EventFragment;
     "NewLengthPremium(uint256,uint256)": EventFragment;
     "NewYearlyFee(uint256)": EventFragment;
     "UpdatedProfileStake(string,uint256)": EventFragment;
@@ -339,13 +339,14 @@ export type ExtendLicenseEvent = TypedEvent<
 export type ExtendLicenseEventFilter = TypedEventFilter<ExtendLicenseEvent>;
 
 export type MintedProfileEvent = TypedEvent<
-  [string, string, BigNumber, BigNumber, BigNumber],
+  [string, string, BigNumber, BigNumber, BigNumber, string],
   {
     _user: string;
     _val: string;
     tokenId: BigNumber;
     _duration: BigNumber;
     _fee: BigNumber;
+    _paymentToken: string;
   }
 >;
 
@@ -926,19 +927,21 @@ export interface ProfileAuction extends BaseContract {
       _expired?: null
     ): ExtendLicenseEventFilter;
 
-    "MintedProfile(address,string,uint256,uint256,uint256)"(
+    "MintedProfile(address,string,uint256,uint256,uint256,address)"(
       _user?: null,
       _val?: null,
       tokenId?: null,
       _duration?: null,
-      _fee?: null
+      _fee?: null,
+      _paymentToken?: null
     ): MintedProfileEventFilter;
     MintedProfile(
       _user?: null,
       _val?: null,
       tokenId?: null,
       _duration?: null,
-      _fee?: null
+      _fee?: null,
+      _paymentToken?: null
     ): MintedProfileEventFilter;
 
     "NewLengthPremium(uint256,uint256)"(
