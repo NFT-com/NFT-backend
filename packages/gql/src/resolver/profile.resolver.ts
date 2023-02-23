@@ -245,6 +245,7 @@ const maybeUpdateProfileOwnership = (
                 return Promise.all([undefined, undefined])
               } else {
                 logger.log('maybeUpdateProfileOwnership - wallet valid')
+                if (!wallet.userId) return Promise.all([undefined, undefined])
                 return Promise.all([
                   ctx.repositories.user.findById(wallet.userId),
                   Promise.resolve(wallet),
