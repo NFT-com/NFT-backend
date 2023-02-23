@@ -932,7 +932,7 @@ export const fetchDataUsingMulticall = async (
       abiInterface.encodeFunctionData(call.name, call.params),
     ])
     // 2. get bytes array from multicall contract by process aggregate method...
-    const results: { success: boolean; returnData: string }[] =
+    const results: MulticallResponse[] =
       await multicallContract.tryAggregate(false, callData)
 
     if (returnRawResults) {
