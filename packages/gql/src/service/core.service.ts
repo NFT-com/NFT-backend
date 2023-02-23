@@ -1552,3 +1552,18 @@ export const checkAddressIsSanctioned = async (
     return true
   }
 }
+
+export const findDuplicatesByProperty = <T>(arr: T[], property: string): T[] => {
+  const hash: {[key: string]: boolean} = {}
+  const duplicates: T[] = []
+
+  for (let i = 0; i < arr.length; i++) {
+    if (hash[arr[i][property]]) {
+      duplicates.push(arr[i])
+    } else {
+      hash[arr[i][property]] = true
+    }
+  }
+
+  return duplicates
+}
