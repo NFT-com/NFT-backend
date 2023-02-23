@@ -77,6 +77,37 @@ export const connectPg = async (): Promise<void> => {
   })
 }
 
+export const connectTestPg = async (): Promise<void> => {
+  const ssl = helper.parseBoolean(DB_USE_SSL)
+    ? {
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: process.env.TEST_DB_HOST !== 'localhost',
+    }
+    : undefined
+
+  pgClient = new Pool({
+    user: process.env.TEST_DB_USERNAME || 'app',
+    password: process.env.TEST_DB_PASSWORD || 'password',
+    host: process.env.TEST_DB_HOST || 'localhost',
+    database: process.env.TEST_DB_DATABASE || 'app',
+    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    ssl,
+    max: 20,
+    application_name: 'gql',
+  })
+  
+  pgClientRO = new Pool({
+    user: process.env.TEST_DB_USERNAME || 'app',
+    password: process.env.TEST_DB_PASSWORD || 'password',
+    host: process.env.TEST_DB_HOST || 'localhost',
+    database: process.env.TEST_DB_DATABASE || 'app',
+    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    ssl,
+    max: 20,
+    application_name: 'gql',
+  })
+}
+
 export const endPg = async (): Promise<void> => {
   await pgClient.end()
   await pgClientRO.end()
