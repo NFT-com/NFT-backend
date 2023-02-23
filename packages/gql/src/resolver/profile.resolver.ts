@@ -238,6 +238,9 @@ const maybeUpdateProfileOwnership = (
       .then(([trueOwner, oldOwnerWallet]: [string | undefined, entity.Wallet | undefined]) => {
         if (!trueOwner) throw Error('maybeUpdateProfileOwnership - trueOwner is null')
 
+        if (oldOwnerWallet?.address &&
+          ethers.utils.getAddress(oldOwnerWallet?.address) === ethers.utils.getAddress(trueOwner)) return profile
+
         return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
           .then((trueOwnerWalletId: entity.Wallet | undefined) => {
             if (!trueOwnerWalletId) {
