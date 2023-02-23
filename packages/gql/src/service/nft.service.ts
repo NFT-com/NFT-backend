@@ -1703,43 +1703,79 @@ export const updateEdgesWeightForProfile = async (
   }
 }
 
+const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
+  logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
+
+  // Delete edges where NFT does not exist
+  const disconnectedEdgeIds: string[] = (await nftLoader.loadMany(edges.map((e) => e.thatEntityId)))
+    .reduce((disconnectedEdges, nft, i) => {
+      if (!nft) disconnectedEdges.push(edges[i].id)
+      return disconnectedEdges
+    }, [])
+
+  // Delete edges that are duplicate connections on an NFT
+  const edgeCounts = edges.reduce((counts, edge) => {
+    return counts.set(edge.thatEntityId, (counts.get(edge.thatEntityId) || 0) + 1)
+  }, new Map())
+  const duplicatedIds: string[] = edges
+    .filter((edge) => edgeCounts.get(edge.thatEntityId) > 1)
+    .sort((e1, e2) => e1.thatEntityId > e2.thatEntityId ? 1 : -1)
+    .reduce((duplicatedIds, edge, i, arr) => {
+      if (i > 0 && arr[i-1].thatEntityId === edge.thatEntityId) duplicatedIds.push(edge.id)
+      return duplicatedIds
+    }, [])
+
+  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
+  if (edgeIdsToDelete.length)
+    await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
+}
 export const syncEdgesWithNFTs = async (
   profileId: string,
 ): Promise<void> => {
   try {
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        edgeType: defs.EdgeType.Displays,
-      },
+    const pgClient = db.getPgClient(true)
+    await new Promise<void>((resolve, reject) => {
+      pgClient.connect((err, client, done) => {
+        if (err) throw err
+        const batch = []
+        const batchSize = 100
+        const query = new QueryStream(
+          `SELECT
+            *
+          FROM
+            edge
+          WHERE
+            "thisEntityId" = $1
+            AND "thisEntityType" = '${defs.EntityType.Profile}'
+            AND "thatEntityType" = '${defs.EntityType.NFT}'
+            AND "edgeType" = '${defs.EdgeType.Displays}'`,
+          [profileId],
+          { batchSize, highWaterMark: 500 },
+        )
+        const stream = client.query(query)
+        stream.on('end', async () => {
+          if (batch.length) {
+            await deleteExtraEdges(batch.splice(0))
+          }
+          done()
+          resolve()
+        })
+        stream.on('error', (err) => {
+          reject(err)
+        })
+        const processEdges = new Writable({
+          objectMode: true,
+          async write(nft, _encoding, callback) {
+            batch.push(nft)
+            if (batch.length === batchSize) {
+              await deleteExtraEdges(batch.splice(0, batchSize))
+            }
+            callback()
+          },
+        })
+        stream.pipe(processEdges)
+      })
     })
-
-    logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
-
-    // Delete edges where NFT does not exist
-    const disconnectedEdgeIds: string[] = (await nftLoader.loadMany(edges.map((e) => e.thatEntityId)))
-      .reduce((disconnectedEdges, nft, i) => {
-        if (!nft) disconnectedEdges.push(edges[i].id)
-        return disconnectedEdges
-      }, [])
-
-    // Delete edges that are duplicate connections on an NFT
-    const edgeCounts = edges.reduce((counts, edge) => {
-      return counts.set(edge.thatEntityId, (counts.get(edge.thatEntityId) || 0) + 1)
-    }, new Map())
-    const duplicatedIds: string[] = edges
-      .filter((edge) => edgeCounts.get(edge.thatEntityId) > 1)
-      .sort((e1, e2) => e1.thatEntityId > e2.thatEntityId ? 1 : -1)
-      .reduce((duplicatedIds, edge, i, arr) => {
-        if (i > 0 && arr[i-1].thatEntityId === edge.thatEntityId) duplicatedIds.push(edge.id)
-        return duplicatedIds
-      }, [])
-
-    const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
-    if (edgeIdsToDelete.length)
-      await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
   } catch (err) {
     logger.error(`Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
