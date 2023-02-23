@@ -13,6 +13,33 @@ interface UpsertOptions {
   skipUpdateIfNoValuesChanged?: boolean
 }
 
+function validateWhereOptions(
+  where?: FindOptionsWhere<typeorm.BaseEntity>[] | FindOptionsWhere<typeorm.BaseEntity>,
+): Promise<void> {
+  if (!where) {
+    return Promise.resolve()
+  }
+
+  if (!Array.isArray(where)) {
+    where = [where]
+  }
+
+  const errors: string[] = []
+  where.forEach((findOptionsWhere) => {
+    for (const key in findOptionsWhere) {
+      if (findOptionsWhere[key] === null || findOptionsWhere[key] === undefined) {
+        errors.push(`Invalid value of where parameter ${key}`)
+      }
+    }
+  })
+
+  if (errors.length) {
+    return Promise.reject(errors.join('. '))
+  }
+
+  return Promise.resolve()
+}
+
 export class BaseRepository<T> {
 
   private readonly entity: typeorm.EntityTarget<T>
@@ -39,13 +66,15 @@ export class BaseRepository<T> {
   }
 
   public delete = (opts: FindOptionsWhere<T>): Promise<boolean> => {
-    return this.getRepository().softDelete({ where: { ...opts } } as FindOneOptions<Partial<T>>)
-      .then((r) => r.affected > 0)
+    return validateWhereOptions(opts).then(() =>
+      this.getRepository().softDelete({ where: { ...opts } } as FindOneOptions<Partial<T>>)
+        .then((r) => r.affected > 0))
   }
 
   public hardDelete = (opts: typeorm.FindOptionsWhere<Partial<T>>): Promise<boolean> => {
-    return this.getRepository().delete(opts)
-      .then((r) => r.affected > 0)
+    return validateWhereOptions(opts).then(() =>
+      this.getRepository().delete(opts)
+        .then((r) => r.affected > 0))
   }
 
   public hardDeleteByIds = (ids: string[]): Promise<boolean> => {
@@ -54,6 +83,7 @@ export class BaseRepository<T> {
   }
 
   public deleteById = (id: string): Promise<boolean> => {
+    if (id === null || id === undefined) return Promise.reject(`Invalid value of where parameter ${id}`)
     return this.getRepository().softDelete(id)
       .then((r) => r.affected === 1)
   }
@@ -111,16 +141,16 @@ export class BaseRepository<T> {
   }
 
   public findOne = (opts: typeorm.FindOneOptions<Partial<T>>): Promise<T | undefined> => {
-    return this.getRepository(true).findOne(opts)
-    // .then(fp.thruIf<T>(isNil)(fp.N))
+    return validateWhereOptions(opts.where).then(() => this.getRepository(true).findOne(opts))
   }
 
   public findById = (id: string): Promise<T | undefined> => {
+    if (id === null || id === undefined) return Promise.reject(`Invalid value of where parameter ${id}`)
     return this.getRepository(true).findOne({ where: { id } })
-    // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
   public findByUserId = (userId: string): Promise<T[]> => {
+    if (userId === null || userId === undefined) return Promise.reject(`Invalid value of where parameter ${userId}`)
     return this.find({ where: { userId } })
   }
 
@@ -139,6 +169,7 @@ export class BaseRepository<T> {
     id: string,
     entity: typeorm.DeepPartial<T>,
   ): Promise<T | undefined> => {
+    if (id === null || id === undefined) return Promise.reject(`Invalid value of where parameter ${id}`)
     return this.getRepository().update(id, entity as any)
       .then(() => this.findById(id))
   }
@@ -167,11 +198,13 @@ export class BaseRepository<T> {
   }
 
   public exists = (opts: FindOptionsWhere<T>): Promise<boolean> => {
-    return this.findOne({ where: opts } as FindOneOptions<Partial<T>>).then(helper.isNotEmpty)
+    return validateWhereOptions(opts).then(() =>
+      this.findOne({ where: opts } as FindOneOptions<Partial<T>>).then(helper.isNotEmpty))
   }
 
   public count = (opts: FindOptionsWhere<T>): Promise<number> => {
-    return this.getRepository(true).count({ where: opts })
+    return validateWhereOptions(opts).then(() =>
+      this.getRepository(true).count({ where: opts }))
   }
 
 }
