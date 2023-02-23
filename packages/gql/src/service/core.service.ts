@@ -6,6 +6,7 @@ import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
 import fetch from 'node-fetch'
 import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
+import { hexToAscii } from 'web3-utils'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
@@ -941,9 +942,10 @@ export const fetchDataUsingMulticall = async (
       }
     })
   } catch (error) {
-    logger.error(
-      `Failed to fetch data using multicall: ${error}`,
+    logger.error(error,
+      'Failed to fetch data using multicall',
     )
+    logger.info({ data: hexToAscii(error.data) })
     return []
   }
 }

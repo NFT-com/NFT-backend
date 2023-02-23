@@ -22,8 +22,7 @@ const main = async (): Promise<void> => {
     headers: {
       accept: 'application/json',
     },
-  }))
-    .json()
+  })).json()
   const notSpamFromDb: string[] = (await pgClient.query('SELECT "contract" FROM collection WHERE "isSpam" = false'))
     .rows
     .map((r) => r.contract)

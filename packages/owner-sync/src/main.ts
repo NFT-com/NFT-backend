@@ -3,6 +3,8 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { toLower } from 'lodash'
 import { Pool } from 'pg'
 import { AbiItem } from 'web3-utils'
+import QueryStream from 'pg-query-stream'
+import { Writable } from 'stream'
 
 import { core } from '@nftcom/gql/service'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -75,7 +77,6 @@ const getOwnersForNFTs = async (
       name: 'ownerOf',
       params: [BigNumber.from(tokenId)],
     }
-    console.log({ tokenId: BigNumber.from(tokenId), contract, callData })
     return callData
   })
 
@@ -85,15 +86,13 @@ const getOwnersForNFTs = async (
     for (let i = 0; i < ownersOf.length; i++) {
       const data = ownersOf[0]
       if (!data) continue
-      vals.push(`(${nfts[i].id}, ${data[0]})`)
+      vals.push(`('${nfts[i].id}', '${data[0]}')`)
     }
-    console.log(vals)
-    process.exit()
     await client.query(`
-      UPDATE nft SET owner = vals.owner
+      UPDATE nft SET "owner" = vals.owner, "updatedAt" = Now()
       FROM (
         VALUES
-        '${vals.join(', ')}'
+        ${vals.join(', ')}
       ) AS vals ("id", "owner")
       WHERE nft."id" = vals."id"`)
     console.log('*'.repeat(10) + ` BATCH OF ${ownersOf.length} COMPLETED ` + '*'.repeat(10))
@@ -138,21 +137,21 @@ const main = async (): Promise<void> => {
     headers: {
       accept: 'application/json',
     },
-  }))
-    .json()
+  })).json()
   // Get all nftAddresses to update, then loop (or process in batches/waves/async queue)
-  const nfts: Partial<entity.NFT>[] = (await pgClient.query(`
-  SELECT "id", "contract", "tokenId"
-  FROM nft 
-  WHERE 
-    "type" = 'ERC721' 
-    AND "owner" IS NULL
-    AND "contract" NOT IN (
-      SELECT "contract" FROM collection WHERE "isSpam" = true
-    )
-  `))
-    .rows
-    .filter((nft) => !spamFromAlchemy.includes(toLower(nft.contract)))
+  // const nfts: Partial<entity.NFT>[] = (await pgClient.query(`
+  // SELECT "id", "contract", "tokenId"
+  // FROM nft 
+  // WHERE 
+  //   "type" = 'ERC721' 
+  //   AND "owner" IS NULL
+  //   AND "contract" IN (
+  //     SELECT "contract" FROM collection WHERE "isSpam" = false
+  //   )
+  //   LIMIT 1000
+  // `))
+  //   .rows
+  //   .filter((nft) => !spamFromAlchemy.includes(toLower(nft.contract)))
   //   .filter((c) => !defs.LARGE_COLLECTIONS.includes(c.contract))
   //   .map((c) => c.contract)
   // contracts.unshift(...defs.LARGE_COLLECTIONS)
@@ -163,12 +162,56 @@ const main = async (): Promise<void> => {
     return { contractAddresses: new Set(nfts.map((n) => n.contract)), remaining: q.length() }
   }, 1)
 
-  q.push(chunk(nfts, 1000), (err, task) => {
-    if (err) {
-      console.error(err)
-      return
-    }
-    console.info(task)
+  const pushBatchToQueue = (batch: Partial<entity.NFT>[]) => {
+    q.push([batch], (err, task) => {
+      if (err) {
+        console.error(err)
+        return
+      }
+      console.info(task)
+    })
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    pgClient.connect((err, client, done) => {
+      if (err) throw err
+      const batch = []
+      const batchSize = 1000
+      const query = new QueryStream(
+        `SELECT "id", "contract", "tokenId"
+        FROM nft 
+        WHERE 
+          "type" = 'ERC721' 
+          AND "owner" IS NULL
+          AND "contract" IN (
+            SELECT "contract" FROM collection WHERE "isSpam" = false
+          )`, [], { batchSize, highWaterMark: 1_000_000 },
+      )
+      const stream = client.query(query)
+      stream.on('end', async () => {
+        if (batch.length) {
+          pushBatchToQueue(batch.splice(0))
+        }
+        done()
+        resolve()
+      })
+      stream.on('error', (err) => {
+        reject(err)
+      })
+      const processBatch = new Writable({
+        objectMode: true,
+        async write(nft, _encoding, callback) {
+          if (!spamFromAlchemy.includes(toLower(nft.contract))) {
+            batch.push(nft)
+          }
+          if (batch.length === batchSize) {
+            pushBatchToQueue(batch.splice(0, batchSize))
+          }
+          callback()
+        },
+      })
+      stream.pipe(processBatch)
+    })
   })
 
   await q.drain()
