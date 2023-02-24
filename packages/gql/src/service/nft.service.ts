@@ -253,7 +253,7 @@ export const filterNFTsWithAlchemy = async (
     const withMetadata = true
     do {
       const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(owner, { contracts, withMetadata, pageKey })
-      ownedNfts.push(ownedNFTs)
+      ownedNfts.push(...ownedNFTs)
       pageKey = nextPageKey
     } while (pageKey)
     const checksum = ethers.utils.getAddress
