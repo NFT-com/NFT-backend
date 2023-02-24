@@ -65,6 +65,8 @@ type Profile {
   visibleNFTs: Int
   usersActionsWithPoints: [UsersActionOutput]
   expireAt: DateTime
+  ownerUserId: String
+  ownerWalletId: String
 }
 
 type UsersActionOutput {
