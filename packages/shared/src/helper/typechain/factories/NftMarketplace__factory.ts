@@ -11,6 +11,11 @@ import type {
 
 const _abi = [
   {
+    inputs: [],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
     anonymous: false,
     inputs: [
       {
@@ -86,6 +91,51 @@ const _abi = [
       {
         indexed: true,
         internalType: "address",
+        name: "aggregator",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "bool",
+        name: "status",
+        type: "bool",
+      },
+    ],
+    name: "EditAggregator",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint48",
+        name: "discount",
+        type: "uint48",
+      },
+    ],
+    name: "FunTokenDiscount",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint8",
+        name: "version",
+        type: "uint8",
+      },
+    ],
+    name: "Initialized",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
         name: "maker",
         type: "address",
       },
@@ -124,7 +174,13 @@ const _abi = [
       {
         indexed: false,
         internalType: "uint256",
-        name: "fee",
+        name: "publicFee",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "profileFee",
         type: "uint256",
       },
     ],
@@ -170,6 +226,12 @@ const _abi = [
         internalType: "uint256",
         name: "percent",
         type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "setter",
+        type: "address",
       },
     ],
     name: "RoyaltyInfoChange",
@@ -277,6 +339,25 @@ const _abi = [
         internalType: "uint48",
         name: "",
         type: "uint48",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "aggregator",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
       },
     ],
     stateMutability: "view",
@@ -643,12 +724,43 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "uint48",
+        name: "_newProfile",
+        type: "uint48",
+      },
+    ],
+    name: "changeProfileFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "uint256",
-        name: "_fee",
+        name: "_newPublic",
         type: "uint256",
       },
     ],
     name: "changeProtocolFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_aggregator",
+        type: "address",
+      },
+      {
+        internalType: "bool",
+        name: "_status",
+        type: "bool",
+      },
+    ],
+    name: "editAggregator",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -878,6 +990,32 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "funToken",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "funTokenDiscount",
+    outputs: [
+      {
+        internalType: "uint48",
+        name: "",
+        type: "uint48",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "incrementNonce",
     outputs: [],
     stateMutability: "nonpayable",
@@ -907,7 +1045,7 @@ const _abi = [
       },
       {
         internalType: "address",
-        name: "_nftToken",
+        name: "_funToken",
         type: "address",
       },
       {
@@ -918,6 +1056,11 @@ const _abi = [
       {
         internalType: "contract MarketplaceEvent",
         name: "_marketplaceEvent",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "_nftProfile",
         type: "address",
       },
     ],
@@ -972,7 +1115,7 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "nftToken",
+    name: "nftProfile",
     outputs: [
       {
         internalType: "address",
@@ -1005,9 +1148,104 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
-        name: "hash",
-        type: "bytes32",
+        components: [
+          {
+            internalType: "address",
+            name: "maker",
+            type: "address",
+          },
+          {
+            components: [
+              {
+                components: [
+                  {
+                    internalType: "bytes4",
+                    name: "assetClass",
+                    type: "bytes4",
+                  },
+                  {
+                    internalType: "bytes",
+                    name: "data",
+                    type: "bytes",
+                  },
+                ],
+                internalType: "struct LibAsset.AssetType",
+                name: "assetType",
+                type: "tuple",
+              },
+              {
+                internalType: "bytes",
+                name: "data",
+                type: "bytes",
+              },
+            ],
+            internalType: "struct LibAsset.Asset[]",
+            name: "makeAssets",
+            type: "tuple[]",
+          },
+          {
+            internalType: "address",
+            name: "taker",
+            type: "address",
+          },
+          {
+            components: [
+              {
+                components: [
+                  {
+                    internalType: "bytes4",
+                    name: "assetClass",
+                    type: "bytes4",
+                  },
+                  {
+                    internalType: "bytes",
+                    name: "data",
+                    type: "bytes",
+                  },
+                ],
+                internalType: "struct LibAsset.AssetType",
+                name: "assetType",
+                type: "tuple",
+              },
+              {
+                internalType: "bytes",
+                name: "data",
+                type: "bytes",
+              },
+            ],
+            internalType: "struct LibAsset.Asset[]",
+            name: "takeAssets",
+            type: "tuple[]",
+          },
+          {
+            internalType: "uint256",
+            name: "salt",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "start",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "end",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "nonce",
+            type: "uint256",
+          },
+          {
+            internalType: "enum LibSignature.AuctionType",
+            name: "auctionType",
+            type: "uint8",
+          },
+        ],
+        internalType: "struct LibSignature.Order",
+        name: "order",
+        type: "tuple",
       },
     ],
     name: "orderApproved",
@@ -1036,12 +1274,38 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "profileFee",
+    outputs: [
+      {
+        internalType: "uint48",
+        name: "",
+        type: "uint48",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "protocolFee",
     outputs: [
       {
         internalType: "uint256",
         name: "",
         type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "proxiableUUID",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
       },
     ],
     stateMutability: "view",
@@ -1101,6 +1365,58 @@ const _abi = [
     inputs: [
       {
         internalType: "address",
+        name: "_funToken",
+        type: "address",
+      },
+    ],
+    name: "setFunToken",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint48",
+        name: "_discount",
+        type: "uint48",
+      },
+    ],
+    name: "setFunTokenDiscount",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_nftBuyContract",
+        type: "address",
+      },
+    ],
+    name: "setNftBuyContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_nftProfile",
+        type: "address",
+      },
+    ],
+    name: "setNftProfile",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
         name: "nftContract",
         type: "address",
       },
@@ -1116,6 +1432,29 @@ const _abi = [
       },
     ],
     name: "setRoyalty",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "nftContract",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "recipient",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "setRoyaltyOwnerAdmin",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

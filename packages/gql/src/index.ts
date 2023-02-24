@@ -40,6 +40,7 @@ const bootstrap = (): Promise<void> => {
   verifyConfiguration()
 
   return db.connect(dbConfig)
+    .then(db.connectPg)
     .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
     //.then(() => job.startAndListen())
@@ -76,6 +77,7 @@ const cleanExit = (): Promise<void> => {
     .then(killPort)
     .then(() => job.stopAndDisconnect())
     .then(db.disconnect)
+    .then(db.endPg)
     // .then(job.stopAndDisconnect)
     .then(fp.pause(500))
     .finally(() => {

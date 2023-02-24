@@ -1,12 +1,16 @@
-import { BigNumber } from 'ethers'
+import { BigNumber as BN } from 'bignumber.js'
+import { BigNumber, utils } from 'ethers'
 
 import { cache, CacheKeys } from '@nftcom/cache'
+import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { X2Y2Order } from '@nftcom/gql/service/x2y2.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
+
+import { getSymbolInUsd } from './core.service'
 
 type Order = SeaportOrder | LooksRareOrder | X2Y2Order
 
@@ -492,4 +496,131 @@ export const triggerNFTOrderRefreshQueue = async (
     return Promise.resolve(0)
   }
   return Promise.resolve(cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, ...nftRefreshKeys))
+}
+
+export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
+
+export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
+  switch(listing?.order?.protocol) {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.price || 0)
+  }
+  case (defs.ProtocolType.Seaport): {
+    const order = listing?.order?.protocolData
+    return order?.parameters?.consideration
+      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
+  }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
+  }
+  }
+}
+
+export const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
+  switch(listing?.order?.protocol) {
+  case (defs.ProtocolType.LooksRare):
+  case (defs.ProtocolType.X2Y2): {
+    const order = listing?.order?.protocolData
+    return order?.currencyAddress ?? order?.['currency']
+  }
+  case (defs.ProtocolType.Seaport): {
+    const order = listing?.order?.protocolData
+    return order?.parameters?.consideration?.[0]?.token
+  }
+  case (defs.ProtocolType.NFTCOM): {
+    const order = listing?.order?.protocolData
+    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
+  }
+  }
+}
+
+const isSupportedCurrency = async (txActivity: TxActivityDAO): Promise<boolean> => {
+  return ['ETH', 'WETH', 'USDC'].includes(await getSymbolForContract(getListingCurrencyAddress(txActivity)))
+}
+
+const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
+  '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
+
+const transactionIsBuyNow = (order: entity.TxOrder): boolean => {
+  return order.exchange === defs.ExchangeType.X2Y2
+    || (order.exchange === defs.ExchangeType.OpenSea
+      && !!order.protocolData?.parameters?.consideration?.length)
+    || (order.exchange === defs.ExchangeType.LooksRare
+      && order.protocolData?.strategy !== LR_DUTCH_AUCTION)
+    || (order.exchange === defs.ExchangeType.NFTCOM
+      && order.protocolData.auctionType === defs.AuctionType.FixedPrice)
+}
+
+const nonceIsLarger = (n1, n2): boolean => {
+  return n1 - n2 > 0
+}
+
+const priceIsLower = async (l1, l2): Promise<boolean> => {
+  const addrCurrL1 = getListingCurrencyAddress(l1)
+  const priceL1 = new BN(utils.formatUnits(
+    getListingPrice(l1),
+    await getDecimalsForContract(addrCurrL1),
+  ))
+  const currencyL1 = await getSymbolForContract(addrCurrL1)
+
+  const addrCurrL2 = getListingCurrencyAddress(l1)
+  const priceL2 = new BN(utils.formatUnits(
+    getListingPrice(l2),
+    await getDecimalsForContract(addrCurrL2),
+  ))
+  const currencyL2 = await getSymbolForContract(addrCurrL2)
+
+  if (currencyL1 === currencyL2) {
+    return priceL1.isLessThan(priceL2)
+  }
+
+  const priceUsdL1 = await getSymbolInUsd(currencyL1)
+  const priceUsdL2 = await getSymbolInUsd(currencyL2)
+  return priceL1.multipliedBy(priceUsdL1).isLessThan(priceL2.multipliedBy(priceUsdL2))
+}
+
+export const listingMapFrom = async (txActivities: TxActivityDAO[]): Promise<{ [k:string]: TxActivityDAO[] }> => {
+  return (await txActivities.reduce(async (agg, txActivity) => {
+    const listings = await agg
+    if (
+      (await isSupportedCurrency(txActivity))
+      && transactionIsBuyNow(txActivity.order)
+      && txActivity.order?.exchange
+    ) {
+      const existingIdx = listings.findIndex((tx) => {
+        return tx.order?.exchange
+        && txActivity.order?.exchange
+        && tx.order.exchange === txActivity.order.exchange
+      })
+      if (
+        existingIdx > -1
+        && (
+          nonceIsLarger(txActivity.order.nonce, listings[existingIdx].order.nonce)
+        || (
+          txActivity.order.nonce === listings[existingIdx].order.nonce
+          && (await priceIsLower(txActivity, listings[existingIdx]))
+        ))
+      ) {
+        listings[existingIdx] = txActivity
+      } else {
+        listings.push(txActivity)
+      }
+    }
+    return listings
+  }, Promise.resolve([] as TxActivityDAO[])))
+    .reduce((map, txActivity: TxActivityDAO) => {
+      if (helper.isNotEmpty(txActivity.order?.protocolData)) {
+        const nftIdParts = txActivity.nftId[0].split('/')
+        const k = `${nftIdParts[1]}-${nftIdParts[2]}`
+        if (map[k]?.length) {
+          map[k].push(txActivity)
+        } else {
+          map[k] = [txActivity]
+        }
+      }
+      return map
+    }, {})
 }

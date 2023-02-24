@@ -4,7 +4,7 @@ import * as util from 'util'
 
 import { context, trace } from '@opentelemetry/api'
 
-import { fromString,toNumberString } from './dd-fns'
+import { fromString, toNumberString } from './dd-fns'
 import { LoggerContext, LogLevel } from './types'
 
 export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({

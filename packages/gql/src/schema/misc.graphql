@@ -5,35 +5,8 @@ type FileUploadOutput {
   sessionToken: String!
 }
 
-input getContractsInput {
-  chainId: String!
-}
-
-input convertEnsToEthAddressInput {
-  ensAddresses: [String!]!
-}
-
-type ConvertEnsToEthAddress {
-  ethAddresses: [String!]!
-}
-
-type GetContracts {
-  marketplace: String!
-  marketplaceEvent: String!
-  validationLogic: String!
-  nftToken: String!
-  profileAuction: String!
-  genesisKey: String!
-  nftProfile: String!
-  genesisKeyStake: String!
-  genesisKeyTeamClaim: String!
-  genesisKeyDistributor: String!
-  genesisKeyTeamMerkle: String!
-}
-
 extend type Query {
-  getContracts(input: getContractsInput!): GetContracts!
-  convertEnsToEthAddress(input: convertEnsToEthAddressInput!): ConvertEnsToEthAddress!
+  fetchEthUsd: Float!
 }
 
 extend type Mutation {

@@ -93,7 +93,10 @@ export class NFTRepository extends BaseRepository<NFT> {
     `, [collectionAddress])
   }
 
-  findByEdgeProfileDisplays(profileId: string, shouldIncludeHidden=false): Promise<ProfileSearchNFT[]> {
+  findByEdgeProfileDisplays(
+    profileId: string, shouldIncludeHidden=false, nftFilter: NFT[] = [],
+  ): Promise<ProfileSearchNFT[]> {
+    const nftIds = nftFilter.length ? nftFilter.map((n) => n.id) : undefined
     const queryRunner = db.getDataSource(true).createQueryRunner()
     return queryRunner.query(`
     SELECT
@@ -102,19 +105,20 @@ export class NFTRepository extends BaseRepository<NFT> {
       edge.hide AS "isHide"
     FROM
       edge
-      JOIN nft ON nft.id = edge. "thatEntityId"
+      JOIN nft ON nft.id = edge."thatEntityId"
       JOIN collection ON collection.contract = nft.contract
     WHERE
       edge."thisEntityType" = 'Profile'
       AND edge."thisEntityId" = $1
       AND edge."thatEntityType" = 'NFT'
+      ${nftFilter.length ? 'AND edge."thatEntityId" = ANY($2)' : ''}
       AND edge."edgeType" = 'Displays'
       ${shouldIncludeHidden ? '' : 'AND edge."hide" = false'}
       AND collection."isSpam" = false
     ORDER BY
       edge.hide ASC,
       edge.weight ASC,
-      edge. "updatedAt" DESC`, [profileId])
+      edge. "updatedAt" DESC`, [profileId, nftIds].filter(x => !!x))
   }
 
 }

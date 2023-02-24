@@ -30,6 +30,7 @@ export class TxActivity extends BaseEntity {
   @Column({ type: 'enum', enum: ActivityStatus, nullable: false, default: ActivityStatus.Valid })
   status: ActivityStatus
 
+  @Index()
   @Column({ nullable: false, default: '0x' })
   nftContract: string
 

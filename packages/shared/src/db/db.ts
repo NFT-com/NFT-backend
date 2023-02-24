@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import { Pool } from 'pg'
 import { DataSource } from 'typeorm'
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
 
@@ -27,6 +28,89 @@ export const getDataSource = (isReadOnly?: boolean): DataSource => {
     throw new Error('No database connection')
   }
   return connection
+}
+
+let pgClient: Pool
+let pgClientRO: Pool
+export const getPgClient = (isReadOnly?: boolean): Pool => {
+  if (isReadOnly) {
+    if (!pgClientRO) {
+      throw new Error('No read-only pg client connected')
+    }
+    return pgClientRO
+  }
+  if (!pgClient) {
+    throw new Error('Not pg client connected')
+  }
+  return pgClient
+}
+export const connectPg = async (): Promise<void> => {
+  if (pgClient) return
+
+  const ssl = helper.parseBoolean(DB_USE_SSL)
+    ? {
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: DB_HOST !== 'localhost',
+    }
+    : undefined
+
+  pgClient = new Pool({
+    user: process.env.DB_USERNAME || 'app',
+    password: process.env.DB_PASSWORD || 'password',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_DATABASE || 'app',
+    port: parseInt(process.env.DB_PORT) || 5432,
+    ssl,
+    max: 20,
+    application_name: 'gql',
+  })
+  
+  pgClientRO = new Pool({
+    user: process.env.DB_USERNAME || 'app',
+    password: process.env.DB_PASSWORD || 'password',
+    host: process.env.DB_HOST_RO || 'localhost',
+    database: process.env.DB_DATABASE || 'app',
+    port: parseInt(process.env.DB_PORT) || 5432,
+    ssl,
+    max: 20,
+    application_name: 'gql',
+  })
+}
+
+export const connectTestPg = async (): Promise<void> => {
+  const ssl = helper.parseBoolean(DB_USE_SSL)
+    ? {
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: process.env.TEST_DB_HOST !== 'localhost',
+    }
+    : undefined
+
+  pgClient = new Pool({
+    user: process.env.TEST_DB_USERNAME || 'app',
+    password: process.env.TEST_DB_PASSWORD || 'password',
+    host: process.env.TEST_DB_HOST || 'localhost',
+    database: process.env.TEST_DB_DATABASE || 'app',
+    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    ssl,
+    max: 20,
+    application_name: 'gql',
+  })
+  
+  pgClientRO = new Pool({
+    user: process.env.TEST_DB_USERNAME || 'app',
+    password: process.env.TEST_DB_PASSWORD || 'password',
+    host: process.env.TEST_DB_HOST || 'localhost',
+    database: process.env.TEST_DB_DATABASE || 'app',
+    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    ssl,
+    max: 20,
+    application_name: 'gql',
+  })
+}
+
+export const endPg = async (): Promise<void> => {
+  await pgClient.end()
+  await pgClientRO.end()
 }
 
 export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Promise<void> => {
@@ -125,9 +209,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
       `${__dirname}/migration/*.ts`,
       `${__dirname}/migration/*.js`,
     ],
-    ssl: {
-      rejectUnauthorized: false,
-    },
+    ssl: false,
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
   }).initialize()

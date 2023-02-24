@@ -99,11 +99,13 @@ const mockTestServer = (): any => {
 describe('nft resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
+    await db.connectTestPg()
   })
 
   afterAll(async () => {
     if (!connection) return
     await connection.destroy()
+    await db.endPg()
   })
 
   describe('get NFT', () => {

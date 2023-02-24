@@ -54,6 +54,7 @@ export class BaseRepository<T> {
   }
 
   public deleteById = (id: string): Promise<boolean> => {
+    if (id === null || id === undefined) return Promise.reject(`Invalid value of where parameter ${id}`)
     return this.getRepository().softDelete(id)
       .then((r) => r.affected === 1)
   }
@@ -112,15 +113,15 @@ export class BaseRepository<T> {
 
   public findOne = (opts: typeorm.FindOneOptions<Partial<T>>): Promise<T | undefined> => {
     return this.getRepository(true).findOne(opts)
-    // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
   public findById = (id: string): Promise<T | undefined> => {
+    if (id === null || id === undefined) return Promise.reject(`Invalid value of where parameter ${id}`)
     return this.getRepository(true).findOne({ where: { id } })
-    // .then(fp.thruIf<T>(isNil)(fp.N))
   }
 
   public findByUserId = (userId: string): Promise<T[]> => {
+    if (userId === null || userId === undefined) return Promise.reject(`Invalid value of where parameter ${userId}`)
     return this.find({ where: { userId } })
   }
 

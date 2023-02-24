@@ -63,6 +63,7 @@ runs:
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
         ASSET_BUCKET: ${{ fromJSON(inputs.secrets).ASSET_BUCKET }}
+        SLACK_TOKEN: ${{ fromJSON(inputs.secrets).SLACK_TOKEN }}
         ASSET_BUCKET_ROLE: ${{ fromJSON(inputs.secrets).ASSET_BUCKET_ROLE }}
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
         GIT_SHA: ${{ github.sha }}

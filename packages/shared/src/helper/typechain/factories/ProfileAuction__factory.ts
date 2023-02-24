@@ -112,6 +112,12 @@ const _abi = [
         name: "_fee",
         type: "uint256",
       },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "_paymentToken",
+        type: "address",
+      },
     ],
     name: "MintedProfile",
     type: "event",

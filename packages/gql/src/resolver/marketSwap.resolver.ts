@@ -20,7 +20,7 @@ const getSwaps = (
   const pageInput = args?.input?.pageInput
   const { marketAskIds, marketBidIds } = helper.safeObject(args?.input)
 
-  console.log(repositories, pageInput)
+  logger.log(repositories, pageInput)
   const filters: Partial<entity.MarketSwap>[] = [
     ...(marketAskIds ?? []).map((askIdToFind) => helper.removeEmpty({
       marketAsk: askIdToFind == null ? null : {
@@ -33,7 +33,7 @@ const getSwaps = (
       },
     })),
   ]
-  console.log(filters)
+  logger.log(filters)
   return null
 }
 
@@ -49,7 +49,7 @@ const getUserSwaps = (
   // TODO: also find the swaps where input.participant initiated a "buyNow" event
   // in that case, there is just one MarketAsk and the buyer's address isn't saved
   // anywhere in our DB currently.
-  console.log(repositories, pageInput)
+  logger.debug(repositories, pageInput)
   const filters: Partial<entity.MarketSwap>[] = [
     helper.removeEmpty({
       marketAsk: {
@@ -72,7 +72,7 @@ const getUserSwaps = (
       },
     }),
   ]
-  console.log(filters)
+  logger.debug(filters)
   return null
 }
 
@@ -176,7 +176,7 @@ const swapNFT = (
   args: gql.MutationSwapNFTArgs,
   ctx: Context,
 ): Promise<gql.MarketSwap> => {
-  const { user, repositories } = ctx
+  const { user } = ctx
   logger.debug('swapNFT', { loggedInUserId: user?.id, input: args?.input })
 
   const schema = Joi.object().keys({
@@ -185,7 +185,6 @@ const swapNFT = (
     txHash: Joi.string().required(),
   })
   joi.validateSchema(schema, args?.input)
-  console.log(repositories)
   return null
 }
 

@@ -50,6 +50,7 @@ jobs:
         envkey_CONFIRM_EMAIL_URL: ${{ secrets.CONFIRM_EMAIL_URL }}
         envkey_ASSET_BUCKET: ${{ secrets.ASSET_BUCKET }}
         envkey_ASSET_BUCKET_ROLE: ${{ secrets.ASSET_BUCKET_ROLE }}
+        envkey_SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
         envkey_ETH_GAS_STATION_API_KEY: ${{ secrets.ETH_GAS_STATION_API_KEY }}
         envkey_TEAM_AUTH_TOKEN: ${{ secrets.TEAM_AUTH_TOKEN }}
         envkey_MNEMONIC: ${{ secrets.MNEMONIC }}

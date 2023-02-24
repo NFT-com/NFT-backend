@@ -2,6 +2,7 @@ import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { getNftName } from '@nftcom/gql/service/nft.service'
+import { getListingCurrencyAddress, getListingPrice } from '@nftcom/gql/service/txActivity.service'
 import { defs, helper } from '@nftcom/shared'
 
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
@@ -41,43 +42,6 @@ const calculateNFTScore = (collection: CollectionDao, hasListings: boolean): num
     return score + Math.floor(Math.random() * multiplier)
   }
   return score
-}
-
-const getListingPrice = (listing: TxActivityDAO): BigNumber => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.price ?? 0)
-  }
-  case (defs.ProtocolType.Seaport): {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration
-      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount ?? 0)), BigNumber.from(0))
-  }
-  case (defs.ProtocolType.NFTCOM): {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
-  }
-  }
-}
-
-const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
-    const order = listing?.order?.protocolData
-    return order?.currencyAddress ?? order?.['currency']
-  }
-  case (defs.ProtocolType.Seaport): {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration?.[0]?.token
-  }
-  case (defs.ProtocolType.NFTCOM): {
-    const order = listing?.order?.protocolData
-    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
-  }
-  }
 }
 
 export const mapCollectionData = async (
@@ -191,7 +155,7 @@ export const mapCollectionData = async (
         status: '', //  HasOffers, BuyNow, New, OnAuction
         rarity: parseFloat(nft.rarity) || 0.0,
         isProfile: nft.contract === PROFILE_CONTRACT,
-        isProfileGKMinted: profile?.expireAt.getFullYear() >= gkExpirationYear,
+        isProfileGKMinted: profile?.expireAt ? profile?.expireAt.getFullYear() >= gkExpirationYear : false,
         issuance: nft.collection?.issuanceDate ? new Date(nft.collection?.issuanceDate).getTime() : 0,
         hasListings: listings.length ? 1 : 0,
         score: calculateNFTScore(nft.collection, !!listings.length),
