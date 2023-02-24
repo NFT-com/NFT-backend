@@ -206,66 +206,13 @@ export const getNFTsFromAlchemyPage = async (
   }
 }
 
-export const getNFTsFromAlchemy = async (
-  owner: string,
-  contracts?: string[],
-  withMetadata = true,
-): Promise<OwnedNFT[]> => {
-  try {
-    let pageKey
-    const ownedNFTs: Array<OwnedNFT> = []
-    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
-    let queryParams = `owner=${owner}`
-
-    if (contracts) {
-      queryParams += `&contractAddresses[]=${contracts}`
-    }
-
-    if (withMetadata) {
-      queryParams += `&withMetadata=${withMetadata}`
-    }
-
-    const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
-
-    if (response?.data?.ownedNfts) {
-      ownedNFTs.push(...response?.data?.ownedNfts as OwnedNFT[])
-      if (response?.data?.pageKey) {
-        pageKey = response?.data?.pageKey
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const res: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}&pageKey=${pageKey}`)
-
-          if (res?.data?.ownedNfts) {
-            ownedNFTs.push(...res?.data?.ownedNfts as OwnedNFT[])
-            if (res?.data?.pageKey) {
-              pageKey = res?.data?.pageKey
-            } else {
-              break
-            }
-          } else {
-            break
-          }
-        }
-      }
-
-      return ownedNFTs
-    } else {
-      return []
-    }
-  } catch (err) {
-    logger.error(`Error in getNFTsFromAlchemy: ${err}`)
-    Sentry.captureMessage(`Error in getNFTsFromAlchemy: ${err}`)
-    throw err
-  }
-}
-
 export const getOwnersForNFT = async (
   nft: typeorm.DeepPartial<entity.NFT>,
 ): Promise<string[]> => {
   try {
     initiateWeb3(nft.chainId)
     const contract = ethers.utils.getAddress(nft.contract)
-    
+
     const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
     const response = await axios.get(baseUrl)
 
@@ -301,7 +248,14 @@ export const filterNFTsWithAlchemy = async (
     }
   })
   try {
-    const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
+    const ownedNfts = []
+    let pageKey = undefined
+    const withMetadata = true
+    do {
+      const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(owner, { contracts, withMetadata, pageKey })
+      ownedNfts.push(ownedNFTs)
+      pageKey = nextPageKey
+    } while (pageKey)
     const checksum = ethers.utils.getAddress
 
     const newOwnerNFTs = new Map()
@@ -2081,7 +2035,7 @@ export const saveProfileScore = async (
 
     // get unique nft.contract from nfts with
     const collections = [...new Set(nfts.map((nft) => nft.contract))]
-    
+
     // get visible items
     const visibleEdgesCount = await repositories.edge.count({
       thisEntityId: profile.id,

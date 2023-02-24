@@ -495,11 +495,12 @@ describe('nft service', () => {
     })
   })
 
-  describe('getNFTsFromAlchemy', () => {
+  describe('getNFTsFromAlchemyPage', () => {
     it('should return NFTs from alchemy', async () => {
       const owner = '0x59495589849423692778a8c5aaca62ca80f875a4'
       nftService.initiateWeb3('5')
-      const nfts = await nftService.getNFTsFromAlchemy(owner)
+      const pageKey = undefined
+      const nfts = await nftService.getNFTsFromAlchemyPage(owner, { pageKey })
       expect(nfts.length).toBeGreaterThan(0)
     })
   })
