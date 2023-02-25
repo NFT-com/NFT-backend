@@ -1313,6 +1313,7 @@ export const hideAllNFTs = async (
 const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.NFT[]): Promise<void> => {
   try {
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}`)
+    const startTime = new Date().getTime()
 
     // filter nfts are not added to edge yet...
     const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
@@ -1322,22 +1323,37 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
     let weight = await getLastWeight(repositories, profileId)
     const edgesWithWeight = []
     for (let i = 0; i < nftsToBeAdded.length; i++) {
-      const newWeight = generateWeight(weight)
-      edgesWithWeight.push({
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        thatEntityId: nftsToBeAdded[i].id,
-        edgeType: defs.EdgeType.Displays,
-        weight: newWeight,
-        hide: hide,
+      const existingWeight = await repositories.edge.findOne({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nftsToBeAdded[i].id,
+          edgeType: defs.EdgeType.Displays,
+        },
       })
-      weight = newWeight
+
+      // sometimes, we don't get all duplicates due to batching NFTs
+      // that are being passed for nft filter in findByEdgeProfileDisplays
+      // TODO: maybe room to improve in future w/o having to do a findOne operation
+      if (!existingWeight) {
+        const newWeight = generateWeight(weight)
+        edgesWithWeight.push({
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nftsToBeAdded[i].id,
+          edgeType: defs.EdgeType.Displays,
+          weight: newWeight,
+          hide: hide,
+        })
+        weight = newWeight
+      }
     }
 
     // save nfts to edge...
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
-    logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done`)
+    logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
   } catch (err) {
     logger.error(`Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
