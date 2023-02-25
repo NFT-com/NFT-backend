@@ -1311,6 +1311,8 @@ export const hideAllNFTs = async (
 }
 
 const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.NFT[]): Promise<void> => {
+  logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}`)
+
   // filter nfts are not added to edge yet...
   const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
   const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
@@ -1332,7 +1334,9 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
   }
   // save nfts to edge...
   await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+  logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done`)
 }
+
 export const saveEdgesWithWeight = async (
   profileId: string,
   hide: boolean,
@@ -1359,12 +1363,16 @@ export const saveEdgesWithWeight = async (
             [walletId, chainId],
             { batchSize, highWaterMark: 500 },
           )
+
+          logger.info(`Querying nfts for profileId ${profileId}, wallet ${walletId}...`)
           const stream = client.query(query)
           stream.on('end', async () => {
             if (batch.length) {
               await saveEdgesForNFTs(profileId, hide, batch.splice(0))
             }
             done()
+
+            logger.info(`saveEdgesForNFTs for profileId ${profileId}, wallet ${walletId} done`)
             resolve()
           })
           stream.on('error', (err) => {
@@ -1618,6 +1626,8 @@ export const updateNFTsOrder = async (
 }
 
 const fillEdgesWithWeight = async (profileId, nullEdges: entity.Edge[], weight?: string): Promise<string> => {
+  logger.info(`#1 fillEdgesWithWeight for profileId: ${profileId} and weight: ${weight} and nullEdges: ${nullEdges.length}`)
+
   // fill weight of edges which have null as weight...
   weight ??= await getLastWeight(repositories, profileId)
   const edgesWithWeight: EdgeWithWeight[] = []
@@ -1630,7 +1640,11 @@ const fillEdgesWithWeight = async (profileId, nullEdges: entity.Edge[], weight?:
     })
     weight = newWeight
   }
+
+  logger.info(`#2 fillEdgesWithWeight for profileId: ${profileId} and weight: ${weight} and edgesWithWeight: ${edgesWithWeight.length}`)
   await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+
+  logger.info(`#3 fillEdgesWithWeight for profileId: ${profileId} saved!`)
   return weight
 }
 export const updateEdgesWithNullWeight = async (
@@ -1657,12 +1671,15 @@ export const updateEdgesWithNullWeight = async (
         [profileId],
         { batchSize, highWaterMark: 500 },
       )
+      logger.info(`profileId ${profileId} = updateEdgesWithNullWeight: ${query}`)
       const stream = client.query(query)
       stream.on('end', async () => {
         if (batch.length) {
           await fillEdgesWithWeight(profileId, batch.splice(0), lastWeight)
         }
         done()
+
+        logger.info(`profileId ${profileId} = updateEdgesWithNullWeight: done!`)
         resolve()
       })
       stream.on('error', (err) => {
@@ -1692,11 +1709,15 @@ export const updateEdgesWeightForProfile = async (
       walletId: walletId,
       chainId: chainId,
     })
-    logger.debug({ nftCount, profileId, walletId }, 'updateEdgesWeightForProfile')
+    logger.info({ nftCount, profileId, walletId }, 'updateEdgesWeightForProfile')
     if (!nftCount) return
     await updateEdgesWithNullWeight(profileId)
+
     // save edges for new nfts...
+    logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
     await saveEdgesWithWeight(profileId, true, { walletId })
+
+    logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
   } catch (err) {
     logger.error(`Error in updateEdgesWeightForProfile: ${err}`)
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
@@ -2036,6 +2057,7 @@ export const saveVisibleNFTsForProfile = async (
   repositories: db.Repository,
 ): Promise<void> => {
   try {
+    logger.info(`starting saveVisibleNFTsForProfile: ${profileId}`)
     const edges = await repositories.edge.find({
       where: {
         thisEntityId: profileId,
@@ -2047,6 +2069,9 @@ export const saveVisibleNFTsForProfile = async (
     })
     if (edges.length) {
       await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
+      logger.info(`saveVisibleNFTsForProfile: ${profileId} - ${edges.length} visible NFTs`)
+    } else {
+      logger.info(`saveVisibleNFTsForProfile: ${profileId} - no visible NFTs`)
     }
   } catch (err) {
     logger.error(`Error in saveVisibleNFTsForProfile: ${err}`)

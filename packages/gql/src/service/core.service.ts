@@ -1340,6 +1340,7 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
+  logger.info(`getLastWeight for profile ${profileId} is called`)
   const edges = await repositories.edge.find({ where: {
     thisEntityType: defs.EntityType.Profile,
     thatEntityType: defs.EntityType.NFT,
@@ -1354,6 +1355,7 @@ export const getLastWeight = async (
     if (biggest < filterEdges[i].weight)
       biggest = filterEdges[i].weight
   }
+  logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
   return biggest
 }
 
