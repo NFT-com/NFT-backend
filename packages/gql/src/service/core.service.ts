@@ -1340,35 +1340,40 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
-  logger.info(`getLastWeight for profile ${profileId} is called`)
+  try {
+    logger.info(`getLastWeight for profile ${profileId} is called`)
 
-  const edges = await repositories.edge.find({
-    where: {
-      thisEntityType: defs.EntityType.Profile,
-      thatEntityType: defs.EntityType.NFT,
-      thisEntityId: profileId,
-      edgeType: defs.EdgeType.Displays,
-    },
-  })
-  if (!edges.length) {
-    logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
-    return undefined
-  }
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        edgeType: defs.EdgeType.Displays,
+      },
+    })
+    if (!edges.length) {
+      logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
+      return undefined
+    }
 
-  const filterEdges = edges.filter((edge) => edge.weight !== null)
-  if (!filterEdges.length) {
-    logger.info(`getLastWeight for profile ${profileId} is undefined (no weight)`)
-    return undefined
-  }
+    const filterEdges = edges.filter((edge) => edge.weight !== null)
+    if (!filterEdges.length) {
+      logger.info(`getLastWeight for profile ${profileId} is undefined (no weight)`)
+      return undefined
+    }
 
-  let biggest = filterEdges[0].weight
-  for (let i = 1; i < filterEdges.length; i++) {
-    if (biggest < filterEdges[i].weight)
-      biggest = filterEdges[i].weight
+    let biggest = filterEdges[0].weight
+    for (let i = 1; i < filterEdges.length; i++) {
+      if (biggest < filterEdges[i].weight)
+        biggest = filterEdges[i].weight
+    }
+
+    logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
+    return biggest
+  } catch (err) {
+    logger.error(`getLastWeight for profile ${profileId} failed`)
+    throw err
   }
-  
-  logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
-  return biggest
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
