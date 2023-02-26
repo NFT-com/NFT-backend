@@ -12,7 +12,7 @@ import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
-import { cache } from '@nftcom/cache'
+import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
@@ -46,7 +46,6 @@ export const getWallet = (
   ctx: Context,
   input: gql.WalletInput,
 ): Promise<entity.Wallet> => {
-  const { network, chainId, address } = input
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
@@ -1372,6 +1371,7 @@ export const getLastWeight = async (
     return biggest
   } catch (err) {
     logger.error(`getLastWeight for profile ${profileId} failed`)
+    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${process.env.CHAIN_ID}`, [profileId])
     throw err
   }
 }

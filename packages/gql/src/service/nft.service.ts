@@ -1357,6 +1357,7 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
   } catch (err) {
     logger.error(`Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
+    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     throw err
   }
 }
