@@ -2619,8 +2619,11 @@ export const profileGKNFT = async (
       return false
     }
   }
-  const score: number = profile.isGKMinted ? 1 : 2
-  await cache.zadd(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, score,  numericTokenId)
+  
+  if (profile.expireAt) {
+    const score: number = profile.isGKMinted ? 1 : 2
+    await cache.zadd(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, score,  numericTokenId)
+  }
 
   return !!profile.isGKMinted
 }
