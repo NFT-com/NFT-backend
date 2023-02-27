@@ -114,7 +114,6 @@ export class NFTRepository extends BaseRepository<NFT> {
       ${nftFilter.length ? 'AND edge."thatEntityId" = ANY($2)' : ''}
       AND edge."edgeType" = 'Displays'
       ${shouldIncludeHidden ? '' : 'AND edge."hide" = false'}
-      AND collection."isSpam" = false
     ORDER BY
       edge.hide ASC,
       edge.weight ASC,
