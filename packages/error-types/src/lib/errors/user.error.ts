@@ -38,9 +38,11 @@ export const buildAddressSanctioned = (): ApolloError =>
     { errorKey: ErrorType.AddressSanctioned },
   )
 
-export const buildAuthOutOfExpireDuration = (): ApolloError =>
+export const buildAuthOutOfExpireDuration = (
+  nowDate: Date, expireDate: Date, maxExpiration: number, passedInDays: number,
+): ApolloError =>
   new ApolloError(
-    'Expire duration of Authentication is out of expiry limit',
+    `Expire duration of Authentication (${passedInDays} days) is greater than expiry limit of ${maxExpiration} days: nowDate ${nowDate}, expireDate ${expireDate}`,
     HTTP.Unauthorized,
     { errorKey: ErrorType.AuthenticationExpired },
   )
