@@ -95,11 +95,13 @@ export const createContext = async (ctx): Promise<Context> => {
     // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
     const difference = differenceInCalendarDays(nowDate, expireDate)
     if (Number(expireDate) - Number(nowDate) < 0 || difference > authExpireDuration) {
+      logger.error({ req, connection }, 'Auth failed for request')
       return Promise.reject(userError.buildAuthOutOfExpireDuration(nowDate, expireDate, authExpireDuration, difference))
     }
     // If auth header is out of expire duration, this request should be rejected
     const now = nowDate.getTime() / 1000
     if (Number(timestamp) < now) {
+      logger.error({ req, connection }, 'Expired auth for request')
       return Promise.reject(userError.buildAuthExpired())
     }
     chain = auth.verifyAndGetNetworkChain(network, chainId)
