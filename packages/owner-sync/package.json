@@ -1,7 +1,7 @@
 {
-  "name": "@nftcom/semper",
+  "name": "@nftcom/owner-sync",
   "version": "1.0.0",
-  "description": "Search engine utilities",
+  "description": "Owner sync script",
   "main": "src/main",
   "types": "src/main",
   "scripts": {
@@ -12,9 +12,10 @@
     "start": "npm run dev"
   },
   "dependencies": {
-    "@babel/runtime": "^7.18.3",
-    "ethers": "^5.6.9",
-    "typesense": "^1.4.3"
+    "async": "^3.2.4",
+    "ethers": "^5.5.1",
+    "pg": "^8.8.0",
+    "pg-query-stream": "^4.2.4"
   },
   "devDependencies": {
     "@types/async": "^3.2.16",
