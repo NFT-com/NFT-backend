@@ -14,7 +14,7 @@ const pgClient = new Pool({
     rejectUnauthorized: false,
   },
   max: 100,
-  application_name: 'semper',
+  application_name: 'find-spam',
 })
 
 const main = async (): Promise<void> => {

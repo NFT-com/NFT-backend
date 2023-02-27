@@ -19,7 +19,7 @@ const pgClient = new Pool({
     rejectUnauthorized: false,
   },
   max: 100,
-  application_name: 'semper',
+  application_name: 'owner-sync',
 })
 
 const chunk = (arr: any[], size: number): any[] => {
