@@ -29,6 +29,7 @@ export enum CacheKeys {
   PROFILE_SORTED_NFTS = 'PROFILE_SORTED_NFTS',
   PROFILE_SORTED_VISIBLE_NFTS = 'PROFILE_SORTED_VISIBLE_NFTS',
   PROFILE_GK_OWNERS = 'profile_gk_owners',
+  PROFILE_GK_NFT = 'profile_gk_nft',
   GET_TX_BY_CONTRACT = 'get_tx_by_contract',
   GET_TX_BY_NFT = 'get_tx_by_nft',
   PROFILE_OWNER = 'profile_owner',
