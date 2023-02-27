@@ -57,7 +57,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.209.0",
+    "async": "^3.2.4",
     "ethers": "^5.5.1",
+    "pg": "^8.8.0",
+    "pg-query-stream": "^4.2.4",
     "source-map-support": "^0.5.21",
     "tslib": "^2.3.0",
     "typeorm": "^0.3.10"
