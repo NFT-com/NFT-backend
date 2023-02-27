@@ -2506,3 +2506,54 @@ export const profileOwner = async (
     return undefined
   }
 }
+
+const checksumContract = (contract: string): string | undefined => {
+  try {
+    return helper.checkSum(contract)
+  } catch (err) {
+    logger.error(err, `Unable to checkSum contract: ${contract}`)
+  }
+  return
+}
+
+export const profileGKNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<boolean> => {
+  const checksumedContract: string = checksumContract(contract)
+  const profileContract: string = contracts.nftProfileAddress(chainId)
+
+  if (checksumedContract != profileContract) {
+    return false
+  }
+
+  let numericTokenId = ''
+
+  try {
+    numericTokenId = helper.bigNumberToNumber(tokenId).toString()
+  } catch (err) {
+    logger.error(err, `Error while converting profile tokenId: ${numericTokenId}`)
+  }
+
+  const cachedProfileGkValue: string = await cache.zscore(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, numericTokenId)
+
+  if (cachedProfileGkValue) {
+    if (Number(cachedProfileGkValue) === 1) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  const profile = await repositories.profile.findOne({
+    where: {
+      tokenId: numericTokenId,
+    },
+  })
+
+  const score: number = profile.isGKMinted ? 1 : 2
+  await cache.zadd(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, score,  numericTokenId)
+
+  return !!profile.isGKMinted
+}
