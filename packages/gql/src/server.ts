@@ -94,7 +94,7 @@ export const createContext = async (ctx): Promise<Context> => {
 
     // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
     const difference = differenceInCalendarDays(nowDate, expireDate)
-    if (difference > authExpireDuration) {
+    if (Number(expireDate) - Number(nowDate) < 0 || difference > authExpireDuration) {
       return Promise.reject(userError.buildAuthOutOfExpireDuration(nowDate, expireDate, authExpireDuration, difference))
     }
     // If auth header is out of expire duration, this request should be rejected
