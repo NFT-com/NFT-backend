@@ -12,7 +12,7 @@ import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
-import { cache } from '@nftcom/cache'
+import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
@@ -46,7 +46,6 @@ export const getWallet = (
   ctx: Context,
   input: gql.WalletInput,
 ): Promise<entity.Wallet> => {
-  const { network, chainId, address } = input
   const { user, repositories } = ctx
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
@@ -895,6 +894,11 @@ export type Call = {
   params?: any[]
 }
 
+export interface MulticallResponse {
+  success: boolean
+  returnData: string
+}
+
 /**
  * Fetches information about pools and return as `Pair` array using multicall contract.
  * @param calls 'Call' array
@@ -910,15 +914,21 @@ export const fetchDataUsingMulticall = async (
   calls: Array<Call>,
   abi: any[],
   chainId: string,
-): Promise<Array<Result | undefined>> => {
+  returnRawResults?: boolean,
+  customProvider?: ethers.providers.BaseProvider,
+): Promise<Array<Result | MulticallResponse | undefined>> => {
   try {
     const multicall2ABI = contracts.Multicall2ABI()
+    let callProvider = provider.provider(Number(chainId))
+    if (customProvider) {
+      callProvider = customProvider
+    }
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
       multicallAddress.toLowerCase(),
       multicall2ABI,
-      provider.provider(Number(chainId)),
+      callProvider,
     )
     const abiInterface = new ethers.utils.Interface(abi)
     const callData = calls.map((call) => [
@@ -926,9 +936,12 @@ export const fetchDataUsingMulticall = async (
       abiInterface.encodeFunctionData(call.name, call.params),
     ])
     // 2. get bytes array from multicall contract by process aggregate method...
-    const results: { success: boolean; returnData: string }[] =
+    const results: MulticallResponse[] =
       await multicallContract.tryAggregate(false, callData)
 
+    if (returnRawResults) {
+      return results
+    }
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
       if (result.returnData === '0x') {
@@ -1326,21 +1339,41 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
-  const edges = await repositories.edge.find({ where: {
-    thisEntityType: defs.EntityType.Profile,
-    thatEntityType: defs.EntityType.NFT,
-    thisEntityId: profileId,
-    edgeType: defs.EdgeType.Displays,
-  } })
-  if (!edges.length) return
-  const filterEdges = edges.filter((edge) => edge.weight !== null)
-  if (!filterEdges.length) return
-  let biggest = filterEdges[0].weight
-  for (let i = 1; i < filterEdges.length; i++) {
-    if (biggest < filterEdges[i].weight)
-      biggest = filterEdges[i].weight
+  try {
+    logger.info(`getLastWeight for profile ${profileId} is called`)
+
+    const edges = await repositories.edge.find({
+      where: {
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        edgeType: defs.EdgeType.Displays,
+      },
+    })
+    if (!edges.length) {
+      logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
+      return undefined
+    }
+
+    const filterEdges = edges.filter((edge) => edge.weight !== null)
+    if (!filterEdges.length) {
+      logger.info(`getLastWeight for profile ${profileId} is undefined (no weight)`)
+      return undefined
+    }
+
+    let biggest = filterEdges[0].weight
+    for (let i = 1; i < filterEdges.length; i++) {
+      if (biggest < filterEdges[i].weight)
+        biggest = filterEdges[i].weight
+    }
+
+    logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
+    return biggest
+  } catch (err) {
+    logger.error(`getLastWeight for profile ${profileId} failed`)
+    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${process.env.CHAIN_ID}`, [profileId])
+    throw err
   }
-  return biggest
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
