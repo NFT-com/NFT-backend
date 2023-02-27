@@ -118,7 +118,7 @@ export class NFTRepository extends BaseRepository<NFT> {
     ORDER BY
       edge.hide ASC,
       edge.weight ASC,
-      edge. "updatedAt" DESC`, [profileId, nftIds].filter(x => !!x))
+      edge."updatedAt" DESC`, [profileId, nftIds].filter(x => !!x))
   }
 
 }
