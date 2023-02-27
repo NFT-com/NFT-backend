@@ -47,6 +47,7 @@ export const getWallet = (
   input: gql.WalletInput,
 ): Promise<entity.Wallet> => {
   const { user, repositories } = ctx
+  const { network, chainId, address } = input
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
   return repositories.wallet
@@ -954,8 +955,8 @@ export const fetchDataUsingMulticall = async (
       }
     })
   } catch (error) {
-    logger.error(
-      `Failed to fetch data using multicall: ${error}`,
+    logger.error(error,
+      'Failed to fetch data using multicall',
     )
     return []
   }
