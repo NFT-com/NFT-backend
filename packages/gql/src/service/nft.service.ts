@@ -2596,12 +2596,29 @@ export const profileGKNFT = async (
     }
   }
 
-  const profile = await repositories.profile.findOne({
+  let profile = await repositories.profile.findOne({
     where: {
       tokenId: numericTokenId,
     },
   })
 
+  if (!profile.expireAt) {
+    const nftProfileContract = typechain.NftProfile__factory.connect(
+      contracts.nftProfileAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    try {
+      const expiry = await nftProfileContract.getExpiryTimeline([profile.url])
+      const timestamp = helper.bigNumberToNumber(expiry?.[0])
+      if (Number(timestamp) !== 0) {
+        const expireAt = new Date(Number(timestamp) * 1000)
+        profile = await repositories.profile.updateOneById(profile.id, { expireAt })
+      }
+    } catch (err) {
+      logger.error(err, 'Error while fetching or saving expireAt')
+      return false
+    }
+  }
   const score: number = profile.isGKMinted ? 1 : 2
   await cache.zadd(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, score,  numericTokenId)
 
