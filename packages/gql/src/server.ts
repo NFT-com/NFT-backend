@@ -91,9 +91,11 @@ export const createContext = async (ctx): Promise<Context> => {
     // Attempting auth with signature and timestamp
     const nowDate = helper.toUTCDate()
     const expireDate = new Date(Number(timestamp) * 1000)
+
     // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
-    if (differenceInCalendarDays(nowDate, expireDate) > authExpireDuration) {
-      return Promise.reject(userError.buildAuthOutOfExpireDuration())
+    const difference = differenceInCalendarDays(nowDate, expireDate)
+    if (difference > authExpireDuration) {
+      return Promise.reject(userError.buildAuthOutOfExpireDuration(nowDate, expireDate, authExpireDuration, difference))
     }
     // If auth header is out of expire duration, this request should be rejected
     const now = nowDate.getTime() / 1000

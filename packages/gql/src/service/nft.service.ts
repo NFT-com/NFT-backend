@@ -1323,32 +1323,17 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
     let weight = await getLastWeight(repositories, profileId)
     const edgesWithWeight = []
     for (let i = 0; i < nftsToBeAdded.length; i++) {
-      const existingWeight = await repositories.edge.findOne({
-        where: {
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: profileId,
-          thatEntityId: nftsToBeAdded[i].id,
-          edgeType: defs.EdgeType.Displays,
-        },
+      const newWeight = generateWeight(weight)
+      edgesWithWeight.push({
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        thatEntityId: nftsToBeAdded[i].id,
+        edgeType: defs.EdgeType.Displays,
+        weight: newWeight,
+        hide: hide,
       })
-
-      // sometimes, we don't get all duplicates due to batching NFTs
-      // that are being passed for nft filter in findByEdgeProfileDisplays
-      // TODO: maybe room to improve in future w/o having to do a findOne operation
-      if (!existingWeight) {
-        const newWeight = generateWeight(weight)
-        edgesWithWeight.push({
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: profileId,
-          thatEntityId: nftsToBeAdded[i].id,
-          edgeType: defs.EdgeType.Displays,
-          weight: newWeight,
-          hide: hide,
-        })
-        weight = newWeight
-      }
+      weight = newWeight
     }
 
     // save nfts to edge...
@@ -2555,4 +2540,75 @@ export const profileOwner = async (
     Sentry.captureMessage(`Error in profileOwner: ${err}`)
     return undefined
   }
+}
+
+const checksumContract = (contract: string): string | undefined => {
+  try {
+    return helper.checkSum(contract)
+  } catch (err) {
+    logger.error(err, `Unable to checkSum contract: ${contract}`)
+  }
+  return
+}
+
+export const profileGKNFT = async (
+  contract: string,
+  tokenId: string,
+  chainId: string,
+): Promise<boolean> => {
+  const checksumedContract: string = checksumContract(contract)
+  const profileContract: string = contracts.nftProfileAddress(chainId)
+
+  if (checksumedContract != profileContract) {
+    return false
+  }
+
+  let numericTokenId = ''
+
+  try {
+    numericTokenId = helper.bigNumberToNumber(tokenId).toString()
+  } catch (err) {
+    logger.error(err, `Error while converting profile tokenId: ${numericTokenId}`)
+  }
+
+  const cachedProfileGkValue: string = await cache.zscore(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, numericTokenId)
+
+  if (cachedProfileGkValue) {
+    if (Number(cachedProfileGkValue) === 1) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  let profile = await repositories.profile.findOne({
+    where: {
+      tokenId: numericTokenId,
+    },
+  })
+
+  if (!profile.expireAt) {
+    const nftProfileContract = typechain.NftProfile__factory.connect(
+      contracts.nftProfileAddress(chainId),
+      provider.provider(Number(chainId)),
+    )
+    try {
+      const expiry = await nftProfileContract.getExpiryTimeline([profile.url])
+      const timestamp = helper.bigNumberToNumber(expiry?.[0])
+      if (Number(timestamp) !== 0) {
+        const expireAt = new Date(Number(timestamp) * 1000)
+        profile = await repositories.profile.updateOneById(profile.id, { expireAt })
+      }
+    } catch (err) {
+      logger.error(err, 'Error while fetching or saving expireAt')
+      return false
+    }
+  }
+  
+  if (profile.expireAt) {
+    const score: number = profile.isGKMinted ? 1 : 2
+    await cache.zadd(`${CacheKeys.PROFILE_GK_NFT}_${chainId}`, score,  numericTokenId)
+  }
+
+  return !!profile.isGKMinted
 }
