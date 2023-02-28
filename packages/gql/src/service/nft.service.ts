@@ -1277,32 +1277,17 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
     let weight = await getLastWeight(repositories, profileId)
     const edgesWithWeight = []
     for (let i = 0; i < nftsToBeAdded.length; i++) {
-      const existingWeight = await repositories.edge.findOne({
-        where: {
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: profileId,
-          thatEntityId: nftsToBeAdded[i].id,
-          edgeType: defs.EdgeType.Displays,
-        },
+      const newWeight = generateWeight(weight)
+      edgesWithWeight.push({
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        thisEntityId: profileId,
+        thatEntityId: nftsToBeAdded[i].id,
+        edgeType: defs.EdgeType.Displays,
+        weight: newWeight,
+        hide: hide,
       })
-
-      // sometimes, we don't get all duplicates due to batching NFTs
-      // that are being passed for nft filter in findByEdgeProfileDisplays
-      // TODO: maybe room to improve in future w/o having to do a findOne operation
-      if (!existingWeight) {
-        const newWeight = generateWeight(weight)
-        edgesWithWeight.push({
-          thisEntityType: defs.EntityType.Profile,
-          thatEntityType: defs.EntityType.NFT,
-          thisEntityId: profileId,
-          thatEntityId: nftsToBeAdded[i].id,
-          edgeType: defs.EdgeType.Displays,
-          weight: newWeight,
-          hide: hide,
-        })
-        weight = newWeight
-      }
+      weight = newWeight
     }
 
     // save nfts to edge...
