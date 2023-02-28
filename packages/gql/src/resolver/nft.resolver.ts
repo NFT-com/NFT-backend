@@ -32,9 +32,14 @@ import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   getUserWalletFromNFT,
-  initiateWeb3, profileOwner,
-  saveNewNFT, updateCollectionForAssociatedContract,
-  updateNFTMetadata, updateNFTOwnershipAndMetadata, updateNFTsForAssociatedAddresses,
+  initiateWeb3,
+  profileGKNFT,
+  profileOwner,
+  saveNewNFT,
+  updateCollectionForAssociatedContract,
+  updateNFTMetadata,
+  updateNFTOwnershipAndMetadata,
+  updateNFTsForAssociatedAddresses,
   updateWalletNFTs,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
@@ -1300,6 +1305,13 @@ export default {
       defs.EntityType.NFT,
       defs.EntityType.Profile,
     ),
+    isGKMinted: async (parent, _args, _ctx) => {
+      return profileGKNFT(
+        parent.contract,
+        parent.tokenId,
+        parent.chainId || process.env.CHAIN_ID,
+      )
+    },
     listings: async (parent, args, ctx) => {
       const { loaders: {
         listingsByNFT,

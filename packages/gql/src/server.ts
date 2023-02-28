@@ -91,13 +91,17 @@ export const createContext = async (ctx): Promise<Context> => {
     // Attempting auth with signature and timestamp
     const nowDate = helper.toUTCDate()
     const expireDate = new Date(Number(timestamp) * 1000)
+
     // If expire duration is out of our expiry limit (AUTH_EXPIRE_BY_DAYS), this request should be rejected
-    if (differenceInCalendarDays(nowDate, expireDate) > authExpireDuration) {
-      return Promise.reject(userError.buildAuthOutOfExpireDuration())
+    const difference = differenceInCalendarDays(nowDate, expireDate)
+    if (Number(expireDate) - Number(nowDate) < 0 || difference > authExpireDuration) {
+      logger.error({ req, connection }, 'Auth failed for request')
+      return Promise.reject(userError.buildAuthOutOfExpireDuration(nowDate, expireDate, authExpireDuration, difference))
     }
     // If auth header is out of expire duration, this request should be rejected
     const now = nowDate.getTime() / 1000
     if (Number(timestamp) < now) {
+      logger.error({ req, connection }, 'Expired auth for request')
       return Promise.reject(userError.buildAuthExpired())
     }
     chain = auth.verifyAndGetNetworkChain(network, chainId)
@@ -197,6 +201,14 @@ export const start = async (): Promise<void> => {
           || req.method === 'OPTIONS'
         )
       },
+    },
+    customLogLevel: function (_req, res, err) {
+      if (res.statusCode >= 400 && res.statusCode < 500) {
+        return 'warn'
+      } else if (res.statusCode >= 500 || err) {
+        return 'error'
+      }
+      return 'silent'
     },
   }))
 

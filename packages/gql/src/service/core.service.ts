@@ -955,8 +955,8 @@ export const fetchDataUsingMulticall = async (
       }
     })
   } catch (error) {
-    logger.error(
-      `Failed to fetch data using multicall: ${error}`,
+    logger.error(error,
+      'Failed to fetch data using multicall',
     )
     return []
   }

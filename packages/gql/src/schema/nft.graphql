@@ -50,6 +50,7 @@ type NFT {
   isHide: Boolean
   sortIndex: Int
   listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address, protocol: ProtocolType): TxActivitiesOutput
+  isGKMinted: Boolean
 }
 
 input NFTsInput {
