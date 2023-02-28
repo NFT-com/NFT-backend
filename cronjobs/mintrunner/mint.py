@@ -68,16 +68,15 @@ unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - minted
 
 # pull total number of minted profiles via etherscan 
 url = urlopen("https://api.etherscan.io/api?module=stats&action=tokensupply&contractaddress=0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d&apikey=" + os.getenv('ETHERSCAN_API_KEY'))
-totalProfileCount = 0
+publicProfileCount = 0
 
 if(url.getcode()==200):
     rawData = url.read()
+    jsonData = json.loads(rawData)
+    totalProfileCount = jsonData["result"]
+    publicProfileCount = int(totalProfileCount) - mintedProfiles
 else:
     print("Error receiving total profile count from etherscan, http code:", url.getcode())
-
-jsonData = json.loads(rawData)
-totalProfileCount = jsonData["result"]
-publicProfileCount = int(totalProfileCount) - mintedProfiles
 
 # update analytics database, mint table with stats
 tableName = os.getenv('MINT_TABLE_NAME') # using 1 db, so diff table name per env
