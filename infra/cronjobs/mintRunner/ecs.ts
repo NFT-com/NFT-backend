@@ -61,6 +61,10 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
             Value: process.env.ANALYTICS_DB_USER,
           },
           {
+            Name: 'ETHERSCAN_API_KEY',
+            Value: process.env.ETHERSCAN_API_KEY,
+          },
+          {
             Name: 'ETH_NODE_URL',
             Value: process.env.ETH_NODE_URL,
           },
