@@ -9,8 +9,7 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, mintError, userError, walletError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi } from '@nftcom/gql/helper'
-import { obliterateQueue } from '@nftcom/gql/job/job'
-import { core, sendgrid } from '@nftcom/gql/service'
+import { bullService,core, sendgrid } from '@nftcom/gql/service'
 import { profileActionType } from '@nftcom/gql/service/core.service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -751,7 +750,7 @@ export const clearQueue = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('clearQueue', { queue: args?.queue })
 
-    const msg = await obliterateQueue(args?.queue)
+    const msg = await bullService.obliterateQueue(args?.queue)
 
     return {
       message: msg,

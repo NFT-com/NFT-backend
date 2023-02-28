@@ -9,7 +9,6 @@ import kill from 'kill-port'
 import { _logger, db, fp } from '@nftcom/shared'
 
 import { dbConfig, serverPort, verifyConfiguration } from './config'
-import { job } from './job'
 import * as server from './server'
 import HederaConsensusService from './service/hedera.service'
 
@@ -43,7 +42,6 @@ const bootstrap = (): Promise<void> => {
     .then(db.connectPg)
     .then(() => HederaConsensusService.subscribe())
     .then(() => server.start())
-    //.then(() => job.startAndListen())
     // document watcher for local 
     .then(() => {
       if (process.env.NODE_ENV === 'local') {
@@ -75,7 +73,6 @@ const cleanExit = (): Promise<void> => {
   return server.stop()
     .then(() => HederaConsensusService.unsubscribe())
     .then(killPort)
-    .then(() => job.stopAndDisconnect())
     .then(db.disconnect)
     .then(db.endPg)
     // .then(job.stopAndDisconnect)
