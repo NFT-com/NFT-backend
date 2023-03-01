@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS public.mints (
    gkincirculation integer NOT NULL,
    gkunclaimed integer NOT NULL,
    treasuryunclaimed integer NOT NULL,
-   insiderunclaimed integer NOT NULL
+   insiderunclaimed integer NOT NULL,
+   publicmints integer NOT NULL
 );
