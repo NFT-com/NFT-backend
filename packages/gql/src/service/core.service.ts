@@ -1353,7 +1353,7 @@ export const getLastWeight = async (
       },
     })
 
-    logger.info(`getLastWeight for profile ${profileId} found ${edges.length} edges`, edges)
+    logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
 
     if (!edges.length) {
       logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
