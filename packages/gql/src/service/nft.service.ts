@@ -1308,17 +1308,23 @@ export const hideAllNFTs = async (
 const saveEdgesForNFTs = async (
   profileId: string, hide: boolean, nfts: entity.NFT[], lastWeight?: string): Promise<string> => {
   try {
-    logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}`)
-    const startTime = new Date().getTime()
+    logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, lastWeight=${lastWeight}`)
+    let startTime = new Date().getTime()
 
     // filter nfts are not added to edge yet...
     const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
+    logger.info(`saveEdgesForNFTs after findByEdgeProfileDisplays: ${profileId} hide-${hide}, nftLength-${nfts.length}, profileNFTs-${profileNFTs.length}, time-${new Date().getTime() - startTime}ms`)
+    startTime = new Date().getTime()
+
     const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
+    logger.info(`saveEdgesForNFTs after nftsToBeAdded: ${profileId} hide-${hide}, nftLength-${nfts.length}, nftsToBeAdded-${nftsToBeAdded.length}, time-${new Date().getTime() - startTime}ms`)
+    startTime = new Date().getTime()
 
     // generate weights for nfts...
     let weight = lastWeight || await getLastWeight(repositories, profileId)
     const edgesWithWeight = []
     for (let i = 0; i < nftsToBeAdded.length; i++) {
+      logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
       const newWeight = generateWeight(weight)
       edgesWithWeight.push({
         thisEntityType: defs.EntityType.Profile,
