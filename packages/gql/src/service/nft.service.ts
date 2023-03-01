@@ -722,9 +722,10 @@ export const getNftType = (
     return defs.NFTType.ERC721
   } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC1155') {
     return defs.NFTType.ERC1155
-  } else if (nftMetadata?.title.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
+  } else if (nftMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
+    logger.error({ nftMetadata, nftPortDetails }, 'Unknown NFT type')
     return undefined
   }
 }
