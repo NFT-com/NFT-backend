@@ -963,8 +963,8 @@ export const updateWalletNFTs = async (
       await indexNFTsOnSearchEngine(savedNFTs)
     }
   } catch (err) {
-    logger.error(`Error in updateWalletNFTs: ${err}`)
-    Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+    logger.error(`[updateWalletNFTs] error 2: ${err}`)
+    Sentry.captureMessage(`[updateWalletNFTs] error 2: ${err}`)
   }
 }
 
@@ -1251,11 +1251,12 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
       weight = newWeight
     }
 
+    logger.info(`saveEdgesForNFTs: ${profileId} edges to save = ${edgesWithWeight.length}`)
     // save nfts to edge...
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
   } catch (err) {
-    logger.error(`Error in saveEdgesForNFTs: ${err}`)
+    logger.error(err, `Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
     await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     throw err
@@ -2030,44 +2031,48 @@ export const saveProfileScore = async (
   profile: entity.Profile,
 ): Promise<void> => {
   try {
-    let start = new Date().getTime()
-    const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
+    if (profile.ownerUserId && profile.chainId) {
+      let start = new Date().getTime()
+      const gkContractAddress = contracts.genesisKeyAddress(profile.chainId)
 
-    // get genesis key numbers
-    const gkNFTs = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
-    })
+      // get genesis key numbers
+      const gkNFTs = await repositories.nft.find({
+        where: { userId: profile.ownerUserId, contract: gkContractAddress, chainId: profile.chainId },
+      })
 
-    logger.info(`saveProfileScore: Time taken to get gkNFTs: ${new Date().getTime() - start} ms`)
-    start = new Date().getTime()
+      logger.info(`saveProfileScore: Time taken to get gkNFTs: ${new Date().getTime() - start} ms`)
+      start = new Date().getTime()
 
-    // get collections
-    const nfts = await repositories.nft.find({
-      where: { userId: profile.ownerUserId, chainId: profile.chainId },
-    })
+      // get collections
+      const nfts = await repositories.nft.find({
+        where: { userId: profile.ownerUserId, chainId: profile.chainId },
+      })
 
-    logger.info(`saveProfileScore: Time taken to get nfts: ${new Date().getTime() - start} ms`)
-    start = new Date().getTime()
+      logger.info(`saveProfileScore: Time taken to get nfts: ${new Date().getTime() - start} ms`)
+      start = new Date().getTime()
 
-    // get unique nft.contract from nfts with
-    const collections = [...new Set(nfts.map((nft) => nft.contract))]
+      // get unique nft.contract from nfts with
+      const collections = [...new Set(nfts.map((nft) => nft.contract))]
 
-    // get visible items
-    const visibleEdgesCount = await repositories.edge.count({
-      thisEntityId: profile.id,
-      thisEntityType: defs.EntityType.Profile,
-      thatEntityType: defs.EntityType.NFT,
-      edgeType: defs.EdgeType.Displays,
-      hide: false,
-    })
+      // get visible items
+      const visibleEdgesCount = await repositories.edge.count({
+        thisEntityId: profile.id,
+        thisEntityType: defs.EntityType.Profile,
+        thatEntityType: defs.EntityType.NFT,
+        edgeType: defs.EdgeType.Displays,
+        hide: false,
+      })
 
-    logger.info(`saveProfileScore: Time taken to get visibleEdgesCount: ${new Date().getTime() - start} ms`)
-    start = new Date().getTime()
+      logger.info(`saveProfileScore: Time taken to get visibleEdgesCount: ${new Date().getTime() - start} ms`)
+      start = new Date().getTime()
 
-    const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
-    const paddedCollections = collections.length.toString().padStart(5, '0')
-    const score = visibleEdgesCount.toString().concat(paddedCollections).concat(paddedGK)
-    await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
+      const paddedGK =  gkNFTs.length.toString().padStart(5, '0')
+      const paddedCollections = collections.length.toString().padStart(5, '0')
+      const score = visibleEdgesCount.toString().concat(paddedCollections).concat(paddedGK)
+      await cache.zadd(`LEADERBOARD_${profile.chainId}`, score, profile.id)
+    } else {
+      logger.info(`saveProfileScore: No ownerUserId or chainId for profile ${profile.id}`)
+    }
   } catch (err) {
     logger.error(`Error in saveProfileScore: ${err}`)
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
