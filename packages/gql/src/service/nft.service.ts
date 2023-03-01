@@ -1340,7 +1340,7 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
   } catch (err) {
-    logger.error(`Error in saveEdgesForNFTs: ${err}`)
+    logger.error(err, `Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
     await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     throw err
