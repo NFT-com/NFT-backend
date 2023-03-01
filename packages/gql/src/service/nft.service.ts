@@ -1071,25 +1071,18 @@ export const updateWalletNFTs = async (
       const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
       pageKey = nextPageKey
       logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}`)
-      const chunks: OwnedNFT[][] = chunk(
-        ownedNFTs,
-        20,
-      )
       const savedNFTs: entity.NFT[] = []
-      await Promise.allSettled(
-        chunks.map(async (chunk: OwnedNFT[]) => {
-          try {
-            await Promise.allSettled(
-              chunk.map(async (nft) => {
-                const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
-                if (savedNFT) savedNFTs.push(savedNFT)
-              }),
-            )
-          } catch (err) {
-            logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
-            Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
-          }
-        }))
+      try {
+        await Promise.allSettled(
+          ownedNFTs.map(async (nft) => {
+            const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+            if (savedNFT) savedNFTs.push(savedNFT)
+          }),
+        )
+      } catch (err) {
+        logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
+        Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
+      }
       if (savedNFTs.length) {
         logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}`)
         await updateCollectionForNFTs(savedNFTs)
