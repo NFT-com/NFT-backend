@@ -1330,6 +1330,7 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
       weight = newWeight
     }
 
+    logger.info(`saveEdgesForNFTs: ${profileId} edges to save = ${edgesWithWeight.length}`)
     // save nfts to edge...
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
