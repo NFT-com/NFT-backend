@@ -1371,7 +1371,7 @@ export const getLastWeight = async (
     logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
     return biggest
   } catch (err) {
-    logger.error(`getLastWeight for profile ${profileId} failed`)
+    logger.error(err, `getLastWeight for profile ${profileId} failed`)
     await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${process.env.CHAIN_ID}`, [profileId])
     throw err
   }
