@@ -99,6 +99,7 @@ runs:
         ANALYTICS_DB_USER: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_USER }}
         ANALYTICS_DB_PASS: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_PASS }}
         ETH_NODE_URL: ${{ fromJSON(inputs.secrets).ETH_NODE_URL }}
+        ETHERSCAN_API_KEY: ${{ fromJSON(inputs.secrets).ETHERSCAN_API_KEY }}
         PROFILE_PER_GK: ${{ fromJSON(inputs.secrets).PROFILE_PER_GK }}
         MINT_TABLE_NAME: ${{ fromJSON(inputs.secrets).MINT_TABLE_NAME }}
         GQL_DB_HOST: ${{ fromJSON(inputs.secrets).GQL_DB_HOST }}
