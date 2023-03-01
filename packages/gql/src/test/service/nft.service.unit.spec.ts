@@ -205,7 +205,7 @@ describe('nft service', () => {
     })
 
     it('should return nfts owned by address', async () => {
-      const ownedNFTs = await nftService.fetchNFTsFromAlchemyForAddress('0x65Ef6345ee2844DCbAcf0f41Ac4997AE4E24a883', '5')
+      const ownedNFTs = await nftService.fetchNFTsFromAlchemyForAddress('0x59495589849423692778a8c5aaca62ca80f875a4', '5')
       expect(ownedNFTs.length).toBeGreaterThan(0)
     })
   })

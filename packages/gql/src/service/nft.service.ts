@@ -45,6 +45,7 @@ const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
 const TEST_WALLET_ID = 'test'
+const FETCH_NFTS_FROM_ALCHEMY_TIME_OUT = 60 * 1000
 
 let alchemyUrl: string
 let chainId = process.env.CHAIN_ID
@@ -1738,18 +1739,29 @@ export const fetchNFTsFromAlchemyForAddress = async (
     let pageKey = undefined
     const withMetadata = true
     const latestNFTs: OwnedNFT[] = []
-    do {
-      try {
-        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(ethers.utils.getAddress(address),
-          { withMetadata, pageKey })
-        latestNFTs.push(...ownedNFTs)
-        pageKey = nextPageKey
-      } catch (err) {
-        logger.error(`Error in fetchNFTsFromAlchemyForAddress: ${err}`)
-      }
-    } while (pageKey)
-    await cache.set(cacheKey, JSON.stringify(latestNFTs), 'EX', 60 * 10) // 10 min cache
-    return latestNFTs
+    const call = async (): Promise<any> => {
+      do {
+        try {
+          const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(ethers.utils.getAddress(address),
+            { withMetadata, pageKey })
+          latestNFTs.push(...ownedNFTs)
+          pageKey = nextPageKey
+        } catch (err) {
+          logger.error(`Error in fetchNFTsFromAlchemyForAddress: ${err}`)
+        }
+      } while (pageKey)
+      await cache.set(cacheKey, JSON.stringify(latestNFTs), 'EX', 60 * 10) // 10 min cache
+      return latestNFTs
+    }
+    const timer = async (): Promise<any> => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, FETCH_NFTS_FROM_ALCHEMY_TIME_OUT)
+      })
+      logger.info(`Timeout reached in fetchNFTsFromAlchemyForAddress: address ${address}, chainId: ${chainId}`)
+      await cache.set(cacheKey, JSON.stringify(latestNFTs), 'EX', 60 * 10) // 10 min cache
+      return latestNFTs
+    }
+    return await Promise.race([call(), timer()])
   } catch (err) {
     logger.error(`Error in fetchNFTsFromAlchemyForAddress: ${err}`)
     throw err
