@@ -30,17 +30,20 @@ import { safeInput } from '@nftcom/gql/helper/pagination'
 import { saveUsersForAssociatedAddress, stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
-  checkNFTContractAddresses, fetchAssociatedAddressesForProfile,
+  fetchAssociatedAddressesForProfile,
+  fetchNFTsFromAlchemyForAddress,
   getUserWalletFromNFT,
   initiateWeb3,
   profileGKNFT,
-  profileOwner, removeEdgesForNonassociatedAddresses,
-  saveNewNFT, syncEdgesWithNFTs,
+  profileOwner,
+  removeEdgesForNonassociatedAddresses,
+  saveNewNFT,
+  syncEdgesWithNFTs,
   updateCollectionForAssociatedContract,
   updateNFTMetadata,
   updateNFTOwnershipAndMetadata,
   updateNFTsForAssociatedWallet,
-  updateWalletNFTs,
+  updateWalletNFTs, verifyNFTsFromDB,
 } from '@nftcom/gql/service/nft.service'
 import { createSeaportListing } from '@nftcom/gql/service/opensea.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
@@ -593,10 +596,13 @@ const refreshMyNFTs = (
     .then((wallets: entity.Wallet[]) => {
       return Promise.all(
         wallets.map((wallet: entity.Wallet) => {
-          checkNFTContractAddresses(user.id, wallet.id, wallet.address, wallet.chainId)
-            .then(() => {
-              updateWalletNFTs(user.id, wallet, wallet.chainId)
-            })
+          fetchNFTsFromAlchemyForAddress(wallet.address, chainId)
+            .then((latestNFTs) =>
+              verifyNFTsFromDB(user.id, wallet.id, wallet.address, wallet.chainId, latestNFTs)
+                .then(() => {
+                  updateWalletNFTs(user.id, wallet, wallet.chainId, latestNFTs)
+                }),
+            )
         }),
       ).then(() => {
         return { status: true, message: 'Your NFTs are updated!' }

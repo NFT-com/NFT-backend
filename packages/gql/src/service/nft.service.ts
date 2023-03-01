@@ -227,96 +227,6 @@ export const getOwnersForNFT = async (
   }
 }
 
-/**
- * Takes a bunch of NFTs (pulled from the DB), and checks
- * that the given owner is still correct.
- *
- * If not, deletes the NFT record from the DB.
- */
-export const filterNFTsWithAlchemy = async (
-  nfts: Array<typeorm.DeepPartial<entity.NFT>>,
-  owner: string,
-): Promise<void> => {
-  const contracts = []
-  const seen = {}
-  nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
-    const key = ethers.utils.getAddress(nft.contract)
-    if (!seen[key]) {
-      contracts.push(key)
-      seen[key] = true
-    }
-  })
-  try {
-    const ownedNfts = []
-    let pageKey = undefined
-    const withMetadata = true
-    do {
-      const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(owner, { contracts, withMetadata, pageKey })
-      ownedNfts.push(...ownedNFTs)
-      pageKey = nextPageKey
-    } while (pageKey)
-    const checksum = ethers.utils.getAddress
-
-    const newOwnerNFTs = new Map()
-    await Promise.allSettled(
-      nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
-          // logger.log(`&&&***&&& precheck filterNFTsWithAlchemy 1: ownedNFT.id: ${ownedNFT?.id}, dbNFT.id: ${dbNFT?.id} ||| checksum(ownedNFT?.contract?.address) ${checksum(ownedNFT?.contract?.address)}, checksum(dbNFT?.contract) ${checksum(dbNFT?.contract)}, BigNumber.from(ownedNFT?.id?.tokenId) ${BigNumber.from(ownedNFT?.id?.tokenId)}, BigNumber.from(dbNFT?.tokenId) ${BigNumber.from(dbNFT?.tokenId)}`)
-          return checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
-          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId))
-        })
-
-        // We didn't find this NFT entry in the most recent list of
-        // this user's owned tokens for this contract/collection.
-        if (index === -1) {
-          try {
-            // logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
-            await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
-            const owners = await getOwnersForNFT(dbNFT)
-            if (owners.length) {
-              if (owners.length > 1) {
-                // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-                // logger.log(`&&& filterNFTsWithAlchemy 2: dbNFT?.id ${dbNFT?.id}`)
-                await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
-                  .then(() => repositories.nft.hardDelete({
-                    id: dbNFT?.id,
-                  }))
-                await seService.deleteNFT(dbNFT?.id)
-              } else {
-                const newOwner = owners[0]
-                newOwnerNFTs.has(newOwner)
-                  ? newOwnerNFTs.get(newOwner).push(dbNFT)
-                  : newOwnerNFTs.set(newOwner, [dbNFT])
-              }
-            }
-          } catch (err) {
-            logger.error(`Error in filterNFTsWithAlchemy: ${err}`)
-            Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
-          }
-        }
-      }),
-    )
-    for (const [owner, nftsToUpdate] of newOwnerNFTs) {
-      const csOwner = checkSumOwner(owner)
-      const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
-      await Promise.allSettled(
-        nftsToUpdate.map((nft) => {
-          repositories.nft.updateOneById(nft?.id, {
-            userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
-            walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
-            owner: csOwner,
-          })
-        }),
-      )
-      await seService.indexNFTs(nftsToUpdate)
-    }
-  } catch (err) {
-    logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
-    Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
-    throw err
-  }
-}
-
 const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
@@ -820,6 +730,13 @@ const uploadImageToS3 = async (
   }
 }
 
+/**
+ * Save or update owner and metadata information for specific NFT
+ * @param nft
+ * @param userId
+ * @param wallet
+ * @param chainId
+ */
 export const updateNFTOwnershipAndMetadata = async (
   nft: OwnedNFT,
   userId: string,
@@ -846,7 +763,8 @@ export const updateNFTOwnershipAndMetadata = async (
         type = defs.NFTType.ERC721
       } else if (nft.id.tokenMetadata?.tokenType === 'ERC1155') {
         type = defs.NFTType.ERC1155
-      } else if (nft.title && nft.title?.endsWith('.eth')) { // if token is ENS token...
+      } else if (nft.title && nft.title?.endsWith('.eth')) {
+        // if token is ENS token...
         type = defs.NFTType.UNKNOWN
       }
     }
@@ -869,7 +787,8 @@ export const updateNFTOwnershipAndMetadata = async (
         })
       }
     }
-    // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
+    // if we are not available to get nft metadata from getNFTs api,
+    // we try to get information from getNFTMetadata or NFTPort
     if (!type || !name || !description || !image || !traits.length) {
       const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
       if (!metadata) return undefined
@@ -944,11 +863,11 @@ export const updateNFTOwnershipAndMetadata = async (
         })
         return updatedNFT
       } else {
+        // if ownership's not changed and just metadata changed, we update only metadata...
         const isTraitSame = (existingNFT.metadata.traits.length == traits.length) &&
           existingNFT.metadata.traits.every(function(element, index) {
             return element.type === traits[index].type && element.value === traits[index].value
           })
-        // if ownership's not changed and just metadata changed, we update only metadata...
         if (existingNFT.type !== type ||
           existingNFT.metadata.name !== name ||
           existingNFT.metadata.description !== description ||
@@ -970,13 +889,13 @@ export const updateNFTOwnershipAndMetadata = async (
           })
           return updatedNFT
         } else {
-          logger.debug('No need to update owner and metadata', existingNFT.contract)
+          logger.info(`No need to update owner and metadata for NFT contract: ${existingNFT.contract} tokenId: ${existingNFT.tokenId}`)
           return undefined
         }
       }
     }
   } catch (err) {
-    logger.log(err)
+    logger.error(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
     return undefined
   }
@@ -1007,47 +926,41 @@ export const indexCollectionsOnSearchEngine = async (
 }
 
 /**
- * update wallet NFTs using data from alchemy api
+ * update wallet NFTs using information ( metadata and so on) from alchemy api
  * @param userId
  * @param wallet
  * @param chainId
+ * @param latestNFTs
  */
 export const updateWalletNFTs = async (
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
+  latestNFTs: OwnedNFT[],
 ): Promise<void> => {
   try {
-    let pageKey = undefined
-    do {
-      const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
-      pageKey = nextPageKey
-      logger.debug({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
-      const chunks: OwnedNFT[][] = chunk(
-        ownedNFTs,
-        20,
-      )
-      const savedNFTs: entity.NFT[] = []
-      await Promise.allSettled(
-        chunks.map(async (chunk: OwnedNFT[]) => {
-          try {
-            await Promise.allSettled(
-              chunk.map(async (nft) => {
-                const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
-                if (savedNFT) savedNFTs.push(savedNFT)
-              }),
-            )
-          } catch (err) {
-            logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Error in updateWalletNFTs: ${err}`)
-            Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
-          }
-        }))
-      if (savedNFTs.length) {
-        logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `Updating collection and Syncing search index for wallet ${wallet.address}`)
-        await updateCollectionForNFTs(savedNFTs)
-        await indexNFTsOnSearchEngine(savedNFTs)
-      }
-    } while (pageKey)
+    const chunks: OwnedNFT[][] = chunk(latestNFTs, 20)
+    const savedNFTs: entity.NFT[] = []
+    // We chunk the latest NFTs by 20 due to prevent calling alchemy api for metadata so often
+    await Promise.allSettled(
+      chunks.map(async (chunk: OwnedNFT[]) => {
+        try {
+          await Promise.allSettled(
+            chunk.map(async (nft) => {
+              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+              if (savedNFT) savedNFTs.push(savedNFT)
+            }),
+          )
+        } catch (err) {
+          logger.error(`Error in updateWalletNFTs: ${err}`)
+          Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+        }
+      }))
+    if (savedNFTs.length) {
+      logger.info(`Updating collection and Syncing search index for wallet ${wallet.address} savedNFTSize: ${savedNFTs.length}`)
+      await updateCollectionForNFTs(savedNFTs)
+      await indexNFTsOnSearchEngine(savedNFTs)
+    }
   } catch (err) {
     logger.error(`Error in updateWalletNFTs: ${err}`)
     Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
@@ -1057,12 +970,19 @@ export const updateWalletNFTs = async (
 /**
  * Gets all the NFTs in the database owned by this user,
  * and cross-references them with new Alchemy data.
+ * If owner of NFT has been changed, we update them with new address
+ * @param userId
+ * @param walletId
+ * @param walletAddress
+ * @param chainId
+ * @param latestNFTs
  */
-export const checkNFTContractAddresses = async (
+export const verifyNFTsFromDB = async (
   userId: string,
   walletId: string,
   walletAddress: string,
   chainId: string,
+  latestNFTs: OwnedNFT[],
 ): Promise<void> => {
   try {
     const nfts = await repositories.nft.find({ where: {
@@ -1073,24 +993,65 @@ export const checkNFTContractAddresses = async (
     if (!nfts.length) {
       return
     }
-    const nftsChunks: entity.NFT[][] = chunk(
-      nfts,
-      20,
-    )
+    const checksum = ethers.utils.getAddress
+
+    const newOwnerNFTs = new Map()
     await Promise.allSettled(
-      nftsChunks.map(async (nftChunk: entity.NFT[]) => {
-        try {
-          await filterNFTsWithAlchemy(nftChunk, walletAddress)
-        } catch (err) {
-          logger.error(`Error in checkNFTContractAddresses: ${err}`)
-          Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
+      nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
+        const index = latestNFTs.findIndex((ownedNFT: OwnedNFT) => {
+          // logger.log(`&&&***&&& precheck filterNFTsWithAlchemy 1: ownedNFT.id: ${ownedNFT?.id}, dbNFT.id: ${dbNFT?.id} ||| checksum(ownedNFT?.contract?.address) ${checksum(ownedNFT?.contract?.address)}, checksum(dbNFT?.contract) ${checksum(dbNFT?.contract)}, BigNumber.from(ownedNFT?.id?.tokenId) ${BigNumber.from(ownedNFT?.id?.tokenId)}, BigNumber.from(dbNFT?.tokenId) ${BigNumber.from(dbNFT?.tokenId)}`)
+          return checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
+            BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId))
+        })
+
+        // We didn't find this db NFT entry in the latest list of this user's owned NFTs
+        if (index === -1) {
+          try {
+            await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
+            // Find new owner of db NFT entry
+            const owners = await getOwnersForNFT(dbNFT)
+            if (owners.length) {
+              if (owners.length > 1) {
+                // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+                // logger.log(`&&& filterNFTsWithAlchemy 2: dbNFT?.id ${dbNFT?.id}`)
+                await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
+                  .then(() => repositories.nft.hardDelete({
+                    id: dbNFT?.id,
+                  }))
+                await seService.deleteNFT(dbNFT?.id)
+              } else {
+                const newOwner = owners[0]
+                newOwnerNFTs.has(newOwner)
+                  ? newOwnerNFTs.get(newOwner).push(dbNFT)
+                  : newOwnerNFTs.set(newOwner, [dbNFT])
+              }
+            }
+          } catch (err) {
+            logger.error(`Error in verifyNFTsFromDB: ${err}`)
+            Sentry.captureMessage(`Error in verifyNFTsFromDB: ${err}`)
+          }
         }
       }),
     )
+    // For db NFTs which their owner's been changed, we update their ownership
+    for (const [owner, nftsToUpdate] of newOwnerNFTs) {
+      const csOwner = checkSumOwner(owner)
+      const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
+      await Promise.allSettled(
+        nftsToUpdate.map((nft) => {
+          repositories.nft.updateOneById(nft?.id, {
+            userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
+            walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
+            owner: csOwner,
+          })
+        }),
+      )
+      await seService.indexNFTs(nftsToUpdate)
+    }
   } catch (err) {
-    logger.error(`Error in checkNFTContractAddresses: ${err}`)
-    Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
-    return
+    logger.error(`Error in verifyNFTsFromDB: ${err}`)
+    Sentry.captureMessage(`Error in verifyNFTsFromDB: ${err}`)
+    throw err
   }
 }
 
@@ -1759,6 +1720,42 @@ export const syncEdgesWithNFTs = async (
   }
 }
 
+/**
+ * Fetch owned NFTs for wallet address
+ * @param address
+ * @param chainId
+ */
+export const fetchNFTsFromAlchemyForAddress = async (
+  address: string,
+  chainId: string,
+): Promise<OwnedNFT[]> => {
+  try {
+    const cacheKey = `${CacheKeys.WALLET_NFTS}_${ethers.utils.getAddress(address)}_${chainId}`
+    const cachedData = await cache.get(cacheKey)
+    if (cachedData) {
+      return JSON.parse(cachedData) as OwnedNFT[]
+    }
+    let pageKey = undefined
+    const withMetadata = true
+    const latestNFTs: OwnedNFT[] = []
+    do {
+      try {
+        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(ethers.utils.getAddress(address),
+          { withMetadata, pageKey })
+        latestNFTs.push(...ownedNFTs)
+        pageKey = nextPageKey
+      } catch (err) {
+        logger.error(`Error in fetchNFTsFromAlchemyForAddress: ${err}`)
+      }
+    } while (pageKey)
+    await cache.set(cacheKey, JSON.stringify(latestNFTs), 'EX', 60 * 10) // 10 min cache
+    return latestNFTs
+  } catch (err) {
+    logger.error(`Error in fetchNFTsFromAlchemyForAddress: ${err}`)
+    throw err
+  }
+}
+
 export const updateNFTsForAssociatedWallet = async (
   profileId: string,
   wallet: entity.Wallet,
@@ -1767,16 +1764,19 @@ export const updateNFTsForAssociatedWallet = async (
     const cacheKey = `${CacheKeys.UPDATE_NFT_FOR_ASSOCIATED_WALLET}_${wallet.chainId}_${wallet.id}_${wallet.userId}`
     const cachedData = await cache.get(cacheKey)
     if (!cachedData) {
-      await checkNFTContractAddresses(
+      const latestNFTs: OwnedNFT[] = await fetchNFTsFromAlchemyForAddress(wallet.address, wallet.chainId)
+      await verifyNFTsFromDB(
         wallet.userId,
         wallet.id,
         wallet.address,
         wallet.chainId,
+        latestNFTs,
       )
       await updateWalletNFTs(
         wallet.userId,
         wallet,
         wallet.chainId,
+        latestNFTs,
       )
       // save NFT edges for profile...
       await updateEdgesWeightForProfile(profileId, wallet.id)
