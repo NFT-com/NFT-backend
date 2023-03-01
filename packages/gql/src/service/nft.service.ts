@@ -1065,11 +1065,12 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
     let pageKey = undefined
     do {
       const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
       pageKey = nextPageKey
-      logger.debug({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Updating wallet NFTs for ${wallet.address}`)
+      logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}`)
       const chunks: OwnedNFT[][] = chunk(
         ownedNFTs,
         20,
@@ -1085,19 +1086,19 @@ export const updateWalletNFTs = async (
               }),
             )
           } catch (err) {
-            logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `Error in updateWalletNFTs: ${err}`)
-            Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+            logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
+            Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
           }
         }))
       if (savedNFTs.length) {
-        logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `Updating collection and Syncing search index for wallet ${wallet.address}`)
+        logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}`)
         await updateCollectionForNFTs(savedNFTs)
         await indexNFTsOnSearchEngine(savedNFTs)
       }
     } while (pageKey)
   } catch (err) {
-    logger.error(`Error in updateWalletNFTs: ${err}`)
-    Sentry.captureMessage(`Error in updateWalletNFTs: ${err}`)
+    logger.error(`[updateWalletNFTs] error 2: ${err}`)
+    Sentry.captureMessage(`[updateWalletNFTs] error 2: ${err}`)
   }
 }
 
