@@ -5,7 +5,7 @@ import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
 import fetch from 'node-fetch'
-import { FindManyOptions, FindOptionsOrder, IsNull } from 'typeorm'
+import { FindManyOptions, FindOptionsOrder, IsNull, Not } from 'typeorm'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
@@ -1349,29 +1349,27 @@ export const getLastWeight = async (
         thatEntityType: defs.EntityType.NFT,
         thisEntityId: profileId,
         edgeType: defs.EdgeType.Displays,
+        weight: Not(IsNull()),
       },
     })
+
+    logger.info(`getLastWeight for profile ${profileId} found ${edges.length} edges`, edges)
+
     if (!edges.length) {
       logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
       return undefined
     }
 
-    const filterEdges = edges.filter((edge) => edge.weight !== null)
-    if (!filterEdges.length) {
-      logger.info(`getLastWeight for profile ${profileId} is undefined (no weight)`)
-      return undefined
-    }
-
-    let biggest = filterEdges[0].weight
-    for (let i = 1; i < filterEdges.length; i++) {
-      if (biggest < filterEdges[i].weight)
-        biggest = filterEdges[i].weight
+    let biggest = edges[0].weight
+    for (let i = 1; i < edges.length; i++) {
+      if (biggest < edges[i].weight)
+        biggest = edges[i].weight
     }
 
     logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
     return biggest
   } catch (err) {
-    logger.error(err, `getLastWeight for profile ${profileId} failed`)
+    logger.error(`getLastWeight for profile ${profileId} failed`)
     await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${process.env.CHAIN_ID}`, [profileId])
     throw err
   }
