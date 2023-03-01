@@ -1304,7 +1304,8 @@ export const hideAllNFTs = async (
   }
 }
 
-const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.NFT[]): Promise<void> => {
+const saveEdgesForNFTs = async (
+  profileId: string, hide: boolean, nfts: entity.NFT[], lastWeight?: string): Promise<string> => {
   try {
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}`)
     const startTime = new Date().getTime()
@@ -1314,7 +1315,7 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
     const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
 
     // generate weights for nfts...
-    let weight = await getLastWeight(repositories, profileId)
+    let weight = lastWeight || await getLastWeight(repositories, profileId)
     const edgesWithWeight = []
     for (let i = 0; i < nftsToBeAdded.length; i++) {
       const newWeight = generateWeight(weight)
@@ -1334,6 +1335,7 @@ const saveEdgesForNFTs = async (profileId: string, hide: boolean, nfts: entity.N
     // save nfts to edge...
     await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
+    return weight
   } catch (err) {
     logger.error(err, `Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
@@ -1354,9 +1356,10 @@ export const saveEdgesWithWeight = async (
       const pgClient = db.getPgClient(true)
       await new Promise<void>((resolve, reject) => {
         pgClient.connect((err, client, done) => {
+          let weight: string
           if (err) throw err
           const batch = []
-          const batchSize = 100
+          const batchSize = 200
           const query = new QueryStream(
             `SELECT
               *
@@ -1366,14 +1369,14 @@ export const saveEdgesWithWeight = async (
               "walletId" = $1
               AND "chainId" = $2`,
             [walletId, chainId],
-            { batchSize, highWaterMark: 500 },
+            { batchSize, highWaterMark: 1000 },
           )
 
           logger.info(`Querying nfts for profileId ${profileId}, wallet ${walletId}...`)
           const stream = client.query(query)
           stream.on('end', async () => {
             if (batch.length) {
-              await saveEdgesForNFTs(profileId, hide, batch.splice(0))
+              await saveEdgesForNFTs(profileId, hide, batch.splice(0), weight)
             }
             done()
 
@@ -1388,7 +1391,7 @@ export const saveEdgesWithWeight = async (
             async write(nft, _encoding, callback) {
               batch.push(nft)
               if (batch.length === batchSize) {
-                await saveEdgesForNFTs(profileId, hide, batch.splice(0, batchSize))
+                weight = await saveEdgesForNFTs(profileId, hide, batch.splice(0, batchSize), weight)
               }
               callback()
             },
