@@ -39,6 +39,7 @@ jest.mock('@nftcom/cache', () => ({
     PROFILE_SORTED_NFTS: 'PROFILE_SORTED_NFTS',
     PROFILE_SORTED_VISIBLE_NFTS: 'PROFILE_SORTED_VISIBLE_NFTS',
     GENESIS_KEY_OWNERS: 'genesis_key_owners',
+    WALLET_NFTS: 'wallet_nfts',
   },
   createCacheConnection: jest.fn(),
 }))
@@ -195,6 +196,17 @@ describe('nft service', () => {
       await updateNFTMetadata(nftA, repositories)
       const nft = await repositories.nft.findById(nftA.id)
       expect(nft.metadata.imageURL).toBeDefined()
+    })
+  })
+
+  describe('fetchNFTsFromAlchemyForAddress', () => {
+    afterAll(async () => {
+      await clearDB(repositories)
+    })
+
+    it('should return nfts owned by address', async () => {
+      const ownedNFTs = await nftService.fetchNFTsFromAlchemyForAddress('0x65Ef6345ee2844DCbAcf0f41Ac4997AE4E24a883', '5')
+      expect(ownedNFTs.length).toBeGreaterThan(0)
     })
   })
 
