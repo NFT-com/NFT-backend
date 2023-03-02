@@ -1123,6 +1123,8 @@ export const checkNFTContractAddresses = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses starting')
+    let batchIteration = 0
     const pgClient = db.getPgClient(true)
     await new Promise<void>((resolve, reject) => {
       pgClient.connect((err, client, done) => {
@@ -1145,6 +1147,7 @@ export const checkNFTContractAddresses = async (
         const stream = client.query(query)
         stream.on('end', async () => {
           if (batch.length) {
+            logger.info({ userId, walletId, walletAddress, chainId }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
             const nfts = batch.splice(0, batchSize)
             await batchFilterNFTsWithAlchemy(nfts, walletAddress)
           }
@@ -1161,6 +1164,7 @@ export const checkNFTContractAddresses = async (
           async write(nft, _encoding, callback) {
             batch.push(nft)
             if (batch.length === batchSize) {
+              logger.info({ userId, walletId, walletAddress, chainId }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
               const nfts = batch.splice(0, batchSize)
               await batchFilterNFTsWithAlchemy(nfts, walletAddress)
             }
