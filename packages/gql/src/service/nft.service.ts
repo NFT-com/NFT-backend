@@ -351,10 +351,7 @@ export const filterNFTsWithAlchemy = async (
             Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
           }
 
-          logger.info(`filterNFTsWithAlchemy 4a: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
-          start = new Date().getTime()
-        } else {
-          logger.info(`filterNFTsWithAlchemy 4b: key found!, ${new Date().getTime() - start}ms`, ownedNftsKey)
+          logger.info(`filterNFTsWithAlchemy 4: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
           start = new Date().getTime()
         }
       }),
