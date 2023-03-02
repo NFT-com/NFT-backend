@@ -359,7 +359,7 @@ export const filterNFTsWithAlchemy = async (
         }
       }),
     )
-    
+
     for (const [owner, nftsToUpdate] of newOwnerNFTs) {
       const csOwner = checkSumOwner(owner)
       const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
@@ -372,7 +372,12 @@ export const filterNFTsWithAlchemy = async (
           })
         }),
       )
+      logger.info(`filterNFTsWithAlchemy 5a: updated nft for ${owner}, ${new Date().getTime() - start}ms`, nftsToUpdate)
+      start = new Date().getTime()
+
       await seService.indexNFTs(nftsToUpdate)
+      logger.info(`filterNFTsWithAlchemy 5b: updated seService, ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
     }
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
