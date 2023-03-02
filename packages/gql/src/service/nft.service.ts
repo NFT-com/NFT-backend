@@ -1006,6 +1006,7 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
     let pageKey = undefined
     const withMetadata = true
     const dbNFTs = await repositories.nft.find({ where: {
