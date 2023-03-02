@@ -1,7 +1,7 @@
 import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
-import { chunk, differenceBy } from 'lodash'
+import { differenceBy } from 'lodash'
 import QueryStream from 'pg-query-stream'
 import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
@@ -1028,23 +1028,18 @@ export const updateWalletNFTs = async (
           const key = `${ethers.utils.getAddress(nft.contract.address)}-${BigNumber.from(nft.id.tokenId).toHexString()}`
           existing[key] = true
         })
-        // We chunk the latest NFTs by 20 due to prevent calling alchemy api for metadata so often
-        const chunks: OwnedNFT[][] = chunk(ownedNFTs, 20)
         const savedNFTs: entity.NFT[] = []
-        await Promise.allSettled(
-          chunks.map(async (chunk: OwnedNFT[]) => {
-            try {
-              await Promise.allSettled(
-                chunk.map(async (nft) => {
-                  const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
-                  if (savedNFT) savedNFTs.push(savedNFT)
-                }),
-              )
-            } catch (err) {
-              logger.error(`[updateWalletNFTs] error: ${err}`)
-              Sentry.captureMessage(`[updateWalletNFTs] error: ${err}`)
-            }
-          }))
+        try {
+          await Promise.allSettled(
+            ownedNFTs.map(async (nft) => {
+              const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+              if (savedNFT) savedNFTs.push(savedNFT)
+            }),
+          )
+        } catch (err) {
+          logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
+          Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
+        }
         if (savedNFTs.length) {
           logger.info(`[updateWalletNFTs]: Updating collection and Syncing search index for wallet ${wallet.address} savedNFTSize: ${savedNFTs.length}`)
           await updateCollectionForNFTs(savedNFTs)
