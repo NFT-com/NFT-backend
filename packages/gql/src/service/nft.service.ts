@@ -2,6 +2,7 @@ import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, ethers } from 'ethers'
 import { chunk, differenceBy } from 'lodash'
+import { performance } from 'perf_hooks'
 import QueryStream from 'pg-query-stream'
 import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
@@ -1123,6 +1124,9 @@ export const checkNFTContractAddresses = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    const start = performance.now()
+    logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses starting')
+    let batchIteration = 0
     const pgClient = db.getPgClient(true)
     await new Promise<void>((resolve, reject) => {
       pgClient.connect((err, client, done) => {
@@ -1145,12 +1149,14 @@ export const checkNFTContractAddresses = async (
         const stream = client.query(query)
         stream.on('end', async () => {
           if (batch.length) {
+            const start = performance.now()
             const nfts = batch.splice(0, batchSize)
             await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+            const end = performance.now()
+            logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
           }
           done()
 
-          logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses done')
           resolve()
         })
         stream.on('error', (err) => {
@@ -1161,8 +1167,11 @@ export const checkNFTContractAddresses = async (
           async write(nft, _encoding, callback) {
             batch.push(nft)
             if (batch.length === batchSize) {
+              const start = performance.now()
               const nfts = batch.splice(0, batchSize)
               await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+              const end = performance.now()
+              logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
             }
             callback()
           },
@@ -1170,6 +1179,8 @@ export const checkNFTContractAddresses = async (
         stream.pipe(processBatch)
       })
     })
+    const end = performance.now()
+    logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, 'checkNFTContractAddresses done')
   } catch (err) {
     logger.error(`Error in checkNFTContractAddresses: ${err}`)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
