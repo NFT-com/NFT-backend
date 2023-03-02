@@ -292,6 +292,7 @@ export const filterNFTsWithAlchemy = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<void> => {
+  let start = new Date().getTime()
   const contracts = []
   const seen = {}
   nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
@@ -301,22 +302,30 @@ export const filterNFTsWithAlchemy = async (
       seen[key] = true
     }
   })
+  
+  logger.info(`filterNFTsWithAlchemy 1: mapped ${nfts?.length} nfts, ${new Date().getTime() - start}ms`)
+  start = new Date().getTime()
+
   try {
     const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
-    const checksum = ethers.utils.getAddress
+    logger.info(`filterNFTsWithAlchemy 2: found ownedNFTs for owner=${owner} contracts=${contracts}, ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
+
+    // convert ownedNFTs to hash map
+    const ownedNftsKey = {}
+    ownedNfts.forEach((ownedNFT: OwnedNFT) => {
+      ownedNftsKey[`${ethers.utils.getAddress(ownedNFT?.contract?.address)}-${BigNumber.from(ownedNFT?.id?.tokenId).toHexString()}`] = true
+    })
+    logger.info(`filterNFTsWithAlchemy 3: created hash map for ownedNftsKey, ${new Date().getTime() - start}ms`, ownedNftsKey)
+    start = new Date().getTime()
 
     const newOwnerNFTs = new Map()
     await Promise.allSettled(
       nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const index = ownedNfts.findIndex((ownedNFT: OwnedNFT) => {
-          // logger.log(`&&&***&&& precheck filterNFTsWithAlchemy 1: ownedNFT.id: ${ownedNFT?.id}, dbNFT.id: ${dbNFT?.id} ||| checksum(ownedNFT?.contract?.address) ${checksum(ownedNFT?.contract?.address)}, checksum(dbNFT?.contract) ${checksum(dbNFT?.contract)}, BigNumber.from(ownedNFT?.id?.tokenId) ${BigNumber.from(ownedNFT?.id?.tokenId)}, BigNumber.from(dbNFT?.tokenId) ${BigNumber.from(dbNFT?.tokenId)}`)
-          return checksum(ownedNFT?.contract?.address) === checksum(dbNFT?.contract) &&
-          BigNumber.from(ownedNFT?.id?.tokenId).eq(BigNumber.from(dbNFT?.tokenId))
-        })
+        const key = `${ethers.utils.getAddress(dbNFT?.contract)}-${BigNumber.from(dbNFT?.tokenId).toHexString()}`
 
-        // We didn't find this NFT entry in the most recent list of
-        // this user's owned tokens for this contract/collection.
-        if (index === -1) {
+        // if not found in ownedNFTs, delete the NFT
+        if (!ownedNftsKey[key]) {
           try {
             // logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
             await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
@@ -341,9 +350,16 @@ export const filterNFTsWithAlchemy = async (
             logger.error(`Error in filterNFTsWithAlchemy: ${err}`)
             Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
           }
+
+          logger.info(`filterNFTsWithAlchemy 4a: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
+          start = new Date().getTime()
+        } else {
+          logger.info(`filterNFTsWithAlchemy 4b: key found!, ${new Date().getTime() - start}ms`, ownedNftsKey)
+          start = new Date().getTime()
         }
       }),
     )
+
     for (const [owner, nftsToUpdate] of newOwnerNFTs) {
       const csOwner = checkSumOwner(owner)
       const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
@@ -356,7 +372,12 @@ export const filterNFTsWithAlchemy = async (
           })
         }),
       )
+      logger.info(`filterNFTsWithAlchemy 5a: updated nft for ${owner}, ${new Date().getTime() - start}ms`, nftsToUpdate)
+      start = new Date().getTime()
+
       await seService.indexNFTs(nftsToUpdate)
+      logger.info(`filterNFTsWithAlchemy 5b: updated seService, ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
     }
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
