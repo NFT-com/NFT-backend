@@ -844,7 +844,7 @@ export const updateNFTOwnershipAndMetadata = async (
               })
             }
           } else {
-            logger.info(`previous wallet for existing NFT ${existingNFT.id} is undefined`)
+            logger.info(`[updateNFTOwnershipAndMetadata]: Previous wallet for existing NFT ${existingNFT.id} is undefined`)
           }
         }
 
@@ -890,14 +890,14 @@ export const updateNFTOwnershipAndMetadata = async (
           })
           return updatedNFT
         } else {
-          logger.info(`No need to update owner and metadata for NFT contract: ${existingNFT.contract} tokenId: ${existingNFT.tokenId}`)
+          logger.info(`[updateNFTOwnershipAndMetadata]: No need to update owner and metadata for NFT contract: ${existingNFT.contract} tokenId: ${existingNFT.tokenId}`)
           return undefined
         }
       }
     }
   } catch (err) {
-    logger.error(`Error in updateNFTOwnershipAndMetadata: ${err}`)
-    Sentry.captureMessage(`Error in updateNFTOwnershipAndMetadata: ${err}`)
+    logger.error(`[updateNFTOwnershipAndMetadata] error: ${err}`)
+    Sentry.captureMessage(`[updateNFTOwnershipAndMetadata] error: ${err}`)
     return undefined
   }
 }
