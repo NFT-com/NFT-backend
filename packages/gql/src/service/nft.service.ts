@@ -1096,6 +1096,22 @@ export const updateWalletNFTs = async (
   }
 }
 
+const batchFilterNFTsWithAlchemy = async (nfts, walletAddress): Promise<void> => {
+  const nftsChunks: entity.NFT[][] = chunk(
+    nfts,
+    20,
+  )
+  await Promise.allSettled(
+    nftsChunks.map(async (nftChunk: entity.NFT[]) => {
+      try {
+        await filterNFTsWithAlchemy(nftChunk, walletAddress)
+      } catch (err) {
+        logger.error(`Error in checkNFTContractAddresses: ${err}`)
+        Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
+      }
+    }),
+  )
+}
 /**
  * Gets all the NFTs in the database owned by this user,
  * and cross-references them with new Alchemy data.
@@ -1107,28 +1123,53 @@ export const checkNFTContractAddresses = async (
   chainId: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: {
-      userId: userId,
-      walletId: walletId,
-      chainId: chainId,
-    } })
-    if (!nfts.length) {
-      return
-    }
-    const nftsChunks: entity.NFT[][] = chunk(
-      nfts,
-      20,
-    )
-    await Promise.allSettled(
-      nftsChunks.map(async (nftChunk: entity.NFT[]) => {
-        try {
-          await filterNFTsWithAlchemy(nftChunk, walletAddress)
-        } catch (err) {
-          logger.error(`Error in checkNFTContractAddresses: ${err}`)
-          Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
-        }
-      }),
-    )
+    const pgClient = db.getPgClient(true)
+    await new Promise<void>((resolve, reject) => {
+      pgClient.connect((err, client, done) => {
+        if (err) throw err
+        const batch = []
+        const batchSize = 200
+        const query = new QueryStream(
+          `SELECT
+            *
+          FROM
+            nft
+          WHERE
+            "walletId" = $1
+            AND "userId" = $2
+            AND "chainId" = $3`,
+          [walletId, userId, chainId],
+          { batchSize, highWaterMark: 1000 },
+        )
+
+        const stream = client.query(query)
+        stream.on('end', async () => {
+          if (batch.length) {
+            const nfts = batch.splice(0, batchSize)
+            await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+          }
+          done()
+
+          logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses done')
+          resolve()
+        })
+        stream.on('error', (err) => {
+          reject(err)
+        })
+        const processBatch = new Writable({
+          objectMode: true,
+          async write(nft, _encoding, callback) {
+            batch.push(nft)
+            if (batch.length === batchSize) {
+              const nfts = batch.splice(0, batchSize)
+              await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+            }
+            callback()
+          },
+        })
+        stream.pipe(processBatch)
+      })
+    })
   } catch (err) {
     logger.error(`Error in checkNFTContractAddresses: ${err}`)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
