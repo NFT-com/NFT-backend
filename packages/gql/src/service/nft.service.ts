@@ -1156,7 +1156,7 @@ export const checkNFTContractAddresses = async (
         stream.on('error', (err) => {
           reject(err)
         })
-        const saveEdges = new Writable({
+        const processBatch = new Writable({
           objectMode: true,
           async write(nft, _encoding, callback) {
             batch.push(nft)
@@ -1167,7 +1167,7 @@ export const checkNFTContractAddresses = async (
             callback()
           },
         })
-        stream.pipe(saveEdges)
+        stream.pipe(processBatch)
       })
     })
   } catch (err) {
