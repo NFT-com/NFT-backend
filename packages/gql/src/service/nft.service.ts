@@ -1166,7 +1166,7 @@ export const executeUpdateNFTsForProfile = async (
       await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
     }
   } catch (err) {
-    logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
+    logger.error(err, 'Error in executeUpdateNFTsForProfile')
     Sentry.captureMessage(`Error in executeUpdateNFTsForProfile: ${err}`)
     throw err
   }
@@ -1198,7 +1198,7 @@ export const getOwnersOfNFTProfile = async (
       return Promise.reject(`No owner found for NFT profile on chain ${chainId}`)
     }
   } catch (err) {
-    logger.error(`Error in getOwnersOfNFTProfile: ${err}`)
+    logger.error(err, 'Error in getOwnersOfNFTProfile')
     Sentry.captureMessage(`Error in getOwnersOfNFTProfile: ${err}`)
     throw err
   }
@@ -1227,7 +1227,7 @@ export const hideAllNFTs = async (
       await repositories.edge.saveMany(updatedEdges, { chunk: MAX_SAVE_COUNTS })
     }
   } catch (err) {
-    logger.error(`Error in hideAllNFTs: ${err}`)
+    logger.error(err, 'Error in hideAllNFTs')
     Sentry.captureMessage(`Error in hideAllNFTs: ${err}`)
     throw err
   }
@@ -1272,7 +1272,7 @@ const saveEdgesForNFTs = async (
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
     return weight
   } catch (err) {
-    logger.error(err, `Error in saveEdgesForNFTs: ${err}`)
+    logger.error(err, 'Error in saveEdgesForNFTs')
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
     await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     throw err
@@ -1336,7 +1336,7 @@ export const saveEdgesWithWeight = async (
       })
     }
   } catch (err) {
-    logger.error(`Error in saveEdgesWithWeight: ${err}`)
+    logger.error(err, 'Error in saveEdgesWithWeight')
     Sentry.captureMessage(`Error in saveEdgesWithWeight: ${err}`)
     throw err
   }
@@ -1374,7 +1374,7 @@ export const showAllNFTs = async (
       }
     }
   } catch (err) {
-    logger.error(`Error in showAllNFTs: ${err}`)
+    logger.error(err, 'Error in showAllNFTs')
     Sentry.captureMessage(`Error in showAllNFTs: ${err}`)
     throw err
   }
@@ -1413,7 +1413,7 @@ export const showNFTs = async (
       )
     }
   } catch (err) {
-    logger.error(`Error in showNFTs: ${err}`)
+    logger.error(err, 'Error in showNFTs')
     Sentry.captureMessage(`Error in showNFTs: ${err}`)
     throw err
   }
@@ -1484,7 +1484,7 @@ export const changeNFTsVisibility = async (
       }
     }
   } catch (err) {
-    logger.error(`Error in changeNFTsVisibility: ${err}`)
+    logger.error(err, 'Error in changeNFTsVisibility')
     Sentry.captureMessage(`Error in changeNFTsVisibility: ${err}`)
     throw err
   }
@@ -1562,7 +1562,7 @@ export const updateNFTsOrder = async (
       await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
     }
   } catch (err) {
-    logger.error(`Error in updateNFTsOrder: ${err}`)
+    logger.error(err, 'Error in updateNFTsOrder')
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
     throw err
   }
@@ -1662,7 +1662,7 @@ export const updateEdgesWeightForProfile = async (
 
     logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
   } catch (err) {
-    logger.error(`Error in updateEdgesWeightForProfile: ${err}`)
+    logger.error(err, 'Error in updateEdgesWeightForProfile')
     Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
     throw err
   }
@@ -1733,7 +1733,7 @@ export const syncEdgesWithNFTs = async (
       })
     })
   } catch (err) {
-    logger.error(`Error in syncEdgesWithNFTs: ${err}`)
+    logger.error(err, 'Error in syncEdgesWithNFTs')
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
     throw err
   }
@@ -1764,7 +1764,7 @@ export const updateNFTsForAssociatedWallet = async (
       await cache.set(cacheKey, nfts.length.toString(), 'EX', 60 * 10)
     } else return
   } catch (err) {
-    logger.error(`Error in updateNFTsForAssociatedWallet: ${err}`)
+    logger.error(err, 'Error in updateNFTsForAssociatedWallet')
     Sentry.captureMessage(`Error in updateNFTsForAssociatedWallet: ${err}`)
     throw err
   }
@@ -1821,7 +1821,7 @@ export const removeEdgesForNonassociatedAddresses = async (
       }),
     )
   } catch (err) {
-    logger.error(`Error in removeEdgesForNonassociatedAddresses: ${err}`)
+    logger.error(err, 'Error in removeEdgesForNonassociatedAddresses')
     Sentry.captureMessage(`Error in removeEdgesForNonassociatedAddresses: ${err}`)
     throw err
   }
@@ -1887,14 +1887,14 @@ export const updateAssociatedAddressesForProfile = async (
         try {
           await updateNFTsForAssociatedWallet(profile.id, wallet)
         } catch (err) {
-          logger.error(`[updateAssociatedAddressesForProfile] error: ${err}`)
+          logger.error(err, '[updateAssociatedAddressesForProfile] error')
           Sentry.captureMessage(`[updateAssociatedAddressesForProfile] error: ${err}`)
         }
       }),
     )
     await syncEdgesWithNFTs(profile.id)
   } catch (err) {
-    logger.error(`[updateAssociatedAddressesForProfile] error2: ${err}`)
+    logger.error(err, '[updateAssociatedAddressesForProfile] error2')
     Sentry.captureMessage(`[updateAssociatedAddressesForProfile] error2: ${err}`)
     throw err
   }
@@ -1997,7 +1997,7 @@ export const updateGKIconVisibleStatus = async (
       return
     }
   } catch (err) {
-    logger.error(`Error in updateGKIconVisibleStatus: ${err}`)
+    logger.error(err, 'Error in updateGKIconVisibleStatus')
     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
     throw err
   }
@@ -2025,7 +2025,7 @@ export const saveVisibleNFTsForProfile = async (
       logger.info(`saveVisibleNFTsForProfile: ${profileId} - no visible NFTs`)
     }
   } catch (err) {
-    logger.error(`Error in saveVisibleNFTsForProfile: ${err}`)
+    logger.error(err, 'Error in saveVisibleNFTsForProfile')
     Sentry.captureMessage(`Error in saveVisibleNFTsForProfile: ${err}`)
     throw err
   }
@@ -2079,7 +2079,7 @@ export const saveProfileScore = async (
       logger.info(`saveProfileScore: No ownerUserId or chainId for profile ${profile.id}`)
     }
   } catch (err) {
-    logger.error(`Error in saveProfileScore: ${err}`)
+    logger.error(err, 'Error in saveProfileScore')
     Sentry.captureMessage(`Error in saveProfileScore: ${err}`)
     throw err
   }
@@ -2239,7 +2239,7 @@ export const getCollectionInfo = async (
       return returnObject
     }
   } catch (err) {
-    logger.error(`Error in getCollectionInfo: ${err}`)
+    logger.error(err, 'Error in getCollectionInfo')
     Sentry.captureMessage(`Error in getCollectionInfo: ${err}`)
     throw err
   }
@@ -2264,7 +2264,7 @@ export const updateNFTMetadata = async (
       },
     })
   } catch (err) {
-    logger.error(`Error in updateNFTMedata: ${err}`)
+    logger.error(err, 'Error in updateNFTMedata')
     Sentry.captureMessage(`Error in updateNFTMedata: ${err}`)
   }
 }
@@ -2295,7 +2295,7 @@ export const getUserWalletFromNFT = async (
       }
     }
   } catch (err) {
-    logger.debug(`Error in getUserWalletFromNFT: ${err}`)
+    logger.info(err, 'Error in getUserWalletFromNFT')
     Sentry.captureMessage(`Error in getUserWalletFromNFT: ${err}`)
     return undefined
   }
@@ -2336,7 +2336,7 @@ export const saveNewNFT = async (
     await updateCollectionForNFTs([savedNFT])
     return savedNFT
   } catch (err) {
-    logger.error(`Error in saveNewNFT: ${err}`)
+    logger.error(err, 'Error in saveNewNFT')
     Sentry.captureMessage(`Error in saveNewNFT: ${err}`)
     throw err
   }
