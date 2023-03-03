@@ -845,7 +845,8 @@ const updateOwnerOfNFT = async (
 }
 
 /**
- * Save or update owner and metadata information for specific NFT
+ * If specific NFT from alchemy is existing in our DB, we try to update metadata or ownership
+ * Or else, we just save it
  * @param nft
  * @param userId
  * @param wallet
