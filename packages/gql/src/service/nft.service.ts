@@ -221,7 +221,7 @@ export const getOwnersForNFT = async (
       return Promise.reject(`No owners for NFT contract ${contract} tokenId ${nft.tokenId} on chain ${nft.chainId}`)
     }
   } catch (err) {
-    logger.error(`Error in getOwnersForNFT: ${err}`)
+    logger.error(err, 'Error in getOwnersForNFT')
     Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
     throw err
   }
@@ -293,7 +293,7 @@ export const getCollectionNameFromContract = (
       return Promise.resolve('Unknown Name')
     }
   } catch (error) {
-    logger.error('ethers failed: ', error)
+    logger.error(error, 'ethers failed')
     Sentry.captureException(error)
     Sentry.captureMessage(`Error in getCollectionNameFromContract: ${error}`)
     return Promise.resolve('Unknown Name')
@@ -347,7 +347,7 @@ export const getCollectionNameFromDataProvider = async (
       return contractDetails?.contractMetadata?.name
     }
   } catch (error) {
-    logger.error(`Error in getCollectionNameFromDataProvider: ${error}`)
+    logger.error(error, 'Error in getCollectionNameFromDataProvider')
     Sentry.captureException(error)
     Sentry.captureMessage(`Error in getCollectionNameFromDataProvider: ${error}`)
   }
@@ -641,7 +641,7 @@ const getNFTMetaData = async (
       traits,
     }
   } catch (err) {
-    logger.error(`Error in getNFTMetaData: ${err}`)
+    logger.error(err, 'Error in getNFTMetaData')
     Sentry.captureMessage(`Error in getNFTMetaData: ${err}`)
     throw err
   }
@@ -896,7 +896,7 @@ export const updateNFTOwnershipAndMetadata = async (
       }
     }
   } catch (err) {
-    logger.error(`[updateNFTOwnershipAndMetadata] error: ${err}`)
+    logger.error(err, '[updateNFTOwnershipAndMetadata] error')
     Sentry.captureMessage(`[updateNFTOwnershipAndMetadata] error: ${err}`)
     return undefined
   }
@@ -908,7 +908,7 @@ export const indexNFTsOnSearchEngine = async (
   try {
     await seService.indexNFTs(nfts)
   } catch (err) {
-    logger.error(`Error in indexNFTsOnSearchEngine: ${err}`)
+    logger.error(err, 'Error in indexNFTsOnSearchEngine')
     Sentry.captureMessage(`Error in indexNFTsOnSearchEngine: ${err}`)
     throw err
   }
@@ -920,7 +920,7 @@ export const indexCollectionsOnSearchEngine = async (
   try {
     await seService.indexCollections(collections)
   } catch (err) {
-    logger.error(`Error in indexCollectionsOnSearchEngine: ${err}`)
+    logger.error(err, 'Error in indexCollectionsOnSearchEngine')
     Sentry.captureMessage(`Error in indexCollectionsOnSearchEngine: ${err}`)
     throw err
   }
@@ -963,7 +963,7 @@ export const updateOwnerForTransferredNFTs = async (
             }
           }
         } catch (err) {
-          logger.error(`[updateOwnerForTransferredNFTs] error: ${err}`)
+          logger.error(err, '[updateOwnerForTransferredNFTs] error')
           Sentry.captureMessage(`[updateOwnerForTransferredNFTs] error: ${err}`)
         }
       }),
@@ -988,7 +988,7 @@ export const updateOwnerForTransferredNFTs = async (
     }
     logger.info(`[updateOwnerForTransferredNFTs]: Updated owner of ${amount} NFTs for wallet ${wallet.id}`)
   } catch (err) {
-    logger.error(`[updateOwnerForTransferredNFTs] error 2: ${err}`)
+    logger.error(err, '[updateOwnerForTransferredNFTs] error 2')
     Sentry.captureMessage(`[updateOwnerForTransferredNFTs] error 2: ${err}`)
     throw err
   }
@@ -1046,7 +1046,7 @@ export const updateWalletNFTs = async (
           await indexNFTsOnSearchEngine(savedNFTs)
         }
       } catch (err) {
-        logger.error(`[updateWalletNFTs] error 2: ${err}`)
+        logger.error(err, '[updateWalletNFTs] error 2')
       }
     } while (pageKey)
     // Update owner of db NFTs which are not owned by this wallet
@@ -1059,7 +1059,7 @@ export const updateWalletNFTs = async (
     })
     await updateOwnerForTransferredNFTs(toUpdateOwner, wallet)
   } catch (err) {
-    logger.error(`[updateWalletNFTs] error 3: ${err}`)
+    logger.error(err, '[updateWalletNFTs] error 3')
     Sentry.captureMessage(`[updateWalletNFTs] error 3: ${err}`)
   }
 }
@@ -1107,7 +1107,7 @@ export const refreshNFTMetadata = async (
     }
     return nft
   } catch (err) {
-    logger.error(`Error in refreshNFTMetadata: ${err}`)
+    logger.error(err, 'Error in refreshNFTMetadata')
     Sentry.captureMessage(`Error in refreshNFTMetadata: ${err}`)
     throw err
   }
@@ -1140,7 +1140,7 @@ export const getOwnersOfGenesisKeys = async (
       return Promise.reject(`No owner found for genesis key on chain ${chainId}`)
     }
   } catch (err) {
-    logger.error(`Error in getOwnersOfGenesisKeys: ${err}`)
+    logger.error(err, 'Error in getOwnersOfGenesisKeys')
     Sentry.captureMessage(`Error in getOwnersOfGenesisKeys: ${err}`)
     throw err
   }
