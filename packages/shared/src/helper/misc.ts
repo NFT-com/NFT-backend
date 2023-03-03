@@ -4,10 +4,6 @@ import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
 import whitelistJSON from '@nftcom/shared/helper/abis/whitelist.json'
 
-import { _logger } from './'
-
-const logger = _logger.Factory('shared/misc', _logger.Context.Misc)
-
 export const stringListToMap = (
   str: string,
   listSep = '|',
@@ -434,12 +430,7 @@ export const COLLECTION = convertToHash('COLLECTION').substring(0, 10)
 export const CRYPTO_KITTY = convertToHash('CRYPTO_KITTY').substring(0, 10)
 
 export const checkSum = (input: string): string => {
-  try {
-    return utils.getAddress(input)
-  } catch (err) {
-    logger.error(err, `Error in checksum misc ${input}`)
-    throw err
-  }
+  return utils.getAddress(input)
 }
 
 export const id = (input: string): string => {
