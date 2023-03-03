@@ -327,7 +327,7 @@ export const filterNFTsWithMulticall = async (
       }
     })
 
-    logger.info(`filterNFTsWithMulticall 0: starting batch with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
+    logger.info(`filterNFTsWithMulticall 0: starting batch for userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
     start = new Date().getTime()
 
     /* -- use multicall to decrease number to be more efficient with web3 calls - */
@@ -340,7 +340,7 @@ export const filterNFTsWithMulticall = async (
       else {
         const newOwner = helper.checkSum(data[0])
         if (newOwner != helper.checkSum(owner)) {
-          logger.info(`filterNFTsWithMulticall: new owner for ${nfts[i].id} is now ${newOwner} (was ${owner})`)
+          logger.info(`filterNFTsWithMulticall: new owner userId=${nfts[0]?.userId || '-'} ${owner} for ${nfts[i].id} is now ${newOwner}`)
           newOwners[`${nfts[i].id}-${nfts[i].contract}-${nfts[i].tokenId}-${nfts[i].type}-${nfts[i].chainId}`] = newOwner
           nftsToUpdate.push(nfts[i])
         }
@@ -350,7 +350,7 @@ export const filterNFTsWithMulticall = async (
     const newNftOwnerKeys = Object.keys(newOwners)
     
     if (newNftOwnerKeys.length) {
-      logger.info(`filterNFTsWithMulticall 1: new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
+      logger.info(`filterNFTsWithMulticall 1: userId=${nfts[0]?.userId || '-'} ${owner}, new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
       start = new Date().getTime()
     }
 
@@ -359,7 +359,7 @@ export const filterNFTsWithMulticall = async (
       const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
 
       if (nftId) {
-        logger.info(`filterNFTsWithMulticall 2: updating nft ${nftId}, key=${key} ${new Date().getTime() - start}ms`)
+        logger.info(`filterNFTsWithMulticall 2: userId=${nfts[0]?.userId || '-'} ${owner}, updating nft ${nftId}, key=${key} ${new Date().getTime() - start}ms`)
         const newOwner = newOwners[key]
 
         /* ----------------------- Delete NFT Id Edge Display ----------------------- */
@@ -386,12 +386,12 @@ export const filterNFTsWithMulticall = async (
           })
   
           await seService.indexNFTs(nftsToUpdate)
-          logger.info(newOwners,`filterNFTsWithMulticall 3: finished updating newNftOwnerKeys from old owner: ${owner}!, newOwners:${JSON.stringify(newOwners)}, ${new Date().getTime() - start}ms`)
-          logger.info(missingOwners,`filterNFTsWithMulticall 4: missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, missingOwners:${JSON.stringify(missingOwners)}, ${new Date().getTime() - start}ms`)
+          logger.info(newOwners,`filterNFTsWithMulticall 3: userId=${nfts[0]?.userId || '-'} ${owner}, finished updating newNftOwnerKeys from old owner: ${owner}!, newOwners:${JSON.stringify(newOwners)}, ${new Date().getTime() - start}ms`)
+          logger.info(missingOwners,`filterNFTsWithMulticall 4: userId=${nfts[0]?.userId || '-'} ${owner}, missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, missingOwners:${JSON.stringify(missingOwners)}, ${new Date().getTime() - start}ms`)
           start = new Date().getTime()
         }
       } else {
-        logger.info(`filterNFTsWithMulticall 5: no nftId for key ${key}!`)
+        logger.info(`filterNFTsWithMulticall 5: userId=${nfts[0]?.userId || '-'} ${owner}, no nftId for key ${key}!`)
       }
     })
   } catch (err) {
@@ -759,7 +759,7 @@ export const getNftType = (
     return defs.NFTType.ERC721
   } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC1155') {
     return defs.NFTType.ERC1155
-  } else if (nftMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
+  } else if (nftMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name?.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
     logger.error({ nftMetadata, nftPortDetails }, 'Unknown NFT type')
@@ -931,7 +931,7 @@ export const updateNFTOwnershipAndMetadata = async (
         type = defs.NFTType.ERC721
       } else if (nft.id.tokenMetadata?.tokenType === 'ERC1155') {
         type = defs.NFTType.ERC1155
-      } else if (nft.title && nft.title?.endsWith('.eth')) { // if token is ENS token...
+      } else if (nft?.title?.endsWith('.eth')) { // if token is ENS token...
         type = defs.NFTType.UNKNOWN
       }
     }
@@ -1432,9 +1432,9 @@ const saveEdgesForNFTs = async (
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
     return weight
   } catch (err) {
+    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     logger.error(err, `Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
-    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     throw err
   }
 }

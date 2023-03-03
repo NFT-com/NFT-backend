@@ -385,7 +385,7 @@ const updateCollectionName = async (
           await repositories.collection.updateOneById(collection.id, { name })
         } else {
           // If NFT is ENS token,we change collection name to ENS
-          if (nft.metadata.name.endsWith('.eth')) {
+          if (nft?.metadata?.name?.endsWith('.eth')) {
             await repositories.collection.updateOneById(collection.id, { name : 'ENS: Ethereum Name Service' })
           }
         }

@@ -13,7 +13,7 @@ import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
-import { cache, CacheKeys } from '@nftcom/cache'
+import { cache } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
@@ -1363,39 +1363,33 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
-  try {
-    logger.info(`getLastWeight for profile ${profileId} is called`)
+  logger.info(`getLastWeight for profile ${profileId} is called`)
 
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        edgeType: defs.EdgeType.Displays,
-        weight: Not(IsNull()),
-      },
-    })
+  const edges = await repositories.edge.find({
+    where: {
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      thisEntityId: profileId,
+      edgeType: defs.EdgeType.Displays,
+      weight: Not(IsNull()),
+    },
+  })
 
-    logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
+  logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
 
-    if (!edges.length) {
-      logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
-      return undefined
-    }
-
-    let biggest = edges[0].weight
-    for (let i = 1; i < edges.length; i++) {
-      if (biggest < edges[i].weight)
-        biggest = edges[i].weight
-    }
-
-    logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
-    return biggest
-  } catch (err) {
-    logger.error(`getLastWeight for profile ${profileId} failed`)
-    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${process.env.CHAIN_ID}`, [profileId])
-    throw err
+  if (!edges.length) {
+    logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
+    return undefined
   }
+
+  let biggest = edges[0].weight
+  for (let i = 1; i < edges.length; i++) {
+    if (biggest < edges[i].weight)
+      biggest = edges[i].weight
+  }
+
+  logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
+  return biggest
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
