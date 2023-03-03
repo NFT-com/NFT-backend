@@ -344,8 +344,10 @@ export const filterNFTsWithMulticall = async (
 
   const newNftOwnerKeys = Object.keys(newOwners)
   
-  logger.info(`filterNFTsWithMulticall 1: new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
-  start = new Date().getTime()
+  if (newNftOwnerKeys.length) {
+    logger.info(`filterNFTsWithMulticall 1: new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
+  }
 
   try {
     newNftOwnerKeys.forEach(async (key) => {
@@ -357,7 +359,6 @@ export const filterNFTsWithMulticall = async (
         const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
         if (owners.length > 1) {
           // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-          logger.log(`filterNFTsWithMulticall 2: [1155] remove edge for ${key}`)
           await repositories.edge.hardDelete({ thatEntityId: nftId } )
             .then(() => repositories.nft.hardDelete({
               id: nftId,
@@ -373,13 +374,12 @@ export const filterNFTsWithMulticall = async (
           owner: newOwner,
         })
 
-        logger.info(`filterNFTsWithMulticall 3: updated [${nftType}] nft for ${owner}, ${new Date().getTime() - start}ms`)
         await seService.indexNFTs(nftsToUpdate)
       }
     })
 
-    logger.info(`filterNFTsWithMulticall 4: finished updating newNftOwnerKeys!, ${new Date().getTime() - start}ms`)
-    logger.info(`filterNFTsWithMulticall 5: missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`, missingOwners)
+    logger.info(newNftOwnerKeys, `filterNFTsWithMulticall 2: finished updating newNftOwnerKeys from old owner: ${owner}!, ${new Date().getTime() - start}ms`)
+    logger.info(missingOwners, `filterNFTsWithMulticall 3: missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
     start = new Date().getTime()
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithMulticall -- top level')
