@@ -950,11 +950,11 @@ export const updateOwnerForTransferredNFTs = async (
           if (owners.length) {
             if (owners.length > 1) {
               // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-              await repositories.edge.hardDelete({ thatEntityId: nft.id } )
+              await repositories.edge.hardDelete({ thatEntityId: nft?.id } )
                 .then(() => repositories.nft.hardDelete({
-                  id: nft.id,
+                  id: nft?.id,
                 }))
-              await seService.deleteNFT(nft.id)
+              await seService.deleteNFT(nft?.id)
             } else {
               const newOwner = owners[0]
               newOwnerNFTs.has(newOwner)
