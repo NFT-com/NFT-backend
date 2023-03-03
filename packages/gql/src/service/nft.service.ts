@@ -1132,7 +1132,7 @@ export const updateWalletNFTs = async (
 const batchFilterNFTsWithMulticall = async (nfts, walletAddress): Promise<void> => {
   const nftsChunks: entity.NFT[][] = chunk(
     nfts,
-    100,
+    1000,
   )
   await Promise.allSettled(
     nftsChunks.map(async (nftChunk: entity.NFT[]) => {
