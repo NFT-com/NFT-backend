@@ -375,7 +375,7 @@ export const filterNFTsWithMulticall = async (
       }
     })
 
-    logger.info(`filterNFTsWithMulticall 4: finished updating newNftOwnerKeys!, ${new Date().getTime() - start}ms`)
+    logger.info(`filterNFTsWithMulticall 4: finished updating newNftOwnerKeys!, ${new Date().getTime() - start}ms`, missingOwners)
     start = new Date().getTime()
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithMulticall -- top level')
