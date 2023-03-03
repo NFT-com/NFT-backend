@@ -1118,7 +1118,7 @@ export const updateWalletNFTs = async (
 const batchFilterNFTsWithAlchemy = async (nfts, walletAddress): Promise<void> => {
   const nftsChunks: entity.NFT[][] = chunk(
     nfts,
-    20,
+    100,
   )
   await Promise.allSettled(
     nftsChunks.map(async (nftChunk: entity.NFT[]) => {
