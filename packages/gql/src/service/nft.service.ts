@@ -17,6 +17,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import {
   contentTypeFromExt,
   extensionFromFilename,
+  fetchDataUsingMulticall,
   fetchWithTimeout,
   findDuplicatesByProperty,
   generateSVGFromBase64String,
@@ -24,6 +25,7 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
+  nftAbi,
   processIPFSURL,
   s3ToCdn,
   saveUsersForAssociatedAddress,
@@ -282,103 +284,115 @@ export const getOwnersForNFT = async (
   }
 }
 
+export const getOwnersForNFT2 = async (
+  chainId: string,
+  nftContract: string,
+  tokenId: string,
+): Promise<string[]> => {
+  try {
+    initiateWeb3(chainId)
+    const contract = ethers.utils.getAddress(nftContract)
+    
+    const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${tokenId}`
+    const response = await axios.get(baseUrl)
+
+    if (response && response?.data && response.data?.owners) {
+      return response.data.owners as string[]
+    } else {
+      return Promise.reject(`No owners for NFT contract ${contract} tokenId ${tokenId} on chain ${chainId}`)
+    }
+  } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
+    Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
+    throw err
+  }
+}
+
 /**
  * Takes a bunch of NFTs (pulled from the DB), and checks
  * that the given owner is still correct.
  *
  * If not, deletes the NFT record from the DB.
  */
-export const filterNFTsWithAlchemy = async (
+export const filterNFTsWithMulticall = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<void> => {
   let start = new Date().getTime()
-  const contracts = []
-  const seen = {}
-  nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
-    const key = ethers.utils.getAddress(nft.contract)
-    if (!seen[key]) {
-      contracts.push(key)
-      seen[key] = true
+  const nftsToUpdate = []
+  const newOwners = {}
+  const missingOwners = {}
+
+  const multicallArgs = nfts.map(({ tokenId, contract }) => {
+    return {
+      contract,
+      name: 'ownerOf',
+      params: [BigNumber.from(tokenId)],
     }
   })
+
+  const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
+  for (const [i, data] of ownersOf.entries()) {
+    if (!data) missingOwners[i] = data
+    else {
+      const newOwner = ethers.utils.getAddress(data[0])
+      if (newOwner != ethers.utils.getAddress(owner)) {
+        logger.info(`filterNFTsWithMulticall: new owner for ${nfts[i].id} is now ${newOwner} (was ${owner})`)
+        newOwners[`${nfts[i].id}-${nfts[i].contract}-${nfts[i].tokenId}-${nfts[i].type}-${nfts[i].chainId}`] = newOwner
+        nftsToUpdate.push(nfts[i])
+      }
+    }
+  }
+
+  const newNftOwnerKeys = Object.keys(newOwners)
   
-  logger.info(`filterNFTsWithAlchemy 1: mapped ${nfts?.length} nfts, ${new Date().getTime() - start}ms`)
+  logger.info(`filterNFTsWithMulticall 1: new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
   start = new Date().getTime()
 
   try {
-    const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
-    logger.info(`filterNFTsWithAlchemy 2: found ownedNFTs for owner=${owner} contracts=${contracts}, ${new Date().getTime() - start}ms`)
-    start = new Date().getTime()
+    newNftOwnerKeys.forEach(async (key) => {
+      try {
+        const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
+        const newOwner = newOwners[key]
 
-    // convert ownedNFTs to hash map
-    const ownedNftsKey = {}
-    ownedNfts.forEach((ownedNFT: OwnedNFT) => {
-      ownedNftsKey[`${ethers.utils.getAddress(ownedNFT?.contract?.address)}-${BigNumber.from(ownedNFT?.id?.tokenId).toHexString()}`] = true
-    })
-    logger.info(`filterNFTsWithAlchemy 3: created hash map for ownedNftsKey, ${new Date().getTime() - start}ms`, ownedNftsKey)
-    start = new Date().getTime()
-
-    const newOwnerNFTs = new Map()
-    await Promise.allSettled(
-      nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const key = `${ethers.utils.getAddress(dbNFT?.contract)}-${BigNumber.from(dbNFT?.tokenId).toHexString()}`
-
-        // if not found in ownedNFTs, delete the NFT
-        if (!ownedNftsKey[key]) {
-          try {
-            // logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
-            await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
-            const owners = await getOwnersForNFT(dbNFT)
-            if (owners.length) {
-              if (owners.length > 1) {
-                // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-                // logger.log(`&&& filterNFTsWithAlchemy 2: dbNFT?.id ${dbNFT?.id}`)
-                await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
-                  .then(() => repositories.nft.hardDelete({
-                    id: dbNFT?.id,
-                  }))
-                await seService.deleteNFT(dbNFT?.id)
-              } else {
-                const newOwner = owners[0]
-                newOwnerNFTs.has(newOwner)
-                  ? newOwnerNFTs.get(newOwner).push(dbNFT)
-                  : newOwnerNFTs.set(newOwner, [dbNFT])
-              }
-            }
-          } catch (err) {
-            logger.error(`Error in filterNFTsWithAlchemy: ${err}`)
-            Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
+        await repositories.edge.hardDelete({ thatEntityId: nftId, edgeType: defs.EdgeType.Displays } )
+        if (nftType === 'ERC1155') {
+          const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
+          if (owners.length > 1) {
+            // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+            logger.log(`filterNFTsWithMulticall [1155] remove edge for ${key}`)
+            await repositories.edge.hardDelete({ thatEntityId: nftId } )
+              .then(() => repositories.nft.hardDelete({
+                id: nftId,
+              }))
+            await seService.deleteNFT(nftId)
           }
+        } else { // 721, unknown, ens, etc
+          const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
 
-          logger.info(`filterNFTsWithAlchemy 4: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
-          start = new Date().getTime()
-        }
-      }),
-    )
-
-    for (const [owner, nftsToUpdate] of newOwnerNFTs) {
-      const csOwner = checkSumOwner(owner)
-      const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
-      await Promise.allSettled(
-        nftsToUpdate.map((nft) => {
-          repositories.nft.updateOneById(nft?.id, {
+          await repositories.nft.updateOneById(nftId, {
             userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
             walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
-            owner: csOwner,
+            owner: newOwner,
           })
-        }),
-      )
-      logger.info(`filterNFTsWithAlchemy 5a: updated nft for ${owner}, ${new Date().getTime() - start}ms`, nftsToUpdate)
-      start = new Date().getTime()
+          logger.info(`filterNFTsWithMulticall 5a: updated [${nftType}] nft for ${owner}, ${new Date().getTime() - start}ms`)
+          start = new Date().getTime()
+    
+          await seService.indexNFTs(nftsToUpdate)
+          logger.info(`filterNFTsWithMulticall 5b: updated seService [${nftType}], ${new Date().getTime() - start}ms`)
+          start = new Date().getTime()
+        }
+      } catch (err) {
+        logger.error(`Error in filterNFTsWithMulticall: ${err}`)
+        Sentry.captureMessage(`Error in filterNFTsWithMulticall: ${err}`)
+      }
 
-      await seService.indexNFTs(nftsToUpdate)
-      logger.info(`filterNFTsWithAlchemy 5b: updated seService, ${new Date().getTime() - start}ms`)
+      logger.info(`filterNFTsWithMulticall 4: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
       start = new Date().getTime()
-    }
+    })
   } catch (err) {
-    logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
-    Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
+    logger.error(err, 'Error in filterNFTsWithMulticall -- top level')
+    Sentry.captureMessage(`Error in filterNFTsWithMulticall: ${err}`)
     throw err
   }
 }
@@ -1115,7 +1129,7 @@ export const updateWalletNFTs = async (
   }
 }
 
-const batchFilterNFTsWithAlchemy = async (nfts, walletAddress): Promise<void> => {
+const batchFilterNFTsWithMulticall = async (nfts, walletAddress): Promise<void> => {
   const nftsChunks: entity.NFT[][] = chunk(
     nfts,
     100,
@@ -1123,7 +1137,7 @@ const batchFilterNFTsWithAlchemy = async (nfts, walletAddress): Promise<void> =>
   await Promise.allSettled(
     nftsChunks.map(async (nftChunk: entity.NFT[]) => {
       try {
-        await filterNFTsWithAlchemy(nftChunk, walletAddress)
+        await filterNFTsWithMulticall(nftChunk, walletAddress)
       } catch (err) {
         logger.error(`Error in checkNFTContractAddresses: ${err}`)
         Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
@@ -1169,7 +1183,7 @@ export const checkNFTContractAddresses = async (
           if (batch.length) {
             const start = performance.now()
             const nfts = batch.splice(0, batchSize)
-            await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+            await batchFilterNFTsWithMulticall(nfts, walletAddress)
             const end = performance.now()
             logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
           }
@@ -1187,7 +1201,7 @@ export const checkNFTContractAddresses = async (
             if (batch.length === batchSize) {
               const start = performance.now()
               const nfts = batch.splice(0, batchSize)
-              await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+              await batchFilterNFTsWithMulticall(nfts, walletAddress)
               const end = performance.now()
               logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
             }
