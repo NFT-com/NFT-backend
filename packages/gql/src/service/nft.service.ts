@@ -1002,12 +1002,14 @@ export const updateOwnerForTransferredNFTs = async (
       const newWallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
       await Promise.allSettled(
         nftsToUpdate.map(async (nft) => {
-          await repositories.nft.updateOneById(nft?.id, {
-            userId: newWallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
-            walletId: newWallet?.id || null, // null if wallet has not been connected to NFT.com
-            owner: csOwner,
-          })
-          amount++
+          if (nft.id) {
+            await repositories.nft.updateOneById(nft.id, {
+              userId: newWallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
+              walletId: newWallet?.id || null, // null if wallet has not been connected to NFT.com
+              owner: csOwner,
+            })
+            amount++
+          }
         }),
       )
       await seService.indexNFTs(nftsToUpdate)
@@ -1892,6 +1894,7 @@ export const updateAssociatedAddressesForProfile = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    if (!profile.id) return
     const addresses = await fetchAssociatedAddressesForProfile(profile, chainId)
     const prevAssociatedAddresses = profile.associatedAddresses
     // update associated addresses with the latest updates
