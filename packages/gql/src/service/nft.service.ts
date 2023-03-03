@@ -151,7 +151,7 @@ export const getAlchemyInterceptor = (
   const retryOptions: IAxiosRetryConfig= { retries: 3,
     retryCondition: (err: AxiosError<any>) => {
       if (err.response.status === 429) {
-        logger.error(err?.response?.data || err, '[alchemy-interceptor] Alchemy Rate Limit')
+        logger.error(err, '[alchemy-interceptor] Alchemy Rate Limit')
       }
       return (
         axiosRetry.isNetworkOrIdempotentRequestError(err) ||
