@@ -312,75 +312,88 @@ export const filterNFTsWithMulticall = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<void> => {
-  let start = new Date().getTime()
-  const nftsToUpdate = []
-  const newOwners = {}
-  const missingOwners = {}
-
-  const multicallArgs = nfts.map(({ tokenId, contract }) => {
-    return {
-      contract,
-      name: 'ownerOf',
-      params: [BigNumber.from(tokenId)],
-    }
-  })
-
-  logger.info(`filterNFTsWithMulticall 0: starting batch with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
-  start = new Date().getTime()
-
-  const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
-
-  for (const [i, data] of ownersOf.entries()) {
-    if (!data) missingOwners[i] = data
-    else {
-      const newOwner = helper.checkSum(data[0])
-      if (newOwner != helper.checkSum(owner)) {
-        logger.info(`filterNFTsWithMulticall: new owner for ${nfts[i].id} is now ${newOwner} (was ${owner})`)
-        newOwners[`${nfts[i].id}-${nfts[i].contract}-${nfts[i].tokenId}-${nfts[i].type}-${nfts[i].chainId}`] = newOwner
-        nftsToUpdate.push(nfts[i])
-      }
-    }
-  }
-
-  const newNftOwnerKeys = Object.keys(newOwners)
-  
-  if (newNftOwnerKeys.length) {
-    logger.info(`filterNFTsWithMulticall 1: new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
-    start = new Date().getTime()
-  }
-
   try {
-    newNftOwnerKeys.forEach(async (key) => {
-      const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
-      const newOwner = newOwners[key]
+    let start = new Date().getTime()
+    const nftsToUpdate = []
+    const newOwners = {}
+    const missingOwners = {}
 
-      await repositories.edge.hardDelete({ thatEntityId: nftId, edgeType: defs.EdgeType.Displays } )
-      if (nftType === 'ERC1155') {
-        const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
-        if (owners.length > 1) {
-          // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-          await repositories.edge.hardDelete({ thatEntityId: nftId } )
-            .then(() => repositories.nft.hardDelete({
-              id: nftId,
-            }))
-          await seService.deleteNFT(nftId)
-        }
-      } else { // 721, unknown, ens, etc
-        const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
-
-        await repositories.nft.updateOneById(nftId, {
-          userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
-          walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
-          owner: newOwner,
-        })
-
-        await seService.indexNFTs(nftsToUpdate)
+    /* -------------------- generate arguments for multicall -------------------- */
+    const multicallArgs = nfts.map(({ tokenId, contract }) => {
+      return {
+        contract,
+        name: 'ownerOf',
+        params: [BigNumber.from(tokenId)],
       }
     })
 
-    logger.info(newOwners,`filterNFTsWithMulticall 2: finished updating newNftOwnerKeys from old owner: ${owner}!, newOwners:${JSON.stringify(newOwners)}, ${new Date().getTime() - start}ms`)
-    logger.info(missingOwners,`filterNFTsWithMulticall 3: missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, missingOwners:${JSON.stringify(missingOwners)}, ${new Date().getTime() - start}ms`)
+    logger.info(`filterNFTsWithMulticall 0: starting batch with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
     start = new Date().getTime()
+
+    /* -- use multicall to decrease number to be more efficient with web3 calls - */
+    /* ------------ also increases speed of updates bc 1000 at a time ----------- */
+    /* ------ more info on multicall: https://github.com/makerdao/multicall ----- */
+    const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
+
+    for (const [i, data] of ownersOf.entries()) {
+      if (!data) missingOwners[i] = data
+      else {
+        const newOwner = helper.checkSum(data[0])
+        if (newOwner != helper.checkSum(owner)) {
+          logger.info(`filterNFTsWithMulticall: new owner for ${nfts[i].id} is now ${newOwner} (was ${owner})`)
+          newOwners[`${nfts[i].id}-${nfts[i].contract}-${nfts[i].tokenId}-${nfts[i].type}-${nfts[i].chainId}`] = newOwner
+          nftsToUpdate.push(nfts[i])
+        }
+      }
+    }
+
+    const newNftOwnerKeys = Object.keys(newOwners)
+    
+    if (newNftOwnerKeys.length) {
+      logger.info(`filterNFTsWithMulticall 1: new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+    }
+
+    /* ------------------- Loop through new NFT owner updates ------------------- */
+    newNftOwnerKeys.forEach(async (key) => {
+      const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
+
+      if (nftId) {
+        logger.info(`filterNFTsWithMulticall 2: updating nft ${nftId}, key=${key} ${new Date().getTime() - start}ms`)
+        const newOwner = newOwners[key]
+
+        /* ----------------------- Delete NFT Id Edge Display ----------------------- */
+        await repositories.edge.hardDelete({ thatEntityId: nftId, edgeType: defs.EdgeType.Displays } )
+
+        /* ----------------------------- ERC1155 Update ----------------------------- */
+        if (nftType === 'ERC1155') {
+          const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
+          if (owners.length > 1) {
+            // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+            await repositories.edge.hardDelete({ thatEntityId: nftId } )
+              .then(() => repositories.nft.hardDelete({
+                id: nftId,
+              }))
+            await seService.deleteNFT(nftId)
+          }
+        } else { /* ----------------------------- Non-ERC1155 Update ----------------------------- */
+          const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
+  
+          await repositories.nft.updateOneById(nftId, {
+            userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
+            walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
+            owner: newOwner,
+          })
+  
+          await seService.indexNFTs(nftsToUpdate)
+          logger.info(newOwners,`filterNFTsWithMulticall 3: finished updating newNftOwnerKeys from old owner: ${owner}!, newOwners:${JSON.stringify(newOwners)}, ${new Date().getTime() - start}ms`)
+          logger.info(missingOwners,`filterNFTsWithMulticall 4: missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, missingOwners:${JSON.stringify(missingOwners)}, ${new Date().getTime() - start}ms`)
+          start = new Date().getTime()
+        }
+      } else {
+        logger.info(`filterNFTsWithMulticall 5: no nftId for key ${key}!`)
+      }
+    })
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithMulticall -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithMulticall: ${err}`)
