@@ -2,8 +2,9 @@ import { BigNumber, constants, Signature, utils } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
-import { _logger } from '@nftcom/shared'
 import whitelistJSON from '@nftcom/shared/helper/abis/whitelist.json'
+
+import { _logger } from './'
 
 const logger = _logger.Factory('shared/misc', _logger.Context.Misc)
 
