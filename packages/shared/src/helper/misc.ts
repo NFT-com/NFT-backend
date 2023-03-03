@@ -2,7 +2,10 @@ import { BigNumber, constants, Signature, utils } from 'ethers'
 import * as _ from 'lodash'
 import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
+import { _logger } from '@nftcom/shared'
 import whitelistJSON from '@nftcom/shared/helper/abis/whitelist.json'
+
+const logger = _logger.Factory('shared/misc', _logger.Context.Misc)
 
 export const stringListToMap = (
   str: string,
@@ -433,6 +436,7 @@ export const checkSum = (input: string): string => {
   try {
     return utils.getAddress(input)
   } catch (err) {
+    logger.error('Error in checksum misc', err)
     return input
   }
 }
