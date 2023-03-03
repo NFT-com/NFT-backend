@@ -1052,15 +1052,19 @@ export const updateWalletNFTs = async (
     // Update owner of db NFTs which are not owned by this wallet
     const toUpdateOwner: entity.NFT[] = []
     dbNFTs.map((nft) => {
-      const key = `${ethers.utils.getAddress(nft.contract)}-${nft.tokenId}`
-      if (!existing[key]) {
-        toUpdateOwner.push(nft)
+      try {
+        const key = `${ethers.utils.getAddress(nft.contract)}-${BigNumber.from(nft.tokenId).toHexString()}`
+        if (!existing[key]) {
+          toUpdateOwner.push(nft)
+        }
+      } catch (err) {
+        logger.error(err, '[updateWalletNFTs] error 3')
       }
     })
     await updateOwnerForTransferredNFTs(toUpdateOwner, wallet)
   } catch (err) {
-    logger.error(err, '[updateWalletNFTs] error 3')
-    Sentry.captureMessage(`[updateWalletNFTs] error 3: ${err}`)
+    logger.error(err, '[updateWalletNFTs] error 4')
+    Sentry.captureMessage(`[updateWalletNFTs] error 4: ${err}`)
   }
 }
 
