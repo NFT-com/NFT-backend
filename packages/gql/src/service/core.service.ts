@@ -6,6 +6,7 @@ import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
 import fetch from 'node-fetch'
 import { FindManyOptions, FindOptionsOrder, IsNull, Not } from 'typeorm'
+import { AbiItem } from 'web3-utils'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
@@ -1197,6 +1198,28 @@ export const createProfileFromEvent = async (
     logger.error(`Error in createProfileFromEvent: ${err}`)
   }
 }
+
+export const nftAbi: AbiItem[] = [
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'tokenId',
+        type: 'uint256',
+      },
+    ],
+    name: 'ownerOf',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+]
 
 export const saveUsersForAssociatedAddress = async (
   chainId: string,
