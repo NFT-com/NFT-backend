@@ -331,7 +331,11 @@ export const filterNFTsWithMulticall = async (
     }
   })
 
+  logger.info(`filterNFTsWithMulticall 0: starting batch with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
+  start = new Date().getTime()
+
   const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
+
   for (const [i, data] of ownersOf.entries()) {
     if (!data) missingOwners[i] = data
     else {
@@ -351,45 +355,37 @@ export const filterNFTsWithMulticall = async (
 
   try {
     newNftOwnerKeys.forEach(async (key) => {
-      try {
-        const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
-        const newOwner = newOwners[key]
+      const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
+      const newOwner = newOwners[key]
 
-        await repositories.edge.hardDelete({ thatEntityId: nftId, edgeType: defs.EdgeType.Displays } )
-        if (nftType === 'ERC1155') {
-          const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
-          if (owners.length > 1) {
-            // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-            logger.log(`filterNFTsWithMulticall [1155] remove edge for ${key}`)
-            await repositories.edge.hardDelete({ thatEntityId: nftId } )
-              .then(() => repositories.nft.hardDelete({
-                id: nftId,
-              }))
-            await seService.deleteNFT(nftId)
-          }
-        } else { // 721, unknown, ens, etc
-          const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
-
-          await repositories.nft.updateOneById(nftId, {
-            userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
-            walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
-            owner: newOwner,
-          })
-          logger.info(`filterNFTsWithMulticall 5a: updated [${nftType}] nft for ${owner}, ${new Date().getTime() - start}ms`)
-          start = new Date().getTime()
-    
-          await seService.indexNFTs(nftsToUpdate)
-          logger.info(`filterNFTsWithMulticall 5b: updated seService [${nftType}], ${new Date().getTime() - start}ms`)
-          start = new Date().getTime()
+      await repositories.edge.hardDelete({ thatEntityId: nftId, edgeType: defs.EdgeType.Displays } )
+      if (nftType === 'ERC1155') {
+        const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
+        if (owners.length > 1) {
+          // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+          logger.log(`filterNFTsWithMulticall 2: [1155] remove edge for ${key}`)
+          await repositories.edge.hardDelete({ thatEntityId: nftId } )
+            .then(() => repositories.nft.hardDelete({
+              id: nftId,
+            }))
+          await seService.deleteNFT(nftId)
         }
-      } catch (err) {
-        logger.error(`Error in filterNFTsWithMulticall: ${err}`)
-        Sentry.captureMessage(`Error in filterNFTsWithMulticall: ${err}`)
-      }
+      } else { // 721, unknown, ens, etc
+        const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
 
-      logger.info(`filterNFTsWithMulticall 4: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
-      start = new Date().getTime()
+        await repositories.nft.updateOneById(nftId, {
+          userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
+          walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
+          owner: newOwner,
+        })
+
+        logger.info(`filterNFTsWithMulticall 3: updated [${nftType}] nft for ${owner}, ${new Date().getTime() - start}ms`)
+        await seService.indexNFTs(nftsToUpdate)
+      }
     })
+
+    logger.info(`filterNFTsWithMulticall 4: finished updating newNftOwnerKeys!, ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
   } catch (err) {
     logger.error(err, 'Error in filterNFTsWithMulticall -- top level')
     Sentry.captureMessage(`Error in filterNFTsWithMulticall: ${err}`)
