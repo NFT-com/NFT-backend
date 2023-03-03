@@ -436,8 +436,8 @@ export const checkSum = (input: string): string => {
   try {
     return utils.getAddress(input)
   } catch (err) {
-    logger.error(`Error in checksum misc ${input}`, err)
-    return
+    logger.error(err, `Error in checksum misc ${input}`)
+    throw err
   }
 }
 
