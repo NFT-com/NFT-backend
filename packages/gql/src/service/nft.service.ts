@@ -731,30 +731,11 @@ const uploadImageToS3 = async (
   }
 }
 
-/**
- * Save or update owner and metadata information for specific NFT
- * @param nft
- * @param userId
- * @param wallet
- * @param chainId
- */
-export const updateNFTOwnershipAndMetadata = async (
+const parseNFTMetadata = async (
   nft: OwnedNFT,
-  userId: string,
-  wallet: entity.Wallet,
   chainId: string,
-): Promise<entity.NFT | undefined> => {
+): Promise<{ type: defs.NFTType; name: string; description: string; image: string; traits: any[] }> => {
   try {
-    const existingNFT = await repositories.nft.findOne({
-      where: {
-        contract: ethers.utils.getAddress(nft.contract.address),
-        tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
-        chainId: chainId,
-      },
-    })
-
-    const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
-
     let type, name, description, image
     let traits = []
     if (nft.id.tokenMetadata && nft.id.tokenMetadata?.tokenType) {
@@ -791,7 +772,7 @@ export const updateNFTOwnershipAndMetadata = async (
     // if we are not available to get nft metadata from getNFTs api,
     // we try to get information from getNFTMetadata or NFTPort
     if (!type || !name || !description || !image || !traits.length) {
-      const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
+      const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, chainId)
       if (!metadata) return undefined
       type = metadata.type
       name = metadata.name
@@ -799,6 +780,37 @@ export const updateNFTOwnershipAndMetadata = async (
       image = metadata.image
       traits = metadata.traits
     }
+    return { type, name, description, image, traits }
+  } catch (err) {
+    logger.error(err, '[parseNFTMetadata] error')
+    Sentry.captureMessage(`[parseNFTMetadata] error: ${err}`)
+    throw err
+  }
+}
+
+/**
+ * Save or update owner and metadata information for specific NFT
+ * @param nft
+ * @param userId
+ * @param wallet
+ * @param chainId
+ */
+export const updateNFTOwnershipAndMetadata = async (
+  nft: OwnedNFT,
+  userId: string,
+  wallet: entity.Wallet,
+  chainId: string,
+): Promise<entity.NFT | undefined> => {
+  try {
+    const existingNFT = await repositories.nft.findOne({
+      where: {
+        contract: ethers.utils.getAddress(nft.contract.address),
+        tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
+        chainId: chainId,
+      },
+    })
+    const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
+    const { type, name, description, image, traits } = await parseNFTMetadata(nft, walletChainId)
 
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
