@@ -788,6 +788,62 @@ const parseNFTMetadata = async (
   }
 }
 
+const updateOwnerOfNFT = async (
+  nft: entity.NFT,
+  wallet: entity.Wallet,
+  type: defs.NFTType,
+  name: string,
+  description: string,
+  image: string,
+  traits: any[],
+): Promise<entity.NFT> => {
+  try {
+    // we remove edge of previous profile
+    await repositories.edge.hardDelete({ thatEntityId: nft.id, edgeType: defs.EdgeType.Displays } )
+
+    // if this NFT is a profile NFT...
+    if (ethers.utils.getAddress(nft.contract) ==
+      ethers.utils.getAddress(contracts.nftProfileAddress(chainId))) {
+      const previousWallet = await repositories.wallet.findById(nft.walletId)
+
+      if (previousWallet) {
+        const profile = await repositories.profile.findOne({ where: {
+          tokenId: BigNumber.from(nft.tokenId).toString(),
+          ownerWalletId: previousWallet.id,
+          ownerUserId: previousWallet.userId,
+        } })
+        // if this NFT was previous owner's preferred profile...
+        if (profile && profile?.id === previousWallet.profileId) {
+          await repositories.wallet.updateOneById(previousWallet.id, {
+            profileId: null,
+          })
+        }
+      } else {
+        logger.info(`[updateOwnerOfNFT]: Previous wallet for existing NFT ${nft.id} is undefined`)
+      }
+    }
+
+    const csOwner = checkSumOwner(wallet.address)
+    return await repositories.nft.updateOneById(nft.id, {
+      userId: wallet.userId,
+      walletId: wallet.id,
+      owner: csOwner,
+      type,
+      profileId: null,
+      metadata: {
+        name,
+        description,
+        imageURL: image,
+        traits: traits,
+      },
+    })
+  } catch (err) {
+    logger.error(err, '[updateOwnerOfNFT] error')
+    Sentry.captureMessage(`[updateOwnerOfNFT] error: ${err}`)
+    throw err
+  }
+}
+
 /**
  * Save or update owner and metadata information for specific NFT
  * @param nft
@@ -815,7 +871,7 @@ export const updateNFTOwnershipAndMetadata = async (
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
       const csOwner = checkSumOwner(wallet.address)
-      const savedNFT = await repositories.nft.save({
+      return await repositories.nft.save({
         chainId: walletChainId,
         userId,
         walletId: wallet.id,
@@ -830,51 +886,10 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
-      return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== wallet.id) {
-        // we remove edge of previous profile
-        // logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
-        await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
-
-        // if this NFT is a profile NFT...
-        if (ethers.utils.getAddress(existingNFT.contract) ==
-          ethers.utils.getAddress(contracts.nftProfileAddress(chainId))) {
-          const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
-
-          if (previousWallet) {
-            const profile = await repositories.profile.findOne({ where: {
-              tokenId: BigNumber.from(existingNFT.tokenId).toString(),
-              ownerWalletId: previousWallet.id,
-              ownerUserId: previousWallet.userId,
-            } })
-            // if this NFT was previous owner's preferred profile...
-            if (profile && profile?.id === previousWallet.profileId) {
-              await repositories.wallet.updateOneById(previousWallet.id, {
-                profileId: null,
-              })
-            }
-          } else {
-            logger.info(`[updateNFTOwnershipAndMetadata]: Previous wallet for existing NFT ${existingNFT.id} is undefined`)
-          }
-        }
-
-        const csOwner = checkSumOwner(wallet.address)
-        const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
-          userId,
-          walletId: wallet.id,
-          owner: csOwner,
-          type,
-          profileId: null,
-          metadata: {
-            name,
-            description,
-            imageURL: image,
-            traits: traits,
-          },
-        })
-        return updatedNFT
+        return await updateOwnerOfNFT(existingNFT, wallet, type, name, description, image, traits)
       } else {
         // if ownership's not changed and just metadata changed, we update only metadata...
         const isTraitSame = (existingNFT.metadata.traits.length == traits.length) &&
@@ -888,7 +903,7 @@ export const updateNFTOwnershipAndMetadata = async (
           !isTraitSame
         ) {
           const csOwner = checkSumOwner(wallet.address)
-          const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
+          return await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId: wallet.id,
             owner: csOwner,
@@ -900,7 +915,6 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
-          return updatedNFT
         } else {
           logger.info(`[updateNFTOwnershipAndMetadata]: No need to update owner and metadata for NFT contract: ${existingNFT.contract} tokenId: ${existingNFT.tokenId}`)
           return undefined
