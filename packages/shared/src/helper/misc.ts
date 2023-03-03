@@ -430,7 +430,11 @@ export const COLLECTION = convertToHash('COLLECTION').substring(0, 10)
 export const CRYPTO_KITTY = convertToHash('CRYPTO_KITTY').substring(0, 10)
 
 export const checkSum = (input: string): string => {
-  return utils.getAddress(input)
+  try {
+    return utils.getAddress(input)
+  } catch (err) {
+    return input
+  }
 }
 
 export const id = (input: string): string => {

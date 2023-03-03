@@ -125,15 +125,6 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
-const checkSumOwner = (owner: string): string | undefined => {
-  try {
-    return helper.checkSum(owner)
-  } catch (err) {
-    logger.error(err, `Unable to checkSum owner: ${owner}`)
-  }
-  return
-}
-
 export const initiateWeb3 = (cid?: string): void => {
   chainId = cid || process.env.CHAIN_ID // attach default value
   alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
@@ -959,7 +950,7 @@ export const updateNFTOwnershipAndMetadata = async (
 
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      const csOwner = checkSumOwner(wallet.address)
+      const csOwner = helper.checkSum(wallet.address)
       const savedNFT = await repositories.nft.save({
         chainId: walletChainId,
         userId,
@@ -1005,7 +996,7 @@ export const updateNFTOwnershipAndMetadata = async (
           }
         }
 
-        const csOwner = checkSumOwner(wallet.address)
+        const csOwner = helper.checkSum(wallet.address)
         const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId: wallet.id,
@@ -1032,7 +1023,7 @@ export const updateNFTOwnershipAndMetadata = async (
           existingNFT.metadata.imageURL !== image ||
           !isTraitSame
         ) {
-          const csOwner = checkSumOwner(wallet.address)
+          const csOwner = helper.checkSum(wallet.address)
           const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId: wallet.id,
@@ -1283,7 +1274,7 @@ export const getOwnersOfGenesisKeys = async (
     if (res && res?.data && res.data?.ownerAddresses) {
       const gkOwners = res.data.ownerAddresses as string[]
       const gkOwnersObj = gkOwners.reduce((acc, curr) => {
-        acc[checkSumOwner(curr)] = true
+        acc[helper.checkSum(curr)] = true
         return acc
       }, {})
       await cache.set(key, JSON.stringify(gkOwnersObj), 'EX', 60)
@@ -1341,7 +1332,7 @@ export const getOwnersOfNFTProfile = async (
     if (res && res?.data && res.data?.ownerAddresses) {
       const profileOwners = res.data.ownerAddresses as string[]
       const profileOwnersObj = profileOwners.reduce((acc, curr) => {
-        acc[checkSumOwner(curr)] = true
+        acc[helper.checkSum(curr)] = true
         return acc
       }, {})
       await cache.set(key, JSON.stringify(profileOwnersObj), 'EX', 60)
@@ -2134,7 +2125,7 @@ export const updateGKIconVisibleStatus = async (
   try {
     const gkOwners = await getOwnersOfGenesisKeys(chainId)
     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-    const exists = gkOwners[checkSumOwner(wallet.address)]
+    const exists = gkOwners[helper.checkSum(wallet.address)]
     if (exists) {
       await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
     } else {
@@ -2432,7 +2423,7 @@ export const getUserWalletFromNFT = async (
         // We don't save multiple owners for now, so we don't keep this NFT too
         return undefined
       } else {
-        const csOwner = checkSumOwner(owners[0])
+        const csOwner = helper.checkSum(owners[0])
         const fallbackWallet = new entity.Wallet()
         fallbackWallet.address = csOwner
         return await repositories.wallet.findByChainAddress(chainId, csOwner) || fallbackWallet
@@ -2459,7 +2450,7 @@ export const saveNewNFT = async (
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata
-    const csOwner = checkSumOwner(wallet.address)
+    const csOwner = helper.checkSum(wallet.address)
     const savedNFT = await repositories.nft.save({
       chainId: chainId,
       userId: wallet.userId,
