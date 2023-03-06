@@ -1167,7 +1167,7 @@ export const createProfileFromEvent = async (
       const referredInfo = user.referredBy.split('::')
 
       if (referredInfo && referredInfo.length === 2) {
-        const userMadeReferral = await repositories.user.findById(referredInfo[0])
+        const userMadeReferral = await repositories.user.findOne({ where: { referralId: referredInfo[0] } })
         const referredProfileUrl = referredInfo[1]
         const referralKey =`${referredInfo[0]}::${referredProfileUrl}`
 
@@ -1177,7 +1177,7 @@ export const createProfileFromEvent = async (
           },
         })
 
-        logger.info(`ensuring >= 5 REFER_NETWORK for ${referralKey}, referredUsers length=${referredUsers.length}`)
+        logger.info(`ensuring >= 5 REFER_NETWORK for ${referralKey}, userMadeReferral id: ${userMadeReferral.id} referredUsers length=${referredUsers.length}`)
         let accepted = 0
         await Promise.allSettled(
           referredUsers.map(async (referUser) => {
