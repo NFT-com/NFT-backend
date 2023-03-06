@@ -1166,15 +1166,33 @@ export const createProfileFromEvent = async (
     if (user && user.referredBy) {
       const referredInfo = user.referredBy.split('::')
 
-      logger.log(`referredInfo: ${referredInfo}`)
-
       if (referredInfo && referredInfo.length === 2) {
         const userMadeReferral = await repositories.user.findById(referredInfo[0])
         const referredProfileUrl = referredInfo[1]
+        const referralKey =`${referredInfo[0]}::${referredProfileUrl}`
 
-        logger.log(`userMadeReferral id: ${userMadeReferral.id}`)
-        
-        if (userMadeReferral) {
+        const referredUsers = await repositories.user.find({
+          where: {
+            referredBy: referralKey,
+          },
+        })
+
+        logger.info(`ensuring >= 5 REFER_NETWORK for ${referralKey}, referredUsers length=${referredUsers.length}`)
+        let accepted = 0
+        await Promise.allSettled(
+          referredUsers.map(async (referUser) => {
+            if (referUser.isEmailConfirmed) {
+              const profile = await repositories.profile.findOne({
+                where: {
+                  ownerUserId: referUser.id,
+                },
+              })
+              if (profile) accepted += 1
+            }
+          }),
+        )
+
+        if (accepted >= 5) {
           const referNetworkAction = await repositories.incentiveAction.findOne({
             where: {
               userId: userMadeReferral.id,
