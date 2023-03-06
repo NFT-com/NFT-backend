@@ -53,11 +53,13 @@ let user, wallet, wallet2
 describe('nft service', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
+    await db.connectTestPg()
   })
 
   afterAll(async () => {
     if (!connection) return
     await connection.destroy()
+    await db.endPg()
   })
 
   describe('refresh nft endpoint', () => {
