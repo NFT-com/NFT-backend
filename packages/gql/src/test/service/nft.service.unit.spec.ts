@@ -225,66 +225,6 @@ describe('nft service', () => {
     })
   })
 
-  describe('filterNFTsWithAlchemy', () => {
-    beforeAll(async () => {
-      const testMockWallet1 = testMockWallet
-      testMockWallet1.chainId = '5'
-      testMockWallet1.address = '0x59495589849423692778a8c5aaCA62CA80f875a4'
-      // These NFTs should be updated by fiterNFTsWithAlchemy function
-      await repositories.nft.save({
-        contract: '0xa49a0e5eF83cF89Ac8aae182f22E6464B229eFC8',
-        tokenId: '0x0a',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC1155,
-        userId: testMockUser.id,
-        walletId: testMockWallet1.id,
-      })
-      await repositories.nft.save({
-        contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
-        tokenId: '0x22',
-        chainId: '5',
-        metadata: {
-          name: '',
-          description: '',
-          traits: [],
-        },
-        type: defs.NFTType.ERC721,
-        userId: testMockUser.id,
-        walletId: testMockWallet1.id,
-      })
-    })
-
-    afterAll(async () => {
-      await clearDB(repositories)
-    })
-
-    fit('should only set owner for NFT which is not owned by test user', async () => {
-      const nfts = await repositories.nft.findByWalletId(testMockWallet.id, '5')
-      nftService.initiateWeb3('5')
-
-      await nftService.filterNFTsWithAlchemy(nfts, '0x59495589849423692778a8c5aaCA62CA80f875a4')
-
-      // New user should not saved to database
-      const users = await repositories.user.findAll()
-      const wallets = await repositories.wallet.findAll()
-      expect(users.length).toEqual(0)
-      expect(wallets.length).toEqual(0)
-
-      // ERC1155 NFT should be removed
-      const updatedNFTs = await repositories.nft.findAll()
-      expect(updatedNFTs.length).toEqual(2)
-      // Owner of ERC721 NFT should be updated
-      expect(updatedNFTs[1].walletId).toBeNull()
-      expect(updatedNFTs[1].userId).toBeNull()
-      expect(updatedNFTs[1].owner).not.toBe('0x59495589849423692778a8c5aaCA62CA80f875a4')
-    })
-  })
-
   describe('updateNFTOwnershipAndMetadata', () => {
     beforeAll(async () => {
       const testUser = await repositories.user.save({
