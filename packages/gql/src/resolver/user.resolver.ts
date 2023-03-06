@@ -924,22 +924,24 @@ const getSentReferralEmails = async (
         referredBy: `${user.referralId}::${args?.profileUrl}`,
       },
     })
+
+    logger.info(`getSentReferralEmails ${`${user.referralId}::${args?.profileUrl}`}, ${referredUsers}`)
     const res = []
     await Promise.allSettled(
-      referredUsers.map(async (User) => {
+      referredUsers.map(async (referUser) => {
         let accepted = false
-        if (User.isEmailConfirmed) {
+        if (referUser.isEmailConfirmed) {
           const profile = await repositories.profile.findOne({
             where: {
-              ownerUserId: User.id,
+              ownerUserId: referUser.id,
             },
           })
           if (profile) accepted = true
         }
         res.push({
-          email: User.email,
+          email: referUser.email,
           accepted,
-          timestamp: User.createdAt,
+          timestamp: referUser.createdAt,
         })
       }),
     )
