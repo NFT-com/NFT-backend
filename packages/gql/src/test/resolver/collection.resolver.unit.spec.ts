@@ -6,6 +6,7 @@ import { CollectionRepository } from '@nftcom/shared/db/repository'
 
 let mockCacheData = {}
 jest.mock('@nftcom/cache', () => ({
+  redisConfig: {},
   createCacheConnection: jest.fn(),
   cache: {
     get: jest.fn(),
