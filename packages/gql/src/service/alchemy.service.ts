@@ -88,7 +88,7 @@ const getTxReceipts = async (
       const result = res.data.result
       return result?.['receipts']
     } else {
-      logger.log(res.data.error)
+      logger.error({ err: res.data.error, res })
       return []
     }
   } catch (err) {
