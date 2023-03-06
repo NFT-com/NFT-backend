@@ -925,7 +925,7 @@ const getSentReferralEmails = async (
       },
     })
 
-    logger.info(`getSentReferralEmails ${`${user.referralId}::${args?.profileUrl}`}, ${referredUsers}`)
+    logger.info(`getSentReferralEmails ${`${user.id}::${args?.profileUrl}`}, ${referredUsers}`)
     const res = []
     await Promise.allSettled(
       referredUsers.map(async (referUser) => {
