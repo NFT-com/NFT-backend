@@ -921,11 +921,11 @@ const getSentReferralEmails = async (
     logger.debug('getSentReferralEmails', { loggedInUserId: user.id, wallet: wallet.address })
     const referredUsers = await repositories.user.find({
       where: {
-        referredBy: `${user.referralId}::${args?.profileUrl}`,
+        referredBy: `${user.id}::${args?.profileUrl}`,
       },
     })
 
-    logger.info(`getSentReferralEmails ${`${user.id}::${args?.profileUrl}`}, ${referredUsers}`)
+    logger.info(`getSentReferralEmails ${`${user.id}::${args?.profileUrl}`}, length=${referredUsers.length}`)
     const res = []
     await Promise.allSettled(
       referredUsers.map(async (referUser) => {
@@ -943,8 +943,11 @@ const getSentReferralEmails = async (
           accepted,
           timestamp: referUser.createdAt,
         })
+        logger.info(`getSentReferralEmails ${`${user.id}::${args?.profileUrl}`}, email=${referUser.email}, accepted=${accepted}, timestamp=${referUser.createdAt}`)
       }),
     )
+
+    logger.info(`getSentReferralEmails ${`${user.id}::${args?.profileUrl}`}, res=${JSON.stringify(res)}`)
     return res
   } catch (err) {
     Sentry.captureMessage(`Error in getSentReferralEmails: ${err}`)
