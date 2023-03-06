@@ -3,6 +3,7 @@ import json
 import os
 from web3 import Web3
 from dotenv import load_dotenv
+from urllib.request import urlopen
 
 load_dotenv()
 
@@ -65,10 +66,22 @@ unmintedProfiles = (gkInCirculation * int(os.getenv('PROFILE_PER_GK'))) - minted
 #print("Total Mints Remaining on GKs in Circulation: " + str(unmintedProfiles))
 #print("Total Mints Spent on GKs in Circulation: " + str(mintedProfiles))
 
-# update database
+# pull total number of minted profiles via etherscan 
+url = urlopen("https://api.etherscan.io/api?module=stats&action=tokensupply&contractaddress=0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d&apikey=" + os.getenv('ETHERSCAN_API_KEY'))
+publicProfileCount = 0
+
+if(url.getcode()==200):
+    rawData = url.read()
+    jsonData = json.loads(rawData)
+    totalProfileCount = jsonData["result"]
+    publicProfileCount = int(totalProfileCount) - mintedProfiles
+else:
+    print("Error receiving total profile count from etherscan, http code:", url.getcode())
+
+# update analytics database, mint table with stats
 tableName = os.getenv('MINT_TABLE_NAME') # using 1 db, so diff table name per env
 dbConn = psycopg2.connect(database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'))
 dbCur = dbConn.cursor()
-dbCur.execute("INSERT into " + tableName + " (freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed) VALUES (%s,%s,%s,%s,%s,%s)",(unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned))
+dbCur.execute("INSERT into " + tableName + " (freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed,publicmints) VALUES (%s,%s,%s,%s,%s,%s,%s)",(unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned,publicProfileCount))
 dbConn.commit()
 dbConn.close()
