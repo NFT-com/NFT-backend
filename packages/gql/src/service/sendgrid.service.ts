@@ -86,7 +86,7 @@ export const sendReferralEmail = async (
       to: { email },
       dynamicTemplateData: {
         profileName: profileUrl,
-        createProfileLink: `${confirmEmailUrl}?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}`,
+        createProfileLink: `${confirmEmailUrl}/app/mint-profiles?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}`,
       },
       templateId: templates.referralEmail,
     })
