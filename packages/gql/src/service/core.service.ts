@@ -1240,7 +1240,7 @@ export const nftAbi: AbiItem[] = [
   },
 ]
 
-export const saveUsersForAssociatedAddress = async (
+export const saveUserAndWalletForAssociatedAddress = async (
   chainId: string,
   address: string,
   repositories: db.Repository,

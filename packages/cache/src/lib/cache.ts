@@ -12,6 +12,8 @@ export enum CacheKeys {
   REFRESHED_COLLECTION_RARITY= 'refreshed_collection_rarity',
   UPDATED_NFTS_PROFILE = 'updated_nfts_profile',
   UPDATE_NFTS_PROFILE = 'update_nfts_profile',
+  UPDATED_NFTS_NON_PROFILE = 'updated_nfts_non_profile',
+  UPDATE_NFTS_NON_PROFILE = 'update_nfts_non_profile',
   PROFILES_IN_PROGRESS = 'profiles_in_progress',
   UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
   GENESIS_KEY_OWNERS = 'genesis_key_owners',
