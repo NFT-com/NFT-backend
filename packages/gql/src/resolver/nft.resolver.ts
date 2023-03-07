@@ -436,6 +436,11 @@ const getMyNFTs = async (
         args?.input.invalidateCache,
       )
     } else if (args?.input?.ownedByWallet && !args?.input?.profileId) {
+      const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_NON_PROFILE}_${chainId}`, wallet.id)
+      if (!recentlyRefreshed) {
+        // add to NFT cache list
+        await cache.zadd(`${CacheKeys.UPDATE_NFTS_NON_PROFILE}_${chainId}`, 'INCR', 1, wallet.id)
+      }
       return core.paginatedEntitiesBy(
         repositories.nft,
         pageInput,
@@ -459,6 +464,11 @@ const getMyNFTs = async (
         },
       })
       if (!defaultProfile) {
+        const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_NON_PROFILE}_${chainId}`, wallet.id)
+        if (!recentlyRefreshed) {
+          // add to NFT cache list
+          await cache.zadd(`${CacheKeys.UPDATE_NFTS_NON_PROFILE}_${chainId}`, 'INCR', 1, wallet.id)
+        }
         return core.paginatedEntitiesBy(
           repositories.nft,
           pageInput,
