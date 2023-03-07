@@ -26,9 +26,9 @@ import {
   getLastWeight,
   midWeight,
   nftAbi,
+  optionallySaveUserAndWalletForAssociatedAddress,
   processIPFSURL,
   s3ToCdn,
-  saveUserAndWalletForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
@@ -2061,7 +2061,7 @@ export const updateNFTsForAssociatedAddresses = async (
     const wallets: entity.Wallet[] = []
     await Promise.allSettled(
       addresses.map(async (address) => {
-        wallets.push(await saveUserAndWalletForAssociatedAddress(chainId, address, repositories))
+        wallets.push(await optionallySaveUserAndWalletForAssociatedAddress(chainId, address, repositories))
       }),
     )
     logger.info(`[nftService.updateNFTsForAssociatedAddresses] Saved users for associated addresses for profile ${profile.url} in ${new Date().getTime() - start}ms`)
