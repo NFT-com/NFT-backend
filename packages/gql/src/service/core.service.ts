@@ -6,13 +6,14 @@ import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
 import fetch from 'node-fetch'
 import { FindManyOptions, FindOptionsOrder, IsNull, Not } from 'typeorm'
+import { AbiItem } from 'web3-utils'
 
 import { S3Client } from '@aws-sdk/client-s3'
 import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
-import { cache, CacheKeys } from '@nftcom/cache'
+import { cache } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
@@ -1141,8 +1142,7 @@ export const createProfileFromEvent = async (
       ownerUserId: wallet.userId,
       chainId: chainId || process.env.CHAIN_ID,
     })
-    logger.log('Save incentive action for CREATE_NFT_PROFILE')
-    // save incentive action for CREATE_NFT_PROFILE
+    logger.log(`Save incentive action for CREATE_NFT_PROFILE for userId: ${wallet.userId}, url: ${profileUrl}`)
     const createProfileAction = await repositories.incentiveAction.findOne({
       where: {
         userId: wallet.userId,
@@ -1157,22 +1157,42 @@ export const createProfileFromEvent = async (
         task: defs.ProfileTask.CREATE_NFT_PROFILE,
         point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
       })
-      logger.log('Saved incentive action for CREATE_NFT_PROFILE')
+      logger.log(`Saved incentive action for CREATE_NFT_PROFILE for userId: ${wallet.userId}, url ${profileUrl}`)
     }
-    user = await repositories.user.findOne({
-      where: {
-        // defaults
-        username: 'ethereum-' + ethers.utils.getAddress(owner),
-      },
-    })
-    logger.log('Save incentive action for REFER_NETWORK')
-    //save incentive action for REFER_NETWORK
+
+    user = await repositories.user.findById(wallet.userId)
+
+    logger.log(`Save incentive action for REFER_NETWORK for userId: ${user.id}, url: ${profileUrl}`)
     if (user && user.referredBy) {
       const referredInfo = user.referredBy.split('::')
+
       if (referredInfo && referredInfo.length === 2) {
-        const userMadeReferral = await repositories.user.findById(referredInfo[0])
+        const userMadeReferral = await repositories.user.findOne({ where: { referralId: referredInfo[0] } })
         const referredProfileUrl = referredInfo[1]
-        if (userMadeReferral) {
+        const referralKey =`${referredInfo[0]}::${referredProfileUrl}`
+
+        const referredUsers = await repositories.user.find({
+          where: {
+            referredBy: referralKey,
+          },
+        })
+
+        logger.info(`ensuring >= 5 REFER_NETWORK for ${referralKey}, userMadeReferral id: ${userMadeReferral.id} referredUsers length=${referredUsers.length}`)
+        let accepted = 0
+        await Promise.allSettled(
+          referredUsers.map(async (referUser) => {
+            if (referUser.isEmailConfirmed) {
+              const profile = await repositories.profile.findOne({
+                where: {
+                  ownerUserId: referUser.id,
+                },
+              })
+              if (profile) accepted += 1
+            }
+          }),
+        )
+
+        if (accepted >= 5) {
           const referNetworkAction = await repositories.incentiveAction.findOne({
             where: {
               userId: userMadeReferral.id,
@@ -1197,6 +1217,28 @@ export const createProfileFromEvent = async (
     logger.error(`Error in createProfileFromEvent: ${err}`)
   }
 }
+
+export const nftAbi: AbiItem[] = [
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'tokenId',
+        type: 'uint256',
+      },
+    ],
+    name: 'ownerOf',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+]
 
 export const saveUsersForAssociatedAddress = async (
   chainId: string,
@@ -1340,39 +1382,33 @@ export const getLastWeight = async (
   repositories: db.Repository,
   profileId: string,
 ): Promise<string | undefined> => {
-  try {
-    logger.info(`getLastWeight for profile ${profileId} is called`)
+  logger.info(`getLastWeight for profile ${profileId} is called`)
 
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        edgeType: defs.EdgeType.Displays,
-        weight: Not(IsNull()),
-      },
-    })
+  const edges = await repositories.edge.find({
+    where: {
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      thisEntityId: profileId,
+      edgeType: defs.EdgeType.Displays,
+      weight: Not(IsNull()),
+    },
+  })
 
-    logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
+  logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
 
-    if (!edges.length) {
-      logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
-      return undefined
-    }
-
-    let biggest = edges[0].weight
-    for (let i = 1; i < edges.length; i++) {
-      if (biggest < edges[i].weight)
-        biggest = edges[i].weight
-    }
-
-    logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
-    return biggest
-  } catch (err) {
-    logger.error(`getLastWeight for profile ${profileId} failed`)
-    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${process.env.CHAIN_ID}`, [profileId])
-    throw err
+  if (!edges.length) {
+    logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
+    return undefined
   }
+
+  let biggest = edges[0].weight
+  for (let i = 1; i < edges.length; i++) {
+    if (biggest < edges[i].weight)
+      biggest = edges[i].weight
+  }
+
+  logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
+  return biggest
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))

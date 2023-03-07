@@ -1,6 +1,6 @@
 import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
-import { BigNumber, ethers } from 'ethers'
+import { BigNumber } from 'ethers'
 import { chunk, differenceBy } from 'lodash'
 import { performance } from 'perf_hooks'
 import QueryStream from 'pg-query-stream'
@@ -17,6 +17,7 @@ import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import {
   contentTypeFromExt,
   extensionFromFilename,
+  fetchDataUsingMulticall,
   fetchWithTimeout,
   findDuplicatesByProperty,
   generateSVGFromBase64String,
@@ -24,6 +25,7 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
+  nftAbi,
   processIPFSURL,
   s3ToCdn,
   saveUsersForAssociatedAddress,
@@ -121,15 +123,6 @@ type NFTMetaData = {
   description: string
   image: string
   traits: defs.Trait[]
-}
-
-const checkSumOwner = (owner: string): string | undefined => {
-  try {
-    return helper.checkSum(owner)
-  } catch (err) {
-    logger.error(err, `Unable to checkSum owner: ${owner}`)
-  }
-  return
 }
 
 export const initiateWeb3 = (cid?: string): void => {
@@ -268,7 +261,7 @@ export const getOwnersForNFT = async (
 ): Promise<string[]> => {
   try {
     initiateWeb3(nft.chainId)
-    const contract = ethers.utils.getAddress(nft.contract)
+    const contract = helper.checkSum(nft.contract)
     
     const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${nft.tokenId}`
     const response = await axios.get(baseUrl)
@@ -285,103 +278,125 @@ export const getOwnersForNFT = async (
   }
 }
 
+export const getOwnersForNFT2 = async (
+  chainId: string,
+  nftContract: string,
+  tokenId: string,
+): Promise<string[]> => {
+  try {
+    initiateWeb3(chainId)
+    const contract = helper.checkSum(nftContract)
+    
+    const baseUrl = `${alchemyUrl}/getOwnersForToken?contractAddress=${contract}&tokenId=${tokenId}`
+    const response = await axios.get(baseUrl)
+
+    if (response && response?.data && response.data?.owners) {
+      return response.data.owners as string[]
+    } else {
+      return Promise.reject(`No owners for NFT contract ${contract} tokenId ${tokenId} on chain ${chainId}`)
+    }
+  } catch (err) {
+    logger.error(`Error in getOwnersForNFT: ${err}`)
+    Sentry.captureMessage(`Error in getOwnersForNFT: ${err}`)
+    throw err
+  }
+}
+
 /**
  * Takes a bunch of NFTs (pulled from the DB), and checks
  * that the given owner is still correct.
  *
  * If not, deletes the NFT record from the DB.
  */
-export const filterNFTsWithAlchemy = async (
+export const filterNFTsWithMulticall = async (
   nfts: Array<typeorm.DeepPartial<entity.NFT>>,
   owner: string,
 ): Promise<void> => {
-  let start = new Date().getTime()
-  const contracts = []
-  const seen = {}
-  nfts.forEach((nft: typeorm.DeepPartial<entity.NFT>) => {
-    const key = ethers.utils.getAddress(nft.contract)
-    if (!seen[key]) {
-      contracts.push(key)
-      seen[key] = true
-    }
-  })
-  
-  logger.info(`filterNFTsWithAlchemy 1: mapped ${nfts?.length} nfts, ${new Date().getTime() - start}ms`)
-  start = new Date().getTime()
-
   try {
-    const ownedNfts = await getNFTsFromAlchemy(owner, contracts)
-    logger.info(`filterNFTsWithAlchemy 2: found ownedNFTs for owner=${owner} contracts=${contracts}, ${new Date().getTime() - start}ms`)
-    start = new Date().getTime()
+    let start = new Date().getTime()
+    const nftsToUpdate = []
+    const newOwners = {}
+    const missingOwners = {}
 
-    // convert ownedNFTs to hash map
-    const ownedNftsKey = {}
-    ownedNfts.forEach((ownedNFT: OwnedNFT) => {
-      ownedNftsKey[`${ethers.utils.getAddress(ownedNFT?.contract?.address)}-${BigNumber.from(ownedNFT?.id?.tokenId).toHexString()}`] = true
+    /* -------------------- generate arguments for multicall -------------------- */
+    const multicallArgs = nfts.map(({ tokenId, contract }) => {
+      return {
+        contract,
+        name: 'ownerOf',
+        params: [BigNumber.from(tokenId)],
+      }
     })
-    logger.info(`filterNFTsWithAlchemy 3: created hash map for ownedNftsKey, ${new Date().getTime() - start}ms`, ownedNftsKey)
+
+    logger.info(`filterNFTsWithMulticall 0: starting batch for userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
     start = new Date().getTime()
 
-    const newOwnerNFTs = new Map()
-    await Promise.allSettled(
-      nfts.map(async (dbNFT: typeorm.DeepPartial<entity.NFT>) => {
-        const key = `${ethers.utils.getAddress(dbNFT?.contract)}-${BigNumber.from(dbNFT?.tokenId).toHexString()}`
+    /* -- use multicall to decrease number to be more efficient with web3 calls - */
+    /* ------------ also increases speed of updates bc 1000 at a time ----------- */
+    /* ------ more info on multicall: https://github.com/makerdao/multicall ----- */
+    const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
 
-        // if not found in ownedNFTs, delete the NFT
-        if (!ownedNftsKey[key]) {
-          try {
-            // logger.log(`&&& filterNFTsWithAlchemy 1: thatEntityId ${dbNFT?.id}, owner: ${owner}, ownedNfts: ${JSON.stringify(ownedNfts)}`)
-            await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id, edgeType: defs.EdgeType.Displays } )
-            const owners = await getOwnersForNFT(dbNFT)
-            if (owners.length) {
-              if (owners.length > 1) {
-                // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
-                // logger.log(`&&& filterNFTsWithAlchemy 2: dbNFT?.id ${dbNFT?.id}`)
-                await repositories.edge.hardDelete({ thatEntityId: dbNFT?.id } )
-                  .then(() => repositories.nft.hardDelete({
-                    id: dbNFT?.id,
-                  }))
-                await seService.deleteNFT(dbNFT?.id)
-              } else {
-                const newOwner = owners[0]
-                newOwnerNFTs.has(newOwner)
-                  ? newOwnerNFTs.get(newOwner).push(dbNFT)
-                  : newOwnerNFTs.set(newOwner, [dbNFT])
-              }
-            }
-          } catch (err) {
-            logger.error(`Error in filterNFTsWithAlchemy: ${err}`)
-            Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
-          }
-
-          logger.info(`filterNFTsWithAlchemy 4: key ${key} not found, delete edges for nft, ${new Date().getTime() - start}ms`, ownedNftsKey)
-          start = new Date().getTime()
+    for (const [i, data] of ownersOf.entries()) {
+      if (!data) missingOwners[i] = data
+      else {
+        const newOwner = helper.checkSum(data[0])
+        if (newOwner != helper.checkSum(owner)) {
+          logger.info(`filterNFTsWithMulticall: new owner userId=${nfts[0]?.userId || '-'} ${owner} for ${nfts[i].id} is now ${newOwner}`)
+          newOwners[`${nfts[i].id}-${nfts[i].contract}-${nfts[i].tokenId}-${nfts[i].type}-${nfts[i].chainId}`] = newOwner
+          nftsToUpdate.push(nfts[i])
         }
-      }),
-    )
+      }
+    }
 
-    for (const [owner, nftsToUpdate] of newOwnerNFTs) {
-      const csOwner = checkSumOwner(owner)
-      const wallet = await repositories.wallet.findByChainAddress(nftsToUpdate[0].chainId, csOwner)
-      await Promise.allSettled(
-        nftsToUpdate.map((nft) => {
-          repositories.nft.updateOneById(nft?.id, {
+    const newNftOwnerKeys = Object.keys(newOwners)
+    
+    if (newNftOwnerKeys.length) {
+      logger.info(`filterNFTsWithMulticall 1: userId=${nfts[0]?.userId || '-'} ${owner}, new owners = ${newNftOwnerKeys.length}/${nfts.length} nfts, ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+    }
+
+    /* ------------------- Loop through new NFT owner updates ------------------- */
+    newNftOwnerKeys.forEach(async (key) => {
+      const [nftId, nftContact, nftTokenId, nftType, nftChainId] = key.split('-')
+
+      if (nftId) {
+        logger.info(`filterNFTsWithMulticall 2: userId=${nfts[0]?.userId || '-'} ${owner}, updating nft ${nftId}, key=${key} ${new Date().getTime() - start}ms`)
+        const newOwner = newOwners[key]
+
+        /* ----------------------- Delete NFT Id Edge Display ----------------------- */
+        await repositories.edge.hardDelete({ thatEntityId: nftId, edgeType: defs.EdgeType.Displays } )
+
+        /* ----------------------------- ERC1155 Update ----------------------------- */
+        if (nftType === 'ERC1155') {
+          const owners = await getOwnersForNFT2(nftChainId, nftContact, nftTokenId)
+          if (owners.length > 1) {
+            // This is ERC1155 token with multiple owners, so we don't update owner for now and delete NFT
+            await repositories.edge.hardDelete({ thatEntityId: nftId } )
+              .then(() => repositories.nft.hardDelete({
+                id: nftId,
+              }))
+            await seService.deleteNFT(nftId)
+          }
+        } else { /* ----------------------------- Non-ERC1155 Update ----------------------------- */
+          const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
+  
+          await repositories.nft.updateOneById(nftId, {
             userId: wallet?.userId || null, // null if user has not been created yet by connecting to NFT.com
             walletId: wallet?.id || null, // null if wallet has not been connected to NFT.com
-            owner: csOwner,
+            owner: newOwner,
           })
-        }),
-      )
-      logger.info(`filterNFTsWithAlchemy 5a: updated nft for ${owner}, ${new Date().getTime() - start}ms`, nftsToUpdate)
-      start = new Date().getTime()
-
-      await seService.indexNFTs(nftsToUpdate)
-      logger.info(`filterNFTsWithAlchemy 5b: updated seService, ${new Date().getTime() - start}ms`)
-      start = new Date().getTime()
-    }
+  
+          await seService.indexNFTs(nftsToUpdate)
+          logger.info(newOwners,`filterNFTsWithMulticall 3: userId=${nfts[0]?.userId || '-'} ${owner}, finished updating newNftOwnerKeys from old owner: ${owner}!, newOwners:${JSON.stringify(newOwners)}, ${new Date().getTime() - start}ms`)
+          logger.info(missingOwners,`filterNFTsWithMulticall 4: userId=${nfts[0]?.userId || '-'} ${owner}, missingOwners = ${Object.keys(missingOwners).length}/${nfts.length} nfts, missingOwners:${JSON.stringify(missingOwners)}, ${new Date().getTime() - start}ms`)
+          start = new Date().getTime()
+        }
+      } else {
+        logger.info(`filterNFTsWithMulticall 5: userId=${nfts[0]?.userId || '-'} ${owner}, no nftId for key ${key}!`)
+      }
+    })
   } catch (err) {
-    logger.error(err, 'Error in filterNFTsWithAlchemy -- top level')
-    Sentry.captureMessage(`Error in filterNFTsWithAlchemy: ${err}`)
+    logger.error(err, 'Error in filterNFTsWithMulticall -- top level')
+    Sentry.captureMessage(`Error in filterNFTsWithMulticall: ${err}`)
     throw err
   }
 }
@@ -407,7 +422,7 @@ export const getContractMetaDataFromAlchemy = async (
   contractAddress: string,
 ): Promise<ContractMetaDataResponse | undefined> => {
   try {
-    const key = `getContractMetaDataFromAlchemy${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
+    const key = `getContractMetaDataFromAlchemy${alchemyUrl}_${helper.checkSum(contractAddress)}`
     const cachedContractMetadata: string = await cache.get(key)
 
     if (cachedContractMetadata) {
@@ -463,7 +478,7 @@ export const getNFTsForCollection = async (
   contractAddress: string,
 ): Promise<any> => {
   try {
-    const key = `getNFTsForCollection${alchemyUrl}_${ethers.utils.getAddress(contractAddress)}`
+    const key = `getNFTsForCollection${alchemyUrl}_${helper.checkSum(contractAddress)}`
     const cachedContractMetadata: string = await cache.get(key)
 
     const nfts = []
@@ -527,7 +542,7 @@ export const updateCollectionForNFTs = async (
     const seen = {}
     const nonDuplicates: Array<entity.NFT> = []
     nfts.map((nft: entity.NFT) => {
-      const key = ethers.utils.getAddress(nft.contract)
+      const key = helper.checkSum(nft.contract)
       if (!seen[key]) {
         nonDuplicates.push(nft)
         seen[key] = true
@@ -539,7 +554,7 @@ export const updateCollectionForNFTs = async (
     await Promise.allSettled(
       nonDuplicates.map(async (nft: entity.NFT) => {
         const collection = await repositories.collection.findOne({
-          where: { contract: ethers.utils.getAddress(nft.contract) },
+          where: { contract: helper.checkSum(nft.contract) },
         })
         if (!collection) {
           const collectionName = await getCollectionNameFromDataProvider(
@@ -551,7 +566,7 @@ export const updateCollectionForNFTs = async (
           logger.debug('new collection', { collectionName, contract: nft.contract, collectionDeployer })
 
           collections.push({
-            contract: ethers.utils.getAddress(nft.contract),
+            contract: helper.checkSum(nft.contract),
             chainId: nft?.chainId || process.env.CHAIN_ID,
             name: collectionName,
             deployer: collectionDeployer,
@@ -567,7 +582,7 @@ export const updateCollectionForNFTs = async (
     await Promise.allSettled(
       nfts.map(async (nft) => {
         const collection = await repositories.collection.findOne({
-          where: { contract: ethers.utils.getAddress(nft.contract) },
+          where: { contract: helper.checkSum(nft.contract) },
         })
         if (collection) {
           const edgeVals = {
@@ -744,7 +759,7 @@ export const getNftType = (
     return defs.NFTType.ERC721
   } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC1155') {
     return defs.NFTType.ERC1155
-  } else if (nftMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name.endsWith('.eth')) { // if token is ENS token...
+  } else if (nftMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name?.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
     logger.error({ nftMetadata, nftPortDetails }, 'Unknown NFT type')
@@ -899,7 +914,7 @@ export const updateNFTOwnershipAndMetadata = async (
   try {
     const existingNFT = await repositories.nft.findOne({
       where: {
-        contract: ethers.utils.getAddress(nft.contract.address),
+        contract: helper.checkSum(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
         chainId: chainId,
       },
@@ -916,7 +931,7 @@ export const updateNFTOwnershipAndMetadata = async (
         type = defs.NFTType.ERC721
       } else if (nft.id.tokenMetadata?.tokenType === 'ERC1155') {
         type = defs.NFTType.ERC1155
-      } else if (nft.title && nft.title?.endsWith('.eth')) { // if token is ENS token...
+      } else if (nft?.title?.endsWith('.eth')) { // if token is ENS token...
         type = defs.NFTType.UNKNOWN
       }
     }
@@ -952,13 +967,13 @@ export const updateNFTOwnershipAndMetadata = async (
 
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
-      const csOwner = checkSumOwner(wallet.address)
+      const csOwner = helper.checkSum(wallet.address)
       const savedNFT = await repositories.nft.save({
         chainId: walletChainId,
         userId,
         walletId: wallet.id,
         owner: csOwner,
-        contract: ethers.utils.getAddress(nft.contract.address),
+        contract: helper.checkSum(nft.contract.address),
         tokenId: BigNumber.from(nft.id.tokenId).toHexString(),
         type,
         metadata: {
@@ -977,8 +992,8 @@ export const updateNFTOwnershipAndMetadata = async (
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
 
         // if this NFT is a profile NFT...
-        if (ethers.utils.getAddress(existingNFT.contract) ==
-          ethers.utils.getAddress(contracts.nftProfileAddress(chainId))) {
+        if (helper.checkSum(existingNFT.contract) ==
+          helper.checkSum(contracts.nftProfileAddress(chainId))) {
           const previousWallet = await repositories.wallet.findById(existingNFT.walletId)
 
           if (previousWallet) {
@@ -998,7 +1013,7 @@ export const updateNFTOwnershipAndMetadata = async (
           }
         }
 
-        const csOwner = checkSumOwner(wallet.address)
+        const csOwner = helper.checkSum(wallet.address)
         const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
           userId,
           walletId: wallet.id,
@@ -1025,7 +1040,7 @@ export const updateNFTOwnershipAndMetadata = async (
           existingNFT.metadata.imageURL !== image ||
           !isTraitSame
         ) {
-          const csOwner = checkSumOwner(wallet.address)
+          const csOwner = helper.checkSum(wallet.address)
           const updatedNFT = await repositories.nft.updateOneById(existingNFT.id, {
             userId,
             walletId: wallet.id,
@@ -1118,15 +1133,15 @@ export const updateWalletNFTs = async (
   }
 }
 
-const batchFilterNFTsWithAlchemy = async (nfts, walletAddress): Promise<void> => {
+const batchFilterNFTsWithMulticall = async (nfts, walletAddress): Promise<void> => {
   const nftsChunks: entity.NFT[][] = chunk(
     nfts,
-    100,
+    1000,
   )
   await Promise.allSettled(
     nftsChunks.map(async (nftChunk: entity.NFT[]) => {
       try {
-        await filterNFTsWithAlchemy(nftChunk, walletAddress)
+        await filterNFTsWithMulticall(nftChunk, walletAddress)
       } catch (err) {
         logger.error(`Error in checkNFTContractAddresses: ${err}`)
         Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
@@ -1172,7 +1187,7 @@ export const checkNFTContractAddresses = async (
           if (batch.length) {
             const start = performance.now()
             const nfts = batch.splice(0, batchSize)
-            await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+            await batchFilterNFTsWithMulticall(nfts, walletAddress)
             const end = performance.now()
             logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
           }
@@ -1190,7 +1205,7 @@ export const checkNFTContractAddresses = async (
             if (batch.length === batchSize) {
               const start = performance.now()
               const nfts = batch.splice(0, batchSize)
-              await batchFilterNFTsWithAlchemy(nfts, walletAddress)
+              await batchFilterNFTsWithMulticall(nfts, walletAddress)
               const end = performance.now()
               logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
             }
@@ -1276,7 +1291,7 @@ export const getOwnersOfGenesisKeys = async (
     if (res && res?.data && res.data?.ownerAddresses) {
       const gkOwners = res.data.ownerAddresses as string[]
       const gkOwnersObj = gkOwners.reduce((acc, curr) => {
-        acc[checkSumOwner(curr)] = true
+        acc[helper.checkSum(curr)] = true
         return acc
       }, {})
       await cache.set(key, JSON.stringify(gkOwnersObj), 'EX', 60)
@@ -1334,7 +1349,7 @@ export const getOwnersOfNFTProfile = async (
     if (res && res?.data && res.data?.ownerAddresses) {
       const profileOwners = res.data.ownerAddresses as string[]
       const profileOwnersObj = profileOwners.reduce((acc, curr) => {
-        acc[checkSumOwner(curr)] = true
+        acc[helper.checkSum(curr)] = true
         return acc
       }, {})
       await cache.set(key, JSON.stringify(profileOwnersObj), 'EX', 60)
@@ -1417,9 +1432,9 @@ const saveEdgesForNFTs = async (
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
     return weight
   } catch (err) {
+    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     logger.error(err, `Error in saveEdgesForNFTs: ${err}`)
     Sentry.captureMessage(`Error in saveEdgesForNFTs: ${err}`)
-    await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
     throw err
   }
 }
@@ -1942,7 +1957,7 @@ export const removeEdgesForNonassociatedAddresses = async (
       toRemove.map(async (address) => {
         const wallet = await repositories.wallet.findByChainAddress(
           chainId,
-          ethers.utils.getAddress(address),
+          helper.checkSum(address),
         )
         if (wallet) {
           const nfts = await repositories.nft.find({ where: { walletId: wallet.id } })
@@ -2061,7 +2076,7 @@ export const updateCollectionForAssociatedContract = async (
       if (!associatedContract.chainAddr) {
         return `No associated contract of ${profile.url}`
       }
-      contract = ethers.utils.getAddress(associatedContract.chainAddr)
+      contract = helper.checkSum(associatedContract.chainAddr)
       await cache.set(cacheKey, JSON.stringify(contract), 'EX', 60 * 5)
       // update associated contract with the latest updates
       await repositories.profile.updateOneById(profile.id, { associatedContract: contract })
@@ -2101,7 +2116,7 @@ export const updateCollectionForAssociatedContract = async (
         })
         await seService.indexCollections([savedCollection])
       }
-      const checkedDeployer =  ethers.utils.getAddress(deployer)
+      const checkedDeployer =  helper.checkSum(deployer)
       const isAssociated = profile.associatedAddresses.indexOf(checkedDeployer) !== -1 ||
         checkedDeployer === walletAddress
       if (!isAssociated && profile.profileView === defs.ProfileViewType.Collection) {
@@ -2127,7 +2142,7 @@ export const updateGKIconVisibleStatus = async (
   try {
     const gkOwners = await getOwnersOfGenesisKeys(chainId)
     const wallet = await repositories.wallet.findById(profile.ownerWalletId)
-    const exists = gkOwners[checkSumOwner(wallet.address)]
+    const exists = gkOwners[helper.checkSum(wallet.address)]
     if (exists) {
       await repositories.profile.updateOneById(profile.id, { gkIconVisible: false })
     } else {
@@ -2235,7 +2250,7 @@ export const getCollectionInfo = async (
       return JSON.parse(cachedData)
     } else {
       let collection = await repositories.collection.findByContractAddress(
-        ethers.utils.getAddress(contract),
+        helper.checkSum(contract),
         chainId,
       )
       let nftPortResults = undefined
@@ -2249,7 +2264,7 @@ export const getCollectionInfo = async (
 
       if (collection && (
         collection.deployer == null ||
-        ethers.utils.getAddress(collection.deployer) !== collection.deployer
+        helper.checkSum(collection.deployer) !== collection.deployer
       )) {
         const collectionDeployer = await getCollectionDeployer(contract, chainId)
         collection = await repositories.collection.save({
@@ -2261,7 +2276,7 @@ export const getCollectionInfo = async (
 
       const nft = await repositories.nft.findOne({
         where: {
-          contract: ethers.utils.getAddress(contract),
+          contract: helper.checkSum(contract),
           chainId,
         },
       })
@@ -2338,7 +2353,7 @@ export const getCollectionInfo = async (
         })
         await seService.indexCollections([updatedCollection])
         collection = await repositories.collection.findByContractAddress(
-          ethers.utils.getAddress(contract),
+          helper.checkSum(contract),
           chainId,
         )
         nftPortResults = {
@@ -2361,7 +2376,7 @@ export const getCollectionInfo = async (
             }),
           ])
           collection = await repositories.collection.findByContractAddress(
-            ethers.utils.getAddress(contract),
+            helper.checkSum(contract),
             chainId,
           )
         }
@@ -2425,7 +2440,7 @@ export const getUserWalletFromNFT = async (
         // We don't save multiple owners for now, so we don't keep this NFT too
         return undefined
       } else {
-        const csOwner = checkSumOwner(owners[0])
+        const csOwner = helper.checkSum(owners[0])
         const fallbackWallet = new entity.Wallet()
         fallbackWallet.address = csOwner
         return await repositories.wallet.findByChainAddress(chainId, csOwner) || fallbackWallet
@@ -2452,13 +2467,13 @@ export const saveNewNFT = async (
     if (!metadata) return undefined
 
     const { type, name, description, image, traits } = metadata
-    const csOwner = checkSumOwner(wallet.address)
+    const csOwner = helper.checkSum(wallet.address)
     const savedNFT = await repositories.nft.save({
       chainId: chainId,
       userId: wallet.userId,
       walletId: wallet.id,
       owner: csOwner,
-      contract: ethers.utils.getAddress(contract),
+      contract: helper.checkSum(contract),
       tokenId: BigNumber.from(tokenId).toHexString(),
       type,
       metadata: {
