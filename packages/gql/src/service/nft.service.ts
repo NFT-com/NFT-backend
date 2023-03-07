@@ -174,7 +174,8 @@ export const getNFTsFromAlchemyPage = async (
   } = {},
 ): Promise<[OwnedNFT[], string | undefined]> => {
   try {
-    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    initiateWeb3(process.env.CHAIN_ID)
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
     let queryParams = `owner=${owner}`
 
     if (contracts) {
@@ -1161,8 +1162,7 @@ export const checkNFTContractAddresses = async (
 ): Promise<void> => {
   try {
     const start = performance.now()
-    logger.info(`[checkNFTContractAddresses] Checking NFT contract addresses for ${walletAddress}, userId: ${userId}`)
-
+    logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses starting')
     let batchIteration = 0
     const pgClient = db.getPgClient(true)
     await new Promise<void>((resolve, reject) => {
@@ -1217,7 +1217,7 @@ export const checkNFTContractAddresses = async (
       })
     })
     const end = performance.now()
-    logger.info(`[checkNFTContractAddresses] Done checking NFT contract addresses for ${walletAddress}, userId: ${userId}, execTime: ${end - start}ms`)
+    logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, 'checkNFTContractAddresses done')
   } catch (err) {
     logger.error(`Error in checkNFTContractAddresses: ${err}`)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
