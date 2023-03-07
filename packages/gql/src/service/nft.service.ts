@@ -1161,7 +1161,8 @@ export const checkNFTContractAddresses = async (
 ): Promise<void> => {
   try {
     const start = performance.now()
-    logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses starting')
+    logger.info(`[checkNFTContractAddresses] Checking NFT contract addresses for ${walletAddress}, userId: ${userId}`)
+
     let batchIteration = 0
     const pgClient = db.getPgClient(true)
     await new Promise<void>((resolve, reject) => {
@@ -1216,7 +1217,7 @@ export const checkNFTContractAddresses = async (
       })
     })
     const end = performance.now()
-    logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, 'checkNFTContractAddresses done')
+    logger.info(`[checkNFTContractAddresses] Done checking NFT contract addresses for ${walletAddress}, userId: ${userId}, execTime: ${end - start}ms`)
   } catch (err) {
     logger.error(`Error in checkNFTContractAddresses: ${err}`)
     Sentry.captureMessage(`Error in checkNFTContractAddresses: ${err}`)
