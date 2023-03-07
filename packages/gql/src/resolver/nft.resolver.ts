@@ -454,7 +454,7 @@ const getMyNFTs = async (
           // refresh order queue trigger
           return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
             .then(() => Promise.resolve(result))
-        })
+        }) as Promise<gql.NFTsOutput>
     } else {
       const defaultProfile = await repositories.profile.findOne({
         where: {
@@ -482,7 +482,7 @@ const getMyNFTs = async (
             // refresh order queue trigger
             return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
               .then(() => Promise.resolve(result))
-          })
+          }) as Promise<gql.NFTsOutput>
       } else {
         return await returnProfileNFTs(
           defaultProfile.id,
