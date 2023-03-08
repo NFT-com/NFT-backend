@@ -15,7 +15,8 @@ export const getNFTPortInterceptor = (
   })
 
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig= {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
       return (
         axiosRetry.isNetworkOrIdempotentRequestError(err) ||

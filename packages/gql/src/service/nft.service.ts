@@ -15,6 +15,7 @@ import { gql, Pageable } from '@nftcom/gql/defs'
 import { Context } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
+import { delay } from '@nftcom/gql/service/core.service'
 import {
   contentTypeFromExt,
   extensionFromFilename,
@@ -1075,13 +1076,16 @@ export const updateNFTOwnershipAndMetadata = async (
       const redisCount = await cache.zscore(`update_metadata_cron_${chainId}`, nft.contract.address)
 
       // only do 5 updates until skipping
-      if (!redisCount || (redisCount &&  parseInt(redisCount) < 5)) {
+      if (!redisCount || (redisCount &&  parseInt(redisCount) < 3)) {
         logger.info({
           redisCount: redisCount || 1,
           contract: nft.contract.address,
           tokenId: nft.id.tokenId,
         }, `4. NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort... redisCount=${redisCount}, type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
         const onlyNftPort = true // we want nft port data bc alchemy data up till this point has failed
+
+        // space it apart
+        await delay(100)
         const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId, onlyNftPort)
         if (!metadata) {
           logger.info(`NFT metadata is not available from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
