@@ -1762,54 +1762,58 @@ const fillEdgesWithWeight = async (profileId, nullEdges: entity.Edge[], weight?:
 export const updateEdgesWithNullWeight = async (
   profileId: string,
 ): Promise<void> => {
-  const pgClient = db.getPgClient(true)
-  await new Promise<void>((resolve, reject) => {
-    pgClient.connect((err, client, done) => {
-      if (err) throw err
-      const batch = []
-      const batchSize = 100
-      let lastWeight: string = undefined
-      const query = new QueryStream(
-        `SELECT
-          *
-        FROM
-          edge
-        WHERE
-          "thisEntityId" = $1
-          AND "thisEntityType" = '${defs.EntityType.Profile}'
-          AND "thatEntityType" = '${defs.EntityType.NFT}'
-          AND "edgeType" = '${defs.EdgeType.Displays}'
-          AND "weight" IS NULL`,
-        [profileId],
-        { batchSize, highWaterMark: 500 },
-      )
-      logger.info(`profileId ${profileId} = updateEdgesWithNullWeight: ${query}`)
-      const stream = client.query(query)
-      stream.on('end', async () => {
-        if (batch.length) {
-          await fillEdgesWithWeight(profileId, batch.splice(0), lastWeight)
-        }
-        done()
-
-        logger.info(`profileId ${profileId} = updateEdgesWithNullWeight: done!`)
-        resolve()
-      })
-      stream.on('error', (err) => {
-        reject(err)
-      })
-      const fillWeights = new Writable({
-        objectMode: true,
-        async write(nft, _encoding, callback) {
-          batch.push(nft)
-          if (batch.length === batchSize) {
-            lastWeight = await fillEdgesWithWeight(profileId, batch.splice(0, batchSize), lastWeight)
+  try {
+    const pgClient = db.getPgClient(true)
+    await new Promise<void>((resolve, reject) => {
+      pgClient.connect((err, client, done) => {
+        if (err) throw err
+        const batch = []
+        const batchSize = 100
+        let lastWeight: string = undefined
+        const query = new QueryStream(
+          `SELECT
+            *
+          FROM
+            edge
+          WHERE
+            "thisEntityId" = $1
+            AND "thisEntityType" = '${defs.EntityType.Profile}'
+            AND "thatEntityType" = '${defs.EntityType.NFT}'
+            AND "edgeType" = '${defs.EdgeType.Displays}'
+            AND "weight" IS NULL`,
+          [profileId],
+          { batchSize, highWaterMark: 500 },
+        )
+        logger.info(`profileId ${profileId} = updateEdgesWithNullWeight: ${query}`)
+        const stream = client.query(query)
+        stream.on('end', async () => {
+          if (batch.length) {
+            await fillEdgesWithWeight(profileId, batch.splice(0), lastWeight)
           }
-          callback()
-        },
+          done()
+
+          logger.info(`profileId ${profileId} = updateEdgesWithNullWeight: done!`)
+          resolve()
+        })
+        stream.on('error', (err) => {
+          reject(err)
+        })
+        const fillWeights = new Writable({
+          objectMode: true,
+          async write(nft, _encoding, callback) {
+            batch.push(nft)
+            if (batch.length === batchSize) {
+              lastWeight = await fillEdgesWithWeight(profileId, batch.splice(0, batchSize), lastWeight)
+            }
+            callback()
+          },
+        })
+        stream.pipe(fillWeights)
       })
-      stream.pipe(fillWeights)
     })
-  })
+  } catch (err) {
+    logger.error(err, `Error in updateEdgesWithNullWeight for profileId: ${profileId}`)
+  }
 }
 
 export const updateEdgesWeightForProfile = async (
