@@ -1104,28 +1104,36 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    let start = new Date().getTime()
     logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
     let pageKey = undefined
     do {
       const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
       pageKey = nextPageKey
-      logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}`)
+
+      logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, nextPageKey=${nextPageKey}, ${ownedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+
       const savedNFTs: entity.NFT[] = []
       try {
         await Promise.allSettled(
           ownedNFTs.map(async (nft) => {
             const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
             if (savedNFT) savedNFTs.push(savedNFT)
+            
+            logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, ${nft.contract.address}, tokenId=${nft.id.tokenId}, ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
+            start = new Date().getTime()
           }),
         )
       } catch (err) {
         logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
         Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
       }
+
       if (savedNFTs.length) {
-        logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}`)
-        await updateCollectionForNFTs(savedNFTs)
-        await indexNFTsOnSearchEngine(savedNFTs)
+        updateCollectionForNFTs(savedNFTs)
+        indexNFTsOnSearchEngine(savedNFTs)
+        logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
       }
     } while (pageKey)
   } catch (err) {
