@@ -737,10 +737,10 @@ const updateNFTsForProfile = async (
 
     await saveIncentiveActionsForProfile(repositories, profile)
 
-    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.url)
     if (!recentlyRefreshed) {
       // add to NFT cache list
-      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.url)
     }
 
     return await returnProfileNFTs(

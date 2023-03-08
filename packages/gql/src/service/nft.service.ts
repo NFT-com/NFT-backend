@@ -1145,7 +1145,7 @@ export const updateWalletNFTs = async (
           logger.error(err)
           return
         }
-        logger.info(task, `[updateWalletNFTs] Updating wallet NFTs for took ${new Date().getTime() - (task as any).start}ms`)
+        logger.info(task, `[updateWalletNFTs] adding to queue ${new Date().getTime() - (task as any).start}ms`)
       })
     } while (pageKey)
   } catch (err) {
@@ -1328,23 +1328,23 @@ export const getOwnersOfGenesisKeys = async (
 }
 
 export const executeUpdateNFTsForProfile = async (
-  profileId: string,
+  profileUrl: string,
   chainId: string,
 ): Promise<void> => {
   try {
-    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileId)
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileUrl)
     if (recentlyRefreshed) {
       // remove profile from cache which store recently refreshed
-      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profileId])
+      await cache.zrem(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, [profileUrl])
     }
-    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profileId)
+    const inProgress = await cache.zscore(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, profileUrl)
     if (inProgress) {
-      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
+      await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileUrl])
     }
-    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profileId)
+    const inQueue = await cache.zscore(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, profileUrl)
     if (!inQueue) {
       // add to NFT cache list
-      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileUrl)
     }
   } catch (err) {
     logger.error(`Error in executeUpdateNFTsForProfile: ${err}`)
