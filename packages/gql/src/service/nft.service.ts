@@ -1071,19 +1071,36 @@ export const updateNFTOwnershipAndMetadata = async (
 
     // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
     if (undefinedCount >= 4) {
-      logger.info(`4. NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
-      const onlyNftPort = true // we want nft port data bc alchemy data up till this point has failed
-      const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId, onlyNftPort)
-      if (!metadata) {
-        logger.info(`NFT metadata is not available from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+      // get redis count for nft.contract.address
+      const redisCount = await cache.zscore(`UPDATE_METADATA_CRON_${chainId}`, nft.contract.address)
+
+      // only do 5 updates until skipping
+      if (!redisCount || (redisCount &&  parseInt(redisCount) < 5)) {
+        logger.info({
+          redisCount: redisCount || 1,
+          contract: nft.contract.address,
+          tokenId: nft.id.tokenId,
+        }, `4. NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort... redisCount=${redisCount}, type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+        const onlyNftPort = true // we want nft port data bc alchemy data up till this point has failed
+        const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId, onlyNftPort)
+        if (!metadata) {
+          logger.info(`NFT metadata is not available from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+          return undefined
+        }
+        type = metadata.type
+        name = metadata.name
+        description = metadata.description
+        image = metadata.image
+        traits = metadata.traits
+        logger.info(`5. NFT metadata is successfully retrieved from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+      } else {
+        // if we are not able to get metadata from getNFTs api, we try to get metadata from getNFTMetadata or NFTPort for 5 times
+        logger.info(`NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
         return undefined
       }
-      type = metadata.type
-      name = metadata.name
-      description = metadata.description
-      image = metadata.image
-      traits = metadata.traits
-      logger.info(`5. NFT metadata is successfully retrieved from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+
+      // running tracker of bad metadata
+      await cache.zadd(`UPDATE_METADATA_CRON_${chainId}`, 'INCR', 1, nft.contract.address)
     }
 
     logger.info(`6. finished fetching metadata in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
