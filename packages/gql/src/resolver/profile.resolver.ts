@@ -276,7 +276,7 @@ const maybeUpdateProfileOwnership = (
             thatEntityType: defs.EntityType.NFT,
             thisEntityId: profile.id,
           })))
-          .then(fp.tap(() => executeUpdateNFTsForProfile(profile.id, chainId)))
+          .then(fp.tap(() => executeUpdateNFTsForProfile(profile.url, chainId)))
       })
       .catch((e) => {
         logger.log(`[ERROR] maybeUpdateProfileOwnership uncaught error - ${JSON.stringify(e)}`)
