@@ -212,7 +212,7 @@ export const getNFTsFromAlchemy = async (
   try {
     let pageKey
     const ownedNFTs: Array<OwnedNFT> = []
-    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
     let queryParams = `owner=${owner}`
 
     if (contracts) {
@@ -408,7 +408,7 @@ const getNFTMetaDataFromAlchemy = async (
   // optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
 ): Promise<NFTMetaDataResponse | undefined> => {
   try {
-    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
     const queryParams = `contractAddress=${contractAddress}&tokenId=${tokenId}`
     const response: AxiosResponse = await alchemyInstance.get(`/getNFTMetadata?${queryParams}`)
 
