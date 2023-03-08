@@ -914,6 +914,7 @@ export const updateNFTOwnershipAndMetadata = async (
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
   try {
+    let start = new Date().getTime()
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: helper.checkSum(nft.contract.address),
@@ -921,6 +922,8 @@ export const updateNFTOwnershipAndMetadata = async (
         chainId: chainId,
       },
     })
+    logger.info(`1. finished fetching existingNFT in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
 
     const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
 
@@ -937,6 +940,9 @@ export const updateNFTOwnershipAndMetadata = async (
         type = defs.NFTType.UNKNOWN
       }
     }
+
+    logger.info(`2. finished fetching type in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
 
     if (nft.metadata) {
       if (nft.metadata?.name) name = nft.metadata?.name
@@ -956,16 +962,28 @@ export const updateNFTOwnershipAndMetadata = async (
         })
       }
     }
+
+    logger.info(`3. finished fetching name, image, description, traits in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
+
     // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
     if (!type || !name || !description || !image || !traits.length) {
+      logger.info(`4. NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
       const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
-      if (!metadata) return undefined
+      if (!metadata) {
+        logger.info(`NFT metadata is not available from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+        return undefined
+      }
       type = metadata.type
       name = metadata.name
       description = metadata.description
       image = metadata.image
       traits = metadata.traits
+      logger.info(`5. NFT metadata is successfully retrieved from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
     }
+
+    logger.info(`6. finished fetching metadata in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
 
     // if this NFT is not existing on our db, we save it...
     if (!existingNFT) {
@@ -985,12 +1003,12 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits,
         },
       })
+      logger.info(`7. finished saving nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
       return savedNFT
     } else {
       // if this NFT is existing and owner changed, we change its ownership...
       if (existingNFT.userId !== userId || existingNFT.walletId !== wallet.id) {
         // we remove edge of previous profile
-        // logger.log(`&&& updateNFTOwnershipAndMetadata: existingNFT.userId ${existingNFT.userId}, userId ${userId}, existingNFT.walletId ${existingNFT.walletId}, walletId ${walletId}`)
         await repositories.edge.hardDelete({ thatEntityId: existingNFT.id, edgeType: defs.EdgeType.Displays } )
 
         // if this NFT is a profile NFT...
@@ -1011,7 +1029,7 @@ export const updateNFTOwnershipAndMetadata = async (
               })
             }
           } else {
-            logger.info(`previous wallet for existing NFT ${existingNFT.id} is undefined`)
+            logger.info(`8. previous wallet for existing NFT ${existingNFT.id} is undefined`)
           }
         }
 
@@ -1029,6 +1047,7 @@ export const updateNFTOwnershipAndMetadata = async (
             traits: traits,
           },
         })
+        logger.info(`9. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
         return updatedNFT
       } else {
         const isTraitSame = (existingNFT.metadata.traits.length == traits.length) &&
@@ -1055,9 +1074,10 @@ export const updateNFTOwnershipAndMetadata = async (
               traits: traits,
             },
           })
+          logger.info(`10. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
           return updatedNFT
         } else {
-          logger.debug('No need to update owner and metadata', existingNFT.contract)
+          logger.info(`11. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
           return undefined
         }
       }
