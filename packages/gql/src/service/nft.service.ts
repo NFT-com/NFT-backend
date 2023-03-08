@@ -1118,7 +1118,7 @@ const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs,
     indexNFTsOnSearchEngine(savedNFTs)
     logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
   }
-  return { userId, wallet, chainId, ownedNFTs, nextPageKey, start }
+  return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start }
 }, 10_000) // this would allow 100,000 NFTs in progress at any given time...
 
 /**
