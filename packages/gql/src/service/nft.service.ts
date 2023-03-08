@@ -1942,7 +1942,7 @@ export const syncEdgesWithNFTs = async (
 }
 
 export const updateNFTsForAssociatedWallet = async (
-  profileId: string,
+  profileUrl: string,
   wallet: entity.Wallet,
 ): Promise<void> => {
   try {
@@ -1952,12 +1952,12 @@ export const updateNFTsForAssociatedWallet = async (
 
       // async update in streams bullMQ
       if (profileExists) {
-        const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileId)
+        const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileUrl)
         if (!recentlyRefreshed) {
           // add to NFT cache list
-          await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
+          await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileUrl)
         }
-        logger.info(`updateNFTsForAssociatedWallet: queuing profile ${profileId} for update, took ${new Date().getTime() - start}ms`)
+        logger.info(`updateNFTsForAssociatedWallet: queuing profile ${profileUrl} for update, took ${new Date().getTime() - start}ms`)
       } else {
         const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_NON_PROFILE}_${chainId}`, wallet.id)
         if (!recentlyRefreshed) {
@@ -1979,10 +1979,16 @@ export const updateNFTsForAssociatedWallet = async (
       logger.info(`updateNFTsForAssociatedWallet: checkNFTContractAddresses for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
       start = new Date().getTime()
 
-      // save NFT edges for profile...
-      await updateEdgesWeightForProfile(profileId, wallet.id)
+      const profile = await repositories.profile.findOne({ where: { url: profileUrl } })
 
-      logger.info(`updateNFTsForAssociatedWallet: updateEdgesWeightForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
+      if (profile) {
+        // save NFT edges for profile...
+        await updateEdgesWeightForProfile(profile.id, wallet.id)
+
+        logger.info(`updateNFTsForAssociatedWallet: updateEdgesWeightForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
+      } else {
+        logger.error(`updateNFTsForAssociatedWallet: profile ${profileUrl} not found!`)
+      }
     } else {
       logger.error(`updateNFTsForAssociatedWallet: wallet ${wallet.id} has no userId!`)
     }
@@ -2112,7 +2118,7 @@ export const updateNFTsForAssociatedAddresses = async (
     await Promise.allSettled(
       wallets.map(async (wallet) => {
         try {
-          await updateNFTsForAssociatedWallet(profile.id, wallet)
+          await updateNFTsForAssociatedWallet(profile.url, wallet)
         } catch (err) {
           logger.error(`Error in updateNFTsForAssociatedAddresses: ${err}`)
           Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
