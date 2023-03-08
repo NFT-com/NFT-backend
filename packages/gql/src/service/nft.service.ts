@@ -26,9 +26,9 @@ import {
   getLastWeight,
   midWeight,
   nftAbi,
+  optionallySaveUserAndWalletForAssociatedAddress,
   processIPFSURL,
   s3ToCdn,
-  saveUsersForAssociatedAddress,
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
@@ -174,7 +174,8 @@ export const getNFTsFromAlchemyPage = async (
   } = {},
 ): Promise<[OwnedNFT[], string | undefined]> => {
   try {
-    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId)
+    initiateWeb3(process.env.CHAIN_ID)
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
     let queryParams = `owner=${owner}`
 
     if (contracts) {
@@ -1103,28 +1104,36 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
+    let start = new Date().getTime()
     logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
     let pageKey = undefined
     do {
       const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
       pageKey = nextPageKey
-      logger.info({ totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}`)
+
+      logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, nextPageKey=${nextPageKey}, ${ownedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+
       const savedNFTs: entity.NFT[] = []
       try {
         await Promise.allSettled(
           ownedNFTs.map(async (nft) => {
             const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
             if (savedNFT) savedNFTs.push(savedNFT)
+            
+            logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, ${nft.contract.address}, tokenId=${nft.id.tokenId}, ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
+            start = new Date().getTime()
           }),
         )
       } catch (err) {
         logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
         Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
       }
+
       if (savedNFTs.length) {
-        logger.info({ savedNFTsSize: savedNFTs.length, userId, wallet }, `[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}`)
-        await updateCollectionForNFTs(savedNFTs)
-        await indexNFTsOnSearchEngine(savedNFTs)
+        updateCollectionForNFTs(savedNFTs)
+        indexNFTsOnSearchEngine(savedNFTs)
+        logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
       }
     } while (pageKey)
   } catch (err) {
@@ -1845,6 +1854,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   if (edgeIdsToDelete.length)
     await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
 }
+
 export const syncEdgesWithNFTs = async (
   profileId: string,
 ): Promise<void> => {
@@ -1904,31 +1914,46 @@ export const updateNFTsForAssociatedWallet = async (
   wallet: entity.Wallet,
 ): Promise<void> => {
   try {
-    const cacheKey = `${CacheKeys.UPDATE_NFT_FOR_ASSOCIATED_WALLET}_${wallet.chainId}_${wallet.id}_${wallet.userId}`
-    const cachedData = await cache.get(cacheKey)
-    if (!cachedData) {
+    if (wallet.userId) {
+      let start = new Date().getTime()
+      const profileExists  = await repositories.profile.findOne({ where: { ownerUserId: wallet.userId } })
+
+      // async update in streams bullMQ
+      if (profileExists) {
+        const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profileId)
+        if (!recentlyRefreshed) {
+          // add to NFT cache list
+          await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profileId)
+        }
+        logger.info(`updateNFTsForAssociatedWallet: queuing profile ${profileId} for update, took ${new Date().getTime() - start}ms`)
+      } else {
+        const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_NON_PROFILE}_${chainId}`, wallet.id)
+        if (!recentlyRefreshed) {
+          // add to NFT cache list
+          await cache.zadd(`${CacheKeys.UPDATE_NFTS_NON_PROFILE}_${chainId}`, 'INCR', 1, wallet.id)
+        }
+        logger.info(`updateNFTsForAssociatedWallet: queuing non profile address ${wallet.address} for update, took ${new Date().getTime() - start}ms`)
+      }
+      start = new Date().getTime()
+  
+      // multicall
       await checkNFTContractAddresses(
         wallet.userId,
         wallet.id,
         wallet.address,
         wallet.chainId,
       )
-      await updateWalletNFTs(
-        wallet.userId,
-        wallet,
-        wallet.chainId,
-      )
+
+      logger.info(`updateNFTsForAssociatedWallet: checkNFTContractAddresses for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+
       // save NFT edges for profile...
       await updateEdgesWeightForProfile(profileId, wallet.id)
-      const nfts = await repositories.nft.find({
-        where: {
-          userId: wallet.userId,
-          walletId: wallet.id,
-          chainId: wallet.chainId,
-        },
-      })
-      await cache.set(cacheKey, nfts.length.toString(), 'EX', 60 * 10)
-    } else return
+
+      logger.info(`updateNFTsForAssociatedWallet: updateEdgesWeightForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
+    } else {
+      logger.error(`updateNFTsForAssociatedWallet: wallet ${wallet.id} has no userId!`)
+    }
   } catch (err) {
     logger.error(`Error in updateNFTsForAssociatedWallet: ${err}`)
     Sentry.captureMessage(`Error in updateNFTsForAssociatedWallet: ${err}`)
@@ -1999,11 +2024,15 @@ export const updateNFTsForAssociatedAddresses = async (
   chainId: string,
 ): Promise<string> => {
   try {
+    let start = new Date().getTime()
+    logger.info(`[nftService.updateNFTsForAssociatedAddresses] Updating NFTs for associated addresses for profile ${profile.url}...`)
+
     const cacheKey = `${CacheKeys.ASSOCIATED_ADDRESSES}_${chainId}_${profile.url}`
     const cachedData = await cache.get(cacheKey)
     let addresses: string[]
     if (cachedData) {
       addresses = JSON.parse(cachedData)
+      logger.debug(`${addresses.length} associated addresses for profile ${profile.url} from cache, took ${new Date().getTime() - start}ms`)
     } else {
       const nftResolverContract = typechain.NftResolver__factory.connect(
         contracts.nftResolverAddress(chainId),
@@ -2011,7 +2040,9 @@ export const updateNFTsForAssociatedAddresses = async (
       )
       const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
       addresses = associatedAddresses.map((item) => item.chainAddr)
-      logger.debug(`${addresses.length} associated addresses for profile ${profile.url}`)
+      logger.info(`[nftService.updateNFTsForAssociatedAddresses] Got associated addresses for profile ${profile.url} [${JSON.stringify(addresses)}] in ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+
       // remove NFT edges for non-associated addresses
       await removeEdgesForNonassociatedAddresses(
         profile.id,
@@ -2019,20 +2050,32 @@ export const updateNFTsForAssociatedAddresses = async (
         addresses,
         chainId,
       )
+
+      logger.info(`[nftService.updateNFTsForAssociatedAddresses] Removed NFT edges for non-associated addresses for profile ${profile.url} in ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
+
       if (!addresses.length) {
         return `No associated addresses of ${profile.url}`
       }
+
       await cache.set(cacheKey, JSON.stringify(addresses), 'EX', 60 * 5)
+
       // update associated addresses with the latest updates
       await repositories.profile.updateOneById(profile.id, { associatedAddresses: addresses })
+      logger.info(`[nftService.updateNFTsForAssociatedAddresses] Updated associated addresses for profile ${profile.url} in ${new Date().getTime() - start}ms`)
+      start = new Date().getTime()
     }
+
     // save User, Wallet for associated addresses...
     const wallets: entity.Wallet[] = []
     await Promise.allSettled(
       addresses.map(async (address) => {
-        wallets.push(await saveUsersForAssociatedAddress(chainId, address, repositories))
+        wallets.push(await optionallySaveUserAndWalletForAssociatedAddress(chainId, address, repositories))
       }),
     )
+    logger.info(`[nftService.updateNFTsForAssociatedAddresses] Saved users for associated addresses for profile ${profile.url} in ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
+
     // refresh NFTs for associated addresses...
     await Promise.allSettled(
       wallets.map(async (wallet) => {
@@ -2044,7 +2087,13 @@ export const updateNFTsForAssociatedAddresses = async (
         }
       }),
     )
+    logger.info(`[nftService.updateNFTsForAssociatedAddresses] Updated NFTs for associated addresses for profile ${profile.url} in ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
+
     await syncEdgesWithNFTs(profile.id)
+    logger.info(`[nftService.updateNFTsForAssociatedAddresses] Synced edges with NFTs for profile ${profile.url} in ${new Date().getTime() - start}ms`)
+    start = new Date().getTime()
+
     return `refreshed NFTs for associated addresses of ${profile.url}`
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTsForAssociatedAddresses: ${err}`)
