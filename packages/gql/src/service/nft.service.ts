@@ -1422,8 +1422,7 @@ const saveEdgesForNFTs = async (
     const edgesWithWeight = []
     for (let i = 0; i < nftsToBeAdded.length; i++) {
       logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
-      const newWeight = generateWeight(weight)
-
+      
       const foundEdge = await repositories.edge.findOne({
         where: {
           thisEntityType: defs.EntityType.Profile,
@@ -1435,6 +1434,8 @@ const saveEdgesForNFTs = async (
       })
 
       if (!foundEdge) {
+        const newWeight = generateWeight(weight)
+        
         edgesWithWeight.push({
           thisEntityType: defs.EntityType.Profile,
           thatEntityType: defs.EntityType.NFT,
