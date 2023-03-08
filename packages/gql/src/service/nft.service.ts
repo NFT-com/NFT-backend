@@ -648,12 +648,21 @@ export const nftTraitBuilder = (
   return traits
 }
 
+enum MetadataProvider {
+  Alchemy = 'alchemy',
+  NFTPort = 'nftport',
+  All = 'all',
+}
+
 // helper function to get traits for metadata, nftPort optional
-export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Array<defs.Trait> => {
+export const getMetadataTraits = (
+  alchemyMetadata: any,
+  nftPortDetails: any = undefined,
+): Array<defs.Trait> => {
   const traits: Array<defs.Trait> = []
 
-  if (Array.isArray(metadata?.attributes)) {
-    metadata?.attributes.map((trait) => {
+  if (Array.isArray(alchemyMetadata?.attributes)) {
+    alchemyMetadata?.attributes.map((trait) => {
       let value = trait?.value || trait?.trait_value
       value = typeof value === 'string' ? value : JSON.stringify(value)
       traits.push(({
@@ -661,8 +670,8 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
         value,
       }))
     })
-  } else if (Array.isArray(metadata?.message?.attributes)) { // edge case for alchemy
-    metadata?.message?.attributes.map((trait) => {
+  } else if (Array.isArray(alchemyMetadata?.message?.attributes)) { // edge case for alchemy
+    alchemyMetadata?.message?.attributes.map((trait) => {
       let value = trait?.value || trait?.trait_value
       value = typeof value === 'string' ? value : JSON.stringify(value)
       traits.push(({
@@ -670,8 +679,8 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
         value,
       }))
     })
-  } else if (Array.isArray(metadata?.enhanced_cattributes)) {
-    metadata?.enhanced_cattributes.map((trait) => {
+  } else if (Array.isArray(alchemyMetadata?.enhanced_cattributes)) {
+    alchemyMetadata?.enhanced_cattributes.map((trait) => {
       let value = trait?.description
       value = typeof value === 'string' ? value : JSON.stringify(value)
       traits.push(({
@@ -698,9 +707,9 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
       }))
     })
   } else {
-    if (metadata?.attributes) {
-      Object.keys(metadata?.attributes).map(keys => {
-        let value = metadata?.attributes?.[keys]
+    if (alchemyMetadata?.attributes) {
+      Object.keys(alchemyMetadata?.attributes).map(keys => {
+        let value = alchemyMetadata?.attributes?.[keys]
         value = typeof value === 'string' ? value : JSON.stringify(value)
         traits.push(({
           type: keys,
@@ -718,53 +727,111 @@ export const getMetadata = (metadata: any, nftPortDetails: any = undefined): Arr
 }
 
 export const getNftName = (
-  nftMetadata: any,
+  alchemyMetadata: any,
   nftPortDetails: any = undefined,
   contractMetadata: any = undefined,
   tokenId: string = undefined,
+  metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
+  const tokenName = tokenId
+    ? [`${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName}`, BigNumber.from(tokenId).toString()].join(' ')
+    : ''
+
+  if (metadataProvider === MetadataProvider.Alchemy) {
+    return alchemyMetadata?.title || tokenName
+  } else if (metadataProvider === MetadataProvider.NFTPort) {
+    return nftPortDetails?.nft?.metadata?.name || tokenName
+  }
+
+  // default
   return nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK
     ? nftPortDetails?.nft?.metadata?.name
-    : nftMetadata?.title
+    : alchemyMetadata?.title
     || nftPortDetails?.nft?.metadata?.name
-    || (tokenId
-      ? [`${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName}`, BigNumber.from(tokenId).toString()].join(' ')
-      : '')
+    || tokenName
 }
 
 export const getNftDescription = (
-  nftMetadata: any,
+  alchemyMetadata: any,
   nftPortDetails: any = undefined,
+  metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
-  return nftMetadata?.description || nftMetadata?.metadata?.bio || nftPortDetails?.nft?.metadata?.description
+  if (metadataProvider === MetadataProvider.Alchemy) {
+    return alchemyMetadata?.description || alchemyMetadata?.metadata?.bio
+  } else if (metadataProvider === MetadataProvider.NFTPort) {
+    return nftPortDetails?.nft?.metadata?.description
+  }
+
+  // default
+  return alchemyMetadata?.description || alchemyMetadata?.metadata?.bio || nftPortDetails?.nft?.metadata?.description
 }
 
 const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.com/optimizedLoader2.webp'
 export const getNftImage = (
-  metadata: any,
+  alchemyMetadata: any,
   nftPortDetails: any = undefined,
+  metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
-  return (metadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK)
+  if (metadataProvider === MetadataProvider.Alchemy) {
+    return alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
+      alchemyMetadata?.tokenUri?.gateway || alchemyMetadata?.tokenUri?.raw ||
+        (alchemyMetadata?.image_data ? generateSVGFromBase64String(alchemyMetadata?.image_data) : FALLBACK_IMAGE_URL)
+  } else if (metadataProvider === MetadataProvider.NFTPort) {
+    return nftPortDetails?.nft?.cached_file_url
+  }
+
+  // default
+  return (alchemyMetadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK)
     ? nftPortDetails?.nft?.cached_file_url
-    : metadata?.image || metadata?.image_url || metadata?.image_url_cdn || metadata?.tokenUri?.gateway ||
-      metadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
-        (metadata?.image_data ? generateSVGFromBase64String(metadata?.image_data) : FALLBACK_IMAGE_URL)
+    : alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
+      alchemyMetadata?.tokenUri?.gateway || alchemyMetadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
+        (alchemyMetadata?.image_data ? generateSVGFromBase64String(alchemyMetadata?.image_data) : FALLBACK_IMAGE_URL)
 }
 
 export const getNftType = (
-  nftMetadata: any,
+  alchemyMetadata: any,
   nftPortDetails: any = undefined,
+  metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): defs.NFTType | undefined => {
+  if (metadataProvider === MetadataProvider.Alchemy) {
+    if (alchemyMetadata?.id?.tokenMetadata?.tokenType === 'CRYPTO_PUNKS') {
+      return defs.NFTType.CRYPTO_PUNKS
+    } else if (alchemyMetadata?.id?.tokenMetadata?.tokenType === 'ERC721') {
+      return defs.NFTType.ERC721
+    } else if (alchemyMetadata?.id?.tokenMetadata?.tokenType === 'ERC1155') {
+      return defs.NFTType.ERC1155
+    } else if (alchemyMetadata?.title?.endsWith('.eth')) { // if token is ENS token...
+      return defs.NFTType.UNKNOWN
+    } else {
+      logger.error({ alchemyMetadata, nftPortDetails }, 'Unknown NFT type')
+      return undefined
+    }
+  } else if (metadataProvider === MetadataProvider.NFTPort) {
+    if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) {
+      return defs.NFTType.CRYPTO_PUNKS
+    } else if (nftPortDetails?.contract?.type === 'ERC721') {
+      return defs.NFTType.ERC721
+    } else if (nftPortDetails?.contract?.type === 'ERC1155') {
+      return defs.NFTType.ERC1155
+    } else if (nftPortDetails?.nft?.metadata?.name?.endsWith('.eth')) { // if token is ENS token...
+      return defs.NFTType.UNKNOWN
+    } else {
+      logger.error({ alchemyMetadata, nftPortDetails }, 'Unknown NFT type')
+      return undefined
+    }
+  }
+
+  // default
   if (nftPortDetails?.contract?.type == 'CRYPTO_PUNKS' || nftPortDetails?.contract_address?.toLowerCase() == CRYPTOPUNK) {
     return defs.NFTType.CRYPTO_PUNKS
-  } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC721') {
+  } else if ((alchemyMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC721') {
     return defs.NFTType.ERC721
-  } else if ((nftMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC1155') {
+  } else if ((alchemyMetadata?.id?.tokenMetadata?.tokenType || nftPortDetails?.contract?.type) === 'ERC1155') {
     return defs.NFTType.ERC1155
-  } else if (nftMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name?.endsWith('.eth')) { // if token is ENS token...
+  } else if (alchemyMetadata?.title?.endsWith('.eth') || nftPortDetails?.nft?.metadata?.name?.endsWith('.eth')) { // if token is ENS token...
     return defs.NFTType.UNKNOWN
   } else {
-    logger.error({ nftMetadata, nftPortDetails }, 'Unknown NFT type')
+    logger.error({ alchemyMetadata, nftPortDetails }, 'Unknown NFT type')
     return undefined
   }
 }
@@ -774,47 +841,76 @@ const getNFTMetaData = async (
   tokenId: string,
   chainId: string,
   refreshMetadata = true,
+  onlyNftPort = false, // if true, processes only nftPort
 ): Promise<NFTMetaData | undefined> => {
   try {
-    const nftMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
-      contract,
-      tokenId,
-    )
+    if (onlyNftPort) {
+      // useful for cron based updates -> when we don't want to get bogged behind nft port rate limits
+      const nftPortMetadata = await retrieveNFTDetailsNFTPort(
+        contract,
+        tokenId,
+        chainId || process.env.CHAIN_ID,
+        refreshMetadata,
+      )
 
-    const nftPortDetails = await retrieveNFTDetailsNFTPort(
-      contract,
-      tokenId,
-      chainId || process.env.CHAIN_ID,
-      refreshMetadata,
-    )
+      const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(contract)
 
-    if (!nftMetadata) return
+      const name = getNftName(undefined, nftPortMetadata, contractAlchemyMetadata, tokenId, MetadataProvider.NFTPort)
+      const description = getNftDescription(undefined, nftPortMetadata, MetadataProvider.NFTPort)
+      const image = getNftImage(undefined, nftPortMetadata, MetadataProvider.NFTPort)
 
-    const contractMetadata = await getContractMetaDataFromAlchemy(contract)
+      const type: defs.NFTType = getNftType(undefined, nftPortMetadata, MetadataProvider.NFTPort)
+      if (!type) {
+        // If it's missing NFT token type, we should throw error
+        logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
+        return Promise.reject(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
+      }
 
-    const metadata = nftMetadata?.metadata as any
+      const traits: Array<defs.Trait> = getMetadataTraits(undefined, nftPortMetadata)
 
-    const name = getNftName(nftMetadata, nftPortDetails, contractMetadata, tokenId)
+      return {
+        type,
+        name,
+        description,
+        image,
+        traits,
+      }
+    } else {
+      // Useful for non cron based updates -> like individual metadata refresh
+      const alchemyMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+        contract,
+        tokenId,
+      )
 
-    // For CryptoKitties, their metadata response format is different from original one
-    const description = getNftDescription(nftMetadata, nftPortDetails)
+      const nftPortMetadata = await retrieveNFTDetailsNFTPort(
+        contract,
+        tokenId,
+        chainId || process.env.CHAIN_ID,
+        refreshMetadata,
+      )
 
-    const image = getNftImage(metadata, nftPortDetails)
+      const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(contract)
 
-    const type: defs.NFTType = getNftType(nftMetadata, nftPortDetails)
-    if (!type) {
-      // If it's missing NFT token type, we should throw error
-      logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
-      return Promise.reject(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
-    }
-    const traits: Array<defs.Trait> = getMetadata(metadata, nftPortDetails)
+      const name = getNftName(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata, tokenId)
+      const description = getNftDescription(alchemyMetadata, nftPortMetadata)
+      const image = getNftImage(alchemyMetadata?.metadata, nftPortMetadata)
 
-    return {
-      type,
-      name,
-      description,
-      image,
-      traits,
+      const type: defs.NFTType = getNftType(alchemyMetadata, nftPortMetadata)
+      if (!type) {
+        // If it's missing NFT token type, we should throw error
+        logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
+        return Promise.reject(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
+      }
+
+      const traits: Array<defs.Trait> = getMetadataTraits(alchemyMetadata?.metadata, nftPortMetadata)
+
+      return {
+        type,
+        name,
+        description,
+        image,
+        traits,
+      }
     }
   } catch (err) {
     logger.error(`Error in getNFTMetaData: ${err}`)
@@ -966,10 +1062,18 @@ export const updateNFTOwnershipAndMetadata = async (
     logger.info(`3. finished fetching name, image, description, traits in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
     start = new Date().getTime()
 
+    let undefinedCount = 0
+    if (!type) undefinedCount++
+    if (!name) undefinedCount++
+    if (!description) undefinedCount++
+    if (!image) undefinedCount++
+    if (!traits.length) undefinedCount++
+
     // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
-    if (!type || !name || !description || !image || !traits.length) {
+    if (undefinedCount >= 4) {
       logger.info(`4. NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
-      const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId)
+      const onlyNftPort = true // we want nft port data bc alchemy data up till this point has failed
+      const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId, onlyNftPort)
       if (!metadata) {
         logger.info(`NFT metadata is not available from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
         return undefined
