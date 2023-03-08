@@ -1423,16 +1423,31 @@ const saveEdgesForNFTs = async (
     for (let i = 0; i < nftsToBeAdded.length; i++) {
       logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
       const newWeight = generateWeight(weight)
-      edgesWithWeight.push({
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        thisEntityId: profileId,
-        thatEntityId: nftsToBeAdded[i].id,
-        edgeType: defs.EdgeType.Displays,
-        weight: newWeight,
-        hide: hide,
+
+      const foundEdge = await repositories.edge.findOne({
+        where: {
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nftsToBeAdded[i].id,
+          edgeType: defs.EdgeType.Displays,
+        },
       })
-      weight = newWeight
+
+      if (!foundEdge) {
+        edgesWithWeight.push({
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nftsToBeAdded[i].id,
+          edgeType: defs.EdgeType.Displays,
+          weight: newWeight,
+          hide: hide,
+        })
+        weight = newWeight
+      } else {
+        logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
+      }
     }
 
     logger.info(`saveEdgesForNFTs: ${profileId} edges to save = ${edgesWithWeight.length}`)
