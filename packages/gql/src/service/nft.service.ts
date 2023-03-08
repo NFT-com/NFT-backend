@@ -1072,7 +1072,7 @@ export const updateNFTOwnershipAndMetadata = async (
     // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
     if (undefinedCount >= 4) {
       // get redis count for nft.contract.address
-      const redisCount = await cache.zscore(`UPDATE_METADATA_CRON_${chainId}`, nft.contract.address)
+      const redisCount = await cache.zscore(`update_metadata_cron_${chainId}`, nft.contract.address)
 
       // only do 5 updates until skipping
       if (!redisCount || (redisCount &&  parseInt(redisCount) < 5)) {
@@ -1100,7 +1100,7 @@ export const updateNFTOwnershipAndMetadata = async (
       }
 
       // running tracker of bad metadata
-      await cache.zadd(`UPDATE_METADATA_CRON_${chainId}`, 'INCR', 1, nft.contract.address)
+      await cache.zadd(`update_metadata_cron_${chainId}`, 'INCR', 1, nft.contract.address)
     }
 
     logger.info(`6. finished fetching metadata in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
