@@ -134,9 +134,10 @@ export const initiateWeb3 = (cid?: string): void => {
 
 export const getAlchemyInterceptor = (
   chainId: string,
+  customApiKey?: string,
 ): AxiosInstance => {
   const alchemyInstance = axios.create({
-    baseURL: Number(chainId || process.env.CHAIN_ID) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
+    baseURL: customApiKey ?? Number(chainId || process.env.CHAIN_ID) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -165,6 +166,22 @@ export const getAlchemyInterceptor = (
   }
   axiosRetry(alchemyInstance,  retryOptions)
   return alchemyInstance
+}
+
+export const refreshContractAlchemy = async (
+  contractAddress: string,
+  customApiKey = 'ICRpDfTma_4hsGe0rjSfH0tazKtL_koe',
+): Promise<void> => {
+  try {
+    initiateWeb3(process.env.CHAIN_ID)
+    const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID, customApiKey)
+    const response: AxiosResponse = await alchemyInstance.get(`/refreshContract?contractAddress=${contractAddress}`)
+    if (response?.data?.success) {
+      logger.info(`[refreshContractAlchemy] ${contractAddress} refreshed successfully`)
+    }
+  } catch (e) {
+    logger.error(e, `[refreshContractAlchemy] ${contractAddress} refresh failed`)
+  }
 }
 
 export const getNFTsFromAlchemyPage = async (
@@ -1089,6 +1106,7 @@ export const updateNFTOwnershipAndMetadata = async (
         const metadata = await getNFTMetaData(nft.contract.address, nft.id.tokenId, walletChainId, onlyNftPort)
         if (!metadata) {
           logger.info(`NFT metadata is not available from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+          await refreshContractAlchemy(nft.contract.address)
           return undefined
         }
         type = metadata.type
@@ -1110,6 +1128,7 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits.length,
           walletAddress: wallet.address,
         }, '[exceeded redis limit] - NFT metadata is not available from getNFTs api')
+        await refreshContractAlchemy(nft.contract.address)
         return undefined
       }
 
