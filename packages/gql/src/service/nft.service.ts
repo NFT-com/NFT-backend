@@ -1128,7 +1128,6 @@ export const updateNFTOwnershipAndMetadata = async (
           traits: traits.length,
           walletAddress: wallet.address,
         }, '[exceeded redis limit] - NFT metadata is not available from getNFTs api')
-        await refreshContractAlchemy(nft.contract.address)
         return undefined
       }
 
