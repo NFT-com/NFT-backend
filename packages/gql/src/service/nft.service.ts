@@ -1250,7 +1250,7 @@ export const indexCollectionsOnSearchEngine = async (
 
 const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }: any) => {
   logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, nextPageKey=${nextPageKey}, ${ownedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
-  const savedNFTs: entity.NFT[] = []
+  let savedNFTs: entity.NFT[] = []
   // Accuracy over speed
   for (const nft of ownedNFTs) {
     try {
@@ -1267,6 +1267,8 @@ const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs,
     indexNFTsOnSearchEngine(savedNFTs)
     logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
   }
+
+  savedNFTs = []
   return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start }
 }, 10_000) // this would allow 100,000 NFTs in progress at any given time...
 
