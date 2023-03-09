@@ -1658,7 +1658,7 @@ const saveEdgesForNFTs = async (
 
     // generate weights for nfts...
     let weight = lastWeight || await getLastWeight(repositories, profileId)
-    const edgesWithWeight = []
+    let saved = 0
     for (let i = 0; i < nftsToBeAdded.length; i++) {
       logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
       
@@ -1674,8 +1674,9 @@ const saveEdgesForNFTs = async (
 
       if (!foundEdge) {
         const newWeight = generateWeight(weight)
-        
-        edgesWithWeight.push({
+
+        // save immedietely for save on memory
+        await repositories.edge.save({
           thisEntityType: defs.EntityType.Profile,
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
@@ -1684,15 +1685,17 @@ const saveEdgesForNFTs = async (
           weight: newWeight,
           hide: hide,
         })
+
+        saved++
         weight = newWeight
       } else {
         logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
       }
     }
 
-    logger.info(`saveEdgesForNFTs: ${profileId} edges to save = ${edgesWithWeight.length}`)
+    logger.info(`saveEdgesForNFTs: ${profileId} edges saved = ${saved}`)
     // save nfts to edge...
-    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+    
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
     return weight
   } catch (err) {
