@@ -9,7 +9,7 @@ import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
-import { cache, CacheKeys } from '@nftcom/cache'
+import { cache, CacheKeys, removeExpiredTimestampedZsetMembers } from '@nftcom/cache'
 import { assetBucket } from '@nftcom/gql/config'
 import { gql, Pageable } from '@nftcom/gql/defs'
 import { Context } from '@nftcom/gql/defs'
@@ -1277,6 +1277,25 @@ export const indexCollectionsOnSearchEngine = async (
 //   return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start, savedLength, remaining: updateWalletNFTsQueue.length() }
 // }, 10_000) // this would allow 100,000 NFTs in progress at any given time...
 
+const getRelativeTime = (timestamp: number): string => {
+  const now = Date.now()
+  const diff = timestamp - now
+
+  if (diff < 0) {
+    return 'just now'
+  } else if (diff < 1000) {
+    return 'in less than a second'
+  } else if (diff < 60 * 1000) {
+    return 'in ' + Math.floor(diff / 1000) + ' seconds'
+  } else if (diff < 60 * 60 * 1000) {
+    return 'in ' + Math.floor(diff / (60 * 1000)) + ' minutes'
+  } else if (diff < 24 * 60 * 60 * 1000) {
+    return 'in ' + Math.floor(diff / (60 * 60 * 1000)) + ' hours'
+  } else {
+    return 'in ' + Math.floor(diff / (24 * 60 * 60 * 1000)) + ' days'
+  }
+}
+
 /**
  * update wallet NFTs using data from alchemy api
  * @param userId
@@ -1289,46 +1308,73 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
-    let start = new Date().getTime()
-    logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
-    let pageKey = undefined
-    do {
-      const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
-      pageKey = nextPageKey
+    await removeExpiredTimestampedZsetMembers('update_nftService.updateWalletNFTs')
 
-      /* --------------------------- synchronous updates -------------------------- */
-      let savedNFTs: entity.NFT[] = []
-      for (const nft of ownedNFTs) {
-        try {
-          const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
-          if (savedNFT) savedNFTs.push(savedNFT)
-          logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, nft=${JSON.stringify(savedNFT)} ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
-          start = new Date().getTime()
-        } catch (err) {
-          logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
-          Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
+    const walletRecentlyUpdated = await cache.zscore('update_nftService.updateWalletNFTs', wallet.address)
+
+    if (!walletRecentlyUpdated) {
+      let start = new Date().getTime()
+      logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
+      let pageKey = undefined
+      let totalPages = 0
+      do {
+        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
+        pageKey = nextPageKey
+        totalPages++
+  
+        /* --------------------------- synchronous updates -------------------------- */
+        let savedNFTs: entity.NFT[] = []
+        for (const nft of ownedNFTs) {
+          try {
+            const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+            if (savedNFT) savedNFTs.push(savedNFT)
+            logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, nft=${JSON.stringify(savedNFT)} ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
+            start = new Date().getTime()
+          } catch (err) {
+            logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
+            Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
+          }
         }
+  
+        if (savedNFTs.length) {
+          updateCollectionForNFTs(savedNFTs)
+          indexNFTsOnSearchEngine(savedNFTs)
+          logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
+        }
+  
+        savedNFTs = []
+        /* ------------------------------ end of insert ----------------------------- */
+  
+        // updateWalletNFTsQueue.push({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }, (err, task) => {
+        //   if (err) {
+        //     logger.error({ err, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId} FAILED`)
+        //     return
+        //   }
+        //   // this is the callback function, it happens after the queue function finishes
+        //   logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining} for ${wallet.address}`)
+        //   logger.info(task, `[updateWalletNFTs-task] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
+        // })
+      } while (pageKey)
+  
+      const now: Date = new Date()
+      const oneMinute = 60000
+      if (totalPages < 3) { // 300 nfts
+        now.setMilliseconds(now.getMilliseconds() + oneMinute)
+      } else if (totalPages < 5) { // 500 nfts
+        now.setMilliseconds(now.getMilliseconds() + oneMinute * 2)
+      } else if (totalPages < 10) { // 1000 nfts
+        now.setMilliseconds(now.getMilliseconds() + oneMinute * 10)
+      } else if (totalPages < 20) { // 2000 nfts
+        now.setMilliseconds(now.getMilliseconds() + oneMinute * 20)
+      } else {
+        now.setMilliseconds(now.getMilliseconds() + oneMinute * 30)
       }
-
-      if (savedNFTs.length) {
-        updateCollectionForNFTs(savedNFTs)
-        indexNFTsOnSearchEngine(savedNFTs)
-        logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
-      }
-
-      savedNFTs = []
-      /* ------------------------------ end of insert ----------------------------- */
-
-      // updateWalletNFTsQueue.push({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }, (err, task) => {
-      //   if (err) {
-      //     logger.error({ err, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId} FAILED`)
-      //     return
-      //   }
-      //   // this is the callback function, it happens after the queue function finishes
-      //   logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining} for ${wallet.address}`)
-      //   logger.info(task, `[updateWalletNFTs-task] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
-      // })
-    } while (pageKey)
+        
+      const ttl = now.getTime()
+      await cache.zadd('update_nftService.updateWalletNFTs', ttl, wallet.address)
+    } else {
+      logger.info(`[updateWalletNFTs] wallet ${wallet.address} was recently updated, can resync NFTs in ${getRelativeTime(Number(walletRecentlyUpdated))}, skipping`)
+    }
   } catch (err) {
     logger.error(`[updateWalletNFTs] error 2: ${err}`)
     Sentry.captureMessage(`[updateWalletNFTs] error 2: ${err}`)
@@ -1612,7 +1658,7 @@ const saveEdgesForNFTs = async (
 
     // generate weights for nfts...
     let weight = lastWeight || await getLastWeight(repositories, profileId)
-    const edgesWithWeight = []
+    let saved = 0
     for (let i = 0; i < nftsToBeAdded.length; i++) {
       logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
       
@@ -1628,8 +1674,9 @@ const saveEdgesForNFTs = async (
 
       if (!foundEdge) {
         const newWeight = generateWeight(weight)
-        
-        edgesWithWeight.push({
+
+        // save immedietely for save on memory
+        await repositories.edge.save({
           thisEntityType: defs.EntityType.Profile,
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
@@ -1638,15 +1685,17 @@ const saveEdgesForNFTs = async (
           weight: newWeight,
           hide: hide,
         })
+
+        saved++
         weight = newWeight
       } else {
         logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
       }
     }
 
-    logger.info(`saveEdgesForNFTs: ${profileId} edges to save = ${edgesWithWeight.length}`)
+    logger.info(`saveEdgesForNFTs: ${profileId} edges saved = ${saved}`)
     // save nfts to edge...
-    await repositories.edge.saveMany(edgesWithWeight, { chunk: MAX_SAVE_COUNTS })
+    
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
     return weight
   } catch (err) {
