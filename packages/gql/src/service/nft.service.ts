@@ -1099,7 +1099,17 @@ export const updateNFTOwnershipAndMetadata = async (
         logger.info(`5. NFT metadata is successfully retrieved from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
       } else {
         // if we are not able to get metadata from getNFTs api, we try to get metadata from getNFTMetadata or NFTPort for 5 times
-        logger.info(`NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+        logger.info({
+          redisCount: redisCount || 1,
+          contract: nft.contract.address,
+          tokenId: nft.id.tokenId,
+          type: type,
+          name: name,
+          description: description,
+          image: image,
+          traits: traits.length,
+          walletAddress: wallet.address,
+        }, '[exceeded redis limit] - NFT metadata is not available from getNFTs api')
         return undefined
       }
 
