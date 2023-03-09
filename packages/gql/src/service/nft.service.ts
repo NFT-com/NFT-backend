@@ -1267,9 +1267,10 @@ const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs,
     indexNFTsOnSearchEngine(savedNFTs)
     logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
   }
+  const savedLength = savedNFTs.length
   savedNFTs = []
   // eslint-disable-next-line max-len
-  return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start, remaining: updateWalletNFTsQueue.length() }
+  return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start, savedLength, remaining: updateWalletNFTsQueue.length() }
 }, 10_000) // this would allow 100,000 NFTs in progress at any given time...
 
 /**
@@ -1297,7 +1298,8 @@ export const updateWalletNFTs = async (
           return
         }
         // this is the callback function, it happens after the queue function finishes
-        logger.info(task, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
+        logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining}`)
+        logger.info(task, `[updateWalletNFTs-task] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
       })
     } while (pageKey)
   } catch (err) {
