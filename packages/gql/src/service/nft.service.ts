@@ -757,7 +757,7 @@ export const getNftName = (
     : ''
 
   if (metadataProvider === MetadataProvider.Alchemy) {
-    return alchemyMetadata?.title || tokenName
+    return alchemyMetadata?.title || alchemyMetadata?.metadata?.name || tokenName
   } else if (metadataProvider === MetadataProvider.NFTPort) {
     return nftPortDetails?.nft?.metadata?.name || tokenName
   }
@@ -765,7 +765,7 @@ export const getNftName = (
   // default
   return nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK
     ? nftPortDetails?.nft?.metadata?.name
-    : alchemyMetadata?.title
+    : alchemyMetadata?.title || alchemyMetadata?.metadata?.name
     || nftPortDetails?.nft?.metadata?.name
     || tokenName
 }
@@ -1059,14 +1059,14 @@ export const updateNFTOwnershipAndMetadata = async (
     const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
 
     let name = getNftName(
-      nft.metadata,
+      nft,
       undefined,
       nft.contractMetadata,
       nft.id.tokenId,
       MetadataProvider.Alchemy,
     )
-    let type = getNftType(nft.metadata, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
-    let description = getNftDescription(nft.metadata, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
+    let type = getNftType(nft, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
+    let description = getNftDescription(nft, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
     let image = getNftImage(nft.metadata, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
     let traits = getMetadataTraits(nft.metadata, undefined)
 
