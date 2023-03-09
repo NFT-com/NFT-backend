@@ -1077,6 +1077,15 @@ export const updateNFTOwnershipAndMetadata = async (
         })
       }
     } else if (nft.contractMetadata) {
+      if (nft.contractMetadata?.tokenType) {
+        if (nft.contractMetadata?.tokenType === 'ERC721') {
+          type = defs.NFTType.ERC721
+        } else if (nft.contractMetadata?.tokenType === 'ERC1155') {
+          type = defs.NFTType.ERC1155
+        } else if (nft.contractMetadata?.name?.endsWith('.eth')) { // if token is ENS token...
+          type = defs.NFTType.UNKNOWN
+        }
+      }
       if (nft.contractMetadata?.name) name = nft.contractMetadata?.name
       if (nft.contractMetadata?.openSea?.imageUrl) image = nft.contractMetadata?.openSea?.imageUrl
       if (nft.contractMetadata?.openSea?.description) description = nft.contractMetadata?.openSea?.description
@@ -1093,7 +1102,7 @@ export const updateNFTOwnershipAndMetadata = async (
     if (!traits.length) undefinedCount++
 
     // if we are not available to get nft metadata from getNFTs api, we try to get information from getNFTMetadata or NFTPort
-    if (undefinedCount >= 4) {
+    if (undefinedCount >= 3) {
       // get redis count for nft.contract.address
       const redisCount = await cache.zscore(`update_metadata_cron_${chainId}`, nft.contract.address)
 
