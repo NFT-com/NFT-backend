@@ -1298,7 +1298,7 @@ export const updateWalletNFTs = async (
           return
         }
         // this is the callback function, it happens after the queue function finishes
-        logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining}`)
+        logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining} for ${wallet.address}`)
         logger.info(task, `[updateWalletNFTs-task] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
       })
     } while (pageKey)
