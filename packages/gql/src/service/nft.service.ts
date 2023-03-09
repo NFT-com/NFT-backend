@@ -1099,7 +1099,17 @@ export const updateNFTOwnershipAndMetadata = async (
         logger.info(`5. NFT metadata is successfully retrieved from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
       } else {
         // if we are not able to get metadata from getNFTs api, we try to get metadata from getNFTMetadata or NFTPort for 5 times
-        logger.info(`NFT metadata is not available from getNFTs api, trying to get from getNFTMetadata or NFTPort...type=${type}, name=${name}, description=${description}, image=${image}, traits=${traits.length}`)
+        logger.info({
+          redisCount: redisCount || 1,
+          contract: nft.contract.address,
+          tokenId: nft.id.tokenId,
+          type: type,
+          name: name,
+          description: description,
+          image: image,
+          traits: traits.length,
+          walletAddress: wallet.address,
+        }, '[exceeded redis limit] - NFT metadata is not available from getNFTs api')
         return undefined
       }
 
@@ -1240,7 +1250,7 @@ export const indexCollectionsOnSearchEngine = async (
 
 const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }: any) => {
   logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, nextPageKey=${nextPageKey}, ${ownedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
-  const savedNFTs: entity.NFT[] = []
+  let savedNFTs: entity.NFT[] = []
   // Accuracy over speed
   for (const nft of ownedNFTs) {
     try {
@@ -1257,6 +1267,7 @@ const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs,
     indexNFTsOnSearchEngine(savedNFTs)
     logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
   }
+  savedNFTs = []
   // eslint-disable-next-line max-len
   return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start, remaining: updateWalletNFTsQueue.length() }
 }, 10_000) // this would allow 100,000 NFTs in progress at any given time...
