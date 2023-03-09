@@ -1384,7 +1384,7 @@ export const getLastWeight = async (
 ): Promise<string | undefined> => {
   logger.info(`getLastWeight for profile ${profileId} is called`)
 
-  const edges = await repositories.edge.find({
+  const biggestEdge = await repositories.edge.findOne({
     where: {
       thisEntityType: defs.EntityType.Profile,
       thatEntityType: defs.EntityType.NFT,
@@ -1392,23 +1392,18 @@ export const getLastWeight = async (
       edgeType: defs.EdgeType.Displays,
       weight: Not(IsNull()),
     },
+    order: {
+      weight: 'DESC',
+    },
   })
 
-  logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
-
-  if (!edges.length) {
+  if (!biggestEdge) {
     logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
     return undefined
   }
 
-  let biggest = edges[0].weight
-  for (let i = 1; i < edges.length; i++) {
-    if (biggest < edges[i].weight)
-      biggest = edges[i].weight
-  }
-
-  logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
-  return biggest
+  logger.info(`getLastWeight for profile ${profileId} is ${biggestEdge.weight} (biggest)`)
+  return biggestEdge.weight
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
