@@ -1,4 +1,4 @@
-import { queue } from 'async'
+// import { queue } from 'async'
 import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber } from 'ethers'
@@ -1264,30 +1264,30 @@ export const indexCollectionsOnSearchEngine = async (
   }
 }
 
-const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }: any) => {
-  logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, nextPageKey=${nextPageKey}, ${ownedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
-  let savedNFTs: entity.NFT[] = []
-  // Accuracy over speed
-  for (const nft of ownedNFTs) {
-    try {
-      const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
-      if (savedNFT) savedNFTs.push(savedNFT)
-      logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, ${nft.contract.address}, tokenId=${nft.id.tokenId}, ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
-    } catch (err) {
-      logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
-      Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
-    }
-  }
-  if (savedNFTs.length) {
-    updateCollectionForNFTs(savedNFTs)
-    indexNFTsOnSearchEngine(savedNFTs)
-    logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
-  }
-  const savedLength = savedNFTs.length
-  savedNFTs = []
-  // eslint-disable-next-line max-len
-  return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start, savedLength, remaining: updateWalletNFTsQueue.length() }
-}, 10_000) // this would allow 100,000 NFTs in progress at any given time...
+// const updateWalletNFTsQueue = queue(async ({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }: any) => {
+//   logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, nextPageKey=${nextPageKey}, ${ownedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
+//   let savedNFTs: entity.NFT[] = []
+//   // Accuracy over speed
+//   for (const nft of ownedNFTs) {
+//     try {
+//       const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+//       if (savedNFT) savedNFTs.push(savedNFT)
+//       logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}, ${nft.contract.address}, tokenId=${nft.id.tokenId}, ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
+//     } catch (err) {
+//       logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
+//       Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
+//     }
+//   }
+//   if (savedNFTs.length) {
+//     updateCollectionForNFTs(savedNFTs)
+//     indexNFTsOnSearchEngine(savedNFTs)
+//     logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
+//   }
+//   const savedLength = savedNFTs.length
+//   savedNFTs = []
+//   // eslint-disable-next-line max-len
+//   return { userId, wallet, chainId, ownedNFTs: ownedNFTs.length, nextPageKey, start, savedLength, remaining: updateWalletNFTsQueue.length() }
+// }, 10_000) // this would allow 100,000 NFTs in progress at any given time...
 
 /**
  * update wallet NFTs using data from alchemy api
@@ -1301,22 +1301,45 @@ export const updateWalletNFTs = async (
   chainId: string,
 ): Promise<void> => {
   try {
-    const start = new Date().getTime()
+    let start = new Date().getTime()
     logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId}`)
     let pageKey = undefined
     do {
       const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
       pageKey = nextPageKey
 
-      updateWalletNFTsQueue.push({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }, (err, task) => {
-        if (err) {
-          logger.error({ err, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId} FAILED`)
-          return
+      /* --------------------------- synchronous updates -------------------------- */
+      let savedNFTs: entity.NFT[] = []
+      for (const nft of ownedNFTs) {
+        try {
+          const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
+          if (savedNFT) savedNFTs.push(savedNFT)
+          logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, nft=${JSON.stringify(savedNFT)} ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
+          start = new Date().getTime()
+        } catch (err) {
+          logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
+          Sentry.captureMessage(`[updateWalletNFTs] error 1: ${err}`)
         }
-        // this is the callback function, it happens after the queue function finishes
-        logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining} for ${wallet.address}`)
-        logger.info(task, `[updateWalletNFTs-task] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
-      })
+      }
+
+      if (savedNFTs.length) {
+        updateCollectionForNFTs(savedNFTs)
+        indexNFTsOnSearchEngine(savedNFTs)
+        logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
+      }
+
+      savedNFTs = []
+      /* ------------------------------ end of insert ----------------------------- */
+
+      // updateWalletNFTsQueue.push({ userId, wallet, chainId, ownedNFTs, nextPageKey, start }, (err, task) => {
+      //   if (err) {
+      //     logger.error({ err, userId, wallet }, `[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, ${userId} FAILED`)
+      //     return
+      //   }
+      //   // this is the callback function, it happens after the queue function finishes
+      //   logger.info(`[updateWalletNFTs-task] saved: ${task.savedLength} remaining in queue: ${task.remaining} for ${wallet.address}`)
+      //   logger.info(task, `[updateWalletNFTs-task] Updating wallet NFTs for ${wallet.address}, ${userId} took ${new Date().getTime() - (task as any).start}ms`)
+      // })
     } while (pageKey)
   } catch (err) {
     logger.error(`[updateWalletNFTs] error 2: ${err}`)
