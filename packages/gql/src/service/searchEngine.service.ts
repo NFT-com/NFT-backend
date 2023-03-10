@@ -2,12 +2,14 @@ import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { core } from '@nftcom/gql/service'
-import { db, defs, entity, helper } from '@nftcom/shared'
+import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
 import { getNftName } from './nft.service'
 import { getListingCurrencyAddress, getListingPrice, listingMapFrom, TxActivityDAO } from './txActivity.service'
+
+const logger = _logger.Factory('searchEngine.service', _logger.Context.Typesense)
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
 const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
@@ -48,11 +50,16 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           loaders: null,
         }
 
-        const collection = await core.resolveCollectionById<entity.NFT, entity.Collection>(
-          'contract',
-          defs.EntityType.NFT,
-        )(nft, null, ctx)
-
+        let collection
+        try {
+          collection = await core.resolveCollectionById<entity.NFT, entity.Collection>(
+            'contract',
+            defs.EntityType.NFT,
+          )(nft, null, ctx)
+        } catch (err) {
+          logger.warn(err, `Collection contract not found in database ${nft.contract}`)
+        }
+        
         const wallet = await core.resolveEntityById<entity.NFT, entity.Wallet>(
           'walletId',
           defs.EntityType.NFT,

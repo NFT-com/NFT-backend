@@ -1328,7 +1328,6 @@ export const updateWalletNFTs = async (
           try {
             const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
             if (savedNFT) savedNFTs.push(savedNFT)
-            logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, nft=${JSON.stringify(savedNFT)} ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
             start = new Date().getTime()
           } catch (err) {
             logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
@@ -1660,8 +1659,6 @@ const saveEdgesForNFTs = async (
     let weight = lastWeight || await getLastWeight(repositories, profileId)
     let saved = 0
     for (let i = 0; i < nftsToBeAdded.length; i++) {
-      logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
-      
       const foundEdge = await repositories.edge.findOne({
         where: {
           thisEntityType: defs.EntityType.Profile,
@@ -2478,20 +2475,19 @@ export const saveVisibleNFTsForProfile = async (
 ): Promise<void> => {
   try {
     logger.info(`starting saveVisibleNFTsForProfile: ${profileId}`)
-    const edges = await repositories.edge.find({
-      where: {
-        thisEntityId: profileId,
-        thisEntityType: defs.EntityType.Profile,
-        thatEntityType: defs.EntityType.NFT,
-        edgeType: defs.EdgeType.Displays,
-        hide: false,
-      },
+    const start = new Date().getTime()
+    const edges = await repositories.edge.count({
+      thisEntityId: profileId,
+      thisEntityType: defs.EntityType.Profile,
+      thatEntityType: defs.EntityType.NFT,
+      edgeType: defs.EdgeType.Displays,
+      hide: false,
     })
-    if (edges.length) {
-      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges.length })
-      logger.info(`saveVisibleNFTsForProfile: ${profileId} - ${edges.length} visible NFTs`)
+    if (edges) {
+      await repositories.profile.updateOneById(profileId, { visibleNFTs: edges })
+      logger.info(`saveVisibleNFTsForProfile: ${profileId} - ${edges} visible NFTs, time taken: ${new Date().getTime() - start}ms`)
     } else {
-      logger.info(`saveVisibleNFTsForProfile: ${profileId} - no visible NFTs`)
+      logger.info(`saveVisibleNFTsForProfile: ${profileId} - no visible NFTs, time taken: ${new Date().getTime() - start}ms`)
     }
   } catch (err) {
     logger.error(`Error in saveVisibleNFTsForProfile: ${err}`)

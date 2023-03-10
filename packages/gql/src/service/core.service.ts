@@ -1373,7 +1373,7 @@ export const midWeight = (prev: string, next: string): string => {
 }
 
 /**
- * Get the biggest weight of edges for profile NFTs
+ * Get the biggest weight of edges for profile NFTs (last visible edge)
  * We may want to use this method before action to save new edges on edge table for profile NFTs
  * @param repositories
  * @param profileId
@@ -1384,7 +1384,7 @@ export const getLastWeight = async (
 ): Promise<string | undefined> => {
   logger.info(`getLastWeight for profile ${profileId} is called`)
 
-  const smallestEdge = await repositories.edge.findOne({
+  const lastVisibleEdge = await repositories.edge.findOne({
     where: {
       thisEntityType: defs.EntityType.Profile,
       thatEntityType: defs.EntityType.NFT,
@@ -1393,17 +1393,17 @@ export const getLastWeight = async (
       weight: Not(IsNull()),
     },
     order: {
-      weight: 'ASC',
+      weight: 'DESC',
     },
   })
 
-  if (!smallestEdge) {
+  if (!lastVisibleEdge) {
     logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
     return undefined
   }
 
-  logger.info(`getLastWeight for profile ${profileId} is ${smallestEdge.weight} (last edge)`)
-  return smallestEdge.weight
+  logger.info(`getLastWeight for profile ${profileId} is ${lastVisibleEdge.weight} (last edge)`)
+  return lastVisibleEdge.weight
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
