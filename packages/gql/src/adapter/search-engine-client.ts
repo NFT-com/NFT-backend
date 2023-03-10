@@ -44,11 +44,12 @@ export class SearchEngineClient {
   }
   
   insertDocuments = async (collection: string,  documents: any[]): Promise<boolean> => {
+    if (!documents.length) return true
     let response
     try {
       response = await this._client.collections(collection).documents().import(documents, { action: 'upsert' })
     } catch (e) {
-      logger.error(documents, 'Error in document importing to Typesense')
+      logger.error({ documents }, 'Error in document importing to Typesense')
       logger.error(e, 'Error importing to Typesense')
     }
     return this.isFullySuccessful(response)

@@ -634,7 +634,7 @@ const getGkNFTs = async (
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
-    const ALCHEMY_API_URL = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const ALCHEMY_API_URL = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
     try {
@@ -737,10 +737,10 @@ const updateNFTsForProfile = async (
 
     await saveIncentiveActionsForProfile(repositories, profile)
 
-    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.url)
     if (!recentlyRefreshed) {
       // add to NFT cache list
-      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.url)
     }
 
     return await returnProfileNFTs(
