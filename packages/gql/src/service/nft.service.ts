@@ -1686,7 +1686,18 @@ const saveEdgesForNFTs = async (
         }
       }
     } else {
-      await repositories.edge.saveMany(nftsToBeAdded.map((nft) => ({
+      await repositories.edge.saveMany(nftsToBeAdded.filter(async (nft) => (
+        // this is only really needed because we end up processing the same nfts on multiple servers
+        !(await repositories.edge.findOne({
+          where: {
+            thisEntityType: defs.EntityType.Profile,
+            thatEntityType: defs.EntityType.NFT,
+            thisEntityId: profileId,
+            thatEntityId: nft.id,
+            edgeType: defs.EdgeType.Displays,
+          },
+        }))
+      )).map((nft) => ({
         thisEntityType: defs.EntityType.Profile,
         thatEntityType: defs.EntityType.NFT,
         thisEntityId: profileId,
@@ -1718,37 +1729,15 @@ export const saveEdgesWithWeight = async (
       await saveEdgesForNFTs(profileId, hide, nfts)
     } else if (walletId) {
       const pgClientPool = db.getPgClient(true)
-      const client = await pgClientPool.connect()
-      try {
-        const batchSize = 200
-        const query = new QueryStream(
-          `SELECT
-            *
-          FROM
-            nft
-          WHERE
-            "walletId" = $1
-            AND "chainId" = $2`,
-          [walletId, chainId],
-          { batchSize, highWaterMark: 1000 },
-        )
-        const stream = client.query(query)
-        let weight: string
-        const batch = []
-        for await (const nft of stream) {
-          batch.push(nft)
-          if (batch.length === batchSize) {
-            weight = await saveEdgesForNFTs(profileId, hide, batch.splice(0, batchSize), weight)
-          }
-        }
-        if (batch.length) {
-          await saveEdgesForNFTs(profileId, hide, batch.splice(0), weight)
-        }
-      } catch (err) {
-        logger.error(err, `Error in saveEdgesWithWeight query stream for: ${walletId}`)
-      } finally {
-        client.release()
-      }
+      const nftsForWallet = (await pgClientPool.query(`SELECT
+        *
+      FROM
+        nft
+      WHERE
+        "walletId" = $1
+        AND "chainId" = $2`,
+      [walletId, chainId])).rows as entity.NFT[]
+      await saveEdgesForNFTs(profileId, hide, nftsForWallet)
     }
   } catch (err) {
     logger.error(`Error in saveEdgesWithWeight: ${err}`)
