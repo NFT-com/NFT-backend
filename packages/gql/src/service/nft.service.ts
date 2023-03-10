@@ -1660,8 +1660,6 @@ const saveEdgesForNFTs = async (
     let weight = lastWeight || await getLastWeight(repositories, profileId)
     let saved = 0
     for (let i = 0; i < nftsToBeAdded.length; i++) {
-      logger.info(`[inside loop] saveEdgesForNFTs: ${profileId} hide-${hide}, nftLength-${nfts.length} ${i}/${nftsToBeAdded.length - 1}`)
-      
       const foundEdge = await repositories.edge.findOne({
         where: {
           thisEntityType: defs.EntityType.Profile,
