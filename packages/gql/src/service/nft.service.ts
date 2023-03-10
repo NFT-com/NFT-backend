@@ -2476,6 +2476,7 @@ export const saveVisibleNFTsForProfile = async (
 ): Promise<void> => {
   try {
     logger.info(`starting saveVisibleNFTsForProfile: ${profileId}`)
+    const start = new Date().getTime()
     const edges = await repositories.edge.count({
       thisEntityId: profileId,
       thisEntityType: defs.EntityType.Profile,
@@ -2485,9 +2486,9 @@ export const saveVisibleNFTsForProfile = async (
     })
     if (edges) {
       await repositories.profile.updateOneById(profileId, { visibleNFTs: edges })
-      logger.info(`saveVisibleNFTsForProfile: ${profileId} - ${edges} visible NFTs`)
+      logger.info(`saveVisibleNFTsForProfile: ${profileId} - ${edges} visible NFTs, time taken: ${new Date().getTime() - start}ms`)
     } else {
-      logger.info(`saveVisibleNFTsForProfile: ${profileId} - no visible NFTs`)
+      logger.info(`saveVisibleNFTsForProfile: ${profileId} - no visible NFTs, time taken: ${new Date().getTime() - start}ms`)
     }
   } catch (err) {
     logger.error(`Error in saveVisibleNFTsForProfile: ${err}`)
