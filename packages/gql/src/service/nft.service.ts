@@ -1328,7 +1328,6 @@ export const updateWalletNFTs = async (
           try {
             const savedNFT = await updateNFTOwnershipAndMetadata(nft, userId, wallet, chainId)
             if (savedNFT) savedNFTs.push(savedNFT)
-            logger.info(`[updateWalletNFTs] Updating wallet NFTs for ${wallet.address}, nft=${JSON.stringify(savedNFT)} ${savedNFT ? 'saved' : 'not saved'} NFT, took ${new Date().getTime() - start}ms`)
             start = new Date().getTime()
           } catch (err) {
             logger.error({ err, totalOwnedNFTs: ownedNFTs.length, userId, wallet }, `[updateWalletNFTs] error 1: ${err}`)
