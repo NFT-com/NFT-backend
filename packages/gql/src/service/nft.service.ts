@@ -2,7 +2,7 @@
 import axios,  { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber } from 'ethers'
-import { chunk, differenceBy } from 'lodash'
+import { chunk } from 'lodash'
 import { performance } from 'perf_hooks'
 import QueryStream from 'pg-query-stream'
 import { Writable } from 'stream'
@@ -1635,52 +1635,45 @@ export const hideAllNFTs = async (
 }
 
 const saveEdgesForNFTs = async (
-  profileId: string, hide: boolean, nfts: entity.NFT[]): Promise<void> => {
+  profileId: string, hide: boolean, nfts: entity.NFT[], useWeights = true): Promise<void> => {
   try {
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}`)
-    let startTime = new Date().getTime()
-
-    // filter nfts are not added to edge yet...
-    const profileNFTs = await repositories.nft.findByEdgeProfileDisplays(profileId, true, nfts)
-    logger.info(`saveEdgesForNFTs after findByEdgeProfileDisplays: ${profileId} hide-${hide}, nftLength-${nfts.length}, profileNFTs-${profileNFTs.length}, time-${new Date().getTime() - startTime}ms`)
-    startTime = new Date().getTime()
-
-    const nftsToBeAdded = differenceBy(nfts, profileNFTs, 'id')
-    logger.info(`saveEdgesForNFTs after nftsToBeAdded: ${profileId} hide-${hide}, nftLength-${nfts.length}, nftsToBeAdded-${nftsToBeAdded.length}, time-${new Date().getTime() - startTime}ms`)
-    startTime = new Date().getTime()
+    const startTime = new Date().getTime()
 
     let saved = 0
+    let weight = null
     // generate weights for nfts...
-    let weight = await getLastWeight(repositories, profileId)
-    for (let i = 0; i < nftsToBeAdded.length; i++) {
+    if (useWeights) weight = await getLastWeight(repositories, profileId)
+    for (let i = 0; i < nfts.length; i++) {
       const foundEdge = await repositories.edge.findOne({
         where: {
           thisEntityType: defs.EntityType.Profile,
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
-          thatEntityId: nftsToBeAdded[i].id,
+          thatEntityId: nfts[i].id,
           edgeType: defs.EdgeType.Displays,
         },
       })
 
       if (!foundEdge) {
-        const newWeight = generateWeight(weight)
+        let newWeight = null
+        if (useWeights) newWeight = generateWeight(weight)
 
         // save immedietely for save on memory
         await repositories.edge.save({
           thisEntityType: defs.EntityType.Profile,
           thatEntityType: defs.EntityType.NFT,
           thisEntityId: profileId,
-          thatEntityId: nftsToBeAdded[i].id,
+          thatEntityId: nfts[i].id,
           edgeType: defs.EdgeType.Displays,
           weight: newWeight,
           hide: hide,
         })
 
         saved++
-        weight = newWeight
+        if (useWeights) weight = newWeight
       } else {
-        logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
+        logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts.length}, weight = ${weight} done`)
       }
     }
 
@@ -1697,11 +1690,11 @@ const saveEdgesForNFTs = async (
 export const saveEdgesWithWeight = async (
   profileId: string,
   hide: boolean,
-  { nfts, walletId }: { nfts?: entity.NFT[]; walletId?: string} = {},
+  { nfts, walletId, useWeights = true }: { nfts?: entity.NFT[]; walletId?: string; useWeights?: boolean } = {},
 ): Promise<void> => {
   try {
     if (nfts) {
-      await saveEdgesForNFTs(profileId, hide, nfts)
+      await saveEdgesForNFTs(profileId, hide, nfts, useWeights)
     } else if (walletId) {
       const pgClientPool = db.getPgClient(true)
       const nftsForWallet = (await pgClientPool.query(`SELECT
@@ -1712,7 +1705,7 @@ export const saveEdgesWithWeight = async (
         "walletId" = $1
         AND "chainId" = $2`,
       [walletId, chainId])).rows as entity.NFT[]
-      await saveEdgesForNFTs(profileId, hide, nftsForWallet)
+      await saveEdgesForNFTs(profileId, hide, nftsForWallet, useWeights)
     }
   } catch (err) {
     logger.error(`Error in saveEdgesWithWeight: ${err}`)
@@ -1960,7 +1953,8 @@ export const updateEdgesWeightForProfile = async (
     if (!nftCount) return
     // save edges for new nfts...
     logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
-    await saveEdgesWithWeight(profileId, true, { walletId })
+    // don't use weights for faster syncs
+    await saveEdgesWithWeight(profileId, true, { walletId, useWeights: false })
 
     logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
   } catch (err) {
