@@ -1316,12 +1316,12 @@ describe('profile resolver', () => {
 
     it('should return 10 for profile A', async () => {
       const result = await testServer.executeOperation({
-        query: `query ProfileVisibleNFTCount($profileIds($profileIds: [String!]!, $chainId: String) {
-          profileVisibleNFTCount(profileIds(profileIds: $profileIds, chainId: $chainId) {
-            id
-            visibleNFTs
-          }
-        }`,
+        query: `query ProfileVisibleNFTCount($profileIds: [String!]!, $chainId: String) {
+            profileVisibleNFTCount(profileIds: $profileIds, chainId: $chainId) {
+              id
+              visibleNFTs
+            }
+          }`,
         variables: {
           profileIds: ['testProfileA'],
           chainId: '5',
@@ -1333,8 +1333,8 @@ describe('profile resolver', () => {
 
     it('should return 11 for profile B', async () => {
       const result = await testServer.executeOperation({
-        query: `query ProfileVisibleNFTCount($profileIds($profileIds: [String!]!, $chainId: String) {
-            profileVisibleNFTCount(profileIds(profileIds: $profileIds, chainId: $chainId) {
+        query: `query ProfileVisibleNFTCount($profileIds: [String!]!, $chainId: String) {
+            profileVisibleNFTCount(profileIds: $profileIds, chainId: $chainId) {
               id
               visibleNFTs
             }
@@ -1344,25 +1344,24 @@ describe('profile resolver', () => {
           chainId: '5',
         },
       })
-
       expect(result?.data?.profileVisibleNFTCount?.[0]?.visibleNFTs).toBe(11)
     })
 
     it('should throw error as profile array is empty', async () => {
       const result = await testServer.executeOperation({
-        query: `query ProfileVisibleNFTCount($profileIds($profileIds: [String!]!, $chainId: String) {
-            profileVisibleNFTCount(profileIds(profileIds: $profileIds, chainId: $chainId) {
-              id
-              visibleNFTs
-            }
-          }`,
+        query: `query ProfileVisibleNFTCount($profileIds: [String!]!, $chainId: String) {
+                  profileVisibleNFTCount(profileIds: $profileIds, chainId: $chainId) {
+                    id
+                    visibleNFTs
+                  }
+              }`,
         variables: {
           profileIds: [],
           chainId: '5',
         },
       })
 
-      expect(result).toThrowError()
+      expect(result.errors.length).toBeGreaterThan(0)
     })
   })
 })
