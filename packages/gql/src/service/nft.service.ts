@@ -1322,8 +1322,8 @@ export const updateWalletNFTs = async (
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
-  excludeSpam?: boolean,
-  excludeAirdrops?: boolean,
+  excludeSpam = true,
+  excludeAirdrops = false,
 ): Promise<void> => {
   try {
     await removeExpiredTimestampedZsetMembers('update_nftService.updateWalletNFTs')
