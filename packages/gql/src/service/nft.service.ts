@@ -747,7 +747,7 @@ export const getNftName = (
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
   const tokenName = tokenId
-    ? [`${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName}`, BigNumber.from(tokenId).toString()].join(' ')
+    ? [`${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName || alchemyMetadata?.contract?.address || ''}`, `#${BigNumber.from(tokenId).toString()}`].join(' ')
     : ''
 
   if (metadataProvider === MetadataProvider.Alchemy) {
