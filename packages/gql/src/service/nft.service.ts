@@ -208,11 +208,11 @@ export const getNFTsFromAlchemyPage = async (
       queryParams += `&withMetadata=${withMetadata}`
     }
 
-    if (excludeSpam) {
+    if (excludeSpam && chainId === '1') {
       queryParams += '&excludeFilters[]=SPAM'
     }
 
-    if (excludeAirdrops) {
+    if (excludeAirdrops && chainId === '1') {
       queryParams += '&excludeFilters[]=AIRDROPS'
     }
 
@@ -1333,7 +1333,7 @@ export const updateWalletNFTs = async (
         }
   
         if (savedNFTs.length) {
-          await updateCollectionForNFTs(savedNFTs)
+          await updateCollectionForNFTs(savedNFTs) // we're awaiting for the sake of a test
           indexNFTsOnSearchEngine(savedNFTs)
           logger.info(`[updateWalletNFTs] Updating collection and Syncing search index for wallet ${wallet.address}, ${userId}, ${savedNFTs.length} NFTs, took ${new Date().getTime() - start}ms`)
         }
@@ -1943,7 +1943,6 @@ export const createNullEdgesForProfile = async (
       chainId: chainId,
     })
     logger.info({ nftCount, profileId, walletId }, 'createNullEdgesForProfile')
-    if (!nftCount) return
     // save edges for new nfts...
     logger.info(`createNullEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
     // don't use weights for faster syncs
@@ -2063,13 +2062,11 @@ export const updateNFTsForAssociatedWallet = async (
         wallet.address,
         wallet.chainId,
       )
-      
+
       await updateWalletNFTs(
         wallet.userId,
         wallet,
         chainId,
-        true, // excludeSpam
-        true, // excludeAirdrops
       )
 
       logger.info(`updateNFTsForAssociatedWallet: checkNFTContractAddresses for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
