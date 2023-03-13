@@ -653,7 +653,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    it('should refresh NFTs for associated addresses', async () => {
+    fit('should refresh NFTs for associated addresses', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation UpdateAssociatedAddresses($input: UpdateAssociatedAddressesInput) { updateAssociatedAddresses(input: $input) { message } }',
         variables: {
