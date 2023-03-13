@@ -799,7 +799,7 @@ describe('nft service', () => {
     })
   })
 
-  describe('updateEdgesWeightForProfile', () => {
+  describe('createNullEdgesForProfile', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -848,10 +848,10 @@ describe('nft service', () => {
     })
 
     it('should update edges with weight', async () => {
-      await nftService.updateEdgesWeightForProfile('test-profile', testMockWallet.id)
+      await nftService.createNullEdgesForProfile('test-profile', testMockWallet.id)
       const edges = await repositories.edge.findAll()
       for(const edge of edges) {
-        expect(edge.weight).not.toBeNull()
+        expect(edge.weight).toBeNull()
       }
     })
   })

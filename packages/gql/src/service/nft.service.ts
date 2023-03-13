@@ -182,9 +182,16 @@ export const refreshContractAlchemy = async (
 
 export const getNFTsFromAlchemyPage = async (
   owner: string,
-  { contracts, withMetadata = true, pageKey }: {
+  { contracts,
+    withMetadata = true,
+    excludeSpam = true,
+    excludeAirdrops = false,
+    pageKey,
+  }: {
     contracts?: string[]
     withMetadata?: boolean
+    excludeSpam?: boolean
+    excludeAirdrops?: boolean
     pageKey?: string
   } = {},
 ): Promise<[OwnedNFT[], string | undefined]> => {
@@ -199,6 +206,14 @@ export const getNFTsFromAlchemyPage = async (
 
     if (withMetadata) {
       queryParams += `&withMetadata=${withMetadata}`
+    }
+
+    if (excludeSpam) {
+      queryParams += '&excludeFilters[]=SPAM'
+    }
+
+    if (excludeAirdrops) {
+      queryParams += '&excludeFilters[]=AIRDROPS'
     }
 
     if (pageKey) {
@@ -748,7 +763,12 @@ export const getNftName = (
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
   const tokenName = tokenId
-    ? [`${contractMetadata?.contractMetadata?.name || contractMetadata?.contractMetadata?.openSea?.collectionName}`, BigNumber.from(tokenId).toString()].join(' ')
+    ? [
+      `${contractMetadata?.contractMetadata?.name ||
+        contractMetadata?.contractMetadata?.openSea?.collectionName ||
+        alchemyMetadata?.contract?.address ||
+        ''
+      }`, `#${BigNumber.from(tokenId).toString()}`].join(' ')
     : ''
 
   if (metadataProvider === MetadataProvider.Alchemy) {
@@ -1296,11 +1316,15 @@ const getRelativeTime = (timestamp: number): string => {
  * @param userId
  * @param wallet
  * @param chainId
+* @param excludeSpam (default: true, nobody likes spam)
+ * @param excludeAirdrops (default: false, optionally include to remove airdrops)
  */
 export const updateWalletNFTs = async (
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
+  excludeSpam = true,
+  excludeAirdrops = false,
 ): Promise<void> => {
   try {
     await removeExpiredTimestampedZsetMembers('update_nftService.updateWalletNFTs')
@@ -1313,7 +1337,10 @@ export const updateWalletNFTs = async (
       let pageKey = undefined
       let totalPages = 0
       do {
-        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
+        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(
+          wallet.address,
+          { pageKey, excludeAirdrops, excludeSpam },
+        )
         pageKey = nextPageKey
         totalPages++
   
@@ -1941,26 +1968,26 @@ export const updateNFTsOrder = async (
   }
 }
 
-export const updateEdgesWeightForProfile = async (
+export const createNullEdgesForProfile = async (
   profileId: string,
   walletId: string,
 ): Promise<void> => {
   try {
-    const nftCount = repositories.nft.count({
+    const nftCount = await repositories.nft.count({
       walletId: walletId,
       chainId: chainId,
     })
-    logger.info({ nftCount, profileId, walletId }, 'updateEdgesWeightForProfile')
+    logger.info({ nftCount, profileId, walletId }, 'createNullEdgesForProfile')
     if (!nftCount) return
     // save edges for new nfts...
-    logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
+    logger.info(`createNullEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
     // don't use weights for faster syncs
     await saveEdgesWithWeight(profileId, true, { walletId, useWeights: false })
 
-    logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
+    logger.info(`createNullEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
   } catch (err) {
-    logger.error(`Error in updateEdgesWeightForProfile: ${err}`)
-    Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
+    logger.error(`Error in createNullEdgesForProfile: ${err}`)
+    Sentry.captureMessage(`Error in createNullEdgesForProfile: ${err}`)
     throw err
   }
 }
@@ -2079,9 +2106,9 @@ export const updateNFTsForAssociatedWallet = async (
 
       if (profile) {
         // save NFT edges for profile...
-        await updateEdgesWeightForProfile(profile.id, wallet.id)
+        await createNullEdgesForProfile(profile.id, wallet.id)
 
-        logger.info(`updateNFTsForAssociatedWallet: updateEdgesWeightForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
+        logger.info(`updateNFTsForAssociatedWallet: createNullEdgesForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
       } else {
         logger.error(`updateNFTsForAssociatedWallet: profile ${profileUrl} not found!`)
       }
