@@ -851,7 +851,7 @@ describe('nft service', () => {
       await nftService.createNullEdgesForProfile('test-profile', testMockWallet.id)
       const edges = await repositories.edge.findAll()
       for(const edge of edges) {
-        expect(edge.weight).not.toBeNull()
+        expect(edge.weight).toBeNull()
       }
     })
   })
