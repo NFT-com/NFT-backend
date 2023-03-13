@@ -1945,7 +1945,7 @@ export const updateEdgesWeightForProfile = async (
   walletId: string,
 ): Promise<void> => {
   try {
-    const nftCount = repositories.nft.count({
+    const nftCount = await repositories.nft.count({
       walletId: walletId,
       chainId: chainId,
     })
