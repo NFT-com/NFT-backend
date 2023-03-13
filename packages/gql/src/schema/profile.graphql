@@ -230,6 +230,11 @@ type ValidateProfileGKOwners {
   gkIconVisible: Boolean
 }
 
+type ProfileVisibleNFTCount {
+  id: String!
+  visibleNFTs: Int!
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -252,6 +257,7 @@ extend type Query {
   "AUTHENTICATED"
   searchNFTsForProfile(input: SearchNFTsForProfileInput!): NFTsOutput!
   validateProfileGKOwners(profileIds: [String!]!, chainId: String): [ValidateProfileGKOwners!]!
+  profileVisibleNFTCount(profileIds: [String!]!, chainId: String): [ProfileVisibleNFTCount!]!
 }
 
 extend type Mutation {
