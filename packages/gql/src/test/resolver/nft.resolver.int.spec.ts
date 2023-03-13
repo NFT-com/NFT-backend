@@ -41,6 +41,7 @@ jest.mock('@nftcom/cache', () => ({
     zscore: jest.fn().mockReturnValue(0),
     zadd: jest.fn(),
   },
+  removeExpiredTimestampedZsetMembers: jest.fn(),
   CacheKeys: {
     ASSOCIATED_ADDRESSES: 'associated_addresses',
     UPDATE_NFT_FOR_ASSOCIATED_WALLET: 'update_nft_for_associated_wallet',
@@ -653,7 +654,7 @@ describe('nft resolver', () => {
       await testServer.stop()
     })
 
-    fit('should refresh NFTs for associated addresses', async () => {
+    it('should refresh NFTs for associated addresses', async () => {
       const result = await testServer.executeOperation({
         query: 'mutation UpdateAssociatedAddresses($input: UpdateAssociatedAddressesInput) { updateAssociatedAddresses(input: $input) { message } }',
         variables: {
