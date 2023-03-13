@@ -1978,7 +1978,6 @@ export const createNullEdgesForProfile = async (
       chainId: chainId,
     })
     logger.info({ nftCount, profileId, walletId }, 'createNullEdgesForProfile')
-    if (!nftCount) return
     // save edges for new nfts...
     logger.info(`createNullEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
     // don't use weights for faster syncs
