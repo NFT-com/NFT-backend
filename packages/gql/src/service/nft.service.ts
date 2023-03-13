@@ -184,7 +184,7 @@ export const getNFTsFromAlchemyPage = async (
   { contracts,
     withMetadata = true,
     excludeSpam = true,
-    excludeAirdrops = true,
+    excludeAirdrops = false,
     pageKey,
   }: {
     contracts?: string[]
@@ -1315,11 +1315,15 @@ const getRelativeTime = (timestamp: number): string => {
  * @param userId
  * @param wallet
  * @param chainId
+* @param excludeSpam (default: true, nobody likes spam)
+ * @param excludeAirdrops (default: false, optionally include to remove airdrops)
  */
 export const updateWalletNFTs = async (
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
+  excludeSpam?: boolean,
+  excludeAirdrops?: boolean,
 ): Promise<void> => {
   try {
     await removeExpiredTimestampedZsetMembers('update_nftService.updateWalletNFTs')
@@ -1332,7 +1336,10 @@ export const updateWalletNFTs = async (
       let pageKey = undefined
       let totalPages = 0
       do {
-        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(wallet.address, { pageKey })
+        const [ownedNFTs, nextPageKey] = await getNFTsFromAlchemyPage(
+          wallet.address,
+          { pageKey, excludeAirdrops, excludeSpam },
+        )
         pageKey = nextPageKey
         totalPages++
   
