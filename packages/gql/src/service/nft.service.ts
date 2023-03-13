@@ -181,9 +181,16 @@ export const refreshContractAlchemy = async (
 
 export const getNFTsFromAlchemyPage = async (
   owner: string,
-  { contracts, withMetadata = true, pageKey }: {
+  { contracts,
+    withMetadata = true,
+    excludeSpam = true,
+    excludeAirdrops = true,
+    pageKey,
+  }: {
     contracts?: string[]
     withMetadata?: boolean
+    excludeSpam?: boolean
+    excludeAirdrops?: boolean
     pageKey?: string
   } = {},
 ): Promise<[OwnedNFT[], string | undefined]> => {
@@ -198,6 +205,14 @@ export const getNFTsFromAlchemyPage = async (
 
     if (withMetadata) {
       queryParams += `&withMetadata=${withMetadata}`
+    }
+
+    if (excludeSpam) {
+      queryParams += '&excludeFilters[]=SPAM'
+    }
+
+    if (excludeAirdrops) {
+      queryParams += '&excludeFilters[]=AIRDROPS'
     }
 
     if (pageKey) {
