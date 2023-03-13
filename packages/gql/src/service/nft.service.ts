@@ -4,8 +4,6 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber } from 'ethers'
 import { chunk } from 'lodash'
 import { performance } from 'perf_hooks'
-import QueryStream from 'pg-query-stream'
-import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
 import { In } from 'typeorm'
 
@@ -1398,57 +1396,21 @@ export const checkNFTContractAddresses = async (
     logger.info({ userId, walletId, walletAddress, chainId }, 'checkNFTContractAddresses starting')
     let batchIteration = 0
     const pgClient = db.getPgClient(true)
-    await new Promise<void>((resolve, reject) => {
-      pgClient.connect((err, client, done) => {
-        if (err) throw err
-        const batch = []
-        const batchSize = 200
-        const query = new QueryStream(
-          `SELECT
-            *
-          FROM
-            nft
-          WHERE
-            "walletId" = $1
-            AND "userId" = $2
-            AND "chainId" = $3`,
-          [walletId, userId, chainId],
-          { batchSize, highWaterMark: 1000 },
-        )
-
-        const stream = client.query(query)
-        stream.on('end', async () => {
-          if (batch.length) {
-            const start = performance.now()
-            const nfts = batch.splice(0, batchSize)
-            await batchFilterNFTsWithMulticall(nfts, walletAddress)
-            const end = performance.now()
-            logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
-          }
-          done()
-
-          resolve()
-        })
-        stream.on('error', (err) => {
-          reject(err)
-        })
-        const processBatch = new Writable({
-          objectMode: true,
-          async write(nft, _encoding, callback) {
-            batch.push(nft)
-            if (batch.length === batchSize) {
-              const start = performance.now()
-              const nfts = batch.splice(0, batchSize)
-              await batchFilterNFTsWithMulticall(nfts, walletAddress)
-              const end = performance.now()
-              logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
-            }
-            callback()
-          },
-        })
-        stream.pipe(processBatch)
-      })
-    })
+    const nfts: entity.NFT[] = (await pgClient.query(`SELECT
+      *
+    FROM
+      nft
+    WHERE
+      "walletId" = $1
+      AND "userId" = $2
+      AND "chainId" = $3`,
+    [walletId, userId, chainId])).rows
+    do {
+      await batchFilterNFTsWithMulticall(nfts.splice(0, 200), walletAddress)
+      const end = performance.now()
+      logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, `checkNFTContractAddresses processing batch for ${walletAddress}, iteration = ${batchIteration++}`)
+    } while (nfts.length)
+    
     const end = performance.now()
     logger.info({ userId, walletId, walletAddress, chainId, execTimeMillis: (end - start) }, 'checkNFTContractAddresses done')
   } catch (err) {
@@ -1979,48 +1941,19 @@ export const syncEdgesWithNFTs = async (
 ): Promise<void> => {
   try {
     const pgClient = db.getPgClient(true)
-    await new Promise<void>((resolve, reject) => {
-      pgClient.connect((err, client, done) => {
-        if (err) throw err
-        const batch = []
-        const batchSize = 100
-        const query = new QueryStream(
-          `SELECT
-            *
-          FROM
-            edge
-          WHERE
-            "thisEntityId" = $1
-            AND "thisEntityType" = '${defs.EntityType.Profile}'
-            AND "thatEntityType" = '${defs.EntityType.NFT}'
-            AND "edgeType" = '${defs.EdgeType.Displays}'`,
-          [profileId],
-          { batchSize, highWaterMark: 500 },
-        )
-        const stream = client.query(query)
-        stream.on('end', async () => {
-          if (batch.length) {
-            await deleteExtraEdges(batch.splice(0))
-          }
-          done()
-          resolve()
-        })
-        stream.on('error', (err) => {
-          reject(err)
-        })
-        const processEdges = new Writable({
-          objectMode: true,
-          async write(nft, _encoding, callback) {
-            batch.push(nft)
-            if (batch.length === batchSize) {
-              await deleteExtraEdges(batch.splice(0, batchSize))
-            }
-            callback()
-          },
-        })
-        stream.pipe(processEdges)
-      })
-    })
+    const edges: entity.Edge[] = (await pgClient.query(`SELECT
+        *
+      FROM
+        edge
+      WHERE
+        "thisEntityId" = $1
+        AND "thisEntityType" = '${defs.EntityType.Profile}'
+        AND "thatEntityType" = '${defs.EntityType.NFT}'
+        AND "edgeType" = '${defs.EdgeType.Displays}'`,
+    [profileId])).rows
+    do {
+      await deleteExtraEdges(edges.splice(0, 100))
+    } while (edges.length)
   } catch (err) {
     logger.error(`Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
