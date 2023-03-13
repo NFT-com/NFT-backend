@@ -2066,7 +2066,7 @@ export const updateNFTsForAssociatedWallet = async (
       await updateWalletNFTs(
         wallet.userId,
         wallet,
-        chainId,
+        wallet.chainId,
       )
 
       logger.info(`updateNFTsForAssociatedWallet: checkNFTContractAddresses for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
