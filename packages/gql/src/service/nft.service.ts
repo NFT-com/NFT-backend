@@ -1967,7 +1967,7 @@ export const updateNFTsOrder = async (
   }
 }
 
-export const updateEdgesWeightForProfile = async (
+export const createNullEdgesForProfile = async (
   profileId: string,
   walletId: string,
 ): Promise<void> => {
@@ -1976,17 +1976,17 @@ export const updateEdgesWeightForProfile = async (
       walletId: walletId,
       chainId: chainId,
     })
-    logger.info({ nftCount, profileId, walletId }, 'updateEdgesWeightForProfile')
+    logger.info({ nftCount, profileId, walletId }, 'createNullEdgesForProfile')
     if (!nftCount) return
     // save edges for new nfts...
-    logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
+    logger.info(`createNullEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
     // don't use weights for faster syncs
     await saveEdgesWithWeight(profileId, true, { walletId, useWeights: false })
 
-    logger.info(`updateEdgesWeightForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
+    logger.info(`createNullEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
   } catch (err) {
-    logger.error(`Error in updateEdgesWeightForProfile: ${err}`)
-    Sentry.captureMessage(`Error in updateEdgesWeightForProfile: ${err}`)
+    logger.error(`Error in createNullEdgesForProfile: ${err}`)
+    Sentry.captureMessage(`Error in createNullEdgesForProfile: ${err}`)
     throw err
   }
 }
@@ -2105,9 +2105,9 @@ export const updateNFTsForAssociatedWallet = async (
 
       if (profile) {
         // save NFT edges for profile...
-        await updateEdgesWeightForProfile(profile.id, wallet.id)
+        await createNullEdgesForProfile(profile.id, wallet.id)
 
-        logger.info(`updateNFTsForAssociatedWallet: updateEdgesWeightForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
+        logger.info(`updateNFTsForAssociatedWallet: createNullEdgesForProfile for wallet ${wallet.id} took ${new Date().getTime() - start}ms`)
       } else {
         logger.error(`updateNFTsForAssociatedWallet: profile ${profileUrl} not found!`)
       }
