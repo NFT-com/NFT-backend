@@ -1142,8 +1142,7 @@ export const createProfileFromEvent = async (
       ownerUserId: wallet.userId,
       chainId: chainId || process.env.CHAIN_ID,
     })
-    logger.log('Save incentive action for CREATE_NFT_PROFILE')
-    // save incentive action for CREATE_NFT_PROFILE
+    logger.log(`Save incentive action for CREATE_NFT_PROFILE for userId: ${wallet.userId}, url: ${profileUrl}`)
     const createProfileAction = await repositories.incentiveAction.findOne({
       where: {
         userId: wallet.userId,
@@ -1158,22 +1157,42 @@ export const createProfileFromEvent = async (
         task: defs.ProfileTask.CREATE_NFT_PROFILE,
         point: defs.ProfileTaskPoint.CREATE_NFT_PROFILE,
       })
-      logger.log('Saved incentive action for CREATE_NFT_PROFILE')
+      logger.log(`Saved incentive action for CREATE_NFT_PROFILE for userId: ${wallet.userId}, url ${profileUrl}`)
     }
-    user = await repositories.user.findOne({
-      where: {
-        // defaults
-        username: 'ethereum-' + ethers.utils.getAddress(owner),
-      },
-    })
-    logger.log('Save incentive action for REFER_NETWORK')
-    //save incentive action for REFER_NETWORK
+
+    user = await repositories.user.findById(wallet.userId)
+
+    logger.log(`Save incentive action for REFER_NETWORK for userId: ${user.id}, url: ${profileUrl}`)
     if (user && user.referredBy) {
       const referredInfo = user.referredBy.split('::')
+
       if (referredInfo && referredInfo.length === 2) {
-        const userMadeReferral = await repositories.user.findById(referredInfo[0])
+        const userMadeReferral = await repositories.user.findOne({ where: { referralId: referredInfo[0] } })
         const referredProfileUrl = referredInfo[1]
-        if (userMadeReferral) {
+        const referralKey =`${referredInfo[0]}::${referredProfileUrl}`
+
+        const referredUsers = await repositories.user.find({
+          where: {
+            referredBy: referralKey,
+          },
+        })
+
+        logger.info(`ensuring >= 5 REFER_NETWORK for ${referralKey}, userMadeReferral id: ${userMadeReferral.id} referredUsers length=${referredUsers.length}`)
+        let accepted = 0
+        await Promise.allSettled(
+          referredUsers.map(async (referUser) => {
+            if (referUser.isEmailConfirmed) {
+              const profile = await repositories.profile.findOne({
+                where: {
+                  ownerUserId: referUser.id,
+                },
+              })
+              if (profile) accepted += 1
+            }
+          }),
+        )
+
+        if (accepted >= 5) {
           const referNetworkAction = await repositories.incentiveAction.findOne({
             where: {
               userId: userMadeReferral.id,
@@ -1221,7 +1240,7 @@ export const nftAbi: AbiItem[] = [
   },
 ]
 
-export const saveUsersForAssociatedAddress = async (
+export const optionallySaveUserAndWalletForAssociatedAddress = async (
   chainId: string,
   address: string,
   repositories: db.Repository,
@@ -1354,7 +1373,7 @@ export const midWeight = (prev: string, next: string): string => {
 }
 
 /**
- * Get the biggest weight of edges for profile NFTs
+ * Get the biggest weight of edges for profile NFTs (last visible edge)
  * We may want to use this method before action to save new edges on edge table for profile NFTs
  * @param repositories
  * @param profileId
@@ -1365,7 +1384,7 @@ export const getLastWeight = async (
 ): Promise<string | undefined> => {
   logger.info(`getLastWeight for profile ${profileId} is called`)
 
-  const edges = await repositories.edge.find({
+  const lastVisibleEdge = await repositories.edge.findOne({
     where: {
       thisEntityType: defs.EntityType.Profile,
       thatEntityType: defs.EntityType.NFT,
@@ -1373,23 +1392,18 @@ export const getLastWeight = async (
       edgeType: defs.EdgeType.Displays,
       weight: Not(IsNull()),
     },
+    order: {
+      weight: 'DESC',
+    },
   })
 
-  logger.info(`getLastWeight for profile ${profileId} found ${edges?.length} edges`, edges)
-
-  if (!edges.length) {
+  if (!lastVisibleEdge) {
     logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
     return undefined
   }
 
-  let biggest = edges[0].weight
-  for (let i = 1; i < edges.length; i++) {
-    if (biggest < edges[i].weight)
-      biggest = edges[i].weight
-  }
-
-  logger.info(`getLastWeight for profile ${profileId} is ${biggest} (biggest)`)
-  return biggest
+  logger.info(`getLastWeight for profile ${profileId} is ${lastVisibleEdge.weight} (last edge)`)
+  return lastVisibleEdge.weight
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))

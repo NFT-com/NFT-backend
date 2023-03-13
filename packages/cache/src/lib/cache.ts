@@ -6,6 +6,8 @@ let redis: Redis
 const DEFAULT_TTL_MINS = Number(process.env.DEFAULT_TTL_MINS) || 15 // 15 mins
 
 export enum CacheKeys {
+  UPDATED_NFTS_NON_PROFILE = 'updated_nfts_non_profile',
+  UPDATE_NFTS_NON_PROFILE = 'update_nfts_non_profile',
   REFRESH_NFT_ORDERS_EXT = 'refresh_nft_orders_ext',
   REFRESHED_NFT_ORDERS_EXT = 'refreshed_nft_orders_ext',
   REFRESH_COLLECTION_RARITY= 'refresh_collection_rarity',
@@ -13,6 +15,7 @@ export enum CacheKeys {
   UPDATED_NFTS_PROFILE = 'updated_nfts_profile',
   UPDATE_NFTS_PROFILE = 'update_nfts_profile',
   PROFILES_IN_PROGRESS = 'profiles_in_progress',
+  NON_PROFILES_IN_PROGRESS = 'non_profiles_in_progress',
   UPDATE_NFT_FOR_ASSOCIATED_WALLET = 'update_nft_for_associated_wallet',
   GENESIS_KEY_OWNERS = 'genesis_key_owners',
   NFT_PROFILE_OWNERS = 'nft_profile_owners',

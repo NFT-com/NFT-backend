@@ -67,7 +67,7 @@ const signUp = (
       if (!referredUserId || !referredUserId.length) {
         referredInfo = null
       } else {
-        referredInfo = referredUserId
+        referredInfo = referredBy
         if (referredUrl && referredUrl.length) {
           referredInfo = referredInfo + '::' + referredUrl
         }
@@ -918,30 +918,37 @@ const getSentReferralEmails = async (
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('getSentReferralEmails', { loggedInUserId: user.id, wallet: wallet.address })
+
+    const referralKey =`${user.referralId}::${args?.profileUrl}`
     const referredUsers = await repositories.user.find({
       where: {
-        referredBy: `${user.referralId}::${args?.profileUrl}`,
+        referredBy: referralKey,
       },
     })
+
+    logger.info(`getSentReferralEmails ${referralKey}, length=${referredUsers.length}`)
     const res = []
     await Promise.allSettled(
-      referredUsers.map(async (User) => {
+      referredUsers.map(async (referUser) => {
         let accepted = false
-        if (User.isEmailConfirmed) {
+        if (referUser.isEmailConfirmed) {
           const profile = await repositories.profile.findOne({
             where: {
-              ownerUserId: User.id,
+              ownerUserId: referUser.id,
             },
           })
           if (profile) accepted = true
         }
         res.push({
-          email: User.email,
+          email: referUser.email,
           accepted,
-          timestamp: User.createdAt,
+          timestamp: referUser.createdAt,
         })
+        logger.info(`getSentReferralEmails ${referralKey}, email=${referUser.email}, accepted=${accepted}, timestamp=${referUser.createdAt}`)
       }),
     )
+
+    logger.info(`getSentReferralEmails ${referralKey}, res=${JSON.stringify(res)}`)
     return res
   } catch (err) {
     Sentry.captureMessage(`Error in getSentReferralEmails: ${err}`)

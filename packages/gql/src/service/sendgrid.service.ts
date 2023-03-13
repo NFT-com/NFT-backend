@@ -52,14 +52,22 @@ export const sendEmailVerificationCode = (user: entity.User): Promise<boolean> =
     logger.debug('sendEmailVerificationCode', { user })
     const baseUrl = confirmEmailUrl
 
-    return send({
-      from,
-      to: { email: user.email },
-      dynamicTemplateData: {
-        confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
-      },
-      templateId: templates.sendEmailVerificationCode,
-    }).then(() => true)
+    if (!user.isEmailConfirmed &&
+      user?.confirmEmailTokenExpiresAt &&
+      new Date(user?.confirmEmailTokenExpiresAt) <= new Date()
+    ) {
+      return send({
+        from,
+        to: { email: user.email },
+        dynamicTemplateData: {
+          confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
+        },
+        templateId: templates.sendEmailVerificationCode,
+      }).then(() => true)
+    } else {
+      logger.info(`sendEmailVerificationCode cannot send email, ${user}`)
+      return Promise.resolve(false)
+    }
   }
 }
 
@@ -86,7 +94,7 @@ export const sendReferralEmail = async (
       to: { email },
       dynamicTemplateData: {
         profileName: profileUrl,
-        createProfileLink: `${confirmEmailUrl}?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}`,
+        createProfileLink: `${confirmEmailUrl}/app/mint-profiles?makerReferralCode=${makerReferralId}&referralUrl=${profileUrl}&receiverReferralCode=${receiverReferralId}`,
       },
       templateId: templates.referralEmail,
     })

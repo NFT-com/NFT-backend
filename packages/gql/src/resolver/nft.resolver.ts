@@ -436,6 +436,11 @@ const getMyNFTs = async (
         args?.input.invalidateCache,
       )
     } else if (args?.input?.ownedByWallet && !args?.input?.profileId) {
+      const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_NON_PROFILE}_${chainId}`, wallet.id)
+      if (!recentlyRefreshed) {
+        // add to NFT cache list
+        await cache.zadd(`${CacheKeys.UPDATE_NFTS_NON_PROFILE}_${chainId}`, 'INCR', 1, wallet.id)
+      }
       return core.paginatedEntitiesBy(
         repositories.nft,
         pageInput,
@@ -449,7 +454,7 @@ const getMyNFTs = async (
           // refresh order queue trigger
           return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
             .then(() => Promise.resolve(result))
-        })
+        }) as Promise<gql.NFTsOutput>
     } else {
       const defaultProfile = await repositories.profile.findOne({
         where: {
@@ -459,6 +464,11 @@ const getMyNFTs = async (
         },
       })
       if (!defaultProfile) {
+        const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_NON_PROFILE}_${chainId}`, wallet.id)
+        if (!recentlyRefreshed) {
+          // add to NFT cache list
+          await cache.zadd(`${CacheKeys.UPDATE_NFTS_NON_PROFILE}_${chainId}`, 'INCR', 1, wallet.id)
+        }
         return core.paginatedEntitiesBy(
           repositories.nft,
           pageInput,
@@ -472,7 +482,7 @@ const getMyNFTs = async (
             // refresh order queue trigger
             return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
               .then(() => Promise.resolve(result))
-          })
+          }) as Promise<gql.NFTsOutput>
       } else {
         return await returnProfileNFTs(
           defaultProfile.id,
@@ -624,7 +634,7 @@ const getGkNFTs = async (
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
-    const ALCHEMY_API_URL = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const ALCHEMY_API_URL = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
     try {
@@ -727,10 +737,10 @@ const updateNFTsForProfile = async (
 
     await saveIncentiveActionsForProfile(repositories, profile)
 
-    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.id)
+    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.UPDATED_NFTS_PROFILE}_${chainId}`, profile.url)
     if (!recentlyRefreshed) {
       // add to NFT cache list
-      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.id)
+      await cache.zadd(`${CacheKeys.UPDATE_NFTS_PROFILE}_${chainId}`, 'INCR', 1, profile.url)
     }
 
     return await returnProfileNFTs(
