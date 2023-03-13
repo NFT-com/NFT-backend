@@ -7,6 +7,7 @@ import { performance } from 'perf_hooks'
 import QueryStream from 'pg-query-stream'
 import { Writable } from 'stream'
 import * as typeorm from 'typeorm'
+import { In } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers } from '@nftcom/cache'
@@ -2362,6 +2363,30 @@ export const updateGKIconVisibleStatus = async (
     Sentry.captureMessage(`Error in updateGKIconVisibleStatus: ${err}`)
     throw err
   }
+}
+
+export const profileNFTCount = async (
+  profileIds: string[],
+  repositories: db.Repository,
+  chainId: string,
+): Promise<gql.ProfileVisibleNFTCount[]> => {
+  try {
+    if (profileIds.length) {
+      return repositories.profile.find({
+        where: {
+          id: In([...profileIds]),
+          chainId,
+        },
+        select: {
+          id: true,
+          visibleNFTs: true,
+        },
+      })
+    }
+  } catch (err) {
+    logger.error(err, 'Error in profileNFTCount')
+  }
+  return []
 }
 
 export const saveVisibleNFTsForProfile = async (

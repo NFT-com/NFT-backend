@@ -1270,4 +1270,98 @@ describe('profile resolver', () => {
       expect(result?.data?.validateProfileGKOwners?.[0]?.gkIconVisible).toBe(null)
     })
   })
+
+  describe('profileVisibleNFTCount', () => {
+    beforeAll(async () => {
+      const user = await repositories.user.save({
+        email: testMockUser.email,
+        username: 'test-user',
+        referralId: testMockUser.referralId,
+        preferences: testMockUser.preferences,
+      })
+      testServer = getTestApolloServer(repositories,
+        user,
+        testMockWallet,
+      )
+
+      await repositories.profile.save({
+        id: 'testProfileA',
+        url: 'testProfileA',
+        ownerUserId: user.id,
+        ownerWalletId: 'test-wallet-id',
+        tokenId: '7307',
+        status: defs.ProfileStatus.Owned,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+        visibleNFTs: 10,
+      })
+
+      await repositories.profile.save({
+        id: 'testProfileB',
+        url: 'testProfileB',
+        ownerUserId: 'test-id-b',
+        ownerWalletId: 'test-wallet-id-b',
+        tokenId: '7301',
+        status: defs.ProfileStatus.Owned,
+        layoutType: defs.ProfileLayoutType.Default,
+        chainId: '5',
+        visibleNFTs: 11,
+      })
+    })
+
+    afterAll(async () => {
+      await clearDB(repositories)
+      await testServer.stop()
+    })
+
+    it('should return 10 for profile A', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ProfileVisibleNFTCount($profileIds: [String!]!, $chainId: String) {
+            profileVisibleNFTCount(profileIds: $profileIds, chainId: $chainId) {
+              id
+              visibleNFTs
+            }
+          }`,
+        variables: {
+          profileIds: ['testProfileA'],
+          chainId: '5',
+        },
+      })
+
+      expect(result?.data?.profileVisibleNFTCount?.[0]?.visibleNFTs).toBe(10)
+    })
+
+    it('should return 11 for profile B', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ProfileVisibleNFTCount($profileIds: [String!]!, $chainId: String) {
+            profileVisibleNFTCount(profileIds: $profileIds, chainId: $chainId) {
+              id
+              visibleNFTs
+            }
+          }`,
+        variables: {
+          profileIds: ['testProfileB'],
+          chainId: '5',
+        },
+      })
+      expect(result?.data?.profileVisibleNFTCount?.[0]?.visibleNFTs).toBe(11)
+    })
+
+    it('should throw error as profile array is empty', async () => {
+      const result = await testServer.executeOperation({
+        query: `query ProfileVisibleNFTCount($profileIds: [String!]!, $chainId: String) {
+                  profileVisibleNFTCount(profileIds: $profileIds, chainId: $chainId) {
+                    id
+                    visibleNFTs
+                  }
+              }`,
+        variables: {
+          profileIds: [],
+          chainId: '5',
+        },
+      })
+
+      expect(result.errors.length).toBeGreaterThan(0)
+    })
+  })
 })
