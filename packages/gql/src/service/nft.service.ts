@@ -816,7 +816,7 @@ export const getNftImage = async (
       },
     })
 
-    if (internalProfile) {
+    if (internalProfile && alchemyMetadata?.metadata?.name) {
       return internalProfile?.photoURL
     }
   }
