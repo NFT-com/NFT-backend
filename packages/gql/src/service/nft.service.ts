@@ -763,8 +763,8 @@ export const getNftName = (
   logger.info(`=======> getNftName: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(contractMetadata)}, ${tokenId}, ${metadataProvider}`)
   const tokenName = tokenId
     ? [
-      `${contractMetadata?.contractMetadata?.name ||
-        contractMetadata?.contractMetadata?.openSea?.collectionName ||
+      `${contractMetadata?.name ||
+        contractMetadata?.openSea?.collectionName ||
         ''
       }`, `#${BigNumber.from(tokenId).toString()}`].join(' ')
     : ''
