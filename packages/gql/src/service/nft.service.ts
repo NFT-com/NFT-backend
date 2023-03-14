@@ -371,13 +371,19 @@ export const filterNFTsWithMulticall = async (
       }
     })
 
-    logger.info(`filterNFTsWithMulticall 0: starting batch for userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
+    logger.info(`filterNFTsWithMulticall 0: starting batch for userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms, calls: ${JSON.stringify(multicallArgs)}`)
     start = new Date().getTime()
 
     /* -- use multicall to decrease number to be more efficient with web3 calls - */
     /* ------------ also increases speed of updates bc 1000 at a time ----------- */
     /* ------ more info on multicall: https://github.com/makerdao/multicall ----- */
-    const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
+    const ownersOf = await fetchDataUsingMulticall(
+      multicallArgs,
+      nftAbi,
+      '1',
+      false,
+      provider.provider(Number(chainId)),
+    )
 
     logger.info(`filterNFTsWithMulticall 0b: found ownersOf userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms, ownersOf=${JSON.stringify(ownersOf)}`)
 
