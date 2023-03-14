@@ -419,6 +419,8 @@ export const filterNFTsWithMulticall = async (
                 id: nftId,
               }))
             await seService.deleteNFT(nftId)
+            logger.info(`filterNFTsWithMulticall 2b: userId=${nfts[0]?.userId || '-'} ${owner}, deleting nft ${nftId}, key=${key} ${new Date().getTime() - start}ms`)
+            start = new Date().getTime()
           }
         } else { /* ----------------------------- Non-ERC1155 Update ----------------------------- */
           const wallet = await repositories.wallet.findByChainAddress(nftChainId, newOwner)
