@@ -54,22 +54,22 @@ let alchemyUrl: string
 let chainId = process.env.CHAIN_ID
 
 interface AlchemyContractMetaData {
-  name: string
-  symbol: string
-  totalSupply: string
-  tokenType: string
-  contractDeployer: string
-  deployedBlockNumber: number
-  openSea: {
-    floorPrice: number
-    collectionName: string
-    safelistRequestStatus: string
-    imageUrl: string
-    description: string
-    externalUrl: string
-    twitterUsername: string
-    discordUrl: string
-    lastIngestedAt: string
+  name?: string
+  symbol?: string
+  totalSupply?: string
+  tokenType?: string
+  contractDeployer?: string
+  deployedBlockNumber?: number
+  openSea?: {
+    floorPrice?: number
+    collectionName?: string
+    safelistRequestStatus?: string
+    imageUrl?: string
+    description?: string
+    externalUrl?: string
+    twitterUsername?: string
+    discordUrl?: string
+    lastIngestedAt?: string
   }
 }
 
@@ -86,12 +86,12 @@ interface MediaObjects {
   bytes?: number
 }
 
-interface AlchemyNFTMetaDataResponse {
-  contract: {
-    address: string
+export interface AlchemyNFTMetaDataResponse {
+  contract?: {
+    address?: string
   }
-  id: {
-    tokenId: string
+  id?: {
+    tokenId?: string
     tokenMetadata?: {
       tokenType?: string
     }
