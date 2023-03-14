@@ -371,13 +371,19 @@ export const filterNFTsWithMulticall = async (
       }
     })
 
-    logger.info(`filterNFTsWithMulticall 0: starting batch for userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms`)
+    logger.info(`filterNFTsWithMulticall 0: starting batch for userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms, calls: ${JSON.stringify(multicallArgs)}`)
     start = new Date().getTime()
 
     /* -- use multicall to decrease number to be more efficient with web3 calls - */
     /* ------------ also increases speed of updates bc 1000 at a time ----------- */
     /* ------ more info on multicall: https://github.com/makerdao/multicall ----- */
-    const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
+    const ownersOf = await fetchDataUsingMulticall(
+      multicallArgs,
+      nftAbi,
+      '1',
+      false,
+      provider.provider(Number(chainId)),
+    )
 
     logger.info(`filterNFTsWithMulticall 0b: found ownersOf userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms, ownersOf=${JSON.stringify(ownersOf)}`)
 
@@ -1957,10 +1963,47 @@ export const createNullEdgesForProfile = async (
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
-  // Delete edges where NFT does not exist
+  const uniqueProfileIds = [...new Set(edges.map((e) => e.thisEntityId))]
+  logger.info(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
+
+  const allProfileWalletAndUserIds = await repositories.profile.find({
+    where: {
+      id: In(uniqueProfileIds),
+    },
+  }).then((profiles) => profiles.map((p) => ({
+    profileId: p.id,
+    walletId: p.ownerWalletId,
+    userId: p.ownerUserId,
+    associatedAddresses: p.associatedAddresses,
+  })))
+
+  logger.info(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
+
+  const profileWalletAndUserIds = allProfileWalletAndUserIds.reduce((acc, p) => {
+    acc[p.profileId] = p
+    return acc
+  }, {})
+  logger.info(`[deleteExtraEdges] profileWalletAndUserIds: ${JSON.stringify(profileWalletAndUserIds)}`)
+
   const disconnectedEdgeIds: string[] = (await nftLoader.loadMany(edges.map((e) => e.thatEntityId)))
-    .reduce((disconnectedEdges, nft, i) => {
+    .reduce((disconnectedEdges, nft: entity.NFT, i) => {
+      // Delete edges where NFT does not exist
       if (!nft) disconnectedEdges.push(edges[i].id)
+
+      // Delete edges where owner of nft is different / not associated
+      const profileId = edges[i].thisEntityId
+
+      const foundProfile = profileWalletAndUserIds[profileId]
+
+      if (foundProfile.ownerUserId != nft.userId || foundProfile.ownerWalletId != nft.walletId) {
+        logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}`)
+
+        if (!foundProfile.associatedAddresses.includes(nft.owner)) {
+          logger.info(`[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(foundProfile.associatedAddresses)}, owner=${nft.owner}`)
+          disconnectedEdges.push(edges[i].id)
+        }
+      }
+
       return disconnectedEdges
     }, [])
 
