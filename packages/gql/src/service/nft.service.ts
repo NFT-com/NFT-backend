@@ -802,18 +802,18 @@ export const getNftDescription = (
 
 const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.com/optimizedLoader2.webp'
 export const getNftImage = async (
-  alchemyDetails: any,
+  alchemyNFT: any,
   nftPortDetails: any = undefined,
-  contractMetadata: any = undefined,
+  alchemyContractMetadata: any = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): Promise<string> => {
-  const alchemyMetadata = alchemyDetails?.metadata
+  const alchemyMetadata = alchemyNFT?.metadata
 
-  if (alchemyDetails) {
-    const isNftProfile = alchemyDetails.contract.address.toLowerCase() ===
+  if (alchemyNFT) {
+    const isNftProfile = alchemyNFT.contract.address.toLowerCase() ===
       contracts.nftProfileAddress(chainId).toLowerCase()
     if (isNftProfile && alchemyMetadata?.name) {
-      logger.info(`=======> getNftImage: ${JSON.stringify(alchemyDetails)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(contractMetadata)}, ${metadataProvider}`)
+      logger.info(`=======> getNftImage: ${JSON.stringify(alchemyNFT)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(alchemyContractMetadata)}, ${metadataProvider}`)
       const internalProfile = await repositories.profile.findOne({
         where: {
           url: alchemyMetadata?.name,
@@ -831,7 +831,7 @@ export const getNftImage = async (
     return alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
       alchemyMetadata?.tokenUri?.gateway || alchemyMetadata?.tokenUri?.raw ||
         (alchemyMetadata?.image_data ? generateSVGFromBase64String(alchemyMetadata?.image_data) :
-          contractMetadata?.openSea?.imageUrl ?? FALLBACK_IMAGE_URL
+          alchemyContractMetadata?.openSea?.imageUrl ?? FALLBACK_IMAGE_URL
         )
   } else if (metadataProvider === MetadataProvider.NFTPort) {
     return nftPortDetails?.nft?.cached_file_url
