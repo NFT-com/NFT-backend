@@ -807,14 +807,16 @@ export const getNftImage = async (
   contractMetadata: any = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): Promise<string> => {
+  const alchemyMetadata = alchemyDetails?.metadata
+
   if (alchemyDetails) {
     const isNftProfile = alchemyDetails.contract.address.toLowerCase() ===
       contracts.nftProfileAddress(chainId).toLowerCase()
-    if (isNftProfile && alchemyDetails?.metadata?.name) {
+    if (isNftProfile && alchemyMetadata?.name) {
       logger.info(`=======> getNftImage: ${JSON.stringify(alchemyDetails)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(contractMetadata)}, ${metadataProvider}`)
       const internalProfile = await repositories.profile.findOne({
         where: {
-          url: alchemyDetails?.metadata?.name,
+          url: alchemyMetadata?.name,
         },
       })
 
@@ -824,8 +826,6 @@ export const getNftImage = async (
       }
     }
   }
-
-  const alchemyMetadata = alchemyDetails?.metadata
 
   if (metadataProvider === MetadataProvider.Alchemy) {
     return alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
