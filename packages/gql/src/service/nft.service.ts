@@ -21,7 +21,6 @@ import {
   fetchDataUsingMulticall,
   fetchWithTimeout,
   findDuplicatesByProperty,
-  generateSVGFromBase64String,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -54,40 +53,29 @@ const TEST_WALLET_ID = 'test'
 let alchemyUrl: string
 let chainId = process.env.CHAIN_ID
 
-interface OwnedNFT {
-  contract: {
-    address: string
+interface AlchemyContractMetaData {
+  name: string
+  symbol: string
+  totalSupply: string
+  tokenType: string
+  contractDeployer: string
+  deployedBlockNumber: number
+  openSea: {
+    floorPrice: number
+    collectionName: string
+    safelistRequestStatus: string
+    imageUrl: string
+    description: string
+    externalUrl: string
+    twitterUsername: string
+    discordUrl: string
+    lastIngestedAt: string
   }
-  id: {
-    tokenId: string
-    tokenMetadata?: any
-  }
-  title?: string
-  metadata?: any
-  contractMetadata?: any
 }
 
 interface AlchemyContractMetaDataResponse {
   address: string
-  contractMetadata: {
-    name: string
-    symbol: string
-    totalSupply: string
-    tokenType: string
-    contractDeployer: string
-    deployedBlockNumber: number
-    openSea: {
-      floorPrice: number
-      collectionName: string
-      safelistRequestStatus: string
-      imageUrl: string
-      description: string
-      externalUrl: string
-      twitterUsername: string
-      discordUrl: string
-      lastIngestedAt: string
-    }
-  }
+  contractMetadata: AlchemyContractMetaData
 }
 
 interface AlchemyNFTMetaDataResponse {
@@ -121,6 +109,7 @@ interface AlchemyNFTMetaDataResponse {
     attributes?: Array<Record<string, any>>
   }
   timeLastUpdated: string
+  contractMetadata: AlchemyContractMetaData
 }
 
 type NFTOrder = {
@@ -207,7 +196,7 @@ export const getNFTsFromAlchemyPage = async (
     excludeAirdrops?: boolean
     pageKey?: string
   } = {},
-): Promise<[OwnedNFT[], string | undefined]> => {
+): Promise<[AlchemyNFTMetaDataResponse[], string | undefined]> => {
   try {
     initiateWeb3(process.env.CHAIN_ID)
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
@@ -236,7 +225,7 @@ export const getNFTsFromAlchemyPage = async (
     const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
 
     if (response?.data?.ownedNfts) {
-      return [response.data.ownedNfts as OwnedNFT[], response.data.pageKey]
+      return [response.data.ownedNfts as AlchemyNFTMetaDataResponse[], response.data.pageKey]
     } else {
       return [[], undefined]
     }
@@ -251,10 +240,10 @@ export const getNFTsFromAlchemy = async (
   owner: string,
   contracts?: string[],
   withMetadata = true,
-): Promise<OwnedNFT[]> => {
+): Promise<AlchemyNFTMetaDataResponse[]> => {
   try {
     let pageKey
-    const ownedNFTs: Array<OwnedNFT> = []
+    const ownedNFTs: Array<AlchemyNFTMetaDataResponse> = []
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
     let queryParams = `owner=${owner}`
 
@@ -269,7 +258,7 @@ export const getNFTsFromAlchemy = async (
     const response: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}`)
 
     if (response?.data?.ownedNfts) {
-      ownedNFTs.push(...response?.data?.ownedNfts as OwnedNFT[])
+      ownedNFTs.push(...response?.data?.ownedNfts as AlchemyNFTMetaDataResponse[])
       if (response?.data?.pageKey) {
         pageKey = response?.data?.pageKey
         // eslint-disable-next-line no-constant-condition
@@ -277,7 +266,7 @@ export const getNFTsFromAlchemy = async (
           const res: AxiosResponse = await alchemyInstance.get(`/getNFTs?${queryParams}&pageKey=${pageKey}`)
 
           if (res?.data?.ownedNfts) {
-            ownedNFTs.push(...res?.data?.ownedNfts as OwnedNFT[])
+            ownedNFTs.push(...res?.data?.ownedNfts as AlchemyNFTMetaDataResponse[])
             if (res?.data?.pageKey) {
               pageKey = res?.data?.pageKey
             } else {
@@ -820,7 +809,7 @@ const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.co
 export const getNftImage = async (
   alchemyNFT: AlchemyNFTMetaDataResponse,
   nftPortDetails: any = undefined,
-  alchemyContractMetadata: AlchemyContractMetaDataResponse = undefined,
+  alchemyContractMetadata: AlchemyContractMetaData = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): Promise<string> => {
   const alchemyMetadata = alchemyNFT?.metadata
@@ -844,21 +833,19 @@ export const getNftImage = async (
   }
 
   if (metadataProvider === MetadataProvider.Alchemy) {
-    return alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
-      alchemyMetadata?.tokenUri?.gateway || alchemyMetadata?.tokenUri?.raw ||
-        (alchemyMetadata?.image_data ? generateSVGFromBase64String(alchemyMetadata?.image_data) :
-          alchemyContractMetadata?.openSea?.imageUrl ?? FALLBACK_IMAGE_URL
-        )
+    return alchemyMetadata?.image ||
+      alchemyNFT?.tokenUri?.gateway || alchemyNFT?.tokenUri?.raw ||
+          (alchemyContractMetadata?.openSea?.imageUrl ?? FALLBACK_IMAGE_URL)
   } else if (metadataProvider === MetadataProvider.NFTPort) {
     return nftPortDetails?.nft?.cached_file_url
   }
 
   // default
-  return (alchemyMetadata?.image?.indexOf('copebear') >= 0 || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK)
+  return (alchemyMetadata?.image?.includes('copebear') || nftPortDetails?.nft?.contract_address?.toLowerCase() == CRYPTOPUNK)
     ? nftPortDetails?.nft?.cached_file_url
-    : alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
-      alchemyMetadata?.tokenUri?.gateway || alchemyMetadata?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url ||
-        (alchemyMetadata?.image_data ? generateSVGFromBase64String(alchemyMetadata?.image_data) : FALLBACK_IMAGE_URL)
+    : alchemyMetadata?.image ||
+      alchemyNFT?.tokenUri?.gateway || alchemyNFT?.tokenUri?.raw || nftPortDetails?.nft?.cached_file_url
+        || FALLBACK_IMAGE_URL
 }
 
 export const getNftType = (
@@ -940,7 +927,8 @@ const getNFTMetaData = async (
       const name = getNftName(undefined, nftPortMetadata, contractAlchemyMetadata, tokenId, MetadataProvider.NFTPort)
       const description = getNftDescription(
         undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
-      const image = await getNftImage(undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
+      const image = await getNftImage(
+        undefined, nftPortMetadata, contractAlchemyMetadata.contractMetadata, MetadataProvider.NFTPort)
 
       const type: defs.NFTType = getNftType(
         undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
@@ -977,7 +965,7 @@ const getNFTMetaData = async (
 
       const name = getNftName(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata, tokenId)
       const description = getNftDescription(alchemyMetadata, contractAlchemyMetadata, nftPortMetadata)
-      const image = await getNftImage(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata)
+      const image = await getNftImage(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata.contractMetadata)
 
       const type: defs.NFTType = getNftType(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata)
       if (!type) {
@@ -1088,7 +1076,7 @@ const uploadImageToS3 = async (
 }
 
 export const updateNFTOwnershipAndMetadata = async (
-  nft: OwnedNFT,
+  nft: AlchemyNFTMetaDataResponse,
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
