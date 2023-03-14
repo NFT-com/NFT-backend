@@ -1434,7 +1434,8 @@ export const checkNFTContractAddresses = async (
     WHERE
       "walletId" = $1
       AND "userId" = $2
-      AND "chainId" = $3`,
+      AND "chainId" = $3
+      AND ("type" = 'ERC721' or "type" = 'Profile' or "type" = 'GenesisKey' or "type" = 'GenesisKeyProfile')`,
     [walletId, userId, chainId])).rows
     do {
       await batchFilterNFTsWithMulticall(nfts.splice(0, 200), walletAddress)
