@@ -756,15 +756,15 @@ export const getMetadataTraits = (
 export const getNftName = (
   alchemyMetadata: any,
   nftPortDetails: any = undefined,
-  contractMetadata: any = undefined,
+  alchemyContractMetadata: any = undefined,
   tokenId: string = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
-  logger.info(`=======> getNftName: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(contractMetadata)}, ${tokenId}, ${metadataProvider}`)
+  logger.info(`=======> getNftName: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(alchemyContractMetadata)}, ${tokenId}, ${metadataProvider}`)
   const tokenName = tokenId
     ? [
-      `${contractMetadata?.name ||
-        contractMetadata?.openSea?.collectionName ||
+      `${alchemyContractMetadata?.name ||
+        alchemyContractMetadata?.openSea?.collectionName ||
         ''
       }`, `#${BigNumber.from(tokenId).toString()}`].join(' ')
     : ''
@@ -786,18 +786,19 @@ export const getNftName = (
 export const getNftDescription = (
   alchemyMetadata: any,
   nftPortDetails: any = undefined,
-  contractMetadata: any = undefined,
+  alchemyContractMetadata: any = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
   if (metadataProvider === MetadataProvider.Alchemy) {
-    return alchemyMetadata?.description || alchemyMetadata?.metadata?.bio || contractMetadata?.openSea?.description
+    return alchemyMetadata?.description ||
+      alchemyMetadata?.metadata?.bio || alchemyContractMetadata?.openSea?.description
   } else if (metadataProvider === MetadataProvider.NFTPort) {
     return nftPortDetails?.nft?.metadata?.description
   }
 
   // default
   return alchemyMetadata?.description || alchemyMetadata?.metadata?.bio ||
-    contractMetadata?.openSea?.description || nftPortDetails?.nft?.metadata?.description
+    alchemyContractMetadata?.openSea?.description || nftPortDetails?.nft?.metadata?.description
 }
 
 const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.com/optimizedLoader2.webp'
