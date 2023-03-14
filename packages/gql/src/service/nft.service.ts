@@ -67,23 +67,30 @@ interface OwnedNFT {
   contractMetadata?: any
 }
 
-interface ContractMetaDataResponse {
+interface AlchemyContractMetaDataResponse {
   address: string
   contractMetadata: {
     name: string
     symbol: string
     totalSupply: string
     tokenType: string
+    contractDeployer: string
+    deployedBlockNumber: number
     openSea: {
       floorPrice: number
       collectionName: string
-      imageUrl: string
       safelistRequestStatus: string
+      imageUrl: string
+      description: string
+      externalUrl: string
+      twitterUsername: string
+      discordUrl: string
+      lastIngestedAt: string
     }
   }
 }
 
-interface NFTMetaDataResponse {
+interface AlchemyNFTMetaDataResponse {
   contract: {
     address: string
   }
@@ -95,13 +102,21 @@ interface NFTMetaDataResponse {
   }
   title: string
   description: string
+  tokenUri?: {
+    gateway: string
+    raw: string
+  }
   media?: {
     uri?: {
-      raw: string
-      gateway: string
+      gateway?: string
+      thumbnail?: string
+      raw?: string
+      format?: string
+      bytes?: number
     }
   }
   metadata?: {
+    name?: string
     image?: string
     attributes?: Array<Record<string, any>>
   }
@@ -434,13 +449,13 @@ const getNFTMetaDataFromAlchemy = async (
   contractAddress: string,
   tokenId: string,
   // optionalWeb3: (AlchemyWeb3 | undefined) = undefined,
-): Promise<NFTMetaDataResponse | undefined> => {
+): Promise<AlchemyNFTMetaDataResponse | undefined> => {
   try {
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(process.env.CHAIN_ID)
     const queryParams = `contractAddress=${contractAddress}&tokenId=${tokenId}`
     const response: AxiosResponse = await alchemyInstance.get(`/getNFTMetadata?${queryParams}`)
 
-    return response.data as NFTMetaDataResponse
+    return response.data as AlchemyNFTMetaDataResponse
   } catch (err) {
     Sentry.captureMessage(`Error in getNFTMetaDataFromAlchemy: ${err}`)
     return undefined
@@ -449,7 +464,7 @@ const getNFTMetaDataFromAlchemy = async (
 
 export const getContractMetaDataFromAlchemy = async (
   contractAddress: string,
-): Promise<ContractMetaDataResponse | undefined> => {
+): Promise<AlchemyContractMetaDataResponse | undefined> => {
   try {
     const key = `getContractMetaDataFromAlchemy${alchemyUrl}_${helper.checkSum(contractAddress)}`
     const cachedContractMetadata: string = await cache.get(key)
@@ -539,7 +554,7 @@ export const getCollectionNameFromDataProvider = async (
   type:  defs.NFTType,
 ): Promise<string> => {
   try {
-    const contractDetails: ContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
+    const contractDetails: AlchemyContractMetaDataResponse = await getContractMetaDataFromAlchemy(contract)
 
     // priority to OS Collection Name from Alchemy before fetching name from contract
     if (contractDetails?.contractMetadata?.openSea?.collectionName) {
@@ -803,9 +818,9 @@ export const getNftDescription = (
 
 const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.com/optimizedLoader2.webp'
 export const getNftImage = async (
-  alchemyNFT: any,
+  alchemyNFT: AlchemyNFTMetaDataResponse,
   nftPortDetails: any = undefined,
-  alchemyContractMetadata: any = undefined,
+  alchemyContractMetadata: AlchemyContractMetaDataResponse = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): Promise<string> => {
   const alchemyMetadata = alchemyNFT?.metadata
@@ -946,7 +961,7 @@ const getNFTMetaData = async (
       }
     } else {
       // Useful for non cron based updates -> like individual metadata refresh
-      const alchemyMetadata: NFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+      const alchemyMetadata: AlchemyNFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
         contract,
         tokenId,
       )
