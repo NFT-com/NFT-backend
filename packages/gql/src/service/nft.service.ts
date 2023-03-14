@@ -760,11 +760,11 @@ export const getNftName = (
   tokenId: string = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
+  logger.info(`=======> getNftName: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(contractMetadata)}, ${tokenId}, ${metadataProvider}`)
   const tokenName = tokenId
     ? [
       `${contractMetadata?.contractMetadata?.name ||
         contractMetadata?.contractMetadata?.openSea?.collectionName ||
-        alchemyMetadata?.contract?.address ||
         ''
       }`, `#${BigNumber.from(tokenId).toString()}`].join(' ')
     : ''
@@ -801,12 +801,26 @@ export const getNftDescription = (
 }
 
 const FALLBACK_IMAGE_URL = process.env.FALLBACK_IMAGE_URL || 'https://cdn.nft.com/optimizedLoader2.webp'
-export const getNftImage = (
+export const getNftImage = async (
   alchemyMetadata: any,
   nftPortDetails: any = undefined,
   contractMetadata: any = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
-): string => {
+): Promise<string> => {
+  const isNftProfile = alchemyMetadata.contract.address.toLowerCase() ===
+    contracts.nftProfileAddress(chainId).toLowerCase()
+  if (isNftProfile) {
+    const internalProfile = await repositories.profile.findOne({
+      where: {
+        url: alchemyMetadata?.metadata?.name,
+      },
+    })
+
+    if (internalProfile) {
+      return internalProfile?.photoURL
+    }
+  }
+
   if (metadataProvider === MetadataProvider.Alchemy) {
     return alchemyMetadata?.image || alchemyMetadata?.image_url || alchemyMetadata?.image_url_cdn ||
       alchemyMetadata?.tokenUri?.gateway || alchemyMetadata?.tokenUri?.raw ||
@@ -904,7 +918,7 @@ const getNFTMetaData = async (
       const name = getNftName(undefined, nftPortMetadata, contractAlchemyMetadata, tokenId, MetadataProvider.NFTPort)
       const description = getNftDescription(
         undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
-      const image = getNftImage(undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
+      const image = await getNftImage(undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
 
       const type: defs.NFTType = getNftType(
         undefined, nftPortMetadata, contractAlchemyMetadata, MetadataProvider.NFTPort)
@@ -941,7 +955,7 @@ const getNFTMetaData = async (
 
       const name = getNftName(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata, tokenId)
       const description = getNftDescription(alchemyMetadata, contractAlchemyMetadata, nftPortMetadata)
-      const image = getNftImage(alchemyMetadata?.metadata, nftPortMetadata, contractAlchemyMetadata)
+      const image = await getNftImage(alchemyMetadata?.metadata, nftPortMetadata, contractAlchemyMetadata)
 
       const type: defs.NFTType = getNftType(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata)
       if (!type) {
@@ -1070,7 +1084,7 @@ export const updateNFTOwnershipAndMetadata = async (
     start = new Date().getTime()
 
     const walletChainId =  wallet?.chainId || process.env.CHAIN_ID
-
+    
     let name = getNftName(
       nft,
       undefined,
@@ -1080,7 +1094,7 @@ export const updateNFTOwnershipAndMetadata = async (
     )
     let type = getNftType(nft, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
     let description = getNftDescription(nft, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
-    let image = getNftImage(nft.metadata, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
+    let image = await getNftImage(nft.metadata, undefined, nft.contractMetadata, MetadataProvider.Alchemy)
     let traits = getMetadataTraits(nft.metadata, undefined)
 
     logger.info(`2. finished fetching name, image, description, traits in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms`)
