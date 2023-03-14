@@ -379,6 +379,8 @@ export const filterNFTsWithMulticall = async (
     /* ------ more info on multicall: https://github.com/makerdao/multicall ----- */
     const ownersOf = await fetchDataUsingMulticall(multicallArgs, nftAbi, '1')
 
+    logger.info(`filterNFTsWithMulticall 0b: found ownersOf userId=${nfts[0]?.userId || '-'} ${owner} with ${multicallArgs.length} nfts ${new Date().getTime() - start}ms, ownersOf=${JSON.stringify(ownersOf)}`)
+
     for (const [i, data] of ownersOf.entries()) {
       if (!data) missingOwners[i] = data
       else {
