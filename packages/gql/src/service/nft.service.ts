@@ -809,14 +809,16 @@ export const getNftImage = async (
 ): Promise<string> => {
   const isNftProfile = alchemyMetadata.contract.address.toLowerCase() ===
     contracts.nftProfileAddress(chainId).toLowerCase()
-  if (isNftProfile) {
+  if (isNftProfile && alchemyMetadata?.metadata?.name) {
+    logger.info(`=======> getNftImage: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(contractMetadata)}, ${metadataProvider}`)
     const internalProfile = await repositories.profile.findOne({
       where: {
         url: alchemyMetadata?.metadata?.name,
       },
     })
 
-    if (internalProfile && alchemyMetadata?.metadata?.name) {
+    if (internalProfile) {
+      logger.info(`=======> getNftImage: ${internalProfile.photoURL}`)
       return internalProfile?.photoURL
     }
   }
@@ -1132,7 +1134,7 @@ export const updateNFTOwnershipAndMetadata = async (
         type = metadata.type
         name = metadata.name
         description = metadata.description
-        image = metadata.image
+        image ??= metadata.image
         traits = metadata.traits
         logger.info(`5. NFT metadata is successfully retrieved from getNFTMetadata or NFTPort...${JSON.stringify(nft)}, metadata=${JSON.stringify(metadata)}`)
       } else {
