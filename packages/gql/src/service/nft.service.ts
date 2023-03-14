@@ -88,8 +88,8 @@ interface AlchemyNFTMetaDataResponse {
       tokenType?: string
     }
   }
-  title: string
-  description: string
+  title?: string
+  description?: string
   tokenUri?: {
     gateway: string
     raw: string
@@ -108,8 +108,8 @@ interface AlchemyNFTMetaDataResponse {
     image?: string
     attributes?: Array<Record<string, any>>
   }
-  timeLastUpdated: string
-  contractMetadata: AlchemyContractMetaData
+  timeLastUpdated?: string
+  contractMetadata?: AlchemyContractMetaData
 }
 
 type NFTOrder = {
