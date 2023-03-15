@@ -467,6 +467,15 @@ const createEcsTaskDefinition = (
         {
           name: getResourceName('datadog-agent'),
           image: 'public.ecr.aws/datadog/agent:latest',
+          logConfiguration: {
+            logDriver: 'awslogs',
+            options: {
+              'awslogs-group': `/ecs/${resourceName}`,
+              'awslogs-region': 'us-east-1',
+              'awslogs-stream-prefix': 'ddog/',
+              'awslogs-create-group': 'True',
+            },
+          },
           cpu: 100,
           memory: 512,
           essential: true,
@@ -477,24 +486,16 @@ const createEcsTaskDefinition = (
               containerPort: 8126,
             },
           ],
-          mountPoints: [
-            {
-              containerPath: '/var/run/docker.sock',
-              sourceVolume: 'docker_sock',
-              readOnly: null,
-            },
-            {
-              containerPath: '/host/sys/fs/cgroup',
-              sourceVolume: 'cgroup',
-              readOnly: null,
-            },
-            {
-              containerPath: '/host/proc',
-              sourceVolume: 'proc',
-              readOnly: null,
-            },
-          ],
+          mountPoints: [],
           environment: [
+            {
+              name: 'ECS_FARGATE',
+              value: 'true',
+            },
+            {
+              name: 'DD_PROCESS_AGENT_ENABLED',
+              value: 'true',
+            },
             {
               name: 'DD_API_KEY',
               value: process.env.DATADOG_API_KEY,
@@ -506,20 +507,6 @@ const createEcsTaskDefinition = (
           ],
         },
       ]),
-      volumes: [
-        {
-          hostPath: '/var/run/docker.sock',
-          name: 'docker_sock',
-        },
-        {
-          hostPath: '/proc/',
-          name: 'proc',
-        },
-        {
-          hostPath: '/sys/fs/cgroup/',
-          name: 'cgroup',
-        },
-      ],
       cpu: config.require('ecsTaskCpu'),
       memory: config.require('ecsTaskMemory'),
       taskRoleArn: role.arn,
