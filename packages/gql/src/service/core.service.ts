@@ -1342,6 +1342,8 @@ export const generateWeight = (prevWeight: string | undefined): string => {
  * @param next
  */
 export const midWeight = (prev: string, next: string): string => {
+  if (!next) next = prev + 'a'
+  
   let p, n, pos, str
   // find leftmost non-matching character
   for (pos = 0; p == n; pos++) {
