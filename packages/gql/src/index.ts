@@ -1,8 +1,4 @@
-// Tracing needs to be set up early for graphql
-import { setupTracing } from './tracer'
-if (['development','staging','production'].includes(process.env.NODE_ENV)) {
-  setupTracing(`${process.env.NODE_ENV}-gql`)
-}
+import './tracer' // must come before importing any instrumented module.
 
 import kill from 'kill-port'
 
