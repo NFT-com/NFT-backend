@@ -26,8 +26,12 @@ import {
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility, getCollectionInfo,
-  getOwnersOfGenesisKeys, queryNFTsForProfile, saveProfileScore, saveVisibleNFTsForProfile,
+  changeNFTsVisibility, executeUpdateNFTsForProfile, getCollectionInfo,
+  getOwnersOfGenesisKeys,
+  profileNFTCount,
+  queryNFTsForProfile,
+  saveProfileScore,
+  saveVisibleNFTsForProfile,
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
 import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
@@ -276,6 +280,7 @@ const maybeUpdateProfileOwnership = (
             thatEntityType: defs.EntityType.NFT,
             thisEntityId: profile.id,
           })))
+          .then(fp.tap(() => executeUpdateNFTsForProfile(profile.url, chainId)))
       })
       .catch((e) => {
         logger.log(`[ERROR] maybeUpdateProfileOwnership uncaught error - ${JSON.stringify(e)}`)
@@ -1649,6 +1654,32 @@ const validateProfileGKOwners = async (
   }
 }
 
+const profileVisibleNFTCount = (
+  _: any,
+  args: gql.QueryProfileVisibleNFTCountArgs,
+  ctx: Context,
+): Promise<gql.ProfileVisibleNFTCount[]> => {
+  try {
+    const schema = Joi.object().keys({
+      profileIds: Joi.array().required().items(Joi.string().required()),
+      chainId: Joi.string().optional(),
+    })
+    joi.validateSchema(schema, args)
+    const chainId = args?.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
+    const { profileIds } = args
+    const { repositories } = ctx
+    return profileNFTCount(
+      profileIds,
+      repositories,
+      chainId,
+    )
+  } catch(err)  {
+    Sentry.captureMessage(`Error in profileVisibleNFTCount: ${err}`)
+    return err
+  }
+}
+
 export default {
   Upload: GraphQLUpload,
   Query: {
@@ -1669,6 +1700,7 @@ export default {
     searchVisibleNFTsForProfile: searchVisibleNFTsForProfile,
     searchNFTsForProfile: combineResolvers(auth.isAuthenticated, searchNFTsForProfile),
     validateProfileGKOwners,
+    profileVisibleNFTCount,
   },
   Mutation: {
     followProfile: combineResolvers(auth.isAuthenticated, followProfile),

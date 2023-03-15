@@ -920,11 +920,13 @@ export const fetchDataUsingMulticall = async (
   customProvider?: ethers.providers.BaseProvider,
 ): Promise<Array<Result | MulticallResponse | undefined>> => {
   try {
+    logger.info(`fetchDataUsingMulticall: ${JSON.stringify(calls)}`)
     const multicall2ABI = contracts.Multicall2ABI()
     let callProvider = provider.provider(Number(chainId))
     if (customProvider) {
       callProvider = customProvider
     }
+    
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
@@ -937,6 +939,8 @@ export const fetchDataUsingMulticall = async (
       call.contract.toLowerCase(),
       abiInterface.encodeFunctionData(call.name, call.params),
     ])
+
+    logger.info(`fetchDataUsingMulticall callData: ${JSON.stringify(callData)}`)
     // 2. get bytes array from multicall contract by process aggregate method...
     const results: MulticallResponse[] =
       await multicallContract.tryAggregate(false, callData)
@@ -944,15 +948,22 @@ export const fetchDataUsingMulticall = async (
     if (returnRawResults) {
       return results
     }
+    
+    logger.info(`fetchDataUsingMulticall results: ${JSON.stringify(results)}`)
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
-      if (result.returnData === '0x') {
+      if (!result.success || result.returnData === '0x') {
         return undefined
       } else {
-        return abiInterface.decodeFunctionResult(
-          calls[i].name,
-          result.returnData,
-        )
+        try {
+          return abiInterface.decodeFunctionResult(
+            calls[i].name,
+            result.returnData,
+          )
+        } catch (err) {
+          logger.error({ err, result }, `fetchDataUsingMulticall unable to decode result for ${calls[i].name}`)
+          return undefined
+        }
       }
     })
   } catch (error) {
@@ -1373,7 +1384,7 @@ export const midWeight = (prev: string, next: string): string => {
 }
 
 /**
- * Get the biggest weight of edges for profile NFTs
+ * Get the biggest weight of edges for profile NFTs (last visible edge)
  * We may want to use this method before action to save new edges on edge table for profile NFTs
  * @param repositories
  * @param profileId
@@ -1384,7 +1395,7 @@ export const getLastWeight = async (
 ): Promise<string | undefined> => {
   logger.info(`getLastWeight for profile ${profileId} is called`)
 
-  const smallestEdge = await repositories.edge.findOne({
+  const lastVisibleEdge = await repositories.edge.findOne({
     where: {
       thisEntityType: defs.EntityType.Profile,
       thatEntityType: defs.EntityType.NFT,
@@ -1393,17 +1404,17 @@ export const getLastWeight = async (
       weight: Not(IsNull()),
     },
     order: {
-      weight: 'ASC',
+      weight: 'DESC',
     },
   })
 
-  if (!smallestEdge) {
+  if (!lastVisibleEdge) {
     logger.info(`getLastWeight for profile ${profileId} is undefined (no edges)`)
     return undefined
   }
 
-  logger.info(`getLastWeight for profile ${profileId} is ${smallestEdge.weight} (last edge)`)
-  return smallestEdge.weight
+  logger.info(`getLastWeight for profile ${profileId} is ${lastVisibleEdge.weight} (last edge)`)
+  return lastVisibleEdge.weight
 }
 
 export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
