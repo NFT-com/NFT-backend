@@ -1932,7 +1932,7 @@ export const updateNFTsOrder = async (
             // if new index is last place of nft order...
             if (index !== edges.length - 1) {
               const edgeWeight = edges[edges.length - 1].weight
-                || generateWeight(await getLastWeight(repositories, profileId))
+                || await getLastWeight(repositories, profileId)
               await repositories.edge.updateOneById(existingEdge.id, {
                 weight: generateWeight(edgeWeight),
               })
