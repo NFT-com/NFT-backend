@@ -952,13 +952,18 @@ export const fetchDataUsingMulticall = async (
     logger.info(`fetchDataUsingMulticall results: ${JSON.stringify(results)}`)
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
-      if (result.returnData === '0x') {
+      if (!result.success || result.returnData === '0x') {
         return undefined
       } else {
-        return abiInterface.decodeFunctionResult(
-          calls[i].name,
-          result.returnData,
-        )
+        try {
+          return abiInterface.decodeFunctionResult(
+            calls[i].name,
+            result.returnData,
+          )
+        } catch (err) {
+          logger.error({ err, result }, `fetchDataUsingMulticall unable to decode result for ${calls[i].name}`)
+          return undefined
+        }
       }
     })
   } catch (error) {
