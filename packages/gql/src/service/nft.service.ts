@@ -1098,7 +1098,7 @@ export const updateNFTOwnershipAndMetadata = async (
     let start = new Date().getTime()
 
     let nft = inputNft
-    const containsMetadata = inputNft?.metadata || inputNft?.contractMetadata
+    const containsMetadata = inputNft?.metadata != undefined || inputNft?.contractMetadata != undefined
 
     logger.info(`0a. started fetching existingNFT in updateNFTOwnershipAndMetadata, containsMetadata: ${containsMetadata}, inputNft: ${JSON.stringify(inputNft)}`)
 
@@ -1655,7 +1655,7 @@ export const hideAllNFTs = async (
 const saveEdgesForNFTs = async (
   profileId: string, hide: boolean, nfts: entity.NFT[], useWeights = true): Promise<void> => {
   try {
-    logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}`)
+    logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts?.length}`)
     const startTime = new Date().getTime()
 
     let saved = 0
@@ -1691,7 +1691,7 @@ const saveEdgesForNFTs = async (
         saved++
         if (useWeights) weight = newWeight
       } else {
-        logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts.length}, weight = ${weight} done`)
+        logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts?.length}, weight = ${weight} done`)
       }
     }
 
@@ -1741,7 +1741,7 @@ export const showAllNFTs = async (
   try {
     const nftCount = await repositories.nft.count({ walletId, chainId })
     if (nftCount) {
-      await saveEdgesWithWeight(profileId, false, { walletId })
+      await saveEdgesWithWeight(profileId, false, { walletId, useWeights: true })
       // change hide column to false which ones are true...
       const edges = await repositories.edge.find({
         where: {
@@ -1784,7 +1784,7 @@ export const showNFTs = async (
       }),
     )
     if (nfts.length) {
-      await saveEdgesWithWeight(profileId, false, { nfts })
+      await saveEdgesWithWeight(profileId, false, { nfts, useWeights: true })
       // change hide column to false which ones are true...
       await Promise.allSettled(
         nfts.map(async (nft: entity.NFT) => {
@@ -1885,7 +1885,8 @@ export const updateNFTsOrder = async (
   orders: Array<NFTOrder>,
 ): Promise<void> => {
   try {
-    for (let i = 0; i < orders.length; i++) {
+    logger.info(`updateNFTsOrder: orders: ${JSON.stringify(orders)}`)
+    for (let i = 0; i < orders?.length; i++) {
       const edges = await repositories.edge.find({
         where: {
           thisEntityType: defs.EntityType.Profile,
@@ -1899,6 +1900,8 @@ export const updateNFTsOrder = async (
           updatedAt: 'DESC',
         },
       })
+
+      logger.info(`updateNFTsOrder: edges: ${JSON.stringify(edges)}, ${edges}`)
       const existingNFT = await repositories.nft.findOne({
         where: {
           id: orders[i].nftId,
@@ -1947,12 +1950,12 @@ export const updateNFTsOrder = async (
         }
       }
     }
-    if (orders.length) {
+    if (orders?.length) {
       const chainId = process.env.CHAIN_ID
       await cache.del([`${CacheKeys.PROFILE_SORTED_NFTS}_${chainId}_${profileId}`, `${CacheKeys.PROFILE_SORTED_VISIBLE_NFTS}_${chainId}_${profileId}`])
     }
   } catch (err) {
-    logger.error(`Error in updateNFTsOrder: ${err}`)
+    logger.error(err, `Error in updateNFTsOrder: ${err}`)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
     throw err
   }
@@ -2010,25 +2013,25 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
     .reduce((disconnectedEdges, nft: entity.NFT, i) => {
       // Delete edges where NFT does not exist
       if (!nft) disconnectedEdges.push(edges[i].id)
+      else {
+        // Delete edges where owner of nft is different / not associated
+        const profileId = edges[i].thisEntityId
 
-      // Delete edges where owner of nft is different / not associated
-      const profileId = edges[i].thisEntityId
+        const foundProfile = profileWalletAndUserIds[profileId]
+        logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft?.userId}, nft.walletId=${nft?.walletId}, nft=${JSON.stringify(nft)}`)
 
-      const foundProfile = profileWalletAndUserIds[profileId]
-      logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
+        if (nft?.userId && nft?.walletId &&
+          (foundProfile.userId != nft?.userId || foundProfile.walletId != nft?.walletId)
+        ) {
+          logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}, nft.userId=${nft?.userId}, nft.walletId=${nft?.walletId}, nft=${JSON.stringify(nft)}`)
 
-      if (nft.userId && nft.walletId &&
-        (foundProfile.userId != nft.userId || foundProfile.walletId != nft.walletId)
-      ) {
-        logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
-
-        // if the profile is not associated with nft owner, delete the edge
-        if (!foundProfile.associatedAddresses.includes(nft.owner)) {
-          logger.info(`[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(foundProfile.associatedAddresses)}, owner=${nft.owner}`)
-          disconnectedEdges.push(edges[i].id)
+          // if the profile is not associated with nft owner, delete the edge
+          if (!foundProfile.associatedAddresses.includes(nft?.owner)) {
+            logger.info(`[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(foundProfile.associatedAddresses)}, owner=${nft?.owner}`)
+            disconnectedEdges.push(edges[i].id)
+          }
         }
       }
-
       return disconnectedEdges
     }, [])
 
@@ -2059,7 +2062,7 @@ export const syncEdgesWithNFTs = async (
       await deleteExtraEdges(edges.splice(0, 100))
     } while (edges.length)
   } catch (err) {
-    logger.error(`Error in syncEdgesWithNFTs: ${err}`)
+    logger.error(err, `Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
     throw err
   }
