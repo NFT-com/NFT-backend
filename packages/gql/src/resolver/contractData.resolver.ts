@@ -145,7 +145,7 @@ const executeSyncNFTPorTxs = async (
     }
     const url = `${process.env.STREAM_BASE_URL}/syncTxsFromNFTPort`
     const res = await axios.post(url, payload, { headers })
-    logger.info(`Response from stream : ${JSON.stringify(res)}`)
+    logger.info(res.data, 'Response from stream')
   } catch (err) {
     logger.error(`Error in executeSyncNFTPorTxs: ${err}`)
     return
