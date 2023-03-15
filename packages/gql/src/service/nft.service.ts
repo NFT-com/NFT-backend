@@ -1089,13 +1089,30 @@ const uploadImageToS3 = async (
 }
 
 export const updateNFTOwnershipAndMetadata = async (
-  nft: AlchemyNFTMetaDataResponse,
+  inputNft: AlchemyNFTMetaDataResponse,
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
   try {
     let start = new Date().getTime()
+
+    let nft = inputNft
+    const containsMetadata = inputNft?.metadata || inputNft?.contractMetadata
+
+    if (!containsMetadata && inputNft?.contract?.address && inputNft?.id?.tokenId) {
+      // Useful for non cron based updates -> like individual metadata refresh
+      const alchemyMetadata: AlchemyNFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+        inputNft?.contract?.address,
+        inputNft?.id?.tokenId,
+      )
+      const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(inputNft?.contract.address)
+      nft = {
+        ...alchemyMetadata,
+        contractMetadata: contractAlchemyMetadata.contractMetadata,
+      }
+    }
+      
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: helper.checkSum(nft.contract.address),
