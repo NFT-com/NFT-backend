@@ -1089,13 +1089,34 @@ const uploadImageToS3 = async (
 }
 
 export const updateNFTOwnershipAndMetadata = async (
-  nft: AlchemyNFTMetaDataResponse,
+  inputNft: AlchemyNFTMetaDataResponse,
   userId: string,
   wallet: entity.Wallet,
   chainId: string,
 ): Promise<entity.NFT | undefined> => {
   try {
     let start = new Date().getTime()
+
+    let nft = inputNft
+    const containsMetadata = inputNft?.metadata || inputNft?.contractMetadata
+
+    logger.info(`0a. started fetching existingNFT in updateNFTOwnershipAndMetadata, containsMetadata: ${containsMetadata}, inputNft: ${JSON.stringify(inputNft)}`)
+
+    // useful for refreshNFT, where inputNFT doesn't contain metadata / contract metadata
+    // therefore we must repull and fill in nft object
+    if (!containsMetadata && inputNft?.contract?.address && inputNft?.id?.tokenId) {
+      const alchemyMetadata: AlchemyNFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
+        inputNft?.contract?.address,
+        inputNft?.id?.tokenId,
+      )
+      const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(inputNft?.contract.address)
+      nft = {
+        ...alchemyMetadata,
+        contractMetadata: contractAlchemyMetadata.contractMetadata,
+      }
+      logger.info(`0b. finished fetching existingNFT in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${JSON.stringify(nft)}`)
+    }
+      
     const existingNFT = await repositories.nft.findOne({
       where: {
         contract: helper.checkSum(nft.contract.address),
@@ -1270,7 +1291,7 @@ export const updateNFTOwnershipAndMetadata = async (
           logger.info(`10. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${nft.contract.address}, tokenId=${nft.id.tokenId}`)
           return updatedNFT
         } else {
-          logger.info(`11. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${nft.contract.address}, tokenId=${nft.id.tokenId}`)
+          logger.info(`11. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${nft.contract.address}, tokenId=${nft.id.tokenId}, existingNFT=${JSON.stringify(existingNFT)}, image=${image}, name=${name}, description=${description}, traits=${JSON.stringify(traits)}, isTraitSame=${isTraitSame}`)
           return undefined
         }
       }
