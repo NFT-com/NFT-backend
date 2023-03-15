@@ -1996,8 +1996,9 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
       const foundProfile = profileWalletAndUserIds[profileId]
 
       if (foundProfile.ownerUserId != nft.userId || foundProfile.ownerWalletId != nft.walletId) {
-        logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}`)
+        logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
 
+        // if the profile is not associated with nft owner, delete the edge
         if (!foundProfile.associatedAddresses.includes(nft.owner)) {
           logger.info(`[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(foundProfile.associatedAddresses)}, owner=${nft.owner}`)
           disconnectedEdges.push(edges[i].id)
