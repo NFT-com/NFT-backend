@@ -1994,6 +1994,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
       const profileId = edges[i].thisEntityId
 
       const foundProfile = profileWalletAndUserIds[profileId]
+      logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
 
       if (nft.userId && nft.walletId &&
         (foundProfile.ownerUserId != nft.userId || foundProfile.ownerWalletId != nft.walletId)
