@@ -1976,8 +1976,9 @@ export const updateNFTsOrder = async (
           if (orders[i].newIndex <= 0) {
             // if new index is first place of nft order...
             if (index !== 0) {
+              const edgeWeight = edges[1].weight || generateWeight(await getLastWeight(repositories, profileId))
               await repositories.edge.updateOneById(edges[0].id, {
-                weight: midWeight('aaaa', edges[1].weight),
+                weight: midWeight('aaaa', edgeWeight),
               })
               await repositories.edge.updateOneById(existingEdge.id, {
                 weight: 'aaaa',
@@ -1986,17 +1987,22 @@ export const updateNFTsOrder = async (
           } else if (orders[i].newIndex >= edges.length - 1) {
             // if new index is last place of nft order...
             if (index !== edges.length - 1) {
+              const edgeWeight = edges[edges.length - 1].weight
+                || await getLastWeight(repositories, profileId)
               await repositories.edge.updateOneById(existingEdge.id, {
-                weight: generateWeight(edges[edges.length - 1].weight),
+                weight: generateWeight(edgeWeight),
               })
             }
           } else {
             // if new index is inside nft order...
             if (index !== orders[i].newIndex) {
+              const edgeWeightFirst = edges[orders[i].newIndex - 1].weight
+                || generateWeight(await getLastWeight(repositories, profileId))
+              const edgeWeightSecond = edges[orders[i].newIndex].weight
+                || generateWeight(await getLastWeight(repositories, profileId))
               await repositories.edge.updateOneById(existingEdge.id, {
                 weight:
-                  midWeight(edges[orders[i].newIndex - 1].weight,
-                    edges[orders[i].newIndex].weight),
+                  midWeight(edgeWeightFirst, edgeWeightSecond),
               })
             }
           }
