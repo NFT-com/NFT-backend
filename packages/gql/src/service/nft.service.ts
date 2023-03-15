@@ -1658,7 +1658,8 @@ const saveEdgesForNFTs = async (
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts?.length}`)
     const startTime = new Date().getTime()
 
-    let saved = 0
+    const saved = []
+    const duplicated = []
     let weight = null
     // generate weights for nfts...
     if (useWeights) weight = await getLastWeight(repositories, profileId)
@@ -1688,14 +1689,31 @@ const saveEdgesForNFTs = async (
           hide: hide,
         })
 
-        saved++
+        saved.push({
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nfts[i].id,
+          edgeType: defs.EdgeType.Displays,
+          weight: newWeight,
+          hide: hide,
+        })
         if (useWeights) weight = newWeight
       } else {
-        logger.info(`saveEdgesForNFTs: duplicate edge found ${profileId} ${hide} ${nfts?.length}, weight = ${weight} done`)
+        duplicated.push({
+          thisEntityType: defs.EntityType.Profile,
+          thatEntityType: defs.EntityType.NFT,
+          thisEntityId: profileId,
+          thatEntityId: nfts[i].id,
+          edgeType: defs.EdgeType.Displays,
+        })
       }
     }
 
-    logger.info(`saveEdgesForNFTs: ${profileId} edges saved = ${saved}`)
+    logger.info({
+      saved,
+      duplicated,
+    }, `saveEdgesForNFTs: ${profileId} edges saved = ${saved.length}`)
     logger.info(`saveEdgesForNFTs: ${profileId} ${hide} ${nfts.length}, weight = ${weight} done, time = ${new Date().getTime() - startTime} ms`)
   } catch (err) {
     await cache.zrem(`${CacheKeys.PROFILES_IN_PROGRESS}_${chainId}`, [profileId])
@@ -1880,12 +1898,47 @@ export const changeNFTsVisibility = async (
   }
 }
 
+export const createEdgesForProfile = async (
+  profileId: string,
+  walletId: string,
+): Promise<void> => {
+  try {
+    const nftCount = await repositories.nft.count({
+      walletId: walletId,
+      chainId: chainId,
+    })
+    logger.info({ nftCount, profileId, walletId }, 'createEdgesForProfile')
+    // save edges for new nfts...
+    logger.info(`createEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
+    // don't use weights for faster syncs
+    await saveEdgesWithWeight(profileId, true, { walletId, useWeights: true })
+
+    logger.info(`createEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
+  } catch (err) {
+    logger.error(`Error in createEdgesForProfile: ${err}`)
+    Sentry.captureMessage(`Error in createEdgesForProfile: ${err}`)
+    throw err
+  }
+}
+
 export const updateNFTsOrder = async (
   profileId: string,
   orders: Array<NFTOrder>,
 ): Promise<void> => {
   try {
     logger.info(`updateNFTsOrder: orders: ${JSON.stringify(orders)}`)
+
+    const profile = await repositories.profile.findOne({
+      where: {
+        id: profileId,
+      },
+    })
+
+    if (profile) {
+      await createEdgesForProfile(profileId, profile.ownerWalletId)
+      logger.info('updateNFTsOrder: createEdgesForProfile done!')
+    }
+    
     for (let i = 0; i < orders?.length; i++) {
       const edges = await repositories.edge.find({
         where: {
@@ -1957,29 +2010,6 @@ export const updateNFTsOrder = async (
   } catch (err) {
     logger.error(err, `Error in updateNFTsOrder: ${err}`)
     Sentry.captureMessage(`Error in updateNFTsOrder: ${err}`)
-    throw err
-  }
-}
-
-export const createEdgesForProfile = async (
-  profileId: string,
-  walletId: string,
-): Promise<void> => {
-  try {
-    const nftCount = await repositories.nft.count({
-      walletId: walletId,
-      chainId: chainId,
-    })
-    logger.info({ nftCount, profileId, walletId }, 'createEdgesForProfile')
-    // save edges for new nfts...
-    logger.info(`createEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId}`)
-    // don't use weights for faster syncs
-    await saveEdgesWithWeight(profileId, true, { walletId, useWeights: true })
-
-    logger.info(`createEdgesForProfile: saveEdgesWithWeight for profileId: ${profileId} and walletId: ${walletId} done!`)
-  } catch (err) {
-    logger.error(`Error in createEdgesForProfile: ${err}`)
-    Sentry.captureMessage(`Error in createEdgesForProfile: ${err}`)
     throw err
   }
 }
