@@ -183,7 +183,7 @@ const createEcsTaskDefinition = (
             options: {
               'awslogs-group': `/ecs/${resourceName}`,
               'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'gql/',
+              'awslogs-stream-prefix': 'gql',
               'awslogs-create-group': 'True',
             },
           },
@@ -470,9 +470,9 @@ const createEcsTaskDefinition = (
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
-              'awslogs-group': `/ecs/${resourceName}`,
+              'awslogs-group': `/ecs/${getResourceName('datadog-agent')}`,
               'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'ddog/',
+              'awslogs-stream-prefix': 'ddog',
               'awslogs-create-group': 'True',
             },
           },
