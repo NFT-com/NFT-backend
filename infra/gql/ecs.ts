@@ -187,6 +187,11 @@ const createEcsTaskDefinition = (
               'awslogs-create-group': 'True',
             },
           },
+          healthCheck: {
+            command: ['/.well-known/apollo/server-health'],
+            interval: 10,
+            startPeriod: 60,
+          },
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
