@@ -2010,25 +2010,25 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
     .reduce((disconnectedEdges, nft: entity.NFT, i) => {
       // Delete edges where NFT does not exist
       if (!nft) disconnectedEdges.push(edges[i].id)
+      else {
+        // Delete edges where owner of nft is different / not associated
+        const profileId = edges[i].thisEntityId
 
-      // Delete edges where owner of nft is different / not associated
-      const profileId = edges[i].thisEntityId
+        const foundProfile = profileWalletAndUserIds[profileId]
+        logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
 
-      const foundProfile = profileWalletAndUserIds[profileId]
-      logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
+        if (nft?.userId && nft?.walletId &&
+          (foundProfile.userId != nft?.userId || foundProfile.walletId != nft?.walletId)
+        ) {
+          logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}, nft.userId=${nft?.userId}, nft.walletId=${nft?.walletId}, nft=${JSON.stringify(nft)}`)
 
-      if (nft.userId && nft.walletId &&
-        (foundProfile.userId != nft.userId || foundProfile.walletId != nft.walletId)
-      ) {
-        logger.info(`[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
-
-        // if the profile is not associated with nft owner, delete the edge
-        if (!foundProfile.associatedAddresses.includes(nft.owner)) {
-          logger.info(`[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(foundProfile.associatedAddresses)}, owner=${nft.owner}`)
-          disconnectedEdges.push(edges[i].id)
+          // if the profile is not associated with nft owner, delete the edge
+          if (!foundProfile.associatedAddresses.includes(nft?.owner)) {
+            logger.info(`[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(foundProfile.associatedAddresses)}, owner=${nft?.owner}`)
+            disconnectedEdges.push(edges[i].id)
+          }
         }
       }
-
       return disconnectedEdges
     }, [])
 
