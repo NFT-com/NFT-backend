@@ -1100,6 +1100,8 @@ export const updateNFTOwnershipAndMetadata = async (
     let nft = inputNft
     const containsMetadata = inputNft?.metadata || inputNft?.contractMetadata
 
+    logger.info(`0a. started fetching existingNFT in updateNFTOwnershipAndMetadata, containsMetadata: ${containsMetadata}, inputNft: ${JSON.stringify(inputNft)}`)
+
     // useful for refreshNFT, where inputNFT doesn't contain metadata / contract metadata
     // therefore we must repull and fill in nft object
     if (!containsMetadata && inputNft?.contract?.address && inputNft?.id?.tokenId) {
@@ -1112,6 +1114,7 @@ export const updateNFTOwnershipAndMetadata = async (
         ...alchemyMetadata,
         contractMetadata: contractAlchemyMetadata.contractMetadata,
       }
+      logger.info(`0b. finished fetching existingNFT in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${JSON.stringify(nft)}`)
     }
       
     const existingNFT = await repositories.nft.findOne({
