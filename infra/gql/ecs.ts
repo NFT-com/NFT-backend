@@ -187,11 +187,6 @@ const createEcsTaskDefinition = (
               'awslogs-create-group': 'True',
             },
           },
-          healthCheck: {
-            command: ['/.well-known/apollo/server-health'],
-            interval: 10,
-            startPeriod: 60,
-          },
           name: resourceName,
           portMappings: [
             { containerPort: 8080, hostPort: 8080, protocol: 'tcp' },
@@ -508,6 +503,10 @@ const createEcsTaskDefinition = (
             {
               name: 'DD_SITE',
               value: 'datadoghq.com',
+            },
+            {
+              name: 'DD_APM_FILTER_TAGS_REJECT',
+              value: 'http.method:OPTIONS',
             },
           ],
         },
