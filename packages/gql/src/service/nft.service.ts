@@ -1100,8 +1100,9 @@ export const updateNFTOwnershipAndMetadata = async (
     let nft = inputNft
     const containsMetadata = inputNft?.metadata || inputNft?.contractMetadata
 
+    // useful for refreshNFT, where inputNFT doesn't contain metadata / contract metadata
+    // therefore we must repull and fill in nft object
     if (!containsMetadata && inputNft?.contract?.address && inputNft?.id?.tokenId) {
-      // Useful for non cron based updates -> like individual metadata refresh
       const alchemyMetadata: AlchemyNFTMetaDataResponse = await getNFTMetaDataFromAlchemy(
         inputNft?.contract?.address,
         inputNft?.id?.tokenId,
