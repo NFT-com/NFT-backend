@@ -1288,7 +1288,7 @@ export const updateNFTOwnershipAndMetadata = async (
           logger.info(`10. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${nft.contract.address}, tokenId=${nft.id.tokenId}`)
           return updatedNFT
         } else {
-          logger.info(`11. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${nft.contract.address}, tokenId=${nft.id.tokenId}`)
+          logger.info(`11. finished updating nft in updateNFTOwnershipAndMetadata: ${new Date().getTime() - start}ms, nft=${nft.contract.address}, tokenId=${nft.id.tokenId}, existingNFT=${JSON.stringify(existingNFT)}, image=${image}, name=${name}, description=${description}, traits=${JSON.stringify(traits)}, isTraitSame=${isTraitSame}`)
           return undefined
         }
       }
