@@ -2,11 +2,6 @@ import Bull from 'bull'
 
 import { redisConfig } from '@nftcom/cache'
 import { cache } from '@nftcom/cache'
-import { getEthereumEvents } from '@nftcom/gql/job/handler'
-import {
-  nftExternalOrdersOnDemand,
-} from '@nftcom/gql/job/nft.job'
-import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -199,17 +194,8 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
 const listenToJobs = async (): Promise<void> => {
   for (const queue of queues.values()) {
     switch (queue.name) {
-    case QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE:
-      queue.process(generateCompositeImages)
-      break
-    case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
-      // queue.process(nftExternalOrders)
-      break
-    case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
-      queue.process(nftExternalOrdersOnDemand)
-      break
     default:
-      queue.process(getEthereumEvents)
+      break
     }
   }
 }
