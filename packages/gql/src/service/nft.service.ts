@@ -2015,7 +2015,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
         const profileId = edges[i].thisEntityId
 
         const foundProfile = profileWalletAndUserIds[profileId]
-        logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft.userId}, nft.walletId=${nft.walletId}, nft=${JSON.stringify(nft)}`)
+        logger.info(`[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft?.userId}, nft.walletId=${nft?.walletId}, nft=${JSON.stringify(nft)}`)
 
         if (nft?.userId && nft?.walletId &&
           (foundProfile.userId != nft?.userId || foundProfile.walletId != nft?.walletId)
@@ -2059,7 +2059,7 @@ export const syncEdgesWithNFTs = async (
       await deleteExtraEdges(edges.splice(0, 100))
     } while (edges.length)
   } catch (err) {
-    logger.error(`Error in syncEdgesWithNFTs: ${err}`)
+    logger.error(err, `Error in syncEdgesWithNFTs: ${err}`)
     Sentry.captureMessage(`Error in syncEdgesWithNFTs: ${err}`)
     throw err
   }
