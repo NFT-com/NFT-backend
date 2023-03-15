@@ -920,11 +920,13 @@ export const fetchDataUsingMulticall = async (
   customProvider?: ethers.providers.BaseProvider,
 ): Promise<Array<Result | MulticallResponse | undefined>> => {
   try {
+    logger.info(`fetchDataUsingMulticall: ${JSON.stringify(calls)}`)
     const multicall2ABI = contracts.Multicall2ABI()
     let callProvider = provider.provider(Number(chainId))
     if (customProvider) {
       callProvider = customProvider
     }
+    
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
@@ -937,6 +939,8 @@ export const fetchDataUsingMulticall = async (
       call.contract.toLowerCase(),
       abiInterface.encodeFunctionData(call.name, call.params),
     ])
+
+    logger.info(`fetchDataUsingMulticall callData: ${JSON.stringify(callData)}`)
     // 2. get bytes array from multicall contract by process aggregate method...
     const results: MulticallResponse[] =
       await multicallContract.tryAggregate(false, callData)
@@ -944,15 +948,22 @@ export const fetchDataUsingMulticall = async (
     if (returnRawResults) {
       return results
     }
+    
+    logger.info(`fetchDataUsingMulticall results: ${JSON.stringify(results)}`)
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
-      if (result.returnData === '0x') {
+      if (!result.success || result.returnData === '0x') {
         return undefined
       } else {
-        return abiInterface.decodeFunctionResult(
-          calls[i].name,
-          result.returnData,
-        )
+        try {
+          return abiInterface.decodeFunctionResult(
+            calls[i].name,
+            result.returnData,
+          )
+        } catch (err) {
+          logger.error({ err, result }, `fetchDataUsingMulticall unable to decode result for ${calls[i].name}`)
+          return undefined
+        }
       }
     })
   } catch (error) {

@@ -6,7 +6,7 @@ import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { SearchEngineClient } from '../adapter'
-import { getNftName } from './nft.service'
+import { AlchemyNFTMetaDataResponse, getNftName } from './nft.service'
 import { getListingCurrencyAddress, getListingPrice, listingMapFrom, TxActivityDAO } from './txActivity.service'
 
 const logger = _logger.Factory('searchEngine.service', _logger.Context.Typesense)
@@ -130,7 +130,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         const gkExpirationYear = 3021
         nftsToIndex.push({
           id: nft.id,
-          nftName: nft.metadata?.name || getNftName(nft.metadata, undefined, { contractMetadata: { name: collection?.name } }, tokenId) || `#${tokenId}`,
+          nftName: nft.metadata?.name || getNftName(nft as AlchemyNFTMetaDataResponse, undefined, { name: collection?.name }, tokenId) || `#${tokenId}`,
           nftType: nft.type,
           tokenId,
           traits,

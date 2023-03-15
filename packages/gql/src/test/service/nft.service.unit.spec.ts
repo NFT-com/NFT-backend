@@ -332,8 +332,19 @@ describe('nft service', () => {
         contract: {
           address: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
         },
+        description: 'descriptive text',
+        metadata: {
+          image: 'ipfs://imageurl',
+          attributes: [{
+            trait_type: 'dummy',
+            value: 'value',
+          }],
+        },
         id: {
           tokenId: '0x22',
+          tokenMetadata: {
+            tokenType: 'ERC721',
+          },
         },
       }
       nftService.initiateWeb3('5')
@@ -349,8 +360,19 @@ describe('nft service', () => {
         contract: {
           address: '0x06012c8cf97BEaD5deAe237070F9587f8E7A266d',
         },
+        description: 'descriptive text',
+        metadata: {
+          image: 'ipfs://imageurl',
+          attributes: [{
+            trait_type: 'dummy',
+            value: 'value',
+          }],
+        },
         id: {
           tokenId: '0x024a39',
+          tokenMetadata: {
+            tokenType: 'ERC721',
+          },
         },
       }
       nftService.initiateWeb3('1')
@@ -366,8 +388,19 @@ describe('nft service', () => {
         contract: {
           address: '0xe21EBCD28d37A67757B9Bc7b290f4C4928A430b1',
         },
+        description: 'descriptive text',
+        metadata: {
+          image_data: 'data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          attributes: [{
+            trait_type: 'dummy',
+            value: 'value',
+          }],
+        },
         id: {
           tokenId: '0x12fe',
+          tokenMetadata: {
+            tokenType: 'ERC721',
+          },
         },
       }
       nftService.initiateWeb3('1')
@@ -799,7 +832,7 @@ describe('nft service', () => {
     })
   })
 
-  describe('updateEdgesWeightForProfile', () => {
+  describe('createNullEdgesForProfile', () => {
     beforeAll(async () => {
       nftA = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -833,6 +866,7 @@ describe('nft service', () => {
         edgeType: defs.EdgeType.Displays,
         thatEntityType: defs.EntityType.NFT,
         thatEntityId: nftA.id,
+        hide: false,
       })
       await repositories.edge.save({
         thisEntityType: defs.EntityType.Profile,
@@ -848,10 +882,10 @@ describe('nft service', () => {
     })
 
     it('should update edges with weight', async () => {
-      await nftService.updateEdgesWeightForProfile('test-profile', testMockWallet.id)
+      await nftService.createNullEdgesForProfile('test-profile', testMockWallet.id)
       const edges = await repositories.edge.findAll()
       for(const edge of edges) {
-        expect(edge.weight).not.toBeNull()
+        expect(edge.weight).toBeNull()
       }
     })
   })
