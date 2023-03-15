@@ -31,22 +31,22 @@ interface Trait {
 }
 
 export interface NFTPortNFT {
-  nft: {
-    chain: string
+  nft?: {
+    chain?: string
     contract_address?: string
     token_id?: string
     metadata_url?: string
-    metadata: {
-      attributes: Array<Trait>
-      name: string
-      description: string
-      image: string
-      image_url: string
+    metadata?: {
+      attributes?: Array<Trait>
+      name?: string
+      description?: string
+      image?: string
+      image_url?: string
     }
     file_information?: {
-      height: number
-      width: number
-      file_size: number
+      height?: number
+      width?: number
+      file_size?: number
     }
     file_url?: string
     animation_url?: string
@@ -55,20 +55,20 @@ export interface NFTPortNFT {
     creator_address?: string
     mint_date?: string
     rarity?: {
-      strategy: string
-      score: number
-      rank: number
-      max_rank: number
-      updated_date: string
+      strategy?: string
+      score?: number
+      rank?: number
+      max_rank?: number
+      updated_date?: string
     }
     attributes?: NFTPortRarityAttributes[]
   }
   owner?: string
-  contract: {
+  contract?: {
     name?: string
     symbol?: string
     type?: string // ERC721, ERC1155, CRYPTO_PUNKS
-    metadata: {
+    metadata?: {
       description?: string
       cached_thumbnail_url?: string
       cached_banner_url?: string
