@@ -174,11 +174,40 @@ type CollectionLeaderboard {
   totalItems: Int
 }
 
+
+type OfficialCollectionNFT {
+  id: ID
+  contract: Address
+}
+
+
+"""
+Basic collection type of `isOfficial=true` only collections.
+(Used for generating sitemaps)
+"""
+type OfficialCollection {
+  id: ID
+  contract: Address
+  name: String
+  chainId: String
+}
+
+type OfficialCollectionsOutput {
+  items: [OfficialCollection!]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
+input OfficialCollectionsInput {
+  pageInput: PageInput
+}
+
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
   collectionsByDeployer(deployer: String!): [Collection]
   collectionLeaderboard(input: CollectionLeaderboardInput): CollectionLeaderboard
   collectionTraits(input: CollectionTraitsInput!): CollectionTraitsSummary
+  officialCollections(input: OfficialCollectionsInput!): OfficialCollectionsOutput
   numberOfNFTs(contract: Address!, chainId: String): Int
   associatedAddressesForContract(contract: Address!): AssociatedAddressesForContractOutput!
 }

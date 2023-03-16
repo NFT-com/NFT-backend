@@ -11,6 +11,7 @@ import { appError, collectionError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
+import { getOfficialCollections } from '@nftcom/gql/service/collection.service'
 import { getCollectionInfo, getCollectionNameFromDataProvider } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
@@ -69,10 +70,10 @@ const getCollectionTraits = async (
   })
   const { input } = args
   joi.validateSchema(schema, input)
-  
+
   const rawTraitSummary = await ctx.repositories.nft.fetchTraitSummaryData(input.contract)
   const totalCount = rawTraitSummary.filter(t => rawTraitSummary[0].type === t.type)
-    .reduce((sum, t) => {return sum + parseInt(t.count)}, 0)
+    .reduce((sum, t) => { return sum + parseInt(t.count) }, 0)
   const traits = []
   for (const t of rawTraitSummary) {
     if (traits.length && traits[traits.length - 1].type === t.type) {
@@ -90,12 +91,33 @@ const getCollectionTraits = async (
       })
     }
   }
-  
+
   return {
     stats: {
       totalCount,
     },
     traits,
+  }
+}
+
+const queryOfficialCollections = async (
+  _: unknown,
+  args: gql.QueryOfficialCollectionsArgs,
+  ctx: Context,
+): Promise<gql.OfficialCollectionsOutput> => {
+  const { repositories } = ctx
+  const schema = Joi.object().keys({
+    pageInput: Joi.any().optional(),
+  })
+  const input = args.input || {}
+  joi.validateSchema(schema, input)
+
+  try {
+    return await getOfficialCollections({ collectionRepo: repositories.collection, pageInput: input.pageInput })
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getOfficialCollections: ${err}`)
+    return err
   }
 }
 
@@ -158,9 +180,11 @@ const fetchAndSaveCollectionInfo = async (
   contract: string,
 ): Promise<void> => {
   try {
-    const nfts = await repositories.nft.find({ where: {
-      contract: ethers.utils.getAddress(contract),
-    } })
+    const nfts = await repositories.nft.find({
+      where: {
+        contract: ethers.utils.getAddress(contract),
+      },
+    })
     if (nfts.length) {
       const collectionName = await getCollectionNameFromDataProvider(
         nfts[0].contract,
@@ -204,9 +228,11 @@ const saveCollectionForContract = async (
   logger.debug('saveCollectionForContract', { contract: args?.contract })
   try {
     const { contract } = args
-    const collection = await repositories.collection.findOne({ where: {
-      contract: ethers.utils.getAddress(contract),
-    } })
+    const collection = await repositories.collection.findOne({
+      where: {
+        contract: ethers.utils.getAddress(contract),
+      },
+    })
     if (!collection) {
       await fetchAndSaveCollectionInfo(repositories, contract)
       return {
@@ -386,7 +412,7 @@ const updateCollectionName = async (
         } else {
           // If NFT is ENS token,we change collection name to ENS
           if (nft?.metadata?.name?.endsWith('.eth')) {
-            await repositories.collection.updateOneById(collection.id, { name : 'ENS: Ethereum Name Service' })
+            await repositories.collection.updateOneById(collection.id, { name: 'ENS: Ethereum Name Service' })
           }
         }
       }),
@@ -416,10 +442,12 @@ const updateSpamStatus = async (
     const toUpdate: entity.Collection[] = []
     await Promise.allSettled(
       contracts.map(async (contract) => {
-        const collection = await repositories.collection.findOne({ where: {
-          contract: ethers.utils.getAddress(contract),
-          chainId,
-        } })
+        const collection = await repositories.collection.findOne({
+          where: {
+            contract: ethers.utils.getAddress(contract),
+            chainId,
+          },
+        })
         if (collection && collection.isSpam !== isSpam) {
           collection.isSpam = isSpam
           toUpdate.push(collection)
@@ -446,8 +474,9 @@ const updateSpamStatus = async (
         }))
       }
     }
-    return { message: isSpam ? `${toUpdate.length} collections are set as spam`
-      : `${toUpdate.length} collections are set as not spam`,
+    return {
+      message: isSpam ? `${toUpdate.length} collections are set as spam`
+        : `${toUpdate.length} collections are set as not spam`,
     }
   } catch (err) {
     Sentry.captureException(err)
@@ -578,7 +607,7 @@ const getCollectionLeaderboard = async (
   )([paginatedLeaderboard, leaderboardLength])
 }
 
-export const refreshCollectionRarity = async (  _: any,
+export const refreshCollectionRarity = async (_: any,
   args: gql.MutationRefreshNFTOrderArgs,
   ctx: Context): Promise<string> => {
   const { repositories, chain } = ctx
@@ -612,7 +641,7 @@ export const refreshCollectionRarity = async (  _: any,
         collectionCacheId += ':manual'
       }
 
-      if(args?.ttl) {
+      if (args?.ttl) {
         const ttlDate: Date = new Date(args?.ttl)
         const now: Date = new Date()
         if (ttlDate && ttlDate > now) {
@@ -635,6 +664,7 @@ export default {
     collectionsByDeployer: getCollectionsByDeployer,
     collectionLeaderboard: getCollectionLeaderboard,
     collectionTraits: getCollectionTraits,
+    officialCollections: combineResolvers(auth.isTeamKeyAuthenticated, queryOfficialCollections),
     associatedAddressesForContract:
       combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
     numberOfNFTs: getNumberOfNFTs,

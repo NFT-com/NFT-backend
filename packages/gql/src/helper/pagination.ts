@@ -71,15 +71,20 @@ export const getDefaultCursor = (orderBy: string): DefaultCursor => {
  */
 export const safeInput = (
   input: gql.PageInput,
-  cursor: DefaultCursor,
+  cursor?: DefaultCursor,
   defaultNumItems = 20,
 ): gql.PageInput => {
+  const defaultCursor = cursor || input && hasLast(input) ?
+    { beforeCursor: (input && input.beforeCursor) || '-1' } :
+    { afterCursor: (input && input.afterCursor) || '-1' }
+
   if (helper.isEmpty(input)) {
     return {
       first: defaultNumItems,
-      ...cursor,
+      ...defaultCursor,
     }
   }
+
   const newInput = helper.removeEmpty(input)
 
   if (hasFirst(newInput) && hasLast(newInput)) {
@@ -95,11 +100,31 @@ export const safeInput = (
   }
 
   if (helper.isFalse(hasAfter(input)) && helper.isFalse(hasBefore(input))) {
-    return { ...newInput, ...cursor }
+    return { ...newInput, ...defaultCursor }
   }
 
   return newInput
 }
+
+// TODO: Add proper page input validation.
+// interface ValidatePageInputArgs {
+//   input: gql.PageInput
+//   cursor?: DefaultCursor
+//   defaultNumItems?: number
+// }
+
+// export const validatePageInput = ({ input, cursor, defaultNumItems = 20 }: ValidatePageInputArgs): gql.PageInput => {
+//   const defaultCursor = cursor || input && hasLast(input) ?
+//     { beforeCursor: (input && input.beforeCursor) || '-1' } :
+//     { afterCursor: (input && input.afterCursor) || '-1' }
+//   if (helper.isEmpty(input)) {
+//     return {
+//       first: defaultNumItems,
+//       ...cursor,
+//     }
+//   }
+//   const newInput = helper.removeEmpty(input)
+// }
 
 /**
  * Cursor based pagination filter and by default it is sorted based on time desc

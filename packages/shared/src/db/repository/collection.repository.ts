@@ -1,3 +1,4 @@
+import { gql } from '@nftcom/gql/defs'
 import { db } from '@nftcom/shared/db'
 import { Collection } from '@nftcom/shared/db/entity'
 
@@ -41,6 +42,22 @@ export class CollectionRepository extends BaseRepository<Collection> {
         isOfficial: true,
       },
     })
+  }
+
+  findOfficialCollections(): Promise<Required<Pick<gql.Collection, 'id' | 'chainId' | 'contract' | 'name'>>[]> {
+    return this.getRepository(true).find(
+      {
+        select: {
+          id: true,
+          chainId: true,
+          contract: true,
+          name: true,
+        },
+        where: {
+          isOfficial: true,
+        },
+
+      })
   }
 
 }

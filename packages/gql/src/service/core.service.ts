@@ -9,7 +9,7 @@ import { FindManyOptions, FindOptionsOrder, IsNull, Not } from 'typeorm'
 import { AbiItem } from 'web3-utils'
 
 import { S3Client } from '@aws-sdk/client-s3'
-import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
+import { AssumeRoleRequest, STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
@@ -177,19 +177,29 @@ export const entitiesBy = <T>(
 }
 
 /**
- * Cursor based pagination and by default it is sorted based on time desc
- * "before" and "after" in page terms refers to "later" and "earlier" respectively
+ * @summary Paginates the given repository with the given filters and relations.
  *
- *                                cursor
+ * @desc Cursor based pagination and by default it is sorted based on time desc
+ * `before` and `after` in page terms refers to "later" and "earlier" respectively.
+ *```
+ *                                 cursor
  *               |<-- last n before | first n after -->|
  * 12pm  11am  10am  9am  8am  7am  6am  5am  4am  3am  2am  1am
+ * ```
+ * @param {repository.BaseRepository<T>} repo - The repository to paginate.
+ * @param {gql.PageInput} pageInput - The page input object.
+ * @param {Partial<T>[]} filters - The filters to apply to the pagination.
+ * @param {string[]} relations - The relations to apply to the pagination.
+ * @param {string} orderKey - The key to order by.
+ * @param {string} orderDirection - The direction to order by.
+ *
  */
 export const paginatedEntitiesBy = <T>(
   repo: repository.BaseRepository<T>,
   pageInput: gql.PageInput,
   filters: Partial<T>[],
   relations: string[],
-  orderKey= 'createdAt',
+  orderKey = 'createdAt',
   orderDirection = 'DESC',
 ): Promise<defs.PageableResult<T>> => {
   const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
@@ -303,7 +313,7 @@ export const stringifyTraits = (
   nft: entity.NFT,
 ): entity.NFT => {
   if (nft.metadata && nft.metadata?.traits && nft.metadata.traits?.length) {
-    for ( let i = 0; i < nft.metadata.traits.length; i ++) {
+    for (let i = 0; i < nft.metadata.traits.length; i++) {
       if (nft.metadata.traits[i].value) {
         if (typeof nft.metadata.traits[i].value !== 'string')
           nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
@@ -324,7 +334,7 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
   repo: repository.BaseRepository<any>,
   filter: Partial<entity.Edge>,
   pageInput: gql.PageInput,
-  orderKey= 'createdAt',
+  orderKey = 'createdAt',
   orderDirection = 'DESC',
   chainId: string,
   entityName?: string,
@@ -354,13 +364,15 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
                   ...updatedEntry,
                   isHide: edge.hide,
                 }
-                return repositories.collection.findOne({ where: {
-                  contract: entry.contract,
-                  isSpam: false,
-                  chainId,
-                } })
+                return repositories.collection.findOne({
+                  where: {
+                    contract: entry.contract,
+                    isSpam: false,
+                    chainId,
+                  },
+                })
                   .then(fp.thruIfNotEmpty(() => newEntry))
-              } ))
+              }))
         }),
       ).then((entries: T[]) => {
         const filteredEntries = entries.filter((entry) => !isNil(entry))
@@ -468,7 +480,7 @@ export const blacklistProfilePatterns = [
   /^moonbirds$/,
   /^gmoney$/,
   /^j1mmy$/,
-  /^snoopdogg$/ ,
+  /^snoopdogg$/,
   /^farokh$/,
   /^beeple$/,
   /^deezefi$/,
@@ -479,15 +491,15 @@ export const blacklistProfilePatterns = [
   /^pranksy$/,
   /^pussyriot$/,
   /^cozomo$/,
-  /^planb$/ ,
+  /^planb$/,
   /^naval$/,
   /^sushiswap$/,
   /^uniswap$/,
   /^erikvoorhees$/,
   /^cdixon$/,
-  /^jrnycrypto$/ ,
+  /^jrnycrypto$/,
   /^nickszabo$/,
-  /^deeze$/ ,
+  /^deeze$/,
   /^elliotrades$/,
   /^dcinvestor$/,
   /^brycent$/,
@@ -519,7 +531,7 @@ export const blacklistProfilePatterns = [
   /^danheld$/,
   /^ljxie$/,
   /^arjunblj$/,
-  /^mevcollector$/ ,
+  /^mevcollector$/,
   /^wil$/,
   /^brettmalinowski$/,
   /^cantino$/,
@@ -802,7 +814,7 @@ export const getAWSConfig = async (): Promise<S3Client> => {
   const secretAccessKey = response.Credentials.SecretAccessKey
   const sessionToken = response.Credentials.SessionToken
 
-  return new S3Client({ credentials: { accessKeyId,secretAccessKey,sessionToken } })
+  return new S3Client({ credentials: { accessKeyId, secretAccessKey, sessionToken } })
 }
 
 export const s3ToCdn = (s3URL: string): string => {
@@ -1069,7 +1081,7 @@ export const createProfile = (
           } catch (err) {
             logger.error('error while creating profile and sending message: ', err)
           }
-          
+
           if (!savedProfile.photoURL) {
             const imageURL = await generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
             return ctx.repositories.profile.updateOneById(
@@ -1169,7 +1181,7 @@ export const createProfileFromEvent = async (
       if (referredInfo && referredInfo.length === 2) {
         const userMadeReferral = await repositories.user.findOne({ where: { referralId: referredInfo[0] } })
         const referredProfileUrl = referredInfo[1]
-        const referralKey =`${referredInfo[0]}::${referredProfileUrl}`
+        const referralKey = `${referredInfo[0]}::${referredProfileUrl}`
 
         const referredUsers = await repositories.user.find({
           where: {
@@ -1406,7 +1418,7 @@ export const getLastWeight = async (
   return lastVisibleEdge.weight
 }
 
-export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
+export const delay = (ms: number): Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
 
 export const extensionFromFilename = (filename: string): string | undefined => {
   const strArray = filename.split('.')
@@ -1417,7 +1429,7 @@ export const extensionFromFilename = (filename: string): string | undefined => {
 }
 
 export const contentTypeFromExt = (ext: string): string | undefined => {
-  switch(ext.toLowerCase()) {
+  switch (ext.toLowerCase()) {
   case 'jpg':
     return 'image/jpeg'
   case 'jpeg':
@@ -1524,52 +1536,52 @@ export const profileActionType = (
 }
 
 const firstEntitiesAfter =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
-  return [
-    entities.slice(index, index + pageInput.first),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
+    return [
+      entities.slice(index, index + pageInput.first),
+      entities.length,
+    ]
+  }
 
 const firstEntitiesBefore =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  return [
-    entities.slice(0, Math.min(
-      pageInput.first,
-      entities.findIndex((e) => e[property] === pageInput.beforeCursor),
-    )),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    return [
+      entities.slice(0, Math.min(
+        pageInput.first,
+        entities.findIndex((e) => e[property] === pageInput.beforeCursor),
+      )),
+      entities.length,
+    ]
+  }
 
 const lastEntitiesAfter =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  const index = entities.findIndex((e) => e[property]=== pageInput.afterCursor) + 1
-  return [
-    entities.slice(Math.max(index, entities.length - pageInput.last)),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
+    return [
+      entities.slice(Math.max(index, entities.length - pageInput.last)),
+      entities.length,
+    ]
+  }
 
 const lastEntitiesBefore =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  const index = entities.findIndex((e) => e[property] === pageInput.beforeCursor)
-  return [
-    entities.slice(Math.max(0, index - pageInput.last), index),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    const index = entities.findIndex((e) => e[property] === pageInput.beforeCursor)
+    return [
+      entities.slice(Math.max(0, index - pageInput.last), index),
+      entities.length,
+    ]
+  }
 
 export const paginateEntityArray =
-<T>(entities: T[], pageInput: gql.PageInput, cursorProp = 'id'): Promise<defs.PageableResult<T>> => {
-  return pagination.resolvePage<T>(pageInput, {
-    firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
-    firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
-    lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
-    lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
-  })
-}
+  <T>(entities: T[], pageInput: gql.PageInput, cursorProp = 'id'): Promise<defs.PageableResult<T>> => {
+    return pagination.resolvePage<T>(pageInput, {
+      firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
+      firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
+      lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
+      lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
+    })
+  }
 
 export const sendEmailVerificationCode = async (
   email: string,
@@ -1617,7 +1629,7 @@ export const checkAddressIsSanctioned = async (
 }
 
 export const findDuplicatesByProperty = <T>(arr: T[], property: string): T[] => {
-  const hash: {[key: string]: boolean} = {}
+  const hash: { [key: string]: boolean } = {}
   const duplicates: T[] = []
 
   for (let i = 0; i < arr.length; i++) {
