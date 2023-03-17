@@ -234,6 +234,7 @@ export type Repository = {
   collection: repo.CollectionRepository
   edge: repo.EdgeRepository
   event: repo.EventRepository
+  like: repo.LikeRepository
   marketAsk: repo.MarketAskRepository
   marketBid: repo.MarketBidRepository
   marketplaceSale: repo.MarketplaceSaleRepository
@@ -257,6 +258,7 @@ export const newRepositories = (): Repository => ({
   collection: new repo.CollectionRepository(),
   edge: new repo.EdgeRepository(),
   event: new repo.EventRepository(),
+  like: new repo.LikeRepository(),
   marketAsk: new repo.MarketAskRepository(),
   marketBid: new repo.MarketBidRepository(),
   marketplaceSale: new repo.MarketplaceSaleRepository(),
