@@ -48,3 +48,4 @@ WORKDIR /app/packages/gql
 EXPOSE 8080
 
 CMD ["npm", "start"]
+
