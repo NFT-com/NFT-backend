@@ -13,7 +13,6 @@ services:
     volumes:
       - "redis:/var/lib/redis"
       - "redis:/usr/local/etc/redis/redis.conf"
-    restart: unless-stopped
 
   redis-web:
     image: rediscommander/redis-commander:latest
@@ -26,7 +25,6 @@ services:
       - "10015:8081"
     depends_on:
       - redis
-    restart: unless-stopped
 
   postgres:
     image: postgres:13.4-alpine
@@ -41,7 +39,6 @@ services:
       - "10030:5432"
     volumes:
       - postgres:/var/lib/postgresql/data/
-    restart: unless-stopped
 
   postgres_tests:
     image: postgres:13.4-alpine
@@ -56,7 +53,6 @@ services:
       - "10031:5432"
     volumes:
       - postgres:/var/lib/postgresql-test/data/
-    restart: unless-stopped
 
 volumes:
   postgres:
