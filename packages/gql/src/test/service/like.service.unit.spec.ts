@@ -117,5 +117,41 @@ describe('like service', () => {
         likedType: 'Profile',
       })).rejects.toThrow('Profile already liked')
     })
+
+    it('does not set like for invalid type', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.setLike({
+        likedById: '1',
+        likedId: '2',
+        likedType: 'Walnut',
+      })).rejects.toThrow('Walnut cannot be liked')
+    })
+
+    it('requires likedById', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.setLike({
+        likedById: undefined,
+        likedId: '2',
+        likedType: 'NFT',
+      })).rejects.toThrow(/^Missing property or property undefined in .*$/)
+    })
+
+    it('requires likedId', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.setLike({
+        likedById: '1',
+        likedId: undefined,
+        likedType: 'NFT',
+      })).rejects.toThrow(/^Missing property or property undefined in .*$/)
+    })
+
+    it('required likedType', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.setLike({
+        likedById: '1',
+        likedId: '2',
+        likedType: undefined,
+      })).rejects.toThrow(/^Missing property or property undefined in .*$/)
+    })
   })
 })
