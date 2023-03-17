@@ -2,7 +2,7 @@ name: NFT.com github actions
 on: [push]
 jobs:
   deployment-triggers:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     outputs:
       gql-changed: ${{ steps.filter.outputs.gql }}
       cronjobs-changed: ${{ steps.filter.outputs.cronjobs }}
@@ -29,7 +29,7 @@ jobs:
   deploy-dev:
     needs: deployment-triggers
     if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     environment: nftcom_dev
     steps:
       - uses: actions/checkout@v3
