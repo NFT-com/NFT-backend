@@ -1,6 +1,7 @@
 import { _logger, db, entity } from '@nftcom/shared'
 
 export type SetLikeArgs = { likedById: string; likedId: string; likedType: entity.LikeableType }
+
 export function getLikeService(repos: db.Repository = db.newRepositories()): { [key: string]: any } {
   async function setLike({ likedById, likedId, likedType }: SetLikeArgs): Promise<entity.Like> {
     const setLikeArgs = { likedById, likedId, likedType }
