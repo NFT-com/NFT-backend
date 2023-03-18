@@ -88,17 +88,53 @@ describe('core service', () => {
 
   describe('createProfileFromEvent', () => {
     beforeAll(async () => {
-      const userA = await repositories.user.save({
+      await repositories.user.save({
         email: testMockUser.email,
         username: 'test-user',
-        referralId: testMockUser.referralId,
+        referralId: 'userA-referralId',
         preferences: testMockUser.preferences,
       })
       const userB = await repositories.user.save({
         email: 'test@immutableholdings.com',
         username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005',
-        referredBy: `${userA.id}::test-profile-A`,
+        referredBy: 'userA-referralId::test-profile-A',
         referralId: '',
+        isEmailConfirmed: true,
+      })
+      await Promise.all([repositories.user.save({
+        email: 'test2@immutableholdings.com',
+        username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3009',
+        referredBy: 'userA-referralId::test-profile-A',
+        referralId: '',
+        isEmailConfirmed: true,
+      }),
+      repositories.user.save({
+        email: 'test3@immutableholdings.com',
+        username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3008',
+        referredBy: 'userA-referralId::test-profile-A',
+        referralId: '',
+        isEmailConfirmed: true,
+      }),
+      repositories.user.save({
+        email: 'test4@immutableholdings.com',
+        username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3007',
+        referredBy: 'userA-referralId::test-profile-A',
+        referralId: '',
+        isEmailConfirmed: true,
+      }),
+      repositories.user.save({
+        email: 'test5@immutableholdings.com',
+        username: 'ethereum-0xC345420194D9Bac1a4b8f698507Fda9ecB2E3006',
+        referredBy: 'userA-referralId::test-profile-A',
+        referralId: '',
+        isEmailConfirmed: true,
+      })]).then(async (users) => {
+        await Promise.all(users.map((user) => {
+          repositories.profile.save({
+            url: `testprofile-${user.id}`,
+            ownerUserId: user.id,
+          })
+        }))
       })
       await repositories.wallet.save({
         address: ethers.utils.getAddress('0xC345420194D9Bac1a4b8f698507Fda9ecB2E3005'),

@@ -24,39 +24,60 @@ export interface NFTPortRarityAttributes {
   }
 }
 
+interface Trait {
+  trait_type?: string
+  value?: string
+  trait_value?: string
+}
+
 export interface NFTPortNFT {
-  nft: {
+  nft?: {
+    chain?: string
+    contract_address?: string
     token_id?: string
     metadata_url?: string
-    cached_file_url?: string
-    metadata: {
-      attributes: any
-      name: string
-      description: string
-      image: string
-      image_url: string
+    metadata?: {
+      attributes?: Array<Trait>
+      name?: string
+      description?: string
+      image?: string
+      image_url?: string
     }
+    file_information?: {
+      height?: number
+      width?: number
+      file_size?: number
+    }
+    file_url?: string
+    animation_url?: string
+    cached_file_url?: string
+    cached_animation_url?: string
+    creator_address?: string
+    mint_date?: string
     rarity?: {
-      strategy: string
-      score: number
-      rank: number
-      max_rank: number
-      updated_date: string
+      strategy?: string
+      score?: number
+      rank?: number
+      max_rank?: number
+      updated_date?: string
     }
     attributes?: NFTPortRarityAttributes[]
   }
-  contract: {
+  owner?: string
+  contract?: {
     name?: string
     symbol?: string
-    type?: string
-    metadata: {
+    type?: string // ERC721, ERC1155, CRYPTO_PUNKS
+    metadata?: {
       description?: string
       cached_thumbnail_url?: string
       cached_banner_url?: string
     }
   }
+  status?: string
   status_message?: string
 }
+
 export const retrieveNFTDetailsNFTPort = async (
   contract: string,
   tokenId: string,

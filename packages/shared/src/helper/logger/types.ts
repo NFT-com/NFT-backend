@@ -31,6 +31,7 @@ export enum LoggerContext {
   SalesProcessor = 'salesProcessor',
   CollectionStats = 'collectionStats',
   ContractData = 'contractData',
+  Social = 'social'
 }
 
 export enum LogLevel {

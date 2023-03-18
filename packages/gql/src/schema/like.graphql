@@ -1,0 +1,25 @@
+
+enum LikeableType {
+  Collection
+  NFT
+  Profile
+}
+
+input SetLikeInput {
+  likedById: String!
+  likedId: String!
+  likedType: LikeableType!
+}
+
+type Like {
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  likedById: String
+  likedId: String
+  likedType: LikeableType
+}
+
+extend type Mutation {
+  setLike(input: SetLikeInput!): Like
+}
