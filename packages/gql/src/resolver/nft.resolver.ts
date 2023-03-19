@@ -31,6 +31,7 @@ import { stringifyTraits } from '@nftcom/gql/service/core.service'
 import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
+  getNFTsForOfficialCollection,
   getUserWalletFromNFT,
   initiateWeb3,
   profileGKNFT,
@@ -311,7 +312,8 @@ const returnProfileNFTs = async (
               contract: ethers.utils.getAddress(nft.contract),
               isSpam: false,
               chainId,
-            } })
+            },
+          })
           if (collection && isMatch) {
             nfts.push({
               sortIndex: index,
@@ -519,7 +521,7 @@ const getCurationNFTs = (
     ))
     .then((curation) => Promise.all([
       Promise.resolve(curation.items),
-      Promise.all(curation.items.map(item =>  repositories.nft.findById(item.id))),
+      Promise.all(curation.items.map(item => repositories.nft.findById(item.id))),
     ]))
     .then(([items, nfts]) => nfts.map((nft, index) => ({ nft: nft, size: items[index].size })))
     .then((nfts) => Promise.resolve({
@@ -589,6 +591,31 @@ const getCollectionNFTs = (
     })
 }
 
+const getOfficialCollectionNFTs = async (
+  _: unknown,
+  args: gql.QueryCollectionNFTsArgs,
+): Promise<gql.OfficialCollectionNFTsOutput> => {
+  // Validate Inputs
+  const schema = Joi.object().keys({
+    collectionAddress: Joi.string().required(),
+    chainId: Joi.string().required(),
+    pagination: Joi.object().keys({
+      page: Joi.number().optional(),
+      pageSize: Joi.number().optional(),
+    }).optional(),
+  })
+  const input = args.input || {}
+  joi.validateSchema(schema, input)
+
+  try {
+    return await getNFTsForOfficialCollection(args.input)
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in getOfficialCollectionNFTs: ${err}`)
+    return err
+  }
+}
+
 const refreshMyNFTs = (
   _: any,
   args: any,
@@ -624,7 +651,7 @@ const getGkNFTs = async (
   ctx: Context,
 ): Promise<gql.GetGkNFTsOutput> => {
   const { user } = ctx
-  logger.debug('getGkNFTs', { loggedInUserId: user?.id  })
+  logger.debug('getGkNFTs', { loggedInUserId: user?.id })
 
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -883,7 +910,7 @@ export const refreshNft = async (
 }
 
 // @TODO: Force Refresh as a second iteration
-export const refreshNFTOrder = async (  _: any,
+export const refreshNFTOrder = async (_: any,
   args: gql.MutationRefreshNFTOrderArgs,
   ctx: Context): Promise<string> => {
   const { repositories, chain } = ctx
@@ -912,7 +939,7 @@ export const refreshNFTOrder = async (  _: any,
         nftCacheId += ':manual'
       }
 
-      if(args?.ttl) {
+      if (args?.ttl) {
         const ttlDate: Date = new Date(args?.ttl)
         const now: Date = new Date()
         if (ttlDate && ttlDate > now) {
@@ -1087,7 +1114,7 @@ export const updateNFTProfileId =
       )
     }
 
-    const updatedNFT =  await repositories.nft.updateOneById(nft.id, {
+    const updatedNFT = await repositories.nft.updateOneById(nft.id, {
       profileId: profile.id,
     })
     // fix (short-term) : trait value
@@ -1275,6 +1302,7 @@ export default {
     myNFTs: combineResolvers(auth.isAuthenticated, getMyNFTs),
     curationNFTs: getCurationNFTs,
     collectionNFTs: getCollectionNFTs,
+    officialCollectionNFTs: combineResolvers(auth.isTeamKeyAuthenticated, getOfficialCollectionNFTs),
     nftsForCollections: getNFTsForCollections,
   },
   Mutation: {

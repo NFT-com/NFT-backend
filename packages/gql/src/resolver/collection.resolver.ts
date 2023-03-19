@@ -10,14 +10,13 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, collectionError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
+import { core } from '@nftcom/gql/service'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
-import { getOfficialCollections } from '@nftcom/gql/service/collection.service'
 import { getCollectionInfo, getCollectionNameFromDataProvider } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { core } from '../service'
 import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
@@ -100,7 +99,7 @@ const getCollectionTraits = async (
   }
 }
 
-const queryOfficialCollections = async (
+const getOfficialCollections = async (
   _: unknown,
   args: gql.QueryOfficialCollectionsArgs,
   ctx: Context,
@@ -113,7 +112,21 @@ const queryOfficialCollections = async (
   joi.validateSchema(schema, input)
 
   try {
-    return await getOfficialCollections({ collectionRepo: repositories.collection, pageInput: input.pageInput })
+    return await core.paginatedResultsFromEntityBy({
+      repo: repositories.collection,
+      pageInput: args.input.pageInput,
+      filters: [{ isOfficial: true }],
+      relations: [], // no relations
+      orderKey: 'id',
+      orderDirection: 'DESC',
+      select: {
+        id: true,
+        chainId: true,
+        contract: true,
+        name: true,
+      },
+    },
+    )
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getOfficialCollections: ${err}`)
@@ -664,7 +677,7 @@ export default {
     collectionsByDeployer: getCollectionsByDeployer,
     collectionLeaderboard: getCollectionLeaderboard,
     collectionTraits: getCollectionTraits,
-    officialCollections: combineResolvers(auth.isTeamKeyAuthenticated, queryOfficialCollections),
+    officialCollections: combineResolvers(auth.isTeamKeyAuthenticated, getOfficialCollections),
     associatedAddressesForContract:
       combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
     numberOfNFTs: getNumberOfNFTs,

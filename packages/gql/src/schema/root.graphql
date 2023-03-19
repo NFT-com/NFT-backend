@@ -12,11 +12,18 @@ type PageInfo {
   lastCursor: String
 }
 
+"Pagination input type"
 input PageInput {
   first: Int
   last: Int
   afterCursor: String
   beforeCursor: String
+}
+
+"Offset pagination input"
+input OffsetPaginationInput {
+  page: Int
+  pageSize: Int
 }
 
 type Signature {

@@ -1,6 +1,9 @@
-import { FindOperator } from 'typeorm'
+import { FindOperator, FindOptionsSelect } from 'typeorm'
 
-import { Collection, NFT } from '../db/entity'
+import { gql } from '@nftcom/gql/defs'
+import { repository } from '@nftcom/shared'
+
+import { BaseEntity, Collection, NFT } from '../db/entity'
 
 export enum EntityType {
   Approval = 'Approval',
@@ -226,6 +229,18 @@ export interface ActivityFilters {
 
 export type OrderBy = { [x: string]: 'ASC' | 'DESC' | { order: 'ASC' | 'DESC'; nulls?: 'NULLS FIRST' | 'NULLS LAST' } }
 
+export type OrderKey<T> = (keyof T extends string ? keyof T : keyof BaseEntity) | 'createdAt'
+
+export type PaginatedResultsFromEntityByArgs<T> = {
+  repo: repository.BaseRepository<T>
+  pageInput: gql.PageInput
+  filters: Partial<T>[]
+  relations: string[]
+  orderKey: OrderKey<T>
+  orderDirection: 'ASC' | 'DESC'
+  select?: FindOptionsSelect<Partial<T>>
+}
+
 export type DBConfig = {
   host: string
   port: number
@@ -254,4 +269,12 @@ export type ProfileSearchNFT = NFT & {
   collection: Collection
   isHide: boolean
   sortIndex: number
+}
+
+/**
+ * Special options passed to Repository#upsert
+ */
+export interface UpsertOptions {
+  conflictPaths: string[]
+  skipUpdateIfNoValuesChanged?: boolean
 }
