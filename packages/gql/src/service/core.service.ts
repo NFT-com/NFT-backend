@@ -5,7 +5,7 @@ import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
 import fetch from 'node-fetch'
-import { FindManyOptions, FindOptionsOrder, IsNull, Not } from 'typeorm'
+import { FindManyOptions, FindOptionsOrder, FindOptionsSelect, IsNull, Not } from 'typeorm'
 import { AbiItem } from 'web3-utils'
 
 import { S3Client } from '@aws-sdk/client-s3'
@@ -23,7 +23,7 @@ import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
-import { ProfileTask } from '@nftcom/shared/defs'
+import { PaginatedResultsFromEntityByArgs, ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -177,7 +177,7 @@ export const entitiesBy = <T>(
 }
 
 /**
- * @summary Paginates the given repository with the given filters and relations.
+ * @summary Paginates db results by the given arguments.
  *
  * @desc Cursor based pagination and by default it is sorted based on time desc
  * `before` and `after` in page terms refers to "later" and "earlier" respectively.
@@ -192,8 +192,10 @@ export const entitiesBy = <T>(
  * @param {string[]} relations - The relations to apply to the pagination.
  * @param {string} orderKey - The key to order by.
  * @param {string} orderDirection - The direction to order by.
- *
+ * @param {FindOptionsSelect<Partial<T>>} [select] - The db entity fields you would like to select.
+ * @returns Paginated db entity results
  */
+// TODO: Refactor fn args to an object for easier use.
 export const paginatedEntitiesBy = <T>(
   repo: repository.BaseRepository<T>,
   pageInput: gql.PageInput,
@@ -201,38 +203,76 @@ export const paginatedEntitiesBy = <T>(
   relations: string[],
   orderKey = 'createdAt',
   orderDirection = 'DESC',
+  select?: FindOptionsSelect<Partial<T>>,
 ): Promise<defs.PageableResult<T>> => {
   const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
   const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
   const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reversedOrderBy = <FindOptionsOrder<any>>{ [orderKey]: reversedOrderDirection }
+  const pageOptions = {
+    where: pageableFilters,
+    relations: relations,
+    order: orderBy,
+    take: pageInput.first,
+    select,
+  }
+
+  logger.warn({ args: { filters, where: pageableFilters, orderBy, select } })
 
   return pagination.resolvePage<T>(pageInput, {
-    firstAfter: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
-      order: orderBy,
-      take: pageInput.first,
-    } as FindManyOptions<T>),
-    firstBefore: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
-      order: orderBy,
-      take: pageInput.first,
-    } as FindManyOptions<T>),
+    firstAfter: () => repo.findPageable(pageOptions as FindManyOptions<T>),
+    firstBefore: () => repo.findPageable(pageOptions as FindManyOptions<T>),
     lastAfter: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
-      order: reversedOrderBy,
+      ...pageOptions,
       take: pageInput.last,
     } as FindManyOptions<T>).then(pagination.reverseResult),
     lastBefore: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
+      ...pageOptions,
       order: reversedOrderBy,
       take: pageInput.last,
     } as FindManyOptions<T>).then(pagination.reverseResult),
   })
+}
+
+/**
+ * @summary DB pagination wrapper, returns a page of results from provided db
+ * repository by the given arguments.
+ *
+ * !NOTE: Please ensure the `orderKey` provided matches any of the selected db columns
+ * @param {Repository<T>} repo - The repository to query.
+ * @param {PageInput} pageInput - The page input object.
+ * @param {FilterConfig[]} filters - The filter configuration objects.
+ * @param {string[]} relations - The relations to fetch.
+ * @param {string} orderKey - The key to order by.
+ * @param {string} orderDirection - The direction to order by.
+ * @param {string[]} select - The fields to select.
+ * @returns {Promise<Pageable<T>>} Page of db results.
+ */
+export const paginatedResultsFromEntityBy = async<T>({
+  repo,
+  pageInput,
+  filters,
+  relations,
+  orderKey = 'createdAt',
+  orderDirection = 'DESC',
+  select,
+}: PaginatedResultsFromEntityByArgs<T>): Promise<Pageable<T>> => {
+  const [paginatedResults, totalItems] = await paginatedEntitiesBy(
+    repo,
+    pageInput,
+    filters,
+    relations,
+    orderKey,
+    orderDirection,
+    select,
+  )
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedResults[0],
+    paginatedResults[paginatedResults.length - 1],
+    orderKey,
+  )([paginatedResults, totalItems])
 }
 
 export const paginatedResultFromIndexedArray = (
@@ -938,7 +978,7 @@ export const fetchDataUsingMulticall = async (
     if (customProvider) {
       callProvider = customProvider
     }
-    
+
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
@@ -960,7 +1000,7 @@ export const fetchDataUsingMulticall = async (
     if (returnRawResults) {
       return results
     }
-    
+
     logger.info(`fetchDataUsingMulticall results: ${JSON.stringify(results)}`)
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
@@ -1355,7 +1395,7 @@ export const generateWeight = (prevWeight: string | undefined): string => {
  */
 export const midWeight = (prev: string, next: string): string => {
   if (!next) next = prev + 'a'
-  
+
   let p, n, pos, str
   // find leftmost non-matching character
   for (pos = 0; p == n; pos++) {
