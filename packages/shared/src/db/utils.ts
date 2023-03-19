@@ -1,6 +1,6 @@
-import { _logger, helper } from '../helper'
-import { newRepositories } from './db'
-import { NFT, TxActivity, TxOrder } from './entity'
+import { newRepositories } from '@nftcom/shared/db/db'
+import { NFT, TxActivity, TxOrder } from '@nftcom/shared/db/entity'
+import { _logger, helper } from '@nftcom/shared/helper'
 
 const logger = _logger.Factory('search.handler', _logger.Context.TxActivity)
 const repositories = newRepositories()
@@ -28,7 +28,7 @@ export const getNFTsFromTxOrders = async (orders: TxOrder[]): Promise<NFT[]> => 
                   tokenId: idParts[2],
                 },
               })
-    
+
               if (nft) {
                 nfts.push(nft)
               }
@@ -36,7 +36,7 @@ export const getNFTsFromTxOrders = async (orders: TxOrder[]): Promise<NFT[]> => 
               logger.log(`Error in finding NFT: ${err}`)
             }
           }
-        
+
           nftsSeen[nftId] = true
         }
       }
@@ -68,7 +68,7 @@ export const getNFTsFromTxActivities = async (activities: TxActivity[]): Promise
                   tokenId: idParts[2],
                 },
               })
-    
+
               if (nft) {
                 nfts.push(nft)
               }

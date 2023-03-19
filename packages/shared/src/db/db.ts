@@ -64,7 +64,7 @@ export const connectPg = async (): Promise<void> => {
     max: 20,
     application_name: 'gql',
   })
-  
+
   pgClientRO = new Pool({
     user: process.env.DB_USERNAME || 'app',
     password: process.env.DB_PASSWORD || 'password',
@@ -95,7 +95,7 @@ export const connectTestPg = async (): Promise<void> => {
     max: 20,
     application_name: 'gql',
   })
-  
+
   pgClientRO = new Pool({
     user: process.env.TEST_DB_USERNAME || 'app',
     password: process.env.TEST_DB_PASSWORD || 'password',
@@ -255,7 +255,7 @@ export const newRepositories = (): Repository => ({
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
   curation: new repo.CurationRepository(),
-  collection: new repo.CollectionRepository(),
+  collection: new repo.CollectionRepository(logger),
   edge: new repo.EdgeRepository(),
   event: new repo.EventRepository(),
   like: new repo.LikeRepository(),

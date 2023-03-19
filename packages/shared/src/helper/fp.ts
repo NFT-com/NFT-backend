@@ -1,4 +1,4 @@
-import { Context,Factory } from './logger'
+import { Context, Factory } from './logger'
 import { isEmpty, isFalse, isNotEmpty, isTrue } from './misc'
 
 const logger = Factory('fp', Context.Misc)
@@ -454,24 +454,17 @@ export const thruIfOtherNotEmpty = <K>(otherValue: K) => {
  * the promise result (`arr[1]`). (Provides cleaner error handling for async code.)
  *
  * @param {Promise<T>} promise - the promise to wrap
- * @param {object} [errObj] - an object to attach to the error object for additional err logging.
- * @returns {Promise<[U, undefined] | [null, T]>} - a promise that will resolve to the result of the original promise,
- * or an error object if the original promise fails.
+ * @returns {Promise<[U, undefined] | [null, T]>} - a promise that will resolve to the result of
+ * the original promise, or an error object if the original promise fails.
  *
  * @example
  * const [exampleErr, exampleResult] = await fp.promiseTo(promiseFn(), {extraErrDetails: 'Error Detail'});
  */
-export function promiseTo<T, U = Error>(promise: Promise<T>, errObj?: object): Promise<[U, undefined] | [null, T]> {
+export function promiseTo<T, U = Error>(promise: Promise<T>): Promise<[U, undefined] | [null, T]> {
   return promise
     .then<[null, T]>((data: T) => [null, data])
-    .catch<[U, undefined]>((err: U) => {
-    if (errObj) {
-      const parsedError = Object.assign({}, err, errObj)
-      return [parsedError, undefined]
-    }
-
-    return [err, undefined]
-  })
+    .catch<[U, undefined]>((err: U) => [err, undefined],
+  )
 }
 
 /**
