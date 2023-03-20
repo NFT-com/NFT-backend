@@ -256,7 +256,7 @@ export const newRepositories = (): Repository => ({
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
   curation: new repo.CurationRepository(),
-  collection: new repo.CollectionRepository(logger),
+  collection: new repo.CollectionRepository(),
   edge: new repo.EdgeRepository(),
   event: new repo.EventRepository(),
   like: new repo.LikeRepository(),
