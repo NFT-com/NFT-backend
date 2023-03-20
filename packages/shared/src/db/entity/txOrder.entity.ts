@@ -42,7 +42,10 @@ export class TxOrder extends BaseEntity {
   @Column({ type: 'json' })
   protocolData: any
 
-  // counter is mapped to nonce for OS
+  // 3/20/23 -> string due to OS making breaking change to hex strings
+  @Column({ nullable: true })
+  osNonce: string
+
   @Column({ nullable: true })
   nonce: number
 

@@ -90,7 +90,7 @@ const seaportOrderBuilder = (
     exchange: defs.ExchangeType.OpenSea,
     makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address): null,
     takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address): null,
-    nonce: order.protocol_data?.parameters?.counter, // counter is mapped to nonce for OS
+    osNonce: (order.protocol_data?.parameters?.counter)?.toString(), // counter is mapped to nonce for OS
     zone: order.protocol_data?.parameters?.zone, // only mapped for OS
     protocolData: {
       ...order.protocol_data,

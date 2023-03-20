@@ -121,7 +121,7 @@ export interface SeaportOrder extends OpenseaBaseOrder {
       salt: string
       conduitKey: string
       totalOriginalConsiderationItems: number
-      counter: number
+      counter: number | string // part of seaport 1.4 upgrade -> new counters will be strings and old counters will be numbers
     }
     signature: string
   }
