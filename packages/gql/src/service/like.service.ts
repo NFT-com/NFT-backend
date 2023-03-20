@@ -1,3 +1,5 @@
+import { In } from 'typeorm'
+
 import { appError } from '@nftcom/error-types'
 import { db, entity } from '@nftcom/shared'
 
@@ -19,13 +21,9 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
   }
 
   async function isLikedByUser(likedId, userId): Promise<boolean> {
-    const likes = await repos.like.find({ where: { likedId } })
-    for (const like of likes) {
-      if (await profileService.isProfileOwnedByUser({ profileId: like.likedById, userId })) {
-        return true
-      }
-    }
-    return false
+    const profiles = await repos.profile.find({ where: { ownerUserId: userId } })
+    const like = await repos.like.findOne({ where: { likedId, likedById: In(profiles.map(p => p.id)) } })
+    return !!like
   }
 
   async function setLike({ likedById, likedId, likedType }: SetLikeArgs): Promise<entity.Like> {
