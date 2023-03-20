@@ -12,6 +12,16 @@ describe('like service', () => {
     nextId = 1
     repos = {
       like: {
+        count: (findByOpts: any) => {
+          return Promise.resolve(Array.from(likesMap.values()).filter((l) => {
+            for (const prop of Object.getOwnPropertyNames(findByOpts)) {
+              if (l[prop] !== findByOpts[prop]) {
+                return false
+              }
+            }
+            return true
+          }).length)
+        },
         save: (like: any) => {
           lastId = nextId++
           likesMap.set(lastId, {
@@ -43,6 +53,19 @@ describe('like service', () => {
     }
   })
 
+  describe('getLikeCount', () => {
+    it('gets a count of likes', async () => {
+      const likeService = getLikeService(repos)
+      await Promise.all([
+        likeService.setLike({ likedById: '1', likedId: '2', likedType: 'NFT' }),
+        likeService.setLike({ likedById: '2', likedId: '2', likedType: 'NFT' }),
+        likeService.setLike({ likedById: '3', likedId: '2', likedType: 'NFT' }),
+      ])
+      const result = await likeService.getLikeCount('2')
+      expect(result).toBe(3)
+    })
+  })
+  
   describe('setLike', () => {
     it('sets a like for an NFT', async () => {
       const likeService = getLikeService(repos)
