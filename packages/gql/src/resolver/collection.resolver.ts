@@ -116,7 +116,7 @@ const getOfficialCollections = async (
   joi.validateSchema(schema, input)
 
   try {
-    return await core.paginatedOffsetResultsFromEntityBy({
+    return await core.paginatedOffsetResultsFromEntitiesBy({
       repo: repositories.collection,
       offsetPageInput: args.input.offsetPageInput,
       filters: [{ isOfficial: true }],

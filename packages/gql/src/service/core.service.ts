@@ -253,7 +253,7 @@ export const paginatedEntitiesBy = <T>(
  * @param {string[]} select - The fields to select.
  * @returns {Promise<Pageable<T>>} Page of db results.
  */
-export const paginatedResultsFromEntityBy = async<T>({
+export const paginatedResultsFromEntitiesBy = async<T>({
   repo,
   pageInput,
   filters,
@@ -290,7 +290,7 @@ export const paginatedResultsFromEntityBy = async<T>({
  * @param {string} [orderDirection] - The direction to order the results by.
  * @
  */
-export const paginatedOffsetResultsFromEntityBy = async<T>({
+export const paginatedOffsetResultsFromEntitiesBy = async<T>({
   repo,
   filters = [],
   relations = [],

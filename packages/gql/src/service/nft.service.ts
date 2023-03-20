@@ -28,7 +28,7 @@ import {
   midWeight,
   nftAbi,
   optionallySaveUserAndWalletForAssociatedAddress,
-  paginatedOffsetResultsFromEntityBy,
+  paginatedOffsetResultsFromEntitiesBy,
   processIPFSURL,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
@@ -588,7 +588,7 @@ export const getNFTsForOfficialCollection = async ({
     )
   }
 
-  return await paginatedOffsetResultsFromEntityBy({
+  return await paginatedOffsetResultsFromEntitiesBy({
     repo: repositories.nft,
     offsetPageInput,
     filters: [{ contract: collectionAddress }],
