@@ -32,14 +32,14 @@ describe('like service', () => {
           return Promise.resolve(likesMap.get(lastId))
         },
         find: (opts: FindManyOptions<entity.Like>) => {
-          for(const like of likesMap.values()) {
-            if (opts.where['likedById'] === like.likedById
-            && opts.where['likedId'] === like.likedId
-            && opts.where['likedType'] === like.likedType) {
-              return Promise.resolve(like)
+          return Promise.resolve(Array.from(likesMap.values()).filter((l) => {
+            for (const prop of Object.getOwnPropertyNames(opts.where)) {
+              if (l[prop] !== opts.where[prop]) {
+                return false
+              }
             }
-          }
-          return Promise.resolve(undefined)
+            return true
+          }))
         },
         findById: (id: string) => {
           return Promise.resolve(likesMap.get(id))
@@ -81,6 +81,31 @@ describe('like service', () => {
     it('throws invalid when likedId is missing', async () => {
       const likeService = getLikeService(repos)
       await expect(likeService.getLikeCount(undefined)).rejects.toThrow('Cannot get count without likedId')
+    })
+  })
+
+  describe('isLikedByUser', () => {
+    it('should be true if the user likes the entity', async () => {
+      const likeService = getLikeService(repos)
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
+      await likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.NFT })
+      const result = await likeService.isLikedByUser('2', 'testUser')
+      expect(result).toBe(true)
+    })
+
+    it('should be false if the user does not like the entity', async () => {
+      const likeService = getLikeService(repos)
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(false)
+      await likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.Collection })
+      const result = await likeService.isLikedByUser('2', 'testUser')
+      expect(result).toBe(false)
+    })
+
+    it('should be false if there are no likes for the entity', async () => {
+      const likeService = getLikeService(repos)
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
+      const result = await likeService.isLikedByUser('2', 'testUser')
+      expect(result).toBe(false)
     })
   })
   

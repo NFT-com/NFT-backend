@@ -6,6 +6,7 @@ import { profileService } from './profile.service'
 type SetLikeArgs = { likedById: string; likedId: string; likedType: entity.LikeableType }
 interface LikeService {
   getLikeCount(likedId: string): Promise<number>
+  isLikedByUser(likedId: string, userId: string): Promise<boolean>
   setLike({ likedById, likedId, likedType }: SetLikeArgs): Promise<entity.Like>
   unsetLike(id: string, likedByUserId: string): Promise<boolean>
 }
@@ -17,6 +18,16 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
     return repos.like.count({ likedId })
   }
 
+  async function isLikedByUser(likedId, userId): Promise<boolean> {
+    const likes = await repos.like.find({ where: { likedId } })
+    for (const like of likes) {
+      if (await profileService.isProfileOwnedByUser({ profileId: like.likedById, userId })) {
+        return true
+      }
+    }
+    return false
+  }
+
   async function setLike({ likedById, likedId, likedType }: SetLikeArgs): Promise<entity.Like> {
     const setLikeArgs = { likedById, likedId, likedType }
     if (!likedById || !likedId || !likedType) {
@@ -25,7 +36,7 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
     if (!Object.values(entity.LikeableType).includes(likedType)) {
       throw appError.buildInvalid(`${likedType} cannot be liked`, 'LIKE_INVALID')
     }
-    if (await repos.like.find({ where: setLikeArgs })) {
+    if ((await repos.like.find({ where: setLikeArgs })).length) {
       throw appError.buildExists(`${likedType} already liked`, 'LIKE_ALREADY_EXISTS')
     }
     return repos.like.save(setLikeArgs)
@@ -46,6 +57,7 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
 
   return {
     getLikeCount,
+    isLikedByUser,
     setLike,
     unsetLike,
   }
