@@ -39,7 +39,7 @@ import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } 
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
-import { getLikeService } from '../service/like.service'
+import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
@@ -1737,7 +1737,6 @@ export default {
     winningBid: getWinningBid,
     usersActionsWithPoints: getUsersActionsWithPoints,
     likeCount: async (parent) => {
-      const likeService = getLikeService()
       likeService.getLikeCount(parent.id)
     },
   },

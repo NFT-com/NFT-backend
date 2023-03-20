@@ -18,7 +18,7 @@ import * as Sentry from '@sentry/node'
 
 import { core } from '../service'
 import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
-import { getLikeService } from '../service/like.service'
+import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 const seService = SearchEngineService()
@@ -652,7 +652,6 @@ export default {
   },
   Collection: {
     likeCount: async (parent) => {
-      const likeService = getLikeService()
       likeService.getLikeCount(parent.id)
     },
   },

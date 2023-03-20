@@ -18,7 +18,7 @@ import {
   utils as dbUtils,
 } from '@nftcom/shared'
 
-import { getLikeService } from '../service/like.service'
+import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -1351,7 +1351,6 @@ export default {
       return listingsByNFT.load({ ...parent, args })
     },
     likeCount: async (parent) => {
-      const likeService = getLikeService()
       likeService.getLikeCount(parent.id)
     },
   },
