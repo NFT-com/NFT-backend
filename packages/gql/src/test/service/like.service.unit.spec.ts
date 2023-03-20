@@ -5,35 +5,45 @@ import { entity } from '@nftcom/shared'
 import { getLikeService } from '../../service/like.service'
 
 describe('like service', () => {
-  describe('setLike', () => {
-    let repos, likesMap: Map<string, any>, nextId, lastId
-    const firstEthDate = 1438269973000
-    beforeEach(() => {
-      likesMap = new Map()
-      nextId = 1
-      repos = {
-        like: {
-          save: (like: any) => {
-            lastId = nextId++
-            likesMap.set(lastId, {
-              id: lastId, createdAt: new Date(firstEthDate), updatedAt: new Date(firstEthDate), ...like,
-            })
-            return Promise.resolve(likesMap.get(lastId))
-          },
-          find: (opts: FindManyOptions<entity.Like>) => {
-            for(const like of likesMap.values()) {
-              if (opts.where['likedById'] === like.likedById
-              && opts.where['likedId'] === like.likedId
-              && opts.where['likedType'] === like.likedType) {
-                return Promise.resolve(like)
-              }
-            }
-            return Promise.resolve(undefined)
-          },
+  let repos, likesMap: Map<string, any>, nextId, lastId
+  const firstEthDate = 1438269973000
+  beforeEach(() => {
+    likesMap = new Map()
+    nextId = 1
+    repos = {
+      like: {
+        save: (like: any) => {
+          lastId = nextId++
+          likesMap.set(lastId, {
+            id: lastId, createdAt: new Date(firstEthDate), updatedAt: new Date(firstEthDate), ...like,
+          })
+          return Promise.resolve(likesMap.get(lastId))
         },
-      }
-    })
+        find: (opts: FindManyOptions<entity.Like>) => {
+          for(const like of likesMap.values()) {
+            if (opts.where['likedById'] === like.likedById
+            && opts.where['likedId'] === like.likedId
+            && opts.where['likedType'] === like.likedType) {
+              return Promise.resolve(like)
+            }
+          }
+          return Promise.resolve(undefined)
+        },
+        findById: (id: string) => {
+          return Promise.resolve(likesMap.get(id))
+        },
+        hardDeleteByIds: (ids: string[]) => {
+          const results: boolean[] = []
+          for (const id of ids) {
+            results.push(likesMap.delete(id))
+          }
+          return results.some(e => e)
+        },
+      },
+    }
+  })
 
+  describe('setLike', () => {
     it('sets a like for an NFT', async () => {
       const likeService = getLikeService(repos)
       const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: 'NFT' })
@@ -152,6 +162,41 @@ describe('like service', () => {
         likedId: '2',
         likedType: undefined,
       })).rejects.toThrow(/^Missing property or property undefined in .*$/)
+    })
+  })
+
+  describe('unsetLike', () => {
+    it('should unset a like', async () => {
+      const likeService = getLikeService(repos)
+      const like = await likeService.setLike({
+        likedById: 'likedById',
+        likedId: '1',
+        likedType: 'NFT',
+      })
+      const result = await likeService.unsetLike(like.id, 'likedById')
+      expect(result).toBe(true)
+    })
+    it('should throw invalid when no preferred profile', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.unsetLike('1', undefined))
+        .rejects.toThrow('Wallet has no preferred profile')
+    })
+
+    it('should throw not found when no like found', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.unsetLike('-1', 'testLikedById'))
+        .rejects.toThrow('Like not found')
+    })
+
+    it('should throw forbidden when likedById does not match', async () => {
+      const likeService = getLikeService(repos)
+      const like = await likeService.setLike({
+        likedById: 'differentId',
+        likedId: '1',
+        likedType: 'NFT',
+      })
+      await expect(likeService.unsetLike(like.id, 'testLikedById'))
+        .rejects.toThrow('Wallet cannot unset like')
     })
   })
 })

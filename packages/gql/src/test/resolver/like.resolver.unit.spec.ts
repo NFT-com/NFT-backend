@@ -1,5 +1,5 @@
-import { setLike } from '@nftcom/gql/resolver/like.resolver'
-import { LikeableType } from '@nftcom/shared/db/entity'
+import { setLike, unsetLike } from '@nftcom/gql/resolver/like.resolver'
+import { LikeableType, Wallet } from '@nftcom/shared/db/entity'
 
 import { Context } from '../../defs'
 import { likeService } from '../../service/like.service'
@@ -61,6 +61,14 @@ describe('like resolver', () => {
       await expect(setLike(undefined, {
         input: { likedById: '1', likedId: '2', likedType: 'Invalid' as unknown as LikeableType },
       }, { user: {} } as Context)).rejects.toThrow(/^Invalid schema provided: .*$/)
+    })
+  })
+
+  describe('unsetLike', () => {
+    it('should remove a like by id', async () => {
+      jest.spyOn(likeService, 'unsetLike').mockResolvedValueOnce(true)
+      const response = await unsetLike(undefined, { id: '1' }, { wallet: { profileId: 'testProfileId' } as Wallet } as Context)
+      expect(response).toBe(true)
     })
   })
 })

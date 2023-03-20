@@ -1,3 +1,4 @@
+import { ApolloError } from 'apollo-server-express'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
@@ -28,18 +29,28 @@ export const setLike =
       return likeService.setLike(args.input)
     } catch (err) {
       logger.error({ err, setLikeOptions: args.input }, 'Unable to set like for input')
-      if (err.message.endsWith('already liked')) {
-        throw appError.buildExists(err.message, 'LIKE_ALREADY_EXISTS')
-      } else if (err.message.endsWith('cannot be liked')) {
-        throw appError.buildInvalid(err.message, 'LIKE_INVALID')
-      } else {
+      if (!(err.originalError instanceof ApolloError)) {
         throw appError.buildInternal()
       }
+      throw err
     }
   }
+
+export const unsetLike = (_: any, args: gql.MutationUnsetLikeArgs, ctx: Context): Promise<boolean> => {
+  try {
+    return likeService.unsetLike(args.id, ctx.wallet.profileId)
+  } catch (err) {
+    logger.error(err, 'Unable to unset like')
+    if (!(err.originalError instanceof ApolloError)) {
+      throw appError.buildInternal()
+    }
+    throw err
+  }
+}
 
 export default {
   Mutation: {
     setLike: combineResolvers(auth.isAuthenticated, setLike),
+    unsetLike: combineResolvers(auth.isAuthenticated, unsetLike),
   },
 }
