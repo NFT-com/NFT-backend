@@ -64,6 +64,22 @@ describe('like service', () => {
       const result = await likeService.getLikeCount('2')
       expect(result).toBe(3)
     })
+
+    it('gets a zero count of likes when there are none', async () => {
+      const likeService = getLikeService(repos)
+      await Promise.all([
+        likeService.setLike({ likedById: '1', likedId: '2', likedType: 'NFT' }),
+        likeService.setLike({ likedById: '2', likedId: '2', likedType: 'NFT' }),
+        likeService.setLike({ likedById: '3', likedId: '2', likedType: 'NFT' }),
+      ])
+      const result = await likeService.getLikeCount('1')
+      expect(result).toBe(0)
+    })
+
+    it('throws invalid when likedId is missing', async () => {
+      const likeService = getLikeService(repos)
+      await expect(likeService.getLikeCount()).rejects.toThrow('Cannot get count without likedId')
+    })
   })
   
   describe('setLike', () => {
