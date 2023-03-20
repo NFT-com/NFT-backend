@@ -21,7 +21,8 @@ export const setLike =
     })
     joi.validateSchema(schema, args.input)
 
-    if (!ctx.user || !(await profileService.isProfileOwnedByUser(args.input.likedById, ctx.user.id))) {
+    if (!ctx.user
+      || !(await profileService.isProfileOwnedByUser({ profileId: args.input.likedById, userId: ctx.user.id }))) {
       throw appError.buildForbidden('Cannot set like', 'LIKE_FORBIDDEN')
     }
 
@@ -38,7 +39,7 @@ export const setLike =
 
 export const unsetLike = (_: any, args: gql.MutationUnsetLikeArgs, ctx: Context): Promise<boolean> => {
   try {
-    return likeService.unsetLike(args.id, ctx.wallet.profileId)
+    return likeService.unsetLike(args.id, ctx.user.id)
   } catch (err) {
     logger.error(err, 'Unable to unset like')
     if (!(err.originalError instanceof ApolloError)) {
