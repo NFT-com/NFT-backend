@@ -1,8 +1,10 @@
 import { FindManyOptions } from 'typeorm'
 
+import { LikeableType } from '@nftcom/gql/defs/gql'
 import { entity } from '@nftcom/shared'
 
 import { getLikeService } from '../../service/like.service'
+import { profileService } from '../../service/profile.service'
 
 describe('like service', () => {
   let repos, likesMap: Map<string, any>, nextId, lastId
@@ -57,9 +59,9 @@ describe('like service', () => {
     it('gets a count of likes', async () => {
       const likeService = getLikeService(repos)
       await Promise.all([
-        likeService.setLike({ likedById: '1', likedId: '2', likedType: 'NFT' }),
-        likeService.setLike({ likedById: '2', likedId: '2', likedType: 'NFT' }),
-        likeService.setLike({ likedById: '3', likedId: '2', likedType: 'NFT' }),
+        likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.NFT }),
+        likeService.setLike({ likedById: '2', likedId: '2', likedType: LikeableType.NFT }),
+        likeService.setLike({ likedById: '3', likedId: '2', likedType: LikeableType.NFT }),
       ])
       const result = await likeService.getLikeCount('2')
       expect(result).toBe(3)
@@ -68,9 +70,9 @@ describe('like service', () => {
     it('gets a zero count of likes when there are none', async () => {
       const likeService = getLikeService(repos)
       await Promise.all([
-        likeService.setLike({ likedById: '1', likedId: '2', likedType: 'NFT' }),
-        likeService.setLike({ likedById: '2', likedId: '2', likedType: 'NFT' }),
-        likeService.setLike({ likedById: '3', likedId: '2', likedType: 'NFT' }),
+        likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.NFT }),
+        likeService.setLike({ likedById: '2', likedId: '2', likedType: LikeableType.NFT }),
+        likeService.setLike({ likedById: '3', likedId: '2', likedType: LikeableType.NFT }),
       ])
       const result = await likeService.getLikeCount('1')
       expect(result).toBe(0)
@@ -78,14 +80,14 @@ describe('like service', () => {
 
     it('throws invalid when likedId is missing', async () => {
       const likeService = getLikeService(repos)
-      await expect(likeService.getLikeCount()).rejects.toThrow('Cannot get count without likedId')
+      await expect(likeService.getLikeCount(undefined)).rejects.toThrow('Cannot get count without likedId')
     })
   })
   
   describe('setLike', () => {
     it('sets a like for an NFT', async () => {
       const likeService = getLikeService(repos)
-      const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: 'NFT' })
+      const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.NFT })
 
       expect(result).toEqual({
         createdAt: new Date('2015-07-30T15:26:13.000Z'),
@@ -102,18 +104,18 @@ describe('like service', () => {
       await likeService.setLike({
         likedById: 'nftLikeSetAlreadyLikedBy',
         likedId: 'nftLikeSetAlreadyLiked',
-        likedType: 'NFT',
+        likedType: LikeableType.NFT,
       })
       await expect(likeService.setLike({
         likedById: 'nftLikeSetAlreadyLikedBy',
         likedId: 'nftLikeSetAlreadyLiked',
-        likedType: 'NFT',
+        likedType: LikeableType.NFT,
       })).rejects.toThrow('NFT already liked')
     })
 
     it('sets a like for a Collection', async () => {
       const likeService = getLikeService(repos)
-      const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: 'Collection' })
+      const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.Collection })
 
       expect(result).toEqual({
         createdAt: new Date('2015-07-30T15:26:13.000Z'),
@@ -130,18 +132,18 @@ describe('like service', () => {
       await likeService.setLike({
         likedById: 'collectionLikeSetAlreadyLikedBy',
         likedId: 'collectionLikeSetAlreadyLiked',
-        likedType: 'Collection',
+        likedType: LikeableType.Collection,
       })
       await expect(likeService.setLike({
         likedById: 'collectionLikeSetAlreadyLikedBy',
         likedId: 'collectionLikeSetAlreadyLiked',
-        likedType: 'Collection',
+        likedType: LikeableType.Collection,
       })).rejects.toThrow('Collection already liked')
     })
 
     it('sets a like for a Profile', async () => {
       const likeService = getLikeService(repos)
-      const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: 'Profile' })
+      const result = await likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.Profile })
 
       expect(result).toEqual({
         createdAt: new Date('2015-07-30T15:26:13.000Z'),
@@ -158,12 +160,12 @@ describe('like service', () => {
       await likeService.setLike({
         likedById: 'profileLikeSetAlreadyLikedBy',
         likedId: 'profileLikeSetAlreadyLiked',
-        likedType: 'Profile',
+        likedType: LikeableType.Profile,
       })
       await expect(likeService.setLike({
         likedById: 'profileLikeSetAlreadyLikedBy',
         likedId: 'profileLikeSetAlreadyLiked',
-        likedType: 'Profile',
+        likedType: LikeableType.Profile,
       })).rejects.toThrow('Profile already liked')
     })
 
@@ -172,7 +174,7 @@ describe('like service', () => {
       await expect(likeService.setLike({
         likedById: '1',
         likedId: '2',
-        likedType: 'Walnut',
+        likedType: 'Walnut' as LikeableType,
       })).rejects.toThrow('Walnut cannot be liked')
     })
 
@@ -181,7 +183,7 @@ describe('like service', () => {
       await expect(likeService.setLike({
         likedById: undefined,
         likedId: '2',
-        likedType: 'NFT',
+        likedType: LikeableType.NFT,
       })).rejects.toThrow(/^Missing property or property undefined in .*$/)
     })
 
@@ -190,7 +192,7 @@ describe('like service', () => {
       await expect(likeService.setLike({
         likedById: '1',
         likedId: undefined,
-        likedType: 'NFT',
+        likedType: LikeableType.NFT,
       })).rejects.toThrow(/^Missing property or property undefined in .*$/)
     })
 
@@ -206,19 +208,20 @@ describe('like service', () => {
 
   describe('unsetLike', () => {
     it('should unset a like', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
       const likeService = getLikeService(repos)
       const like = await likeService.setLike({
         likedById: 'likedById',
         likedId: '1',
-        likedType: 'NFT',
+        likedType: LikeableType.NFT,
       })
       const result = await likeService.unsetLike(like.id, 'likedById')
       expect(result).toBe(true)
     })
-    it('should throw invalid when no preferred profile', async () => {
+    it('should throw invalid when no user id', async () => {
       const likeService = getLikeService(repos)
       await expect(likeService.unsetLike('1', undefined))
-        .rejects.toThrow('Wallet has no preferred profile')
+        .rejects.toThrow('unsetLike requires likedByUserId')
     })
 
     it('should throw not found when no like found', async () => {
@@ -227,15 +230,16 @@ describe('like service', () => {
         .rejects.toThrow('Like not found')
     })
 
-    it('should throw forbidden when likedById does not match', async () => {
+    it('should throw forbidden when likedByUserId does not own the profile likedBY', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(false)
       const likeService = getLikeService(repos)
       const like = await likeService.setLike({
         likedById: 'differentId',
         likedId: '1',
-        likedType: 'NFT',
+        likedType: LikeableType.NFT,
       })
       await expect(likeService.unsetLike(like.id, 'testLikedById'))
-        .rejects.toThrow('Wallet cannot unset like')
+        .rejects.toThrow('User cannot unset like')
     })
   })
 })

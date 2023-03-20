@@ -177,7 +177,7 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
       pgClient.connect((err, client, done) => {
         if (err) throw err
         const batch = []
-        const batchSize = 1000
+        const batchSize = 100
         const query = new QueryStream(
           `SELECT "id", "contract", "tokenId"
           FROM nft 
