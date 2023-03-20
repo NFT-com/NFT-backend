@@ -18,6 +18,7 @@ import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftc
 import * as Sentry from '@sentry/node'
 
 import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
+import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
 const seService = SearchEngineService()
@@ -694,5 +695,10 @@ export default {
     updateCollectionName: combineResolvers(auth.isAuthenticated, updateCollectionName),
     updateSpamStatus: combineResolvers(auth.isTeamAuthenticated, updateSpamStatus),
     updateOfficialCollections: combineResolvers(auth.isAuthenticated, updateOfficialCollections),
+  },
+  Collection: {
+    likeCount: async (parent) => {
+      likeService.getLikeCount(parent.id)
+    },
   },
 }

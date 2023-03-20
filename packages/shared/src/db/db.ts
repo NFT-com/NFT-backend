@@ -132,6 +132,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.Collection,
     entity.Edge,
     entity.Event,
+    entity.Like,
     entity.MarketAsk,
     entity.MarketBid,
     entity.MarketplaceSale,

@@ -76,6 +76,7 @@ type Collection {
   totalVolume: Float
   averagePrice: Float
   stats: NFTPortStatistics
+  likeCount: Int
 }
 
 type NFTPortResults {

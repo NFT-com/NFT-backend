@@ -51,6 +51,7 @@ type NFT {
   sortIndex: Int
   listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address, protocol: ProtocolType): TxActivitiesOutput
   isGKMinted: Boolean
+  likeCount: Int
 }
 
 type OfficialCollectionNFT {

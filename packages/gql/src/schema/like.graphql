@@ -22,4 +22,5 @@ type Like {
 
 extend type Mutation {
   setLike(input: SetLikeInput!): Like
+  unsetLike(id: ID!): Boolean
 }

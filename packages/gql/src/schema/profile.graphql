@@ -67,6 +67,7 @@ type Profile {
   expireAt: DateTime
   ownerUserId: String
   ownerWalletId: String
+  likeCount: Int
 }
 
 type UsersActionOutput {

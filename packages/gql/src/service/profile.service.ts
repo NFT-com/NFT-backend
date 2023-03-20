@@ -1,8 +1,10 @@
 import { _logger, db } from '@nftcom/shared'
 
-export type isProfileOwnedByUserArgs = { profileId: string; userId: string }
-
-export function getProfileService(repos: db.Repository = db.newRepositories()): { [key: string]: any } {
+type isProfileOwnedByUserArgs = { profileId: string; userId: string }
+interface ProfileService {
+  isProfileOwnedByUser({ profileId, userId }: isProfileOwnedByUserArgs): Promise<boolean>
+}
+function getProfileService(repos: db.Repository = db.newRepositories()): ProfileService {
   async function isProfileOwnedByUser({ profileId, userId }: isProfileOwnedByUserArgs): Promise<boolean> {
     if (!profileId || !userId) {
       return false
@@ -19,3 +21,4 @@ export function getProfileService(repos: db.Repository = db.newRepositories()): 
     isProfileOwnedByUser,
   }
 }
+export const profileService = getProfileService()
