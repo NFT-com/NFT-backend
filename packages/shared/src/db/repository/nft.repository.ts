@@ -1,4 +1,3 @@
-import { OfficialCollectionNFT } from '@nftcom/gql/defs/gql'
 import { db } from '@nftcom/shared/db'
 import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
 import { ProfileSearchNFT } from '@nftcom/shared/defs'
@@ -9,41 +8,6 @@ export class NFTRepository extends BaseRepository<NFT> {
 
   constructor() {
     super(NFT)
-  }
-
-  /**
-   * Offset pagination db query, finds all the official collections for a given contract.
-   * @param {string} collectionAddress - the address of the contract that owns the collections
-   * @param {number} [page=0] - the number of collections to skip
-   * @param {number} [pageSize=1000] - the number of collections to take
-   * @returns {Promise<Collection[]>} - the array of collections
-   */
-  findOfficialCollections(
-    {
-      collectionAddress,
-      page = 1,
-      pageSize = 1000,
-    }:
-      {
-        collectionAddress: string
-        page?: number
-        pageSize?: number
-      },
-  ): Promise<[Required<OfficialCollectionNFT[]>, number]> {
-    return this.getRepository(true).findAndCount(
-      {
-        select: {
-          id: true,
-          contract: true,
-          tokenId: true,
-        },
-        where: {
-          contract: collectionAddress,
-        },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        cache: true,
-      })
   }
 
   findByWalletId(walletId: string, chainId: string): Promise<NFT[]> {
