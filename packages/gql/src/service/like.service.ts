@@ -2,6 +2,13 @@ import { appError } from '@nftcom/error-types'
 import { db, entity } from '@nftcom/shared'
 
 export function getLikeService(repos: db.Repository = db.newRepositories()): { [key: string]: any } {
+  async function getLikeCount(likedId: string): Promise<number> {
+    if (!likedId) {
+      throw appError.buildInvalid('Cannot get count without likedId', 'LIKE_COUNT_INVALID')
+    }
+    return repos.like.count({ likedId })
+  }
+
   type SetLikeArgs = { likedById: string; likedId: string; likedType: entity.LikeableType }
   async function setLike({ likedById, likedId, likedType }: SetLikeArgs): Promise<entity.Like> {
     const setLikeArgs = { likedById, likedId, likedType }
@@ -31,6 +38,7 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): { [
   }
 
   return {
+    getLikeCount,
     setLike,
     unsetLike,
   }
