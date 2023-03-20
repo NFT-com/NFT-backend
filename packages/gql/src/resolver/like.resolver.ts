@@ -6,8 +6,8 @@ import { _logger, entity } from '@nftcom/shared'
 
 import { Context, gql } from '../defs'
 import { auth, joi } from '../helper'
-import { getLikeService } from '../service/like.service'
-import { getProfileService } from '../service/profile.service'
+import { likeService } from '../service/like.service'
+import { profileService } from '../service/profile.service'
 
 const logger = _logger.Factory('like.resolver', _logger.Context.GraphQL)
 
@@ -20,12 +20,10 @@ export const setLike =
     })
     joi.validateSchema(schema, args.input)
 
-    const profileService = getProfileService()
     if (!ctx.user || !(await profileService.isProfileOwnedByUser(args.input.likedById, ctx.user.id))) {
       throw appError.buildForbidden('Cannot set like', 'LIKE_FORBIDDEN')
     }
 
-    const likeService = getLikeService()
     try {
       return likeService.setLike(args.input)
     } catch (err) {
