@@ -599,7 +599,7 @@ const getOfficialCollectionNFTs = async (
   const schema = Joi.object().keys({
     collectionAddress: Joi.string().required(),
     chainId: Joi.string().required(),
-    pagination: Joi.object().keys({
+    offsetPageInput: Joi.object().keys({
       page: Joi.number().optional(),
       pageSize: Joi.number().optional(),
     }).optional(),

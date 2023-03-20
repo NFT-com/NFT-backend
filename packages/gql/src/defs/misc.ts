@@ -1,27 +1,7 @@
-import DataLoader from 'dataloader'
 import { ethers } from 'ethers'
 
 import { gql } from '@nftcom/gql/defs'
-import { _logger, db, defs, entity, helper, provider } from '@nftcom/shared'
-
-import { PageInfo } from './gql'
-
-export type Pageable<T> = {
-  items: T[]
-  pageInfo: PageInfo
-  totalItems: number
-}
-
-export type Context = {
-  chain: defs.Chain
-  network: string
-  repositories: db.Repository
-  user: entity.User
-  wallet: entity.Wallet
-  teamKey?: string
-  xMintSignature?: string
-  loaders: { [k: string]: DataLoader<any, any, any> }
-}
+import { _logger, defs, helper, provider } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 

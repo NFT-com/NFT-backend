@@ -174,32 +174,26 @@ type CollectionLeaderboard {
   totalItems: Int
 }
 
-
-type OfficialCollectionNFT {
-  id: ID
-  contract: Address
-}
-
-
 """
 Basic collection type of `isOfficial=true` only collections.
 (Used for generating sitemaps)
 """
 type OfficialCollection {
-  id: ID
-  contract: Address
-  name: String
-  chainId: String
+  id: ID!
+  name: String!
+  contract: Address!
+  chainId: String!
+  updatedAt: DateTime!
 }
 
 type OfficialCollectionsOutput {
   items: [OfficialCollection!]!
-  pageInfo: PageInfo
+  pageCount: Int
   totalItems: Int
 }
 
 input OfficialCollectionsInput {
-  pageInput: PageInput
+  offsetPageInput: OffsetPageInput
 }
 
 extend type Query {

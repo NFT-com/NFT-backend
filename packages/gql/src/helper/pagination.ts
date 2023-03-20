@@ -2,7 +2,7 @@ import * as _ from 'lodash'
 import { IsNull } from 'typeorm'
 
 import { appError } from '@nftcom/error-types'
-import { gql, Pageable } from '@nftcom/gql/defs'
+import { gql, OffsetPageable, Pageable, ToOffsetPageableArgs } from '@nftcom/gql/defs'
 import { _logger, defs, helper } from '@nftcom/shared'
 
 type PageResolvers<T> = {
@@ -179,6 +179,22 @@ export const toPageInfo = <T>(
   return {
     firstCursor: cursorValueFn(firstValue?.[orderKey]),
     lastCursor: cursorValueFn(lastValue?.[orderKey]),
+  }
+}
+
+/**
+ * Takes in an OffsetPageInput and a PageableResult and returns the offset result with page count.
+ * @param {gql.OffsetPageInput} offsetPageInput - the OffsetPageInput object
+ * @param {defs.PageableResult<T>} result - the PageableResult object
+ * @returns {defs.PageableResult<T>} - the new PageableResult object
+ */
+export const toOffsetPageable = <T>({
+  offsetPageInput,
+  result }: ToOffsetPageableArgs<T>): OffsetPageable<T> => {
+  return {
+    items: result[0],
+    totalItems: result[1],
+    pageCount: Math.ceil(result[1] / (offsetPageInput.pageSize || 5000)),
   }
 }
 

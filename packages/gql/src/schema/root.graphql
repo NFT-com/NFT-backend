@@ -20,8 +20,9 @@ input PageInput {
   beforeCursor: String
 }
 
+
 "Offset pagination input"
-input OffsetPaginationInput {
+input OffsetPageInput {
   page: Int
   pageSize: Int
 }

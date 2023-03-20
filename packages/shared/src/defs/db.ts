@@ -1,7 +1,4 @@
-import { FindOperator, FindOptionsSelect } from 'typeorm'
-
-import { gql } from '@nftcom/gql/defs'
-import { repository } from '@nftcom/shared'
+import { FindOperator } from 'typeorm'
 
 import { BaseEntity, Collection, NFT } from '../db/entity'
 
@@ -230,16 +227,6 @@ export interface ActivityFilters {
 export type OrderBy = { [x: string]: 'ASC' | 'DESC' | { order: 'ASC' | 'DESC'; nulls?: 'NULLS FIRST' | 'NULLS LAST' } }
 
 export type OrderKey<T> = (keyof T extends string ? keyof T : keyof BaseEntity) | 'createdAt'
-
-export type PaginatedResultsFromEntityByArgs<T> = {
-  repo: repository.BaseRepository<T>
-  pageInput: gql.PageInput
-  filters: Partial<T>[]
-  relations: string[]
-  orderKey: OrderKey<T>
-  orderDirection: 'ASC' | 'DESC'
-  select?: FindOptionsSelect<Partial<T>>
-}
 
 export type DBConfig = {
   host: string

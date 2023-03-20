@@ -23,7 +23,6 @@ export class CollectionRepository extends BaseRepository<Collection> {
    */
   public findByContractAddress = (address: string, chainId: string, isOfficial?: true): Promise<Collection> => {
     const whereQuery = { contract: address, deletedAt: null, chainId }
-    this.logger.warn({ isOfficial, address, chainId })
 
     return this.findOne({ where: isOfficial ? { isOfficial: true, ...whereQuery } : whereQuery })
   }

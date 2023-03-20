@@ -16,14 +16,21 @@ import { Contract } from '@ethersproject/contracts'
 import { cache } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
-import { Context, gql, Pageable } from '@nftcom/gql/defs'
+import {
+  Context,
+  gql,
+  OffsetPageable,
+  Pageable,
+  PaginatedOffsetResultsFromEntityByArgs,
+  PaginatedResultsFromEntityByArgs,
+} from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 import { nullPhotoBase64 } from '@nftcom/gql/service/nullPhoto.base64'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
-import { PaginatedResultsFromEntityByArgs, ProfileTask } from '@nftcom/shared/defs'
+import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -217,8 +224,6 @@ export const paginatedEntitiesBy = <T>(
     select,
   }
 
-  logger.warn({ args: { filters, where: pageableFilters, orderBy, select } })
-
   return pagination.resolvePage<T>(pageInput, {
     firstAfter: () => repo.findPageable(pageOptions as FindManyOptions<T>),
     firstBefore: () => repo.findPageable(pageOptions as FindManyOptions<T>),
@@ -273,6 +278,42 @@ export const paginatedResultsFromEntityBy = async<T>({
     paginatedResults[paginatedResults.length - 1],
     orderKey,
   )([paginatedResults, totalItems])
+}
+
+/**
+ * Finds paginated results from a repository using the given arguments.
+ * @param {Repository<T>} repo - The repository to find results from.
+ * @param {FilterConfig[]} [filters] - The filters to apply to the results.
+ * @param {FindOptionsRelation[]} [relations] - The relations to apply to the results.
+ * @param {OffsetPageInput} offsetPageInput - The offset page input.
+ * @param {string} [orderKey] - The key to order the results by.
+ * @param {string} [orderDirection] - The direction to order the results by.
+ * @
+ */
+export const paginatedOffsetResultsFromEntityBy = async<T>({
+  repo,
+  filters = [],
+  relations = [],
+  offsetPageInput,
+  orderKey = 'createdAt',
+  orderDirection = 'DESC',
+  select,
+}: PaginatedOffsetResultsFromEntityByArgs<T>): Promise<OffsetPageable<T>> => {
+  const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
+  const pageableFilters = filters.map(((filter) => ({ ...filter, deletedAt: IsNull() })))
+
+  const pageOptions = {
+    select,
+    orderBy,
+    relations,
+    where: pageableFilters,
+    skip: (offsetPageInput.page - 1) / (offsetPageInput.pageSize || 5000),
+    take: offsetPageInput.pageSize || 5000,
+  } as FindManyOptions<T>
+
+  const result = await repo.findPageable(pageOptions)
+
+  return pagination.toOffsetPageable({ offsetPageInput, result })
 }
 
 export const paginatedResultFromIndexedArray = (

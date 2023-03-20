@@ -106,17 +106,19 @@ const getOfficialCollections = async (
 ): Promise<gql.OfficialCollectionsOutput> => {
   const { repositories } = ctx
   const schema = Joi.object().keys({
-    pageInput: Joi.any().optional(),
+    offsetPageInput: Joi.object().keys({
+      page: Joi.number().optional(),
+      pageSize: Joi.number().optional(),
+    }).optional(),
   })
   const input = args.input || {}
   joi.validateSchema(schema, input)
 
   try {
-    return await core.paginatedResultsFromEntityBy({
+    return await core.paginatedOffsetResultsFromEntityBy({
       repo: repositories.collection,
-      pageInput: args.input.pageInput,
+      offsetPageInput: args.input.offsetPageInput,
       filters: [{ isOfficial: true }],
-      relations: [], // no relations
       orderKey: 'id',
       orderDirection: 'DESC',
       select: {
@@ -124,6 +126,7 @@ const getOfficialCollections = async (
         chainId: true,
         contract: true,
         name: true,
+        updatedAt: true,
       },
     },
     )

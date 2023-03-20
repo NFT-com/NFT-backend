@@ -28,6 +28,7 @@ import {
   midWeight,
   nftAbi,
   optionallySaveUserAndWalletForAssociatedAddress,
+  paginatedOffsetResultsFromEntityBy,
   processIPFSURL,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
@@ -568,7 +569,7 @@ export const getNFTsForCollection = async (
 export const getNFTsForOfficialCollection = async ({
   chainId = process.env.CHAIN_ID,
   collectionAddress,
-  pagination,
+  offsetPageInput,
 }: gql.OfficialCollectionNFTsInput): Promise<gql.OfficialCollectionNFTsOutput> => {
   // Validate args
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -579,12 +580,6 @@ export const getNFTsForOfficialCollection = async ({
       chainId,
       true, // Check if collection isOfficial
     ))
-  logger.warn(
-    {
-      officialCollection,
-      check: helper.isEmpty(officialCollection),
-      sendErr: officialCollectionErr || helper.isEmpty(officialCollection),
-    })
   /// Error Handling
   if (officialCollectionErr || helper.isEmpty(officialCollection)) {
     throw appError.buildNotFound(
@@ -593,14 +588,18 @@ export const getNFTsForOfficialCollection = async ({
     )
   }
 
-  const [officialCollectionNFTs, totalItems] =
-    await repositories.nft.findOfficialCollections({ collectionAddress, ...pagination })
-
-  return {
-    items: officialCollectionNFTs,
-    totalItems,
-    pageCount: Math.ceil(totalItems / (pagination.pageSize || 1000)),
-  }
+  return await paginatedOffsetResultsFromEntityBy({
+    repo: repositories.nft,
+    offsetPageInput,
+    filters: [{ contract: collectionAddress }],
+    orderKey: 'id',
+    orderDirection: 'DESC',
+    select: {
+      id: true,
+      tokenId: true,
+      updatedAt: true,
+    },
+  })
 }
 
 export const getCollectionNameFromDataProvider = async (
