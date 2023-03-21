@@ -95,7 +95,7 @@ class Commander {
   }
 
   retrieveListings = async (opts?: { nftContract?: string; sinceUpdatedAt?: Date }): Promise<any>  => {
-    const { nftContract, sinceUpdatedAt } = opts
+    const { nftContract, sinceUpdatedAt } = opts || {}
     return txActivityService.listingMapFrom(await this.repositories.txActivity
       .findActivitiesNotExpired(
         defs.ActivityType.Listing, { nftContract, updatedAt: sinceUpdatedAt }) as TxActivityDAO[])
