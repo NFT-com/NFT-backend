@@ -12,6 +12,7 @@ import nftMarketplaceABIJSON from '@nftcom/shared/helper/abis/NftMarketplace.jso
 import nftProfileABIJSON from '@nftcom/shared/helper/abis/NftProfile.json'
 import nftResolverABIJSON from '@nftcom/shared/helper/abis/NftResolver.json'
 import openseaSeaportABIJSON from '@nftcom/shared/helper/abis/OSSeaport.json'
+import openseaSeaport1_4ABIJSON from '@nftcom/shared/helper/abis/OSSeaport1_4.json'
 import profileAuctionABIJSON from '@nftcom/shared/helper/abis/ProfileAuction.json'
 import validationLogicABIJSON from '@nftcom/shared/helper/abis/ValidationLogic.json'
 import x2y2ABIJSON from '@nftcom/shared/helper/abis/X2Y2.json'
@@ -243,6 +244,20 @@ export function openseaSeaportAddress(chainId: string | number = 'mainnet'): str
   }
 }
 
+// opensea seaport 1.4
+export function openseaSeaportAddress1_4(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+  case '5':
+  case 'goerli':
+  case 5:
+    return utils.getAddress('0x00000000000001ad428e4906aE43D8F9852d0dD6')
+  case '1':
+  case 1:
+  case 'mainnet':
+    return utils.getAddress('0x00000000000001ad428e4906aE43D8F9852d0dD6')
+  }
+}
+
 export function x2y2Address(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
   case '5':
@@ -308,6 +323,10 @@ export function looksrareExchangeABI(): any {
 
 export function openseaSeaportABI(): any {
   return openseaSeaportABIJSON
+}
+
+export function openseaSeaportABI1_4(): any {
+  return openseaSeaport1_4ABIJSON
 }
 
 export function x2y2ABI(): any {
