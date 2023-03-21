@@ -64,7 +64,7 @@ export const connectPg = async (): Promise<void> => {
     max: 20,
     application_name: 'gql',
   })
-  
+
   pgClientRO = new Pool({
     user: process.env.DB_USERNAME || 'app',
     password: process.env.DB_PASSWORD || 'password',
@@ -95,7 +95,7 @@ export const connectTestPg = async (): Promise<void> => {
     max: 20,
     application_name: 'gql',
   })
-  
+
   pgClientRO = new Pool({
     user: process.env.TEST_DB_USERNAME || 'app',
     password: process.env.TEST_DB_PASSWORD || 'password',

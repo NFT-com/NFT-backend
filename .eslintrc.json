@@ -32,6 +32,7 @@
         "classes": "always"
       }
     ],
+    "no-magic-numbers": "warn",
     "no-multiple-empty-lines": [
       "warn",
       {
@@ -110,10 +111,10 @@
       "error",
       {
         "groups": [
-          ["^\\u0000"],   // side effect (imports that do not export anything)
-          ["^[^.]"],      // anything that does not start with dot
-          ["^@?\\w"],     // local absolute imports `@/foo`
-          ["^\\."]        // relative imports
+          [ "^\\u0000" ], // side effect (imports that do not export anything)
+          [ "^[^.]" ], // anything that does not start with dot
+          [ "^@?\\w" ], // local absolute imports `@/foo`
+          [ "^\\." ] // relative imports
         ]
       }
     ],

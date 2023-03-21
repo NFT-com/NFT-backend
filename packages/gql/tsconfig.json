@@ -3,8 +3,8 @@
   "compilerOptions": {
     "declaration": true
   },
-  "files": [],
-  "include": [],
+  "files": [ ],
+  "include": [ ],
   "references": [
     {
       "path": "./tsconfig.app.json"

@@ -68,6 +68,7 @@ type Profile {
   ownerUserId: String
   ownerWalletId: String
   likeCount: Int
+  isLikedByUser: Boolean
 }
 
 type UsersActionOutput {

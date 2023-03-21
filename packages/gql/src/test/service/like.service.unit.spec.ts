@@ -1,4 +1,4 @@
-import { FindManyOptions } from 'typeorm'
+import { FindManyOptions, FindOperator } from 'typeorm'
 
 import { LikeableType } from '@nftcom/gql/defs/gql'
 import { entity } from '@nftcom/shared'
@@ -32,14 +32,30 @@ describe('like service', () => {
           return Promise.resolve(likesMap.get(lastId))
         },
         find: (opts: FindManyOptions<entity.Like>) => {
-          for(const like of likesMap.values()) {
-            if (opts.where['likedById'] === like.likedById
-            && opts.where['likedId'] === like.likedId
-            && opts.where['likedType'] === like.likedType) {
-              return Promise.resolve(like)
+          return Promise.resolve(Array.from(likesMap.values()).filter((l) => {
+            for (const prop of Object.getOwnPropertyNames(opts.where)) {
+              if (l[prop] !== opts.where[prop]) {
+                return false
+              }
             }
-          }
-          return Promise.resolve(undefined)
+            return true
+          }))
+        },
+        findOne: (opts: FindManyOptions<entity.Like>) => {
+          return Promise.resolve(Array.from(likesMap.values()).filter((l) => {
+            for (const prop of Object.getOwnPropertyNames(opts.where)) {
+              if (opts.where[prop] instanceof FindOperator && opts.where[prop]._type === 'in') {
+                if (!opts.where[prop]._value.some(v => v === l[prop])) {
+                  return false
+                }
+              } else {
+                if (l[prop] !== opts.where[prop]) {
+                  return false
+                }
+              }
+            }
+            return true
+          })[0])
         },
         findById: (id: string) => {
           return Promise.resolve(likesMap.get(id))
@@ -50,6 +66,14 @@ describe('like service', () => {
             results.push(likesMap.delete(id))
           }
           return results.some(e => e)
+        },
+      },
+      profile: {
+        find: (opts: FindManyOptions<entity.Profile>) => {
+          if (opts.where['ownerUserId'] === 'true') {
+            return Promise.resolve([{ id: 'trueProfile' } as entity.Profile])
+          }
+          return Promise.resolve([])
         },
       },
     }
@@ -81,6 +105,28 @@ describe('like service', () => {
     it('throws invalid when likedId is missing', async () => {
       const likeService = getLikeService(repos)
       await expect(likeService.getLikeCount(undefined)).rejects.toThrow('Cannot get count without likedId')
+    })
+  })
+
+  describe('isLikedByUser', () => {
+    it('should be true if the user likes the entity', async () => {
+      const likeService = getLikeService(repos)
+      await likeService.setLike({ likedById: 'trueProfile', likedId: '2', likedType: LikeableType.NFT })
+      const result = await likeService.isLikedByUser('2', 'true')
+      expect(result).toBe(true)
+    })
+
+    it('should be false if the user does not like the entity', async () => {
+      const likeService = getLikeService(repos)
+      await likeService.setLike({ likedById: '1', likedId: '2', likedType: LikeableType.Collection })
+      const result = await likeService.isLikedByUser('2', 'testUser')
+      expect(result).toBe(false)
+    })
+
+    it('should be false if there are no likes for the entity', async () => {
+      const likeService = getLikeService(repos)
+      const result = await likeService.isLikedByUser('2', 'testUser')
+      expect(result).toBe(false)
     })
   })
   

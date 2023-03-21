@@ -1,4 +1,4 @@
-import { Context,Factory } from './logger'
+import { Context, Factory } from './logger'
 import { isEmpty, isFalse, isNotEmpty, isTrue } from './misc'
 
 const logger = Factory('fp', Context.Misc)
@@ -435,7 +435,7 @@ export const thruIfOtherEmpty = <K>(otherValue: K) => {
 /**
  * @example fp.thruIfOther(otherValue => isNotEmpty)(value => { ...do this if true... })
  *
- * runs thenFn iff other value is not empty
+ * runs thenFn if other value is not empty
  *
  * @param otherValue: K
  * @param thenFn: T => FnT2Any
@@ -448,6 +448,25 @@ export const thruIfOtherNotEmpty = <K>(otherValue: K) => {
     return (value: T) => isNotEmpty(otherValue) ? thenFn(value) : value
   }
 }
+
+/**
+ * Async/Promise Wrapper utility that returns an array with either an error (`arr[0]`) or
+ * the promise result (`arr[1]`). (Provides cleaner error handling for async code.)
+ *
+ * @param {Promise<T>} promise - the promise to wrap
+ * @returns {Promise<[U, undefined] | [null, T]>} - a promise that will resolve to the result of
+ * the original promise, or an error object if the original promise fails.
+ *
+ * @example
+ * const [exampleErr, exampleResult] = await fp.promiseTo(promiseFn(), {extraErrDetails: 'Error Detail'});
+ */
+export function promiseTo<T, U = Error>(promise: Promise<T>): Promise<[U, undefined] | [null, T]> {
+  return promise
+    .then<[null, T]>((data: T) => [null, data])
+    .catch<[U, undefined]>((err: U) => [err, undefined],
+  )
+}
+
 /**
  * @example fp.promiseFilter(fn => fn that returns Promise<K>)(Array of T)
  *
