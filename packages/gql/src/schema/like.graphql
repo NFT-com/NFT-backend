@@ -11,6 +11,12 @@ input SetLikeInput {
   likedType: LikeableType!
 }
 
+input UnsetLikeInput {
+  likedById: String!
+  likedId: String!
+  likedType: LikeableType!
+}
+
 type Like {
   id: String
   createdAt: DateTime
@@ -22,5 +28,5 @@ type Like {
 
 extend type Mutation {
   setLike(input: SetLikeInput!): Like
-  unsetLike(id: ID!): Boolean
+  unsetLike(input: UnsetLikeInput!): Boolean
 }
