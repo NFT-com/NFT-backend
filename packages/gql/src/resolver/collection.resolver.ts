@@ -134,6 +134,7 @@ const getOfficialCollections = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getOfficialCollections: ${err}`)
+    logger.error(err, 'Error in getOfficialCollections')
     return err
   }
 }

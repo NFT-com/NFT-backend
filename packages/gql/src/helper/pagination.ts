@@ -166,11 +166,13 @@ export const toPageInfo = <T>(
  */
 export const toOffsetPageable = <T>({
   offsetPageInput,
-  result }: ToOffsetPageableArgs<T>): OffsetPageable<T> => {
+  result,
+}: ToOffsetPageableArgs<T>): OffsetPageable<T> => {
+  const fallbackPageSize = 5000
   return {
     items: result[0],
     totalItems: result[1],
-    pageCount: Math.ceil(result[1] / (offsetPageInput.pageSize || 5000)),
+    pageCount: Math.ceil(result[1] / (offsetPageInput.pageSize || fallbackPageSize)),
   }
 }
 

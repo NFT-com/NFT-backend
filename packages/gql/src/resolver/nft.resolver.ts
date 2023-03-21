@@ -614,6 +614,7 @@ const getOfficialCollectionNFTs = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getOfficialCollectionNFTs: ${err}`)
+    logger.error(err, 'Error in getOfficialCollectionNFTs')
     return err
   }
 }

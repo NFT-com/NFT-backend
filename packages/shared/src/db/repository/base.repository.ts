@@ -70,9 +70,12 @@ export class BaseRepository<T> {
       order,
       where,
       select,
-      skip = 0,
-      take = 5000,
+      skip,
+      take,
     }: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
+    const defaultPageSkip = 0
+    const defaultPageSize = 5000;
+
     [where].flatMap((where) => {
       Object
         .entries(where)
@@ -88,8 +91,8 @@ export class BaseRepository<T> {
         where,
         select,
         order,
-        skip,
-        take,
+        skip: skip || defaultPageSkip,
+        take: take || defaultPageSize,
         cache: true,
       })
   }
