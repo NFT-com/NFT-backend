@@ -1380,7 +1380,16 @@ export default {
       return listingsByNFT.load({ ...parent, args })
     },
     likeCount: async (parent) => {
-      likeService.getLikeCount(parent.id)
+      if (!parent) {
+        return 0
+      }
+      return likeService.getLikeCount(parent.id)
+    },
+    isLikedByUser: async (parent, _, ctx) => {
+      if (!parent || !ctx.user) {
+        return false
+      }
+      return likeService.isLikedByUser(parent.id, ctx.user.id)
     },
   },
 }
