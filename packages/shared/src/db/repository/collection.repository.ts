@@ -1,3 +1,5 @@
+import { FindOneOptions, FindOptionsSelect } from 'typeorm'
+
 import { db } from '@nftcom/shared/db'
 import { Collection } from '@nftcom/shared/db/entity'
 
@@ -9,10 +11,10 @@ export class CollectionRepository extends BaseRepository<Collection> {
     super(Collection)
   }
 
-  public findByContractAddress = (address: string, chainId: string): Promise<Collection> => {
-    return this.findOne({
-      where: { contract: address, deletedAt: null, chainId },
-    })
+  public findByContractAddress = (address: string, chainId: string, isOfficial?: true): Promise<Collection> => {
+    const whereQuery = { contract: address, deletedAt: null, chainId }
+
+    return this.findOne({ where: isOfficial ? { isOfficial: true, ...whereQuery } : whereQuery })
   }
 
   findPageWithAnNft(cursor?: string, limit?: number): Promise<any[]> {
@@ -35,11 +37,12 @@ export class CollectionRepository extends BaseRepository<Collection> {
       ${cursor ? cursorAndLimit : limit ? limitOnly : ''}`, [cursor, limit].filter(x => !!x))
   }
 
-  findAllOfficial(): Promise<Collection[]> {
+  findAllOfficial<T extends FindOptionsSelect<Collection>>(select?: T): T extends Pick<FindOneOptions<Collection>, 'select'> ? Promise<Pick<FindOneOptions<Collection>, 'select'>[]> : Promise<Collection[]> {
     return this.getRepository(true).find({
       where: {
         isOfficial: true,
       },
+      select: (select as FindOptionsSelect<any>),
     })
   }
 

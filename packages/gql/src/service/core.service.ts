@@ -5,18 +5,25 @@ import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
 import fetch from 'node-fetch'
-import { FindManyOptions, FindOptionsOrder, IsNull, Not } from 'typeorm'
+import { FindManyOptions, FindOptionsOrder, FindOptionsSelect, IsNull, Not } from 'typeorm'
 import { AbiItem } from 'web3-utils'
 
 import { S3Client } from '@aws-sdk/client-s3'
-import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
+import { AssumeRoleRequest, STS } from '@aws-sdk/client-sts'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Result } from '@ethersproject/abi'
 import { Contract } from '@ethersproject/contracts'
 import { cache } from '@nftcom/cache'
 import { appError, profileError, walletError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
-import { Context, gql, Pageable } from '@nftcom/gql/defs'
+import {
+  Context,
+  gql,
+  OffsetPageable,
+  Pageable,
+  PaginatedOffsetResultsFromEntityByArgs,
+  PaginatedResultsFromEntityByArgs,
+} from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { sendgrid } from '@nftcom/gql/service'
@@ -177,52 +184,136 @@ export const entitiesBy = <T>(
 }
 
 /**
- * Cursor based pagination and by default it is sorted based on time desc
- * "before" and "after" in page terms refers to "later" and "earlier" respectively
+ * @summary Paginates db results by the given arguments.
  *
- *                                cursor
+ * @desc Cursor based pagination and by default it is sorted based on time desc
+ * `before` and `after` in page terms refers to "later" and "earlier" respectively.
+ *```
+ *                                 cursor
  *               |<-- last n before | first n after -->|
  * 12pm  11am  10am  9am  8am  7am  6am  5am  4am  3am  2am  1am
+ * ```
+ * @param {repository.BaseRepository<T>} repo - The repository to paginate.
+ * @param {gql.PageInput} pageInput - The page input object.
+ * @param {Partial<T>[]} filters - The filters to apply to the pagination.
+ * @param {string[]} relations - The relations to apply to the pagination.
+ * @param {string} orderKey - The key to order by.
+ * @param {string} orderDirection - The direction to order by.
+ * @param {FindOptionsSelect<Partial<T>>} [select] - The db entity fields you would like to select.
+ * @returns Paginated db entity results
  */
+// TODO: Refactor fn args to an object for easier use.
 export const paginatedEntitiesBy = <T>(
   repo: repository.BaseRepository<T>,
   pageInput: gql.PageInput,
   filters: Partial<T>[],
   relations: string[],
-  orderKey= 'createdAt',
+  orderKey = 'createdAt',
   orderDirection = 'DESC',
+  select?: FindOptionsSelect<Partial<T>>,
 ): Promise<defs.PageableResult<T>> => {
   const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
   const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
   const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reversedOrderBy = <FindOptionsOrder<any>>{ [orderKey]: reversedOrderDirection }
+  const pageOptions = {
+    where: pageableFilters,
+    relations: relations,
+    order: orderBy,
+    take: pageInput.first,
+    select,
+  }
 
   return pagination.resolvePage<T>(pageInput, {
-    firstAfter: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
-      order: orderBy,
-      take: pageInput.first,
-    } as FindManyOptions<T>),
-    firstBefore: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
-      order: orderBy,
-      take: pageInput.first,
-    } as FindManyOptions<T>),
+    firstAfter: () => repo.findPageable(pageOptions as FindManyOptions<T>),
+    firstBefore: () => repo.findPageable(pageOptions as FindManyOptions<T>),
     lastAfter: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
-      order: reversedOrderBy,
+      ...pageOptions,
       take: pageInput.last,
     } as FindManyOptions<T>).then(pagination.reverseResult),
     lastBefore: () => repo.findPageable({
-      where: pageableFilters,
-      relations: relations,
+      ...pageOptions,
       order: reversedOrderBy,
       take: pageInput.last,
     } as FindManyOptions<T>).then(pagination.reverseResult),
   })
+}
+
+/**
+ * @summary DB pagination wrapper, returns a page of results from provided db
+ * repository by the given arguments.
+ *
+ * !NOTE: Please ensure the `orderKey` provided matches any of the selected db columns
+ * @param {Repository<T>} repo - The repository to query.
+ * @param {PageInput} pageInput - The page input object.
+ * @param {FilterConfig[]} filters - The filter configuration objects.
+ * @param {string[]} relations - The relations to fetch.
+ * @param {string} orderKey - The key to order by.
+ * @param {string} orderDirection - The direction to order by.
+ * @param {string[]} select - The fields to select.
+ * @returns {Promise<Pageable<T>>} Page of db results.
+ */
+export const paginatedResultsFromEntitiesBy = async<T>({
+  repo,
+  pageInput,
+  filters,
+  relations,
+  orderKey = 'createdAt',
+  orderDirection = 'DESC',
+  select,
+}: PaginatedResultsFromEntityByArgs<T>): Promise<Pageable<T>> => {
+  const [paginatedResults, totalItems] = await paginatedEntitiesBy(
+    repo,
+    pageInput,
+    filters,
+    relations,
+    orderKey,
+    orderDirection,
+    select,
+  )
+
+  return pagination.toPageable(
+    pageInput,
+    paginatedResults[0],
+    paginatedResults[paginatedResults.length - 1],
+    orderKey,
+  )([paginatedResults, totalItems])
+}
+
+/**
+ * Finds paginated results from a repository using the given arguments.
+ * @param {Repository<T>} repo - The repository to find results from.
+ * @param {FilterConfig[]} [filters] - The filters to apply to the results.
+ * @param {FindOptionsRelation[]} [relations] - The relations to apply to the results.
+ * @param {OffsetPageInput} offsetPageInput - The offset page input.
+ * @param {string} [orderKey] - The key to order the results by.
+ * @param {string} [orderDirection] - The direction to order the results by.
+ * @
+ */
+export const paginatedOffsetResultsFromEntitiesBy = async<T>({
+  repo,
+  filters = [],
+  relations = [],
+  offsetPageInput,
+  orderKey = 'createdAt',
+  orderDirection = 'DESC',
+  select,
+}: PaginatedOffsetResultsFromEntityByArgs<T>): Promise<OffsetPageable<T>> => {
+  const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
+  const pageableFilters = filters.map(((filter) => ({ ...filter, deletedAt: IsNull() })))
+
+  const pageOptions = {
+    select,
+    orderBy,
+    relations,
+    where: pageableFilters,
+    skip: (offsetPageInput.page - 1) / (offsetPageInput.pageSize || 5000),
+    take: offsetPageInput.pageSize || 5000,
+  } as FindManyOptions<T>
+
+  const result = await repo.findPageable(pageOptions)
+
+  return pagination.toOffsetPageable({ offsetPageInput, result })
 }
 
 export const paginatedResultFromIndexedArray = (
@@ -303,7 +394,7 @@ export const stringifyTraits = (
   nft: entity.NFT,
 ): entity.NFT => {
   if (nft.metadata && nft.metadata?.traits && nft.metadata.traits?.length) {
-    for ( let i = 0; i < nft.metadata.traits.length; i ++) {
+    for (let i = 0; i < nft.metadata.traits.length; i++) {
       if (nft.metadata.traits[i].value) {
         if (typeof nft.metadata.traits[i].value !== 'string')
           nft.metadata.traits[i].value = JSON.stringify(nft.metadata.traits[i].value)
@@ -324,7 +415,7 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
   repo: repository.BaseRepository<any>,
   filter: Partial<entity.Edge>,
   pageInput: gql.PageInput,
-  orderKey= 'createdAt',
+  orderKey = 'createdAt',
   orderDirection = 'DESC',
   chainId: string,
   entityName?: string,
@@ -354,13 +445,15 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
                   ...updatedEntry,
                   isHide: edge.hide,
                 }
-                return repositories.collection.findOne({ where: {
-                  contract: entry.contract,
-                  isSpam: false,
-                  chainId,
-                } })
+                return repositories.collection.findOne({
+                  where: {
+                    contract: entry.contract,
+                    isSpam: false,
+                    chainId,
+                  },
+                })
                   .then(fp.thruIfNotEmpty(() => newEntry))
-              } ))
+              }))
         }),
       ).then((entries: T[]) => {
         const filteredEntries = entries.filter((entry) => !isNil(entry))
@@ -468,7 +561,7 @@ export const blacklistProfilePatterns = [
   /^moonbirds$/,
   /^gmoney$/,
   /^j1mmy$/,
-  /^snoopdogg$/ ,
+  /^snoopdogg$/,
   /^farokh$/,
   /^beeple$/,
   /^deezefi$/,
@@ -479,15 +572,15 @@ export const blacklistProfilePatterns = [
   /^pranksy$/,
   /^pussyriot$/,
   /^cozomo$/,
-  /^planb$/ ,
+  /^planb$/,
   /^naval$/,
   /^sushiswap$/,
   /^uniswap$/,
   /^erikvoorhees$/,
   /^cdixon$/,
-  /^jrnycrypto$/ ,
+  /^jrnycrypto$/,
   /^nickszabo$/,
-  /^deeze$/ ,
+  /^deeze$/,
   /^elliotrades$/,
   /^dcinvestor$/,
   /^brycent$/,
@@ -519,7 +612,7 @@ export const blacklistProfilePatterns = [
   /^danheld$/,
   /^ljxie$/,
   /^arjunblj$/,
-  /^mevcollector$/ ,
+  /^mevcollector$/,
   /^wil$/,
   /^brettmalinowski$/,
   /^cantino$/,
@@ -802,7 +895,7 @@ export const getAWSConfig = async (): Promise<S3Client> => {
   const secretAccessKey = response.Credentials.SecretAccessKey
   const sessionToken = response.Credentials.SessionToken
 
-  return new S3Client({ credentials: { accessKeyId,secretAccessKey,sessionToken } })
+  return new S3Client({ credentials: { accessKeyId, secretAccessKey, sessionToken } })
 }
 
 export const s3ToCdn = (s3URL: string): string => {
@@ -926,7 +1019,7 @@ export const fetchDataUsingMulticall = async (
     if (customProvider) {
       callProvider = customProvider
     }
-    
+
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
     const multicallContract = new Contract(
@@ -948,7 +1041,7 @@ export const fetchDataUsingMulticall = async (
     if (returnRawResults) {
       return results
     }
-    
+
     logger.info(`fetchDataUsingMulticall results: ${JSON.stringify(results)}`)
     // 3. decode bytes array to useful data array...
     return results.map((result, i) => {
@@ -1080,7 +1173,7 @@ export const createProfile = (
           } catch (err) {
             logger.error('error while creating profile and sending message: ', err)
           }
-          
+
           if (!savedProfile.photoURL) {
             const imageURL = await generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
             return ctx.repositories.profile.updateOneById(
@@ -1180,7 +1273,7 @@ export const createProfileFromEvent = async (
       if (referredInfo && referredInfo.length === 2) {
         const userMadeReferral = await repositories.user.findOne({ where: { referralId: referredInfo[0] } })
         const referredProfileUrl = referredInfo[1]
-        const referralKey =`${referredInfo[0]}::${referredProfileUrl}`
+        const referralKey = `${referredInfo[0]}::${referredProfileUrl}`
 
         const referredUsers = await repositories.user.find({
           where: {
@@ -1343,7 +1436,7 @@ export const generateWeight = (prevWeight: string | undefined): string => {
  */
 export const midWeight = (prev: string, next: string): string => {
   if (!next) next = prev + 'a'
-  
+
   let p, n, pos, str
   // find leftmost non-matching character
   for (pos = 0; p == n; pos++) {
@@ -1419,7 +1512,7 @@ export const getLastWeight = async (
   return lastVisibleEdge.weight
 }
 
-export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
+export const delay = (ms: number): Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
 
 export const extensionFromFilename = (filename: string): string | undefined => {
   const strArray = filename.split('.')
@@ -1430,7 +1523,7 @@ export const extensionFromFilename = (filename: string): string | undefined => {
 }
 
 export const contentTypeFromExt = (ext: string): string | undefined => {
-  switch(ext.toLowerCase()) {
+  switch (ext.toLowerCase()) {
   case 'jpg':
     return 'image/jpeg'
   case 'jpeg':
@@ -1537,52 +1630,52 @@ export const profileActionType = (
 }
 
 const firstEntitiesAfter =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
-  return [
-    entities.slice(index, index + pageInput.first),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
+    return [
+      entities.slice(index, index + pageInput.first),
+      entities.length,
+    ]
+  }
 
 const firstEntitiesBefore =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  return [
-    entities.slice(0, Math.min(
-      pageInput.first,
-      entities.findIndex((e) => e[property] === pageInput.beforeCursor),
-    )),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    return [
+      entities.slice(0, Math.min(
+        pageInput.first,
+        entities.findIndex((e) => e[property] === pageInput.beforeCursor),
+      )),
+      entities.length,
+    ]
+  }
 
 const lastEntitiesAfter =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  const index = entities.findIndex((e) => e[property]=== pageInput.afterCursor) + 1
-  return [
-    entities.slice(Math.max(index, entities.length - pageInput.last)),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
+    return [
+      entities.slice(Math.max(index, entities.length - pageInput.last)),
+      entities.length,
+    ]
+  }
 
 const lastEntitiesBefore =
-async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-  const index = entities.findIndex((e) => e[property] === pageInput.beforeCursor)
-  return [
-    entities.slice(Math.max(0, index - pageInput.last), index),
-    entities.length,
-  ]
-}
+  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
+    const index = entities.findIndex((e) => e[property] === pageInput.beforeCursor)
+    return [
+      entities.slice(Math.max(0, index - pageInput.last), index),
+      entities.length,
+    ]
+  }
 
 export const paginateEntityArray =
-<T>(entities: T[], pageInput: gql.PageInput, cursorProp = 'id'): Promise<defs.PageableResult<T>> => {
-  return pagination.resolvePage<T>(pageInput, {
-    firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
-    firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
-    lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
-    lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
-  })
-}
+  <T>(entities: T[], pageInput: gql.PageInput, cursorProp = 'id'): Promise<defs.PageableResult<T>> => {
+    return pagination.resolvePage<T>(pageInput, {
+      firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
+      firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
+      lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
+      lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
+    })
+  }
 
 export const sendEmailVerificationCode = async (
   email: string,
@@ -1630,7 +1723,7 @@ export const checkAddressIsSanctioned = async (
 }
 
 export const findDuplicatesByProperty = <T>(arr: T[], property: string): T[] => {
-  const hash: {[key: string]: boolean} = {}
+  const hash: { [key: string]: boolean } = {}
   const duplicates: T[] = []
 
   for (let i = 0; i < arr.length; i++) {

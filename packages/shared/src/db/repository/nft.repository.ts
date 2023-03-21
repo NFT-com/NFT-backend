@@ -37,7 +37,7 @@ export class NFTRepository extends BaseRepository<NFT> {
       LEFT JOIN wallet ON wallet."id" = nft."walletId"
       WHERE nft."deletedAt" IS NULL
       ${isSingleContract ? 'AND nft."contract" = $1' : ''}
-      ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
+      ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly : ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
   }
 
   findAllWithRelations(): Promise<NFT[]> {
@@ -85,16 +85,16 @@ export class NFTRepository extends BaseRepository<NFT> {
   fetchTraitSummaryData(collectionAddress: string): Promise<any[]> {
     const queryRunner = db.getDataSource(true).createQueryRunner()
     return queryRunner.query(`
-    SELECT count(*) as count, (traits.value->>'type') as type, (traits.value->>'value') as value 
-    FROM "nft", json_array_elements(nft."metadata"->'traits') as traits 
-    WHERE "contract" = $1 
-    GROUP BY (traits.value->>'type'), (traits.value->>'value') 
+    SELECT count(*) as count, (traits.value->>'type') as type, (traits.value->>'value') as value
+    FROM "nft", json_array_elements(nft."metadata"->'traits') as traits
+    WHERE "contract" = $1
+    GROUP BY (traits.value->>'type'), (traits.value->>'value')
     ORDER BY type ASC, count DESC
     `, [collectionAddress])
   }
 
   findByEdgeProfileDisplays(
-    profileId: string, shouldIncludeHidden=false, nftFilter: NFT[] = [],
+    profileId: string, shouldIncludeHidden = false, nftFilter: NFT[] = [],
   ): Promise<ProfileSearchNFT[]> {
     const nftIds = nftFilter.length ? nftFilter.map((n) => n.id) : undefined
     const queryRunner = db.getDataSource(true).createQueryRunner()

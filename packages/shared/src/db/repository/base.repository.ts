@@ -2,16 +2,8 @@ import * as typeorm from 'typeorm'
 import { FindManyOptions, FindOneOptions, FindOptionsWhere, IsNull } from 'typeorm'
 
 import { db } from '@nftcom/shared/db'
-import { PageableQuery, PageableResult } from '@nftcom/shared/defs'
+import { PageableQuery, PageableResult, UpsertOptions } from '@nftcom/shared/defs'
 import { helper } from '@nftcom/shared/helper'
-
-/**
- * Special options passed to Repository#upsert
- */
-interface UpsertOptions {
-  conflictPaths: string[]
-  skipUpdateIfNoValuesChanged?: boolean
-}
 
 export class BaseRepository<T> {
 
@@ -67,8 +59,24 @@ export class BaseRepository<T> {
     return this.getRepository(true).find()
   }
 
-  public findPageable = (query: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
-    [query.where].flat().map((where) => {
+  /**
+   * Creates a paginated orm query from the provided args.
+   * @param {FindManyOptions<Partial<T>>} query - the query to find the pageable result of.
+   * @returns {Promise<PageableResult<T>>} - the pageable result of the query.
+   */
+  public findPageable = (
+    {
+      relations,
+      order,
+      where,
+      select,
+      skip,
+      take,
+    }: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
+    const defaultPageSkip = 0
+    const defaultPageSize = 5000;
+
+    [where].flatMap((where) => {
       Object
         .entries(where)
         .reduce((obj, [key, val]) => {
@@ -76,13 +84,15 @@ export class BaseRepository<T> {
           return { ...obj, [key]: val }
         }, {})
     })
+
     return this.getRepository(true)
       .findAndCount({
-        relations: query.relations,
-        where: query.where,
-        order: query.order,
-        skip: query.skip || 0,
-        take: query.take || 5000,
+        relations,
+        where,
+        select,
+        order,
+        skip: skip || defaultPageSkip,
+        take: take || defaultPageSize,
         cache: true,
       })
   }

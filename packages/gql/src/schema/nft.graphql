@@ -55,6 +55,12 @@ type NFT {
   isLikedByUser: Boolean
 }
 
+type OfficialCollectionNFT {
+  id: ID!
+  tokenId: Uint256!
+  updatedAt: DateTime!
+}
+
 input NFTsInput {
   pageInput: PageInput
   types: [NFTType!]
@@ -75,6 +81,12 @@ input CollectionNFTsInput {
   collectionAddress: Address!
   chainId: String
   pageInput: PageInput
+}
+
+input OfficialCollectionNFTsInput {
+  collectionAddress: Address!
+  chainId: String
+  offsetPageInput: OffsetPageInput
 }
 
 type TokenUri {
@@ -111,6 +123,12 @@ type GetGkNFTSOutput {
 type NFTsOutput {
   items: [NFT!]!
   pageInfo: PageInfo
+  totalItems: Int
+}
+
+type OfficialCollectionNFTsOutput {
+  items: [OfficialCollectionNFT!]!
+  pageCount: Int
   totalItems: Int
 }
 
@@ -243,6 +261,7 @@ extend type Query {
   myNFTs(input: NFTsInput): NFTsOutput!
   curationNFTs(input: CurationInput!): CurationNFTsOutput!
   collectionNFTs(input: CollectionNFTsInput!): NFTsOutput!
+  officialCollectionNFTs(input: OfficialCollectionNFTsInput!): OfficialCollectionNFTsOutput!
   nftsForCollections(input: NftsForCollectionsInput!): [CollectionNFT!]!
 }
 
