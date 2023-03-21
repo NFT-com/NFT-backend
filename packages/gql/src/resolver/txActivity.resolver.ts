@@ -264,7 +264,7 @@ const getActivities = async (
     filters = { ...filters, walletAddress: walletAddressVerifed }
   }
 
-  if(activityType) {
+  if (activityType) {
     const castedActivityType: defs.ActivityType = activityType as defs.ActivityType
     if (!Object.values(defs.ActivityType).includes(castedActivityType)) {
       return Promise.reject(appError.buildInvalid(
@@ -303,7 +303,7 @@ const getActivities = async (
     nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
   }
 
-  if(nftId?.length) {
+  if (nftId?.length) {
     filters = { ...filters, nftId }
   }
 
@@ -348,6 +348,7 @@ const getActivities = async (
       take: 0,
     })
     const filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
+
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
     if (safefilters[0].walletAddress &&
@@ -368,6 +369,18 @@ const getActivities = async (
       activity.activityType = gql.ActivityType.Purchase
       filteredActivities.push(activity)
     })
+
+    // filter by activity type since all activities are stored as Sale in BE
+    // we must filter for endpoint here
+    if (activityType === 'Sale') {
+      filteredActivities.filter((activity) => {
+        return activity.activityType === ActivityType.Sale
+      })
+    } else if (activityType === 'Purchase') {
+      filteredActivities.filter((activity) => {
+        return activity.activityType === ActivityType.Purchase
+      })
+    }
 
     // sort and return
     const sortedActivities = _lodash.orderBy(filteredActivities, ['updatedAt'], ['desc'])
