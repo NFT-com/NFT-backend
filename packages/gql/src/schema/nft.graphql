@@ -52,6 +52,7 @@ type NFT {
   listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address, protocol: ProtocolType): TxActivitiesOutput
   isGKMinted: Boolean
   likeCount: Int
+  isLikedByUser: Boolean
 }
 
 input NFTsInput {
