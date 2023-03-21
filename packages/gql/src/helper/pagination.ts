@@ -71,17 +71,13 @@ export const getDefaultCursor = (orderBy: string): DefaultCursor => {
  */
 export const safeInput = (
   input: gql.PageInput,
-  cursor?: DefaultCursor,
+  cursor: DefaultCursor,
   defaultNumItems = 20,
 ): gql.PageInput => {
-  const defaultCursor = cursor || input && hasLast(input) ?
-    { beforeCursor: (input && input.beforeCursor) || '-1' } :
-    { afterCursor: (input && input.afterCursor) || '-1' }
-
   if (helper.isEmpty(input)) {
     return {
       first: defaultNumItems,
-      ...defaultCursor,
+      ...cursor,
     }
   }
 
@@ -100,7 +96,7 @@ export const safeInput = (
   }
 
   if (helper.isFalse(hasAfter(input)) && helper.isFalse(hasBefore(input))) {
-    return { ...newInput, ...defaultCursor }
+    return { ...newInput, ...cursor }
   }
 
   return newInput
