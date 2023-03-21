@@ -114,7 +114,7 @@ const getOfficialCollections = async (
   })
   const input = args.input || {}
   joi.validateSchema(schema, input)
-
+  const defaultCacheDuration = 12 * 60 * 60 * 1000 // 12hrs in ms
   try {
     return await core.paginatedOffsetResultsFromEntitiesBy({
       repo: repositories.collection,
@@ -129,6 +129,7 @@ const getOfficialCollections = async (
         name: true,
         updatedAt: true,
       },
+      cache: defaultCacheDuration,
     },
     )
   } catch (err) {

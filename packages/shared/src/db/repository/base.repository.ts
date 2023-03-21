@@ -72,6 +72,7 @@ export class BaseRepository<T> {
       select,
       skip,
       take,
+      cache = true,
     }: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
     const defaultPageSkip = 0
     const defaultPageSize = 5000;
@@ -93,7 +94,7 @@ export class BaseRepository<T> {
         order,
         skip: skip || defaultPageSkip,
         take: take || defaultPageSize,
-        cache: true,
+        cache,
       })
   }
 

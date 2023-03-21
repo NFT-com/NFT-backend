@@ -571,6 +571,7 @@ export const getNFTsForOfficialCollection = async ({
   collectionAddress,
   offsetPageInput,
 }: gql.OfficialCollectionNFTsInput): Promise<gql.OfficialCollectionNFTsOutput> => {
+  const defaultCacheDuration = 12 * 60 * 60 * 1000 // 12hrs in ms
   // Validate args
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
@@ -580,6 +581,7 @@ export const getNFTsForOfficialCollection = async ({
       chainId,
       true, // Check if collection isOfficial
     ))
+
   /// Error Handling
   if (officialCollectionErr || helper.isEmpty(officialCollection)) {
     throw appError.buildNotFound(
@@ -599,6 +601,7 @@ export const getNFTsForOfficialCollection = async ({
       tokenId: true,
       updatedAt: true,
     },
+    cache: defaultCacheDuration,
   })
 }
 

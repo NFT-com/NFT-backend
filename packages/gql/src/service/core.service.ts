@@ -298,6 +298,7 @@ export const paginatedOffsetResultsFromEntitiesBy = async<T>({
   orderKey = 'createdAt',
   orderDirection = 'DESC',
   select,
+  cache = true,
 }: PaginatedOffsetResultsFromEntityByArgs<T>): Promise<OffsetPageable<T>> => {
   const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
   const pageableFilters = filters.map(((filter) => ({ ...filter, deletedAt: IsNull() })))
@@ -309,6 +310,7 @@ export const paginatedOffsetResultsFromEntitiesBy = async<T>({
     where: pageableFilters,
     skip: (offsetPageInput.page - 1) / (offsetPageInput.pageSize || 5000),
     take: offsetPageInput.pageSize || 5000,
+    cache,
   } as FindManyOptions<T>
 
   const result = await repo.findPageable(pageOptions)
