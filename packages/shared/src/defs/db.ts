@@ -1,6 +1,6 @@
 import { FindOperator } from 'typeorm'
 
-import { Collection, NFT } from '../db/entity'
+import { BaseEntity, Collection, NFT } from '../db/entity'
 
 export enum EntityType {
   Approval = 'Approval',
@@ -226,6 +226,8 @@ export interface ActivityFilters {
 
 export type OrderBy = { [x: string]: 'ASC' | 'DESC' | { order: 'ASC' | 'DESC'; nulls?: 'NULLS FIRST' | 'NULLS LAST' } }
 
+export type OrderKey<T> = (keyof T extends string ? keyof T : keyof BaseEntity) | 'createdAt'
+
 export type DBConfig = {
   host: string
   port: number
@@ -254,4 +256,12 @@ export type ProfileSearchNFT = NFT & {
   collection: Collection
   isHide: boolean
   sortIndex: number
+}
+
+/**
+ * Special options passed to Repository#upsert
+ */
+export interface UpsertOptions {
+  conflictPaths: string[]
+  skipUpdateIfNoValuesChanged?: boolean
 }
