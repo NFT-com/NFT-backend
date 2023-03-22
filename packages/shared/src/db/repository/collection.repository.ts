@@ -34,6 +34,7 @@ export class CollectionRepository extends BaseRepository<Collection> {
     FROM collection
     LEFT JOIN nft_collections ON nft_collections."contract" = collection."contract"
     AND collection."deletedAt" IS NULL
+    AND collection."isSpam" = false
       ${cursor ? cursorAndLimit : limit ? limitOnly : ''}`, [cursor, limit].filter(x => !!x))
   }
 
