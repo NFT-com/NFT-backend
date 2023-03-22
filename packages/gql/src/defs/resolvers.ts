@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader'
-import { FindOptionsSelect } from 'typeorm'
+import { FindOneOptions, FindOptionsSelect } from 'typeorm'
 
 import { gql } from '@nftcom/gql/defs'
 import { db, defs, entity, repository } from '@nftcom/shared'
@@ -40,7 +40,11 @@ export type PaginatedResultsFromEntityByArgs<T> = {
   select?: FindOptionsSelect<Partial<T>>
 }
 
-export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<PaginatedResultsFromEntityByArgs<T>, 'pageInput' | 'relations'> & { offsetPageInput: gql.OffsetPageInput; relations?: string[] }
+export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<PaginatedResultsFromEntityByArgs<T>, 'pageInput' | 'relations'> & Pick<FindOneOptions<T>, 'cache'> &
+{
+  offsetPageInput: gql.OffsetPageInput
+  relations?: string[]
+}
 
 export type ToOffsetPageableArgs<T> = {
   offsetPageInput: gql.OffsetPageInput
