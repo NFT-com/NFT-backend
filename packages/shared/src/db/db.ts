@@ -132,21 +132,22 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.Collection,
     entity.Edge,
     entity.Event,
+    entity.IncentiveAction,
     entity.Like,
     entity.MarketAsk,
     entity.MarketBid,
     entity.MarketplaceSale,
     entity.MarketSwap,
     entity.NFT,
+    entity.NFTPortTransaction,
     entity.Profile,
-    entity.User,
     entity.TxActivity,
     entity.TxCancel,
     entity.TxOrder,
     entity.TxTransaction,
+    entity.User,
+    entity.View,
     entity.Wallet,
-    entity.IncentiveAction,
-    entity.NFTPortTransaction,
   ]
 
   const defaultDataSource = new DataSource({
@@ -235,21 +236,22 @@ export type Repository = {
   collection: repo.CollectionRepository
   edge: repo.EdgeRepository
   event: repo.EventRepository
+  incentiveAction: repo.IncentiveActionRepository
   like: repo.LikeRepository
   marketAsk: repo.MarketAskRepository
   marketBid: repo.MarketBidRepository
   marketplaceSale: repo.MarketplaceSaleRepository
   marketSwap: repo.MarketSwapRepository
   nft: repo.NFTRepository
+  nftPortTransaction: repo.NFTPortTransactionRepository
   profile: repo.ProfileRepository
-  user: repo.UserRepository
   txActivity: repo.TxActivityRepository
   txCancel: repo.TxCancelRepository
   txOrder: repo.TxOrderRepository
   txTransaction: repo.TxTransactionRepository
+  user: repo.UserRepository
+  view: repo.ViewRepository
   wallet: repo.WalletRepository
-  incentiveAction: repo.IncentiveActionRepository
-  nftPortTransaction: repo.NFTPortTransactionRepository
 }
 
 export const newRepositories = (): Repository => ({
@@ -259,19 +261,20 @@ export const newRepositories = (): Repository => ({
   collection: new repo.CollectionRepository(),
   edge: new repo.EdgeRepository(),
   event: new repo.EventRepository(),
+  incentiveAction: new repo.IncentiveActionRepository(),
   like: new repo.LikeRepository(),
   marketAsk: new repo.MarketAskRepository(),
   marketBid: new repo.MarketBidRepository(),
   marketplaceSale: new repo.MarketplaceSaleRepository(),
   marketSwap: new repo.MarketSwapRepository(),
   nft: new repo.NFTRepository(),
+  nftPortTransaction: new repo.NFTPortTransactionRepository(),
   profile: new repo.ProfileRepository(),
-  user: new repo.UserRepository(),
   txActivity: new repo.TxActivityRepository(),
   txCancel: new repo.TxCancelRepository(),
   txOrder: new repo.TxOrderRepository(),
   txTransaction: new repo.TxTransactionRepository(),
+  user: new repo.UserRepository(),
+  view: new repo.ViewRepository(),
   wallet: new repo.WalletRepository(),
-  incentiveAction: new repo.IncentiveActionRepository(),
-  nftPortTransaction: new repo.NFTPortTransactionRepository(),
 })
