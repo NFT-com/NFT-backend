@@ -366,20 +366,16 @@ const getActivities = async (
 
     asRecipientTxs.map((tx) => {
       const activity = tx.activity as gql.TxActivity
-      activity.activityType = gql.ActivityType.Purchase
+      activity.activityType = ActivityType.Purchase
       filteredActivities.push(activity)
     })
 
     // filter by activity type since all activities are stored as Sale in BE
     // we must filter for endpoint here
     if (activityType === 'Sale') {
-      filteredActivities.filter((activity) => {
-        return activity.activityType !== ActivityType.Sale
-      })
+      filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
     } else if (activityType === 'Purchase') {
-      filteredActivities.filter((activity) => {
-        return activity.activityType !== 'Purchase'
-      })
+      filteredActivities.filter(activity => activity.activityType == 'Purchase')
     }
 
     // sort and return

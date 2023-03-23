@@ -35,23 +35,23 @@ const createMain = (
         applyMethod: 'pending-reboot',
       },
       {
-        name: "log_replication_commands",
-        value: "1",
+        name: 'log_replication_commands',
+        value: '1',
         applyMethod: 'pending-reboot',
       },
       {
-        name: "max_logical_replication_workers",
-        value: "5",
+        name: 'max_logical_replication_workers',
+        value: '5',
         applyMethod: 'pending-reboot',
       },
       {
-        name: "rds.logical_replication",
-        value: "1",
+        name: 'rds.logical_replication',
+        value: '1',
         applyMethod: 'pending-reboot',
       },
       {
-        name: "wal_buffers",
-        value: "4",
+        name: 'wal_buffers',
+        value: '4',
         applyMethod: 'pending-reboot',
       },
     ],
@@ -91,8 +91,8 @@ const createMain = (
         value: '102400',
       },
       {
-        name: "log_replication_commands",
-        value: "1",
+        name: 'log_replication_commands',
+        value: '1',
       },
 
     ],
