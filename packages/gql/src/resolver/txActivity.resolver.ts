@@ -211,7 +211,7 @@ const getActivities = async (
   ctx: Context,
 ): Promise<any> => {
   const { repositories, network } = ctx
-
+  
   const schema = Joi.object().keys({
     input: Joi.object().required().keys({
       pageInput: Joi.any().required(),
@@ -352,7 +352,7 @@ const getActivities = async (
       relations: [],
       take: 0,
     })
-    const filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
+    let filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
 
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
@@ -374,11 +374,11 @@ const getActivities = async (
       activity.activityType = gql.ActivityType.Purchase
       filteredActivities.push(activity)
     })
-    
+
     if (activityType == ActivityType.Sale) {
-      filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
+      filteredActivities = filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
     } else if (activityType == gql.ActivityType.Purchase) {
-      filteredActivities.filter(activity => activity.activityType == gql.ActivityType.Purchase)
+      filteredActivities = filteredActivities.filter(activity => activity.activityType == gql.ActivityType.Purchase)
     }
 
     // sort and return
@@ -391,12 +391,12 @@ const getActivities = async (
       })
       index++
     })
-    await cache.set(
-      cacheKey,
-      JSON.stringify(indexedActivities),
-      'EX',
-      3 * 60, // 3 min
-    )
+    // await cache.set(
+    //   cacheKey,
+    //   JSON.stringify(indexedActivities),
+    //   'EX',
+    //   3 * 60, // 3 min
+    // )
   }
   return paginatedResultFromIndexedArray(indexedActivities, pageInput)
 }
