@@ -211,7 +211,7 @@ const getActivities = async (
   ctx: Context,
 ): Promise<any> => {
   const { repositories, network } = ctx
-  
+
   const schema = Joi.object().keys({
     input: Joi.object().required().keys({
       pageInput: Joi.any().required(),
@@ -391,12 +391,12 @@ const getActivities = async (
       })
       index++
     })
-    // await cache.set(
-    //   cacheKey,
-    //   JSON.stringify(indexedActivities),
-    //   'EX',
-    //   3 * 60, // 3 min
-    // )
+    await cache.set(
+      cacheKey,
+      JSON.stringify(indexedActivities),
+      'EX',
+      3 * 60, // 3 min
+    )
   }
   return paginatedResultFromIndexedArray(indexedActivities, pageInput)
 }
