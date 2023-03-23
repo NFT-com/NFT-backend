@@ -52,7 +52,7 @@ jobs:
           stage: staging
   deploy-prod:
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted]
     environment: nftcom_prod
     steps:
       - uses: actions/checkout@v3

@@ -289,6 +289,9 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     if (!updatedAt) {
       delete queryObj['updatedAt']
     }
+    if (!nftContract) {
+      delete queryObj['nftContract']
+    }
     return queryBuilder
       .where(queryObj)
       .orderBy({ 'activity.updatedAt': 'DESC' })
