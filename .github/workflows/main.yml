@@ -40,7 +40,7 @@ jobs:
           stage: dev
   deploy-staging:
     needs: deployment-triggers
-    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.gql-changed == 'true' }}
+    if: ${{ github.ref_name == 'main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'staging')) }}
     runs-on: [self-hosted]
     environment: nftcom_staging
     steps:

@@ -272,7 +272,12 @@ const getActivities = async (
         txActivityError.ErrorType.ActivityIncorrect,
       ))
     }
-    filters = { ...filters, activityType: castedActivityType }
+    filters = {
+      ...filters,
+      activityType: castedActivityType == defs.ActivityType.Purchase ?
+        defs.ActivityType.Sale : // force purchase to be sale to not break tx query
+        castedActivityType,
+    }
   }
 
   if(status && status !== defs.ActivityStatus.Valid) {
@@ -347,12 +352,12 @@ const getActivities = async (
       relations: [],
       take: 0,
     })
-    const filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
+    let filteredActivities: gql.TxActivity[] = activities[0] as gql.TxActivity[]
 
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
     if (safefilters[0].walletAddress &&
-      (!safefilters[0].activityType || safefilters[0].activityType === ActivityType.Sale ||
+      (!safefilters[0].activityType || activityType as defs.ActivityType === gql.ActivityType.Purchase ||
         safefilters[0].activityType === ActivityType.Transfer ||
         safefilters[0].activityType === ActivityType.Swap
       ))
@@ -366,16 +371,14 @@ const getActivities = async (
 
     asRecipientTxs.map((tx) => {
       const activity = tx.activity as gql.TxActivity
-      activity.activityType = ActivityType.Purchase
+      activity.activityType = gql.ActivityType.Purchase
       filteredActivities.push(activity)
     })
 
-    // filter by activity type since all activities are stored as Sale in BE
-    // we must filter for endpoint here
-    if (activityType === 'Sale') {
-      filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
-    } else if (activityType === 'Purchase') {
-      filteredActivities.filter(activity => activity.activityType == 'Purchase')
+    if (activityType == ActivityType.Sale) {
+      filteredActivities = filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
+    } else if (activityType == gql.ActivityType.Purchase) {
+      filteredActivities = filteredActivities.filter(activity => activity.activityType == gql.ActivityType.Purchase)
     }
 
     // sort and return
