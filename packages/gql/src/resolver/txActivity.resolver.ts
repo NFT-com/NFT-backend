@@ -352,7 +352,7 @@ const getActivities = async (
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
     if (safefilters[0].walletAddress &&
-      (!safefilters[0].activityType || safefilters[0].activityType === ActivityType.Sale ||
+      (!safefilters[0].activityType || safefilters[0].activityType === gql.ActivityType.Purchase ||
         safefilters[0].activityType === ActivityType.Transfer ||
         safefilters[0].activityType === ActivityType.Swap
       ))
@@ -366,16 +366,14 @@ const getActivities = async (
 
     asRecipientTxs.map((tx) => {
       const activity = tx.activity as gql.TxActivity
-      activity.activityType = ActivityType.Purchase
+      activity.activityType = gql.ActivityType.Purchase
       filteredActivities.push(activity)
     })
-
-    // filter by activity type since all activities are stored as Sale in BE
-    // we must filter for endpoint here
-    if (activityType === 'Sale') {
+    
+    if (activityType == ActivityType.Sale) {
       filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
-    } else if (activityType === 'Purchase') {
-      filteredActivities.filter(activity => activity.activityType == 'Purchase')
+    } else if (activityType == gql.ActivityType.Purchase) {
+      filteredActivities.filter(activity => activity.activityType == gql.ActivityType.Purchase)
     }
 
     // sort and return
