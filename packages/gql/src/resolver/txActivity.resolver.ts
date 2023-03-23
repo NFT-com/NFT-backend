@@ -338,7 +338,7 @@ const getActivities = async (
       .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
   }
 
-  const cacheKey = `${CacheKeys.GET_ACTIVITIES}_${JSON.stringify(safefilters)}`
+  const cacheKey = `${CacheKeys.GET_ACTIVITIES}_${activityType}_${JSON.stringify(safefilters)}`
   let indexedActivities: gql.TxActivity[] = []
   const cachedData = await cache.get(cacheKey)
   if (cachedData) {
