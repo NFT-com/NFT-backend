@@ -272,7 +272,12 @@ const getActivities = async (
         txActivityError.ErrorType.ActivityIncorrect,
       ))
     }
-    filters = { ...filters, activityType: castedActivityType }
+    filters = {
+      ...filters,
+      activityType: castedActivityType == defs.ActivityType.Purchase ?
+        defs.ActivityType.Sale : // force purchase to be sale to not break tx query
+        castedActivityType,
+    }
   }
 
   if(status && status !== defs.ActivityStatus.Valid) {
