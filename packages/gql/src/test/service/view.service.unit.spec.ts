@@ -10,6 +10,22 @@ describe('view service', () => {
       viewsMap = new Map()
       nextId = 1
       repos = {
+        profile: {
+          findOne: (findOneArgs: any) => {
+            if (findOneArgs.where.ownerUserId === 'profileHolder1') {
+              return { id: 'profileHolder1' }
+            }
+            return
+          },
+        },
+        user: {
+          findById: (id: string) => {
+            if (id === 'user1') {
+              return { id }
+            }
+            return
+          },
+        },
         view: {
           save: (like: any) => {
             lastId = nextId++
@@ -24,7 +40,7 @@ describe('view service', () => {
     })
     it('sets a view for an NFT', async () => {
       const viewInputs = {
-        viewerId: '1',
+        viewerId: 'profileHolder1',
         viewerType: entity.ViewerType.ProfileHolder,
         viewedId: '2',
         viewedType: entity.ViewableType.NFT,
@@ -39,7 +55,7 @@ describe('view service', () => {
 
     it('sets a view for a Collection', async () => {
       const viewInputs = {
-        viewerId: '3',
+        viewerId: 'user1',
         viewerType: entity.ViewerType.User,
         viewedId: '4',
         viewedType: entity.ViewableType.Collection,
@@ -111,12 +127,12 @@ describe('view service', () => {
 
     it('requires viewedId', async () => {
       await expect(viewService.handleView({
-        viewerId: '1',
+        viewerId: 'user1',
         viewerType: entity.ViewerType.User,
         viewedType: entity.ViewableType.Profile,
       }))
         .rejects
-        .toThrow('Missing property or property undefined in {"viewerId":"1","viewerType":"User","viewedType":"Profile"}')
+        .toThrow('Missing property or property undefined in {"viewerId":"user1","viewerType":"User","viewedType":"Profile"}')
     })
 
     it('requires viewedType', async () => {
@@ -127,6 +143,28 @@ describe('view service', () => {
       }))
         .rejects
         .toThrow('Missing property or property undefined in {"viewerId":"1","viewerType":"Profile Holder","viewedId":"6"}')
+    })
+
+    it('verifies a profile holder has at least one profile', async () => {
+      const viewInputs = {
+        viewerId: 'user1',
+        viewerType: entity.ViewerType.ProfileHolder,
+        viewedId: '6',
+        viewedType: entity.ViewableType.Profile,
+      }
+      await expect(viewService.handleView(viewInputs))
+        .rejects.toThrow('Wrong type for viewerId: user1, viewerType: Profile Holder')
+    })
+
+    it('verifies a user exists', async () => {
+      const viewInputs = {
+        viewerId: 'visitor1',
+        viewerType: entity.ViewerType.User,
+        viewedId: '6',
+        viewedType: entity.ViewableType.Profile,
+      }
+      await expect(viewService.handleView(viewInputs))
+        .rejects.toThrow('Wrong type for viewerId: visitor1, viewerType: User')
     })
   })
 })
