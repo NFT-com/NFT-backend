@@ -374,11 +374,11 @@ const getActivities = async (
     // we must filter for endpoint here
     if (activityType === 'Sale') {
       filteredActivities.filter((activity) => {
-        return activity.activityType === ActivityType.Sale
+        return activity.activityType !== ActivityType.Sale
       })
     } else if (activityType === 'Purchase') {
       filteredActivities.filter((activity) => {
-        return activity.activityType === ActivityType.Purchase
+        return activity.activityType !== 'Purchase'
       })
     }
 
