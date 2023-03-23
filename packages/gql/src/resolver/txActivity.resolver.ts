@@ -357,7 +357,7 @@ const getActivities = async (
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
     if (safefilters[0].walletAddress &&
-      (!safefilters[0].activityType || safefilters[0].activityType === gql.ActivityType.Purchase ||
+      (!safefilters[0].activityType || activityType as defs.ActivityType === gql.ActivityType.Purchase ||
         safefilters[0].activityType === ActivityType.Transfer ||
         safefilters[0].activityType === ActivityType.Swap
       ))
