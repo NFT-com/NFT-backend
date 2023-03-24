@@ -31,7 +31,7 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
   ): Promise<entity.Like> {
     const setLikeArgs = { likedById, likedId, likedType }
     if (!likedById || !likedId || !likedType) {
-      throw new Error(`Missing property or property undefined in ${setLikeArgs}`)
+      throw new Error(`Missing property or property undefined in ${JSON.stringify(setLikeArgs)}`)
     }
     if (!Object.values(entity.LikeableType).includes(likedType)) {
       throw appError.buildInvalid(`${likedType} cannot be liked`, 'LIKE_INVALID')
