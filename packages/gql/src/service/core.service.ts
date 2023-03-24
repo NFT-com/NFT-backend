@@ -641,7 +641,6 @@ export const blacklistProfilePatterns = [
   /^timferriss$/,
   /^udp$/,
   /^premintxyz$/,
-  /^nftwineclub$/,
   /^wineclub$/,
   /^unstoppabledomains$/,
   /^orangecomet$/,
