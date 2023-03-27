@@ -141,7 +141,7 @@ export interface OpenseaExternalOrder {
   offers: entity.TxOrder[]
 }
 
-interface ListingPayload {
+export interface ListingPayload {
   listing: {
     hash: string
     chain: string
@@ -194,36 +194,38 @@ interface Order {
   signature: string
 }
 
-interface FulfillmentData {
-  transaction: {
-    function: string
-    chain: number
-    to: string
-    value: number
-    input_data: {
-      parameters: {
-        considerationToken: string
-        considerationIdentifier: number
-        considerationAmount: number
-        offerer: string
-        zone: string
-        offerToken: string
-        offerIdentifier: number
-        offerAmount: number
-        basicOrderType: number
-        startTime: number
-        endTime: number
-        zoneHash: string
-        salt: number
-        offererConduitKey: string
-        fulfillerConduitKey: string
-        totalOriginalAdditionalRecipients: number
-        additionalRecipients: AdditionalRecipient[]
-        signature: string
+export interface FulfillmentData {
+  fulfillment_data: {
+    transaction: {
+      function: string
+      chain: number
+      to: string
+      value: number
+      input_data: {
+        parameters: {
+          considerationToken: string
+          considerationIdentifier: number
+          considerationAmount: number
+          offerer: string
+          zone: string
+          offerToken: string
+          offerIdentifier: number
+          offerAmount: number
+          basicOrderType: number
+          startTime: number
+          endTime: number
+          zoneHash: string
+          salt: number
+          offererConduitKey: string
+          fulfillerConduitKey: string
+          totalOriginalAdditionalRecipients: number
+          additionalRecipients: AdditionalRecipient[]
+          signature: string
+        }
       }
     }
+    orders: Order[]
   }
-  orders: Order[]
 }
 
 // commented for future reference
