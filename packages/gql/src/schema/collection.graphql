@@ -94,8 +94,9 @@ type CollectionInfo {
 }
 
 input CollectionInput {
-  contract: Address!
+  contract: Address
   chainId: String
+  name: String
   network: String!
 }
 

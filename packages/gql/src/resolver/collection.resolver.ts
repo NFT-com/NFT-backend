@@ -32,9 +32,31 @@ const getCollection = async (
 ): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
+    // Validate Inputs
+    const input = args.input || {}
     const chainId = args?.input?.chainId || process.env.CHAIN_ID
+    const options = { chainId, repositories: ctx.repositories }
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    return await getCollectionInfo(args?.input?.contract, chainId, ctx.repositories)
+
+    const schema = args?.input?.contract ? Joi.object().keys({
+      chainId: Joi.string().optional(),
+      contract: Joi.string().required(),
+      network: Joi.string().required(),
+    }) : Joi.object().keys({
+      chainId: Joi.string().optional(),
+      name: Joi.string().required(),
+      network: Joi.string().required(),
+    })
+
+    joi.validateSchema(schema, input)
+
+    return await getCollectionInfo(args?.input?.contract ? {
+      contract: args?.input?.contract,
+      ...options,
+    } : {
+      name: args?.input?.name,
+      ...options,
+    })
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
     return err
@@ -380,7 +402,11 @@ const updateCollectionImageUrls = async (
     await Promise.allSettled(
       toUpdate.map(async (collection) => {
         try {
-          await getCollectionInfo(collection.contract, chainId, repositories)
+          await getCollectionInfo({
+            chainId,
+            contract: collection.contract,
+            repositories,
+          })
         } catch (err) {
           logger.error(`Error in updateCollectionImageUrls: ${err}`)
           Sentry.captureMessage(`Error in updateCollectionImageUrls: ${err}`)

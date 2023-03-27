@@ -104,7 +104,7 @@ describe('nft service', () => {
 
       const result = await testServer.executeOperation({
         query: 'mutation RefreshNft($id: ID!) { refreshNft(id: $id) { id } }',
-        variables: { },
+        variables: {},
       })
 
       expect(result.errors).toHaveLength(1)
@@ -156,10 +156,26 @@ describe('nft service', () => {
     afterAll(async () => {
       await clearDB(repositories)
     })
+    it('should return collection, when queried by name', async () => {
+      const chainId = '1'
+      const name = 'Warner Bros nft'
+      const collectionInfo = await getCollectionInfo({
+        chainId,
+        name,
+        repositories,
+      })
+      expect(collectionInfo.collection.name).toEqual(name)
+      expect(collectionInfo.collection.description).not.toEqual(null)
+    })
     it('should return default banner, logo image and description', async () => {
       const contract = '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'
       const chainId = '1'
-      const collectionInfo = await getCollectionInfo(contract, chainId, repositories)
+      
+      const collectionInfo = await getCollectionInfo({
+        chainId,
+        contract,
+        repositories,
+      })
       expect(collectionInfo.collection.bannerUrl).toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).toEqual('https://cdn.nft.com/profile-image-default.svg')
       expect(collectionInfo.collection.description).not.toEqual(null)
@@ -167,7 +183,12 @@ describe('nft service', () => {
     it('should return valid banner, logo image and description', async () => {
       const contract = '0x8fB5a7894AB461a59ACdfab8918335768e411414'
       const chainId = '1'
-      const collectionInfo = await getCollectionInfo(contract, chainId, repositories)
+      const collectionInfo = await getCollectionInfo({
+        chainId,
+        contract,
+        repositories,
+      },
+      )
       expect(collectionInfo.collection.bannerUrl).not.toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).not.toEqual('https://cdn.nft.com/profile-image-default.svg')
       expect(collectionInfo.collection.description).not.toEqual(null)
@@ -536,7 +557,7 @@ describe('nft service', () => {
 
     it('should hide all NFTs', async () => {
       await nftService.hideAllNFTs(repositories, 'test-profile')
-      const count = await repositories.edge.count({ hide: true } )
+      const count = await repositories.edge.count({ hide: true })
       expect(count).toEqual(2)
     })
   })
@@ -585,7 +606,7 @@ describe('nft service', () => {
 
     it('should show all NFTs', async () => {
       await nftService.showAllNFTs(repositories, testMockWallet.id, 'test-profile', '5')
-      const count = await repositories.edge.count({ hide: false } )
+      const count = await repositories.edge.count({ hide: false })
       expect(count).toEqual(3)
     })
   })
@@ -634,7 +655,7 @@ describe('nft service', () => {
 
     it('should show NFTs for specific IDs', async () => {
       await nftService.showNFTs([nftA.id], 'test-profile', '5')
-      const count = await repositories.edge.count({ hide: false } )
+      const count = await repositories.edge.count({ hide: false })
       expect(count).toEqual(1)
     })
   })
@@ -700,7 +721,7 @@ describe('nft service', () => {
         null,
         '5',
       )
-      const count = await repositories.edge.count({ hide: false } )
+      const count = await repositories.edge.count({ hide: false })
       expect(count).toEqual(2)
     })
 
@@ -715,7 +736,7 @@ describe('nft service', () => {
         null,
         '5',
       )
-      const count = await repositories.edge.count({ hide: true } )
+      const count = await repositories.edge.count({ hide: true })
       expect(count).toEqual(2)
     })
 
@@ -730,7 +751,7 @@ describe('nft service', () => {
         [nftB.id],
         '5',
       )
-      const count = await repositories.edge.count({ hide: true } )
+      const count = await repositories.edge.count({ hide: true })
       expect(count).toEqual(1)
     })
   })
@@ -884,7 +905,7 @@ describe('nft service', () => {
     it('should update edges with weight', async () => {
       await nftService.createEdgesForProfile('test-profile', testMockWallet.id)
       const edges = await repositories.edge.findAll()
-      for(const edge of edges) {
+      for (const edge of edges) {
         expect(edge.weight).toBeNull()
       }
     })

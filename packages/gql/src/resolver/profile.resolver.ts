@@ -9,7 +9,7 @@ import { In, IsNull } from 'typeorm'
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
-import { appError, mintError, nftError,profileError } from '@nftcom/error-types'
+import { appError, mintError, nftError, profileError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import {
@@ -35,7 +35,7 @@ import {
   updateNFTsOrder,
 } from '@nftcom/gql/service/nft.service'
 import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
-import { _logger, contracts, db,defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
@@ -137,7 +137,7 @@ const createFollowEdge = (ctx: Context) => {
       thatEntityType: defs.EntityType.Profile,
       deletedAt: IsNull(),
     })
-      .then(fp.thruIfFalse(() => core.createEdge(ctx,  {
+      .then(fp.thruIfFalse(() => core.createEdge(ctx, {
         collectionId: user.id,
         thisEntityId: wallet.id,
         thisEntityType: defs.EntityType.Wallet,
@@ -321,7 +321,7 @@ const getProfileByURL = (
       if (profile) {
         if (!profile.photoURL) {
           return generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE).then(imageURL => {
-            logger.debug(`getProfileByURL: composite Image for Profile ${ profile.url } was generated`)
+            logger.debug(`getProfileByURL: composite Image for Profile ${profile.url} was generated`)
 
             const updateObj = {
               photoURL: imageURL,
@@ -330,7 +330,7 @@ const getProfileByURL = (
             if (!profile.bannerURL) updateObj['bannerURL'] = 'https://cdn.nft.com/profile-banner-default-logo-key.png'
             if (!profile.description) updateObj['description'] = `NFT.com profile for ${profile.url}`
 
-            logger.log(`getProfileByURL: updating profile ${ profile.url } with ${ JSON.stringify(updateObj) }`)
+            logger.log(`getProfileByURL: updating profile ${profile.url} with ${JSON.stringify(updateObj)}`)
             return ctx.repositories.profile.updateOneById(profile.id, updateObj)
           })
         }
@@ -777,7 +777,7 @@ const sortedProfilesByVisibleNFTs = async (
   if (cachedData) {
     indexedProfiles = JSON.parse(cachedData)
   } else {
-    const profiles = await repositories.profile.find({  where: { chainId }, order: { visibleNFTs: 'DESC' } })
+    const profiles = await repositories.profile.find({ where: { chainId }, order: { visibleNFTs: 'DESC' } })
     for (let i = 0; i < profiles.length; i++) {
       indexedProfiles.push({
         index: i,
@@ -948,7 +948,7 @@ const leaderboard = async (
     let index = 0
     // get leaderboard for TOP items...
     const length = profilesWithScore.length >= TOP * 2 ? TOP * 2 : profilesWithScore.length
-    for (let i = 0; i < length - 1; i+= 2) {
+    for (let i = 0; i < length - 1; i += 2) {
       const profileId = profilesWithScore[i]
       const collectionInfo = collectInfoFromScore(profilesWithScore[i + 1])
       const profile = await repositories.profile.findOne({ where: { id: profileId } })
@@ -1032,7 +1032,7 @@ const saveScoreForProfiles = async (
         await repositories.profile.updateOneById(profile.id, {
           lastScored: now,
         })
-        logger.debug(`Score is cached for Profile ${ profile.id }`)
+        logger.debug(`Score is cached for Profile ${profile.id}`)
       }),
     )
     logger.debug('Profile scores are cached', { counts: slicedProfiles.length })
@@ -1258,7 +1258,11 @@ const getAssociatedCollectionForProfile = async (
     }
     if (profile.profileView === defs.ProfileViewType.Collection) {
       if (profile.associatedContract) {
-        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+        return await getCollectionInfo({
+          chainId,
+          contract: profile.associatedContract,
+          repositories,
+        })
       } else {
         return Promise.reject(appError.buildNotFound(
           profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
@@ -1324,7 +1328,8 @@ const profilesByDisplayNft = async (
   })
   joi.validateSchema(schema, args?.input)
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
-  return repositories.nft.findOne({ where:
+  return repositories.nft.findOne({
+    where:
     {
       contract: utils.getAddress(args?.input?.collectionAddress),
       tokenId: ethers.BigNumber.from(args?.input?.tokenId).toHexString(),
@@ -1337,7 +1342,7 @@ const profilesByDisplayNft = async (
         nftError.ErrorType.NFTNotFound,
       ),
     )).then((nft) => {
-      let filters: Partial<entity.Edge>  = {
+      let filters: Partial<entity.Edge> = {
         thatEntityType: defs.EntityType.NFT,
         thatEntityId: nft.id,
         edgeType: defs.EdgeType.Displays,
@@ -1401,7 +1406,7 @@ const getUsersActionsWithPoints = async (
   const { repositories, chain } = ctx
   const chainId = chain?.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
-  const actions =  await repositories.incentiveAction.find({
+  const actions = await repositories.incentiveAction.find({
     where: {
       profileUrl: parent.url,
     },
@@ -1675,7 +1680,7 @@ const profileVisibleNFTCount = (
       repositories,
       chainId,
     )
-  } catch(err)  {
+  } catch (err) {
     Sentry.captureMessage(`Error in profileVisibleNFTCount: ${err}`)
     return err
   }
