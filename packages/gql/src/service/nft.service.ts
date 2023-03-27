@@ -2605,7 +2605,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
         chainId,
         deletedAt: null,
         isOfficial: true,
-        name: ILike(`${name}`),
+        name: ILike(name),
       },
     })
 
