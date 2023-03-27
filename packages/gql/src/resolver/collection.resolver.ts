@@ -38,15 +38,12 @@ const getCollection = async (
     const options = { chainId, repositories: ctx.repositories }
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-    const schema = args?.input?.contract ? Joi.object().keys({
-      chainId: Joi.string().optional(),
-      contract: Joi.string().required(),
-      network: Joi.string().required(),
-    }) : Joi.object().keys({
-      chainId: Joi.string().optional(),
-      name: Joi.string().required(),
-      network: Joi.string().required(),
-    })
+    const schema = Joi.object().keys({
+      chainId: Joi.string().trim().optional(),
+      contract: Joi.string().trim(),
+      name: Joi.string().trim(),
+      network: Joi.string().trim().required(),
+    }).or('contract', 'name').nand('contract', 'name')
 
     joi.validateSchema(schema, input)
 
