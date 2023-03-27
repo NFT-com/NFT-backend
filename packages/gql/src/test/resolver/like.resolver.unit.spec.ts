@@ -67,7 +67,7 @@ describe('like resolver', () => {
   describe('unsetLike', () => {
     it('should remove a like by id', async () => {
       jest.spyOn(likeService, 'unsetLike').mockResolvedValueOnce(true)
-      const response = await unsetLike(undefined, { id: '1' }, { user: { id: 'testProfileId' } as User } as Context)
+      const response = await unsetLike(undefined, { input: { likedById: '1', likedId: '2', likedType: LikeableType.Collection } }, { user: { id: 'testProfileId' } as User } as Context)
       expect(response).toBe(true)
     })
   })

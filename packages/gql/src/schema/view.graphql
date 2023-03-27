@@ -1,0 +1,22 @@
+enum ViewerType {
+  ProfileHolder
+  User
+  Visitor
+}
+
+enum ViewableType {
+  Collection
+  NFT
+  Profile
+}
+
+input RecordViewInput {
+  viewerId: ID!
+  viewerType: ViewerType!
+  viewedId: ID!
+  viewedType: ViewableType!
+}
+
+extend type Mutation {
+  recordView(input: RecordViewInput!): Boolean
+}

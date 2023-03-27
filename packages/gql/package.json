@@ -75,7 +75,7 @@
     "lru_map": "^0.4.1",
     "node-fetch": "^2.6.7",
     "path": "^0.12.7",
-    "pino-http": "8.3.1",
+    "pino-http": "^8.3.3",
     "qs": "^6.11.0",
     "rate-limiter-flexible": "^2.4.1",
     "source-map-support": "^0.5.21",
