@@ -1,6 +1,6 @@
 import { db } from '@nftcom/shared'
 
-export type GetCollectionInfoByContact = {
+export type GetCollectionInfoByContract = {
   contract: string
   chainId: string
   repositories: db.Repository
@@ -12,4 +12,4 @@ export type GetCollectionInfoByName = {
   repositories: db.Repository
 }
 
-export type GetCollectionInfoArgs = GetCollectionInfoByContact | GetCollectionInfoByName
+export type GetCollectionInfoArgs = GetCollectionInfoByContract | GetCollectionInfoByName

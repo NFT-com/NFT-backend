@@ -2590,7 +2590,10 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
       name = args.name
     }
 
-    const key = `${contract ? contract.toLowerCase() : name.toLowerCase().replaceAll(/[^a-zA-Z0-9_-]/g, '-')}-${chainId}`
+    const key = `${contract ?
+      contract.toLowerCase() :
+      name.toLowerCase().replaceAll(/[^a-zA-Z0-9_-]/g, '-')
+    }-${chainId}`
     const cachedData = await cache.get(key)
 
     if (cachedData) {
@@ -2605,7 +2608,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
         chainId,
         deletedAt: null,
         isOfficial: true,
-        name: ILike(name),
+        name: ILike(`%${name}%`),
       },
     })
 
