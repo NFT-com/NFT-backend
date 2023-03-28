@@ -126,6 +126,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     : null
 
   const entities = [
+    entity.ActivityFeed,
     entity.Approval,
     entity.Bid,
     entity.Collection,
@@ -231,6 +232,7 @@ export const disconnect = async (): Promise<void> => {
 }
 
 export type Repository = {
+  activityFeed: repo.ActivityFeedRepository
   approval: repo.ApprovalRepository
   bid: repo.BidRepository
   collection: repo.CollectionRepository
@@ -257,6 +259,7 @@ export type Repository = {
 }
 
 export const newRepositories = (): Repository => ({
+  activityFeed: new repo.ActivityFeedRepository(),
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
   collection: new repo.CollectionRepository(),

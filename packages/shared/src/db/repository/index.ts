@@ -1,3 +1,4 @@
+export * from './activityFeed.repository'
 export * from './approval.repository'
 export * from './base.repository'
 export * from './bid.repository'
