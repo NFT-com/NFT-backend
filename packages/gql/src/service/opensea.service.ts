@@ -1,3 +1,4 @@
+/* eslint-disable no-magic-numbers */
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { Maybe } from 'graphql/jsutils/Maybe'
@@ -15,6 +16,7 @@ const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
 // const OPENSEA_TESTNET_WYVERIN_API_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
 // const OPENSEA_WYVERIN_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
 
+const OPENSEA_POST_DELAY = 500
 const OPENSEA_LISTING_BATCH_SIZE = 30
 const DELAY_AFTER_BATCH_RUN = 4
 const MAX_QUERY_LENGTH = 4014 // 4094 - 80
@@ -138,6 +140,93 @@ export interface SeaportOrder extends OpenseaBaseOrder {
 export interface OpenseaExternalOrder {
   listings: entity.TxOrder[]
   offers: entity.TxOrder[]
+}
+
+export interface ListingPayload {
+  listing: {
+    hash: string
+    chain: string
+    protocol_address: string
+  }
+  fulfiller: {
+    address: string
+  }
+}
+
+interface AdditionalRecipient {
+  amount: number
+  recipient: string
+}
+
+interface Asset {
+  itemType: number
+  token: string
+  identifierOrCriteria: string
+  startAmount: string
+  endAmount: string
+}
+
+interface Consideration {
+  itemType: number
+  token: string
+  identifierOrCriteria: string
+  startAmount: string
+  endAmount: string
+  recipient: string
+}
+
+interface OrderParameters {
+  offerer: string
+  offer: Asset[]
+  consideration: Consideration[]
+  startTime: string
+  endTime: string
+  orderType: number
+  zone: string
+  zoneHash: string
+  salt: string
+  conduitKey: string
+  totalOriginalConsiderationItems: number
+  counter: number
+}
+
+interface Order {
+  parameters: OrderParameters
+  signature: string
+}
+
+export interface FulfillmentData {
+  fulfillment_data: {
+    transaction: {
+      function: string
+      chain: number
+      to: string
+      value: number
+      input_data: {
+        parameters: {
+          considerationToken: string
+          considerationIdentifier: number
+          considerationAmount: number
+          offerer: string
+          zone: string
+          offerToken: string
+          offerIdentifier: number
+          offerAmount: number
+          basicOrderType: number
+          startTime: number
+          endTime: number
+          zoneHash: string
+          salt: number
+          offererConduitKey: string
+          fulfillerConduitKey: string
+          totalOriginalAdditionalRecipients: number
+          additionalRecipients: AdditionalRecipient[]
+          signature: string
+        }
+      }
+    }
+    orders: Order[]
+  }
 }
 
 // commented for future reference
@@ -267,6 +356,48 @@ const retrieveListingsInBatches = async (
   }
 
   return await Promise.all(listings)
+}
+
+/**
+ * Fulfill listings by sending POST requests to the OpenSea API.
+ * @param payloads An array of payloads to be sent in the POST requests.
+ * @param chainId The chainId to be used for selecting the appropriate API key and base URL.
+ * @param apiKey Optional custom API key. If not provided, the default API key will be used.
+ * @returns A Promise that resolves to an array of responses received from the OpenSea API.
+ */
+export const postListingFulfillments = async (
+  payloads: ListingPayload[],
+  chainId: string,
+): Promise<FulfillmentData[]> => {
+  const fulfillmentResponses: FulfillmentData[] = []
+
+  // listingBaseUrl is V2
+  const listingBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId)
+    ? OPENSEA_API_TESTNET_BASE_URL
+    : OPENSEA_API_BASE_URL
+  const listingInterceptor = getOpenseaInterceptor(listingBaseUrl, chainId)
+
+  for (let i = 0; i < payloads.length; i++) {
+    const payload = payloads[i]
+    const response: AxiosResponse = await listingInterceptor.post(
+      '/listings/fulfillment_data',
+      payload,
+      {
+        headers: {
+          'content-type': 'application/json',
+        },
+      },
+    )
+
+    fulfillmentResponses.push(response.data)
+
+    // Throttle requests to 2 per second by waiting 500ms between each request
+    if (i < payloads.length - 1) {
+      await delay(OPENSEA_POST_DELAY)
+    }
+  }
+
+  return fulfillmentResponses
 }
 
 /**

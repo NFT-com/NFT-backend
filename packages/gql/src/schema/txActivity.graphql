@@ -304,12 +304,18 @@ input TxActivitiesInput {
   expirationType: ActivityExpiration
 }
 
+input GetSeaportSignaturesInput {
+  orderHashes: [String!]!
+}
+
 type FulfillActivitiesNFTIdOutput {
   message: String
 }
 
 extend type Query {
   getActivities(input: TxActivitiesInput): TxActivitiesOutput!
+  getSeaportSignatures(input: GetSeaportSignaturesInput): [TxOrder]
+  "AUTHENTICATED"
   getActivitiesByType(activityType: String, chainId: String): [TxActivity]
   "AUTHENTICATED"
   getActivitiesByWalletAddress(walletAddress: String, chainId: String): [TxActivity]
