@@ -1,3 +1,4 @@
+export * from './activityFeed.entity'
 export * from './approval.entity'
 export * from './base.entity'
 export * from './bid.entity'
