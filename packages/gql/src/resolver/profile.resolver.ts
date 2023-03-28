@@ -424,6 +424,7 @@ const updateProfile = (
     photoURL: Joi.string().uri().allow(null),
     showNFTIds: Joi.array().items(Joi.string()).allow(null),
     hideNFTIds: Joi.array().items(Joi.string()).allow(null),
+    hideCustomization: Joi.boolean().allow(null),
     showAllNFTs: Joi.boolean().allow(null),
     hideAllNFTs: Joi.boolean().allow(null),
     gkIconVisible: Joi.boolean().allow(null),
@@ -462,6 +463,7 @@ const updateProfile = (
         p.description = args.input.description ?? p.description
         p.photoURL = args.input.photoURL ?? p.photoURL
         p.displayType = args.input.displayType ?? p.displayType
+        p.hideCustomization = args.input.hideCustomization ?? p.hideCustomization
         p.layoutType = args.input.layoutType ?? p.layoutType
         p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
         p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible

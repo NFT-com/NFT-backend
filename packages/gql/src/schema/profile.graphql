@@ -46,6 +46,7 @@ type Profile {
   createdAt: DateTime!
   chainId: String
   description: String
+  hideCustomization: Boolean
   displayType: ProfileDisplayType
   layoutType: ProfileLayoutType
   followersCount: Int
@@ -106,6 +107,7 @@ input UpdateProfileInput {
   photoURL: String
   showNFTIds: [String]
   hideNFTIds: [String]
+  hideCustomization: Boolean
   showAllNFTs: Boolean
   hideAllNFTs: Boolean
   gkIconVisible: Boolean
