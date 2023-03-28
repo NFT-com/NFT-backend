@@ -90,6 +90,20 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     ],
   })
 
+  const dmsSG = new awsEc2.SecurityGroup("dmsSG", {
+    description: "Allow Replication instance access to RDS and Redshift ",
+    egress: [{
+        fromPort: 0,
+        protocol: "-1",
+        securityGroups: [
+            "sg-01c0692968fbc3061",
+            "sg-054040bcb2529f03a",
+        ],
+        toPort: 0,
+    }],
+    name: "prod-dms-ri",
+    vpcId: "vpc-07ebf0c144c483260",
+})
   const aurora = new awsEC2.SecurityGroup('sg_aurora_main', {
     name: getResourceName('aurora-main'),
     description: 'Allow traffic to Aurora (Postgres) main instance',
@@ -100,6 +114,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
           buildIngressRule(5432, 'tcp', [web.id]),
           buildIngressRule(5432, 'tcp', [webEcs.id]),
           buildIngressRule(5432, 'tcp', [internalEcs.id]),
+          buildIngressRule(5432, 'tcp', [dmsSG.id])
           buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
           buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bd5dceea498f0356')]), // Prod Stream ECS Cluster 
         ]
@@ -155,5 +170,6 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     typesense,
     web,
     webEcs,
+    dmsSG,
   }
 }
