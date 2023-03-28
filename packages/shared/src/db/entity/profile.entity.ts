@@ -31,6 +31,9 @@ export class Profile extends BaseEntity {
   @Column({ nullable: true })
   tokenId: string
 
+  @Column({ default: false })
+  hideCustomization: boolean
+
   @Column({
     type: 'enum',
     enum: ProfileStatus,
