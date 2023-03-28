@@ -90,7 +90,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     ],
   })
 
-  const dmsSG = new awsEc2.SecurityGroup("dmsSG", {
+  const dmsSG = new awsEC2.SecurityGroup("dmsSG", {
     description: "Allow Replication instance access to RDS and Redshift ",
     egress: [{
         fromPort: 0,
