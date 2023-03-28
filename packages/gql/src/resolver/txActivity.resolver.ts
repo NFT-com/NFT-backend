@@ -8,9 +8,9 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, txActivityError } from '@nftcom/error-types'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { core, openseaService } from '@nftcom/gql/service'
 import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
-import { defs, entity, helper } from '@nftcom/shared'
+import { contracts, defs, entity, helper } from '@nftcom/shared'
 import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
@@ -104,6 +104,83 @@ const updateStatusByIds = async (_: any, args: gql.MutationUpdateStatusByIdsArgs
     (id: string) => !activities.updatedIdsSuccess.includes(id),
   )
   return activities
+}
+
+/**
+ * Retrieves the OpenSea signatures for the provided order hashes and updates the
+ * corresponding signature field in the database.
+ *
+ * @param _ - Ignored root object
+ * @param args - Contains input parameters: orderHashes and chainId
+ * @param ctx - Context object containing repositories and wallet
+ * @returns A Promise resolving to an array of updated TxOrder entities
+ */
+const getSeaportSignatures = async (
+  _: any,
+  args: gql.QueryGetSeaportSignaturesArgs,
+  ctx: Context,
+): Promise<entity.TxOrder[]> => {
+  const { repositories, wallet } = ctx
+  const orderHashes = args.input.orderHashes
+  const chainId = wallet.chainId || process.env.CHAIN_ID
+  auth.verifyAndGetNetworkChain('ethereum', chainId)
+
+  // Define the input validation schema
+  const schema = Joi.object({
+    input: Joi.object({
+      orderHashes: Joi.array().items(Joi.string()).required(),
+    }).required(),
+  })
+
+  joi.validateSchema(schema, args)
+
+  // Check if the provided order hashes exist in the database
+  const orders = await repositories.txOrder.findOrdersByHashes(orderHashes, chainId)
+
+  if (orders.length !== orderHashes.length) {
+    throw new Error('Some order hashes do not exist in the database.')
+  }
+
+  // Filter orders with existing signatures
+  const ordersWithSignatures = orders.filter((order) => order.protocolData.signature)
+
+  const updatedOrders: entity.TxOrder[] = []
+
+  // Add orders with existing signatures to updatedOrders
+  updatedOrders.push(...ordersWithSignatures)
+
+  // Filter orders without signatures and prepare their payloads
+  const ordersWithoutSignatures = orders.filter((order) => !order.protocolData.signature)
+
+  // Prepare the payload for orders with null signatures
+  const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures
+    .map((order) => ({
+      listing: {
+        hash: order.orderHash,
+        chain: chainId,
+        protocol_address: contracts.openseaSeaportAddress1_4(chainId),
+      },
+      fulfiller: {
+        address: wallet.address,
+      },
+    }))
+
+  const responses = await openseaService.postListingFulfillments(payloads, chainId)
+
+  for (let i = 0; i < responses.length; i++) {
+    const signature = responses[i].fulfillment_data.transaction.input_data.parameters.signature
+
+    const updateResult: entity.TxOrder = await repositories.txOrder.updateOneById(orders[i].id, {
+      protocolData: {
+        ...orders[i].protocolData,
+        signature,
+      },
+    })
+
+    updatedOrders.push(updateResult)
+  }
+
+  return updatedOrders
 }
 
 const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)
@@ -228,6 +305,7 @@ const getActivities = async (
   })
 
   joi.validateSchema(schema, args)
+
   const {
     pageInput,
     walletAddress,
@@ -453,6 +531,10 @@ export default {
     getActivitiesByWalletAddressAndType: combineResolvers(
       auth.isAuthenticated,
       getActivitiesByWalletAddressAndType,
+    ),
+    getSeaportSignatures: combineResolvers(
+      auth.isAuthenticated,
+      getSeaportSignatures,
     ),
   },
   Mutation: {
