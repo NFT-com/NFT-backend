@@ -129,8 +129,9 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.ActivityFeed,
     entity.Approval,
     entity.Bid,
-    entity.Curation,
     entity.Collection,
+    entity.Comment,
+    entity.Curation,
     entity.Edge,
     entity.Event,
     entity.IncentiveAction,
@@ -234,8 +235,9 @@ export type Repository = {
   activityFeed: repo.ActivityFeedRepository
   approval: repo.ApprovalRepository
   bid: repo.BidRepository
-  curation: repo.CurationRepository
   collection: repo.CollectionRepository
+  comment: repo.CommentRepository
+  curation: repo.CurationRepository
   edge: repo.EdgeRepository
   event: repo.EventRepository
   incentiveAction: repo.IncentiveActionRepository
@@ -260,8 +262,9 @@ export const newRepositories = (): Repository => ({
   activityFeed: new repo.ActivityFeedRepository(),
   approval: new repo.ApprovalRepository(),
   bid: new repo.BidRepository(),
-  curation: new repo.CurationRepository(),
   collection: new repo.CollectionRepository(),
+  comment: new repo.CommentRepository(),
+  curation: new repo.CurationRepository(),
   edge: new repo.EdgeRepository(),
   event: new repo.EventRepository(),
   incentiveAction: new repo.IncentiveActionRepository(),
