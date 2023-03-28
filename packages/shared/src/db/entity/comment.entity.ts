@@ -9,6 +9,7 @@ export enum SocialEntityType {
 }
 
 export enum CommentStatus {
+  Deleted = 'Deleted',
   Explicit = 'Explicit',
   Flagged = 'Flagged',
   Hidden = 'Hidden',
