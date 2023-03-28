@@ -16,6 +16,7 @@ const OPENSEA_API_BASE_URL = 'https://api.opensea.io/v2'
 // const OPENSEA_TESTNET_WYVERIN_API_BASE_URL = 'https://testnets-api.opensea.io/wyvern/v1'
 // const OPENSEA_WYVERIN_API_BASE_URL = 'https://api.opensea.io/wyvern/v1'
 
+const OPENSEA_POST_DELAY = 500
 const OPENSEA_LISTING_BATCH_SIZE = 30
 const DELAY_AFTER_BATCH_RUN = 4
 const MAX_QUERY_LENGTH = 4014 // 4094 - 80
@@ -392,7 +393,7 @@ export const postListingFulfillments = async (
 
     // Throttle requests to 2 per second by waiting 500ms between each request
     if (i < payloads.length - 1) {
-      await delay(500)
+      await delay(OPENSEA_POST_DELAY)
     }
   }
 
