@@ -1,5 +1,6 @@
 import {
   buildCollectionNotFoundMsg,
+  buildOfficialCollectionNotFoundMsg,
 } from './collection.error'
 
 describe('collection error', () => {
@@ -12,7 +13,7 @@ describe('collection error', () => {
 
   describe('buildOfficialCollectionNotFoundMsg', () => {
     it('sets an id in the message', () => {
-      const msg = buildCollectionNotFoundMsg('qfkneqwioeqw')
+      const msg = buildOfficialCollectionNotFoundMsg('qfkneqwioeqw')
       expect(msg).toBe('Official collection qfkneqwioeqw not found')
     })
   })

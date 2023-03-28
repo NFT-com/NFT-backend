@@ -119,6 +119,7 @@ describe('nft service', () => {
         name: 'Warner Bros nft',
         chainId: '1',
         deployer: ethers.utils.getAddress('0x87686E35CEF5271E33e83e1294FDd633a807eeEA'),
+        isOfficial: true,
       })
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0x8fB5a7894AB461a59ACdfab8918335768e411414'),
@@ -170,7 +171,7 @@ describe('nft service', () => {
     it('should return default banner, logo image and description', async () => {
       const contract = '0xAd8C3BDd635e33e14DFC020fCd922Ef89aA9Bf6E'
       const chainId = '1'
-      
+
       const collectionInfo = await getCollectionInfo({
         chainId,
         contract,
