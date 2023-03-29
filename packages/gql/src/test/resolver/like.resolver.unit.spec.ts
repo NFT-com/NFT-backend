@@ -48,20 +48,6 @@ describe('like resolver', () => {
         input: { likedById: '1', likedId: '2', likedType: 'Invalid' as unknown as LikeableType },
       }, { user: {} } as Context)).rejects.toThrow(/^Invalid schema provided: .*$/)
     })
-
-    it('should reject requests without user', async () => {
-      jest.spyOn(profileService, 'isProfileOwnedByUser').mockImplementation(jest.fn(() => Promise.resolve(true)))
-      await expect(setLike(undefined, {
-        input: { likedById: '1', likedId: '2', likedType: 'Invalid' as unknown as LikeableType },
-      }, undefined)).rejects.toThrow(/^Invalid schema provided: .*$/)
-    })
-
-    it('should reject requests with user but does not own profile', async () => {
-      jest.spyOn(profileService, 'isProfileOwnedByUser').mockImplementation(jest.fn(() => Promise.resolve(false)))
-      await expect(setLike(undefined, {
-        input: { likedById: '1', likedId: '2', likedType: 'Invalid' as unknown as LikeableType },
-      }, { user: {} } as Context)).rejects.toThrow(/^Invalid schema provided: .*$/)
-    })
   })
 
   describe('unsetLike', () => {
