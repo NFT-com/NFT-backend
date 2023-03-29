@@ -97,6 +97,35 @@ const getTxReceipts = async (
   }
 }
 
+const secondaryCollectionDeployerHelper = async (
+  contractAddress: string,
+  chainId: string,
+): Promise<string | null> => {
+  const apiKeys = ['1DRNAZ39TR2VSYXS9BCYMS48GIIMMC4WXP', 'NBD9XB7AEMGKGV2HHXR22915ABNRHU21SU', 'XHSKP3E7E312CY67D7KSJDB8ZMPGTKKGUM']
+  const network = chainId === '1' ? 'api' : 'api-goerli'
+  const apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)]
+  const url = `https://${network}.etherscan.io/api?module=contract&action=getcontractcreation&contractaddresses=${contractAddress}&apikey=${apiKey}`
+
+  const response = await axios.get(url)
+  const data = response.data
+
+  if (data.status === '0') {
+    throw new Error(data.result)
+  }
+
+  const result = data.result[0]
+  if (!result) {
+    throw new Error('Contract source code not found')
+  }
+
+  const deployerAddress = result.contractCreator
+  if (!deployerAddress) {
+    throw new Error('Deployer address not found in contract source code')
+  }
+
+  return deployerAddress
+}
+
 export const getCollectionDeployer = async (
   contractAddress: string,
   chainId: string,
@@ -119,9 +148,11 @@ export const getCollectionDeployer = async (
       )
   
       const receipts = await getTxReceipts(REQUEST_URL, deployedBlockNumber)
+
       const collectionDeployer = receipts?.find(
         receipt => receipt?.contractAddress === contractAddress.toLowerCase(),
-      )?.from
+      )?.from ?? await secondaryCollectionDeployerHelper(contractAddress, chainId)
+
       try {
         const checksummed = ethers.utils.getAddress(collectionDeployer)
         await cache.set(cacheKey, checksummed)
