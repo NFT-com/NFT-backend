@@ -15,7 +15,7 @@ export class TxOrderRepository extends BaseRepository<TxOrder> {
       .createQueryBuilder('order')
   
     return queryBuilder
-      .where({ hash: In(orderHashes), chainId })
+      .where({ orderHash: In(orderHashes), chainId })
       .orderBy({ 'order.createdAt': 'DESC' })
       .leftJoinAndSelect('order.protocolData', 'protocolData')
       .cache(true)
