@@ -39,7 +39,7 @@ describe('comment service', () => {
         findOne: (opts: FindManyOptions<entity.Comment>) => {
           return Promise.resolve(
             Array.from(likesMap.values()).filter(l => {
-              for (const prop of Object.getOwnPropertyNames(opts.where)) {
+              for (const prop of Object.keys(opts.where)) {
                 if (opts.where[prop] instanceof FindOperator && opts.where[prop]._type === 'in') {
                   if (!opts.where[prop]._value.some(v => v === l[prop])) {
                     return false
