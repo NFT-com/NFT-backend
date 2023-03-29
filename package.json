@@ -15,7 +15,11 @@
     "cronjobs/sales-processor"
   ],
   "scripts": {
-    "lint": "eslint --color . --ext .ts,.mjs,.js --cache --fix",
+    "lint": "npx eslint --color . --ext .ts,.mjs,.js --cache",
+    "lint:fix": "npm run lint -- --fix",
+    "prettier": "npx prettier --check '{cronjobs,infra,packages}/**/*.{js,ts}' --cache",
+    "prettier:fix": "npm run prettier -- --write",
+    "format": "npm run prettier:fix && npm run lint:fix",
     "generate:coverage": "cd packages/gql && npm run test",
     "prepare": "npx husky install"
   },
@@ -42,6 +46,7 @@
     "@typescript-eslint/parser": "^5.39.0",
     "esbuild": "^0.15.7",
     "eslint": "^8.24.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "husky": "^7.0.4",
     "jest": "28.1.1",
@@ -49,6 +54,7 @@
     "lint-staged": "^12.0.2",
     "lodash": "^4.17.21",
     "nx": "15.7.2",
+    "prettier": "^2.8.7",
     "sinon": "^14.0.1",
     "ts-jest": "28.0.5",
     "ts-node": "10.9.1",
