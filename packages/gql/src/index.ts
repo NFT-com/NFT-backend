@@ -35,20 +35,23 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
 
-  return db.connect(dbConfig)
-    .then(db.connectPg)
-    .then(() => HederaConsensusService.subscribe())
-    .then(() => server.start())
-    //.then(() => job.startAndListen())
-    // document watcher for local 
-    .then(() => {
-      if (process.env.NODE_ENV === 'local') {
-        // commented out so that we can look for a new package
-        // return Promise.resolve(execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:'))
-      }
-      return Promise.resolve()
-    })
-    .then(fp.pause(500))
+  return (
+    db
+      .connect(dbConfig)
+      .then(db.connectPg)
+      .then(() => HederaConsensusService.subscribe())
+      .then(() => server.start())
+      //.then(() => job.startAndListen())
+      // document watcher for local
+      .then(() => {
+        if (process.env.NODE_ENV === 'local') {
+          // commented out so that we can look for a new package
+          // return Promise.resolve(execShellCommand('npm run gqldoc', true, '📚 GQL Documentation:'))
+        }
+        return Promise.resolve()
+      })
+      .then(fp.pause(500))
+  )
 }
 
 const handleError = (err: Error): void => {
@@ -57,10 +60,12 @@ const handleError = (err: Error): void => {
 }
 
 const killPort = (): Promise<unknown> => {
-  return kill(serverPort)
-    // Without this small delay sometimes it's not killed in time
-    .then(fp.pause(500))
-    .catch((err: any) => logger.error(err))
+  return (
+    kill(serverPort)
+      // Without this small delay sometimes it's not killed in time
+      .then(fp.pause(500))
+      .catch((err: any) => logger.error(err))
+  )
 }
 
 const logGoodbye = (): void => {
@@ -68,18 +73,21 @@ const logGoodbye = (): void => {
 }
 
 const cleanExit = (): Promise<void> => {
-  return server.stop()
-    .then(() => HederaConsensusService.unsubscribe())
-    .then(killPort)
-    .then(() => job.stopAndDisconnect())
-    .then(db.disconnect)
-    .then(db.endPg)
-    // .then(job.stopAndDisconnect)
-    .then(fp.pause(500))
-    .finally(() => {
-      logGoodbye()
-      process.exit()
-    })
+  return (
+    server
+      .stop()
+      .then(() => HederaConsensusService.unsubscribe())
+      .then(killPort)
+      .then(() => job.stopAndDisconnect())
+      .then(db.disconnect)
+      .then(db.endPg)
+      // .then(job.stopAndDisconnect)
+      .then(fp.pause(500))
+      .finally(() => {
+        logGoodbye()
+        process.exit()
+      })
+  )
 }
 
 process.on('SIGINT', cleanExit)

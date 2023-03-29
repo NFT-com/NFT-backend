@@ -1,7 +1,7 @@
 export enum ErrorType {
   MarketSwapInvalid = 'MARKET_SWAP_INVALID',
   MarketSwapExisting = 'MARKET_SWAP_EXISTING',
-  TxHashInvalid = 'TX_HASH_INVALID'
+  TxHashInvalid = 'TX_HASH_INVALID',
 }
 
 export const buildMarketSwapInvalidMsg = (): string => 'MarketSwap invalid'

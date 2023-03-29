@@ -8,7 +8,7 @@ export const createAnalyticsDatabase = (): aws.rds.Instance => {
     allocatedStorage: 20,
     backupWindow: '04:30-05:00',
     caCertIdentifier: 'rds-ca-2019',
-    dbSubnetGroupName: 'dev-aurora',  //public subnets via dev-gql vpc, use in all envs
+    dbSubnetGroupName: 'dev-aurora', //public subnets via dev-gql vpc, use in all envs
     engine: 'postgres',
     engineVersion: '14.3',
     identifier: resourceName,

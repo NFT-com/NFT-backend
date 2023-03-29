@@ -56,17 +56,19 @@ describe('approval resolver', () => {
   describe('approve amount', () => {
     beforeAll(async () => {
       entityCreatedAt = new Date()
-      testServer = getTestApolloServer({
-        approval: {
-          save: (entityToBeSaved) => Promise.resolve({
-            id: entitySavedId,
-            createdAt: entityCreatedAt,
-            ...entityToBeSaved,
-          }),
+      testServer = getTestApolloServer(
+        {
+          approval: {
+            save: entityToBeSaved =>
+              Promise.resolve({
+                id: entitySavedId,
+                createdAt: entityCreatedAt,
+                ...entityToBeSaved,
+              }),
+          },
         },
-      },
-      testMockUser,
-      testMockWallet,
+        testMockUser,
+        testMockWallet,
       )
     })
 
@@ -122,10 +124,12 @@ describe('approval resolver', () => {
                   createdAt
                 }
               }`,
-        variables: { input: {
-          ...approvalInput,
-          amount: -1,
-        } },
+        variables: {
+          input: {
+            ...approvalInput,
+            amount: -1,
+          },
+        },
       })
 
       expect(approvalResponse?.errors).toHaveLength(1)

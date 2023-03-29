@@ -11,31 +11,34 @@ import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory('like.resolver', _logger.Context.GraphQL)
 
-export const setLike =
-  async (_: any, args: gql.MutationSetLikeArgs, ctx: Context): Promise<gql.Like> => {
-    const schema = Joi.object().keys({
-      likedById: Joi.string().required(),
-      likedId: Joi.string().required(),
-      likedType: Joi.string().valid(...Object.values(entity.LikeableType)).required(),
-    })
-    joi.validateSchema(schema, args.input)
+export const setLike = async (_: any, args: gql.MutationSetLikeArgs, ctx: Context): Promise<gql.Like> => {
+  const schema = Joi.object().keys({
+    likedById: Joi.string().required(),
+    likedId: Joi.string().required(),
+    likedType: Joi.string()
+      .valid(...Object.values(entity.LikeableType))
+      .required(),
+  })
+  joi.validateSchema(schema, args.input)
 
-    try {
-      return likeService.setLike(args.input, ctx.user.id)
-    } catch (err) {
-      logger.error({ err, setLikeOptions: args.input }, 'Unable to set like for input')
-      if (!(err.originalError instanceof ApolloError)) {
-        throw appError.buildInternal()
-      }
-      throw err
+  try {
+    return likeService.setLike(args.input, ctx.user.id)
+  } catch (err) {
+    logger.error({ err, setLikeOptions: args.input }, 'Unable to set like for input')
+    if (!(err.originalError instanceof ApolloError)) {
+      throw appError.buildInternal()
     }
+    throw err
   }
+}
 
 export const unsetLike = (_: any, args: gql.MutationUnsetLikeArgs, ctx: Context): Promise<boolean> => {
   const schema = Joi.object().keys({
     likedById: Joi.string().required(),
     likedId: Joi.string().required(),
-    likedType: Joi.string().valid(...Object.values(entity.LikeableType)).required(),
+    likedType: Joi.string()
+      .valid(...Object.values(entity.LikeableType))
+      .required(),
   })
   joi.validateSchema(schema, args.input)
 

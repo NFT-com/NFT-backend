@@ -3,9 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 const NFTPORT_API_KEY = process.env.NFTPORT_KEY
 
-export const getNFTPortInterceptor = (
-  baseURL: string,
-): AxiosInstance => {
+export const getNFTPortInterceptor = (baseURL: string): AxiosInstance => {
   const instance = axios.create({
     baseURL,
     headers: {
@@ -15,13 +13,10 @@ export const getNFTPortInterceptor = (
   })
 
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= {
+  const retryOptions: IAxiosRetryConfig = {
     retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
@@ -33,7 +28,7 @@ export const getNFTPortInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(instance as any,  retryOptions)
+  axiosRetry(instance as any, retryOptions)
 
   return instance
 }

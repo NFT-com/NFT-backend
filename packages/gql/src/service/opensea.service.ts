@@ -5,7 +5,7 @@ import { Maybe } from 'graphql/jsutils/Maybe'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { _logger,defs,entity } from '@nftcom/shared'
+import { _logger, defs, entity } from '@nftcom/shared'
 
 const OPENSEA_API_KEY = process.env.OPENSEA_API_KEY
 const OPENSEA_ORDERS_API_KEY = process.env.OPENSEA_ORDERS_API_KEY
@@ -27,7 +27,7 @@ const logger = _logger.Factory(_logger.Context.Opensea)
 enum OpenseaQueryParamType {
   TOKEN_IDS = 'token_ids',
   ASSET_CONTRACT_ADDRESSES = 'asset_contract_addresses',
-  ASSET_CONTRACT_ADDRESS = 'asset_contract_address'
+  ASSET_CONTRACT_ADDRESS = 'asset_contract_address',
 }
 
 interface MakerOrTaker {
@@ -102,7 +102,6 @@ export interface SeaportOffer {
   identifierOrCriteria: string
   startAmount: string
   endAmount: string
-
 }
 
 export interface SeaportConsideration extends SeaportOffer {
@@ -248,28 +247,22 @@ export interface OpenseaOrderRequest {
   chainId: string
 }
 
-const getOpenseaInterceptor = (
-  baseURL: string,
-  chainId: string,
-  apiKey?: string,
-): AxiosInstance => {
+const getOpenseaInterceptor = (baseURL: string, chainId: string, apiKey?: string): AxiosInstance => {
   const apiKeyApplied: string = apiKey ? apiKey : OPENSEA_API_KEY
   const openseaInstance = axios.create({
     baseURL,
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/json',
-      'X-API-KEY': chainId === '1'? apiKeyApplied : '',
+      'X-API-KEY': chainId === '1' ? apiKeyApplied : '',
     },
   })
 
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig = {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
@@ -281,7 +274,7 @@ const getOpenseaInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(openseaInstance as any,  retryOptions)
+  axiosRetry(openseaInstance as any, retryOptions)
 
   return openseaInstance
 }
@@ -299,17 +292,14 @@ const retrieveListingsInBatches = async (
 ): Promise<any[]> => {
   const listings: any[] = []
   let batch: string[], queryUrl: string
-  const listingBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
-    V1_OPENSEA_API_TESTNET_BASE_URL
+  const listingBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId)
+    ? V1_OPENSEA_API_TESTNET_BASE_URL
     : V1_OPENSEA_API_BASE_URL
-  const listingInterceptor = getOpenseaInterceptor(
-    listingBaseUrl,
-    chainId,
-  )
+  const listingInterceptor = getOpenseaInterceptor(listingBaseUrl, chainId)
 
   let delayCounter = 0
   let size: number
-  while(listingQueryParams.length) {
+  while (listingQueryParams.length) {
     size = batchSize
     batch = listingQueryParams.slice(0, size) // batches of 200
 
@@ -317,7 +307,7 @@ const retrieveListingsInBatches = async (
 
     // only executed if query length more than accepted limit by opensea
     // runs once or twice at most
-    while(queryUrl.length > MAX_QUERY_LENGTH) {
+    while (queryUrl.length > MAX_QUERY_LENGTH) {
       size--
       batch = listingQueryParams.slice(0, size)
       queryUrl = `${batch.join('&')}`
@@ -331,7 +321,7 @@ const retrieveListingsInBatches = async (
       if (assets?.length) {
         for (const asset of assets) {
           const contract: string = asset?.asset_contract?.address
-          const seaportOrders: SeaportOrder[] | null =  asset?.seaport_sell_orders
+          const seaportOrders: SeaportOrder[] | null = asset?.seaport_sell_orders
           // seaport orders - always returns cheapest order
           if (seaportOrders && Object.keys(seaportOrders?.[0]).length) {
             listings.push(
@@ -379,15 +369,11 @@ export const postListingFulfillments = async (
 
   for (let i = 0; i < payloads.length; i++) {
     const payload = payloads[i]
-    const response: AxiosResponse = await listingInterceptor.post(
-      '/listings/fulfillment_data',
-      payload,
-      {
-        headers: {
-          'content-type': 'application/json',
-        },
+    const response: AxiosResponse = await listingInterceptor.post('/listings/fulfillment_data', payload, {
+      headers: {
+        'content-type': 'application/json',
       },
-    )
+    })
 
     fulfillmentResponses.push(response.data)
 
@@ -415,14 +401,9 @@ const retrieveOffersInBatches = async (
   let batch: string[], queryUrl: string
   const offers: any[] = []
 
-  const offerBaseUrl: string =  TESTNET_CHAIN_IDS.includes(chainId) ?
-    OPENSEA_API_TESTNET_BASE_URL
-    : OPENSEA_API_BASE_URL
+  const offerBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId) ? OPENSEA_API_TESTNET_BASE_URL : OPENSEA_API_BASE_URL
 
-  const offerInterceptor = getOpenseaInterceptor(
-    offerBaseUrl,
-    chainId,
-  )
+  const offerInterceptor = getOpenseaInterceptor(offerBaseUrl, chainId)
 
   let delayCounter = 0
   let size: number
@@ -443,14 +424,16 @@ const retrieveOffersInBatches = async (
 
           // only executed if query length more than accepted limit by opensea
           // runs once or twice at most
-          while(queryUrl.length > MAX_QUERY_LENGTH) {
+          while (queryUrl.length > MAX_QUERY_LENGTH) {
             size--
             batch = tokens.slice(0, size)
             queryUrl = `asset_contract_address=${contract}&${batch.join('&')}`
           }
 
           const response: AxiosResponse = await offerInterceptor(
-            `/orders/${chainId === '1' ? 'ethereum': chainId === '5' ? 'goerli' : 'goerli'}/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
+            `/orders/${
+              chainId === '1' ? 'ethereum' : chainId === '5' ? 'goerli' : 'goerli'
+            }/seaport/offers?${queryUrl}&limit=${batchSize}&order_direction=desc&order_by=eth_price`,
           )
 
           if (response?.data?.orders?.length) {
@@ -510,13 +493,9 @@ export const retrieveMultipleOrdersOpensea = async (
         if (includeOffers) {
           // offer query builder
           if (!offerQueryParams.has(openseaReq.contract)) {
-            offerQueryParams.set(openseaReq.contract,
-              [],
-            )
+            offerQueryParams.set(openseaReq.contract, [])
           }
-          offerQueryParams.get(openseaReq.contract)?.push(
-            `${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`,
-          )
+          offerQueryParams.get(openseaReq.contract)?.push(`${OpenseaQueryParamType.TOKEN_IDS}=${openseaReq.tokenId}`)
         }
       }
 
@@ -531,11 +510,7 @@ export const retrieveMultipleOrdersOpensea = async (
 
       // offers
       if (includeOffers && offerQueryParams.size) {
-        responseAggregator.offers = await retrieveOffersInBatches(
-          offerQueryParams,
-          chainId,
-          OPENSEA_LISTING_BATCH_SIZE,
-        )
+        responseAggregator.offers = await retrieveOffersInBatches(offerQueryParams, chainId, OPENSEA_LISTING_BATCH_SIZE)
       }
     }
   } catch (err) {
@@ -555,22 +530,20 @@ export const createSeaportListing = async (
   signature: Maybe<string>,
   parameters: Maybe<string>,
   chainId: string,
-): Promise<Partial<entity.TxOrder> | null| Error> => {
+): Promise<Partial<entity.TxOrder> | null | Error> => {
   let openseaOrder: Partial<entity.TxOrder>
   const baseUrlV2 = chainId === '1' ? OPENSEA_API_BASE_URL : OPENSEA_API_TESTNET_BASE_URL
-  if (
-    signature == null || signature.length === 0 ||
-    parameters == null || parameters.length === 0
-  ) {
+  if (signature == null || signature.length === 0 || parameters == null || parameters.length === 0) {
     return null
   }
   try {
     const res = await getOpenseaInterceptor(baseUrlV2, chainId, OPENSEA_ORDERS_API_KEY).post(
-      `/orders/${chainId === '1' ? 'ethereum': 'goerli'}/seaport/listings`,
+      `/orders/${chainId === '1' ? 'ethereum' : 'goerli'}/seaport/listings`,
       {
         signature,
         parameters: JSON.parse(parameters),
-      })
+      },
+    )
 
     if (res.status === 200 && res.data.order) {
       const contract: string = JSON.parse(parameters)?.offer?.[0]?.token
@@ -594,4 +567,3 @@ export const createSeaportListing = async (
     throw JSON.stringify(err)
   }
 }
-

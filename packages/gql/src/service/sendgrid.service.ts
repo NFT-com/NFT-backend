@@ -23,12 +23,11 @@ const templates = {
   sendEmailVerificationCode: 'd-afd347552d7d4059ba5bfd9e727e7500',
 }
 
-const send = (
-  message: sendgrid.MailDataRequired | sendgrid.MailDataRequired[],
-): Promise<unknown> => {
-  return sendgrid.send(message)
-    .then(fp.tap((result) => logger.debug('send', { message, result })))
-    .catch(fp.tapThrow((err) => logger.error('send', { message, err })))
+const send = (message: sendgrid.MailDataRequired | sendgrid.MailDataRequired[]): Promise<unknown> => {
+  return sendgrid
+    .send(message)
+    .then(fp.tap(result => logger.debug('send', { message, result })))
+    .catch(fp.tapThrow(err => logger.error('send', { message, err })))
 }
 
 export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
@@ -40,7 +39,9 @@ export const sendConfirmEmail = (user: entity.User): Promise<boolean> => {
       from,
       to: { email: user.email },
       dynamicTemplateData: {
-        confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
+        confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(
+          user.confirmEmailToken,
+        )}`,
       },
       templateId: templates.sendConfirmEmail,
     }).then(() => true)
@@ -52,7 +53,8 @@ export const sendEmailVerificationCode = (user: entity.User): Promise<boolean> =
     logger.debug('sendEmailVerificationCode', { user })
     const baseUrl = confirmEmailUrl
 
-    if (!user.isEmailConfirmed &&
+    if (
+      !user.isEmailConfirmed &&
       user?.confirmEmailTokenExpiresAt &&
       new Date(user?.confirmEmailTokenExpiresAt) <= new Date()
     ) {
@@ -60,7 +62,9 @@ export const sendEmailVerificationCode = (user: entity.User): Promise<boolean> =
         from,
         to: { email: user.email },
         dynamicTemplateData: {
-          confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(user.confirmEmailToken)}`,
+          confirmEmailLink: `${baseUrl}/app/confirm-email?email=${encode(user.email)}&token=${encode(
+            user.confirmEmailToken,
+          )}`,
         },
         templateId: templates.sendEmailVerificationCode,
       }).then(() => true)
@@ -113,16 +117,11 @@ export const sendReferredBy = (user: entity.User, totalReferrals: number): Promi
       to: { email: user.email },
       subject: `New NFT.com Referral! ${new Date().toUTCString()}`,
       text: `A new NFT.com user has signed up using your referral code. \n\n[${new Date().toUTCString()}] \n\nYou have successfully referred ${totalReferrals} users.`,
-    })
-      .then(() => true)
+    }).then(() => true)
   }
 }
 
-export const sendBidConfirmEmail = (
-  bid: entity.Bid,
-  user: entity.User,
-  profileURL: string,
-): Promise<boolean> => {
+export const sendBidConfirmEmail = (bid: entity.Bid, user: entity.User, profileURL: string): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendBidConfirm', { bid, user })
 
@@ -142,10 +141,7 @@ export const sendBidConfirmEmail = (
   }
 }
 
-export const sendOutbidEmail = (
-  user: entity.User,
-  profileURL: string,
-): Promise<boolean> => {
+export const sendOutbidEmail = (user: entity.User, profileURL: string): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendOutbid', { user })
 
@@ -164,11 +160,7 @@ export const sendOutbidEmail = (
   }
 }
 
-export const sendWinEmail = (
-  topBid: entity.Bid,
-  user: entity.User,
-  profileURL: string,
-): Promise<boolean> => {
+export const sendWinEmail = (topBid: entity.Bid, user: entity.User, profileURL: string): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendWinEmail', { user })
 
@@ -197,11 +189,11 @@ export const addEmailToList = async (
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sgAPIKey}`,
+        Authorization: `Bearer ${sgAPIKey}`,
       },
       body: JSON.stringify({
         list_ids,
-        contacts: [{ 'email': email?.toLowerCase() }],
+        contacts: [{ email: email?.toLowerCase() }],
       }),
     })
 
@@ -211,10 +203,7 @@ export const addEmailToList = async (
   }
 }
 
-export const sendMarketplaceBidConfirmEmail = (
-  makerAddress: string,
-  user: entity.User,
-): Promise<boolean> => {
+export const sendMarketplaceBidConfirmEmail = (makerAddress: string, user: entity.User): Promise<boolean> => {
   if (user?.email) {
     logger.debug('sendMarketplaceBidConfirmEmail', { makerAddress, user })
 

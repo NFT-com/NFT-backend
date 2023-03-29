@@ -16,10 +16,7 @@ export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
   const { wallet, user } = ctx
 
   if (helper.isEmpty(wallet)) {
-    return appError.buildNotFound(
-      walletError.buildAddressNotFoundMsg(),
-      walletError.ErrorType.AddressNotFound,
-    )
+    return appError.buildNotFound(walletError.buildAddressNotFoundMsg(), walletError.ErrorType.AddressNotFound)
   }
   if (helper.isEmpty(user)) {
     return userError.buildAuth()
@@ -40,18 +37,12 @@ export const isAuthenticated = (_: any, args: any, ctx: Context): any => {
 export const isTeamAuthenticated = (_: any, args: any, ctx: Context): any => {
   const { wallet, teamKey } = ctx
   if (helper.isEmpty(wallet)) {
-    return appError.buildNotFound(
-      walletError.buildAddressNotFoundMsg(),
-      walletError.ErrorType.AddressNotFound,
-    )
+    return appError.buildNotFound(walletError.buildAddressNotFoundMsg(), walletError.ErrorType.AddressNotFound)
   }
 
   // TODO (eddie): add wallet allowlist too for extra security
   if (teamKey !== teamPassword) {
-    return appError.buildForbidden(
-      userError.buildForbiddenActionMsg(),
-      userError.ErrorType.ForbiddenAction,
-    )
+    return appError.buildForbidden(userError.buildForbiddenActionMsg(), userError.ErrorType.ForbiddenAction)
   }
 }
 
@@ -65,10 +56,7 @@ export const isTeamAuthenticated = (_: any, args: any, ctx: Context): any => {
  */
 export const isTeamKeyAuthenticated = (_: any, args: any, ctx: Context): any => {
   if (ctx?.teamKey !== teamPassword) {
-    return appError.buildForbidden(
-      userError.buildForbiddenActionMsg(),
-      userError.ErrorType.ForbiddenAction,
-    )
+    return appError.buildForbidden(userError.buildForbiddenActionMsg(), userError.ErrorType.ForbiddenAction)
   }
 }
 

@@ -1,7 +1,5 @@
-import {
-  buildCollectionNotFoundMsg,
-} from './collection.error'
-  
+import { buildCollectionNotFoundMsg } from './collection.error'
+
 describe('collection error', () => {
   describe('buildCollectionNotFoundMsg', () => {
     it('sets an id in the message', () => {

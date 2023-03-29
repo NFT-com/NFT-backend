@@ -22,21 +22,20 @@ const sendBidNotifications = (
   prevTopBidOwner: entity.User,
   newBidOwner: entity.User,
   profileURL: string,
-): Promise<[boolean, boolean]> => Promise.all([
-  sendgrid.sendBidConfirmEmail(newBid, newBidOwner, profileURL),
-  sendgrid.sendOutbidEmail(prevTopBidOwner, profileURL),
-])
+): Promise<[boolean, boolean]> =>
+  Promise.all([
+    sendgrid.sendBidConfirmEmail(newBid, newBidOwner, profileURL),
+    sendgrid.sendOutbidEmail(prevTopBidOwner, profileURL),
+  ])
 
-const bid = (
-  _: any,
-  args: gql.MutationBidArgs,
-  ctx: Context,
-): Promise<gql.Bid> => {
+const bid = (_: any, args: gql.MutationBidArgs, ctx: Context): Promise<gql.Bid> => {
   const { user, repositories, wallet } = ctx
   logger.debug('bid', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
-    nftType: Joi.string().required().valid(...Object.values(gql.NFTType)),
+    nftType: Joi.string()
+      .required()
+      .valid(...Object.values(gql.NFTType)),
     price: Joi.required().custom(joi.buildBigNumber),
     profileURL: Joi.string(),
     signature: joi.buildSignatureInputSchema(),
@@ -49,23 +48,26 @@ const bid = (
     throw appError.buildInvalidSchema(new Error('profileURL is required'))
   }
 
-  if (input.nftType === gql.NFTType.GenesisKey &&
-    /* 4/26/2022, 7:00:00 PM in Milliseconds */
-    1651014000000 > new Date().getTime() ||
+  if (
+    (input.nftType === gql.NFTType.GenesisKey &&
+      /* 4/26/2022, 7:00:00 PM in Milliseconds */
+      1651014000000 > new Date().getTime()) ||
     /* 4/28/2022, 7:00:00 PM in Milliseconds */
     1651186800000 < new Date().getTime()
   ) {
     throw appError.buildForbidden('Auction is not live.')
   }
 
-  return core.getWallet(ctx, input.wallet)
+  return core
+    .getWallet(ctx, input.wallet)
     .then(({ id: walletId }) => {
       if (input.nftType !== gql.NFTType.Profile) {
         return { walletId, profileId: null }
       }
 
       // create profile if it doesn't exist
-      return core.createProfile(ctx, { url: input.profileURL, chainId: wallet.chainId })
+      return core
+        .createProfile(ctx, { url: input.profileURL, chainId: wallet.chainId })
         .then(({ id }) => ({ walletId, profileId: id }))
     })
     .then(async ({ profileId, walletId }) => {
@@ -73,44 +75,50 @@ const bid = (
         const whitelist = helper.getGenesisKeyWhitelist()
         const ofacBool = OFAC[wallet.address]
 
-        const lowercasedWhitelist = whitelist.map(
-          (address) => {
-            try {
-              return address?.toLowerCase()
-            } catch (e) {
-              return address
-            }
-          },
-        )
+        const lowercasedWhitelist = whitelist.map(address => {
+          try {
+            return address?.toLowerCase()
+          } catch (e) {
+            return address
+          }
+        })
 
         if (ofacBool) {
           throw appError.buildForbidden(`${wallet.address} is on OFAC`)
         } else {
           if (lowercasedWhitelist.includes(wallet.address.toLowerCase())) {
-            return repositories.bid.findOne({ where: {
-              nftType: gql.NFTType.GenesisKey,
-              walletId,
-            } }).then((previousGKBid) => ({
-              walletId,
-              profileId,
-              stakeWeight: null,
-              existingBid: previousGKBid,
-              prevTopBidOwner: null,
-            }))
-          } else {
-            const ensList = helper.getEnsKeyWhitelist()
-            const ensAddress = await core.convertEthAddressToEns(wallet.address)
-            if (ensList.includes(ensAddress)) {
-              return repositories.bid.findOne({ where: {
-                nftType: gql.NFTType.GenesisKey,
-                walletId,
-              } }).then((previousGKBid) => ({
+            return repositories.bid
+              .findOne({
+                where: {
+                  nftType: gql.NFTType.GenesisKey,
+                  walletId,
+                },
+              })
+              .then(previousGKBid => ({
                 walletId,
                 profileId,
                 stakeWeight: null,
                 existingBid: previousGKBid,
                 prevTopBidOwner: null,
               }))
+          } else {
+            const ensList = helper.getEnsKeyWhitelist()
+            const ensAddress = await core.convertEthAddressToEns(wallet.address)
+            if (ensList.includes(ensAddress)) {
+              return repositories.bid
+                .findOne({
+                  where: {
+                    nftType: gql.NFTType.GenesisKey,
+                    walletId,
+                  },
+                })
+                .then(previousGKBid => ({
+                  walletId,
+                  profileId,
+                  stakeWeight: null,
+                  existingBid: previousGKBid,
+                  prevTopBidOwner: null,
+                }))
             } else {
               throw appError.buildForbidden(`${wallet.address} is not whitelisted`)
             }
@@ -122,27 +130,24 @@ const bid = (
       }
 
       // calculate stake weight seconds for Profile bids
-      return repositories.bid.findRecentBidByProfileUser(profileId, user.id)
-        .then((existingBid) => {
-          const now = helper.toUTCDate()
-          const existingUpdateTime = existingBid?.updatedAt || now
-          const existingStake = existingBid?.price || 0
-          const existingStakeWeight = existingBid?.stakeWeightedSeconds || 0
-          const curSeconds = isEqual(now, existingUpdateTime)
-            ? 0
-            : differenceInSeconds(now, existingUpdateTime)
-          const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
-          const stakeWeight = existingStakeWeight + curSeconds * Number(bigNumStake)
-          return {
-            walletId,
-            profileId,
-            stakeWeight,
-            existingBid,
-            prevTopBidOwner: repositories.bid.findTopBidByProfile(profileId)
-              .then(fp.thruIfNotEmpty(
-                (prevTopBid) => repositories.user.findById(prevTopBid.userId))),
-          }
-        })
+      return repositories.bid.findRecentBidByProfileUser(profileId, user.id).then(existingBid => {
+        const now = helper.toUTCDate()
+        const existingUpdateTime = existingBid?.updatedAt || now
+        const existingStake = existingBid?.price || 0
+        const existingStakeWeight = existingBid?.stakeWeightedSeconds || 0
+        const curSeconds = isEqual(now, existingUpdateTime) ? 0 : differenceInSeconds(now, existingUpdateTime)
+        const bigNumStake = helper.bigNumber(existingStake).div(helper.tokenDecimals)
+        const stakeWeight = existingStakeWeight + curSeconds * Number(bigNumStake)
+        return {
+          walletId,
+          profileId,
+          stakeWeight,
+          existingBid,
+          prevTopBidOwner: repositories.bid
+            .findTopBidByProfile(profileId)
+            .then(fp.thruIfNotEmpty(prevTopBid => repositories.user.findById(prevTopBid.userId))),
+        }
+      })
     })
     .then(({ profileId, walletId, stakeWeight, existingBid, prevTopBidOwner }) => {
       return Promise.all([
@@ -160,9 +165,10 @@ const bid = (
         prevTopBidOwner,
       ])
     })
-    .then(fp.tapIf(([newBid]) => newBid.nftType === defs.NFTType.Profile)(
-      ([newBid, prevTopBidOwner]) =>
-        sendBidNotifications(newBid, prevTopBidOwner, user, input.profileURL)),
+    .then(
+      fp.tapIf(([newBid]) => newBid.nftType === defs.NFTType.Profile)(([newBid, prevTopBidOwner]) =>
+        sendBidNotifications(newBid, prevTopBidOwner, user, input.profileURL),
+      ),
     )
     .then(([newBid]) => newBid)
 }
@@ -176,7 +182,7 @@ const bid = (
 //   logger.debug('getBids', { loggedInUserId: user?.id, input: args?.input })
 //   const pageInput = args?.input?.pageInput
 
-//   // TODO (eddie): add support for querying all public 
+//   // TODO (eddie): add support for querying all public
 //   // bids for a user, given one of their wallet's details.
 
 //   return Promise.resolve(args?.input?.wallet)
@@ -204,29 +210,22 @@ const bid = (
 //     .then(pagination.toPageable(pageInput))
 // }
 
-const getMyBids = (
-  _: any,
-  args: gql.QueryMyBidsArgs,
-  ctx: Context,
-): Promise<gql.BidsOutput> => {
+const getMyBids = (_: any, args: gql.QueryMyBidsArgs, ctx: Context): Promise<gql.BidsOutput> => {
   const { user } = ctx
   logger.debug('getMyBids', { loggedInUserId: user.id, input: args?.input })
   const pageInput = args?.input?.pageInput
   const filters = [helper.inputT2SafeK<entity.Bid>({ ...args?.input, userId: user.id })]
-  return core.paginatedEntitiesBy(
-    ctx.repositories.bid,
-    pageInput,
-    filters,
-    [], // relations
-  )
+  return core
+    .paginatedEntitiesBy(
+      ctx.repositories.bid,
+      pageInput,
+      filters,
+      [], // relations
+    )
     .then(pagination.toPageable(pageInput))
 }
 
-const signHash = (
-  _: any,
-  args: gql.MutationSignHashArgs,
-  ctx: Context,
-): Promise<gql.SignHashOutput> => {
+const signHash = (_: any, args: gql.MutationSignHashArgs, ctx: Context): Promise<gql.SignHashOutput> => {
   const privateKey = process.env.PUBLIC_SALE_KEY
 
   const { user, xMintSignature } = ctx
@@ -242,13 +241,10 @@ const signHash = (
   if (!xMintSignature) {
     throw userError.buildAuth()
   } else {
-    return ctx.repositories.wallet.findByUserId(user.id)
-      .then(fp.rejectIfEmpty(
-        appError.buildNotFound(
-          mintError.buildWalletEmpty(),
-          mintError.ErrorType.WalletEmpty,
-        ),
-      )).then((wallet) => {
+    return ctx.repositories.wallet
+      .findByUserId(user.id)
+      .then(fp.rejectIfEmpty(appError.buildNotFound(mintError.buildWalletEmpty(), mintError.ErrorType.WalletEmpty)))
+      .then(wallet => {
         const hmac = crypto.createHmac('sha256', String(process.env.SHARED_MINT_SECRET))
         const { timestamp } = input
         const inputObject = {
@@ -256,17 +252,14 @@ const signHash = (
           timestamp,
         }
         const calculatedSignature = hmac.update(JSON.stringify(inputObject)).digest('hex')
-        
+
         if (xMintSignature != calculatedSignature) {
           throw userError.buildAuth()
         } else {
-          const hash = '0x' + abi.soliditySHA3(
-            ['string'],
-            [xMintSignature],
-          ).toString('hex')
-      
+          const hash = '0x' + abi.soliditySHA3(['string'], [xMintSignature]).toString('hex')
+
           const sigObj = web3.eth.accounts.sign(hash, privateKey)
-      
+
           return {
             hash: sigObj.messageHash,
             signature: sigObj.signature,
@@ -276,11 +269,7 @@ const signHash = (
   }
 }
 
-const signHashProfile = (
-  _: any,
-  args: gql.MutationSignHashProfileArgs,
-  ctx: Context,
-): Promise<gql.SignHashOutput> => {
+const signHashProfile = (_: any, args: gql.MutationSignHashProfileArgs, ctx: Context): Promise<gql.SignHashOutput> => {
   const privateKey = process.env.PUBLIC_SALE_KEY
   const { user } = ctx
 
@@ -291,14 +280,11 @@ const signHashProfile = (
       return [object, true]
     }),
   )
-  
-  return ctx.repositories.wallet.findByUserId(user.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        mintError.buildWalletEmpty(),
-        mintError.ErrorType.WalletEmpty,
-      ),
-    )).then((wallet) => {
+
+  return ctx.repositories.wallet
+    .findByUserId(user.id)
+    .then(fp.rejectIfEmpty(appError.buildNotFound(mintError.buildWalletEmpty(), mintError.ErrorType.WalletEmpty)))
+    .then(wallet => {
       if (resevedMap.get(args?.profileUrl?.toLowerCase())) {
         const potentialInsider = reserved[helper.checkSum(wallet[0]?.address)]
 
@@ -323,13 +309,11 @@ const signHashProfile = (
         throw appError.buildForbidden(`${wallet[0]?.address} is on OFAC`)
       }
 
-      const hash = '0x' + abi.soliditySHA3(
-        ['address', 'string'],
-        [wallet[0]?.address, args?.profileUrl],
-      ).toString('hex')
-    
+      const hash =
+        '0x' + abi.soliditySHA3(['address', 'string'], [wallet[0]?.address, args?.profileUrl]).toString('hex')
+
       const sigObj = web3.eth.accounts.sign(hash, privateKey)
-    
+
       return {
         hash: sigObj.messageHash,
         signature: sigObj.signature,
@@ -337,11 +321,7 @@ const signHashProfile = (
     })
 }
 
-const cancelBid = (
-  _: any,
-  args: gql.MutationCancelBidArgs,
-  ctx: Context,
-): Promise<boolean> => {
+const cancelBid = (_: any, args: gql.MutationCancelBidArgs, ctx: Context): Promise<boolean> => {
   const { user, repositories } = ctx
   logger.debug('cancelBid', { loggedInUserId: user.id, input: args })
   return repositories.bid.deleteById(args.id)
@@ -375,37 +355,42 @@ const setProfilePreferences = (
     contracts.genesisKeyAddress(wallet.chainId),
     provider.provider(Number(wallet.chainId)),
   )
-  return genesisKeyContract
-    .balanceOf(wallet.address)
-    // Verify GK ownership
-    .then(fp.rejectIf((balance) => balance === 0)(appError.buildForbidden('Not a GenesisKey owner.')))
-    // Find and Delete any previous preferences for this wallet.
-    // TODO (eddie): skip this if we decide to collect 2 rounds of preferences
-    .then(() => ctx.repositories.bid.delete({
-      nftType: gql.NFTType.GenesisKeyProfile,
-      walletId: wallet.id,
-    }))
-    // Fetch the Profiles by URLs and create Profiles that don't exist.
-    .then(() => Promise.all(
-      args.input.urls.map((url) =>
-        core.createProfile(ctx, { url, chainId: wallet.chainId }),
-      ),
-    ))
-    // Save the new Bids
-    .then((profiles: entity.Profile[]) =>
-      Promise.all(args.input.urls.map((url, index) => ctx.repositories.bid.save({
-        nftType: gql.NFTType.GenesisKeyProfile,
-        price: String(phaseWeight + (10 - index)),
-        profileId: profiles[index].id,
-        signature: {
-          v: 0,
-          r: '0x0000000000000000000000000000000000000000000000000000000000000000',
-          s: '0x0000000000000000000000000000000000000000000000000000000000000000',
-        },
-        status: gql.BidStatus.Submitted,
-        walletId: wallet.id,
-        userId: user.id,
-      }))))
+  return (
+    genesisKeyContract
+      .balanceOf(wallet.address)
+      // Verify GK ownership
+      .then(fp.rejectIf(balance => balance === 0)(appError.buildForbidden('Not a GenesisKey owner.')))
+      // Find and Delete any previous preferences for this wallet.
+      // TODO (eddie): skip this if we decide to collect 2 rounds of preferences
+      .then(() =>
+        ctx.repositories.bid.delete({
+          nftType: gql.NFTType.GenesisKeyProfile,
+          walletId: wallet.id,
+        }),
+      )
+      // Fetch the Profiles by URLs and create Profiles that don't exist.
+      .then(() => Promise.all(args.input.urls.map(url => core.createProfile(ctx, { url, chainId: wallet.chainId }))))
+      // Save the new Bids
+      .then((profiles: entity.Profile[]) =>
+        Promise.all(
+          args.input.urls.map((url, index) =>
+            ctx.repositories.bid.save({
+              nftType: gql.NFTType.GenesisKeyProfile,
+              price: String(phaseWeight + (10 - index)),
+              profileId: profiles[index].id,
+              signature: {
+                v: 0,
+                r: '0x0000000000000000000000000000000000000000000000000000000000000000',
+                s: '0x0000000000000000000000000000000000000000000000000000000000000000',
+              },
+              status: gql.BidStatus.Submitted,
+              walletId: wallet.id,
+              userId: user.id,
+            }),
+          ),
+        ),
+      )
+  )
 }
 
 export default {
@@ -421,15 +406,7 @@ export default {
     setProfilePreferences: combineResolvers(auth.isAuthenticated, setProfilePreferences),
   },
   Bid: {
-    profile: core.resolveEntityById<gql.Bid, entity.Profile>(
-      'profileId',
-      defs.EntityType.Bid,
-      defs.EntityType.Profile,
-    ),
-    wallet: core.resolveEntityById<gql.Bid, entity.Wallet>(
-      'walletId',
-      defs.EntityType.Bid,
-      defs.EntityType.Wallet,
-    ),
+    profile: core.resolveEntityById<gql.Bid, entity.Profile>('profileId', defs.EntityType.Bid, defs.EntityType.Profile),
+    wallet: core.resolveEntityById<gql.Bid, entity.Wallet>('walletId', defs.EntityType.Bid, defs.EntityType.Wallet),
   },
 }

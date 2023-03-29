@@ -34,11 +34,13 @@ export const createDBSyncTaskDefinition = (): aws.ecs.TaskDefinition => {
         memoryReservation: 1024,
         mountPoints: [],
         name: resourceName,
-        portMappings: [{
-          containerPort: 80,
-          hostPort: 80,
-          protocol: 'tcp',
-        }],
+        portMappings: [
+          {
+            containerPort: 80,
+            hostPort: 80,
+            protocol: 'tcp',
+          },
+        ],
         environment: [
           {
             Name: 'STAGING_DB_HOST',
@@ -78,7 +80,8 @@ export const createDBSyncTaskDefinition = (): aws.ecs.TaskDefinition => {
           },
         ],
         volumesFrom: [],
-      }]),
+      },
+    ]),
     cpu: '512',
     executionRoleArn: execRole,
     family: resourceName,
@@ -95,31 +98,30 @@ export const createDBSyncTaskDefinition = (): aws.ecs.TaskDefinition => {
 
 export const createDBSyncEcsCluster = (): aws.ecs.Cluster => {
   const resourceName = 'cronjob-dbsync'
-  const cluster = new aws.ecs.Cluster('dbsync-cluster',
-    {
-      name: resourceName,
-      settings: [
-        {
-          name: 'containerInsights',
-          value: 'enabled',
-        }],
-      capacityProviders: [
-        'FARGATE_SPOT',
-        'FARGATE',
-      ],
-      configuration: {
-        executeCommandConfiguration: {
-          logging: 'DEFAULT',
-        },
+  const cluster = new aws.ecs.Cluster('dbsync-cluster', {
+    name: resourceName,
+    settings: [
+      {
+        name: 'containerInsights',
+        value: 'enabled',
       },
-      tags: {
-        cronjob: 'dbsync',
+    ],
+    capacityProviders: ['FARGATE_SPOT', 'FARGATE'],
+    configuration: {
+      executeCommandConfiguration: {
+        logging: 'DEFAULT',
       },
-      defaultCapacityProviderStrategies: [{
+    },
+    tags: {
+      cronjob: 'dbsync',
+    },
+    defaultCapacityProviderStrategies: [
+      {
         capacityProvider: 'FARGATE',
         weight: 1,
-      }],
-    })
+      },
+    ],
+  })
 
   return cluster
 }

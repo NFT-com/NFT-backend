@@ -23,8 +23,11 @@ interface UpdatedIds {
 }
 
 // only update to fulfilled or cancelled allowed
-const updateStatusByIds = async (_: any, args: gql.MutationUpdateStatusByIdsArgs, ctx: Context)
-: Promise<gql.UpdateReadOutput> => {
+const updateStatusByIds = async (
+  _: any,
+  args: gql.MutationUpdateStatusByIdsArgs,
+  ctx: Context,
+): Promise<gql.UpdateReadOutput> => {
   const activities: gql.UpdateReadOutput = {
     updatedIdsSuccess: [],
     idsNotFoundOrFailed: [],
@@ -34,28 +37,19 @@ const updateStatusByIds = async (_: any, args: gql.MutationUpdateStatusByIdsArgs
 
   if (!ids.length) {
     return Promise.reject(
-      appError.buildInvalid(
-        txActivityError.buildNoActivityId(),
-        txActivityError.ErrorType.ActivityNotSet,
-      ),
+      appError.buildInvalid(txActivityError.buildNoActivityId(), txActivityError.ErrorType.ActivityNotSet),
     )
   }
 
-  if(!Object.keys(defs.ActivityStatus).includes(status)) {
+  if (!Object.keys(defs.ActivityStatus).includes(status)) {
     return Promise.reject(
-      appError.buildInvalid(
-        txActivityError.buildIncorrectStatus(status),
-        txActivityError.ErrorType.StatusNotAllowed,
-      ),
+      appError.buildInvalid(txActivityError.buildIncorrectStatus(status), txActivityError.ErrorType.StatusNotAllowed),
     )
   }
 
-  if(status === defs.ActivityStatus.Valid) {
+  if (status === defs.ActivityStatus.Valid) {
     return Promise.reject(
-      appError.buildInvalid(
-        txActivityError.buildStatusNotAllowed(status),
-        txActivityError.ErrorType.StatusNotAllowed,
-      ),
+      appError.buildInvalid(txActivityError.buildStatusNotAllowed(status), txActivityError.ErrorType.StatusNotAllowed),
     )
   }
 
@@ -84,25 +78,15 @@ const updateStatusByIds = async (_: any, args: gql.MutationUpdateStatusByIdsArgs
     )
   }
 
-  const ownedIds: string[] = ownedActivities.map(
-    (ownedActivity: entity.TxActivity) => ownedActivity.id,
-  )
+  const ownedIds: string[] = ownedActivities.map((ownedActivity: entity.TxActivity) => ownedActivity.id)
 
   const filters: defs.ActivityFilters = {
     walletAddress,
     chainId: chain.id,
   }
-  const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
-    ownedIds,
-    filters,
-    'status',
-    status)
-  activities.updatedIdsSuccess = updatedIds?.raw?.map(
-    (item: UpdatedIds) => item.id,
-  )
-  activities.idsNotFoundOrFailed = ids.filter(
-    (id: string) => !activities.updatedIdsSuccess.includes(id),
-  )
+  const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(ownedIds, filters, 'status', status)
+  activities.updatedIdsSuccess = updatedIds?.raw?.map((item: UpdatedIds) => item.id)
+  activities.idsNotFoundOrFailed = ids.filter((id: string) => !activities.updatedIdsSuccess.includes(id))
   return activities
 }
 
@@ -142,7 +126,7 @@ const getSeaportSignatures = async (
   }
 
   // Filter orders with existing signatures
-  const ordersWithSignatures = orders.filter((order) => order.protocolData.signature)
+  const ordersWithSignatures = orders.filter(order => order.protocolData.signature)
 
   const updatedOrders: entity.TxOrder[] = []
 
@@ -150,20 +134,19 @@ const getSeaportSignatures = async (
   updatedOrders.push(...ordersWithSignatures)
 
   // Filter orders without signatures and prepare their payloads
-  const ordersWithoutSignatures = orders.filter((order) => !order.protocolData.signature)
+  const ordersWithoutSignatures = orders.filter(order => !order.protocolData.signature)
 
   // Prepare the payload for orders with null signatures
-  const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures
-    .map((order) => ({
-      listing: {
-        hash: order.orderHash,
-        chain: chainId,
-        protocol_address: contracts.openseaSeaportAddress1_4(chainId),
-      },
-      fulfiller: {
-        address: wallet.address,
-      },
-    }))
+  const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures.map(order => ({
+    listing: {
+      hash: order.orderHash,
+      chain: chainId,
+      protocol_address: contracts.openseaSeaportAddress1_4(chainId),
+    },
+    fulfiller: {
+      address: wallet.address,
+    },
+  }))
 
   const responses = await openseaService.postListingFulfillments(payloads, chainId)
 
@@ -183,8 +166,11 @@ const getSeaportSignatures = async (
   return updatedOrders
 }
 
-const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)
-: Promise<gql.UpdateReadOutput> => {
+const updateReadByIds = async (
+  _: any,
+  args: gql.MutationUpdateReadByIdsArgs,
+  ctx: Context,
+): Promise<gql.UpdateReadOutput> => {
   const activities: gql.UpdateReadOutput = {
     updatedIdsSuccess: [],
     idsNotFoundOrFailed: [],
@@ -198,7 +184,7 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
 
   if (walletAddress) {
     // check ids are owned by wallet
-    if(ids.length) {
+    if (ids.length) {
       ownedActivities = await repositories.txActivity.find({
         where: {
           id: In(ids),
@@ -219,30 +205,25 @@ const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ct
     }
   }
 
-  const ownedIds: string[] = ownedActivities.length ?  ownedActivities.map(
-    (ownedActivity: entity.TxActivity) => ownedActivity.id,
-  ) : []
+  const ownedIds: string[] = ownedActivities.length
+    ? ownedActivities.map((ownedActivity: entity.TxActivity) => ownedActivity.id)
+    : []
 
   const filters: defs.ActivityFilters = {
     walletAddress,
     chainId: chain.id,
   }
-  const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(
-    ownedIds,
-    filters,
-    'read',
-    true)
-  activities.updatedIdsSuccess = updatedIds?.raw?.map(
-    (item: UpdatedIds) => item.id,
-  )
-  activities.idsNotFoundOrFailed = ids.filter(
-    (id: string) => !activities.updatedIdsSuccess.includes(id),
-  )
+  const updatedIds: UpdateResult = await repositories.txActivity.updateActivities(ownedIds, filters, 'read', true)
+  activities.updatedIdsSuccess = updatedIds?.raw?.map((item: UpdatedIds) => item.id)
+  activities.idsNotFoundOrFailed = ids.filter((id: string) => !activities.updatedIdsSuccess.includes(id))
   return activities
 }
 
-const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx: Context)
-: Promise<entity.TxActivity[]> => {
+const getActivitiesByType = (
+  _: any,
+  args: gql.QueryGetActivitiesByTypeArgs,
+  ctx: Context,
+): Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
   const activityType = defs.ActivityType[args.activityType]
   const chainId = args?.chainId || process.env.CHAIN_ID
@@ -252,9 +233,9 @@ const getActivitiesByType = (_: any, args: gql.QueryGetActivitiesByTypeArgs, ctx
 
 const getActivitiesByWalletAddress = (
   _: any,
-  args: gql.QueryGetActivitiesByWalletAddressArgs, ctx: Context,
-)
-: Promise<entity.TxActivity[]> => {
+  args: gql.QueryGetActivitiesByWalletAddressArgs,
+  ctx: Context,
+): Promise<entity.TxActivity[]> => {
   const { repositories } = ctx
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -275,48 +256,33 @@ const getActivitiesByWalletAddressAndType = (
 
   const walletAddress: string = helper.checkSum(args.input?.walletAddress)
 
-  return repositories.txActivity.findActivitiesByWalletAddressAndType(
-    walletAddress,
-    activityType,
-    chainId,
-  )
+  return repositories.txActivity.findActivitiesByWalletAddressAndType(walletAddress, activityType, chainId)
 }
 
-const getActivities = async (
-  _: any,
-  args: gql.QueryGetActivitiesArgs,
-  ctx: Context,
-): Promise<any> => {
+const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Context): Promise<any> => {
   const { repositories, network } = ctx
 
   const schema = Joi.object().keys({
-    input: Joi.object().required().keys({
-      pageInput: Joi.any().required(),
-      walletAddress: Joi.string(),
-      activityType: Joi.string(),
-      status: Joi.string(),
-      read: Joi.boolean(),
-      tokenId: Joi.custom(joi.buildBigNumber),
-      contract: Joi.string(),
-      chainId: Joi.string(),
-      skipRelations: Joi.boolean(),
-      expirationType: Joi.string(),
-    }),
+    input: Joi.object()
+      .required()
+      .keys({
+        pageInput: Joi.any().required(),
+        walletAddress: Joi.string(),
+        activityType: Joi.string(),
+        status: Joi.string(),
+        read: Joi.boolean(),
+        tokenId: Joi.custom(joi.buildBigNumber),
+        contract: Joi.string(),
+        chainId: Joi.string(),
+        skipRelations: Joi.boolean(),
+        expirationType: Joi.string(),
+      }),
   })
 
   joi.validateSchema(schema, args)
 
-  const {
-    pageInput,
-    walletAddress,
-    activityType,
-    status,
-    read,
-    tokenId,
-    contract,
-    skipRelations,
-    expirationType,
-  } = helper.safeObject(args.input)
+  const { pageInput, walletAddress, activityType, status, read, tokenId, contract, skipRelations, expirationType } =
+    helper.safeObject(args.input)
 
   if (!process.env.ACTIVITY_ENDPOINTS_ENABLED) {
     return {
@@ -329,7 +295,7 @@ const getActivities = async (
     }
   }
 
-  const chainId: string =  args.input?.chainId || process.env.CHAIN_ID
+  const chainId: string = args.input?.chainId || process.env.CHAIN_ID
   const verificationNetwork: string = network || 'ethereum'
   let checksumContract: string
 
@@ -345,26 +311,31 @@ const getActivities = async (
   if (activityType) {
     const castedActivityType: defs.ActivityType = activityType as defs.ActivityType
     if (!Object.values(defs.ActivityType).includes(castedActivityType)) {
-      return Promise.reject(appError.buildInvalid(
-        txActivityError.buildIncorrectActivity(castedActivityType),
-        txActivityError.ErrorType.ActivityIncorrect,
-      ))
+      return Promise.reject(
+        appError.buildInvalid(
+          txActivityError.buildIncorrectActivity(castedActivityType),
+          txActivityError.ErrorType.ActivityIncorrect,
+        ),
+      )
     }
     filters = {
       ...filters,
-      activityType: castedActivityType == defs.ActivityType.Purchase ?
-        defs.ActivityType.Sale : // force purchase to be sale to not break tx query
-        castedActivityType,
+      activityType:
+        castedActivityType == defs.ActivityType.Purchase
+          ? defs.ActivityType.Sale // force purchase to be sale to not break tx query
+          : castedActivityType,
     }
   }
 
-  if(status && status !== defs.ActivityStatus.Valid) {
+  if (status && status !== defs.ActivityStatus.Valid) {
     const castedStatus: defs.ActivityStatus = status
-    if(!Object.values(defs.ActivityStatus).includes(castedStatus)) {
-      return Promise.reject(appError.buildInvalid(
-        txActivityError.buildIncorrectStatus(castedStatus),
-        txActivityError.ErrorType.StatusIncorrect,
-      ))
+    if (!Object.values(defs.ActivityStatus).includes(castedStatus)) {
+      return Promise.reject(
+        appError.buildInvalid(
+          txActivityError.buildIncorrectStatus(castedStatus),
+          txActivityError.ErrorType.StatusIncorrect,
+        ),
+      )
     }
     filters = { ...filters, status: castedStatus }
   }
@@ -377,10 +348,9 @@ const getActivities = async (
   }
 
   if (!contract && tokenId) {
-    return Promise.reject(appError.buildInvalid(
-      txActivityError.buildTokenWithNoContract(),
-      txActivityError.ErrorType.TokenWithNoContract,
-    ))
+    return Promise.reject(
+      appError.buildInvalid(txActivityError.buildTokenWithNoContract(), txActivityError.ErrorType.TokenWithNoContract),
+    )
   }
   if (contract && tokenId) {
     nftId = `ethereum/${checksumContract}/${BigNumber.from(tokenId).toHexString()}`
@@ -393,26 +363,20 @@ const getActivities = async (
   // by default expired items are included
   if (!expirationType || expirationType === gql.ActivityExpiration.Active) {
     filters = { ...filters, expiration: helper.moreThanDate(new Date().toString()) }
-  } else if (expirationType === gql.ActivityExpiration.Expired){
+  } else if (expirationType === gql.ActivityExpiration.Expired) {
     filters = { ...filters, expiration: helper.lessThanDate(new Date().toString()) }
   }
 
   let safefilters
   if (read !== undefined) {
-    safefilters = [{ ...helper.inputT2SafeK(filters),  read }]
+    safefilters = [{ ...helper.inputT2SafeK(filters), read }]
   } else {
     safefilters = [helper.inputT2SafeK(filters)]
   }
 
   if (skipRelations) {
-    return core.paginatedEntitiesBy(
-      repositories.txActivity,
-      pageInput,
-      safefilters,
-      [],
-      'createdAt',
-      'DESC',
-    )
+    return core
+      .paginatedEntitiesBy(repositories.txActivity, pageInput, safefilters, [], 'createdAt', 'DESC')
       .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
   }
 
@@ -434,12 +398,13 @@ const getActivities = async (
 
     // find transaction activities for wallet address as recipient
     let asRecipientTxs: entity.TxTransaction[] = []
-    if (safefilters[0].walletAddress &&
-      (!safefilters[0].activityType || activityType as defs.ActivityType === gql.ActivityType.Purchase ||
+    if (
+      safefilters[0].walletAddress &&
+      (!safefilters[0].activityType ||
+        (activityType as defs.ActivityType) === gql.ActivityType.Purchase ||
         safefilters[0].activityType === ActivityType.Transfer ||
-        safefilters[0].activityType === ActivityType.Swap
-      ))
-    {
+        safefilters[0].activityType === ActivityType.Swap)
+    ) {
       asRecipientTxs = await repositories.txTransaction.findRecipientTxs(
         safefilters[0].activityType,
         safefilters[0].walletAddress,
@@ -447,7 +412,7 @@ const getActivities = async (
       )
     }
 
-    asRecipientTxs.map((tx) => {
+    asRecipientTxs.map(tx => {
       const activity = tx.activity as gql.TxActivity
       activity.activityType = gql.ActivityType.Purchase
       filteredActivities.push(activity)
@@ -462,7 +427,7 @@ const getActivities = async (
     // sort and return
     const sortedActivities = _lodash.orderBy(filteredActivities, ['updatedAt'], ['desc'])
     let index = 0
-    sortedActivities.map((activity) => {
+    sortedActivities.map(activity => {
       indexedActivities.push({
         index,
         ...activity,
@@ -487,12 +452,10 @@ const fulfillActivitiesNFTId = async (
   const { repositories } = ctx
   try {
     const count = Math.min(Number(args?.count), 1000)
-    const activities = await repositories.txActivity.findActivitiesWithEmptyNFT(
-      defs.ActivityType.Sale,
-    )
+    const activities = await repositories.txActivity.findActivitiesWithEmptyNFT(defs.ActivityType.Sale)
     const slicedActivities = activities.slice(0, count)
     await Promise.allSettled(
-      slicedActivities.map(async (activity) => {
+      slicedActivities.map(async activity => {
         const activityDAO = activity as TxActivityDAO
         if (activityDAO.transaction) {
           const orderHash = activityDAO.activityTypeId.split(':')[1]
@@ -524,34 +487,16 @@ export default {
   Query: {
     getActivities,
     getActivitiesByType,
-    getActivitiesByWalletAddress: combineResolvers(
-      auth.isAuthenticated,
-      getActivitiesByWalletAddress,
-    ),
-    getActivitiesByWalletAddressAndType: combineResolvers(
-      auth.isAuthenticated,
-      getActivitiesByWalletAddressAndType,
-    ),
-    getSeaportSignatures: combineResolvers(
-      auth.isAuthenticated,
-      getSeaportSignatures,
-    ),
+    getActivitiesByWalletAddress: combineResolvers(auth.isAuthenticated, getActivitiesByWalletAddress),
+    getActivitiesByWalletAddressAndType: combineResolvers(auth.isAuthenticated, getActivitiesByWalletAddressAndType),
+    getSeaportSignatures: combineResolvers(auth.isAuthenticated, getSeaportSignatures),
   },
   Mutation: {
-    updateReadByIds: combineResolvers(
-      auth.isAuthenticated,
-      updateReadByIds,
-    ),
-    updateStatusByIds: combineResolvers(
-      auth.isAuthenticated,
-      updateStatusByIds,
-    ),
-    fulfillActivitiesNFTId: combineResolvers(
-      auth.isAuthenticated,
-      fulfillActivitiesNFTId,
-    ),
+    updateReadByIds: combineResolvers(auth.isAuthenticated, updateReadByIds),
+    updateStatusByIds: combineResolvers(auth.isAuthenticated, updateStatusByIds),
+    fulfillActivitiesNFTId: combineResolvers(auth.isAuthenticated, fulfillActivitiesNFTId),
   },
-  ProtocolData:{
+  ProtocolData: {
     __resolveType(obj) {
       if (obj.signer) {
         return 'LooksrareProtocolData'
@@ -568,7 +513,7 @@ export default {
       return 'SeaportProtocolData'
     },
   },
-  TxProtocolData:{
+  TxProtocolData: {
     __resolveType(obj) {
       if (obj.signer) {
         return 'TxLooksrareProtocolData'

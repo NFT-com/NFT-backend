@@ -12,17 +12,19 @@ jest.mock('@nftcom/cache', () => ({
     set: jest.fn(),
     zadd: async (...args) => {
       const [key, score, data, ..._rest] = args
-      Object.hasOwn(mockCacheData, key) ?
-        mockCacheData[key].push({ score, data }) :
-        mockCacheData[key] = [{ score, data }]
+      Object.hasOwn(mockCacheData, key)
+        ? mockCacheData[key].push({ score, data })
+        : (mockCacheData[key] = [{ score, data }])
     },
     zrange: async (...args) => {
       const [key, ..._rest] = args
-      return mockCacheData[key] ?
-        mockCacheData[key].sort((a, b) => {
-          return b.score - a.score
-        }).map((v) => v.data) :
-        undefined
+      return mockCacheData[key]
+        ? mockCacheData[key]
+          .sort((a, b) => {
+            return b.score - a.score
+          })
+          .map(v => v.data)
+        : undefined
     },
   },
 }))
@@ -53,10 +55,14 @@ describe('collection resolver', () => {
             { count: 99, type: 'Trait B', value: 'x' },
             { count: 97, type: 'Trait B', value: 'y' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
-      const traitSummary = await collectionResolver.Query.collectionTraits(undefined, { input: { contract: '0x00000' } }, mockCtx)
+      const traitSummary = await collectionResolver.Query.collectionTraits(
+        undefined,
+        { input: { contract: '0x00000' } },
+        mockCtx,
+      )
 
       expect(traitSummary.stats.totalCount).toBe(297)
       expect(traitSummary.traits[0].type).toBe('A Trait')
@@ -102,14 +108,13 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
       const leaderboard = await collectionResolver.Query.collectionLeaderboard(undefined, {}, mockCtx)
 
@@ -124,7 +129,6 @@ describe('collection resolver', () => {
         { id: '13', contract: '0x0013', stats: { seven_day_volume: 13 } },
         { id: '12', contract: '0x0012', stats: { seven_day_volume: 12 } },
         { id: '11', contract: '0x0011', stats: { seven_day_volume: 11 } },
-
       ])
       expect(leaderboard.totalItems).toEqual(21)
       expect(leaderboard.pageInfo).toEqual({
@@ -159,18 +163,19 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
-      const leaderboard = (await collectionResolver
-        .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { afterCursor: '11' } } }, mockCtx))
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(
+        undefined,
+        { input: { pageInput: { afterCursor: '11' } } },
+        mockCtx,
+      )
 
       expect(leaderboard.items).toEqual([
         { id: '10', contract: '0x0010', stats: { seven_day_volume: 10 } },
@@ -217,18 +222,19 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
-      const leaderboard = (await collectionResolver
-        .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { beforeCursor: '10' } } }, mockCtx))
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(
+        undefined,
+        { input: { pageInput: { beforeCursor: '10' } } },
+        mockCtx,
+      )
 
       expect(leaderboard.items).toEqual([
         { id: '20', contract: '0x0020', stats: { seven_day_volume: 20 } },
@@ -275,18 +281,19 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
-      const leaderboard = (await collectionResolver
-        .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { first: 5, beforeCursor: '10' } } }, mockCtx))
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(
+        undefined,
+        { input: { pageInput: { first: 5, beforeCursor: '10' } } },
+        mockCtx,
+      )
 
       expect(leaderboard.items).toEqual([
         { id: '20', contract: '0x0020', stats: { seven_day_volume: 20 } },
@@ -328,18 +335,19 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
-      const leaderboard = (await collectionResolver
-        .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { last: 4, beforeCursor: '5' } } }, mockCtx))
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(
+        undefined,
+        { input: { pageInput: { last: 4, beforeCursor: '5' } } },
+        mockCtx,
+      )
 
       expect(leaderboard.items).toEqual([
         { id: '9', contract: '0x0009', stats: { seven_day_volume: 9 } },
@@ -380,18 +388,19 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
-      const leaderboard = (await collectionResolver
-        .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { last: 7, afterCursor: '18' } } }, mockCtx))
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(
+        undefined,
+        { input: { pageInput: { last: 7, afterCursor: '18' } } },
+        mockCtx,
+      )
 
       expect(leaderboard.items).toEqual([
         { id: '6', contract: '0x0006', stats: { seven_day_volume: 6 } },
@@ -435,18 +444,19 @@ describe('collection resolver', () => {
             { id: '19', contract: '0x0019' },
             { id: '20', contract: '0x0020' },
           ]),
-        }  as unknown as CollectionRepository,
+        } as unknown as CollectionRepository,
       } as unknown as Repository
 
       let sales = 0
-      mockFetchData
-        .mockImplementation(() => {
-          return { statistics: { seven_day_volume: sales++ } }
-        })
+      mockFetchData.mockImplementation(() => {
+        return { statistics: { seven_day_volume: sales++ } }
+      })
 
-      const leaderboard = (await collectionResolver
-        .Query
-        .collectionLeaderboard(undefined, { input: { pageInput: { last: 7, afterCursor: '5' } } }, mockCtx))
+      const leaderboard = await collectionResolver.Query.collectionLeaderboard(
+        undefined,
+        { input: { pageInput: { last: 7, afterCursor: '5' } } },
+        mockCtx,
+      )
 
       expect(leaderboard.items).toEqual([
         { id: '4', contract: '0x0004', stats: { seven_day_volume: 4 } },

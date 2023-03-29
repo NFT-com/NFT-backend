@@ -3,7 +3,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { _logger, defs,entity } from '@nftcom/shared'
+import { _logger, defs, entity } from '@nftcom/shared'
 
 const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
 const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-goerli.looksrare.org/api/v1'
@@ -28,9 +28,9 @@ export interface LooksRareOrder {
   amount: number
   price: string
   nonce: string
-  startTime:number
-  endTime:number
-  minPercentageToAsk:number
+  startTime: number
+  endTime: number
+  minPercentageToAsk: number
   params: string
   status: string
   signature: string
@@ -55,25 +55,20 @@ export interface LookrareResponse {
   status: string
 }
 
-const getLooksRareInterceptor = (
-  baseURL: string,
-  chainId: string,
-): AxiosInstance => {
+const getLooksRareInterceptor = (baseURL: string, chainId: string): AxiosInstance => {
   const looksrareInstance = axios.create({
     baseURL,
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/json',
-      'X-Looks-Api-Key': chainId === '1'? LOOKSRARE_API_KEY : '',
+      'X-Looks-Api-Key': chainId === '1' ? LOOKSRARE_API_KEY : '',
     },
   })
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig = {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
@@ -85,7 +80,7 @@ const getLooksRareInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(looksrareInstance as any,  retryOptions)
+  axiosRetry(looksrareInstance as any, retryOptions)
   return looksrareInstance
 }
 
@@ -104,24 +99,18 @@ const retrieveLooksRareOrdersInBatches = async (
   const offers: any[] = []
   let queryUrl
   const listingBaseUrl = chainId === '5' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
-  const listingInterceptorLooksrare = getLooksRareInterceptor(
-    listingBaseUrl,
-    chainId,
-  )
+  const listingInterceptorLooksrare = getLooksRareInterceptor(listingBaseUrl, chainId)
   let delayCounter = 0
   let size: number
-  while(listingQueryParams.length>0) {
+  while (listingQueryParams.length > 0) {
     size = batchSize
     queryUrl = listingQueryParams.pop()
 
-    const response: AxiosResponse = await listingInterceptorLooksrare(
-      `/orders?${queryUrl}`,
-    )
+    const response: AxiosResponse = await listingInterceptorLooksrare(`/orders?${queryUrl}`)
 
-    if (response?.data?.data?.length)
-    {
+    if (response?.data?.data?.length) {
       const orders = response?.data?.data
-      if( queryUrl.includes('isOrderAsk=true')){
+      if (queryUrl.includes('isOrderAsk=true')) {
         listings.push(
           orderEntityBuilder(
             defs.ProtocolType.LooksRare,
@@ -131,8 +120,7 @@ const retrieveLooksRareOrdersInBatches = async (
             orders[0]?.collectionAddress,
           ),
         )
-      }
-      else  {
+      } else {
         offers.push(
           orderEntityBuilder(
             defs.ProtocolType.LooksRare,
@@ -144,7 +132,7 @@ const retrieveLooksRareOrdersInBatches = async (
         )
       }
     }
-    delayCounter = delayCounter +1
+    delayCounter = delayCounter + 1
     if (delayCounter === size) {
       await delay(1000)
       delayCounter = 0
@@ -177,17 +165,17 @@ export const retrieveMultipleOrdersLooksrare = async (
     if (looksrareMultiOrderRequest?.length) {
       const orderQueries: Array<string> = []
       for (const looksrareReq of looksrareMultiOrderRequest) {
-        orderQueries.push(`isOrderAsk=true&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_ASC`)
+        orderQueries.push(
+          `isOrderAsk=true&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_ASC`,
+        )
         if (includeOffers) {
-          orderQueries.push(`isOrderAsk=false&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_DESC`)
+          orderQueries.push(
+            `isOrderAsk=false&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_DESC`,
+          )
         }
       }
       if (orderQueries.length) {
-        responseAggregator = await retrieveLooksRareOrdersInBatches(
-          orderQueries,
-          chainId,
-          LOOKSRARE_LISTING_BATCH_SIZE,
-        )
+        responseAggregator = await retrieveLooksRareOrdersInBatches(orderQueries, chainId, LOOKSRARE_LISTING_BATCH_SIZE)
       }
     }
   } catch (err) {
@@ -208,13 +196,11 @@ export const createLooksrareListing = async (
 ): Promise<Partial<entity.TxOrder> | null | Error> => {
   let looksrareOrder: Partial<entity.TxOrder>
   const baseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
-  if (order == null || order.length === 0   ) {
+  if (order == null || order.length === 0) {
     return null
   }
   try {
-    const res = await getLooksRareInterceptor(baseUrl, chainId).post('/orders',
-      JSON.parse(order),
-    )
+    const res = await getLooksRareInterceptor(baseUrl, chainId).post('/orders', JSON.parse(order))
     if (res.status === 201 && res.data.data) {
       looksrareOrder = await orderEntityBuilder(
         defs.ProtocolType.LooksRare,

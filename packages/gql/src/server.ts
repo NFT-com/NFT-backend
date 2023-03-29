@@ -54,8 +54,7 @@ type GQLError = {
   path: Array<string | number>
 }
 
-const getAddressFromSignature = (authMsg, signature: string): string =>
-  utils.verifyMessage(authMsg, signature)
+const getAddressFromSignature = (authMsg, signature: string): string => utils.verifyMessage(authMsg, signature)
 
 export const createLoaders = (): any => {
   return {
@@ -119,8 +118,10 @@ export const createContext = async (ctx): Promise<Context> => {
       walletLoader.clear(wallet.id).prime(wallet.id, wallet)
       user = await repositories.user.findById(wallet?.userId)
     } else {
-      logger.warn({ address, chainId, network, wallet },
-        'User attempting to authenticate, but wallet missing from the database.')
+      logger.warn(
+        { address, chainId, network, wallet },
+        'User attempting to authenticate, but wallet missing from the database.',
+      )
     }
   } else if (hasAuthSignature) {
     // Auth signature, but no timestamp is forbidden
@@ -192,25 +193,26 @@ export const start = async (): Promise<void> => {
 
   const httpServer = http.createServer(app)
 
-  app.use(pinoHttp({
-    logger: _logger.parent,
-    autoLogging: {
-      ignore: (req) => {
-        return (
-          ['/.well-known/apollo/server-health', '/favicon.ico', '/'].includes(req.url)
-          || req.method === 'OPTIONS'
-        )
+  app.use(
+    pinoHttp({
+      logger: _logger.parent,
+      autoLogging: {
+        ignore: req => {
+          return (
+            ['/.well-known/apollo/server-health', '/favicon.ico', '/'].includes(req.url) || req.method === 'OPTIONS'
+          )
+        },
       },
-    },
-    customLogLevel: function (_req, res, err) {
-      if (res.statusCode >= 400 && res.statusCode < 500) {
-        return 'warn'
-      } else if (res.statusCode >= 500 || err) {
-        return 'error'
-      }
-      return 'silent'
-    },
-  }))
+      customLogLevel: function (_req, res, err) {
+        if (res.statusCode >= 400 && res.statusCode < 500) {
+          return 'warn'
+        } else if (res.statusCode >= 500 || err) {
+          return 'error'
+        }
+        return 'silent'
+      },
+    }),
+  )
 
   app.use(Sentry.Handlers.requestHandler())
   app.use(cors())
@@ -237,16 +239,17 @@ export const start = async (): Promise<void> => {
     } else if (new Date(foundUser?.confirmEmailTokenExpiresAt) > new Date()) {
       return res.status(400).json({ message: 'Email already sent' })
     } else {
-      return repositories.user.save({
-        ...foundUser,
-        email: email?.toLowerCase(),
-        username: `marketing-${email?.toLowerCase()}`,
-        referredBy: null,
-        avatarURL: null,
-        confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
-        confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
-        referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
-      })
+      return repositories.user
+        .save({
+          ...foundUser,
+          email: email?.toLowerCase(),
+          username: `marketing-${email?.toLowerCase()}`,
+          referredBy: null,
+          avatarURL: null,
+          confirmEmailToken: cryptoRandomString({ length: 36, type: 'url-safe' }),
+          confirmEmailTokenExpiresAt: addDays(helper.toUTCDate(), 1),
+          referralId: cryptoRandomString({ length: 10, type: 'url-safe' }),
+        })
         .then(user => sendgrid.sendConfirmEmail(user))
         .then(() => res.status(200).json({ message: 'success' }))
     }
@@ -256,33 +259,38 @@ export const start = async (): Promise<void> => {
   app.get('/verify/:email/:token', validate.validate(validate.verifySchema), async function (req, res) {
     const { email, token } = req.params
 
-    return repositories.user.findOne({ where:
-      {
-        email: email?.toLowerCase(),
-        confirmEmailToken: token,
-      },
-    }).then(user => {
-      if (!user) {
-        return res.status(400).json({
-          message: 'Invalid email token pair',
-        })
-      } else {
-        if (user?.isEmailConfirmed) {
+    return repositories.user
+      .findOne({
+        where: {
+          email: email?.toLowerCase(),
+          confirmEmailToken: token,
+        },
+      })
+      .then(user => {
+        if (!user) {
           return res.status(400).json({
-            message: 'User already verified',
+            message: 'Invalid email token pair',
           })
+        } else {
+          if (user?.isEmailConfirmed) {
+            return res.status(400).json({
+              message: 'User already verified',
+            })
+          }
+          return repositories.user
+            .save({
+              ...user,
+              isEmailConfirmed: true,
+            })
+            .then(() => sendgrid.addEmailToList(email?.toLowerCase()))
+            .then(() => sendgrid.sendSuccessSubscribeEmail(email?.toLowerCase()))
+            .then(() =>
+              res.status(200).json({
+                message: 'successfully verified!',
+              }),
+            )
         }
-        return repositories.user.save({
-          ...user,
-          isEmailConfirmed: true,
-        })
-          .then(() => sendgrid.addEmailToList(email?.toLowerCase()))
-          .then(() => sendgrid.sendSuccessSubscribeEmail(email?.toLowerCase()))
-          .then(() => res.status(200).json({
-            message: 'successfully verified!',
-          }))
-      }
-    })
+      })
   })
 
   app.get('/uri/:username', async function (req, res) {
@@ -295,38 +303,37 @@ export const start = async (): Promise<void> => {
     if (cachedData) {
       return res.send(JSON.parse(cachedData as string))
     } else {
-      return repositories.profile.findByURL(username.toLowerCase(), chainId)
-        .then(async (profile: entity.Profile) => {
-          if (!profile) {
-            return res.send({
-              name: username.toLowerCase(),
-              image: 'https://cdn.nft.com/nullPhoto.png',
-              header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-              description: `NFT.com profile for ${username.toLowerCase()}`,
-              attributes: [
-                {
-                  trait_type: 'name',
-                  value: username.toLowerCase(),
-                },
-              ],
-            })
-          } else {
-            const data = {
-              name: username?.toLowerCase(),
-              image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
-              header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-              description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
-              attributes: [
-                {
-                  trait_type: 'name',
-                  value: username.toLowerCase(),
-                },
-              ],
-            }
-            await cache.set(key, JSON.stringify(data), 'EX', 60 * 10)
-            return res.send(data)
+      return repositories.profile.findByURL(username.toLowerCase(), chainId).then(async (profile: entity.Profile) => {
+        if (!profile) {
+          return res.send({
+            name: username.toLowerCase(),
+            image: 'https://cdn.nft.com/nullPhoto.png',
+            header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+            description: `NFT.com profile for ${username.toLowerCase()}`,
+            attributes: [
+              {
+                trait_type: 'name',
+                value: username.toLowerCase(),
+              },
+            ],
+          })
+        } else {
+          const data = {
+            name: username?.toLowerCase(),
+            image: profile.photoURL ?? 'https://cdn.nft.com/nullPhoto.png',
+            header: profile.bannerURL ?? 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+            description: profile.description ?? `NFT.com profile for ${username.toLowerCase()}`,
+            attributes: [
+              {
+                trait_type: 'name',
+                value: username.toLowerCase(),
+              },
+            ],
           }
-        })
+          await cache.set(key, JSON.stringify(data), 'EX', 60 * 10)
+          return res.send(data)
+        }
+      })
     }
   })
 
@@ -356,10 +363,7 @@ export const start = async (): Promise<void> => {
         </html>`,
       )
     } else {
-      return Promise.reject(appError.buildExists(
-        profileError.buildKeyNotValid(key),
-        profileError.ErrorType.KeyInvalid,
-      ))
+      return Promise.reject(appError.buildExists(profileError.buildKeyNotValid(key), profileError.ErrorType.KeyInvalid))
     }
   })
 

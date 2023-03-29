@@ -31,11 +31,12 @@ const chunk = (arr: any[], size: number): any[] => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getOwnersForContract = async (
-  nftAbi: any[], nftAddress: string): Promise<number> => {
+const getOwnersForContract = async (nftAbi: any[], nftAddress: string): Promise<number> => {
   // Get tokenIds from nftAddress
   const client = await pgClient.connect()
-  const tokenIds: entity.NFT[] = (await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text AND "owner" IS NULL', [nftAddress])).rows
+  const tokenIds: entity.NFT[] = (
+    await client.query('SELECT "tokenId" FROM nft WHERE "contract" = $1::text AND "owner" IS NULL', [nftAddress])
+  ).rows
   const multicallArgs = tokenIds.map(({ tokenId }) => {
     return {
       contract: nftAddress,
@@ -51,7 +52,8 @@ const getOwnersForContract = async (
         if (!data) continue
         await client.query(
           'UPDATE nft SET owner = $1::text, "updatedAt" = Now() WHERE "contract" = $2::text AND "tokenId" = $3::text',
-          [data[0], tokenIds[i].contract, tokenIds[i].tokenId])
+          [data[0], tokenIds[i].contract, tokenIds[i].tokenId],
+        )
       }
       console.log('*'.repeat(10) + ` BATCH OF ${batch.length} COMPLETED ` + '*'.repeat(10))
     }
@@ -62,8 +64,7 @@ const getOwnersForContract = async (
   return tokenIds.length
 }
 
-const getOwnersForNFTs = async (
-  nftAbi: any[], nfts: Partial<entity.NFT>[]): Promise<number> => {
+const getOwnersForNFTs = async (nftAbi: any[], nfts: Partial<entity.NFT>[]): Promise<number> => {
   const client = await pgClient.connect()
   const multicallArgs = nfts.map(({ tokenId, contract }) => {
     return {
@@ -123,14 +124,17 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
     },
   ]
 
-  const spamFromAlchemy: string[] = await (await fetch(`https://eth-mainnet.g.alchemy.com/nft/v2/${process.env.ALCHEMY_API_KEY}/getSpamContracts`, {
-    headers: {
-      accept: 'application/json',
-    },
-  })).json()
+  const spamFromAlchemy: string[] = await (
+    await fetch(`https://eth-mainnet.g.alchemy.com/nft/v2/${process.env.ALCHEMY_API_KEY}/getSpamContracts`, {
+      headers: {
+        accept: 'application/json',
+      },
+    })
+  ).json()
 
   if (shouldSeparateContracts) {
-    const contracts: Partial<entity.NFT>[] = (await pgClient.query(`
+    const contracts: Partial<entity.NFT>[] = (
+      await pgClient.query(`
       SELECT DISTINCT "contract"
       FROM nft 
       WHERE 
@@ -138,15 +142,15 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
         AND "owner" IS NULL
         AND "contract" IN (
           SELECT "contract" FROM collection WHERE "isSpam" = false
-        )`))
-        .rows
-        .filter((nft) => !spamFromAlchemy.includes(toLower(nft.contract)))
-        .map((nft) => nft.contract)
+        )`)
+    ).rows
+      .filter(nft => !spamFromAlchemy.includes(toLower(nft.contract)))
+      .map(nft => nft.contract)
     const q = queue(async (contractAddress: string) => {
       const batchSize = await getOwnersForContract(nftAbi, contractAddress)
       return { contractAddress, batchSize, remaining: q.length() }
     }, 100)
-  
+
     q.push(contracts, (err, task) => {
       if (err) {
         console.error(err)
@@ -154,15 +158,15 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
       }
       console.info(task)
     })
-  
+
     await q.drain()
   } else {
     const q = queue(async (nfts: Partial<entity.NFT>[]) => {
       const batchSize = await getOwnersForNFTs(nftAbi, nfts)
       // await getOwnersForContract(nftAbi, contractAddress, multicallContract)
-      return { contractAddresses: new Set(nfts.map((n) => n.contract)), batchSize, remaining: q.length() }
+      return { contractAddresses: new Set(nfts.map(n => n.contract)), batchSize, remaining: q.length() }
     }, 20)
-  
+
     const pushBatchToQueue = (batch: Partial<entity.NFT>[]) => {
       q.push([batch], (err, task) => {
         if (err) {
@@ -172,7 +176,7 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
         console.info(task)
       })
     }
-  
+
     await new Promise<void>((resolve, reject) => {
       pgClient.connect((err, client, done) => {
         if (err) throw err
@@ -186,7 +190,9 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
             AND "owner" IS NULL
             AND "contract" IN (
               SELECT "contract" FROM collection WHERE "isSpam" = false
-            )`, [], { batchSize, highWaterMark: 1_000_000 },
+            )`,
+          [],
+          { batchSize, highWaterMark: 1_000_000 },
         )
         const stream = client.query(query)
         stream.on('end', async () => {
@@ -196,7 +202,7 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
           done()
           resolve()
         })
-        stream.on('error', (err) => {
+        stream.on('error', err => {
           reject(err)
         })
         const processBatch = new Writable({
@@ -214,7 +220,7 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
         stream.pipe(processBatch)
       })
     })
-  
+
     await q.drain()
   }
 }
@@ -223,7 +229,7 @@ const main = async (shouldSeparateContracts = false): Promise<void> => {
 main()
   .then(() => pgClient.end())
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch(error => {
     console.error(error)
     process.exit(1)
   })

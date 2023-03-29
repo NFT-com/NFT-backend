@@ -10,8 +10,8 @@ export enum CacheKeys {
   UPDATE_NFTS_NON_PROFILE = 'update_nfts_non_profile',
   REFRESH_NFT_ORDERS_EXT = 'refresh_nft_orders_ext',
   REFRESHED_NFT_ORDERS_EXT = 'refreshed_nft_orders_ext',
-  REFRESH_COLLECTION_RARITY= 'refresh_collection_rarity',
-  REFRESHED_COLLECTION_RARITY= 'refreshed_collection_rarity',
+  REFRESH_COLLECTION_RARITY = 'refresh_collection_rarity',
+  REFRESHED_COLLECTION_RARITY = 'refreshed_collection_rarity',
   UPDATED_NFTS_PROFILE = 'updated_nfts_profile',
   UPDATE_NFTS_PROFILE = 'update_nfts_profile',
   PROFILES_IN_PROGRESS = 'profiles_in_progress',
@@ -40,7 +40,7 @@ export enum CacheKeys {
 }
 
 export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
-  const currentTime: Date = new Date(ttl? ttl: Date.now())
+  const currentTime: Date = new Date(ttl ? ttl : Date.now())
   if (!ttl) {
     currentTime.setMinutes(currentTime.getMinutes() + DEFAULT_TTL_MINS)
   }
@@ -48,12 +48,10 @@ export const ttlForTimestampedZsetMembers = (ttl?: Date): number => {
 }
 
 // for expired set members
-export const removeExpiredTimestampedZsetMembers = (
-  zSetKey: string,
-  expireTill?: number): Promise<number> => {
+export const removeExpiredTimestampedZsetMembers = (zSetKey: string, expireTill?: number): Promise<number> => {
   const dateNow: number = Date.now()
   const expireTillCondition: boolean = new Date(expireTill) < new Date(dateNow)
-  const expirationTime = expireTill && expireTillCondition? expireTill: dateNow
+  const expirationTime = expireTill && expireTillCondition ? expireTill : dateNow
   if (redis) {
     return redis.zremrangebyscore(zSetKey, '-inf', expirationTime)
   }

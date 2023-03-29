@@ -15,10 +15,7 @@ import { TxActivityDAO } from './model'
 import collections from './schemas/collections.json'
 import nfts from './schemas/nfts.json'
 
-const logger = _logger.Factory(
-  _logger.Context.General,
-  _logger.Context.Typesense,
-)
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.Typesense)
 
 const NFT_PAGE_SIZE = parseInt(process.env.NFT_PAGE_SIZE) || 100_000
 const N_CHUNKS = parseInt(process.env.N_CHUNKS) || 1
@@ -30,11 +27,7 @@ const chunk = (arr: any[], size: number): any[] => {
   }
   return chunks
 }
-const addDocumentsToTypesense = async (
-  client: any,
-  collectionName: string,
-  documents: any[],
-): Promise<void> => {
+const addDocumentsToTypesense = async (client: any, collectionName: string, documents: any[]): Promise<void> => {
   while (documents.length) {
     const batch = documents.splice(0, BATCH_SIZE)
     try {
@@ -46,10 +39,10 @@ const addDocumentsToTypesense = async (
             .collections(collectionName)
             .documents()
             .import(jsonl)
-            .catch(async (err) => {
+            .catch(async err => {
               if (err.httpStatus === 413) {
                 const responses = await Promise.all(
-                  chunk(docChunk, Math.ceil(docChunk.length / 2)).map(async (dc) => {
+                  chunk(docChunk, Math.ceil(docChunk.length / 2)).map(async dc => {
                     const jsonl = dc.map((doc: any) => JSON.stringify(doc)).join('\n')
                     logger.info({ size: dc.length }, 'IMPORTING BATCH')
                     return await client.collections(collectionName).documents().import(jsonl)
@@ -63,12 +56,14 @@ const addDocumentsToTypesense = async (
         }),
       )
 
-      const failedImports = responses.map(data =>
-        data
-          .split('\n')
-          .map((r: string) => JSON.parse(r))
-          .filter((item: { success: boolean }) => item.success === false),
-      ).flat()
+      const failedImports = responses
+        .map(data =>
+          data
+            .split('\n')
+            .map((r: string) => JSON.parse(r))
+            .filter((item: { success: boolean }) => item.success === false),
+        )
+        .flat()
 
       if (failedImports.length) {
         throw new Error(`Error indexing items ${JSON.stringify(failedImports, null, 2)}`)
@@ -82,7 +77,6 @@ const addDocumentsToTypesense = async (
 const schemas = [collections, nfts]
 
 class Commander {
-
   client: Typesense.Client
   repositories: db.Repository
   pgClient: PgClient
@@ -94,18 +88,24 @@ class Commander {
     this.pgClient = pgClient
   }
 
-  retrieveListings = async (opts?: { nftContract?: string; sinceUpdatedAt?: Date }): Promise<any>  => {
+  retrieveListings = async (opts?: { nftContract?: string; sinceUpdatedAt?: Date }): Promise<any> => {
     const { nftContract, sinceUpdatedAt } = opts || { nftContract: undefined }
-    return txActivityService.listingMapFrom(await this.repositories.txActivity
-      .findActivitiesNotExpired(
-        defs.ActivityType.Listing, { nftContract, updatedAt: sinceUpdatedAt }) as TxActivityDAO[])
+    return txActivityService.listingMapFrom(
+      (await this.repositories.txActivity.findActivitiesNotExpired(defs.ActivityType.Listing, {
+        nftContract,
+        updatedAt: sinceUpdatedAt,
+      })) as TxActivityDAO[],
+    )
   }
 
   reindexNFTsByContract = async (contractAddr: string, listingMap?: any): Promise<void> => {
     const nfts = await this.repositories.nft.findAllWithRelationsByContract(contractAddr)
     const collection = await mapCollectionData('nfts', nfts, this.repositories, listingMap)
     if (collection?.length) {
-      await this.client.collections('nfts').documents().delete({ 'filter_by': `contractAddr:=${contractAddr}` })
+      await this.client
+        .collections('nfts')
+        .documents()
+        .delete({ filter_by: `contractAddr:=${contractAddr}` })
       try {
         await addDocumentsToTypesense(this.client, 'nfts', collection)
       } catch (e) {
@@ -114,14 +114,14 @@ class Commander {
     }
   }
 
-  erase = async (): Promise<PromiseSettledResult<CollectionSchema|void>[]> => {
+  erase = async (): Promise<PromiseSettledResult<CollectionSchema | void>[]> => {
     const [collections, aliasesResponse] = await Promise.all([
       this.client.collections().retrieve(),
       this.client.aliases().retrieve(),
     ])
     const aliases = aliasesResponse.aliases.map(ar => ar.collection_name)
     return Promise.allSettled(
-      collections.map((collection) => {
+      collections.map(collection => {
         if (!aliases.includes(collection.name)) {
           return this.client.collections(collection.name).delete()
         }
@@ -134,12 +134,14 @@ class Commander {
     cursorContract: string,
     cursorId: string,
     limit: number,
-    isSingleContract?: boolean): Promise<QueryResult<any>> {
+    isSingleContract?: boolean,
+  ): Promise<QueryResult<any>> {
     const cursorAndLimit = `
     AND (nft.contract, nft.id) > ($1, $2)
     ORDER BY nft.contract ASC, nft.id ASC LIMIT $3`
     const limitOnly = `ORDER BY nft.contract ASC, nft.id ASC LIMIT ${isSingleContract ? '$2' : '$1'}`
-    return this.pgClient.query(`
+    return this.pgClient.query(
+      `
     SELECT
       nft.*,
       row_to_json(collection.*) as collection,
@@ -151,11 +153,16 @@ class Commander {
       LEFT JOIN wallet ON wallet."id" = nft."walletId"
       WHERE nft."deletedAt" IS NULL
       ${isSingleContract ? 'AND nft."contract" = $1' : ''}
-      ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly: ''}`, [cursorContract, cursorId, limit].filter(x => !!x))
+      ${cursorContract && cursorId ? cursorAndLimit : limit ? limitOnly : ''}`,
+      [cursorContract, cursorId, limit].filter(x => !!x),
+    )
   }
 
-  private _retrieveData = async (name: string, cursor?: string | string[], pageSize = NFT_PAGE_SIZE):
-  Promise<[any[], number]> => {
+  private _retrieveData = async (
+    name: string,
+    cursor?: string | string[],
+    pageSize = NFT_PAGE_SIZE,
+  ): Promise<[any[], number]> => {
     if (name === 'nfts') {
       const cursorContract = cursor ? cursor[0] : undefined
       const cursorId = cursor ? cursor[1] : undefined
@@ -184,9 +191,7 @@ class Commander {
 
       logger.info({ retrievedCount, totalCount, cursor })
       logger.info({ name }, 'MAPPING DATA')
-      const documents = (
-        await mapCollectionData(name, data, this.repositories)
-      ).filter(x => x !== undefined)
+      const documents = (await mapCollectionData(name, data, this.repositories)).filter(x => x !== undefined)
 
       if (documents) {
         await addDocumentsToTypesense(this.client, collectionName, documents)
@@ -202,8 +207,9 @@ class Commander {
       readableObjectMode: true,
       writableObjectMode: true,
       async transform(chunk, _encoding, callback) {
-        const mappedData = (await mapCollectionData(name, [chunk], repositories, listingMap))
-          .filter((x) => x !== undefined)
+        const mappedData = (await mapCollectionData(name, [chunk], repositories, listingMap)).filter(
+          x => x !== undefined,
+        )
         callback(null, mappedData)
       },
     })
@@ -251,9 +257,7 @@ class Commander {
         stream.on('error', () => {
           reject()
         })
-        stream
-          .pipe(mapNFTs)
-          .pipe(indexNFTs)
+        stream.pipe(mapNFTs).pipe(indexNFTs)
       })
     })
 
@@ -263,18 +267,22 @@ class Commander {
   }
 
   private _indexNFTs = async (collectionName: string, listingMap: any): Promise<string> => {
-    const collections = (await this.repositories.collection.find({
-      select: { contract: true },
-      where: {
-        isSpam: false,
-      },
-      order: {
-        totalSales: {
-          direction: 'DESC',
-          nulls: 'LAST',
+    const collections = (
+      await this.repositories.collection.find({
+        select: { contract: true },
+        where: {
+          isSpam: false,
         },
-      },
-    })).filter((c) => !defs.LARGE_COLLECTIONS.includes(c.contract)).map((c) => c.contract)
+        order: {
+          totalSales: {
+            direction: 'DESC',
+            nulls: 'LAST',
+          },
+        },
+      })
+    )
+      .filter(c => !defs.LARGE_COLLECTIONS.includes(c.contract))
+      .map(c => c.contract)
 
     const q = queue(async (contract: string) => {
       await this._indexNFTCollection(collectionName, contract, listingMap)
@@ -323,11 +331,11 @@ class Commander {
     const collectionNames = await Promise.all([
       this._indexCollection(`collections-${timestamp}`),
       this.retrieveListings()
-        .then(async (listingMap) => {
+        .then(async listingMap => {
           await this._indexLargeCollections(`nfts-${timestamp}`, listingMap)
           return listingMap
         })
-        .then(async (listingMap) => {
+        .then(async listingMap => {
           return await this._indexNFTs(`nfts-${timestamp}`, listingMap)
         }),
     ])
@@ -349,9 +357,11 @@ class Commander {
   }
 
   private _dropFields = (fields: string[], newFields: string[]): { name: string; drop: boolean }[] => {
-    return fields.filter((field) => !newFields.includes(field)).map(field => {
-      return { name: field, drop: true }
-    })
+    return fields
+      .filter(field => !newFields.includes(field))
+      .map(field => {
+        return { name: field, drop: true }
+      })
   }
   update = async (collection: string, fields: string[], newFields: string[]): Promise<void> => {
     for (const schema of schemas) {
@@ -371,7 +381,6 @@ class Commander {
   help = async (): Promise<void> => {
     console.log('Uncomment the commands you want to run!')
   }
-
 }
 
 export default Commander

@@ -88,8 +88,7 @@ export const blockchainConfig = {
   contractAccountPK: '',
 }
 
-export const isNetworkSupported = (network: string): boolean =>
-  helper.isNotEmpty(supportedNetworks[network])
+export const isNetworkSupported = (network: string): boolean => helper.isNotEmpty(supportedNetworks[network])
 
 export const getChain = (network: string, chainId: string): defs.Chain =>
   supportedNetworks[network].find((chain: defs.Chain) => chain.id === chainId)

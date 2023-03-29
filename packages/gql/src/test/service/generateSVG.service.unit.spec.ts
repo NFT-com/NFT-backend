@@ -1,6 +1,7 @@
 import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
 
-const profileURL = 'testProfile', base64String = 'testBase64String'
+const profileURL = 'testProfile',
+  base64String = 'testBase64String'
 describe('generateSVG service', () => {
   describe('generateSVG', () => {
     // Test SVG has profileURL and base64String

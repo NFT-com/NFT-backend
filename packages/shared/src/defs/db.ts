@@ -11,7 +11,7 @@ export enum EntityType {
   NFT = 'NFT',
   Profile = 'Profile',
   User = 'User',
-  Wallet = 'Wallet'
+  Wallet = 'Wallet',
 }
 
 export enum EdgeType {
@@ -19,12 +19,12 @@ export enum EdgeType {
   Referred = 'Referred',
   Displays = 'Displays',
   Includes = 'Includes',
-  Watches = 'Watches'
+  Watches = 'Watches',
 }
 
 export enum BidStatus {
   Executed = 'Executed',
-  Submitted = 'Submitted'
+  Submitted = 'Submitted',
 }
 
 export enum NFTType {
@@ -34,20 +34,20 @@ export enum NFTType {
   CRYPTO_PUNKS = 'CRYPTO_PUNKS',
   Profile = 'Profile',
   GenesisKey = 'GenesisKey',
-  GenesisKeyProfile = 'GenesisKeyProfile'
+  GenesisKeyProfile = 'GenesisKeyProfile',
 }
 
 export enum NFTSize {
   Small = 'Small',
   Medium = 'Medium',
-  Large = 'Large'
+  Large = 'Large',
 }
 
 export enum AssetClass {
   ETH = 'ETH',
   ERC20 = 'ERC20',
   ERC721 = 'ERC721',
-  ERC1155 = 'ERC1155'
+  ERC1155 = 'ERC1155',
 }
 
 export type CurationItem = {
@@ -93,13 +93,13 @@ export enum ActivityType {
 
 export enum ActivityHL {
   Highest = 'highest',
-  Lowest = 'lowest'
+  Lowest = 'lowest',
 }
 
 export enum ActivityStatus {
   Valid = 'Valid',
   Cancelled = 'Cancelled',
-  Executed = 'Executed'
+  Executed = 'Executed',
 }
 
 export enum ExchangeType {
@@ -113,7 +113,7 @@ export enum ProtocolType {
   Seaport = 'Seaport',
   LooksRare = 'LooksRare',
   X2Y2 = 'X2Y2',
-  NFTCOM = 'NFTCOM'
+  NFTCOM = 'NFTCOM',
 }
 
 export type NFTPortNFTType = {
@@ -138,13 +138,13 @@ export enum NFTPortMarketplace {
 }
 
 export const CancelActivities = [ActivityType.Listing, ActivityType.Bid] as const
-export type CancelActivityType = typeof CancelActivities[number]
+export type CancelActivityType = (typeof CancelActivities)[number]
 
 export enum CurrencyType {
   ETH = 'ETH',
   WETH = 'WETH',
   USDC = 'USDC',
-  DAI = 'DAI'
+  DAI = 'DAI',
 }
 
 export type Trait = {
@@ -171,7 +171,7 @@ export type UserPreferences = {
 export enum ProfileStatus {
   Available = 'Available',
   Pending = 'Pending',
-  Owned = 'Owned'
+  Owned = 'Owned',
 }
 
 export enum ProfileDisplayType {

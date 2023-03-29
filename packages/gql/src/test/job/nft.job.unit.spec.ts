@@ -18,10 +18,7 @@ jest.mock('@nftcom/cache', () => ({
     REFRESHED_NFT_ORDERS_EXT: 'refreshed_nft_orders_ext_test',
   },
   createCacheConnection: jest.fn(),
-  removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(
-    () => Promise.resolve(null),
-  ),
-
+  removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(() => Promise.resolve(null)),
 }))
 
 jest.mock('@nftcom/gql/job/profile.job', () => {
@@ -29,9 +26,11 @@ jest.mock('@nftcom/gql/job/profile.job', () => {
     repositories: {
       nft: {
         find: () => {
-          return Promise.resolve()},
-        updateOneById: (id: string, nft: DeepPartial<entity.NFT>) =>{
-          return Promise.resolve({ id, ...nft })},
+          return Promise.resolve()
+        },
+        updateOneById: (id: string, nft: DeepPartial<entity.NFT>) => {
+          return Promise.resolve({ id, ...nft })
+        },
       },
     },
   }
@@ -48,22 +47,22 @@ describe('nft job', () => {
     it('executes retrieveMulitpleOpenseaOrders and retrieveLooksrareMultipleOrders', async () => {
       const cacheExpSpy = jest.spyOn(cacheService, 'removeExpiredTimestampedZsetMembers')
 
-      const osOrdersSpy = jest.spyOn(openseaService, 'retrieveMultipleOrdersOpensea')
-        .mockImplementationOnce(
-          () => Promise.resolve({
-            listings: [],
-            offers: [],
-          }),
-        )
-      const lrSpy = jest.spyOn(looksrareService, 'retrieveMultipleOrdersLooksrare')
-        .mockImplementationOnce(
-          () => Promise.resolve({
-            listings: [],
-            offers: [],
-          }),
-        )
-      await nftExternalOrdersOnDemand({ id: 'test-job-id', data: { FETCH_EXTERNAL_ORDERS_ON_DEMAND,
-        chainId: process.env.CHAIN_ID } } as Job)
+      const osOrdersSpy = jest.spyOn(openseaService, 'retrieveMultipleOrdersOpensea').mockImplementationOnce(() =>
+        Promise.resolve({
+          listings: [],
+          offers: [],
+        }),
+      )
+      const lrSpy = jest.spyOn(looksrareService, 'retrieveMultipleOrdersLooksrare').mockImplementationOnce(() =>
+        Promise.resolve({
+          listings: [],
+          offers: [],
+        }),
+      )
+      await nftExternalOrdersOnDemand({
+        id: 'test-job-id',
+        data: { FETCH_EXTERNAL_ORDERS_ON_DEMAND, chainId: process.env.CHAIN_ID },
+      } as Job)
 
       expect(cacheExpSpy).toHaveBeenCalledTimes(1)
       expect(osOrdersSpy).toHaveBeenCalledTimes(1)

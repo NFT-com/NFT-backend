@@ -5,10 +5,7 @@ import { DateResolver, DateTimeResolver } from 'graphql-scalars'
 import { appError } from '@nftcom/error-types'
 import { helper } from '@nftcom/shared'
 
-const invalidAddressError = appError.buildInvalid(
-  'Value is not an address',
-  'INVALID_ADDRESS',
-)
+const invalidAddressError = appError.buildInvalid('Value is not an address', 'INVALID_ADDRESS')
 
 const validateAddress = (value: string): string => {
   if (value.startsWith('0x') && value.length === 42) {
@@ -30,10 +27,7 @@ const Address = new GraphQLScalarType({
   },
 })
 
-const invalidBytesError = appError.buildInvalid(
-  'Value is not Bytes',
-  'INVALID_BYTES',
-)
+const invalidBytesError = appError.buildInvalid('Value is not Bytes', 'INVALID_BYTES')
 
 const validateBytes = (value: string): string => {
   if (value.startsWith('0x')) {
@@ -55,10 +49,7 @@ const Bytes = new GraphQLScalarType({
   },
 })
 
-const invalidUint256Error = appError.buildInvalid(
-  'Value is not Uint256',
-  'INVALID_UINT256',
-)
+const invalidUint256Error = appError.buildInvalid('Value is not Uint256', 'INVALID_UINT256')
 
 const Uint256 = new GraphQLScalarType({
   name: 'Uint256',

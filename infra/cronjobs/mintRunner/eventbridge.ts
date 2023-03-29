@@ -10,7 +10,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('mintRunner-eventRule')
   return new aws.cloudwatch.EventRule('mintRunner-eventRule', {
     name: resourceName,
-    scheduleExpression: isProduction() ? 'cron(05 09 * * ? *)' : 'cron(05 09 1 * ? *)',  // if prod, run daily at 09:05 UTC, otherwise 1x monthly
+    scheduleExpression: isProduction() ? 'cron(05 09 * * ? *)' : 'cron(05 09 1 * ? *)', // if prod, run daily at 09:05 UTC, otherwise 1x monthly
     tags: getTags(tags),
   })
 }

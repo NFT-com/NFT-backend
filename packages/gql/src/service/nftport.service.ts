@@ -88,8 +88,7 @@ export const retrieveNFTDetailsNFTPort = async (
     logger.debug(`starting retrieveNFTDetailsNFTPort: ${contract} ${tokenId} ${chainId}`)
     const key = `NFTPORT_NFT_DETAIL_${chainId}_${contract}_${tokenId}`
     const cachedData = await cache.get(key)
-    if (cachedData)
-      return JSON.parse(cachedData)
+    if (cachedData) return JSON.parse(cachedData)
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
@@ -101,7 +100,7 @@ export const retrieveNFTDetailsNFTPort = async (
         refresh_metadata: refreshMetadata || undefined,
         include: ['attributes'],
       },
-      paramsSerializer: (params) => qs.stringify(params, { arrayFormat: 'repeat' }),
+      paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' }),
     })
     if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
@@ -126,8 +125,7 @@ export const retrieveContractNFTs = async (
     logger.debug(`starting retrieveContractNFTs: ${contract} ${chainId}`)
     const key = `NFTPORT_CONTRACT_NFTS_${chainId}_${contract}`
     const cachedData = await cache.get(key)
-    if (cachedData)
-      return JSON.parse(cachedData)
+    if (cachedData) return JSON.parse(cachedData)
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
@@ -151,30 +149,31 @@ export const retrieveContractNFTs = async (
   }
 }
 
-const marketplaceString = (
-  marketplace: string | null,
-): defs.NFTPortMarketplace | null => {
+const marketplaceString = (marketplace: string | null): defs.NFTPortMarketplace | null => {
   if (!marketplace) return null
-  switch(marketplace) {
-  case 'opensea': return defs.NFTPortMarketplace.OpenSea
-  case 'rarible': return defs.NFTPortMarketplace.Rarible
-  case 'cryptopunks': return defs.NFTPortMarketplace.Cryptopunks
-  case 'looksrare': return defs.NFTPortMarketplace.LooksRare
-  case 'x2y2': return defs.NFTPortMarketplace.X2Y2
-  default: return null
+  switch (marketplace) {
+  case 'opensea':
+    return defs.NFTPortMarketplace.OpenSea
+  case 'rarible':
+    return defs.NFTPortMarketplace.Rarible
+  case 'cryptopunks':
+    return defs.NFTPortMarketplace.Cryptopunks
+  case 'looksrare':
+    return defs.NFTPortMarketplace.LooksRare
+  case 'x2y2':
+    return defs.NFTPortMarketplace.X2Y2
+  default:
+    return null
   }
 }
 
 /*
  * Keep NFTPort transactions to matching table
  */
-export const saveTransactionsToEntity = async (
-  transactions: any[],
-  chainId: string,
-): Promise<void> => {
+export const saveTransactionsToEntity = async (transactions: any[], chainId: string): Promise<void> => {
   try {
     await Promise.allSettled(
-      transactions.map(async (tx) => {
+      transactions.map(async tx => {
         try {
           if (tx.type.includes('transfer') || tx.type.includes('mint') || tx.type.includes('burn')) {
             const isExisting = await repositories.nftPortTransaction.findOne({
@@ -233,8 +232,9 @@ export const saveTransactionsToEntity = async (
                 quantity: Number(tx.quantity),
                 priceDetails: {
                   assetType: tx.price_details.asset_type,
-                  contractAddress: tx.price_details.contract_address ?
-                    ethers.utils.getAddress(tx.price_details.contract_address) : null,
+                  contractAddress: tx.price_details.contract_address
+                    ? ethers.utils.getAddress(tx.price_details.contract_address)
+                    : null,
                   price: tx.price_details.price ? tx.price_details.price.toString() : null,
                   priceUSD: tx.price_details.price_usd ? tx.price_details.price_usd.toString() : null,
                 },
@@ -271,8 +271,9 @@ export const saveTransactionsToEntity = async (
                 quantity: Number(tx.quantity),
                 priceDetails: {
                   assetType: tx.price_details.asset_type,
-                  contractAddress: tx.price_details.contract_address ?
-                    ethers.utils.getAddress(tx.price_details.contract_address) : null,
+                  contractAddress: tx.price_details.contract_address
+                    ? ethers.utils.getAddress(tx.price_details.contract_address)
+                    : null,
                   price: tx.price_details.price ? tx.price_details.price.toString() : null,
                   priceUSD: tx.price_details.price_usd ? tx.price_details.price_usd.toString() : null,
                 },
@@ -309,8 +310,9 @@ export const saveTransactionsToEntity = async (
                 quantity: Number(tx.quantity),
                 priceDetails: {
                   assetType: tx.price_details.asset_type,
-                  contractAddress: tx.price_details.contract_address ?
-                    ethers.utils.getAddress(tx.price_details.contract_address) : null,
+                  contractAddress: tx.price_details.contract_address
+                    ? ethers.utils.getAddress(tx.price_details.contract_address)
+                    : null,
                   price: tx.price_details.price ? tx.price_details.price.toString() : null,
                   priceUSD: tx.price_details.price_usd ? tx.price_details.price_usd.toString() : null,
                 },
@@ -333,11 +335,8 @@ export const saveTransactionsToEntity = async (
   }
 }
 
-const toSaveTxsBeStopped = (
-  txs : any[],
-  transactionDate: Date,
-): boolean => {
-  const tx = txs.find((tx) => new Date(tx.transaction_date) < transactionDate)
+const toSaveTxsBeStopped = (txs: any[], transactionDate: Date): boolean => {
+  const tx = txs.find(tx => new Date(tx.transaction_date) < transactionDate)
   return !!tx
 }
 
@@ -350,7 +349,7 @@ export const fetchTxsFromNFTPort = async (
 ): Promise<void> => {
   try {
     const availableTypes = ['transfer', 'burn', 'mint', 'sale', 'list', 'all']
-    const filteredType = type.filter((t) => availableTypes.indexOf(t) !== -1)
+    const filteredType = type.filter(t => availableTypes.indexOf(t) !== -1)
     let args
     if (tokenId) {
       args = [contractAddress, BigNumber.from(tokenId).toString()]
@@ -428,13 +427,16 @@ export const fetchTxsFromNFTPort = async (
               }
             }
             const timer = async (): Promise<any> => {
-              await new Promise((resolve) => {
+              await new Promise(resolve => {
                 setTimeout(resolve, NFTPORT_TIME_OUT)
               })
               if (tokenId)
-                throw Error(`Timeout reached in fetchTxsFromNFTPort: contract ${contractAddress}, tokenId ${BigNumber.from(tokenId).toString()}`)
-              else
-                throw Error(`Timeout reached in fetchTxsFromNFTPort: contract ${contractAddress}`)
+                throw Error(
+                  `Timeout reached in fetchTxsFromNFTPort: contract ${contractAddress}, tokenId ${BigNumber.from(
+                    tokenId,
+                  ).toString()}`,
+                )
+              else throw Error(`Timeout reached in fetchTxsFromNFTPort: contract ${contractAddress}`)
             }
             return await Promise.race([call(), timer()])
           } catch (err) {

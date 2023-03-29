@@ -2,19 +2,16 @@ import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
-import { BaseEntity,TxActivity } from '.'
+import { BaseEntity, TxActivity } from '.'
 
 @Index(['taker'])
 @Entity()
 export class TxTransaction extends BaseEntity {
 
-  @OneToOne(() => TxActivity,
-    (activity) =>  activity.activityTypeId,
-    {
-      nullable: false,
-      cascade: ['insert', 'update'],
-    },
-  )
+  @OneToOne(() => TxActivity, activity => activity.activityTypeId, {
+    nullable: false,
+    cascade: ['insert', 'update'],
+  })
   @JoinColumn({
     name: 'activityId',
     referencedColumnName: 'id',

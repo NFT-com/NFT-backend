@@ -1,34 +1,34 @@
-import { _logger,db } from '@nftcom/shared'
+import { _logger, db } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 export const clearDB = async (repositories: db.Repository): Promise<void> => {
   let users = await repositories.user.findAll()
-  const userIds = users.map((user) => user.id)
+  const userIds = users.map(user => user.id)
 
   let wallets = await repositories.wallet.findAll()
-  const walletIds = wallets.map((wallet) => wallet.id)
+  const walletIds = wallets.map(wallet => wallet.id)
 
   let profiles = await repositories.profile.findAll()
-  const profileIds = profiles.map((profile) => profile.id)
+  const profileIds = profiles.map(profile => profile.id)
 
   let nfts = await repositories.nft.findAll()
-  const nftIds = nfts.map((nft) => nft.id)
+  const nftIds = nfts.map(nft => nft.id)
 
   let edges = await repositories.edge.findAll()
-  const edgeIds = edges.map((edge) => edge.id)
+  const edgeIds = edges.map(edge => edge.id)
 
   let collections = await repositories.collection.findAll()
-  const collectionIds = collections.map((collection) => collection.id)
+  const collectionIds = collections.map(collection => collection.id)
 
   let events = await repositories.event.findAll()
-  const eventIds = events.map((event) => event.id)
+  const eventIds = events.map(event => event.id)
 
   const incentiveActions = await repositories.incentiveAction.findAll()
-  const actionIds = incentiveActions.map((action) => action.id)
+  const actionIds = incentiveActions.map(action => action.id)
 
   const nftPortTxs = await repositories.nftPortTransaction.findAll()
-  const nftPortTxIds = nftPortTxs.map((tx) => tx.id)
+  const nftPortTxIds = nftPortTxs.map(tx => tx.id)
 
   if (edgeIds.length) await repositories.edge.hardDeleteByIds(edgeIds)
   if (collectionIds.length) await repositories.collection.hardDeleteByIds(collectionIds)
@@ -43,12 +43,12 @@ export const clearDB = async (repositories: db.Repository): Promise<void> => {
   const activities = await repositories.txActivity.findAll()
 
   if (activities.length) {
-    const activityIds = activities.map((activity) => activity.id)
+    const activityIds = activities.map(activity => activity.id)
     // just orders for now
-    const activityTypeIds = activities.map((activity) => activity.activityTypeId)
+    const activityTypeIds = activities.map(activity => activity.activityTypeId)
     if (activityTypeIds.length) {
       await Promise.allSettled(
-        activityTypeIds.map(async (hash) => {
+        activityTypeIds.map(async hash => {
           await repositories.txOrder.hardDelete({ orderHash: hash })
         }),
       )
@@ -63,8 +63,14 @@ export const clearDB = async (repositories: db.Repository): Promise<void> => {
   edges = await repositories.edge.findAll()
   collections = await repositories.collection.findAll()
   events = await repositories.event.findAll()
-  if (users.length || wallets.length || profiles.length ||
-    nfts.length || edges.length || collections.length || events.length
+  if (
+    users.length ||
+    wallets.length ||
+    profiles.length ||
+    nfts.length ||
+    edges.length ||
+    collections.length ||
+    events.length
   ) {
     logger.error('Failed to clear test DB')
   }

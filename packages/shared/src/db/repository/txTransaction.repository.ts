@@ -17,21 +17,24 @@ export class TxTransactionRepository extends BaseRepository<TxTransaction> {
     status: ActivityStatus,
     protocol?: ProtocolType,
   ): Promise<TxTransaction[]> => {
-    const queryBuilder: SelectQueryBuilder<TxTransaction> = this.getRepository(true)
-      .createQueryBuilder('tx')
+    const queryBuilder: SelectQueryBuilder<TxTransaction> = this.getRepository(true).createQueryBuilder('tx')
     const types = []
     if (activityType) {
       types.push(activityType)
     } else {
       types.push(...[ActivityType.Sale, ActivityType.Transfer, ActivityType.Swap])
     }
-    if (protocol ) {
+    if (protocol) {
       return queryBuilder
         .where({ transactionType: In(types), taker: address, protocol })
         .orderBy({ 'tx.createdAt': 'DESC' })
         .leftJoinAndSelect('tx.activity', 'activity', 'activity.status = :status', { status })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId',
+        )
         .cache(true)
         .getMany()
     } else {
@@ -39,8 +42,12 @@ export class TxTransactionRepository extends BaseRepository<TxTransaction> {
         .where({ transactionType: In(types), taker: address })
         .orderBy({ 'tx.createdAt': 'DESC' })
         .leftJoinAndSelect('tx.activity', 'activity', 'activity.status = :status', { status })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId',
+        )
         .cache(true)
         .getMany()
     }

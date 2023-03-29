@@ -11,9 +11,8 @@ export class TxOrderRepository extends BaseRepository<TxOrder> {
   }
 
   public findOrdersByHashes = (orderHashes: string[], chainId: string): Promise<TxOrder[]> => {
-    const queryBuilder: SelectQueryBuilder<TxOrder> = this.getRepository(true)
-      .createQueryBuilder('order')
-  
+    const queryBuilder: SelectQueryBuilder<TxOrder> = this.getRepository(true).createQueryBuilder('order')
+
     return queryBuilder
       .where({ orderHash: In(orderHashes), chainId })
       .orderBy({ 'order.createdAt': 'DESC' })
@@ -21,5 +20,5 @@ export class TxOrderRepository extends BaseRepository<TxOrder> {
       .cache(true)
       .getMany()
   }
-  
+
 }

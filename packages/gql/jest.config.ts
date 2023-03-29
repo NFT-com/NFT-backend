@@ -17,5 +17,5 @@ export default {
   moduleNameMapper: {
     '@nftcom/shared/(.*)': '<rootDir>/../shared/src/$1',
     '@nftcom/gql/(.*)': '<rootDir>/src/$1',
-  }
-};
+  },
+}

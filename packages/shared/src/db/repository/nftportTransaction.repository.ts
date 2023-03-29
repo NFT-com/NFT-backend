@@ -16,9 +16,9 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
     contract: string,
     chainId: string,
   ): Promise<NFTPortTransaction[]> => {
-    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
-      .createQueryBuilder('transaction')
-    if (types.findIndex((type) => type === 'all') !== -1) {
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> =
+      this.getRepository(true).createQueryBuilder('transaction')
+    if (types.findIndex(type => type === 'all') !== -1) {
       return queryBuilder
         .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
           nft: {
@@ -41,10 +41,13 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
           },
           types,
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.type IN (:...types)', {
-          contractAddress: ethers.utils.getAddress(contract),
-          types,
-        })
+        .orWhere(
+          'transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.type IN (:...types)',
+          {
+            contractAddress: ethers.utils.getAddress(contract),
+            types,
+          },
+        )
         .andWhere({
           chainId,
         })
@@ -59,9 +62,9 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
     tokenId: string,
     chainId: string,
   ): Promise<NFTPortTransaction[]> => {
-    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
-      .createQueryBuilder('transaction')
-    if (types.findIndex((type) => type === 'all') !== -1) {
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> =
+      this.getRepository(true).createQueryBuilder('transaction')
+    if (types.findIndex(type => type === 'all') !== -1) {
       return queryBuilder
         .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
           nft: {
@@ -69,10 +72,13 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
             tokenId: BigNumber.from(tokenId).toHexString(),
           },
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
-          contractAddress: ethers.utils.getAddress(contract),
-          tokenId: BigNumber.from(tokenId).toHexString(),
-        })
+        .orWhere(
+          'transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId',
+          {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        )
         .andWhere({
           chainId,
         })
@@ -87,11 +93,14 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
           },
           types,
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId and transaction.type IN (:...types)', {
-          contractAddress: ethers.utils.getAddress(contract),
-          tokenId: BigNumber.from(tokenId).toHexString(),
-          types,
-        })
+        .orWhere(
+          'transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId and transaction.type IN (:...types)',
+          {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+            types,
+          },
+        )
         .andWhere({
           chainId,
         })
@@ -105,8 +114,8 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
     tokenId: string,
     whereQuery: any,
   ): Promise<NFTPortTransaction[]> => {
-    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
-      .createQueryBuilder('transaction')
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> =
+      this.getRepository(true).createQueryBuilder('transaction')
     return queryBuilder
       .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
         nft: {
@@ -124,8 +133,8 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
     contract: string,
     tokenId?: string,
   ): Promise<NFTPortTransaction> => {
-    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
-      .createQueryBuilder('transaction')
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> =
+      this.getRepository(true).createQueryBuilder('transaction')
     if (tokenId) {
       return queryBuilder
         .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
@@ -134,10 +143,13 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
             tokenId: BigNumber.from(tokenId).toHexString(),
           },
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
-          contractAddress: ethers.utils.getAddress(contract),
-          tokenId: BigNumber.from(tokenId).toHexString(),
-        })
+        .orWhere(
+          'transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId',
+          {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        )
         .andWhere({
           chainId,
         })
@@ -163,13 +175,9 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
     }
   }
 
-  public countForCollectionOrNFT = (
-    chainId: string,
-    contract: string,
-    tokenId?: string,
-  ): Promise<number> => {
-    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> = this.getRepository(true)
-      .createQueryBuilder('transaction')
+  public countForCollectionOrNFT = (chainId: string, contract: string, tokenId?: string): Promise<number> => {
+    const queryBuilder: SelectQueryBuilder<NFTPortTransaction> =
+      this.getRepository(true).createQueryBuilder('transaction')
     if (tokenId) {
       return queryBuilder
         .where('transaction.nft IS NOT NULL and transaction.nft ::jsonb @> :nft', {
@@ -178,10 +186,13 @@ export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransact
             tokenId: BigNumber.from(tokenId).toHexString(),
           },
         })
-        .orWhere('transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId', {
-          contractAddress: ethers.utils.getAddress(contract),
-          tokenId: BigNumber.from(tokenId).toHexString(),
-        })
+        .orWhere(
+          'transaction.nft IS NULL and transaction.contractAddress = :contractAddress and transaction.tokenId = :tokenId',
+          {
+            contractAddress: ethers.utils.getAddress(contract),
+            tokenId: BigNumber.from(tokenId).toHexString(),
+          },
+        )
         .andWhere({
           chainId,
         })

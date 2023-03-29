@@ -11,28 +11,15 @@ export enum ErrorType {
   AddressNotFound = 'ADDRESS_NOT_FOUND',
 }
 
-export const buildInvalidChainId = (
-  network: string | null,
-  chainId: string | null,
-): ApolloError => new ApolloError(
-  `Chain id ${chainId} is not supported for network ${network}`,
-  HTTP.BadRequest,
-  { errorKey: ErrorType.InvalidChainId },
-)
+export const buildInvalidChainId = (network: string | null, chainId: string | null): ApolloError =>
+  new ApolloError(`Chain id ${chainId} is not supported for network ${network}`, HTTP.BadRequest, {
+    errorKey: ErrorType.InvalidChainId,
+  })
 
 export const buildInvalidNetwork = (network: string | null): ApolloError =>
-  new ApolloError(
-    `Network ${network} is not supported`,
-    HTTP.BadRequest,
-    { errorKey: ErrorType.InvalidNetwork },
-  )
+  new ApolloError(`Network ${network} is not supported`, HTTP.BadRequest, { errorKey: ErrorType.InvalidNetwork })
 
-export const buildAddressExistsMsg = (
-  network: string,
-  chain: defs.Chain,
-  address: string,
-): string =>
+export const buildAddressExistsMsg = (network: string, chain: defs.Chain, address: string): string =>
   `Address ${address} already exists for chain ${network}:${chain.id}:${chain.name}`
 
-export const buildAddressNotFoundMsg = (): string =>
-  'Please signup or add this address before using'
+export const buildAddressNotFoundMsg = (): string => 'Please signup or add this address before using'

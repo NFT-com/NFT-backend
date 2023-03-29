@@ -37,9 +37,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   }
 }
 
-export const createSharedInfra = (
-  preview?: boolean,
-): Promise<pulumi.automation.OutputMap> => {
+export const createSharedInfra = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
   const stackName = `${process.env.STAGE}.shared.${process.env.AWS_REGION}`
   const workDir = upath.joinSafe(__dirname, 'stack')
   return deployInfra(stackName, workDir, pulumiProgram, preview)

@@ -24,8 +24,7 @@ describe('sendgrid service', () => {
     })
 
     it('sends confirmation email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerSuccessResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerSuccessResponse)
       const testUser: Partial<entity.User> = {
         email: testMockUser.email,
         confirmEmailToken: 'test',
@@ -37,37 +36,32 @@ describe('sendgrid service', () => {
     })
 
     it('fails to send confirmation email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerFailureResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerFailureResponse)
       const testUser: Partial<entity.User> = {
         email: '',
         confirmEmailToken: 'test',
       }
 
-      const testSendResponse = await sendgridService
-        .sendConfirmEmail(testUser as entity.User)
+      const testSendResponse = await sendgridService.sendConfirmEmail(testUser as entity.User)
       expect(testSendResponse).toBe(mailerFailureResponse)
       expect(sendgrid.send).toBeCalled()
     })
 
     it('sends referred by email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerFailureResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerFailureResponse)
       const testUser: Partial<entity.User> = {
         email: testMockUser.email,
       }
 
       const totalReferrals = 10
 
-      const testSendResponse = await sendgridService
-        .sendReferredBy(testUser as entity.User, totalReferrals)
+      const testSendResponse = await sendgridService.sendReferredBy(testUser as entity.User, totalReferrals)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
 
     it('sends bid confirmation email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerFailureResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerFailureResponse)
       const bid: Partial<entity.Bid> = {
         price: '10',
       }
@@ -84,15 +78,17 @@ describe('sendgrid service', () => {
 
       const profileUrl = 'test-profile'
 
-      const testSendResponse = await sendgridService
-        .sendBidConfirmEmail(bid as entity.Bid, testUser as entity.User, profileUrl)
+      const testSendResponse = await sendgridService.sendBidConfirmEmail(
+        bid as entity.Bid,
+        testUser as entity.User,
+        profileUrl,
+      )
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
 
     it('sends outbid email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerFailureResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerFailureResponse)
       const testUser: Partial<entity.User> = {
         email: testMockUser.email,
         preferences: {
@@ -106,15 +102,13 @@ describe('sendgrid service', () => {
 
       const profileUrl = 'test-profile'
 
-      const testSendResponse = await sendgridService
-        .sendOutbidEmail(testUser as entity.User, profileUrl)
+      const testSendResponse = await sendgridService.sendOutbidEmail(testUser as entity.User, profileUrl)
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
 
     it('sends win email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerFailureResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerFailureResponse)
       const topBid: Partial<entity.Bid> = {
         price: '10',
       }
@@ -130,15 +124,17 @@ describe('sendgrid service', () => {
       }
 
       const profileUrl = 'test-profile'
-      const testSendResponse = await sendgridService
-        .sendWinEmail(topBid as entity.Bid, testUser as entity.User, profileUrl)
+      const testSendResponse = await sendgridService.sendWinEmail(
+        topBid as entity.Bid,
+        testUser as entity.User,
+        profileUrl,
+      )
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })
 
     it('sends marketplace bid confirmation email', async () => {
-      (sendgrid.send as jest.MockedFunction<typeof sendgrid.send>)
-        .mockResolvedValueOnce(mailerFailureResponse)
+      ;(sendgrid.send as jest.MockedFunction<typeof sendgrid.send>).mockResolvedValueOnce(mailerFailureResponse)
       const testUser: Partial<entity.User> = {
         email: testMockUser.email,
         preferences: {
@@ -150,8 +146,10 @@ describe('sendgrid service', () => {
         },
       }
 
-      const testSendResponse = await sendgridService
-        .sendMarketplaceBidConfirmEmail(testMockWallet.address, testUser as entity.User)
+      const testSendResponse = await sendgridService.sendMarketplaceBidConfirmEmail(
+        testMockWallet.address,
+        testUser as entity.User,
+      )
       expect(testSendResponse).toBe(mailerSuccessResponse)
       expect(sendgrid.send).toBeCalled()
     })

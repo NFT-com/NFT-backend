@@ -8,13 +8,10 @@ import { BaseEntity, TxActivity } from '.'
 @Index(['makerAddress', 'exchange', 'nonce'])
 export class TxOrder extends BaseEntity {
 
-  @OneToOne(() => TxActivity,
-    (activity) =>  activity.activityTypeId,
-    {
-      nullable: false,
-      cascade: ['insert', 'update'],
-    },
-  )
+  @OneToOne(() => TxActivity, activity => activity.activityTypeId, {
+    nullable: false,
+    cascade: ['insert', 'update'],
+  })
   @JoinColumn({
     name: 'activityId',
     referencedColumnName: 'id',

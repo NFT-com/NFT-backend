@@ -34,13 +34,16 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   referredBy: string
 
-  @Column('json', { nullable: false, default: {
-    bidActivityNotifications: true,
-    priceChangeNotifications: true,
-    outbidNotifications: true,
-    purchaseSuccessNotifications: true,
-    promotionalNotifications: true,
-  } })
+  @Column('json', {
+    nullable: false,
+    default: {
+      bidActivityNotifications: true,
+      priceChangeNotifications: true,
+      outbidNotifications: true,
+      purchaseSuccessNotifications: true,
+      promotionalNotifications: true,
+    },
+  })
   preferences: UserPreferences
 
 }

@@ -1,4 +1,3 @@
-
 import { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/cache'
@@ -144,23 +143,23 @@ const MAX_CHUNK_SIZE = 500
 export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
   logger.debug('external orders on demand', job.data)
   try {
-    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
-    await removeExpiredTimestampedZsetMembers(
-      `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
-      Date.now(),
-    )
+    const chainId: string = job.data?.chainId || process.env.CHAIN_ID
+    await removeExpiredTimestampedZsetMembers(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, Date.now())
     const cachedNfts = await cache.zrevrangebyscore(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, '+inf', '(0')
 
     const nfts: Array<string> = []
 
     for (const item of cachedNfts) {
       const itemSplit: string[] = item.split(':')
-      const isItemForced = itemSplit.length === 3 && itemSplit?.[2] === 'force' ? true: false
+      const isItemForced = itemSplit.length === 3 && itemSplit?.[2] === 'force' ? true : false
 
-      const itemPresentInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, item)
+      const itemPresentInRefreshedCache: string = await cache.zscore(
+        `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
+        item,
+      )
 
       // item is not present in refresh cache
-      if(!itemPresentInRefreshedCache || isItemForced) {
+      if (!itemPresentInRefreshedCache || isItemForced) {
         nfts.push(item)
       }
     }
@@ -181,7 +180,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
       // settlements should not depend on each other
       const [opensea, looksrare] = await Promise.allSettled([
         retrieveMultipleOrdersOpensea(nftRequest, chainId, true),
-        retrieveMultipleOrdersLooksrare(nftRequest,chainId, true),
+        retrieveMultipleOrdersLooksrare(nftRequest, chainId, true),
       ])
 
       const listings: entity.TxOrder[] = []
@@ -224,7 +223,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       await Promise.all(persistActivity)
 
-      const refreshedOrders  = nfts.reduce((acc, curr) => {
+      const refreshedOrders = nfts.reduce((acc, curr) => {
         const nftSplit: Array<string> = curr.split(':')
         const nft: string = nftSplit.slice(0, 2).join(':')
         let ttlCondition = ''
@@ -241,7 +240,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
         const currentTime: Date = new Date()
         let date: Date
-        switch(ttlCondition) {
+        switch (ttlCondition) {
         case 'manual':
           currentTime.setMinutes(currentTime.getMinutes() + 5)
           date = currentTime
@@ -258,10 +257,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         return acc
       }, [])
       await Promise.all([
-        cache.zadd(
-          `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
-          ...refreshedOrders,
-        ),
+        cache.zadd(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, ...refreshedOrders),
         cache.zremrangebyscore(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, 1, '+inf'),
       ])
     }
