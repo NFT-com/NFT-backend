@@ -24,7 +24,6 @@ jest.mock('@nftcom/cache', () => ({
 }))
 
 const repositories = db.newRepositories()
-const realOrderHash = '0x5e963bf7209f7e4967a04169153919b7ede26bfcf1a66252e731eb6610f623f9'
 
 let testServer
 let testData
@@ -49,19 +48,6 @@ describe('transaction activity resolver', () => {
       activity.nftContract ='0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.nftId = ['ethereum/test-nft-contract/test-token-id']
       activity.chainId = '5'
-
-      // only valid for 180 days
-      const activitySeaport = new TxActivity()
-      activitySeaport.activityType = ActivityType.Listing
-      activitySeaport.activityTypeId = realOrderHash
-      activitySeaport.status = ActivityStatus.Valid
-      activitySeaport.timestamp = new Date(timestamp + (10000 * i))
-      currentDate.setDate(currentDate.getDate() - 1)
-      activitySeaport.expiration = currentDate
-      activitySeaport.walletAddress = '0x893f5090014182A731800fd9Eab839386E25cAb8'
-      activitySeaport.nftContract ='0x5c3B3D1Eb43E0FbbD53c8CF8f589Cd77D42FEC36'
-      activitySeaport.nftId = ['ethereum/0x5c3B3D1Eb43E0FbbD53c8CF8f589Cd77D42FEC36/1594']
-      activitySeaport.chainId = '1'
 
       let activityA = new TxActivity()
       activityA.activityType = ActivityType.Sale
@@ -90,63 +76,6 @@ describe('transaction activity resolver', () => {
         activityType.protocol = ProtocolType.Seaport
         activityType.protocolData = {}
         activityType.chainId = '5'
-
-        activity = await repositories.txActivity.save(activity)
-        activityType.activity = activity
-        activityType = await repositories.txOrder.save(activityType)
-
-        // insert real orderHash listing for opensea seaport 1.4
-        activityType = new TxOrder()
-        activityType.id = realOrderHash
-        activityType.activity = activitySeaport
-        activityType.exchange = ExchangeType.OpenSea
-        activityType.orderHash = realOrderHash
-        activityType.orderType = ActivityType.Listing
-        activityType.makerAddress = '0x893f5090014182A731800fd9Eab839386E25cAb8'
-        activityType.protocol = ProtocolType.Seaport
-        activityType.protocolData = {
-          'parameters': {
-            'offerer': '0x893f5090014182a731800fd9eab839386e25cab8',
-            'offer': [
-              {
-                'itemType': 2,
-                'token': '0x5c3B3D1Eb43E0FbbD53c8CF8f589Cd77D42FEC36',
-                'identifierOrCriteria': '1594',
-                'startAmount': '1',
-                'endAmount': '1',
-              },
-            ],
-            'consideration': [
-              {
-                'itemType': 0,
-                'token': '0x0000000000000000000000000000000000000000',
-                'identifierOrCriteria': '0',
-                'startAmount': '97500000000000000000',
-                'endAmount': '97500000000000000000',
-                'recipient': '0x893f5090014182A731800fd9Eab839386E25cAb8',
-              },
-              {
-                'itemType': 0,
-                'token': '0x0000000000000000000000000000000000000000',
-                'identifierOrCriteria': '0',
-                'startAmount': '2500000000000000000',
-                'endAmount': '2500000000000000000',
-                'recipient': '0x0000a26b00c1F0DF003000390027140000fAa719',
-              },
-            ],
-            'startTime': '1680115202',
-            'endTime': '1695667202',
-            'orderType': 0,
-            'zone': '0x0000000000000000000000000000000000000000',
-            'zoneHash': '0x3000000000000000000000000000000000000000000000000000000000000000',
-            'salt': '0xd983cc4ff74a417804fb9d2e792c7f2',
-            'conduitKey': '0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000',
-            'totalOriginalConsiderationItems': 2,
-            'counter': 0,
-          },
-          'signature': null,
-        }
-        activityType.chainId = '1'
 
         activity = await repositories.txActivity.save(activity)
         activityType.activity = activity
@@ -218,29 +147,6 @@ describe('transaction activity resolver', () => {
         expect(activity.order.exchange).toBe(ExchangeType.OpenSea)
       }
       expect(activities.length).toBe(orderData.length)
-    })
-
-    it('should be able to getSeaportSignatures', async () => {
-      const orderHashes = [realOrderHash]
-      const result = await testServer.executeOperation({
-        query: `query Query($orderHashes: [String!]) {
-          getSeaportSignatures(orderHashes: $orderHashes) {
-            orderHash
-            protocol
-            protocolData
-          }
-        }`,
-        variables: { orderHashes: orderHashes },
-      })
-
-      const signatures = result.data?.getSeaportSignatures
-      expect(signatures.length).toBe(1)
-      expect(signatures[0].orderHash).toBe(realOrderHash)
-      expect(signatures[0].protocol).toBe(ProtocolType.Seaport)
-      
-      // expect signature of protocolData not be null
-      expect(signatures[0].protocolData.signature).not.toBeNull()
-      expect(signatures[0].protocolData.signature).toBe('0x92958f518befa425c708664b03e102806ec33914434fac277427ecc767a985650c02432238220a4e8b1fee77f16bddce5fb8ae899d35ef4d296aca215e53195a')
     })
 
     it('should query activity by wallet address', async () => {

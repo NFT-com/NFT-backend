@@ -120,67 +120,71 @@ const getSeaportSignatures = async (
   args: gql.QueryGetSeaportSignaturesArgs,
   ctx: Context,
 ): Promise<entity.TxOrder[]> => {
-  const { repositories, wallet } = ctx
-  const orderHashes = args.input.orderHashes
-  const chainId = wallet.chainId || process.env.CHAIN_ID
-  auth.verifyAndGetNetworkChain('ethereum', chainId)
+  try {
+    const { repositories, wallet } = ctx
+    const orderHashes = args.input.orderHashes
+    const chainId = wallet.chainId || process.env.CHAIN_ID
+    auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  // Define the input validation schema
-  const schema = Joi.object({
-    input: Joi.object({
-      orderHashes: Joi.array().items(Joi.string()).required(),
-    }).required(),
-  })
-
-  joi.validateSchema(schema, args)
-
-  // Check if the provided order hashes exist in the database
-  const orders = await repositories.txOrder.findOrdersByHashes(orderHashes, chainId)
-
-  if (orders.length !== orderHashes.length) {
-    throw new Error('Some order hashes do not exist in the database.')
-  }
-
-  // Filter orders with existing signatures
-  const ordersWithSignatures = orders.filter((order) => order.protocolData.signature)
-
-  const updatedOrders: entity.TxOrder[] = []
-
-  // Add orders with existing signatures to updatedOrders
-  updatedOrders.push(...ordersWithSignatures)
-
-  // Filter orders without signatures and prepare their payloads
-  const ordersWithoutSignatures = orders.filter((order) => !order.protocolData.signature)
-
-  // Prepare the payload for orders with null signatures
-  const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures
-    .map((order) => ({
-      listing: {
-        hash: order.orderHash,
-        chain: chainId,
-        protocol_address: contracts.openseaSeaportAddress1_4(chainId),
-      },
-      fulfiller: {
-        address: wallet.address,
-      },
-    }))
-
-  const responses = await openseaService.postListingFulfillments(payloads, chainId)
-
-  for (let i = 0; i < responses.length; i++) {
-    const signature = responses[i].fulfillment_data.transaction.input_data.parameters.signature
-
-    const updateResult: entity.TxOrder = await repositories.txOrder.updateOneById(orders[i].id, {
-      protocolData: {
-        ...orders[i].protocolData,
-        signature,
-      },
+    // Define the input validation schema
+    const schema = Joi.object({
+      input: Joi.object({
+        orderHashes: Joi.array().items(Joi.string()).required(),
+      }).required(),
     })
 
-    updatedOrders.push(updateResult)
-  }
+    joi.validateSchema(schema, args)
 
-  return updatedOrders
+    // Check if the provided order hashes exist in the database
+    const orders = await repositories.txOrder.findOrdersByHashes(orderHashes, chainId)
+
+    if (orders.length !== orderHashes.length) {
+      throw new Error('Some order hashes do not exist in the database.')
+    }
+
+    // Filter orders with existing signatures
+    const ordersWithSignatures = orders.filter((order) => order.protocolData.signature)
+
+    const updatedOrders: entity.TxOrder[] = []
+
+    // Add orders with existing signatures to updatedOrders
+    updatedOrders.push(...ordersWithSignatures)
+
+    // Filter orders without signatures and prepare their payloads
+    const ordersWithoutSignatures = orders.filter((order) => !order.protocolData.signature)
+
+    // Prepare the payload for orders with null signatures
+    const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures
+      .map((order) => ({
+        listing: {
+          hash: order.orderHash,
+          chain: chainId,
+          protocol_address: contracts.openseaSeaportAddress1_4(chainId),
+        },
+        fulfiller: {
+          address: wallet.address,
+        },
+      }))
+
+    const responses = await openseaService.postListingFulfillments(payloads, chainId)
+
+    for (let i = 0; i < responses.length; i++) {
+      const signature = responses[i].fulfillment_data.transaction.input_data.parameters.signature
+
+      const updateResult: entity.TxOrder = await repositories.txOrder.updateOneById(orders[i].id, {
+        protocolData: {
+          ...orders[i].protocolData,
+          signature,
+        },
+      })
+
+      updatedOrders.push(updateResult)
+    }
+
+    return updatedOrders
+  } catch (e) {
+    throw new Error(e)
+  }
 }
 
 const updateReadByIds = async (_: any, args: gql.MutationUpdateReadByIdsArgs, ctx: Context)

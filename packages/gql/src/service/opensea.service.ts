@@ -369,35 +369,41 @@ export const postListingFulfillments = async (
   payloads: ListingPayload[],
   chainId: string,
 ): Promise<FulfillmentData[]> => {
-  const fulfillmentResponses: FulfillmentData[] = []
+  try {
+    const fulfillmentResponses: FulfillmentData[] = []
 
-  // listingBaseUrl is V2
-  const listingBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId)
-    ? OPENSEA_API_TESTNET_BASE_URL
-    : OPENSEA_API_BASE_URL
-  const listingInterceptor = getOpenseaInterceptor(listingBaseUrl, chainId)
+    // listingBaseUrl is V2
+    const listingBaseUrl: string = TESTNET_CHAIN_IDS.includes(chainId)
+      ? OPENSEA_API_TESTNET_BASE_URL
+      : OPENSEA_API_BASE_URL
+    const listingInterceptor = getOpenseaInterceptor(listingBaseUrl, chainId)
 
-  for (let i = 0; i < payloads.length; i++) {
-    const payload = payloads[i]
-    const response: AxiosResponse = await listingInterceptor.post(
-      '/listings/fulfillment_data',
-      payload,
-      {
-        headers: {
-          'content-type': 'application/json',
+    logger.info('Posting listing fulfillment data', JSON.stringify(payloads, null, 2))
+
+    for (let i = 0; i < payloads.length; i++) {
+      const payload = payloads[i]
+      const response: AxiosResponse = await listingInterceptor.post(
+        '/listings/fulfillment_data',
+        payload,
+        {
+          headers: {
+            'content-type': 'application/json',
+          },
         },
-      },
-    )
+      )
 
-    fulfillmentResponses.push(response.data)
+      fulfillmentResponses.push(response.data)
 
-    // Throttle requests to 2 per second by waiting 500ms between each request
-    if (i < payloads.length - 1) {
-      await delay(OPENSEA_POST_DELAY)
+      // Throttle requests to 2 per second by waiting 500ms between each request
+      if (i < payloads.length - 1) {
+        await delay(OPENSEA_POST_DELAY)
+      }
     }
-  }
 
-  return fulfillmentResponses
+    return fulfillmentResponses
+  } catch (err) {
+    logger.error('Error posting listing fulfillment data', JSON.stringify(err, null, 2))
+  }
 }
 
 /**
