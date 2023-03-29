@@ -27,7 +27,7 @@ describe('comment service', () => {
         find: (opts: FindManyOptions<entity.Comment>) => {
           return Promise.resolve(
             Array.from(likesMap.values()).filter(l => {
-              for (const prop of Object.getOwnPropertyNames(opts.where)) {
+              for (const prop of Object.keys(opts.where)) {
                 if (l[prop] !== opts.where[prop]) {
                   return false
                 }
