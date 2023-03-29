@@ -1,3 +1,4 @@
+import { ethers } from 'ethers'
 import * as getStream from 'get-stream'
 import { combineResolvers } from 'graphql-resolvers'
 import type { FileUpload } from 'graphql-upload/processRequest.js'
@@ -233,6 +234,43 @@ const fetchAndSaveCollectionInfo = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in fetchAndSaveCollectionInfo: ${err}`)
+    return err
+  }
+}
+
+const syncCollectionsWithNFTs = async (
+  _: any,
+  args: gql.MutationSyncCollectionsWithNFTsArgs,
+  ctx: Context,
+): Promise<gql.SyncCollectionsWithNFTsOutput> => {
+  const { repositories } = ctx
+  logger.debug('syncCollectionsWithNFTs', { count: args?.count })
+  try {
+    const { count } = args
+    const contracts = await repositories.nft.findDistinctContracts()
+    const missingContracts = []
+    await Promise.allSettled(
+      contracts.map(async (contract) => {
+        const collection = await repositories.collection.findOne({
+          where: { contract: ethers.utils.getAddress(contract.nft_contract) },
+        })
+        if (!collection) missingContracts.push(contract.nft_contract)
+      }),
+    )
+    const length = missingContracts.length > count ? count : missingContracts.length
+    const toSaveContracts = missingContracts.slice(0, length)
+    await Promise.allSettled(
+      toSaveContracts.map(async (contract) => {
+        await fetchAndSaveCollectionInfo(repositories, contract)
+      }),
+    )
+
+    return {
+      message: `Saved new ${length} collections`,
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in syncCollectionsWithNFTs: ${err}`)
     return err
   }
 }
@@ -681,7 +719,7 @@ export default {
     removeDuplicates: combineResolvers(auth.isAuthenticated, removeCollectionDuplicates),
     refreshCollectionRarity: combineResolvers(auth.isAuthenticated, refreshCollectionRarity),
     saveCollectionForContract: combineResolvers(auth.isAuthenticated, saveCollectionForContract),
-    // syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
+    syncCollectionsWithNFTs: combineResolvers(auth.isAuthenticated, syncCollectionsWithNFTs),
     updateCollectionImageUrls: combineResolvers(auth.isAuthenticated, updateCollectionImageUrls),
     updateCollectionName: combineResolvers(auth.isAuthenticated, updateCollectionName),
     updateSpamStatus: combineResolvers(auth.isTeamAuthenticated, updateSpamStatus),
