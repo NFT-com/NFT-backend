@@ -158,7 +158,7 @@ const getSeaportSignatures = async (
       .map((order) => ({
         listing: {
           hash: order.orderHash,
-          chain: chainId,
+          chain: chainId === '1' ? 'ethereum' : 'goerli',
           protocol_address: contracts.openseaSeaportAddress1_4(chainId),
         },
         fulfiller: {
@@ -166,7 +166,7 @@ const getSeaportSignatures = async (
         },
       }))
 
-    const responses = await openseaService.postListingFulfillments(payloads, chainId)
+    const responses = payloads?.length ? await openseaService.postListingFulfillments(payloads, chainId) : []
 
     for (let i = 0; i < responses.length; i++) {
       const signature = responses[i].fulfillment_data.transaction.input_data.parameters.signature

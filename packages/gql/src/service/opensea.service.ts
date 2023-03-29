@@ -229,19 +229,6 @@ export interface FulfillmentData {
   }
 }
 
-// commented for future reference
-// const cids = (): string => {
-//   const ids = [
-//     'ethereum',
-//     'usd-coin',
-//     'ape',
-//     'dai',
-//     'the-sandbox',
-//   ]
-
-//   return ids.join('%2C')
-// }
-
 export interface OpenseaOrderRequest {
   contract: string
   tokenId: string
@@ -378,10 +365,9 @@ export const postListingFulfillments = async (
       : OPENSEA_API_BASE_URL
     const listingInterceptor = getOpenseaInterceptor(listingBaseUrl, chainId)
 
-    logger.info('Posting listing fulfillment data', JSON.stringify(payloads, null, 2))
-
     for (let i = 0; i < payloads.length; i++) {
       const payload = payloads[i]
+      logger.info(`Posting listing fulfillment data ${i} of ${JSON.stringify(payload, null, 2)}`)
       const response: AxiosResponse = await listingInterceptor.post(
         '/listings/fulfillment_data',
         payload,
@@ -402,7 +388,8 @@ export const postListingFulfillments = async (
 
     return fulfillmentResponses
   } catch (err) {
-    logger.error('Error posting listing fulfillment data', JSON.stringify(err, null, 2))
+    logger.error(`Error posting listing fulfillment data ${JSON.stringify(err, null, 2)}`)
+    throw err
   }
 }
 

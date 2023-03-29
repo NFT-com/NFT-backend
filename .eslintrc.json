@@ -32,7 +32,7 @@
         "classes": "always"
       }
     ],
-    // "no-magic-numbers": "warn",
+    "no-magic-numbers": "warn",
     "no-multiple-empty-lines": [
       "warn",
       {
