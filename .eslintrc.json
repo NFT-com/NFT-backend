@@ -14,7 +14,8 @@
   ],
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
   ],
   "rules": {
     "no-console": "error",
@@ -32,7 +33,6 @@
         "classes": "always"
       }
     ],
-    "no-magic-numbers": "warn",
     "no-multiple-empty-lines": [
       "warn",
       {

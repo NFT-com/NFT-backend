@@ -35,4 +35,9 @@ describe('alchemy service functions', () => {
     const deployer = await getCollectionDeployer(nftProfileAddress(), '1')
     expect(deployer).toBe('0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1')
   })
+
+  it.skip('should get the correct mainnet deployer for nftwineclub', async () => {
+    const deployer = await getCollectionDeployer('0x4a9d6b3A70E95c1526BD0639190E370110e9BEB8', '1')
+    expect(deployer).toBe('0x277d5ff321813fDd981dc5DBa0D99A3F40bCf2bb')
+  })
 })
