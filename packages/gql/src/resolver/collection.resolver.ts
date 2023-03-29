@@ -14,7 +14,7 @@ import { core } from '@nftcom/gql/service'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { getCollectionInfo, getCollectionNameFromDataProvider } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import { _logger, contracts, db, defs, entity, provider, typechain } from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
@@ -52,7 +52,7 @@ const getCollectionsByDeployer = async (
       return []
     }
     return ctx.repositories.collection.find({
-      where: { deployer: ethers.utils.getAddress(args?.deployer), isSpam: false },
+      where: { deployer: helper.checkSum(args?.deployer), isSpam: false },
     })
   } catch {
     Sentry.captureMessage('Error in getCollectionsByDeployer: invalid address')
@@ -201,7 +201,7 @@ const fetchAndSaveCollectionInfo = async (
   try {
     const nfts = await repositories.nft.find({
       where: {
-        contract: ethers.utils.getAddress(contract),
+        contract: helper.checkSum(contract),
       },
     })
     if (nfts.length) {
@@ -211,7 +211,7 @@ const fetchAndSaveCollectionInfo = async (
         nfts[0].type,
       )
       const collection = await repositories.collection.save({
-        contract: ethers.utils.getAddress(contract),
+        contract: helper.checkSum(contract),
         chainId: nfts[0]?.chainId || process.env.CHAIN_ID,
         name: collectionName,
       })
@@ -234,37 +234,6 @@ const fetchAndSaveCollectionInfo = async (
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in fetchAndSaveCollectionInfo: ${err}`)
-    return err
-  }
-}
-
-const saveCollectionForContract = async (
-  _: any,
-  args: gql.MutationSaveCollectionForContractArgs,
-  ctx: Context,
-): Promise<gql.SaveCollectionForContractOutput> => {
-  const { repositories } = ctx
-  logger.debug('saveCollectionForContract', { contract: args?.contract })
-  try {
-    const { contract } = args
-    const collection = await repositories.collection.findOne({
-      where: {
-        contract: ethers.utils.getAddress(contract),
-      },
-    })
-    if (!collection) {
-      await fetchAndSaveCollectionInfo(repositories, contract)
-      return {
-        message: 'Collection is saved.',
-      }
-    } else {
-      return {
-        message: 'Collection is already existing.',
-      }
-    }
-  } catch (err) {
-    Sentry.captureException(err)
-    Sentry.captureMessage(`Error in saveCollectionForContract: ${err}`)
     return err
   }
 }
@@ -306,6 +275,46 @@ const syncCollectionsWithNFTs = async (
   }
 }
 
+const saveCollectionForContract = async (
+  _: any,
+  args: gql.MutationSaveCollectionForContractArgs,
+  ctx: Context,
+): Promise<gql.SaveCollectionForContractOutput> => {
+  const { repositories } = ctx
+  logger.debug('saveCollectionForContract', { contract: args?.contract })
+  try {
+    const { contract } = args
+    const collection = await repositories.collection.findOne({
+      where: {
+        contract: helper.checkSum(contract),
+      },
+    })
+    if (!collection) {
+      await fetchAndSaveCollectionInfo(repositories, contract)
+      return {
+        message: 'Collection is saved.',
+      }
+    } else {
+      return {
+        message: 'Collection is already existing.',
+      }
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+    Sentry.captureMessage(`Error in saveCollectionForContract: ${err}`)
+    return err
+  }
+}
+
+/**
+ * Retrieves the deployer address and associated addresses of an NFT collection on Ethereum.
+ * 
+ * @param _ Unused argument
+ * @param args Query arguments
+ * @param ctx Context object with repositories, chain, wallet, logger, and cache
+ * 
+ * @returns Promise that resolves to the deployer address, associated addresses, and deployerIsAssociated flag
+ */
 export const associatedAddressesForContract = async (
   _: any,
   args: gql.QueryAssociatedAddressesForContractArgs,
@@ -313,16 +322,32 @@ export const associatedAddressesForContract = async (
 ): Promise<gql.AssociatedAddressesForContractOutput> => {
   try {
     const { repositories, chain, wallet } = ctx
+    
+    // Debug logging
     logger.debug('associatedAddressesForContract', { contract: args?.contract })
+
+    // Verify and get network chain
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const collectionDeployer = await getCollectionDeployer(args?.contract, chainId)
+
+    // Retrieve collection from database or blockchain
+    const collection = await repositories.collection.findOne({ where: { contract: helper.checkSum(args?.contract) } })
+    const collectionDeployer = collection?.deployer || await getCollectionDeployer(args?.contract, chainId)
+
+    // Update collection deployer if defined
+    if (collectionDeployer && !collection?.deployer) {
+      await repositories.collection.updateOneById(collection.id, { deployer: collectionDeployer })
+    }
+
+    // Retrieve profiles for current wallet and chain
     const profiles = await repositories.profile.find({
       where: {
         ownerWalletId: wallet.id,
         chainId,
       },
     })
+    
+    // Retrieve associated addresses for each profile
     const addresses: string[] = []
     await Promise.allSettled(
       profiles.map(async (profile) => {
@@ -343,12 +368,14 @@ export const associatedAddressesForContract = async (
         addresses.push(...addrs)
       }),
     )
+    
+    // Return deployer address, associated addresses, and deployerIsAssociated flag
     return {
       deployerAddress: collectionDeployer,
       associatedAddresses: addresses,
       deployerIsAssociated: collectionDeployer ?
-        (addresses.indexOf(ethers.utils.getAddress(collectionDeployer)) !== -1 ||
-          ethers.utils.getAddress(collectionDeployer) === wallet.address
+        (addresses.indexOf(helper.checkSum(collectionDeployer)) !== -1 ||
+          helper.checkSum(collectionDeployer) === wallet.address
         ) : false,
     }
   } catch (err) {
@@ -421,7 +448,7 @@ const updateCollectionName = async (
       toUpdate.map(async (collection) => {
         const nft = await repositories.nft.findOne({
           where: {
-            contract: ethers.utils.getAddress(collection.contract),
+            contract: helper.checkSum(collection.contract),
             chainId,
           },
         })
@@ -463,7 +490,7 @@ const updateSpamStatus = async (
       contracts.map(async (contract) => {
         const collection = await repositories.collection.findOne({
           where: {
-            contract: ethers.utils.getAddress(contract),
+            contract: helper.checkSum(contract),
             chainId,
           },
         })
@@ -521,13 +548,13 @@ const getNumberOfNFTs = async (
     }
     const collection = await repositories.collection.findOne({
       where: {
-        contract: ethers.utils.getAddress(args?.contract),
+        contract: helper.checkSum(args?.contract),
         chainId,
       },
     })
     if (!collection) return 0
     const count = await repositories.nft.count({
-      contract: ethers.utils.getAddress(args?.contract),
+      contract: helper.checkSum(args?.contract),
       chainId,
     })
     await cache.set(key, count.toString(), 'EX', 60 * 5)
@@ -564,7 +591,7 @@ const updateOfficialCollections = async (
           contracts.map(async (contract) => {
             try {
               const collection = await repositories.collection.findByContractAddress(
-                ethers.utils.getAddress(contract),
+                helper.checkSum(contract),
                 chainId,
               )
               if (collection && !collection?.isOfficial) {
