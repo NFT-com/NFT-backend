@@ -1,0 +1,27 @@
+
+enum SocialEntityType {
+  Collection
+  NFT
+  Profile
+}
+
+input AddCommentInput {
+  authorId: ID!
+  content: String!
+  entityId: ID!
+  entityType: SocialEntityType!
+}
+
+type Comment {
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  authorId: ID
+  content: String
+  entityId: ID
+  entityType: SocialEntityType
+}
+
+extend type Mutation {
+  addComment(input: AddCommentInput!): Comment
+}
