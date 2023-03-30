@@ -15,22 +15,24 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   })
 }
 
-export const createMonitorHiddenNFTsEventBridgeTarget = (
-  lambda: aws.lambda.Function,
-): aws.cloudwatch.EventTarget => {
+export const createMonitorHiddenNFTsEventBridgeTarget = (lambda: aws.lambda.Function): aws.cloudwatch.EventTarget => {
   const rule = createEventBridgeRule()
 
   new aws.lambda.Permission('name', {
     action: 'lambda:InvokeFunction',
-    'function': lambda.name,
+    function: lambda.name,
     principal: 'events.amazonaws.com',
     sourceArn: rule.arn,
   })
 
-  return new aws.cloudwatch.EventTarget('monitorHiddenNFTs-eventTarget', {
-    arn: lambda.arn,
-    rule: rule.name,
-  }, {
-    deleteBeforeReplace: true,
-  })
+  return new aws.cloudwatch.EventTarget(
+    'monitorHiddenNFTs-eventTarget',
+    {
+      arn: lambda.arn,
+      rule: rule.name,
+    },
+    {
+      deleteBeforeReplace: true,
+    },
+  )
 }

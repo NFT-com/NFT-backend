@@ -30,7 +30,10 @@ describe('view service', () => {
           save: (like: any) => {
             lastId = nextId++
             viewsMap.set(lastId, {
-              id: lastId, createdAt: new Date(firstEthDate), updatedAt: new Date(firstEthDate), ...like,
+              id: lastId,
+              createdAt: new Date(firstEthDate),
+              updatedAt: new Date(firstEthDate),
+              ...like,
             })
             return Promise.resolve(viewsMap.get(lastId))
           },
@@ -90,8 +93,7 @@ describe('view service', () => {
         viewedId: '6',
         viewedType: entity.ViewableType.NFT,
       }
-      await expect(viewService.handleView(viewInputs))
-        .rejects.toThrow('Unknown viewer type: Giraffe')
+      await expect(viewService.handleView(viewInputs)).rejects.toThrow('Unknown viewer type: Giraffe')
     })
 
     it('does not set view for invalid viewed type', async () => {
@@ -101,48 +103,53 @@ describe('view service', () => {
         viewedId: '6',
         viewedType: 'Peanut' as entity.ViewableType,
       }
-      await expect(viewService.handleView(viewInputs))
-        .rejects.toThrow('Cannot view Peanut')
+      await expect(viewService.handleView(viewInputs)).rejects.toThrow('Cannot view Peanut')
     })
 
     it('requires viewerId', async () => {
-      await expect(viewService.handleView({
-        viewerType: entity.ViewerType.Visitor,
-        viewedId: '6',
-        viewedType: entity.ViewableType.Collection,
-      }))
-        .rejects
-        .toThrow('Missing property or property undefined in {"viewerType":"Visitor","viewedId":"6","viewedType":"Collection"}')
+      await expect(
+        viewService.handleView({
+          viewerType: entity.ViewerType.Visitor,
+          viewedId: '6',
+          viewedType: entity.ViewableType.Collection,
+        }),
+      ).rejects.toThrow(
+        'Missing property or property undefined in {"viewerType":"Visitor","viewedId":"6","viewedType":"Collection"}',
+      )
     })
 
     it('requires viewerType', async () => {
-      await expect(viewService.handleView({
-        viewerId: '1',
-        viewedId: '6',
-        viewedType: entity.ViewableType.NFT,
-      }))
-        .rejects
-        .toThrow('Missing property or property undefined in {"viewerId":"1","viewedId":"6","viewedType":"NFT"}')
+      await expect(
+        viewService.handleView({
+          viewerId: '1',
+          viewedId: '6',
+          viewedType: entity.ViewableType.NFT,
+        }),
+      ).rejects.toThrow('Missing property or property undefined in {"viewerId":"1","viewedId":"6","viewedType":"NFT"}')
     })
 
     it('requires viewedId', async () => {
-      await expect(viewService.handleView({
-        viewerId: 'user1',
-        viewerType: entity.ViewerType.User,
-        viewedType: entity.ViewableType.Profile,
-      }))
-        .rejects
-        .toThrow('Missing property or property undefined in {"viewerId":"user1","viewerType":"User","viewedType":"Profile"}')
+      await expect(
+        viewService.handleView({
+          viewerId: 'user1',
+          viewerType: entity.ViewerType.User,
+          viewedType: entity.ViewableType.Profile,
+        }),
+      ).rejects.toThrow(
+        'Missing property or property undefined in {"viewerId":"user1","viewerType":"User","viewedType":"Profile"}',
+      )
     })
 
     it('requires viewedType', async () => {
-      await expect(viewService.handleView({
-        viewerId: '1',
-        viewerType: entity.ViewerType.ProfileHolder,
-        viewedId: '6',
-      }))
-        .rejects
-        .toThrow('Missing property or property undefined in {"viewerId":"1","viewerType":"Profile Holder","viewedId":"6"}')
+      await expect(
+        viewService.handleView({
+          viewerId: '1',
+          viewerType: entity.ViewerType.ProfileHolder,
+          viewedId: '6',
+        }),
+      ).rejects.toThrow(
+        'Missing property or property undefined in {"viewerId":"1","viewerType":"Profile Holder","viewedId":"6"}',
+      )
     })
 
     it('verifies a profile holder has at least one profile', async () => {
@@ -152,8 +159,9 @@ describe('view service', () => {
         viewedId: '6',
         viewedType: entity.ViewableType.Profile,
       }
-      await expect(viewService.handleView(viewInputs))
-        .rejects.toThrow('Wrong type for viewerId: user1, viewerType: Profile Holder')
+      await expect(viewService.handleView(viewInputs)).rejects.toThrow(
+        'Wrong type for viewerId: user1, viewerType: Profile Holder',
+      )
     })
 
     it('verifies a user exists', async () => {
@@ -163,8 +171,9 @@ describe('view service', () => {
         viewedId: '6',
         viewedType: entity.ViewableType.Profile,
       }
-      await expect(viewService.handleView(viewInputs))
-        .rejects.toThrow('Wrong type for viewerId: visitor1, viewerType: User')
+      await expect(viewService.handleView(viewInputs)).rejects.toThrow(
+        'Wrong type for viewerId: visitor1, viewerType: User',
+      )
     })
   })
 })

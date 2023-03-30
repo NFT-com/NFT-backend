@@ -6,7 +6,7 @@ import * as testActivityService from '@nftcom/gql/service/txActivity.service'
 import { db, defs, entity } from '@nftcom/shared'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
 
-import { testLooksrareExistingOrder, testLooksrareOrder,testSeaportOrder } from '../util/constants'
+import { testLooksrareExistingOrder, testLooksrareOrder, testSeaportOrder } from '../util/constants'
 
 jest.setTimeout(30000)
 jest.mock('@nftcom/cache', () => ({
@@ -21,10 +21,7 @@ jest.mock('@nftcom/cache', () => ({
     REFRESHED_NFT_ORDERS_EXT: 'refreshed_nft_orders_ext_test',
   },
   createCacheConnection: jest.fn(),
-  removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(
-    () => Promise.resolve(null),
-  ),
-
+  removeExpiredTimestampedZsetMembers: jest.fn().mockImplementation(() => Promise.resolve(null)),
 }))
 
 let connection: DataSource
@@ -77,7 +74,9 @@ describe('txActivity service', () => {
       activity.timestamp = new Date()
       activity.walletAddress = '0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.chainId = '4'
-      activity.nftId = [`ethereum/${testLooksrareExistingOrder.collectionAddress}/${testLooksrareExistingOrder.tokenId}`]
+      activity.nftId = [
+        `ethereum/${testLooksrareExistingOrder.collectionAddress}/${testLooksrareExistingOrder.tokenId}`,
+      ]
 
       const savedActivity: entity.TxActivity = await repositories.txActivity.save(activity)
 

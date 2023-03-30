@@ -12,9 +12,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   createEcsService(config, sharedInfraOutput)
 }
 
-export const createGQLServer = (
-  preview?: boolean,
-): Promise<pulumi.automation.OutputMap> => {
+export const createGQLServer = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
   const stackName = `${process.env.STAGE}.gql.${process.env.AWS_REGION}`
   const workDir = upath.joinSafe(__dirname, 'stack')
   return deployInfra(stackName, workDir, pulumiProgram, preview)

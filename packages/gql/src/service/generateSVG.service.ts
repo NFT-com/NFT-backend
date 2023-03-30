@@ -1,10 +1,7 @@
 import { RubikBase64 } from './rubik.base64'
 import { RubikBlackBase64 } from './rubikBlack.base64'
 
-export const generateSVG = (
-  profileURL: string,
-  base64String: string,
-): string => {
+export const generateSVG = (profileURL: string, base64String: string): string => {
   return `<svg width="480" height="480"
   xmlns="http://www.w3.org/2000/svg">
   <defs>

@@ -67,15 +67,11 @@ const sendRequest = async (url: string, extraHeaders = {}, queryParams = {}): Pr
 }
 
 export type FetchDataOpts = {
-  extraHeaders?: { [key:string]: string }
+  extraHeaders?: { [key: string]: string }
   queryParams?: any
   cacheSeconds?: number
 }
-export const fetchData = async (
-  endpoint: string,
-  args: string[],
-  opts: FetchDataOpts = {},
-): Promise<any> => {
+export const fetchData = async (endpoint: string, args: string[], opts: FetchDataOpts = {}): Promise<any> => {
   const { extraHeaders = {}, queryParams = {}, cacheSeconds } = opts
   const key = getCacheKey(endpoint, args, queryParams.continuation, queryParams.page_size)
   const cachedData = await cache.get(key)

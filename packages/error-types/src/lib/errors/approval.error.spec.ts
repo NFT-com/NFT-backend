@@ -1,6 +1,4 @@
-import {
-  buildApprovalInsufficientMsg,
-  buildApprovalNotFoundMsg } from './approval.error'
+import { buildApprovalInsufficientMsg, buildApprovalNotFoundMsg } from './approval.error'
 
 describe('approval error', () => {
   describe('buildApprovalNotFoundMsg', () => {

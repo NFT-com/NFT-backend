@@ -26,10 +26,7 @@ export default new DataSource({
   synchronize: false,
   logging: dbConfig.logging,
   migrationsRun: true,
-  migrations: [
-    `${__dirname}/migration/*.ts`,
-    `${__dirname}/migration/*.js`,
-  ],
+  migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
   ssl,
   entities: [`${__dirname}/entity/*.entity.ts`],
 })

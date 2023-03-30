@@ -1,6 +1,6 @@
 import { combineResolvers } from 'graphql-resolvers'
 
-import { AssumeRoleRequest,STS } from '@aws-sdk/client-sts'
+import { AssumeRoleRequest, STS } from '@aws-sdk/client-sts'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
 import { auth } from '@nftcom/gql/helper'
@@ -17,11 +17,7 @@ const getSTS = (): STS => {
   return cachedSTS
 }
 
-const getFileUploadSession = async (
-  _: unknown,
-  args: unknown,
-  ctx: Context,
-): Promise<gql.FileUploadOutput> => {
+const getFileUploadSession = async (_: unknown, args: unknown, ctx: Context): Promise<gql.FileUploadOutput> => {
   const { user } = ctx
   logger.debug('getFileUploadSession', { loggedInUserId: user.id })
 
@@ -30,21 +26,17 @@ const getFileUploadSession = async (
     RoleArn: assetBucket.role,
     RoleSessionName: sessionName,
   }
-  
+
   const response = await getSTS().assumeRole(params)
-  return ({
+  return {
     accessKey: response.Credentials.AccessKeyId,
     bucket: assetBucket.name,
     secretKey: response.Credentials.SecretAccessKey,
     sessionToken: response.Credentials.SessionToken,
-  })
+  }
 }
 
-const fetchEthUsd = async (
-  _: unknown,
-  __: unknown,
-  ___: Context,
-): Promise<number> => {
+const fetchEthUsd = async (_: unknown, __: unknown, ___: Context): Promise<number> => {
   return await getSymbolInUsd('ETH')
 }
 

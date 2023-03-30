@@ -15,7 +15,7 @@ jest.mock('@nftcom/shared', () => {
     db: {
       getDataSource: jest.fn().mockReturnValue({
         getRepository: jest.fn().mockReturnValue({
-          save: jest.fn().mockImplementation((args) => {
+          save: jest.fn().mockImplementation(args => {
             return args
           }),
         }),
@@ -37,12 +37,14 @@ describe('contract-stats', () => {
       })
 
       const result = await updateContractStats([{ contract: '0x000' }] as entity.Collection[])
-      expect(result).toEqual([{
-        contract: '0x000',
-        floorPrice: 2.4,
-        totalVolume: 27370.823769036146,
-        averagePrice: 1.956736042967983,
-      }])
+      expect(result).toEqual([
+        {
+          contract: '0x000',
+          floorPrice: 2.4,
+          totalVolume: 27370.823769036146,
+          averagePrice: 1.956736042967983,
+        },
+      ])
     })
 
     it('should handle errors by not updating stats', async () => {

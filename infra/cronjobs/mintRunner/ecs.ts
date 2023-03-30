@@ -34,11 +34,13 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
         memoryReservation: 1024,
         mountPoints: [],
         name: resourceName,
-        portMappings: [{
-          containerPort: 80,
-          hostPort: 80,
-          protocol: 'tcp',
-        }],
+        portMappings: [
+          {
+            containerPort: 80,
+            hostPort: 80,
+            protocol: 'tcp',
+          },
+        ],
         environment: [
           {
             Name: 'DB_HOST',
@@ -82,7 +84,8 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
           },
         ],
         volumesFrom: [],
-      }]),
+      },
+    ]),
     cpu: '512',
     executionRoleArn: execRole,
     family: resourceName,
@@ -99,31 +102,30 @@ export const createMintRunnerTaskDefinition = (): aws.ecs.TaskDefinition => {
 
 export const createEcsCluster = (): aws.ecs.Cluster => {
   const resourceName = 'cronjob-mintrunner' // static name to allow each env to share the same ecs cluster
-  const cluster = new aws.ecs.Cluster('mintRunner-cluster',
-    {
-      name: resourceName,
-      settings: [
-        {
-          name: 'containerInsights',
-          value: 'disabled',
-        }],
-      capacityProviders: [
-        'FARGATE_SPOT',
-        'FARGATE',
-      ],
-      configuration: {
-        executeCommandConfiguration: {
-          logging: 'DEFAULT',
-        },
+  const cluster = new aws.ecs.Cluster('mintRunner-cluster', {
+    name: resourceName,
+    settings: [
+      {
+        name: 'containerInsights',
+        value: 'disabled',
       },
-      tags: {
-        cronjob: 'mintrunner',
+    ],
+    capacityProviders: ['FARGATE_SPOT', 'FARGATE'],
+    configuration: {
+      executeCommandConfiguration: {
+        logging: 'DEFAULT',
       },
-      defaultCapacityProviderStrategies: [{
+    },
+    tags: {
+      cronjob: 'mintrunner',
+    },
+    defaultCapacityProviderStrategies: [
+      {
         capacityProvider: 'FARGATE',
         weight: 1,
-      }],
-    })
+      },
+    ],
+  })
 
   return cluster
 }

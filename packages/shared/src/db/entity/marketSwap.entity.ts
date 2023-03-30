@@ -8,13 +8,13 @@ import { BaseEntity } from './base.entity'
 @Entity()
 export class MarketSwap extends BaseEntity {
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   txHash: string
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   blockNumber: string
 
-  @Column( { type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   private: boolean
 
   @OneToOne(() => MarketAsk)

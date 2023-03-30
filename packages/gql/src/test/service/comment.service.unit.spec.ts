@@ -133,15 +133,13 @@ describe('comment service', () => {
       jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
       const commentService = getCommentService(repos)
       await expect(
-        commentService.addComment(
-          {
-            authorId: '1',
-            content: 'Joker is da 💣💥',
-            currentUserId: 'userId',
-            entityId: '2',
-            entityType: 'Joker' as SocialEntityType,
-          },
-        ),
+        commentService.addComment({
+          authorId: '1',
+          content: 'Joker is da 💣💥',
+          currentUserId: 'userId',
+          entityId: '2',
+          entityType: 'Joker' as SocialEntityType,
+        }),
       ).rejects.toThrow('Joker cannot be the subject of a comment')
     })
 

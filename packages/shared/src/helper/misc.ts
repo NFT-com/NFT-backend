@@ -4,11 +4,7 @@ import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
 import whitelistJSON from '@nftcom/shared/helper/abis/whitelist.json'
 
-export const stringListToMap = (
-  str: string,
-  listSep = '|',
-  kvSep = ':',
-): Map<string, string> => {
+export const stringListToMap = (str: string, listSep = '|', kvSep = ':'): Map<string, string> => {
   const list = str.split(listSep)
   return list.reduce((agg: Map<string, string>, val: string) => {
     const kv = val.split(kvSep)
@@ -448,9 +444,7 @@ export const AddressZero = (): string => {
 export const toCompositeKey = (val1: string, val2: string): string => `${val1}:${val2}`
 
 export const parseBoolean = (str: string): boolean => {
-  return _.isString(str)
-    ? str === 'true' || str === '1'
-    : !!str
+  return _.isString(str) ? str === 'true' || str === '1' : !!str
 }
 
 export const isTrue = (v: boolean): boolean => v === true
@@ -466,26 +460,17 @@ export const isEmpty = <T>(v: T): boolean => {
 
 export const isNotEmpty = <T>(v: T): boolean => isFalse(isEmpty(v))
 
-export const safeIn = <T>(arr: T[]): FindOperator<T> =>
-  isEmpty(arr) ? In([null]) : In(arr)
+export const safeIn = <T>(arr: T[]): FindOperator<T> => (isEmpty(arr) ? In([null]) : In(arr))
 
-export const safeInForOmitBy = <T>(arr: T[]): FindOperator<T> | null =>
-  isEmpty(arr) ? null : In(arr)
+export const safeInForOmitBy = <T>(arr: T[]): FindOperator<T> | null => (isEmpty(arr) ? null : In(arr))
 
-export const safeObject = <T>(obj: T): T =>
-  isEmpty(obj) ? <T>{} : obj
+export const safeObject = <T>(obj: T): T => (isEmpty(obj) ? <T>{} : obj)
 
-export const removeEmpty = <T>(obj: _.Dictionary<T>): _.Dictionary<T> =>
-  _.omitBy<T>(obj, isEmpty)
+export const removeEmpty = <T>(obj: _.Dictionary<T>): _.Dictionary<T> => _.omitBy<T>(obj, isEmpty)
 
-export const deleteKey = <T>(obj: _.Dictionary<T>, key: string): _.Dictionary<T> =>
-  _.omit(obj, key)
+export const deleteKey = <T>(obj: _.Dictionary<T>, key: string): _.Dictionary<T> => _.omit(obj, key)
 
-export const inputT2SafeK = <T>(
-  input: _.Dictionary<any>,
-  extra?: Partial<T>,
-  key = 'pageInput',
-): _.Dictionary<T> => {
+export const inputT2SafeK = <T>(input: _.Dictionary<any>, extra?: Partial<T>, key = 'pageInput'): _.Dictionary<T> => {
   const safe = safeObject(input)
   const withoutKey = deleteKey(safe, key)
   return removeEmpty(withoutKey)
@@ -508,11 +493,9 @@ export const toDate = (date = ''): Date => {
   return isEmpty(date) ? toUTCDate() : toUTCDate(new Date(date))
 }
 
-export const toDateIsoString = (date = new Date()): string =>
-  toUTCDate(date).toISOString()
+export const toDateIsoString = (date = new Date()): string => toUTCDate(date).toISOString()
 
-export const toTimestamp = (date = new Date()): number =>
-  toUTCDate(date).getTime()
+export const toTimestamp = (date = new Date()): number => toUTCDate(date).getTime()
 
 // Postgres will return records that **equal** the timestamp, despite
 // the strictly-greater-than filter in the SQL.  This ends up returning
@@ -555,5 +538,4 @@ export const shortenAddress = (address: string, chars = 4): string => {
   return `${parsed.substring(0, chars + 2)}...${parsed.substring(42 - chars)}`
 }
 
-export const toFixedValue = (price: string, units = 18): string =>
-  utils.formatUnits(bigNumber(price), units)
+export const toFixedValue = (price: string, units = 18): string => utils.formatUnits(bigNumber(price), units)

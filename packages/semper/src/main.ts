@@ -50,7 +50,7 @@ const main = async (): Promise<void> => {
   pgClient.connect()
   const repositories = db.newRepositories()
   const commander = new Commander(typesenseClient, repositories, pgClient)
-  
+
   await commander.help()
   // await commander.erase()
   await commander.restore()

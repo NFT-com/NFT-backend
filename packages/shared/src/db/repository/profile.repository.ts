@@ -19,9 +19,7 @@ export class ProfileRepository extends BaseRepository<Profile> {
   findAllWithRelations(): Promise<Profile[]> {
     return this.getRepository(true)
       .createQueryBuilder('profile')
-      .leftJoinAndMapOne('profile.wallet',
-        Wallet, 'wallet',
-        'profile.ownerWalletId = wallet.id')
+      .leftJoinAndMapOne('profile.wallet', Wallet, 'wallet', 'profile.ownerWalletId = wallet.id')
       .getMany()
   }
 

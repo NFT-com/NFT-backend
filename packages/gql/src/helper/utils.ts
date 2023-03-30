@@ -2,7 +2,7 @@ import { gql } from '@nftcom/gql/defs'
 
 const AUCTION_TYPE_TO_INT: gql.AuctionType[] = [
   gql.AuctionType.FixedPrice, // 0 on chain
-  gql.AuctionType.English,    // 1 on chain
+  gql.AuctionType.English, // 1 on chain
   gql.AuctionType.Decreasing, // 2 on chain
 ]
 

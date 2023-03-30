@@ -6,10 +6,7 @@ import { defs, entity, fp } from '@nftcom/shared'
 
 // const logger = _logger.Factory(_logger.Context.Watchlist, _logger.Context.GraphQL)
 
-const getWatchlistItems = (
-  ctx: Context,
-  args: gql.QueryWatchlistArgs,
-): Promise<gql.Watchlist> => {
+const getWatchlistItems = (ctx: Context, args: gql.QueryWatchlistArgs): Promise<gql.Watchlist> => {
   const { userId } = args
   const watchEdge: Partial<entity.Edge> = {
     thisEntityId: userId, // replace with user.id from context when auth is added
@@ -33,22 +30,16 @@ const getWatchlistItems = (
       thatEntityType: defs.EntityType.Collection,
     })
 
-  return Promise.all([
-    getWatchedNFTs(),
-    getWatchedProfiles(),
-    getWatchedCollections(),
-  ]).then(([nftItems, profileItems, collectionItems]) => ({
-    nftItems,
-    profileItems,
-    collectionItems,
-  }))
+  return Promise.all([getWatchedNFTs(), getWatchedProfiles(), getWatchedCollections()]).then(
+    ([nftItems, profileItems, collectionItems]) => ({
+      nftItems,
+      profileItems,
+      collectionItems,
+    }),
+  )
 }
 
-const getWatchlist = (
-  _: any,
-  args: gql.QueryWatchlistArgs,
-  ctx: Context,
-): Promise<gql.Watchlist> => {
+const getWatchlist = (_: any, args: gql.QueryWatchlistArgs, ctx: Context): Promise<gql.Watchlist> => {
   // place back when auth is added
   // const { user } = ctx
   // logger.debug('getWatchlist', { loggedInUserId: user.id, input: args })
@@ -56,10 +47,7 @@ const getWatchlist = (
   return getWatchlistItems(ctx, args)
 }
 
-const createWatchEdge = (
-  args: gql.MutationAddToWatchlistArgs,
-  ctx: Context,
-): Promise<boolean> => {
+const createWatchEdge = (args: gql.MutationAddToWatchlistArgs, ctx: Context): Promise<boolean> => {
   const { repositories } = ctx
   const { userId, itemId, itemType } = args.input
   const watchEdge: FindOptionsWhere<entity.Edge> = {
@@ -73,18 +61,16 @@ const createWatchEdge = (
 
   return repositories.edge
     .exists(watchEdge)
-    .then(fp.thruIfFalse(() => {
-      const watchEdgeEntity = { ...watchEdge, deletedAt: null } as entity.Edge
-      return repositories.edge.save(watchEdgeEntity)
-    }))
+    .then(
+      fp.thruIfFalse(() => {
+        const watchEdgeEntity = { ...watchEdge, deletedAt: null } as entity.Edge
+        return repositories.edge.save(watchEdgeEntity)
+      }),
+    )
     .then(() => true)
 }
 
-const addToWatchlist = (
-  _: any,
-  args: gql.MutationAddToWatchlistArgs,
-  ctx: Context,
-): Promise<boolean> => {
+const addToWatchlist = (_: any, args: gql.MutationAddToWatchlistArgs, ctx: Context): Promise<boolean> => {
   // place back when auth is added
   // const { user } = ctx
   // logger.debug('addToWatchlist', { loggedInUserId: user.id, input: args })
@@ -92,11 +78,7 @@ const addToWatchlist = (
   return createWatchEdge(args, ctx)
 }
 
-const deleteFromWatchlist = (
-  _: any,
-  args: gql.MutationDeleteFromWatchlistArgs,
-  ctx: Context,
-): Promise<boolean> => {
+const deleteFromWatchlist = (_: any, args: gql.MutationDeleteFromWatchlistArgs, ctx: Context): Promise<boolean> => {
   const { repositories } = ctx
   // place back when auth is added
   // logger.debug('deleteFromWatchlist', { loggedInUserId: user.id, input: args })
@@ -110,9 +92,7 @@ const deleteFromWatchlist = (
     deletedAt: IsNull(),
   }
 
-  return repositories.edge
-    .exists(watchEdge)
-    .then(fp.thruIfTrue(() => repositories.edge.delete(watchEdge)))
+  return repositories.edge.exists(watchEdge).then(fp.thruIfTrue(() => repositories.edge.delete(watchEdge)))
 }
 
 export default {

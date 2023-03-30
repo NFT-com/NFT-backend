@@ -6,7 +6,7 @@ import { getContractSalesStatistics, getNFTDetails } from '@nftcom/gql/resolver/
 import { testMockWallet, testMockWatchlistUser } from '@nftcom/gql/test/util/constants'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
 import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'
-import { db,defs } from '@nftcom/shared'
+import { db, defs } from '@nftcom/shared'
 
 jest.setTimeout(300000)
 jest.retryTimes(2)
@@ -38,7 +38,7 @@ jest.mock('@nftcom/cache', () => ({
 }))
 
 const repositories = db.newRepositories()
-let connection : DataSource
+let connection: DataSource
 let testServer
 
 describe('contract data resolver', () => {
@@ -58,43 +58,52 @@ describe('contract data resolver', () => {
   describe('getNFTDetails', () => {
     it('should return nft details', async () => {
       const nftDetails = {
-        'response': 'OK',
-        'nft': {
-          'chain': 'ethereum',
-          'contract_address': '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
-          'token_id': '625',
-          'metadata_url': 'https://prod-api.nft.com/uri/pepe',
-          'metadata': {
-            'description': 'NFT.com profile for pepe',
-            'header': 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-            'image': 'https://cdn.nft.com/profiles/1651637367539-pepe.svg',
-            'name': 'pepe',
+        response: 'OK',
+        nft: {
+          chain: 'ethereum',
+          contract_address: '0x98ca78e89dd1abe48a53dee5799f24cc1a462f2d',
+          token_id: '625',
+          metadata_url: 'https://prod-api.nft.com/uri/pepe',
+          metadata: {
+            description: 'NFT.com profile for pepe',
+            header: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+            image: 'https://cdn.nft.com/profiles/1651637367539-pepe.svg',
+            name: 'pepe',
           },
-          'file_information': null,
-          'file_url': 'https://cdn.nft.com/profiles/1651637367539-pepe.svg',
-          'animation_url': null,
-          'cached_file_url': 'https://storage.googleapis.com/sentinel-nft/raw-assets/d8bfe199789cb0cf1739900f7d014e958c786d67ba4cc9ef581d44a481d6e465.svg+xml',
-          'cached_animation_url': null,
-          'mint_date': '2022-04-29T23:10:10',
-          'updated_date': '2022-05-11T16:30:21.412678',
+          file_information: null,
+          file_url: 'https://cdn.nft.com/profiles/1651637367539-pepe.svg',
+          animation_url: null,
+          cached_file_url:
+            'https://storage.googleapis.com/sentinel-nft/raw-assets/d8bfe199789cb0cf1739900f7d014e958c786d67ba4cc9ef581d44a481d6e465.svg+xml',
+          cached_animation_url: null,
+          mint_date: '2022-04-29T23:10:10',
+          updated_date: '2022-05-11T16:30:21.412678',
         },
-        'owner': '0x17cabb6dc7de7e3e562b0993086915c2c0209860',
-        'contract': {
-          'name': 'NFT.com Profile',
-          'symbol': 'NFTPROFILE',
-          'type': 'ERC721',
-          'metadata': {
-            'description': 'NFT Profiles for NFT.com',
-            'thumbnail_url': 'https://lh3.googleusercontent.com/U5pRG_3Sw8I9vbDHfGQyi5_6INrgxD2hsx3nbMnwr84n8BdzFGYNnZrmvYf9z773t8b8wqlpNAI-N7wTexc3uOiVAcj0_IsjcBCTdw=s120',
-            'cached_thumbnail_url': 'https://storage.googleapis.com/sentinel-nft/raw-assets/68ebcd748427910eb0e23783a6deb15acb0ba60987cd94a7eef28b7aa72028fc.png',
-            'banner_url': 'https://lh3.googleusercontent.com/OvplKu8P0_wcPSCMxio11LpK9uB5oodFOGsmPtF0ND2Tjj3-dfkVFKIIfM6hI3In7_zoE0cVBfcQmkK0FhnXEj-y5-zK8d8ZF9aKgw=s2500',
-            'cached_banner_url': 'https://storage.googleapis.com/sentinel-nft/raw-assets/a704d6d173cee6719fd7987ab01b8f0c47910df2d1621c292df55cc927af98ce.png',
+        owner: '0x17cabb6dc7de7e3e562b0993086915c2c0209860',
+        contract: {
+          name: 'NFT.com Profile',
+          symbol: 'NFTPROFILE',
+          type: 'ERC721',
+          metadata: {
+            description: 'NFT Profiles for NFT.com',
+            thumbnail_url:
+              'https://lh3.googleusercontent.com/U5pRG_3Sw8I9vbDHfGQyi5_6INrgxD2hsx3nbMnwr84n8BdzFGYNnZrmvYf9z773t8b8wqlpNAI-N7wTexc3uOiVAcj0_IsjcBCTdw=s120',
+            cached_thumbnail_url:
+              'https://storage.googleapis.com/sentinel-nft/raw-assets/68ebcd748427910eb0e23783a6deb15acb0ba60987cd94a7eef28b7aa72028fc.png',
+            banner_url:
+              'https://lh3.googleusercontent.com/OvplKu8P0_wcPSCMxio11LpK9uB5oodFOGsmPtF0ND2Tjj3-dfkVFKIIfM6hI3In7_zoE0cVBfcQmkK0FhnXEj-y5-zK8d8ZF9aKgw=s2500',
+            cached_banner_url:
+              'https://storage.googleapis.com/sentinel-nft/raw-assets/a704d6d173cee6719fd7987ab01b8f0c47910df2d1621c292df55cc927af98ce.png',
           },
         },
       }
       mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: nftDetails }))
 
-      const response = await getNFTDetails(undefined, { input: { contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D', tokenId: '625' } }, undefined)
+      const response = await getNFTDetails(
+        undefined,
+        { input: { contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D', tokenId: '625' } },
+        undefined,
+      )
 
       expect(mockedAxios.get).toHaveBeenCalled()
       expect(response).toEqual(nftDetails)
@@ -103,37 +112,41 @@ describe('contract data resolver', () => {
   describe('getContractSalesStatistics', () => {
     it('should return contract sales stats', async () => {
       const salesStats = {
-        'response': 'OK',
-        'statistics': {
-          'one_day_volume': 0.055,
-          'one_day_change': 0,
-          'one_day_sales': 2,
-          'one_day_average_price': 0.0275,
-          'seven_day_volume': 0.375,
-          'seven_day_change': -0.8809927259294943,
-          'seven_day_sales': 4,
-          'seven_day_average_price': 0.09375,
-          'thirty_day_volume': 4.508866889999999,
-          'thirty_day_change': 0.34152939758821055,
-          'thirty_day_sales': 32,
-          'thirty_day_average_price': 0.1409020903125,
-          'total_volume': 144.9268831145444,
-          'total_sales': 573,
-          'total_supply': 9229,
-          'total_minted': 9229,
-          'num_owners': 2383,
-          'average_price': 0.25292606110740734,
-          'market_cap': 865.21875,
-          'floor_price': 0.02,
-          'floor_price_historic_one_day': 0.02,
-          'floor_price_historic_seven_day': 0.02,
-          'floor_price_historic_thirty_day': 0.02,
-          'updated_date': '2022-09-02T16:34:41.033786',
+        response: 'OK',
+        statistics: {
+          one_day_volume: 0.055,
+          one_day_change: 0,
+          one_day_sales: 2,
+          one_day_average_price: 0.0275,
+          seven_day_volume: 0.375,
+          seven_day_change: -0.8809927259294943,
+          seven_day_sales: 4,
+          seven_day_average_price: 0.09375,
+          thirty_day_volume: 4.508866889999999,
+          thirty_day_change: 0.34152939758821055,
+          thirty_day_sales: 32,
+          thirty_day_average_price: 0.1409020903125,
+          total_volume: 144.9268831145444,
+          total_sales: 573,
+          total_supply: 9229,
+          total_minted: 9229,
+          num_owners: 2383,
+          average_price: 0.25292606110740734,
+          market_cap: 865.21875,
+          floor_price: 0.02,
+          floor_price_historic_one_day: 0.02,
+          floor_price_historic_seven_day: 0.02,
+          floor_price_historic_thirty_day: 0.02,
+          updated_date: '2022-09-02T16:34:41.033786',
         },
       }
       mockedAxios.get.mockResolvedValueOnce(Promise.resolve({ data: salesStats }))
 
-      const response = await getContractSalesStatistics(undefined, { input: { contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D' } }, undefined)
+      const response = await getContractSalesStatistics(
+        undefined,
+        { input: { contractAddress: '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D' } },
+        undefined,
+      )
 
       expect(mockedAxios.get).toHaveBeenCalled()
       expect(response).toEqual(salesStats)
@@ -142,11 +155,7 @@ describe('contract data resolver', () => {
 
   describe('getTxByContract', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(
-        repositories,
-        testMockWatchlistUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockWatchlistUser, testMockWallet)
       await repositories.nftPortTransaction.save({
         type: 'mint',
         ownerAddress: '0x4794c458651e2e764e2d88fa2c9d9fd0383ae558',
@@ -219,7 +228,7 @@ describe('contract data resolver', () => {
     })
 
     it('should return transactions with specific types by contract', async () => {
-      mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' }  }))
+      mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' } }))
 
       const result = await testServer.executeOperation({
         query: `query GetTxByContract($input: TransactionsByContractInput) {
@@ -250,11 +259,7 @@ describe('contract data resolver', () => {
 
   describe('getTxByNFT', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(
-        repositories,
-        testMockWatchlistUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockWatchlistUser, testMockWallet)
       await repositories.nftPortTransaction.save({
         type: 'mint',
         ownerAddress: '0x185d8Ca57797f5BCBac2DB01126403c26F504CA4',
@@ -287,7 +292,7 @@ describe('contract data resolver', () => {
     })
 
     it('should return transactions by NFT', async () => {
-      mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' }  }))
+      mockedAxios.post.mockResolvedValueOnce(Promise.resolve({ data: { message: 'Sync started.' } }))
 
       const result = await testServer.executeOperation({
         query: `query GetTxByNFT($input: TransactionsByNFTInput) {

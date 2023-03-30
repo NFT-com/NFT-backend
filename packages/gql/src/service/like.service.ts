@@ -27,7 +27,8 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
   }
 
   async function setLike(
-    { likedById, likedId, likedType }: CommonLikeArgs, likedByUserId: string,
+    { likedById, likedId, likedType }: CommonLikeArgs,
+    likedByUserId: string,
   ): Promise<entity.Like> {
     const setLikeArgs = { likedById, likedId, likedType }
     if (!likedById || !likedId || !likedType) {

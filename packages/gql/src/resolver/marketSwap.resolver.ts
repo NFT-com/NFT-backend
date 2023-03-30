@@ -10,11 +10,7 @@ import { auth, joi } from '../helper'
 
 const logger = _logger.Factory(_logger.Context.MarketSwap, _logger.Context.GraphQL)
 
-const getSwaps = (
-  _: any,
-  args: gql.QueryGetSwapsArgs,
-  ctx: Context,
-): Promise<gql.GetMarketSwap> => {
+const getSwaps = (_: any, args: gql.QueryGetSwapsArgs, ctx: Context): Promise<gql.GetMarketSwap> => {
   const { repositories } = ctx
   logger.debug('getSwaps', { input: args?.input })
   const pageInput = args?.input?.pageInput
@@ -22,26 +18,32 @@ const getSwaps = (
 
   logger.log(repositories, pageInput)
   const filters: Partial<entity.MarketSwap>[] = [
-    ...(marketAskIds ?? []).map((askIdToFind) => helper.removeEmpty({
-      marketAsk: askIdToFind == null ? null : {
-        id: askIdToFind,
-      },
-    })),
-    ...(marketBidIds ?? []).map((bidIdToFind) => helper.removeEmpty({
-      marketBid: bidIdToFind == null ? null : {
-        id: bidIdToFind,
-      },
-    })),
+    ...(marketAskIds ?? []).map(askIdToFind =>
+      helper.removeEmpty({
+        marketAsk:
+          askIdToFind == null
+            ? null
+            : {
+              id: askIdToFind,
+            },
+      }),
+    ),
+    ...(marketBidIds ?? []).map(bidIdToFind =>
+      helper.removeEmpty({
+        marketBid:
+          bidIdToFind == null
+            ? null
+            : {
+              id: bidIdToFind,
+            },
+      }),
+    ),
   ]
   logger.log(filters)
   return null
 }
 
-const getUserSwaps = (
-  _: any,
-  args: gql.QueryGetUserSwapsArgs,
-  ctx: Context,
-): Promise<gql.GetMarketSwap> => {
+const getUserSwaps = (_: any, args: gql.QueryGetUserSwapsArgs, ctx: Context): Promise<gql.GetMarketSwap> => {
   const { repositories } = ctx
   logger.debug('getUserSwaps', { input: args?.input })
   const pageInput = args?.input?.pageInput
@@ -95,8 +97,7 @@ const validateTxHashForSwapNFT = async (
     const chainProvider = provider.provider(Number(chainId))
     // check if tx hash has been executed...
     const tx = await chainProvider.getTransaction(txHash)
-    if (!tx.confirmations)
-      return undefined
+    if (!tx.confirmations) return undefined
 
     const sourceReceipt = await tx.wait()
     const abi = contracts.marketplaceABIJSON()
@@ -108,17 +109,18 @@ const validateTxHashForSwapNFT = async (
     // look through events of tx and check it contains Match event...
     // if it contains Match event, then we validate if both marketAskId, marketBidId are correct ones...
     await Promise.all(
-      sourceReceipt.logs.map(async (log) => {
+      sourceReceipt.logs.map(async log => {
         if (log.topics[0] === topic) {
           const event = iface.parseLog(log)
           if (event.name === 'Match') {
             const makerHash = event.args.makerStructHash
             const takerHash = event.args.takerStructHash
-            const auctionType = event.args.auctionType == 0 ?
-              defs.AuctionType.FixedPrice :
-              event.args.auctionType == 1 ?
-                defs.AuctionType.English :
-                defs.AuctionType.Decreasing
+            const auctionType =
+              event.args.auctionType == 0
+                ? defs.AuctionType.FixedPrice
+                : event.args.auctionType == 1
+                  ? defs.AuctionType.English
+                  : defs.AuctionType.Decreasing
             if (auctionType !== defs.AuctionType.English) eventEmitted = false
             else {
               let marketAsk
@@ -143,8 +145,7 @@ const validateTxHashForSwapNFT = async (
                     structHash: makerHash,
                   },
                 })
-              }
-              else {
+              } else {
                 // if maker is user who provided ask...
                 marketBid = await repositories.marketBid.findOne({
                   where: {
@@ -155,12 +156,13 @@ const validateTxHashForSwapNFT = async (
               }
               if (!marketAsk || !marketBid) eventEmitted = false
               else {
-                eventEmitted = (marketAsk.chainId === marketBid.chainId)
+                eventEmitted = marketAsk.chainId === marketBid.chainId
               }
             }
           }
         }
-      }))
+      }),
+    )
     if (eventEmitted) return tx.blockNumber
     else return undefined
   } catch (e) {
@@ -171,11 +173,7 @@ const validateTxHashForSwapNFT = async (
   }
 }
 
-const swapNFT = (
-  _: any,
-  args: gql.MutationSwapNFTArgs,
-  ctx: Context,
-): Promise<gql.MarketSwap> => {
+const swapNFT = (_: any, args: gql.MutationSwapNFTArgs, ctx: Context): Promise<gql.MarketSwap> => {
   const { user } = ctx
   logger.debug('swapNFT', { loggedInUserId: user?.id, input: args?.input })
 

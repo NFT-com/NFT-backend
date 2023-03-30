@@ -10,5 +10,4 @@ export interface IHederaConsensusService {
   submitMessage(message: string): Promise<void>
   subscribe(): void
   unsubscribe(): void
-
 }

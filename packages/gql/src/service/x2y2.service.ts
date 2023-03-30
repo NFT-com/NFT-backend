@@ -4,7 +4,7 @@ import { BigNumber, BigNumberish } from 'ethers'
 
 import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
-import { _logger, defs,entity } from '@nftcom/shared'
+import { _logger, defs, entity } from '@nftcom/shared'
 
 const X2Y2_API_BASE_URL = 'https://api.x2y2.org'
 const X2Y2_API_TESTNET_BASE_URL = 'https://goerli-api.x2y2.org'
@@ -76,24 +76,20 @@ export interface X2Y2ExternalOrder {
   offers: entity.TxOrder[]
 }
 
-const getX2Y2Interceptor = (
-  baseURL: string,
-): AxiosInstance => {
+const getX2Y2Interceptor = (baseURL: string): AxiosInstance => {
   const x2y2Instance = axios.create({
     baseURL,
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       'X-API-Key': X2Y2_API_KEY,
     },
   })
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig = {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
@@ -105,7 +101,7 @@ const getX2Y2Interceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(x2y2Instance as any,  retryOptions)
+  axiosRetry(x2y2Instance as any, retryOptions)
   return x2y2Instance
 }
 
@@ -123,20 +119,15 @@ const retrieveX2Y2ListingsInBatches = async (
   const listings: any[] = []
   let queryUrl
   const listingBaseUrl = chainId === '5' ? X2Y2_API_TESTNET_BASE_URL : X2Y2_API_BASE_URL
-  const listingInterceptorX2Y2 = getX2Y2Interceptor(
-    listingBaseUrl,
-  )
+  const listingInterceptorX2Y2 = getX2Y2Interceptor(listingBaseUrl)
   let delayCounter = 0
   let size: number
-  while(listingQueryParams.length>0) {
+  while (listingQueryParams.length > 0) {
     size = batchSize
     queryUrl = listingQueryParams.pop()
-    const response: AxiosResponse = await listingInterceptorX2Y2(
-      `/v1/orders?${queryUrl}&sort=price&direction=asc`,
-    )
+    const response: AxiosResponse = await listingInterceptorX2Y2(`/v1/orders?${queryUrl}&sort=price&direction=asc`)
 
-    if (response?.data?.data?.length)
-    {
+    if (response?.data?.data?.length) {
       const orders = response?.data?.data
       listings.push(
         orderEntityBuilder(
@@ -148,7 +139,7 @@ const retrieveX2Y2ListingsInBatches = async (
         ),
       )
     }
-    delayCounter = delayCounter +1
+    delayCounter = delayCounter + 1
     if (delayCounter === size) {
       await delay(1000)
       delayCounter = 0
@@ -172,20 +163,15 @@ const retrieveX2Y2OffersInBatches = async (
   const offers: any[] = []
   let queryUrl
   const offerBaseUrl = chainId === '5' ? X2Y2_API_TESTNET_BASE_URL : X2Y2_API_BASE_URL
-  const offerInterceptorX2Y2 = getX2Y2Interceptor(
-    offerBaseUrl,
-  )
+  const offerInterceptorX2Y2 = getX2Y2Interceptor(offerBaseUrl)
   let delayCounter = 0
   let size: number
-  while(offerQueryParams.length>0) {
+  while (offerQueryParams.length > 0) {
     size = batchSize
     queryUrl = offerQueryParams.pop()
-    const response: AxiosResponse = await offerInterceptorX2Y2(
-      `/v1/offers?${queryUrl}&sort=price&direction=desc`,
-    )
+    const response: AxiosResponse = await offerInterceptorX2Y2(`/v1/offers?${queryUrl}&sort=price&direction=desc`)
 
-    if (response?.data?.data?.length)
-    {
+    if (response?.data?.data?.length) {
       const orders = response?.data?.data
       offers.push(
         orderEntityBuilder(
@@ -197,7 +183,7 @@ const retrieveX2Y2OffersInBatches = async (
         ),
       )
     }
-    delayCounter = delayCounter +1
+    delayCounter = delayCounter + 1
     if (delayCounter === size) {
       await delay(1000)
       delayCounter = 0
@@ -246,11 +232,7 @@ export const retrieveMultipleOrdersX2Y2 = async (
       }
 
       if (includeOffers && offerQueries.length) {
-        responseAggregator.offers = await retrieveX2Y2OffersInBatches(
-          offerQueries,
-          chainId,
-          X2Y2_LISTING_BATCH_SIZE,
-        )
+        responseAggregator.offers = await retrieveX2Y2OffersInBatches(offerQueries, chainId, X2Y2_LISTING_BATCH_SIZE)
       }
     }
   } catch (err) {
@@ -273,11 +255,12 @@ const retriveOrderX2Y2 = async (
   tokenId: string,
   chainId: string,
 ): Promise<X2Y2Order | null> => {
-  const baseUrl = chainId === '1' ?  X2Y2_API_BASE_URL: X2Y2_API_TESTNET_BASE_URL
+  const baseUrl = chainId === '1' ? X2Y2_API_BASE_URL : X2Y2_API_TESTNET_BASE_URL
   const token: string = BigNumber.from(tokenId).toString()
   try {
-    const res = await getX2Y2Interceptor(baseUrl)
-      .get(`/v1/orders?maker=${maker}&contract=${contract}&token_id=${token}&sort=created_at&direction=desc`)
+    const res = await getX2Y2Interceptor(baseUrl).get(
+      `/v1/orders?maker=${maker}&contract=${contract}&token_id=${token}&sort=created_at&direction=desc`,
+    )
     if (res.status === 200 && res.data) {
       return res.data?.data?.[0]
     }
@@ -299,11 +282,9 @@ export const createX2Y2Listing = async (
   chainId: string,
 ): Promise<Partial<entity.TxOrder> | null | Error> => {
   let x2y2Order: Partial<entity.TxOrder>
-  const baseUrl = chainId === '1' ?  X2Y2_API_BASE_URL: X2Y2_API_TESTNET_BASE_URL
+  const baseUrl = chainId === '1' ? X2Y2_API_BASE_URL : X2Y2_API_TESTNET_BASE_URL
   try {
-    const res = await getX2Y2Interceptor(baseUrl).post('/api/orders/add',
-      JSON.parse(order),
-    )
+    const res = await getX2Y2Interceptor(baseUrl).post('/api/orders/add', JSON.parse(order))
     // give x2y2 time to propagate order
     await delay(10000)
     const retrievedOrder: X2Y2Order = await retriveOrderX2Y2(maker, contract, tokenId, chainId)

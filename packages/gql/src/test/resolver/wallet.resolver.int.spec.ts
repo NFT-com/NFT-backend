@@ -22,8 +22,7 @@ let connection: DataSource
 describe('wallet resolver', () => {
   describe('isAddressWhiteListed', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer({
-      })
+      testServer = getTestApolloServer({})
     })
 
     afterAll(async () => {
@@ -62,11 +61,7 @@ describe('wallet resolver', () => {
 
     beforeAll(async () => {
       connection = await db.connectTestDB(testDBConfig)
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
     })
 
     afterAll(async () => {
@@ -97,7 +92,8 @@ describe('wallet resolver', () => {
     })
     it('should insert the profile ID of a profile owned by the user', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateWalletProfileId($profileId: ID!) { updateWalletProfileId(profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateWalletProfileId($profileId: ID!) { updateWalletProfileId(profileId: $profileId) { profileId } }',
         variables: {
           profileId: profileA.id,
         },
@@ -112,7 +108,8 @@ describe('wallet resolver', () => {
       })
 
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateWalletProfileId($profileId: ID!) { updateWalletProfileId(profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateWalletProfileId($profileId: ID!) { updateWalletProfileId(profileId: $profileId) { profileId } }',
         variables: {
           profileId: profileA.id,
         },
@@ -125,7 +122,8 @@ describe('wallet resolver', () => {
 
     it('should return an error if profile is not found', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateWalletProfileId($profileId: ID!) { updateWalletProfileId(profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateWalletProfileId($profileId: ID!) { updateWalletProfileId(profileId: $profileId) { profileId } }',
         variables: {
           profileId: 'not-a-profile-id',
         },

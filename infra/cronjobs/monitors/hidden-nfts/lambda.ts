@@ -33,19 +33,14 @@ const createIAMRole = (account: pulumi.Output<string>, lambdaFunctionName: strin
       Statement: [
         {
           Effect: 'Allow',
-          Action: [
-            'logs:CreateLogGroup',
-            'logs:CreateLogStream',
-            'logs:PutLogEvents',
-          ],
+          Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
           Resource: account.apply(
-            (accountId) =>
-              `arn:aws:logs:${aws.config.region}:${accountId}:log-group:/aws/lambda/${lambdaFunctionName}*`,
+            accountId => `arn:aws:logs:${aws.config.region}:${accountId}:log-group:/aws/lambda/${lambdaFunctionName}*`,
           ),
         },
         {
-          'Effect': 'Allow',
-          'Action': [
+          Effect: 'Allow',
+          Action: [
             /* VPC Access */
             'ec2:CreateNetworkInterface',
             'ec2:DeleteNetworkInterface',
@@ -53,7 +48,7 @@ const createIAMRole = (account: pulumi.Output<string>, lambdaFunctionName: strin
             /* CloudWatch Metric API */
             'cloudwatch:PutMetricData',
           ],
-          'Resource': '*',
+          Resource: '*',
         },
       ],
     },
@@ -68,17 +63,14 @@ const bundleAssets = (): any[] => {
   const code = new pulumi.asset.AssetArchive({
     '.': new pulumi.asset.FileArchive(relativeRootPath('dist/cronjobs/monitors/archive.zip')),
   })
-  
+
   const zipFile = relativeRootPath('layers/archive.zip')
   const nodeModuleLambdaLayerName = getResourceName('lambda-layer-nodemodules-monitorHiddenNFTs')
-  const nodeModuleLambdaLayer = new aws.lambda.LayerVersion(
-    nodeModuleLambdaLayerName,
-    {
-      compatibleRuntimes: [aws.lambda.Runtime.NodeJS16dX],
-      code: new pulumi.asset.FileArchive(zipFile),
-      layerName: nodeModuleLambdaLayerName,
-    },
-  )
+  const nodeModuleLambdaLayer = new aws.lambda.LayerVersion(nodeModuleLambdaLayerName, {
+    compatibleRuntimes: [aws.lambda.Runtime.NodeJS16dX],
+    code: new pulumi.asset.FileArchive(zipFile),
+    layerName: nodeModuleLambdaLayerName,
+  })
   return [code, nodeModuleLambdaLayer]
 }
 
@@ -86,8 +78,9 @@ const bundleAssets = (): any[] => {
  * Lambda Function
  */
 export const createMonitorHiddenNftsLambdaFunction = (
-  securityGroupIds: string[], subnetIds: string[]):
-aws.lambda.Function => {
+  securityGroupIds: string[],
+  subnetIds: string[],
+): aws.lambda.Function => {
   const account = pulumi.output(aws.getCallerIdentity({ async: true })).accountId
   const lambdaFunctionName = getResourceName('monitorHiddenNFTs')
   const executionRole = createIAMRole(account, lambdaFunctionName)

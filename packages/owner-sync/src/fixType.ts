@@ -17,21 +17,31 @@ const pgClient = new Pool({
 })
 
 const main = async (): Promise<void> => {
-  const contracts: string[] = (await pgClient.query('SELECT DISTINCT "contract" FROM nft WHERE "type" != \'ERC1155\' AND "contract" IN (SELECT "contract" FROM "collection" WHERE "isSpam" = false)'))
-    .rows
-    .map((r) => r.contract)
+  const contracts: string[] = (
+    await pgClient.query(
+      'SELECT DISTINCT "contract" FROM nft WHERE "type" != \'ERC1155\' AND "contract" IN (SELECT "contract" FROM "collection" WHERE "isSpam" = false)',
+    )
+  ).rows.map(r => r.contract)
   for (const contract of contracts) {
-    const resp = await (await fetch(`https://eth-mainnet.g.alchemy.com/nft/v2/${process.env.ALCHEMY_API_KEY}/getContractMetadata?contractAddress=${contract.toLowerCase()}`, {
-    headers: {
-      accept: 'application/json',
-    },
-  })).json()
+    const resp = await (
+      await fetch(
+        `https://eth-mainnet.g.alchemy.com/nft/v2/${
+          process.env.ALCHEMY_API_KEY
+        }/getContractMetadata?contractAddress=${contract.toLowerCase()}`,
+        {
+          headers: {
+            accept: 'application/json',
+          },
+        },
+      )
+    ).json()
     if (resp?.contractMetadata?.tokenType === 'ERC1155') {
-      await pgClient.query('UPDATE nft SET "type" = \'ERC1155\', "updatedAt" = Now() WHERE "contract" = $1', [checkSum(contract)])
+      await pgClient.query('UPDATE nft SET "type" = \'ERC1155\', "updatedAt" = Now() WHERE "contract" = $1', [
+        checkSum(contract),
+      ])
     }
     process.stdout.write('.')
   }
 }
 
-main()
-  .then(() => process.exit())
+main().then(() => process.exit())

@@ -83,14 +83,12 @@ export const activityBuilder = async (
  * seaportOrderBuilder
  * @param order
  */
-const seaportOrderBuilder = (
-  order: SeaportOrder,
-): Partial<entity.TxOrder> => {
+const seaportOrderBuilder = (order: SeaportOrder): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.OpenSea,
-    makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address): null,
-    takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address): null,
-    osNonce: (order.protocol_data?.parameters?.counter)?.toString(), // counter is mapped to nonce for OS
+    makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address) : null,
+    takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address) : null,
+    osNonce: order.protocol_data?.parameters?.counter?.toString(), // counter is mapped to nonce for OS
     zone: order.protocol_data?.parameters?.zone, // only mapped for OS
     protocolData: {
       ...order.protocol_data,
@@ -103,9 +101,7 @@ const seaportOrderBuilder = (
  * @param order
  */
 
-const looksrareOrderBuilder = (
-  order: LooksRareOrder,
-): Partial<entity.TxOrder> => {
+const looksrareOrderBuilder = (order: LooksRareOrder): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
     makerAddress: helper.checkSum(order.signer),
@@ -137,9 +133,7 @@ const looksrareOrderBuilder = (
  * @param order
  */
 
-const x2y2OrderBuilder = (
-  order: X2Y2Order,
-): Partial<entity.TxOrder> => {
+const x2y2OrderBuilder = (order: X2Y2Order): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.X2Y2,
     makerAddress: helper.checkSum(order.maker),
@@ -183,7 +177,7 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
   contract: string,
-):  Promise<Partial<entity.TxOrder>> => {
+): Promise<Partial<entity.TxOrder>> => {
   let orderHash: string,
     walletAddress: string,
     tokenId: string,
@@ -215,7 +209,7 @@ export const orderEntityBuilder = async (
     walletAddress = helper.checkSum(looksrareOrder.signer)
     tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
     timestampFromSource = Number(looksrareOrder.startTime)
-    expirationFromSource =  Number(looksrareOrder.endTime)
+    expirationFromSource = Number(looksrareOrder.endTime)
     nftIds = [`ethereum/${checksumContract}/${tokenId}`]
     orderEntity = looksrareOrderBuilder(looksrareOrder)
     break
@@ -284,7 +278,7 @@ export const txSeaportProcotolDataParser = (protocolData: any): TxSeaportProtoco
     }
   })
 
-  return  { offer: txOffer, consideration: txConsideration }
+  return { offer: txOffer, consideration: txConsideration }
 }
 
 /**
@@ -309,11 +303,11 @@ export const txEntityBuilder = async (
   protocol: defs.ProtocolType,
   protocolData: any,
   eventType: string,
-):  Promise<Partial<entity.TxTransaction>> => {
+): Promise<Partial<entity.TxTransaction>> => {
   const checksumContract: string = helper.checkSum(contract)
   const tokenIdHex: string = helper.bigNumberToHex(tokenId)
   const nftIds: string[] = [`ethereum/${checksumContract}/${tokenIdHex}`]
-  const timestampFromSource: number = (new Date().getTime())/1000
+  const timestampFromSource: number = new Date().getTime() / 1000
   const expirationFromSource = null
 
   const activity: entity.TxActivity = await activityBuilder(
@@ -330,7 +324,7 @@ export const txEntityBuilder = async (
   let txProtocolData: TxProtocolData = protocolData
 
   if (protocol === defs.ProtocolType.Seaport) {
-    txProtocolData =  txSeaportProcotolDataParser(protocolData)
+    txProtocolData = txSeaportProcotolDataParser(protocolData)
   }
   return {
     id: txHash,
@@ -374,9 +368,9 @@ export const cancelEntityBuilder = async (
   exchange: defs.ExchangeType,
   orderType: defs.CancelActivityType,
   orderHash: string,
-):  Promise<Partial<entity.TxCancel>> => {
+): Promise<Partial<entity.TxCancel>> => {
   const checksumContract: string = helper.checkSum(contract)
-  const timestampFromSource: number = (new Date().getTime())/1000
+  const timestampFromSource: number = new Date().getTime() / 1000
   const expirationFromSource = null
 
   const activity: entity.TxActivity = await activityBuilder(
@@ -419,7 +413,7 @@ export const paginatedActivitiesBy = (
   pageInput: gql.PageInput,
   filters: Partial<entity.TxActivity>[],
   relations: string[],
-  orderKey= 'createdAt',
+  orderKey = 'createdAt',
   orderDirection = 'DESC',
   protocol?: gql.ProtocolType,
   distinctOn?: defs.DistinctOn<entity.TxActivity>,
@@ -429,38 +423,54 @@ export const paginatedActivitiesBy = (
   const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reversedOrderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: reversedOrderDirection }
   return pagination.resolvePage<entity.TxActivity>(pageInput, {
-    firstAfter: () => repo.findActivities({
-      filters: pageableFilters,
-      relations: relations,
-      orderBy,
-      take: pageInput.first,
-      distinctOn,
-    },
-    protocol,
-    ),
-    firstBefore: () => repo.findActivities({
-      filters: pageableFilters,
-      relations: relations,
-      orderBy,
-      take: pageInput.first,
-      distinctOn,
-    },
-    protocol,
-    ),
-    lastAfter: () => repo.findActivities({
-      filters: pageableFilters,
-      relations: relations,
-      orderBy: reversedOrderBy,
-      take: pageInput.last,
-      distinctOn,
-    }, protocol).then(pagination.reverseResult),
-    lastBefore: () => repo.findActivities({
-      filters: pageableFilters,
-      relations: relations,
-      orderBy: reversedOrderBy,
-      take: pageInput.last,
-      distinctOn,
-    }, protocol).then(pagination.reverseResult),
+    firstAfter: () =>
+      repo.findActivities(
+        {
+          filters: pageableFilters,
+          relations: relations,
+          orderBy,
+          take: pageInput.first,
+          distinctOn,
+        },
+        protocol,
+      ),
+    firstBefore: () =>
+      repo.findActivities(
+        {
+          filters: pageableFilters,
+          relations: relations,
+          orderBy,
+          take: pageInput.first,
+          distinctOn,
+        },
+        protocol,
+      ),
+    lastAfter: () =>
+      repo
+        .findActivities(
+          {
+            filters: pageableFilters,
+            relations: relations,
+            orderBy: reversedOrderBy,
+            take: pageInput.last,
+            distinctOn,
+          },
+          protocol,
+        )
+        .then(pagination.reverseResult),
+    lastBefore: () =>
+      repo
+        .findActivities(
+          {
+            filters: pageableFilters,
+            relations: relations,
+            orderBy: reversedOrderBy,
+            take: pageInput.last,
+            distinctOn,
+          },
+          protocol,
+        )
+        .then(pagination.reverseResult),
   })
 }
 
@@ -470,12 +480,8 @@ export const paginatedActivitiesBy = (
  * @param chainId
  * @param forced
  */
-export const triggerNFTOrderRefreshQueue = async (
-  nfts: any[],
-  chainId: string,
-  forced?: boolean,
-): Promise<number> => {
-  if(!nfts.length) {
+export const triggerNFTOrderRefreshQueue = async (nfts: any[], chainId: string, forced?: boolean): Promise<number> => {
+  if (!nfts.length) {
     return Promise.resolve(0)
   }
   const nftRefreshKeys: string[] = []
@@ -486,13 +492,16 @@ export const triggerNFTOrderRefreshQueue = async (
     if (forced) {
       nftRefreshKeys.push(...['1', nftKey])
     } else {
-      const itemPresentInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, nftKey)
+      const itemPresentInRefreshedCache: string = await cache.zscore(
+        `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
+        nftKey,
+      )
       if (!itemPresentInRefreshedCache) {
         nftRefreshKeys.push(...['1', nftKey])
       }
     }
   }
-  if(!nftRefreshKeys.length) {
+  if (!nftRefreshKeys.length) {
     return Promise.resolve(0)
   }
   return Promise.resolve(cache.zadd(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, ...nftRefreshKeys))
@@ -501,18 +510,20 @@ export const triggerNFTOrderRefreshQueue = async (
 export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
 
 export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
+  switch (listing?.order?.protocol) {
+  case defs.ProtocolType.LooksRare:
+  case defs.ProtocolType.X2Y2: {
     const order = listing?.order?.protocolData
     return BigNumber.from(order?.price || 0)
   }
-  case (defs.ProtocolType.Seaport): {
+  case defs.ProtocolType.Seaport: {
     const order = listing?.order?.protocolData
-    return order?.parameters?.consideration
-      ?.reduce((total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)), BigNumber.from(0))
+    return order?.parameters?.consideration?.reduce(
+      (total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)),
+      BigNumber.from(0),
+    )
   }
-  case (defs.ProtocolType.NFTCOM): {
+  case defs.ProtocolType.NFTCOM: {
     const order = listing?.order?.protocolData
     return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
   }
@@ -520,17 +531,17 @@ export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
 }
 
 export const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
-  switch(listing?.order?.protocol) {
-  case (defs.ProtocolType.LooksRare):
-  case (defs.ProtocolType.X2Y2): {
+  switch (listing?.order?.protocol) {
+  case defs.ProtocolType.LooksRare:
+  case defs.ProtocolType.X2Y2: {
     const order = listing?.order?.protocolData
     return order?.currencyAddress ?? order?.['currency']
   }
-  case (defs.ProtocolType.Seaport): {
+  case defs.ProtocolType.Seaport: {
     const order = listing?.order?.protocolData
     return order?.parameters?.consideration?.[0]?.token
   }
-  case (defs.ProtocolType.NFTCOM): {
+  case defs.ProtocolType.NFTCOM: {
     const order = listing?.order?.protocolData
     return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
   }
@@ -541,17 +552,17 @@ const isSupportedCurrency = async (txActivity: TxActivityDAO): Promise<boolean> 
   return ['ETH', 'WETH', 'USDC'].includes(await getSymbolForContract(getListingCurrencyAddress(txActivity)))
 }
 
-const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev') ?
-  '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB' : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
+const LR_DUTCH_AUCTION = process.env.TYPESENSE_HOST.startsWith('dev')
+  ? '0x550fBf31d44f72bA7b4e4bf567C72463C4d6CEDB'
+  : '0x3E80795Cae5Ee215EBbDf518689467Bf4243BAe0'
 
 const transactionIsBuyNow = (order: entity.TxOrder): boolean => {
-  return order.exchange === defs.ExchangeType.X2Y2
-    || (order.exchange === defs.ExchangeType.OpenSea
-      && !!order.protocolData?.parameters?.consideration?.length)
-    || (order.exchange === defs.ExchangeType.LooksRare
-      && order.protocolData?.strategy !== LR_DUTCH_AUCTION)
-    || (order.exchange === defs.ExchangeType.NFTCOM
-      && order.protocolData.auctionType === defs.AuctionType.FixedPrice)
+  return (
+    order.exchange === defs.ExchangeType.X2Y2 ||
+    (order.exchange === defs.ExchangeType.OpenSea && !!order.protocolData?.parameters?.consideration?.length) ||
+    (order.exchange === defs.ExchangeType.LooksRare && order.protocolData?.strategy !== LR_DUTCH_AUCTION) ||
+    (order.exchange === defs.ExchangeType.NFTCOM && order.protocolData.auctionType === defs.AuctionType.FixedPrice)
+  )
 }
 
 const nonceIsLarger = (n1, n2): boolean => {
@@ -560,17 +571,11 @@ const nonceIsLarger = (n1, n2): boolean => {
 
 const priceIsLower = async (l1, l2): Promise<boolean> => {
   const addrCurrL1 = getListingCurrencyAddress(l1)
-  const priceL1 = new BN(utils.formatUnits(
-    getListingPrice(l1),
-    await getDecimalsForContract(addrCurrL1),
-  ))
+  const priceL1 = new BN(utils.formatUnits(getListingPrice(l1), await getDecimalsForContract(addrCurrL1)))
   const currencyL1 = await getSymbolForContract(addrCurrL1)
 
   const addrCurrL2 = getListingCurrencyAddress(l1)
-  const priceL2 = new BN(utils.formatUnits(
-    getListingPrice(l2),
-    await getDecimalsForContract(addrCurrL2),
-  ))
+  const priceL2 = new BN(utils.formatUnits(getListingPrice(l2), await getDecimalsForContract(addrCurrL2)))
   const currencyL2 = await getSymbolForContract(addrCurrL2)
 
   if (currencyL1 === currencyL2) {
@@ -582,45 +587,41 @@ const priceIsLower = async (l1, l2): Promise<boolean> => {
   return priceL1.multipliedBy(priceUsdL1).isLessThan(priceL2.multipliedBy(priceUsdL2))
 }
 
-export const listingMapFrom = async (txActivities: TxActivityDAO[]): Promise<{ [k:string]: TxActivityDAO[] }> => {
-  return (await txActivities.reduce(async (agg, txActivity) => {
-    const listings = await agg
-    if (
-      (await isSupportedCurrency(txActivity))
-      && transactionIsBuyNow(txActivity.order)
-      && txActivity.order?.exchange
-    ) {
-      const existingIdx = listings.findIndex((tx) => {
-        return tx.order?.exchange
-        && txActivity.order?.exchange
-        && tx.order.exchange === txActivity.order.exchange
-      })
+export const listingMapFrom = async (txActivities: TxActivityDAO[]): Promise<{ [k: string]: TxActivityDAO[] }> => {
+  return (
+    await txActivities.reduce(async (agg, txActivity) => {
+      const listings = await agg
       if (
-        existingIdx > -1
-        && (
-          nonceIsLarger(txActivity.order.nonce, listings[existingIdx].order.nonce)
-        || (
-          txActivity.order.nonce === listings[existingIdx].order.nonce
-          && (await priceIsLower(txActivity, listings[existingIdx]))
-        ))
+        (await isSupportedCurrency(txActivity)) &&
+        transactionIsBuyNow(txActivity.order) &&
+        txActivity.order?.exchange
       ) {
-        listings[existingIdx] = txActivity
-      } else {
-        listings.push(txActivity)
-      }
-    }
-    return listings
-  }, Promise.resolve([] as TxActivityDAO[])))
-    .reduce((map, txActivity: TxActivityDAO) => {
-      if (helper.isNotEmpty(txActivity.order?.protocolData)) {
-        const nftIdParts = txActivity.nftId[0].split('/')
-        const k = `${nftIdParts[1]}-${nftIdParts[2]}`
-        if (map[k]?.length) {
-          map[k].push(txActivity)
+        const existingIdx = listings.findIndex(tx => {
+          return tx.order?.exchange && txActivity.order?.exchange && tx.order.exchange === txActivity.order.exchange
+        })
+        if (
+          existingIdx > -1 &&
+          (nonceIsLarger(txActivity.order.nonce, listings[existingIdx].order.nonce) ||
+            (txActivity.order.nonce === listings[existingIdx].order.nonce &&
+              (await priceIsLower(txActivity, listings[existingIdx]))))
+        ) {
+          listings[existingIdx] = txActivity
         } else {
-          map[k] = [txActivity]
+          listings.push(txActivity)
         }
       }
-      return map
-    }, {})
+      return listings
+    }, Promise.resolve([] as TxActivityDAO[]))
+  ).reduce((map, txActivity: TxActivityDAO) => {
+    if (helper.isNotEmpty(txActivity.order?.protocolData)) {
+      const nftIdParts = txActivity.nftId[0].split('/')
+      const k = `${nftIdParts[1]}-${nftIdParts[2]}`
+      if (map[k]?.length) {
+        map[k].push(txActivity)
+      } else {
+        map[k] = [txActivity]
+      }
+    }
+    return map
+  }, {})
 }

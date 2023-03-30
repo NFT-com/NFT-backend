@@ -13,7 +13,10 @@ const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
     return helper.encode(['address'], [asset.standard.contractAddress])
   case 'ERC721':
   case 'ERC1155':
-    return helper.encode(['address', 'uint256', 'bool'], [asset.standard.contractAddress, asset.standard.tokenId, asset.standard.allowAll])
+    return helper.encode(
+      ['address', 'uint256', 'bool'],
+      [asset.standard.contractAddress, asset.standard.tokenId, asset.standard.allowAll],
+    )
   default:
     return ''
   }
@@ -35,9 +38,7 @@ const encodeAssetClass = (assetClass: gql.AssetClass): string => {
 }
 
 // byte validation and returns back asset list
-export const getAssetList = (
-  assets: Array<gql.MarketplaceAssetInput>,
-): any[] => {
+export const getAssetList = (assets: Array<gql.MarketplaceAssetInput>): any[] => {
   return assets.map((asset: gql.MarketplaceAssetInput) => {
     const assetTypeBytes = encodeAssetType(asset)
     const assetBytes = helper.encode(['uint256', 'uint256'], [asset.value, asset.minimumBid])
@@ -60,11 +61,9 @@ export const getAssetList = (
   })
 }
 
-export const convertAssetInput = (assetInput: Array<gql.MarketplaceAssetInput>):
-Array<gql.MarketplaceAssetInput> =>
-{
+export const convertAssetInput = (assetInput: Array<gql.MarketplaceAssetInput>): Array<gql.MarketplaceAssetInput> => {
   const assets = []
-  assetInput.map((asset) => {
+  assetInput.map(asset => {
     let tokenId = ''
     const assetClass = asset.standard.assetClass as defs.AssetClass
     if (assetClass === defs.AssetClass.ERC721 || assetClass === defs.AssetClass.ERC1155)
@@ -86,19 +85,19 @@ Array<gql.MarketplaceAssetInput> =>
   return assets
 }
 
-export const parseNFTIdsFromNativeAsset = (
-  assets: Array<gql.MarketplaceAssetInput>,
-): string[] => {
+export const parseNFTIdsFromNativeAsset = (assets: Array<gql.MarketplaceAssetInput>): string[] => {
   const nftIds: string[] = []
   for (const asset of assets) {
-    nftIds.push(`ethereum/${ethers.utils.getAddress(asset.standard.contractAddress)}/${helper.bigNumberToHex(asset.standard.tokenId)}`)
+    nftIds.push(
+      `ethereum/${ethers.utils.getAddress(asset.standard.contractAddress)}/${helper.bigNumberToHex(
+        asset.standard.tokenId,
+      )}`,
+    )
   }
   return nftIds
 }
 
-export const parseContractsFromNativeAsset = (
-  assets: Array<gql.MarketplaceAssetInput>,
-): string[] => {
+export const parseContractsFromNativeAsset = (assets: Array<gql.MarketplaceAssetInput>): string[] => {
   const contracts: string[] = []
   const seen = {}
   for (const asset of assets) {
@@ -111,10 +110,7 @@ export const parseContractsFromNativeAsset = (
   return contracts
 }
 
-export const blockNumberToTimestamp = async (
-  blockNumber: number,
-  chainId: string,
-): Promise<number> => {
+export const blockNumberToTimestamp = async (blockNumber: number, chainId: string): Promise<number> => {
   const chainProvider = provider.provider(Number(chainId))
   const block = await chainProvider.getBlock(blockNumber)
   return block.timestamp * 1000

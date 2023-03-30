@@ -23,7 +23,8 @@ export class CollectionRepository extends BaseRepository<Collection> {
     AND contract > $1
     ORDER BY contract ASC LIMIT $2`
     const limitOnly = 'ORDER BY contract ASC LIMIT $1'
-    return queryRunner.query(`
+    return queryRunner.query(
+      `
     WITH nft_collections AS (
       SELECT DISTINCT ON (contract) * FROM nft
     )
@@ -35,15 +36,21 @@ export class CollectionRepository extends BaseRepository<Collection> {
     LEFT JOIN nft_collections ON nft_collections."contract" = collection."contract"
     AND collection."deletedAt" IS NULL
     AND collection."isSpam" = false
-      ${cursor ? cursorAndLimit : limit ? limitOnly : ''}`, [cursor, limit].filter(x => !!x))
+      ${cursor ? cursorAndLimit : limit ? limitOnly : ''}`,
+      [cursor, limit].filter(x => !!x),
+    )
   }
 
-  findAllOfficial<T extends FindOptionsSelect<Collection>>(select?: T): T extends Pick<FindOneOptions<Collection>, 'select'> ? Promise<Pick<FindOneOptions<Collection>, 'select'>[]> : Promise<Collection[]> {
+  findAllOfficial<T extends FindOptionsSelect<Collection>>(
+    select?: T,
+  ): T extends Pick<FindOneOptions<Collection>, 'select'>
+      ? Promise<Pick<FindOneOptions<Collection>, 'select'>[]>
+      : Promise<Collection[]> {
     return this.getRepository(true).find({
       where: {
         isOfficial: true,
       },
-      select: (select as FindOptionsSelect<any>),
+      select: select as FindOptionsSelect<any>,
     })
   }
 

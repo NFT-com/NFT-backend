@@ -4,7 +4,7 @@ import { testDBConfig } from '@nftcom/gql/config'
 import { db, defs } from '@nftcom/shared'
 import { Profile, User } from '@nftcom/shared/db/entity'
 
-import { testMockProfiles, testMockWallet,testMockWatchlistUser } from '../util/constants'
+import { testMockProfiles, testMockWallet, testMockWatchlistUser } from '../util/constants'
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
@@ -26,11 +26,7 @@ describe('watchlist resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
 
-    testServer = getTestApolloServer(
-      repositories,
-      testMockWatchlistUser,
-      testMockWallet,
-    )
+    testServer = getTestApolloServer(repositories, testMockWatchlistUser, testMockWallet)
   })
 
   afterAll(async () => {
@@ -68,13 +64,15 @@ describe('watchlist resolver', () => {
         },
       })
 
-      const edge = await repositories.edge.findOne({ where: {
-        thisEntityId: testMockWatchlistUser.id,
-        thisEntityType: defs.EntityType.User,
-        edgeType: defs.EdgeType.Watches,
-        thatEntityId: testMockProfiles.id,
-        thatEntityType: defs.EntityType.Profile,
-      } })
+      const edge = await repositories.edge.findOne({
+        where: {
+          thisEntityId: testMockWatchlistUser.id,
+          thisEntityType: defs.EntityType.User,
+          edgeType: defs.EdgeType.Watches,
+          thatEntityId: testMockProfiles.id,
+          thatEntityType: defs.EntityType.Profile,
+        },
+      })
 
       expect(edge?.id).not.toBeNull()
       expect(edge?.thisEntityId).toBe(testMockWatchlistUser.id)

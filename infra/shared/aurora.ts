@@ -94,25 +94,26 @@ const createMain = (
         name: 'log_replication_commands',
         value: '1',
       },
-
     ],
   })
   const instance = config.require('auroraMainInstance')
   const numInstances = parseInt(config.require('auroraMainInstances')) || 1
   const clusterInstances: aws.rds.ClusterInstance[] = []
   for (let i = 0; i < numInstances; i++) {
-    clusterInstances.push(new aws.rds.ClusterInstance(`aurora_main_instance_${i + 1}`, {
-      identifier: getResourceName(`main-${i+1}`),
-      clusterIdentifier: cluster.id,
-      instanceClass: instance,
-      engine: engineType,
-      engineVersion: cluster.engineVersion,
-      dbParameterGroupName: dbParameterGroup.name,
-      dbSubnetGroupName: subnetGroup.name,
-      availabilityZone: zones[0],
-      autoMinorVersionUpgrade: true,
-      publiclyAccessible: true, //access controlled via security groups
-    }))
+    clusterInstances.push(
+      new aws.rds.ClusterInstance(`aurora_main_instance_${i + 1}`, {
+        identifier: getResourceName(`main-${i + 1}`),
+        clusterIdentifier: cluster.id,
+        instanceClass: instance,
+        engine: engineType,
+        engineVersion: cluster.engineVersion,
+        dbParameterGroupName: dbParameterGroup.name,
+        dbSubnetGroupName: subnetGroup.name,
+        availabilityZone: zones[0],
+        autoMinorVersionUpgrade: true,
+        publiclyAccessible: true, //access controlled via security groups
+      }),
+    )
   }
 
   return cluster

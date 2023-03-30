@@ -1,13 +1,5 @@
 import * as _lodash from 'lodash'
-import {
-  In,
-  LessThanOrEqual,
-  MoreThan,
-  MoreThanOrEqual,
-  Not,
-  SelectQueryBuilder,
-  UpdateResult,
-} from 'typeorm'
+import { In, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
 import { NFT, TxActivity } from '@nftcom/shared/db/entity'
 import {
@@ -43,29 +35,36 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return { name: `Tx${activityType}`, type: `${activityType.toLowerCase()}` }
   }
 
-  public findActivitiesByType = async (
-    activityType: ActivityType,
-    chainId: string,
-  ): Promise<TxActivity[]> => {
+  public findActivitiesByType = async (activityType: ActivityType, chainId: string): Promise<TxActivity[]> => {
     const { name, type } = this.getEntityNameAndType(activityType)
-    return this.getRepository(true).createQueryBuilder('activity')
+    return this.getRepository(true)
+      .createQueryBuilder('activity')
       .leftJoinAndMapOne(
-        `activity.${type}`, name,
-        'activityType',  'activity.id = activityType.activityId and activityType.id = activity.activityTypeId')
+        `activity.${type}`,
+        name,
+        'activityType',
+        'activity.id = activityType.activityId and activityType.id = activity.activityTypeId',
+      )
       .where({ activityType, chainId })
       .orderBy({ timestamp: 'DESC' })
       .getMany()
   }
 
-  public findActivitiesByWalletAddress = (
-    walletAddress: string,
-    chainId: string,
-  ): Promise<TxActivity[]> => {
-    return this.getRepository(true).createQueryBuilder('activity')
-      .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
-      .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-        'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+  public findActivitiesByWalletAddress = (walletAddress: string, chainId: string): Promise<TxActivity[]> => {
+    return this.getRepository(true)
+      .createQueryBuilder('activity')
+      .leftJoinAndMapOne(
+        'activity.order',
+        'TxOrder',
+        'order',
+        'activity.id = order.activityId and order.orderHash = activity.activityTypeId',
+      )
+      .leftJoinAndMapOne(
+        'activity.cancel',
+        'TxCancel',
+        'cancel',
+        'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId',
+      )
       .where({
         walletAddress,
         chainId,
@@ -80,10 +79,9 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     chainId: string,
   ): Promise<TxActivity[]> => {
     const { name, type } = this.getEntityNameAndType(activityType)
-    return this.getRepository(true).createQueryBuilder('activity')
-      .leftJoinAndMapOne(`activity.${type}`,
-        name, 'activityType',
-        'activity.id = activityType.activityId')
+    return this.getRepository(true)
+      .createQueryBuilder('activity')
+      .leftJoinAndMapOne(`activity.${type}`, name, 'activityType', 'activity.id = activityType.activityId')
       .where({
         activityType,
         walletAddress,
@@ -94,10 +92,11 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   }
 
   // activities for filters - pageable result
-  public findActivities = (query: PageableQuery<TxActivity>, protocol?: ProtocolType)
-  : Promise<PageableResult<TxActivity>> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
+  public findActivities = (
+    query: PageableQuery<TxActivity>,
+    protocol?: ProtocolType,
+  ): Promise<PageableResult<TxActivity>> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true).createQueryBuilder('activity')
     const { nftIds, remainingFilters } = query.filters.reduce(
       (aggregator: any, filter: TxActivity) => {
         const { nftId, ...remainingFilters } = filter
@@ -109,37 +108,64 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
           aggregator.remainingFilters.push(remainingFilters)
         }
         return aggregator
-      }, { nftIds: [], remainingFilters: [] })
-    queryBuilder
-      .where(remainingFilters)
+      },
+      { nftIds: [], remainingFilters: [] },
+    )
+    queryBuilder.where(remainingFilters)
 
     if (nftIds.length) {
-      queryBuilder
-        .andWhere('activity.nftId @> ARRAY[:...nftId]', { nftId: nftIds })
+      queryBuilder.andWhere('activity.nftId @> ARRAY[:...nftId]', { nftId: nftIds })
     }
 
     if (protocol) {
       return queryBuilder
         .orderBy(query.orderBy)
         .take(query.take)
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
-        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
+        .leftJoinAndMapOne(
+          'activity.order',
+          'TxOrder',
+          'order',
+          'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol',
+          { protocol },
+        )
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol',
+          { protocol },
+        )
+        .leftJoinAndMapOne(
+          'activity.cancel',
+          'TxCancel',
+          'cancel',
+          'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol',
+          { protocol },
+        )
         .cache(true)
         .getManyAndCount()
     } else {
       return queryBuilder
         .orderBy(query.orderBy)
         .take(query.take)
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
-        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+        .leftJoinAndMapOne(
+          'activity.order',
+          'TxOrder',
+          'order',
+          'activity.id = order.activityId and order.orderHash = activity.activityTypeId',
+        )
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId',
+        )
+        .leftJoinAndMapOne(
+          'activity.cancel',
+          'TxCancel',
+          'cancel',
+          'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId',
+        )
         .cache(true)
         .getManyAndCount()
     }
@@ -151,8 +177,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     activityTypes: ActivityType[],
     protocol?: string,
   ): Promise<TxActivity[]> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true).createQueryBuilder('activity')
 
     if (protocol) {
       return queryBuilder
@@ -162,12 +187,27 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
           status: ActivityStatus.Valid,
         })
         .orderBy({ 'activity.updatedAt': 'DESC' })
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
-        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
+        .leftJoinAndMapOne(
+          'activity.order',
+          'TxOrder',
+          'order',
+          'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol',
+          { protocol },
+        )
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol',
+          { protocol },
+        )
+        .leftJoinAndMapOne(
+          'activity.cancel',
+          'TxCancel',
+          'cancel',
+          'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol',
+          { protocol },
+        )
         .cache(true)
         .getMany()
     } else {
@@ -178,12 +218,24 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
           status: ActivityStatus.Valid,
         })
         .orderBy({ 'activity.updatedAt': 'DESC' })
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
-        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+        .leftJoinAndMapOne(
+          'activity.order',
+          'TxOrder',
+          'order',
+          'activity.id = order.activityId and order.orderHash = activity.activityTypeId',
+        )
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId',
+        )
+        .leftJoinAndMapOne(
+          'activity.cancel',
+          'TxCancel',
+          'cancel',
+          'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId',
+        )
         .cache(true)
         .getMany()
     }
@@ -198,8 +250,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   ): Promise<TxActivity[]> => {
     const nftId = `ethereum/${contract}/${tokenId}`
 
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true).createQueryBuilder('activity')
 
     if (protocol) {
       return queryBuilder
@@ -210,12 +261,27 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         })
         .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
         .orderBy({ 'activity.updatedAt': 'DESC' })
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol', { protocol })
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol', { protocol })
-        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol', { protocol })
+        .leftJoinAndMapOne(
+          'activity.order',
+          'TxOrder',
+          'order',
+          'activity.id = order.activityId and order.orderHash = activity.activityTypeId and order.protocol = :protocol',
+          { protocol },
+        )
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId and transaction.protocol = :protocol',
+          { protocol },
+        )
+        .leftJoinAndMapOne(
+          'activity.cancel',
+          'TxCancel',
+          'cancel',
+          'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId and cancel.exchange = :protocol',
+          { protocol },
+        )
         .cache(true)
         .getMany()
     } else {
@@ -227,12 +293,24 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
         })
         .andWhere('activity.nftId @> ARRAY[:nftId]', { nftId })
         .orderBy({ 'activity.updatedAt': 'DESC' })
-        .leftJoinAndMapOne('activity.order', 'TxOrder',
-          'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
-        .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-          'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
-        .leftJoinAndMapOne('activity.cancel', 'TxCancel',
-          'cancel', 'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId')
+        .leftJoinAndMapOne(
+          'activity.order',
+          'TxOrder',
+          'order',
+          'activity.id = order.activityId and order.orderHash = activity.activityTypeId',
+        )
+        .leftJoinAndMapOne(
+          'activity.transaction',
+          'TxTransaction',
+          'transaction',
+          'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId',
+        )
+        .leftJoinAndMapOne(
+          'activity.cancel',
+          'TxCancel',
+          'cancel',
+          'activity.id = cancel.activityId and cancel.transactionHash = activity.activityTypeId',
+        )
         .cache(true)
         .getMany()
     }
@@ -250,8 +328,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
   ): Promise<TxActivity[]> => {
     const nftIds = nfts.map((nft: NFT) => `ethereum/${nft.contract}/${nft.tokenId}`)
 
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true).createQueryBuilder('activity')
 
     return queryBuilder
       .where({
@@ -261,8 +338,12 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       })
       .andWhere('activity.nftId && ARRAY[:...nftIds]', { nftIds })
       .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId and order.orderHash = activity.activityTypeId')
+      .leftJoinAndMapOne(
+        'activity.order',
+        'TxOrder',
+        'order',
+        'activity.id = order.activityId and order.orderHash = activity.activityTypeId',
+      )
       .cache(true)
       .getMany()
   }
@@ -274,8 +355,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       updatedAt?: Date
     },
   ): Promise<TxActivity[]> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true).createQueryBuilder('activity')
 
     const { nftContract, updatedAt } = opts
 
@@ -295,8 +375,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return queryBuilder
       .where(queryObj)
       .orderBy({ 'activity.updatedAt': 'DESC' })
-      .innerJoinAndMapOne('activity.order', 'TxOrder',
-        'order', 'activity.id = order.activityId')
+      .innerJoinAndMapOne('activity.order', 'TxOrder', 'order', 'activity.id = order.activityId')
       .cache(true)
       .getMany()
   }
@@ -306,7 +385,7 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     filters: ActivityFilters,
     updateField: string,
     updateValue: any,
-  ): Promise<UpdateResult> =>{
+  ): Promise<UpdateResult> => {
     let queryFilter: any = {
       ...filters,
       [updateField]: Not(updateValue),
@@ -320,7 +399,8 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     if (updateField === 'read') {
       updates = { ...updates, readTimestamp: new Date() }
     }
-    return this.getRepository().createQueryBuilder('activity')
+    return this.getRepository()
+      .createQueryBuilder('activity')
       .update(updates)
       .where(queryFilter)
       .returning(['id'])
@@ -328,11 +408,8 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .execute()
   }
 
-  public findActivitiesWithEmptyNFT = (
-    activityType: ActivityType,
-  ): Promise<TxActivity[]> => {
-    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true)
-      .createQueryBuilder('activity')
+  public findActivitiesWithEmptyNFT = (activityType: ActivityType): Promise<TxActivity[]> => {
+    const queryBuilder: SelectQueryBuilder<TxActivity> = this.getRepository(true).createQueryBuilder('activity')
 
     const queryObj = {
       activityType,
@@ -341,8 +418,12 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
     return queryBuilder
       .where(queryObj)
       .orderBy({ 'activity.updatedAt': 'DESC' })
-      .leftJoinAndMapOne('activity.transaction', 'TxTransaction',
-        'transaction', 'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId')
+      .leftJoinAndMapOne(
+        'activity.transaction',
+        'TxTransaction',
+        'transaction',
+        'activity.id = transaction.activityId and transaction.transactionHash = activity.activityTypeId',
+      )
       .cache(true)
       .getMany()
   }

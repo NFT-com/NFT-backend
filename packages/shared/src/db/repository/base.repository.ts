@@ -31,24 +31,28 @@ export class BaseRepository<T> {
   }
 
   public delete = (opts: FindOptionsWhere<T>): Promise<boolean> => {
-    return this.getRepository().softDelete({ where: { ...opts } } as FindOneOptions<Partial<T>>)
-      .then((r) => r.affected > 0)
+    return this.getRepository()
+      .softDelete({ where: { ...opts } } as FindOneOptions<Partial<T>>)
+      .then(r => r.affected > 0)
   }
 
   public hardDelete = (opts: typeorm.FindOptionsWhere<Partial<T>>): Promise<boolean> => {
-    return this.getRepository().delete(opts)
-      .then((r) => r.affected > 0)
+    return this.getRepository()
+      .delete(opts)
+      .then(r => r.affected > 0)
   }
 
   public hardDeleteByIds = (ids: string[]): Promise<boolean> => {
-    return this.getRepository().delete(ids)
-      .then((r) => r.affected > 0)
+    return this.getRepository()
+      .delete(ids)
+      .then(r => r.affected > 0)
   }
 
   public deleteById = (id: string): Promise<boolean> => {
     if (id === null || id === undefined) return Promise.reject(`Invalid value of where parameter ${id}`)
-    return this.getRepository().softDelete(id)
-      .then((r) => r.affected === 1)
+    return this.getRepository()
+      .softDelete(id)
+      .then(r => r.affected === 1)
   }
 
   public find = (opts: typeorm.FindManyOptions<any>): Promise<T[]> => {
@@ -64,53 +68,48 @@ export class BaseRepository<T> {
    * @param {FindManyOptions<Partial<T>>} query - the query to find the pageable result of.
    * @returns {Promise<PageableResult<T>>} - the pageable result of the query.
    */
-  public findPageable = (
-    {
-      relations,
-      order,
-      where,
-      select,
-      skip,
-      take,
-      cache = true,
-    }: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
+  public findPageable = ({
+    relations,
+    order,
+    where,
+    select,
+    skip,
+    take,
+    cache = true,
+  }: FindManyOptions<Partial<T>>): Promise<PageableResult<T>> => {
     const defaultPageSkip = 0
-    const defaultPageSize = 5000;
+    const defaultPageSize = 5000
 
-    [where].flatMap((where) => {
-      Object
-        .entries(where)
-        .reduce((obj, [key, val]) => {
-          if (val === null) val = IsNull()
-          return { ...obj, [key]: val }
-        }, {})
+    ;[where].flatMap(where => {
+      Object.entries(where).reduce((obj, [key, val]) => {
+        if (val === null) val = IsNull()
+        return { ...obj, [key]: val }
+      }, {})
     })
 
-    return this.getRepository(true)
-      .findAndCount({
-        relations,
-        where,
-        select,
-        order,
-        skip: skip || defaultPageSkip,
-        take: take || defaultPageSize,
-        cache,
-      })
+    return this.getRepository(true).findAndCount({
+      relations,
+      where,
+      select,
+      order,
+      skip: skip || defaultPageSkip,
+      take: take || defaultPageSize,
+      cache,
+    })
   }
 
   // TODO this doesn't work when distinctOn column does not match with orderBy columns
   //  solution is to use outer query to sort and sub query to find non-dupes/distinct
   public findDistinctPageable = (query: PageableQuery<T>): Promise<PageableResult<T>> => {
     const alias = 'tbl'
-    const distinctOn = query.distinctOn.map((k) => `${alias}.${k}`)
-    const orderBy = Object.keys(query.orderBy)
-      .reduce((agg, k) => {
-        const nk = `${alias}.${k}`
-        return {
-          ...agg,
-          [nk]: query.orderBy[k],
-        }
-      }, {})
+    const distinctOn = query.distinctOn.map(k => `${alias}.${k}`)
+    const orderBy = Object.keys(query.orderBy).reduce((agg, k) => {
+      const nk = `${alias}.${k}`
+      return {
+        ...agg,
+        [nk]: query.orderBy[k],
+      }
+    }, {})
 
     return this.getRepository(true)
       .createQueryBuilder(alias)
@@ -140,18 +139,13 @@ export class BaseRepository<T> {
     return this.getRepository().save(this.getRepository().create(entity) as any, opts)
   }
 
-  public saveMany = (
-    entities: typeorm.DeepPartial<T>[],
-    opts?: typeorm.SaveOptions,
-  ): Promise<T[]> => {
+  public saveMany = (entities: typeorm.DeepPartial<T>[], opts?: typeorm.SaveOptions): Promise<T[]> => {
     return this.getRepository().save(this.getRepository().create(entities) as any, opts)
   }
 
-  public updateOneById = (
-    id: string,
-    entity: typeorm.DeepPartial<T>,
-  ): Promise<T | undefined> => {
-    return this.getRepository().update(id, entity as any)
+  public updateOneById = (id: string, entity: typeorm.DeepPartial<T>): Promise<T | undefined> => {
+    return this.getRepository()
+      .update(id, entity as any)
       .then(() => this.findById(id))
   }
 
@@ -163,18 +157,12 @@ export class BaseRepository<T> {
   }
 
   /* Insert/update (Cascades not supported) */
-  public upsert = (
-    entity: typeorm.DeepPartial<T>,
-    opts: UpsertOptions,
-  ): Promise<typeorm.InsertResult> => {
+  public upsert = (entity: typeorm.DeepPartial<T>, opts: UpsertOptions): Promise<typeorm.InsertResult> => {
     return this.getRepository().upsert(this.getRepository().create(entity) as any, opts)
   }
 
   /* Bulk insert/update (Cascades not supported) */
-  public upsertMany = (
-    entities: typeorm.DeepPartial<T>[],
-    opts: UpsertOptions,
-  ): Promise<typeorm.InsertResult> => {
+  public upsertMany = (entities: typeorm.DeepPartial<T>[], opts: UpsertOptions): Promise<typeorm.InsertResult> => {
     return this.getRepository().upsert(entities as any, opts)
   }
 

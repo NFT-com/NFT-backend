@@ -3,7 +3,8 @@ import {
   buildNFTNotFoundMsg,
   buildNFTNotOwnedMsg,
   buildNFTNotValid,
-  buildProfileNotOwnedMsg } from './nft.error'
+  buildProfileNotOwnedMsg,
+} from './nft.error'
 
 describe('nft error', () => {
   describe('buildNFTNotFoundMsg', () => {

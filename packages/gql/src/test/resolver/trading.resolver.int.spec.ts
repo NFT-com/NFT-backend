@@ -5,7 +5,7 @@ import { gql } from '@nftcom/gql/defs'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
 import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'
-import { db, defs,helper } from '@nftcom/shared'
+import { db, defs, helper } from '@nftcom/shared'
 import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 
 jest.setTimeout(300000)
@@ -41,10 +41,7 @@ describe.skip('trading', () => {
         walletId: testMockWallet.id,
       })
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
     })
 
     afterAll(async () => {
@@ -53,7 +50,8 @@ describe.skip('trading', () => {
     })
     it('should throw LISTING_INVALID error', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation CreateMarketListing($input: CreateListingInput!) { createMarketListing(input: $input) { orderHash } }',
+        query:
+          'mutation CreateMarketListing($input: CreateListingInput!) { createMarketListing(input: $input) { orderHash } }',
         variables: {
           input: {
             structHash: '0xe7337a429f9420dfd9b32b6c1a48667a794e7ae5d6f65ce4bfdd851b52fa39f5',
@@ -69,12 +67,14 @@ describe.skip('trading', () => {
               {
                 standard: {
                   assetClass: gql.AssetClass.ERC721,
-                  bytes: '0x000000000000000000000000f5de760f2e916647fd766b4ad9e85ff943ce3a2b0000000000000000000000000000000000000000000000000000000000029fdc0000000000000000000000000000000000000000000000000000000000000000',
+                  bytes:
+                    '0x000000000000000000000000f5de760f2e916647fd766b4ad9e85ff943ce3a2b0000000000000000000000000000000000000000000000000000000000029fdc0000000000000000000000000000000000000000000000000000000000000000',
                   contractAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
                   tokenId: helper.bigNumberToHex(171996),
                   allowAll: true,
                 },
-                bytes: '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
+                bytes:
+                  '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
                 value: helper.bigNumberToHex(1),
                 minimumBid: helper.bigNumberToHex(0),
               },
@@ -96,12 +96,10 @@ describe.skip('trading', () => {
       const testMockWallet1 = testMockWallet
       testMockWallet1.chainId = '5'
       testMockWallet1.address = '0xd1D9F52d63e3736908c6e7D868f785d30Af5e3AC'
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet1,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet1)
       let result = await testServer.executeOperation({
-        query: 'mutation CreateMarketListing($input: CreateListingInput!) { createMarketListing(input: $input) { orderHash } }',
+        query:
+          'mutation CreateMarketListing($input: CreateListingInput!) { createMarketListing(input: $input) { orderHash } }',
         variables: {
           input: {
             structHash: '0x184561a23adec98c9e6ebec5bf236607cdde46b21edf8b0e94f1de969dc28d12',
@@ -117,12 +115,14 @@ describe.skip('trading', () => {
               {
                 standard: {
                   assetClass: gql.AssetClass.ERC721,
-                  bytes: '0x0000000000000000000000009ef7a34dccc32065802b1358129a226b228dab4e000000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000',
+                  bytes:
+                    '0x0000000000000000000000009ef7a34dccc32065802b1358129a226b228dab4e000000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000',
                   contractAddress: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E',
                   tokenId: '0x3f',
                   allowAll: false,
                 },
-                bytes: '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
+                bytes:
+                  '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
                 value: '0x01',
                 minimumBid: '0x00',
               },
@@ -137,7 +137,8 @@ describe.skip('trading', () => {
                   tokenId: '0',
                   allowAll: false,
                 },
-                bytes: '0x0000000000000000000000000000000000000000000000003782dace9d9000000000000000000000000000000000000000000000000000003782dace9d900000',
+                bytes:
+                  '0x0000000000000000000000000000000000000000000000003782dace9d9000000000000000000000000000000000000000000000000000003782dace9d900000',
                 value: '0x3782dace9d900000',
                 minimumBid: '0x3782dace9d900000',
               },
@@ -199,10 +200,7 @@ describe.skip('trading', () => {
 
   describe('createMarketBid', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       // active activity
       let activity = new TxActivity()
@@ -214,7 +212,7 @@ describe.skip('trading', () => {
       currentDate.setDate(currentDate.getDate() + 1)
       activity.expiration = currentDate
       activity.walletAddress = testMockWallet.address
-      activity.nftContract ='0x'
+      activity.nftContract = '0x'
       activity.nftId = []
       activity.chainId = '5'
 
@@ -258,12 +256,14 @@ describe.skip('trading', () => {
               {
                 standard: {
                   assetClass: gql.AssetClass.ERC721,
-                  bytes: '0x000000000000000000000000f5de760f2e916647fd766b4ad9e85ff943ce3a2b0000000000000000000000000000000000000000000000000000000000029fdc0000000000000000000000000000000000000000000000000000000000000000',
+                  bytes:
+                    '0x000000000000000000000000f5de760f2e916647fd766b4ad9e85ff943ce3a2b0000000000000000000000000000000000000000000000000000000000029fdc0000000000000000000000000000000000000000000000000000000000000000',
                   contractAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
                   tokenId: helper.bigNumberToHex(171996),
                   allowAll: true,
                 },
-                bytes: '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
+                bytes:
+                  '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
                 value: helper.bigNumberToHex(1),
                 minimumBid: helper.bigNumberToHex(0),
               },

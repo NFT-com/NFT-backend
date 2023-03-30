@@ -29,9 +29,7 @@ const parseDateRangeForDateFns = (dateRange: string): { [duration: string]: numb
 
 const createTxIdFromNFTPortData = (tx): string => {
   const hmac = crypto.createHmac('sha256', 'contractData')
-  return hmac
-    .update(`${tx.transaction_hash}-${tx.buyer_address}-${tx.seller_address}-${tx.nft.token_id}`)
-    .digest('hex')
+  return hmac.update(`${tx.transaction_hash}-${tx.buyer_address}-${tx.seller_address}-${tx.nft.token_id}`).digest('hex')
 }
 
 const getSymbolFromNFTPortData = async (tx): Promise<string> => {
@@ -56,8 +54,11 @@ const marketplaceSalesFromNFTPortTransactions = async (txns: any[]): Promise<any
   return transformed
 }
 
-const retrievePersistedSales =
-async (contractAddress: string, oldestTransactionDate: Date, tokenId: string): Promise<MarketplaceSale[]> => {
+const retrievePersistedSales = async (
+  contractAddress: string,
+  oldestTransactionDate: Date,
+  tokenId: string,
+): Promise<MarketplaceSale[]> => {
   let whereOptions: any = {
     contractAddress: utils.getAddress(contractAddress),
     date: MoreThanOrEqual(oldestTransactionDate),
@@ -78,8 +79,11 @@ async (contractAddress: string, oldestTransactionDate: Date, tokenId: string): P
   })
 }
 
-const determineOldestTransactionDateForCollectionUpdate =
-(now: Date, tokenId: string, savedSales: MarketplaceSale[]): Date => {
+const determineOldestTransactionDateForCollectionUpdate = (
+  now: Date,
+  tokenId: string,
+  savedSales: MarketplaceSale[],
+): Date => {
   const yesterday = sub(now, parseDateRangeForDateFns('1d'))
   if (!tokenId && isBefore(savedSales[0].date, yesterday)) {
     return savedSales[0].date
@@ -93,7 +97,7 @@ export const getContractSales = async (
   tokenId: string = undefined,
 ): Promise<MarketplaceSale[]> => {
   const endpoint = tokenId ? 'txByNFT' : 'txByContract'
-  const args = [contractAddress, tokenId].filter((x) => !!x) // not falsey
+  const args = [contractAddress, tokenId].filter(x => !!x) // not falsey
   const now = new Date()
 
   let oldestTransactionDate =
@@ -122,9 +126,9 @@ export const getContractSales = async (
           oldestTransactionDate,
         )
       ) {
-        filteredTxns = salesData.transactions.filter((tx) => tx.type === 'sale')
+        filteredTxns = salesData.transactions.filter(tx => tx.type === 'sale')
       } else {
-        filteredTxns = salesData.transactions.filter((tx) => {
+        filteredTxns = salesData.transactions.filter(tx => {
           return tx.type === 'sale' && !isBefore(parseISO(tx.transaction_date), oldestTransactionDate)
         })
         getMoreSalesData = false
@@ -143,10 +147,7 @@ export const getContractSales = async (
   result = result.filter(sale => saleFilterCount.get(sale.id) === 1)
   await repositories.marketplaceSale.saveMany(result, { chunk: 4000 })
 
-  result = [
-    ...result,
-    ...savedSales,
-  ]
+  result = [...result, ...savedSales]
 
   return result
 }

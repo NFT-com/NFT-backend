@@ -18,19 +18,19 @@ export const countHiddenNFTs = async (): Promise<PutMetricDataCommandOutput> => 
     hide: true,
   })
   try {
-    return await cwClient.send(new PutMetricDataCommand({
-      MetricData: [
-        {
-          MetricName: 'HIDDEN_NFTS',
-          Unit: 'Count',
-          Value: hiddenCount,
-          Dimensions: [
-            { Name: 'environment', Value: NODE_ENV },
-          ],
-        },
-      ],
-      Namespace: 'NFTCOM/EDGE',
-    }))
+    return await cwClient.send(
+      new PutMetricDataCommand({
+        MetricData: [
+          {
+            MetricName: 'HIDDEN_NFTS',
+            Unit: 'Count',
+            Value: hiddenCount,
+            Dimensions: [{ Name: 'environment', Value: NODE_ENV }],
+          },
+        ],
+        Namespace: 'NFTCOM/EDGE',
+      }),
+    )
   } catch (err) {
     logger.error(err, 'Unable to put metric to cloudwatch')
   }

@@ -67,7 +67,8 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
             Value: process.env.NODE_ENV,
           },
         ],
-      }]),
+      },
+    ]),
     cpu: '512',
     executionRoleArn: execRole,
     family: resourceName,
@@ -84,31 +85,30 @@ export const createSalesProcessorTaskDefinition = (): aws.ecs.TaskDefinition => 
 
 export const createSalesProcessorEcsCluster = (): aws.ecs.Cluster => {
   const resourceName = 'cronjob-sales-processor' // static name to allow each env to share the same ecs cluster
-  const cluster = new aws.ecs.Cluster('salesProcessor-cluster',
-    {
-      name: resourceName,
-      settings: [
-        {
-          name: 'containerInsights',
-          value: 'disabled',
-        }],
-      capacityProviders: [
-        'FARGATE_SPOT',
-        'FARGATE',
-      ],
-      configuration: {
-        executeCommandConfiguration: {
-          logging: 'DEFAULT',
-        },
+  const cluster = new aws.ecs.Cluster('salesProcessor-cluster', {
+    name: resourceName,
+    settings: [
+      {
+        name: 'containerInsights',
+        value: 'disabled',
       },
-      tags: {
-        cronjob: 'sales-processor',
+    ],
+    capacityProviders: ['FARGATE_SPOT', 'FARGATE'],
+    configuration: {
+      executeCommandConfiguration: {
+        logging: 'DEFAULT',
       },
-      defaultCapacityProviderStrategies: [{
+    },
+    tags: {
+      cronjob: 'sales-processor',
+    },
+    defaultCapacityProviderStrategies: [
+      {
         capacityProvider: 'FARGATE',
         weight: 1,
-      }],
-    })
+      },
+    ],
+  })
 
   return cluster
 }

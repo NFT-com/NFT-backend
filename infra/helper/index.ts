@@ -14,7 +14,7 @@ export const joinStrings = (sep: string, ...strs: string[]): string => strs.join
 
 export const joinStringsByDash = (...strs: string[]): string => joinStrings('-', ...strs)
 
-export const getEnv = (pkg: string, env='.env'): { parsedFile: envfile.Data; workDir: string } => {
+export const getEnv = (pkg: string, env = '.env'): { parsedFile: envfile.Data; workDir: string } => {
   const workDir = upath.joinSafe(__dirname, '..', '..', 'packages', pkg)
   const sourceFile = upath.joinSafe(workDir, env)
   const envFileStr = fs.readFileSync(sourceFile).toString()
@@ -35,7 +35,7 @@ export const getResourceName = (name: string): string => {
   return joinStringsByDash(getStage(), name)
 }
 
-export const getTags = (tags = {}): {[key: string]: string} => {
+export const getTags = (tags = {}): { [key: string]: string } => {
   return {
     ...tags,
     env: getStage(),
@@ -43,7 +43,7 @@ export const getTags = (tags = {}): {[key: string]: string} => {
 }
 
 export const pulumiOutToValue = <T>(output: pulumi.Output<T>): Promise<T> => {
-  return new Promise<T>((resolve) => {
+  return new Promise<T>(resolve => {
     output.apply(resolve)
   })
 }
@@ -96,17 +96,16 @@ export const getSharedInfraOutput = (): SharedInfraOutput => {
 
 const promisifiedExec = util.promisify(exec)
 export const execShellCommand = (command: string, swallowError = false): Promise<void> => {
-  return promisifiedExec(command)
-    .then(({ stdout, stderr }) => {
-      const err = stderr.replace('\n', '').trim()
-      if (isNotEmpty(err) && isFalse(swallowError)) {
-        return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
-      }
-      if (isNotEmpty(err) && swallowError) {
-        console.error('SWALLOWING ERROR', err)
-        return Promise.resolve()
-      }
-      console.log(stdout.replace('\n', '').trim())
+  return promisifiedExec(command).then(({ stdout, stderr }) => {
+    const err = stderr.replace('\n', '').trim()
+    if (isNotEmpty(err) && isFalse(swallowError)) {
+      return Promise.reject(new Error(`Something went wrong with command ${command}. Error: ${err}`))
+    }
+    if (isNotEmpty(err) && swallowError) {
+      console.error('SWALLOWING ERROR', err)
       return Promise.resolve()
-    })
+    }
+    console.log(stdout.replace('\n', '').trim())
+    return Promise.resolve()
+  })
 }

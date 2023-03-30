@@ -96,7 +96,7 @@ export const tapWait = <T, K>(fn: FnT2PromiseK<T, K>): FnT2PromiseT<T> => {
  */
 export const tapIf = <T>(ifFn: FnPred<T>) => {
   return (thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-    return (value: T): TOrPromiseT<T> => ifFn(value) ? tap(thenFn)(value) : value
+    return (value: T): TOrPromiseT<T> => (ifFn(value) ? tap(thenFn)(value) : value)
   }
 }
 
@@ -109,7 +109,7 @@ export const tapIf = <T>(ifFn: FnPred<T>) => {
  * @return fn: (T => TOrPromiseT) => (T => TOrPromiseT)
  */
 export const tapIfNotEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-  return (value: T): TOrPromiseT<T> => isNotEmpty(value) ? tap(thenFn)(value) : value
+  return (value: T): TOrPromiseT<T> => (isNotEmpty(value) ? tap(thenFn)(value) : value)
 }
 
 /**
@@ -121,7 +121,7 @@ export const tapIfNotEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T>
  * @return fn: (T => TOrPromiseT) => (T => TOrPromiseT)
  */
 export const tapIfEmpty = <T>(thenFn: FnT2TOrPromiseT<T>): FnT2TOrPromiseT<T> => {
-  return (value: T): TOrPromiseT<T> => isEmpty(value) ? tap(thenFn)(value) : value
+  return (value: T): TOrPromiseT<T> => (isEmpty(value) ? tap(thenFn)(value) : value)
 }
 
 /**
@@ -135,7 +135,7 @@ export const tapCatch = <T>(fn: FnT2Any<T>): FnT2T<T> => {
   return (value: T): T => {
     Promise.resolve()
       .then(() => fn(value))
-      .catch((err) => logger.error({ value, err }, 'ERROR: tapCatch'))
+      .catch(err => logger.error({ value, err }, 'ERROR: tapCatch'))
     return value
   }
 }
@@ -240,9 +240,7 @@ export const rejectIfTrue = (err: Error): FnT2PromiseT<boolean> => {
 export const tapIFElse = <T>(ifFn: FnPred<T>) => {
   return (thenFn: FnT2Any<T>) => {
     return (elseFn: FnT2Any<T>): FnT2T<T> => {
-      return (value: T): T => ifFn(value)
-        ? tap(thenFn)(value)
-        : tap(elseFn)(value)
+      return (value: T): T => (ifFn(value) ? tap(thenFn)(value) : tap(elseFn)(value))
     }
   }
 }
@@ -259,7 +257,7 @@ export const thruCatch = <T, U>(fn: FnT2K<T, U>): FnT2PromiseK<T, U | null> => {
   return (value: T): Promise<U | null> => {
     return Promise.resolve()
       .then(() => fn(value))
-      .catch((err) => {
+      .catch(err => {
         logger.error({ value, err }, 'ERROR: thru_catch')
         return null
       })
@@ -288,8 +286,8 @@ export const thruThrow = <T, K>(fn: FnT2K<T, K>): FnT2K<T, K> => {
  */
 export const thruAsyncIf = <T>(asyncIfFn: FnPredPromise<T>) => {
   return (thenFn: FnT2T<T> | FnT2PromiseT<T>): FnT2PromiseT<T> => {
-    return (value: T): Promise<T> => Promise.resolve(asyncIfFn(value))
-      .then((boolValue) => isTrue(boolValue) ? thenFn(value) : value)
+    return (value: T): Promise<T> =>
+      Promise.resolve(asyncIfFn(value)).then(boolValue => (isTrue(boolValue) ? thenFn(value) : value))
   }
 }
 
@@ -306,7 +304,7 @@ export const thruAsyncIf = <T>(asyncIfFn: FnPredPromise<T>) => {
 export const thruIfElse = <T, K>(ifFn: FnPred<T>) => {
   return (thenFn: FnT2K<T, K>) => {
     return (elseFn: FnT2K<T, K>): FnT2K<T, K> => {
-      return (value: T): K => ifFn(value) ? thenFn(value) : elseFn(value)
+      return (value: T): K => (ifFn(value) ? thenFn(value) : elseFn(value))
     }
   }
 }
@@ -335,7 +333,7 @@ export const pause = <T>(ms: number): FnT2PromiseT<T> => {
  */
 export const thruIf = <T>(ifFn: FnPred<T>) => {
   return (thenFn: FnT2Any<T>): FnT2Any<T> => {
-    return (value: T) => ifFn(value) ? thenFn(value) : value
+    return (value: T) => (ifFn(value) ? thenFn(value) : value)
   }
 }
 
@@ -350,7 +348,7 @@ export const thruIf = <T>(ifFn: FnPred<T>) => {
  * @return fn: (T => FnT2Any) => (T => any)
  */
 export const thruIfEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-  return (value: T) => isEmpty(value) ? thenFn(value) : value
+  return (value: T) => (isEmpty(value) ? thenFn(value) : value)
 }
 
 /**
@@ -364,7 +362,7 @@ export const thruIfEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
  * @return fn: (T => FnT2Any) => (T => any)
  */
 export const thruIfNotEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-  return (value: T) => isNotEmpty(value) ? thenFn(value) : value
+  return (value: T) => (isNotEmpty(value) ? thenFn(value) : value)
 }
 
 /**
@@ -378,7 +376,7 @@ export const thruIfNotEmpty = <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
  * @return fn: (T => FnT2Any) => (T => any)
  */
 export const thruIfTrue = (thenFn: FnT2Any<boolean>): FnT2Any<boolean> => {
-  return (value: boolean) => isTrue(value) ? thenFn(value) : value
+  return (value: boolean) => (isTrue(value) ? thenFn(value) : value)
 }
 
 /**
@@ -392,7 +390,7 @@ export const thruIfTrue = (thenFn: FnT2Any<boolean>): FnT2Any<boolean> => {
  * @return fn: (T => FnT2Any) => (T => any)
  */
 export const thruIfFalse = (thenFn: FnT2Any<boolean>): FnT2Any<boolean> => {
-  return (value: boolean) => isFalse(value) ? thenFn(value) : value
+  return (value: boolean) => (isFalse(value) ? thenFn(value) : value)
 }
 
 /**
@@ -410,7 +408,7 @@ export const thruIfFalse = (thenFn: FnT2Any<boolean>): FnT2Any<boolean> => {
 export const thruIfOther = <K>(ifFn: FnPred<K>) => {
   return (otherValue: K) => {
     return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-      return (value: T) => ifFn(otherValue) ? thenFn(value) : value
+      return (value: T) => (ifFn(otherValue) ? thenFn(value) : value)
     }
   }
 }
@@ -428,7 +426,7 @@ export const thruIfOther = <K>(ifFn: FnPred<K>) => {
  */
 export const thruIfOtherEmpty = <K>(otherValue: K) => {
   return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-    return (value: T) => isEmpty(otherValue) ? thenFn(value) : value
+    return (value: T) => (isEmpty(otherValue) ? thenFn(value) : value)
   }
 }
 
@@ -445,7 +443,7 @@ export const thruIfOtherEmpty = <K>(otherValue: K) => {
  */
 export const thruIfOtherNotEmpty = <K>(otherValue: K) => {
   return <T>(thenFn: FnT2Any<T>): FnT2Any<T> => {
-    return (value: T) => isNotEmpty(otherValue) ? thenFn(value) : value
+    return (value: T) => (isNotEmpty(otherValue) ? thenFn(value) : value)
   }
 }
 
@@ -461,10 +459,7 @@ export const thruIfOtherNotEmpty = <K>(otherValue: K) => {
  * const [exampleErr, exampleResult] = await fp.promiseTo(promiseFn(), {extraErrDetails: 'Error Detail'});
  */
 export function promiseTo<T, U = Error>(promise: Promise<T>): Promise<[U, undefined] | [null, T]> {
-  return promise
-    .then<[null, T]>((data: T) => [null, data])
-    .catch<[U, undefined]>((err: U) => [err, undefined],
-  )
+  return promise.then<[null, T]>((data: T) => [null, data]).catch<[U, undefined]>((err: U) => [err, undefined])
 }
 
 /**
@@ -475,9 +470,7 @@ export function promiseTo<T, U = Error>(promise: Promise<T>): Promise<[U, undefi
  *
  * @return fn: (T[] => Promise<K[]>
  */
-export const promiseMap = <T, K>(
-  mapper: (v: T, i: number, a: T[]) => Promise<K>,
-): FnT2ArrayPromiseKArray<T, K> => {
+export const promiseMap = <T, K>(mapper: (v: T, i: number, a: T[]) => Promise<K>): FnT2ArrayPromiseKArray<T, K> => {
   return (list: T[]): Promise<K[]> => Promise.all(list.map(mapper))
 }
 
@@ -491,13 +484,11 @@ export const promiseMap = <T, K>(
  * @return fn: (T[] => Promise<T[]>)
  */
 export const promiseFilter = <T>(negate: boolean) => {
-  return (
-    filter: (v: T, i: number, a: T[]) => Promise<boolean>,
-  ): FnT2ArrayPromiseKArray<T, T> => {
+  return (filter: (v: T, i: number, a: T[]) => Promise<boolean>): FnT2ArrayPromiseKArray<T, T> => {
     return (list: T[]): Promise<T[]> => {
       return Promise.resolve(list)
         .then(promiseMap(filter))
-        .then(filterMap => list.filter((_, index) => negate ? !filterMap[index] : filterMap[index]))
+        .then(filterMap => list.filter((_, index) => (negate ? !filterMap[index] : filterMap[index])))
     }
   }
 }
@@ -548,7 +539,7 @@ export const seqAsync = <T>(fn: FnT2PromiseT<T>): FnTArray2PromiseT<T> => {
 export const filterIf = <K>(ifFn: FnPred<K>) => {
   return (otherValue: K) => {
     return <T>(filterFn: ArrayFnT2Boolean<T>): FnTArray2TArray<T> => {
-      return (values: T[]) => ifFn(otherValue) ? values.filter(filterFn) : values
+      return (values: T[]) => (ifFn(otherValue) ? values.filter(filterFn) : values)
     }
   }
 }
@@ -566,7 +557,7 @@ export const filterIf = <K>(ifFn: FnPred<K>) => {
  */
 export const filterIfEmpty = <K>(otherValue: K) => {
   return <T>(filterFn: ArrayFnT2Boolean<T>): FnTArray2TArray<T> => {
-    return (values: T[]) => isEmpty(otherValue) ? values.filter(filterFn) : values
+    return (values: T[]) => (isEmpty(otherValue) ? values.filter(filterFn) : values)
   }
 }
 
@@ -583,6 +574,6 @@ export const filterIfEmpty = <K>(otherValue: K) => {
  */
 export const filterIfNotEmpty = <K>(otherValue: K) => {
   return <T>(filterFn: ArrayFnT2Boolean<T>): FnTArray2TArray<T> => {
-    return (values: T[]) => isNotEmpty(otherValue) ? values.filter(filterFn) : values
+    return (values: T[]) => (isNotEmpty(otherValue) ? values.filter(filterFn) : values)
   }
 }

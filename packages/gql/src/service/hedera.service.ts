@@ -39,17 +39,19 @@ class _HederaConsensusService implements IHederaConsensusService {
 
     // build consensus client
     this.client.setMirrorNetwork(this.mirrorNetwork)
-  
+
     // subscribe to topic to listen to all new messages submitted to it
-    this.HCS = new TopicMessageQuery()
-      .setTopicId(this.topicId)
-      .subscribe(this.client,
-        error => { logger.error( error ) },
-        response => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const message = response.contents.toString()
-          // logger.info(message)
-        })
+    this.HCS = new TopicMessageQuery().setTopicId(this.topicId).subscribe(
+      this.client,
+      error => {
+        logger.error(error)
+      },
+      response => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const message = response.contents.toString()
+        // logger.info(message)
+      },
+    )
   }
 
   unsubscribe(): void {
@@ -76,10 +78,7 @@ class _HederaConsensusService implements IHederaConsensusService {
     this.client.setOperator(accountId, privateKey)
 
     // specify topic id and submit a new message to HCS
-    await new TopicMessageSubmitTransaction()
-      .setTopicId(this.topicId)
-      .setMessage(message)
-      .execute(this.client)
+    await new TopicMessageSubmitTransaction().setTopicId(this.topicId).setMessage(message).execute(this.client)
   }
 
 }

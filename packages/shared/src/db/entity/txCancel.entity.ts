@@ -1,19 +1,16 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { CancelActivities, CancelActivityType,ExchangeType } from '@nftcom/shared/defs'
+import { CancelActivities, CancelActivityType, ExchangeType } from '@nftcom/shared/defs'
 
 import { BaseEntity, TxActivity } from '.'
 
 @Entity()
 export class TxCancel extends BaseEntity {
 
-  @OneToOne(() => TxActivity,
-    (activity) =>  activity.activityTypeId,
-    {
-      nullable: false,
-      cascade: ['insert', 'update'],
-    },
-  )
+  @OneToOne(() => TxActivity, activity => activity.activityTypeId, {
+    nullable: false,
+    cascade: ['insert', 'update'],
+  })
   @JoinColumn({
     name: 'activityId',
     referencedColumnName: 'id',
