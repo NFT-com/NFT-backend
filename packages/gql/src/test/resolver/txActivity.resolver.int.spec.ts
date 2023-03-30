@@ -92,7 +92,8 @@ describe('transaction activity resolver', () => {
           activityType.transactionType = ActivityType.Sale
           activityType.protocol = ProtocolType.NFTCOM
           activityType.protocolData = []
-          activityType.transactionHash = '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185:orderHash'
+          activityType.transactionHash =
+              '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185:orderHash'
           activityType.blockNumber = 16594516
           activityType.maker = '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'
           activityType.taker = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'

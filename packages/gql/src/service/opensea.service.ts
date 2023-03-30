@@ -358,15 +358,11 @@ export const postListingFulfillments = async (
     for (let i = 0; i < payloads.length; i++) {
       const payload = payloads[i]
       logger.info(`Posting listing fulfillment data ${i} of ${JSON.stringify(payload, null, 2)}`)
-      const response: AxiosResponse = await listingInterceptor.post(
-        '/listings/fulfillment_data',
-        payload,
-        {
-          headers: {
-            'content-type': 'application/json',
-          },
+      const response: AxiosResponse = await listingInterceptor.post('/listings/fulfillment_data', payload, {
+        headers: {
+          'content-type': 'application/json',
         },
-      )
+      })
 
       fulfillmentResponses.push(response.data)
 

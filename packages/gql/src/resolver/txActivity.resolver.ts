@@ -138,17 +138,16 @@ const getSeaportSignatures = async (
     const ordersWithoutSignatures = orders.filter(order => !order.protocolData.signature)
 
     // Prepare the payload for orders with null signatures
-    const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures
-      .map((order) => ({
-        listing: {
-          hash: order.orderHash,
-          chain: chainId === '1' ? 'ethereum' : 'goerli',
-          protocol_address: contracts.openseaSeaportAddress1_4(chainId),
-        },
-        fulfiller: {
-          address: wallet.address,
-        },
-      }))
+    const payloads: openseaService.ListingPayload[] = ordersWithoutSignatures.map(order => ({
+      listing: {
+        hash: order.orderHash,
+        chain: chainId === '1' ? 'ethereum' : 'goerli',
+        protocol_address: contracts.openseaSeaportAddress1_4(chainId),
+      },
+      fulfiller: {
+        address: wallet.address,
+      },
+    }))
 
     const responses = payloads?.length ? await openseaService.postListingFulfillments(payloads, chainId) : []
 
