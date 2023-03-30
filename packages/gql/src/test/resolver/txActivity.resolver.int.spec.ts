@@ -80,6 +80,7 @@ describe('transaction activity resolver', () => {
         activity = await repositories.txActivity.save(activity)
         activityType.activity = activity
         activityType = await repositories.txOrder.save(activityType)
+
         break
       case 'txTransaction':
         // purchase
