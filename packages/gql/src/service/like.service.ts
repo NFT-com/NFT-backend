@@ -22,8 +22,7 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
   }
 
   async function isLikedBy(likedById, likedId): Promise<boolean> {
-    const like = await repos.like.findOne({ where: { likedId, likedById } })
-    return !!like
+    return repos.like.exists({ likedId, likedById })
   }
 
   async function isLikedByUser(likedId, userId): Promise<boolean> {
