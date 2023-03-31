@@ -19,67 +19,6 @@
   ],
   "rules": {
     "no-console": "error",
-    "no-trailing-spaces": [
-      "error",
-      {
-        "skipBlankLines": true,
-        "ignoreComments": true
-      }
-    ],
-    "padded-blocks": [
-      "error",
-      {
-        "blocks": "never",
-        "classes": "always"
-      }
-    ],
-    "no-multiple-empty-lines": [
-      "warn",
-      {
-        "max": 1,
-        "maxEOF": 1
-      }
-    ],
-    "max-len": [
-      "error",
-      {
-        "code": 120,
-        "tabWidth": 2,
-        "ignoreComments": true,
-        "ignoreTemplateLiterals": true,
-        "ignoreStrings": true
-      }
-    ],
-    "indent": "off",
-    "@typescript-eslint/indent": [
-      "error",
-      2,
-      {
-        "ignoredNodes": [
-          "FunctionExpression > .params[decorators.length > 0]",
-          "FunctionExpression > .params > :matches(Decorator, :not(:first-child))",
-          "ClassBody.body > PropertyDefinition[decorators.length > 0] > .key"
-        ]
-      }
-    ],
-    "semi": [
-      "error",
-      "never"
-    ],
-    "quotes": [
-      "error",
-      "single"
-    ],
-    "comma-dangle": [
-      "error",
-      {
-        "arrays": "always-multiline",
-        "objects": "always-multiline",
-        "imports": "always-multiline",
-        "exports": "always-multiline",
-        "functions": "always-multiline"
-      }
-    ],
     "no-use-before-define": "error",
     "no-unused-vars": "off",
     "@typescript-eslint/member-delimiter-style": [
