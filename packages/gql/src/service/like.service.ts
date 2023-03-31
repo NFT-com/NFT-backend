@@ -9,6 +9,7 @@ import { profileService } from './profile.service'
 export type CommonLikeArgs = { likedById: string; likedId: string; likedType: entity.LikeableType }
 interface LikeService {
   getLikeCount(likedId: string): Promise<number>
+  isLikedBy(likedById: string, likedId: string): Promise<boolean>
   isLikedByUser(likedId: string, userId: string): Promise<boolean>
   setLike({ likedById, likedId, likedType }: CommonLikeArgs, likedByUserId: string): Promise<entity.Like>
   unsetLike({ likedById, likedId, likedType }: CommonLikeArgs, likedByUserId: string): Promise<boolean>
@@ -19,6 +20,10 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
       throw appError.buildInvalid('Cannot get count without likedId', 'LIKE_COUNT_INVALID')
     }
     return repos.like.count({ likedId })
+  }
+
+  async function isLikedBy(likedById, likedId): Promise<boolean> {
+    return repos.like.exists({ likedId, likedById })
   }
 
   async function isLikedByUser(likedId, userId): Promise<boolean> {
@@ -70,6 +75,7 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
 
   return {
     getLikeCount,
+    isLikedBy,
     isLikedByUser,
     setLike,
     unsetLike,
