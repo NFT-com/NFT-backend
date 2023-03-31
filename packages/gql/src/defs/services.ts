@@ -6,10 +6,10 @@ export type GetCollectionInfoByContract = {
   repositories: db.Repository
 }
 
-export type GetCollectionInfoByName = {
+export type GetCollectionInfoBySlug = {
   chainId: string
-  name: string
+  slug: string
   repositories: db.Repository
 }
 
-export type GetCollectionInfoArgs = GetCollectionInfoByContract | GetCollectionInfoByName
+export type GetCollectionInfoArgs = GetCollectionInfoByContract | GetCollectionInfoBySlug

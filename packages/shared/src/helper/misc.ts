@@ -1,5 +1,6 @@
 import { BigNumber, constants, Signature, utils } from 'ethers'
 import * as _ from 'lodash'
+import slugify from 'slugify'
 import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
 import whitelistJSON from '@nftcom/shared/helper/abis/whitelist.json'
@@ -557,3 +558,35 @@ export const shortenAddress = (address: string, chars = 4): string => {
 
 export const toFixedValue = (price: string, units = 18): string =>
   utils.formatUnits(bigNumber(price), units)
+
+/**
+ * Generates a slug from the given string value using the provided options.
+ * @param {string} value - The string to generate a slug from.
+ * @param {object | string} options - The options to use when generating the slug. Can be either a string used to replace spaces/chars or the slugify options object.
+ */
+export const generateSlug = ({
+  value,
+  options = {
+    lower: true,
+    remove: /[*+~.()'"!:@]/g,
+  },
+}: {
+  value: string
+  options?:
+  | {
+    /** string to replace the removed characters with (default is '-') */
+    replacement?: string
+    /** RegExp to remove characters (default is /[*+~.()'"!:@]/g) */
+    remove?: RegExp
+    /** boolean to convert the slug to lowercase (default is true) */
+    lower?: boolean
+    /** boolean to strip special characters (default is false) */
+    strict?: boolean
+    /** string representing the locale to use (default is 'en') */
+    locale?: string
+    /** trim leading & trailing replacement chars (default is `true`) */
+    trim?: boolean
+  }
+  /** string to replace the removed characters with (default is '-') */
+  | string
+}): string => slugify(value, options)

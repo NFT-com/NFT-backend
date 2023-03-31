@@ -19,22 +19,22 @@ export class Collection extends BaseEntity {
   @Column({ nullable: true })
   deployer: string
 
-  @Column( { nullable: true })
+  @Column({ nullable: true })
   bannerUrl: string
 
-  @Column( { nullable: true })
+  @Column({ nullable: true })
   logoUrl: string
 
-  @Column( { nullable: true })
+  @Column({ nullable: true })
   description: string
 
-  @Column( { nullable: true, default: false })
+  @Column({ nullable: true, default: false })
   isCurated: boolean
 
-  @Column( { default: false })
+  @Column({ default: false })
   isSpam: boolean
 
-  @Column( { default: false })
+  @Column({ default: false })
   isOfficial: boolean
 
   @Column({ nullable: true, type: 'numeric' })
@@ -51,5 +51,8 @@ export class Collection extends BaseEntity {
 
   @Column({ nullable: true, type: 'timestamptz' })
   issuanceDate: Date
+
+  @Column({ unique: true, nullable: true })
+  slug: string
 
 }

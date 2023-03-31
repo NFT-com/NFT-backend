@@ -26,6 +26,10 @@
           "typeorm:cli",
           "typeorm:gen",
           "typeorm:revert",
+          "typeorm:migration:create",
+          "typeorm:migration:run",
+          "typeorm:show",
+          "typeorm:sync",
           "typechain"
         ]
       }
@@ -33,10 +37,10 @@
   },
   "targetDefaults": {
     "build": {
-      "dependsOn": ["^build"]
+      "dependsOn": [ "^build" ]
     },
     "test": {
-      "inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"]
+      "inputs": [ "default", "^default", "{workspaceRoot}/jest.preset.js" ]
     }
   },
   "affected": {

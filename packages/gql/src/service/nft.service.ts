@@ -2573,7 +2573,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
   try {
     // Set variables
     const { chainId, repositories } = args
-    let name
+    let slug
     let collection
     let contract
     let description = null
@@ -2586,13 +2586,13 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
       contract = args.contract
     }
 
-    if ('name' in args) {
-      name = args.name
+    if ('slug' in args) {
+      slug = args.slug
     }
 
     const key = `${contract ?
       contract.toLowerCase() :
-      name.toLowerCase().replaceAll(/[^a-zA-Z0-9_-]/g, '-')
+      slug.toLowerCase()
     }-${chainId}`
     const cachedData = await cache.get(key)
 
@@ -2608,14 +2608,14 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
         chainId,
         deletedAt: null,
         isOfficial: true,
-        name: ILike(`%${name}%`),
+        slug: ILike(`%${slug}%`),
       },
     })
 
     if (!collection) {
-      if (name) { // throw err if name lookup fails
+      if (slug) { // throw err if name lookup fails
         throw appError.buildNotFound(
-          collectionError.buildOfficialCollectionNotFoundMsg(`by the name of "${name}" on chain ${chainId}`),
+          collectionError.buildOfficialCollectionNotFoundMsg(`with the following slug "${slug}" on chain ${chainId}`),
           collectionError.ErrorType.CollectionNotFound,
         )
       }

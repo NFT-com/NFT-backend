@@ -32,4 +32,5 @@ export default new DataSource({
   ],
   ssl,
   entities: [`${__dirname}/entity/*.entity.ts`],
+  subscribers: [`${__dirname}/subscriber/*.subscriber.ts`],
 })

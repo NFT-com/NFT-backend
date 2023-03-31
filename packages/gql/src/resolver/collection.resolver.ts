@@ -41,9 +41,9 @@ const getCollection = async (
     const schema = Joi.object().keys({
       chainId: Joi.string().trim().optional(),
       contract: Joi.string().trim(),
-      name: Joi.string().trim(),
+      slug: Joi.string().trim(),
       network: Joi.string().trim().required(),
-    }).or('contract', 'name').nand('contract', 'name')
+    }).or('contract', 'slug').nand('contract', 'slug') // Requires either contract|slug
 
     joi.validateSchema(schema, input)
 
@@ -51,7 +51,7 @@ const getCollection = async (
       contract: args?.input?.contract,
       ...options,
     } : {
-      name: args?.input?.name,
+      slug: args?.input?.slug,
       ...options,
     })
   } catch (err) {
@@ -145,7 +145,7 @@ const getOfficialCollections = async (
         id: true,
         chainId: true,
         contract: true,
-        name: true,
+        slug: true,
         updatedAt: true,
       },
       cache: defaultCacheDuration,
@@ -327,11 +327,11 @@ const saveCollectionForContract = async (
 
 /**
  * Retrieves the deployer address and associated addresses of an NFT collection on Ethereum.
- * 
+ *
  * @param _ Unused argument
  * @param args Query arguments
  * @param ctx Context object with repositories, chain, wallet, logger, and cache
- * 
+ *
  * @returns Promise that resolves to the deployer address, associated addresses, and deployerIsAssociated flag
  */
 export const associatedAddressesForContract = async (
@@ -341,7 +341,7 @@ export const associatedAddressesForContract = async (
 ): Promise<gql.AssociatedAddressesForContractOutput> => {
   try {
     const { repositories, chain, wallet } = ctx
-    
+
     // Debug logging
     logger.debug('associatedAddressesForContract', { contract: args?.contract })
 
@@ -365,7 +365,7 @@ export const associatedAddressesForContract = async (
         chainId,
       },
     })
-    
+
     // Retrieve associated addresses for each profile
     const addresses: string[] = []
     await Promise.allSettled(
@@ -387,7 +387,7 @@ export const associatedAddressesForContract = async (
         addresses.push(...addrs)
       }),
     )
-    
+
     // Return deployer address, associated addresses, and deployerIsAssociated flag
     return {
       deployerAddress: collectionDeployer,

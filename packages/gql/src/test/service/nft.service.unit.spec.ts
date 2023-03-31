@@ -120,12 +120,14 @@ describe('nft service', () => {
         chainId: '1',
         deployer: ethers.utils.getAddress('0x87686E35CEF5271E33e83e1294FDd633a807eeEA'),
         isOfficial: true,
+        slug: 'warner-bros-nft',
       })
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0x8fB5a7894AB461a59ACdfab8918335768e411414'),
         name: 'NFT.com Genesis Key',
         chainId: '1',
         deployer: ethers.utils.getAddress('0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'),
+        slug: 'nft-com-genesis-key',
       })
       await repositories.nft.save({
         contract: '0x8fB5a7894AB461a59ACdfab8918335768e411414',
@@ -157,15 +159,15 @@ describe('nft service', () => {
     afterAll(async () => {
       await clearDB(repositories)
     })
-    it('should return collection, when queried by name', async () => {
+    it('should return collection, when queried by slug', async () => {
       const chainId = '1'
-      const name = 'Warner Bros nft'
+      const slug = 'warner-bros-nft'
       const collectionInfo = await getCollectionInfo({
         chainId,
-        name,
+        slug,
         repositories,
       })
-      expect(collectionInfo.collection.name).toEqual(name)
+      expect(collectionInfo.collection.slug).toEqual(slug)
       expect(collectionInfo.collection.description).not.toEqual(null)
     })
     it('should return default banner, logo image and description', async () => {
