@@ -3,9 +3,10 @@ import { In } from 'typeorm'
 import { appError } from '@nftcom/error-types'
 import { db, entity } from '@nftcom/shared'
 
+import { reciprocalLike } from './likeReciprocal.service'
 import { profileService } from './profile.service'
 
-type CommonLikeArgs = { likedById: string; likedId: string; likedType: entity.LikeableType }
+export type CommonLikeArgs = { likedById: string; likedId: string; likedType: entity.LikeableType }
 interface LikeService {
   getLikeCount(likedId: string): Promise<number>
   isLikedByUser(likedId: string, userId: string): Promise<boolean>
@@ -43,7 +44,15 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
     if ((await repos.like.find({ where: setLikeArgs })).length) {
       throw appError.buildExists(`${likedType} already liked`, 'LIKE_ALREADY_EXISTS')
     }
-    return repos.like.save(setLikeArgs)
+    const savedLike = await repos.like.save(setLikeArgs)
+
+    if (likedType === entity.LikeableType.Profile) {
+      reciprocalLike.emit('profile', { likedById, likedId, likedType })
+    } else if (likedType === entity.LikeableType.NFT) {
+      reciprocalLike.emit('nft', { likedById, likedId, likedType })
+    }
+
+    return savedLike
   }
 
   async function unsetLike({ likedById, likedId, likedType }: CommonLikeArgs, likedByUserId: string): Promise<boolean> {
