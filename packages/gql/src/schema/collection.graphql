@@ -78,6 +78,7 @@ type Collection {
   stats: NFTPortStatistics
   likeCount: Int
   isLikedByUser: Boolean
+  isLikedBy(likedById: ID!): Boolean
 }
 
 type NFTPortResults {

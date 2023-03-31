@@ -1,4 +1,3 @@
-
 type FollowersOutput {
   items: [Wallet!]!
   pageInfo: PageInfo
@@ -70,6 +69,7 @@ type Profile {
   ownerWalletId: String
   likeCount: Int
   isLikedByUser: Boolean
+  isLikedBy(likedById: ID!): Boolean
 }
 
 type UsersActionOutput {

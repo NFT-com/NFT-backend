@@ -77,10 +77,10 @@ const getProfilesFollowedByMe = (
   const { statuses } = helper.safeObject(args?.input)
   return core
     .thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
-    collectionId: user.id,
-    thatEntityType: defs.EntityType.Profile,
-    edgeType: defs.EdgeType.Follows,
-  })
+      collectionId: user.id,
+      thatEntityType: defs.EntityType.Profile,
+      edgeType: defs.EdgeType.Follows,
+    })
     .then(fp.filterIfNotEmpty(statuses)(p => statuses.includes(p.status)))
     .then(toProfilesOutput)
 }
@@ -115,10 +115,10 @@ const getProfileFollowers = (
 
   return core
     .thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
-    thatEntityId: args.input.profileId,
-    thatEntityType: defs.EntityType.Profile,
-    edgeType: defs.EdgeType.Follows,
-  })
+      thatEntityId: args.input.profileId,
+      thatEntityType: defs.EntityType.Profile,
+      edgeType: defs.EdgeType.Follows,
+    })
     .then(wallets => ({
       items: wallets,
       pageInfo: null,
@@ -970,15 +970,15 @@ const saveScoreForProfiles = async (
     const profiles = await repositories.profile.find(
       args?.input.nullOnly
         ? {
-          where: {
-            lastScored: IsNull(),
-          },
-        }
+            where: {
+              lastScored: IsNull(),
+            },
+          }
         : {
-          order: {
-            lastScored: 'ASC',
+            order: {
+              lastScored: 'ASC',
+            },
           },
-        },
     )
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
@@ -1706,6 +1706,12 @@ export default {
         return false
       }
       return likeService.isLikedByUser(parent.id, ctx.user.id)
+    },
+    isLikedBy: async (parent, args: gql.ProfileIsLikedByArgs, _ctx) => {
+      if (!parent || !args.likedById) {
+        return false
+      }
+      return likeService.isLikedByUser(args.likedById, parent.id)
     },
   },
 }

@@ -1333,5 +1333,11 @@ export default {
       }
       return likeService.isLikedByUser(parent.id, ctx.user.id)
     },
+    isLikedBy: async (parent, args: gql.NFTIsLikedByArgs, _ctx) => {
+      if (!parent || !args.likedById) {
+        return false
+      }
+      return likeService.isLikedByUser(args.likedById, parent.id)
+    },
   },
 }
