@@ -1027,27 +1027,27 @@ export const getNFTMetaData = async (
       const name = getNftName(
         undefined,
         nftPortMetadata,
-        contractAlchemyMetadata.contractMetadata,
+        contractAlchemyMetadata?.contractMetadata,
         tokenId,
         MetadataProvider.NFTPort,
       )
       const description = getNftDescription(
         undefined,
         nftPortMetadata,
-        contractAlchemyMetadata.contractMetadata,
+        contractAlchemyMetadata?.contractMetadata,
         MetadataProvider.NFTPort,
       )
       const image = await getNftImage(
         undefined,
         nftPortMetadata,
-        contractAlchemyMetadata.contractMetadata,
+        contractAlchemyMetadata?.contractMetadata,
         MetadataProvider.NFTPort,
       )
 
       const type: defs.NFTType = getNftType(
         undefined,
         nftPortMetadata,
-        contractAlchemyMetadata.contractMetadata,
+        contractAlchemyMetadata?.contractMetadata,
         MetadataProvider.NFTPort,
       )
       if (!type) {
@@ -1078,11 +1078,11 @@ export const getNFTMetaData = async (
 
       const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(contract)
 
-      const name = getNftName(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata.contractMetadata, tokenId)
-      const description = getNftDescription(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata.contractMetadata)
-      const image = await getNftImage(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata.contractMetadata)
+      const name = getNftName(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata?.contractMetadata, tokenId)
+      const description = getNftDescription(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata?.contractMetadata)
+      const image = await getNftImage(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata?.contractMetadata)
 
-      const type: defs.NFTType = getNftType(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata.contractMetadata)
+      const type: defs.NFTType = getNftType(alchemyMetadata, nftPortMetadata, contractAlchemyMetadata?.contractMetadata)
       if (!type) {
         // If it's missing NFT token type, we should throw error
         logger.error(`token type of NFT is wrong for contract ${contract} and tokenId ${tokenId}`)
