@@ -70,6 +70,13 @@ export function getLikeService(repos: db.Repository = db.newRepositories()): Lik
     } else if (!(await profileService.isProfileOwnedByUser({ profileId: like.likedById, userId: likedByUserId }))) {
       throw appError.buildForbidden('User cannot unset like', 'UNSET_LIKE_FORBIDDEN')
     }
+
+    if (likedType === entity.LikeableType.Profile) {
+      reciprocalLike.emit('unset-profile', { likedById, likedId, likedType })
+    } else if (likedType === entity.LikeableType.NFT) {
+      reciprocalLike.emit('unset-nft', { likedById, likedId, likedType })
+    }
+
     return repos.like.hardDeleteByIds([like.id])
   }
 
