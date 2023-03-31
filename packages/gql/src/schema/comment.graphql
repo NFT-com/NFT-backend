@@ -1,4 +1,3 @@
-
 enum SocialEntityType {
   Collection
   NFT
@@ -22,6 +21,21 @@ type Comment {
   entityType: SocialEntityType
 }
 
+input CommentsInput {
+  entityId: ID!
+  pageInput: PageInput
+}
+
+type CommentsOutput {
+  items: [Comment]!
+  pageInfo: PageInfo
+  totalItems: Int
+}
+
 extend type Mutation {
   addComment(input: AddCommentInput!): Comment
+}
+
+extend type Query {
+  comments(input: CommentsInput!): CommentsOutput
 }
