@@ -1711,7 +1711,7 @@ export default {
       if (!parent || !args.likedById) {
         return false
       }
-      return likeService.isLikedByUser(args.likedById, parent.id)
+      return likeService.isLikedBy(args.likedById, parent.id)
     },
   },
 }
