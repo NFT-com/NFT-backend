@@ -1,6 +1,7 @@
 import { MigrationInterface, QueryRunner, TableColumn } from "typeorm"
 import { Collection } from "../entity"
 import { generateSlug } from "@nftcom/shared/helper/misc"
+import chunk from "lodash/chunk";
 
 export class AddSlugToCollection1680130081817 implements MigrationInterface {
 
@@ -16,8 +17,8 @@ export class AddSlugToCollection1680130081817 implements MigrationInterface {
       })
     );
 
+    const batchSize = 1000 // Used to break up upsert query size
     const repo = queryRunner.manager.getRepository(Collection);
-    const saveChunkSize = 10000; // breaks up large insertions
     const allCollections = await repo.find({
       order: {
         isOfficial: "DESC",
@@ -37,16 +38,10 @@ export class AddSlugToCollection1680130081817 implements MigrationInterface {
       return updatedCollections
     }, [] as Collection[])
 
-    function chunk<T>(arr: T[], chunkSize: number): T[][] {
-      const chunks: T[][] = [];
-      for (let i = 0; i < arr.length; i += chunkSize) {
-        chunks.push(arr.slice(i, i + chunkSize));
-      }
-      return chunks;
-    }
+    const batchedUpdates = chunk(updatedCollections, batchSize)
 
-    const batchedUpdates = chunk(updatedCollections, 1000);
     await Promise.all(
+      // Upsert updates all collection entities due since all ids are the same.
       batchedUpdates.map(batch => repo.upsert(batch,
         {
           conflictPaths: ['id'],
