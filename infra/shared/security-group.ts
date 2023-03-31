@@ -45,10 +45,7 @@ const buildIngressRule = (
   }
 }
 
-const buildEgressRule = (
-  port: number,
-  protocol = 'tcp',
-): any => ({
+const buildEgressRule = (port: number, protocol = 'tcp'): any => ({
   protocol,
   fromPort: port,
   toPort: port,
@@ -60,74 +57,56 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     description: 'Allow traffic from/to web',
     name: getResourceName('web'),
     vpcId: vpc.id,
-    ingress: [
-      buildIngressRule(443),
-      buildIngressRule(80),
-    ],
-    egress: [
-      buildEgressRule(0, '-1'),
-    ],
+    ingress: [buildIngressRule(443), buildIngressRule(80)],
+    egress: [buildEgressRule(0, '-1')],
   })
 
   const webEcs = new awsEC2.SecurityGroup('sg_webEcs', {
     description: 'Allow traffic to ECS (gql) service',
     name: getResourceName('webEcs'),
     vpcId: vpc.id,
-    ingress: [
-      buildIngressRule(8080, 'tcp', [web.id]),
-    ],
-    egress: [
-      buildEgressRule(0, '-1'),
-    ],
+    ingress: [buildIngressRule(8080, 'tcp', [web.id])],
+    egress: [buildEgressRule(0, '-1')],
   })
 
   const internalEcs = new awsEC2.SecurityGroup('int_ecs', {
     description: 'ECS access to RDS, Redis, etc...',
     name: getResourceName('intEcs'),
     vpcId: vpc.id,
-    egress: [
-      buildEgressRule(0, '-1'),
-    ],
+    egress: [buildEgressRule(0, '-1')],
   })
 
   const aurora = new awsEC2.SecurityGroup('sg_aurora_main', {
     name: getResourceName('aurora-main'),
     description: 'Allow traffic to Aurora (Postgres) main instance',
     vpcId: vpc.id,
-    ingress:
-      isProduction()
-        ? [
-          buildIngressRule(5432, 'tcp', [web.id]),
-          buildIngressRule(5432, 'tcp', [webEcs.id]),
-          buildIngressRule(5432, 'tcp', [internalEcs.id]),
-          buildIngressRule(5432, 'tcp', [pulumi.output('sg-00e5406778c83bb19')]),
-          buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
-          buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bd5dceea498f0356')]), // Prod Stream ECS Cluster 
-        ]
-        : [buildIngressRule(5432)],
-    egress: [
-      buildEgressRule(5432),
-    ],
+    ingress: isProduction()
+      ? [
+        buildIngressRule(5432, 'tcp', [web.id]),
+        buildIngressRule(5432, 'tcp', [webEcs.id]),
+        buildIngressRule(5432, 'tcp', [internalEcs.id]),
+        buildIngressRule(5432, 'tcp', [pulumi.output('sg-00e5406778c83bb19')]),
+        buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
+        buildIngressRule(5432, 'tcp', [pulumi.output('sg-0bd5dceea498f0356')]), // Prod Stream ECS Cluster
+      ]
+      : [buildIngressRule(5432)],
+    egress: [buildEgressRule(5432)],
   })
 
   const redis = new awsEC2.SecurityGroup('sg_redis_main', {
     name: getResourceName('redis-main'),
     description: 'Allow traffic to Elasticache (Redis) main instance',
     vpcId: vpc.id,
-    ingress:
-      isProduction()
-        ? [
-          buildIngressRule(6379, 'tcp', [web.id]),
-          buildIngressRule(6379, 'tcp', [webEcs.id]),
-          buildIngressRule(6379, 'tcp', [internalEcs.id]),
-          buildIngressRule(6379, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
-          buildIngressRule(6379, 'tcp', [pulumi.output('sg-0bd5dceea498f0356')]), // Prod Stream ECS Cluster 
-        ]
-        : [buildIngressRule(6379)]
-    ,
-    egress: [
-      buildEgressRule(6379),
-    ],
+    ingress: isProduction()
+      ? [
+        buildIngressRule(6379, 'tcp', [web.id]),
+        buildIngressRule(6379, 'tcp', [webEcs.id]),
+        buildIngressRule(6379, 'tcp', [internalEcs.id]),
+        buildIngressRule(6379, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
+        buildIngressRule(6379, 'tcp', [pulumi.output('sg-0bd5dceea498f0356')]), // Prod Stream ECS Cluster
+      ]
+      : [buildIngressRule(6379)],
+    egress: [buildEgressRule(6379)],
   })
 
   const typesenseIngressRules = [
@@ -139,13 +118,12 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     description: 'Allow traffic to Typesense service',
     name: getResourceName('typesense'),
     vpcId: vpc.id,
-    ingress:
-      isProduction() ?
-        [
-          ...typesenseIngressRules,
-          buildIngressRule(0, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
-        ]
-        : typesenseIngressRules,
+    ingress: isProduction()
+      ? [
+        ...typesenseIngressRules,
+        buildIngressRule(0, 'tcp', [pulumi.output('sg-0bad265e467cdec96')]), // Bastion Host
+      ]
+      : typesenseIngressRules,
     egress: [buildEgressRule(0, '-1')],
   })
 

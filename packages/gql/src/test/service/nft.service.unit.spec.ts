@@ -3,11 +3,7 @@ import { ethers } from 'ethers'
 import { testDBConfig } from '@nftcom/gql/config'
 import { NFTType } from '@nftcom/gql/defs/gql'
 import * as nftService from '@nftcom/gql/service/nft.service'
-import {
-  getCollectionInfo,
-  getOwnersForNFT,
-  updateNFTMetadata,
-} from '@nftcom/gql/service/nft.service'
+import { getCollectionInfo, getOwnersForNFT, updateNFTMetadata } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
 import { db, defs } from '@nftcom/shared'
 import { EdgeType, EntityType } from '@nftcom/shared/defs'
@@ -66,17 +62,19 @@ describe('nft service', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         nft: {
-          findById: (id: any) => Promise.resolve({
-            id,
-            walletId: 'test-wallet-id',
-            userId: 'test-user-id',
-          }),
+          findById: (id: any) =>
+            Promise.resolve({
+              id,
+              walletId: 'test-wallet-id',
+              userId: 'test-user-id',
+            }),
         },
         wallet: {
-          findById: (id: any) => Promise.resolve({
-            id,
-            address: 'test-address',
-          }),
+          findById: (id: any) =>
+            Promise.resolve({
+              id,
+              address: 'test-address',
+            }),
         },
       })
     })
@@ -359,10 +357,12 @@ describe('nft service', () => {
         description: 'descriptive text',
         metadata: {
           image: 'ipfs://imageurl',
-          attributes: [{
-            trait_type: 'dummy',
-            value: 'value',
-          }],
+          attributes: [
+            {
+              trait_type: 'dummy',
+              value: 'value',
+            },
+          ],
         },
         id: {
           tokenId: '0x22',
@@ -387,10 +387,12 @@ describe('nft service', () => {
         description: 'descriptive text',
         metadata: {
           image: 'ipfs://imageurl',
-          attributes: [{
-            trait_type: 'dummy',
-            value: 'value',
-          }],
+          attributes: [
+            {
+              trait_type: 'dummy',
+              value: 'value',
+            },
+          ],
         },
         id: {
           tokenId: '0x024a39',
@@ -414,11 +416,14 @@ describe('nft service', () => {
         },
         description: 'descriptive text',
         metadata: {
-          image_data: 'data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          attributes: [{
-            trait_type: 'dummy',
-            value: 'value',
-          }],
+          image_data:
+            'data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          attributes: [
+            {
+              trait_type: 'dummy',
+              value: 'value',
+            },
+          ],
         },
         id: {
           tokenId: '0x12fe',
@@ -812,15 +817,12 @@ describe('nft service', () => {
     })
 
     it('should updateNFTs order to beginning', async () => {
-      await nftService.updateNFTsOrder(
-        'test-profile',
-        [
-          {
-            nftId: nftB.id,
-            newIndex: 0,
-          },
-        ],
-      )
+      await nftService.updateNFTsOrder('test-profile', [
+        {
+          nftId: nftB.id,
+          newIndex: 0,
+        },
+      ])
       const edge = await repositories.edge.findOne({
         where: {
           thisEntityType: defs.EntityType.Profile,
@@ -834,15 +836,12 @@ describe('nft service', () => {
     })
 
     it('should updateNFTs order to end', async () => {
-      await nftService.updateNFTsOrder(
-        'test-profile',
-        [
-          {
-            nftId: nftA.id,
-            newIndex: 3,
-          },
-        ],
-      )
+      await nftService.updateNFTsOrder('test-profile', [
+        {
+          nftId: nftA.id,
+          newIndex: 3,
+        },
+      ])
       const edge = await repositories.edge.findOne({
         where: {
           thisEntityType: defs.EntityType.Profile,
@@ -977,7 +976,9 @@ describe('nft service', () => {
     })
 
     it('should get type for nftPort CRYPTOPUNKS by contract address', () => {
-      const type = nftService.getNftType(undefined, { nft: { contract_address: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb' } })
+      const type = nftService.getNftType(undefined, {
+        nft: { contract_address: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb' },
+      })
       expect(type).toBe(NFTType.CRYPTO_PUNKS)
     })
 

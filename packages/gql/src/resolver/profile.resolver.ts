@@ -12,21 +12,23 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, mintError, nftError, profileError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { Context, gql } from '@nftcom/gql/defs'
-import {
-  SaveUserActionForBuyNFTsOutput,
-} from '@nftcom/gql/defs/gql'
+import { SaveUserActionForBuyNFTsOutput } from '@nftcom/gql/defs/gql'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { safeInput } from '@nftcom/gql/helper/pagination'
 import { core } from '@nftcom/gql/service'
 import {
   contentTypeFromExt,
-  DEFAULT_NFT_IMAGE, extensionFromFilename,
+  DEFAULT_NFT_IMAGE,
+  extensionFromFilename,
   generateCompositeImage,
-  getAWSConfig, profileActionType,
+  getAWSConfig,
+  profileActionType,
   s3ToCdn,
 } from '@nftcom/gql/service/core.service'
 import {
-  changeNFTsVisibility, executeUpdateNFTsForProfile, getCollectionInfo,
+  changeNFTsVisibility,
+  executeUpdateNFTsForProfile,
+  getCollectionInfo,
   getOwnersOfGenesisKeys,
   profileNFTCount,
   queryNFTsForProfile,
@@ -48,7 +50,7 @@ const MAX_SAVE_COUNTS = 500
 type S3UploadStream = {
   writeStream: stream.PassThrough
   upload: Upload
-};
+}
 
 type LeaderboardInfo = {
   gkCount: number
@@ -73,21 +75,18 @@ const getProfilesFollowedByMe = (
   const { user } = ctx
   logger.debug('getProfilesFollowedByMe', { loggedInUserId: user.id, input: args?.input })
   const { statuses } = helper.safeObject(args?.input)
-  return core.thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
-    collectionId: user.id,
-    thatEntityType: defs.EntityType.Profile,
-    edgeType: defs.EdgeType.Follows,
-  })
-    .then(fp.filterIfNotEmpty(statuses)((p) => statuses.includes(p.status)))
+  return core
+    .thatEntitiesOfEdgesBy<entity.Profile>(ctx, {
+      collectionId: user.id,
+      thatEntityType: defs.EntityType.Profile,
+      edgeType: defs.EdgeType.Follows,
+    })
+    .then(fp.filterIfNotEmpty(statuses)(p => statuses.includes(p.status)))
     .then(toProfilesOutput)
 }
 
 // TODO implement pagination
-const getMyProfiles = (
-  _: any,
-  args: gql.QueryMyProfilesArgs,
-  ctx: Context,
-): Promise<gql.ProfilesOutput> => {
+const getMyProfiles = (_: any, args: gql.QueryMyProfilesArgs, ctx: Context): Promise<gql.ProfilesOutput> => {
   const { user } = ctx
   logger.debug('getMyProfiles', { loggedInUserId: user.id, input: args?.input })
   const { statuses } = helper.safeObject(args?.input)
@@ -95,8 +94,7 @@ const getMyProfiles = (
     status: helper.safeIn(statuses),
     ownerUserId: user.id,
   })
-  return core.entitiesBy(ctx.repositories.profile, filter)
-    .then(toProfilesOutput)
+  return core.entitiesBy(ctx.repositories.profile, filter).then(toProfilesOutput)
 }
 
 const buildProfileInputSchema = (profileIdKey = 'id'): Joi.ObjectSchema =>
@@ -115,12 +113,13 @@ const getProfileFollowers = (
 
   joi.validateSchema(buildProfileInputSchema('profileId'), args.input)
 
-  return core.thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
-    thatEntityId: args.input.profileId,
-    thatEntityType: defs.EntityType.Profile,
-    edgeType: defs.EdgeType.Follows,
-  })
-    .then((wallets) => ({
+  return core
+    .thisEntitiesOfEdgesBy<entity.Wallet>(ctx, {
+      thatEntityId: args.input.profileId,
+      thatEntityType: defs.EntityType.Profile,
+      edgeType: defs.EdgeType.Follows,
+    })
+    .then(wallets => ({
       items: wallets,
       pageInfo: null,
       totalItems: wallets.length,
@@ -130,29 +129,30 @@ const getProfileFollowers = (
 const createFollowEdge = (ctx: Context) => {
   return (profile: entity.Profile): Promise<entity.Edge | boolean> => {
     const { user, wallet, repositories } = ctx
-    return repositories.edge.exists({
-      collectionId: user.id,
-      edgeType: defs.EdgeType.Follows,
-      thatEntityId: profile.id,
-      thatEntityType: defs.EntityType.Profile,
-      deletedAt: IsNull(),
-    })
-      .then(fp.thruIfFalse(() => core.createEdge(ctx, {
+    return repositories.edge
+      .exists({
         collectionId: user.id,
-        thisEntityId: wallet.id,
-        thisEntityType: defs.EntityType.Wallet,
         edgeType: defs.EdgeType.Follows,
         thatEntityId: profile.id,
         thatEntityType: defs.EntityType.Profile,
-      })))
+        deletedAt: IsNull(),
+      })
+      .then(
+        fp.thruIfFalse(() =>
+          core.createEdge(ctx, {
+            collectionId: user.id,
+            thisEntityId: wallet.id,
+            thisEntityType: defs.EntityType.Wallet,
+            edgeType: defs.EdgeType.Follows,
+            thatEntityId: profile.id,
+            thatEntityType: defs.EntityType.Profile,
+          }),
+        ),
+      )
   }
 }
 
-const followProfile = (
-  _: any,
-  args: gql.MutationFollowProfileArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const followProfile = (_: any, args: gql.MutationFollowProfileArgs, ctx: Context): Promise<gql.Profile> => {
   const { user, wallet } = ctx
   logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
 
@@ -160,33 +160,28 @@ const followProfile = (
   joi.validateSchema(schema, args)
 
   const { url } = args
-  return core.createProfile(ctx, { url, chainId: wallet.chainId })
-    .then(fp.tapWait(createFollowEdge(ctx)))
+  return core.createProfile(ctx, { url, chainId: wallet.chainId }).then(fp.tapWait(createFollowEdge(ctx)))
 }
 
 const getProfile = (
   lookupVal: string,
   fbFn: (k: string) => Promise<entity.Profile>,
 ): Promise<entity.Profile | never> => {
-  return fbFn(lookupVal)
-    .then(fp.rejectIfEmpty(appError.buildNotFound(
-      profileError.buildProfileNotFoundMsg(lookupVal),
-      profileError.ErrorType.ProfileNotFound,
-    )))
+  return fbFn(lookupVal).then(
+    fp.rejectIfEmpty(
+      appError.buildNotFound(profileError.buildProfileNotFoundMsg(lookupVal), profileError.ErrorType.ProfileNotFound),
+    ),
+  )
 }
 
-const unfollowProfile = (
-  _: any,
-  args: gql.MutationUnfollowProfileArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const unfollowProfile = (_: any, args: gql.MutationUnfollowProfileArgs, ctx: Context): Promise<gql.Profile> => {
   const { user, wallet, repositories } = ctx
   logger.debug('followProfile', { loggedInUserId: user.id, input: args, wallet })
 
   joi.validateSchema(buildProfileInputSchema(), args)
 
-  return getProfile(args.id, repositories.profile.findById)
-    .then(fp.tapWait((profile) => {
+  return getProfile(args.id, repositories.profile.findById).then(
+    fp.tapWait(profile => {
       return repositories.edge.delete({
         collectionId: user.id,
         edgeType: defs.EdgeType.Follows,
@@ -194,14 +189,11 @@ const unfollowProfile = (
         thatEntityType: defs.EntityType.Profile,
         deletedAt: IsNull(),
       })
-    }))
+    }),
+  )
 }
 
-const getProfileByURLPassive = (
-  _: any,
-  args: gql.QueryProfileArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const getProfileByURLPassive = (_: any, args: gql.QueryProfileArgs, ctx: Context): Promise<gql.Profile> => {
   const { user } = ctx
   logger.debug('getProfileByURLPassive', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
@@ -212,16 +204,18 @@ const getProfileByURLPassive = (
   const chainId = args?.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-  return ctx.repositories.profile.findOne({
-    where: {
-      url: args.url,
-      chainId,
-    },
-  })
-    .then(fp.rejectIfEmpty(appError.buildExists(
-      profileError.buildProfileNotFoundMsg(args.url),
-      profileError.ErrorType.ProfileNotFound,
-    )))
+  return ctx.repositories.profile
+    .findOne({
+      where: {
+        url: args.url,
+        chainId,
+      },
+    })
+    .then(
+      fp.rejectIfEmpty(
+        appError.buildExists(profileError.buildProfileNotFoundMsg(args.url), profileError.ErrorType.ProfileNotFound),
+      ),
+    )
 }
 
 type FnProfileToProfile = (profile: entity.Profile) => Promise<entity.Profile>
@@ -243,16 +237,22 @@ const maybeUpdateProfileOwnership = (
       .then(([trueOwner, oldOwnerWallet]: [string | undefined, entity.Wallet | undefined]) => {
         if (!trueOwner) throw Error('maybeUpdateProfileOwnership - trueOwner is null')
 
-        if (oldOwnerWallet?.address &&
-          ethers.utils.getAddress(oldOwnerWallet?.address) === ethers.utils.getAddress(trueOwner)) return profile
+        if (
+          oldOwnerWallet?.address &&
+          ethers.utils.getAddress(oldOwnerWallet?.address) === ethers.utils.getAddress(trueOwner)
+        )
+          return profile
 
-        return ctx.repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
+        return ctx.repositories.wallet
+          .findByChainAddress(chainId, ethers.utils.getAddress(trueOwner))
           .then((trueOwnerWalletId: entity.Wallet | undefined) => {
             if (!trueOwnerWalletId) {
               logger.log('[ERROR] maybeUpdateProfileOwnership: null trueOwnerWalletId')
               return Promise.all([undefined, undefined])
             } else {
-              logger.log(`maybeUpdateProfileOwnership: for profile/${profile.url} - oldOwnerWallet.address: ${oldOwnerWallet?.address} (walletId = ${oldOwnerWallet?.id}) => trueOwner.address: ${trueOwner} (walletId = ${trueOwnerWalletId})`)
+              logger.log(
+                `maybeUpdateProfileOwnership: for profile/${profile.url} - oldOwnerWallet.address: ${oldOwnerWallet?.address} (walletId = ${oldOwnerWallet?.id}) => trueOwner.address: ${trueOwner} (walletId = ${trueOwnerWalletId})`,
+              )
               if (!trueOwnerWalletId.userId) return Promise.all([undefined, undefined])
               return Promise.all([
                 ctx.repositories.user.findById(trueOwnerWalletId.userId),
@@ -275,26 +275,26 @@ const maybeUpdateProfileOwnership = (
               layoutType: defs.ProfileLayoutType.Default,
             })
           })
-          .then(fp.tap(() => ctx.repositories.edge.hardDelete({
-            edgeType: defs.EdgeType.Displays,
-            thisEntityType: defs.EntityType.Profile,
-            thatEntityType: defs.EntityType.NFT,
-            thisEntityId: profile.id,
-          })))
+          .then(
+            fp.tap(() =>
+              ctx.repositories.edge.hardDelete({
+                edgeType: defs.EdgeType.Displays,
+                thisEntityType: defs.EntityType.Profile,
+                thatEntityType: defs.EntityType.NFT,
+                thisEntityId: profile.id,
+              }),
+            ),
+          )
           .then(fp.tap(() => executeUpdateNFTsForProfile(profile.url, chainId)))
       })
-      .catch((e) => {
+      .catch(e => {
         logger.log(`[ERROR] maybeUpdateProfileOwnership uncaught error - ${JSON.stringify(e)}`)
         return profile
       })
   }
 }
 
-const getProfileByURL = (
-  _: any,
-  args: gql.QueryProfileArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const getProfileByURL = (_: any, args: gql.QueryProfileArgs, ctx: Context): Promise<gql.Profile> => {
   const { user } = ctx
   logger.debug('getProfileByURL', { loggedInUserId: user?.id, input: args })
   const schema = Joi.object().keys({
@@ -310,14 +310,15 @@ const getProfileByURL = (
     provider.provider(Number(chain.id)),
   )
 
-  return ctx.repositories.profile.findOne({
-    where: {
-      url: args.url,
-      chainId: chainId,
-    },
-  })
+  return ctx.repositories.profile
+    .findOne({
+      where: {
+        url: args.url,
+        chainId: chainId,
+      },
+    })
     .then(fp.thruIfNotEmpty(maybeUpdateProfileOwnership(ctx, nftProfileContract, chain.id)))
-    .then((profile) => {
+    .then(profile => {
       if (profile) {
         if (!profile.photoURL) {
           return generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE).then(imageURL => {
@@ -337,40 +338,35 @@ const getProfileByURL = (
       }
       return profile
     })
-    .then(fp.thruIfEmpty(() => nftProfileContract.getTokenId(args.url)
-      .then(fp.rejectIfEmpty(appError.buildExists(
-        profileError.buildProfileNotFoundMsg(args.url),
-        profileError.ErrorType.ProfileNotFound,
-      )))
-      .then((tokenId: BigNumber) => {
-        return nftProfileContract.ownerOf(tokenId)
-          .then((owner: string) => [tokenId, owner])
-      })
-      .then(([tokenId, owner]: [BigNumber, string]) => {
-        return core.createProfileFromEvent(
-          chain.id,
-          owner,
-          tokenId,
-          ctx.repositories,
-          args.url,
-        )
-      })))
+    .then(
+      fp.thruIfEmpty(() =>
+        nftProfileContract
+          .getTokenId(args.url)
+          .then(
+            fp.rejectIfEmpty(
+              appError.buildExists(
+                profileError.buildProfileNotFoundMsg(args.url),
+                profileError.ErrorType.ProfileNotFound,
+              ),
+            ),
+          )
+          .then((tokenId: BigNumber) => {
+            return nftProfileContract.ownerOf(tokenId).then((owner: string) => [tokenId, owner])
+          })
+          .then(([tokenId, owner]: [BigNumber, string]) => {
+            return core.createProfileFromEvent(chain.id, owner, tokenId, ctx.repositories, args.url)
+          }),
+      ),
+    )
 }
 
-const getWinningBid = (
-  parent: gql.Profile,
-  _: unknown,
-  ctx: Context,
-): Promise<gql.Bid> => {
+const getWinningBid = (parent: gql.Profile, _: unknown, ctx: Context): Promise<gql.Bid> => {
   const { user, repositories } = ctx
   logger.debug('getWinningBid', { loggedInUserId: user?.id })
   return repositories.bid.findTopBidByProfile(parent.id)
 }
 
-const addCustomizeIncentiveAction = async (
-  repositories: db.Repository,
-  profile: entity.Profile,
-): Promise<void> => {
+const addCustomizeIncentiveAction = async (repositories: db.Repository, profile: entity.Profile): Promise<void> => {
   try {
     if (profile.ownerUserId && profile.description && profile.photoURL) {
       // if description and photo are valid, we check about NFT visibilities
@@ -409,11 +405,7 @@ const addCustomizeIncentiveAction = async (
   }
 }
 
-const updateProfile = (
-  _: any,
-  args: gql.MutationUpdateProfileArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const updateProfile = (_: any, args: gql.MutationUpdateProfileArgs, ctx: Context): Promise<gql.Profile> => {
   const { user, repositories, wallet } = ctx
   logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
 
@@ -430,9 +422,7 @@ const updateProfile = (
     gkIconVisible: Joi.boolean().allow(null),
     nftsDescriptionsVisible: Joi.boolean().allow(null),
     deployedContractsVisible: Joi.boolean().allow(null),
-    displayType: Joi.string()
-      .valid(defs.ProfileDisplayType.NFT, defs.ProfileDisplayType.Collection)
-      .allow(null),
+    displayType: Joi.string().valid(defs.ProfileDisplayType.NFT, defs.ProfileDisplayType.Collection).allow(null),
     layoutType: Joi.string()
       .valid(
         defs.ProfileLayoutType.Default,
@@ -448,16 +438,19 @@ const updateProfile = (
   const { id } = args.input
 
   return getProfile(id, repositories.profile.findById)
-    .then(fp.rejectIf(notOwner)(appError.buildForbidden(
-      profileError.buildProfileNotOwnedMsg(id),
-      profileError.ErrorType.ProfileNotOwned,
-    )))
+    .then(
+      fp.rejectIf(notOwner)(
+        appError.buildForbidden(profileError.buildProfileNotOwnedMsg(id), profileError.ErrorType.ProfileNotOwned),
+      ),
+    )
     .then((p: entity.Profile) => {
       if (args?.input.description && args?.input.description.length > 300) {
-        return Promise.reject(appError.buildForbidden(
-          profileError.buildProfileDescriptionLength(),
-          profileError.ErrorType.ProfileDescriptionLength,
-        ))
+        return Promise.reject(
+          appError.buildForbidden(
+            profileError.buildProfileDescriptionLength(),
+            profileError.ErrorType.ProfileDescriptionLength,
+          ),
+        )
       } else {
         p.bannerURL = args.input.bannerURL ?? p.bannerURL
         p.description = args.input.description ?? p.description
@@ -477,37 +470,31 @@ const updateProfile = (
           args.input.showNFTIds,
           args.input.hideNFTIds,
           p.chainId,
-        ).then(() => {
-          return repositories.profile.save(p)
-            .then((profile: entity.Profile) => {
+        )
+          .then(() => {
+            return repositories.profile.save(p).then((profile: entity.Profile) => {
               return addCustomizeIncentiveAction(repositories, profile)
                 .then(() => profile)
-                .catch((err) => {
+                .catch(err => {
                   return Promise.reject(new Error(`Something went wrong to save incentive action. Error: ${err}`))
                 })
             })
-        }).catch((err) => {
-          return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
-        })
+          })
+          .catch(err => {
+            return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
+          })
       }
     })
 }
 
-const getFollowersCount = (
-  parent: gql.Profile,
-  _: unknown,
-  ctx: Context,
-): Promise<number> => {
+const getFollowersCount = (parent: gql.Profile, _: unknown, ctx: Context): Promise<number> => {
   return core.countEdges(ctx, {
     thatEntityId: parent.id,
     edgeType: defs.EdgeType.Follows,
   })
 }
 
-const getBlockedProfileURI = (
-  _: unknown,
-  args: gql.QueryBlockedProfileUriArgs,
-): Promise<boolean> => {
+const getBlockedProfileURI = (_: unknown, args: gql.QueryBlockedProfileUriArgs): Promise<boolean> => {
   logger.debug('getBlockedProfileURI', args.url)
   return Promise.resolve(blacklistBool(args.url.toLowerCase(), args.blockReserved))
 }
@@ -526,28 +513,27 @@ const getInsiderReservedProfileURIs = (
 
 // TODO: make sure this is running on cron job -> that pull events from:
 // TODO: emit MintedProfile(_owner, _profileURI, _nftTokens, claimableBlock[hash]);
-const profileClaimed = (
-  _: any,
-  args: gql.MutationProfileClaimedArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const profileClaimed = (_: any, args: gql.MutationProfileClaimedArgs, ctx: Context): Promise<gql.Profile> => {
   const { repositories } = ctx
   const { profileId, walletId, txHash } = args.input
   logger.debug('profileClaimed', { profileId, walletId, txHash })
 
   const profileAuction = new utils.Interface(contracts.profileAuctionABI())
 
-  return repositories.wallet.findById(walletId)
-    .then((wallet: entity.Wallet) => Promise.all([
-      Promise.resolve(wallet),
-      repositories.profile.findById(profileId),
-      provider.provider(Number(wallet.chainId)).getTransactionReceipt(txHash),
-    ]))
+  return repositories.wallet
+    .findById(walletId)
+    .then((wallet: entity.Wallet) =>
+      Promise.all([
+        Promise.resolve(wallet),
+        repositories.profile.findById(profileId),
+        provider.provider(Number(wallet.chainId)).getTransactionReceipt(txHash),
+      ]),
+    )
     .then(([wallet, profile, txReceipt]) => {
       if (
         txReceipt.from !== wallet.address ||
         txReceipt.to !== contracts.profileAuctionAddress(wallet.chainId) ||
-        !txReceipt.logs.some((log) => {
+        !txReceipt.logs.some(log => {
           try {
             const parsed = profileAuction.parseLog(log)
             return parsed?.topic === contracts.MintedProfileTopic && (parsed?.args['_val'] ?? '') === profile.url
@@ -564,12 +550,11 @@ const profileClaimed = (
       }
       return profile
     })
-    .then(fp.rejectIf((profile: entity.Profile) => profile.ownerWalletId !== walletId)(
-      appError.buildInvalid(
-        profileError.buildProfileNotOwnedMsg(profileId),
-        profileError.ErrorType.ProfileNotOwned,
+    .then(
+      fp.rejectIf((profile: entity.Profile) => profile.ownerWalletId !== walletId)(
+        appError.buildInvalid(profileError.buildProfileNotOwnedMsg(profileId), profileError.ErrorType.ProfileNotOwned),
       ),
-    ))
+    )
     .then((profile: entity.Profile) => {
       profile.status = defs.ProfileStatus.Owned
       profile.chainId = ctx.chain.id || process.env.CHAIN_ID
@@ -578,10 +563,7 @@ const profileClaimed = (
     })
 }
 
-const checkFileSize = async (
-  createReadStream: FileUpload['createReadStream'],
-  maxSize: number,
-): Promise<number> =>
+const checkFileSize = async (createReadStream: FileUpload['createReadStream'], maxSize: number): Promise<number> =>
   new Promise((resolves, rejects) => {
     let filesize = 0
     createReadStream().on('data', (chunk: Buffer) => {
@@ -590,17 +572,11 @@ const checkFileSize = async (
         rejects(filesize)
       }
     })
-    createReadStream().on('end', () =>
-      resolves(filesize),
-    )
+    createReadStream().on('end', () => resolves(filesize))
     createReadStream().on('error', rejects)
   })
 
-const createUploadStream = (
-  s3: S3Client,
-  key: string,
-  bucket: string,
-): S3UploadStream => {
+const createUploadStream = (s3: S3Client, key: string, bucket: string): S3UploadStream => {
   const ext = extensionFromFilename(key as string)
   const contentType = contentTypeFromExt(ext)
   const pass = new stream.PassThrough()
@@ -648,10 +624,9 @@ const uploadProfileImages = async (
   const { banner, avatar, profileId, description, compositeProfileURL } = args.input
   let profile = await repositories.profile.findById(profileId)
   if (!profile) {
-    return Promise.reject(appError.buildNotFound(
-      profileError.buildProfileNotFoundMsg(profileId),
-      profileError.ErrorType.ProfileNotFound,
-    ))
+    return Promise.reject(
+      appError.buildNotFound(profileError.buildProfileNotFoundMsg(profileId), profileError.ErrorType.ProfileNotFound),
+    )
   }
   let bannerResponse, avatarResponse
   let bannerStream: FileUpload['createReadStream']
@@ -670,15 +645,16 @@ const uploadProfileImages = async (
     try {
       const bannerMaxSize = 5000000
       await checkFileSize(bannerStream, bannerMaxSize)
-    }
-    catch (e) {
+    } catch (e) {
       Sentry.captureException(e)
       Sentry.captureMessage(`Error in uploadProfileImages: ${e}`)
       if (typeof e === 'number') {
-        return Promise.reject(appError.buildInvalid(
-          profileError.buildProfileBannerFileSize(),
-          profileError.ErrorType.ProfileBannerFileSize,
-        ))
+        return Promise.reject(
+          appError.buildInvalid(
+            profileError.buildProfileBannerFileSize(),
+            profileError.ErrorType.ProfileBannerFileSize,
+          ),
+        )
       }
     }
   }
@@ -688,15 +664,16 @@ const uploadProfileImages = async (
     try {
       const avatarMaxSize = 2000000
       await checkFileSize(avatarStream, avatarMaxSize)
-    }
-    catch (e) {
+    } catch (e) {
       Sentry.captureException(e)
       Sentry.captureMessage(`Error in uploadProfileImages: ${e}`)
       if (typeof e === 'number') {
-        return Promise.reject(appError.buildInvalid(
-          profileError.buildProfileAvatarFileSize(),
-          profileError.ErrorType.ProfileAvatarFileSize,
-        ))
+        return Promise.reject(
+          appError.buildInvalid(
+            profileError.buildProfileAvatarFileSize(),
+            profileError.ErrorType.ProfileAvatarFileSize,
+          ),
+        )
       }
     }
   }
@@ -755,10 +732,9 @@ const createCompositeImage = async (
   const { profileId } = args.input
   let profile = await repositories.profile.findById(profileId)
   if (!profile) {
-    return Promise.reject(appError.buildNotFound(
-      profileError.buildProfileNotFoundMsg(profileId),
-      profileError.ErrorType.ProfileNotFound,
-    ))
+    return Promise.reject(
+      appError.buildNotFound(profileError.buildProfileNotFoundMsg(profileId), profileError.ErrorType.ProfileNotFound),
+    )
   }
 
   const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
@@ -793,26 +769,24 @@ const sortedProfilesByVisibleNFTs = async (
   let paginatedProfiles: Array<gql.Profile>
   let defaultCursor
   if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
-    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
-      { afterCursor: indexedProfiles.length.toString() }
+    defaultCursor = pagination.hasFirst(pageInput)
+      ? { beforeCursor: '-1' }
+      : { afterCursor: indexedProfiles.length.toString() }
   }
 
   const safePageInput = safeInput(pageInput, defaultCursor)
 
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
-    const cursor = pagination.hasAfter(safePageInput) ?
-      safePageInput.afterCursor : safePageInput.beforeCursor
-    paginatedProfiles = indexedProfiles.filter((profile) => profile.index > Number(cursor))
+    const cursor = pagination.hasAfter(safePageInput) ? safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedProfiles = indexedProfiles.filter(profile => profile.index > Number(cursor))
     totalItems = paginatedProfiles.length
     paginatedProfiles = paginatedProfiles.slice(0, safePageInput.first)
   } else {
-    const cursor = pagination.hasAfter(safePageInput) ?
-      safePageInput.afterCursor : safePageInput.beforeCursor
-    paginatedProfiles = indexedProfiles.filter((profile) => profile.index < Number(cursor))
+    const cursor = pagination.hasAfter(safePageInput) ? safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedProfiles = indexedProfiles.filter(profile => profile.index < Number(cursor))
     totalItems = paginatedProfiles.length
-    paginatedProfiles =
-      paginatedProfiles.slice(paginatedProfiles.length - safePageInput.last)
+    paginatedProfiles = paginatedProfiles.slice(paginatedProfiles.length - safePageInput.last)
   }
 
   return pagination.toPageable(
@@ -840,45 +814,23 @@ const getLatestProfiles = async (
   }
   const filters = [helper.inputT2SafeK(inputFilters)]
   if (args?.input.sortBy === gql.ProfileSortType.RecentUpdated) {
-    return core.paginatedEntitiesBy(
-      repositories.profile,
-      pageInput,
-      filters,
-      [],
-      'updatedAt',
-      'DESC',
-    )
+    return core
+      .paginatedEntitiesBy(repositories.profile, pageInput, filters, [], 'updatedAt', 'DESC')
       .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
   } else if (args?.input.sortBy === gql.ProfileSortType.RecentMinted) {
-    return core.paginatedEntitiesBy(
-      repositories.profile,
-      pageInput,
-      filters,
-      [],
-      'createdAt',
-      'DESC',
-    )
+    return core
+      .paginatedEntitiesBy(repositories.profile, pageInput, filters, [], 'createdAt', 'DESC')
       .then(pagination.toPageable(pageInput, null, null, 'createdAt'))
   } else if (args?.input.sortBy === gql.ProfileSortType.MostVisibleNFTs) {
     return await sortedProfilesByVisibleNFTs(repositories, args, chainId)
   } else {
-    return core.paginatedEntitiesBy(
-      repositories.profile,
-      pageInput,
-      filters,
-      [],
-      'updatedAt',
-      'DESC',
-    )
+    return core
+      .paginatedEntitiesBy(repositories.profile, pageInput, filters, [], 'updatedAt', 'DESC')
       .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
   }
 }
 
-const orderingUpdates = (
-  _: any,
-  args: gql.MutationOrderingUpdatesArgs,
-  ctx: Context,
-): Promise<gql.Profile> => {
+const orderingUpdates = (_: any, args: gql.MutationOrderingUpdatesArgs, ctx: Context): Promise<gql.Profile> => {
   const { repositories, user } = ctx
   logger.debug('orderingUpdates', { input: args?.input })
 
@@ -886,11 +838,15 @@ const orderingUpdates = (
   const { profileId, updates } = args.input
 
   return getProfile(profileId, repositories.profile.findById)
-    .then(fp.rejectIf(notOwner)(appError.buildForbidden(
-      profileError.buildProfileNotOwnedMsg(profileId),
-      profileError.ErrorType.ProfileNotOwned,
-    )))
-    .then(fp.tapWait((profile) => updateNFTsOrder(profile.id, updates)))
+    .then(
+      fp.rejectIf(notOwner)(
+        appError.buildForbidden(
+          profileError.buildProfileNotOwnedMsg(profileId),
+          profileError.ErrorType.ProfileNotOwned,
+        ),
+      ),
+    )
+    .then(fp.tapWait(profile => updateNFTsOrder(profile.id, updates)))
 }
 
 const collectInfoFromScore = (score: string): LeaderboardInfo => {
@@ -927,11 +883,7 @@ const collectInfoFromScore = (score: string): LeaderboardInfo => {
   }
 }
 
-const leaderboard = async (
-  _: any,
-  args: gql.QueryLeaderboardArgs,
-  ctx: Context,
-): Promise<gql.LeaderboardOutput> => {
+const leaderboard = async (_: any, args: gql.QueryLeaderboardArgs, ctx: Context): Promise<gql.LeaderboardOutput> => {
   const { repositories } = ctx
   const chainId = args?.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -978,26 +930,24 @@ const leaderboard = async (
   let paginatedLeaderboard: Array<gql.LeaderboardProfile>
   let defaultCursor
   if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
-    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
-      { afterCursor: leaderboard.length.toString() }
+    defaultCursor = pagination.hasFirst(pageInput)
+      ? { beforeCursor: '-1' }
+      : { afterCursor: leaderboard.length.toString() }
   }
 
   const safePageInput = safeInput(pageInput, defaultCursor)
 
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
-    const cursor = pagination.hasAfter(safePageInput) ?
-      safePageInput.afterCursor : safePageInput.beforeCursor
-    paginatedLeaderboard = leaderboard.filter((leader) => leader.index > Number(cursor))
+    const cursor = pagination.hasAfter(safePageInput) ? safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedLeaderboard = leaderboard.filter(leader => leader.index > Number(cursor))
     totalItems = paginatedLeaderboard.length
     paginatedLeaderboard = paginatedLeaderboard.slice(0, safePageInput.first)
   } else {
-    const cursor = pagination.hasAfter(safePageInput) ?
-      safePageInput.afterCursor : safePageInput.beforeCursor
-    paginatedLeaderboard = leaderboard.filter((leader) => leader.index < Number(cursor))
+    const cursor = pagination.hasAfter(safePageInput) ? safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedLeaderboard = leaderboard.filter(leader => leader.index < Number(cursor))
     totalItems = paginatedLeaderboard.length
-    paginatedLeaderboard =
-      paginatedLeaderboard.slice(paginatedLeaderboard.length - safePageInput.last)
+    paginatedLeaderboard = paginatedLeaderboard.slice(paginatedLeaderboard.length - safePageInput.last)
   }
 
   return pagination.toPageable(
@@ -1017,18 +967,22 @@ const saveScoreForProfiles = async (
   logger.debug('saveScoreForProfiles', { input: args?.input })
   try {
     const count = Number(args?.input.count) > 1000 ? 1000 : Number(args?.input.count)
-    const profiles = await repositories.profile.find(args?.input.nullOnly ? {
-      where: {
-        lastScored: IsNull(),
-      },
-    } : {
-      order: {
-        lastScored: 'ASC',
-      },
-    })
+    const profiles = await repositories.profile.find(
+      args?.input.nullOnly
+        ? {
+            where: {
+              lastScored: IsNull(),
+            },
+          }
+        : {
+            order: {
+              lastScored: 'ASC',
+            },
+          },
+    )
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
-      slicedProfiles.map(async (profile) => {
+      slicedProfiles.map(async profile => {
         await saveProfileScore(repositories, profile)
         const now = helper.toUTCDate()
         await repositories.profile.updateOneById(profile.id, {
@@ -1047,11 +1001,7 @@ const saveScoreForProfiles = async (
   }
 }
 
-const clearGKIconVisible = async (
-  _: any,
-  args: any,
-  ctx: Context,
-): Promise<gql.ClearGkIconVisibleOutput> => {
+const clearGKIconVisible = async (_: any, args: any, ctx: Context): Promise<gql.ClearGkIconVisibleOutput> => {
   try {
     const { repositories, chain } = ctx
     const chainId = chain.id || process.env.CHAIN_ID
@@ -1059,7 +1009,7 @@ const clearGKIconVisible = async (
     const owners = await getOwnersOfGenesisKeys(chainId)
     const ownerWalletIds: string[] = []
     await Promise.allSettled(
-      Object.keys(owners).map(async (owner) => {
+      Object.keys(owners).map(async owner => {
         const foundWallet: entity.Wallet = await repositories.wallet.findByChainAddress(
           chainId,
           ethers.utils.getAddress(owner),
@@ -1069,8 +1019,8 @@ const clearGKIconVisible = async (
     )
     const profiles = await repositories.profile.find({ where: { chainId } })
     const updatedProfiles = []
-    profiles.map((profile) => {
-      if (ownerWalletIds.findIndex((id) => id === profile.ownerWalletId) === -1) {
+    profiles.map(profile => {
+      if (ownerWalletIds.findIndex(id => id === profile.ownerWalletId) === -1) {
         if (profile.gkIconVisible) {
           profile.gkIconVisible = false
           updatedProfiles.push(profile)
@@ -1106,20 +1056,22 @@ const updateProfileView = async (
     const { url, profileViewType } = helper.safeObject(args?.input)
     const profile = await repositories.profile.findOne({ where: { url, chainId } })
     if (!profile) {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileUrlNotFoundMsg(url, chainId),
-        profileError.ErrorType.ProfileNotFound,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          profileError.buildProfileUrlNotFoundMsg(url, chainId),
+          profileError.ErrorType.ProfileNotFound,
+        ),
+      )
     } else {
       if (profile.ownerUserId !== user.id) {
-        return Promise.reject(appError.buildForbidden(
-          profileError.buildProfileNotOwnedMsg(profile.id),
-          profileError.ErrorType.ProfileNotOwned,
-        ))
-      } else {
-        return await repositories.profile.updateOneById(profile.id,
-          { profileView: profileViewType },
+        return Promise.reject(
+          appError.buildForbidden(
+            profileError.buildProfileNotOwnedMsg(profile.id),
+            profileError.ErrorType.ProfileNotOwned,
+          ),
         )
+      } else {
+        return await repositories.profile.updateOneById(profile.id, { profileView: profileViewType })
       }
     }
   } catch (err) {
@@ -1142,7 +1094,7 @@ const saveNFTVisibility = async (
     const profiles = await repositories.profile.find({ where: { visibleNFTs: 0, chainId } })
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
-      slicedProfiles.map(async (profile) => {
+      slicedProfiles.map(async profile => {
         await saveVisibleNFTsForProfile(profile.id, repositories)
       }),
     )
@@ -1177,12 +1129,16 @@ const fullFillEventTokenIds = async (
     const length = Math.min(args?.count, events.length)
     const slicedEvents = events.slice(0, length)
     await Promise.allSettled(
-      slicedEvents.map(async (event) => {
+      slicedEvents.map(async event => {
         try {
           const chainProvider = provider.provider(Number(chainId))
           const tx = await chainProvider.getTransaction(event.txHash)
-          const claimFace = new ethers.utils.Interface(['function genesisKeyClaimProfile(string,uint256,address,bytes32,bytes)'])
-          const batchClaimFace = new ethers.utils.Interface(['function genesisKeyBatchClaimProfile((string,uint256,address,bytes32,bytes)[])'])
+          const claimFace = new ethers.utils.Interface([
+            'function genesisKeyClaimProfile(string,uint256,address,bytes32,bytes)',
+          ])
+          const batchClaimFace = new ethers.utils.Interface([
+            'function genesisKeyBatchClaimProfile((string,uint256,address,bytes32,bytes)[])',
+          ])
           let tokenId
           try {
             const res = claimFace.decodeFunctionData('genesisKeyClaimProfile', tx.data)
@@ -1217,11 +1173,7 @@ const fullFillEventTokenIds = async (
   }
 }
 
-const getIgnoredEvents = async (
-  _: any,
-  args: gql.QueryIgnoredEventsArgs,
-  ctx: Context,
-): Promise<entity.Event[]> => {
+const getIgnoredEvents = async (_: any, args: gql.QueryIgnoredEventsArgs, ctx: Context): Promise<entity.Event[]> => {
   try {
     const { repositories } = ctx
     const chainId = args?.input.chainId || process.env.CHAIN_ID
@@ -1253,10 +1205,12 @@ const getAssociatedCollectionForProfile = async (
     logger.debug('getAssociatedCollectionForProfile', { profileUrl: args?.url })
     const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
     if (!profile) {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
-        profileError.ErrorType.ProfileNotFound,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileNotFound,
+        ),
+      )
     }
     if (profile.profileView === defs.ProfileViewType.Collection) {
       if (profile.associatedContract) {
@@ -1266,16 +1220,17 @@ const getAssociatedCollectionForProfile = async (
           repositories,
         })
       } else {
-        return Promise.reject(appError.buildNotFound(
-          profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
-          profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
-        ))
+        return Promise.reject(
+          appError.buildNotFound(
+            profileError.buildAssociatedContractNotFoundMsg(args?.url, chainId),
+            profileError.ErrorType.ProfileAssociatedContractNotFoundMsg,
+          ),
+        )
       }
     } else {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileViewTypeWrong(),
-        profileError.ErrorType.ProfileViewTypeWrong,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(profileError.buildProfileViewTypeWrong(), profileError.ErrorType.ProfileViewTypeWrong),
+      )
     }
   } catch (err) {
     Sentry.captureMessage(`Error in getAssociatedCollectionForProfile: ${err}`)
@@ -1283,11 +1238,7 @@ const getAssociatedCollectionForProfile = async (
   }
 }
 
-const isProfileCustomized = async (
-  _: any,
-  args: gql.QueryIsProfileCustomizedArgs,
-  ctx: Context,
-): Promise<boolean> => {
+const isProfileCustomized = async (_: any, args: gql.QueryIsProfileCustomizedArgs, ctx: Context): Promise<boolean> => {
   try {
     const { repositories } = ctx
     const chainId = args?.chainId || process.env.CHAIN_ID
@@ -1295,10 +1246,12 @@ const isProfileCustomized = async (
     logger.debug('isProfileCustomized', { profileUrl: args?.url })
     const profile = await repositories.profile.findOne({ where: { url: args?.url, chainId } })
     if (!profile) {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
-        profileError.ErrorType.ProfileNotFound,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          profileError.buildProfileUrlNotFoundMsg(args?.url, chainId),
+          profileError.ErrorType.ProfileNotFound,
+        ),
+      )
     }
     const edges = await repositories.edge.find({
       where: {
@@ -1330,20 +1283,25 @@ const profilesByDisplayNft = async (
   })
   joi.validateSchema(schema, args?.input)
   const chainId = args?.input?.chainId || process.env.CHAIN_ID
-  return repositories.nft.findOne({
-    where:
-    {
-      contract: utils.getAddress(args?.input?.collectionAddress),
-      tokenId: ethers.BigNumber.from(args?.input?.tokenId).toHexString(),
-      chainId,
-    },
-  })
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        nftError.buildNFTNotFoundMsg(`profilesByDisplayNft ${args?.input?.collectionAddress} ${args?.input?.tokenId}`),
-        nftError.ErrorType.NFTNotFound,
+  return repositories.nft
+    .findOne({
+      where: {
+        contract: utils.getAddress(args?.input?.collectionAddress),
+        tokenId: ethers.BigNumber.from(args?.input?.tokenId).toHexString(),
+        chainId,
+      },
+    })
+    .then(
+      fp.rejectIfEmpty(
+        appError.buildNotFound(
+          nftError.buildNFTNotFoundMsg(
+            `profilesByDisplayNft ${args?.input?.collectionAddress} ${args?.input?.tokenId}`,
+          ),
+          nftError.ErrorType.NFTNotFound,
+        ),
       ),
-    )).then((nft) => {
+    )
+    .then(nft => {
       let filters: Partial<entity.Edge> = {
         thatEntityType: defs.EntityType.NFT,
         thatEntityId: nft.id,
@@ -1356,7 +1314,8 @@ const profilesByDisplayNft = async (
         filters = { ...filters, hide: !showOnlyVisibleNFTProfile }
       }
       return core.thisEntitiesOfEdgesBy<entity.Profile>(ctx, filters)
-    }).then(toProfilesOutput)
+    })
+    .then(toProfilesOutput)
 }
 
 const getProfilesMintedByGK = async (
@@ -1385,7 +1344,7 @@ const getProfilesMintedByGK = async (
     if (!events.length) return []
     const profiles = []
     await Promise.allSettled(
-      events.map(async (event) => {
+      events.map(async event => {
         const profile = await repositories.profile.findByURL(event.profileUrl, chainId)
         if (profile) profiles.push(profile)
       }),
@@ -1424,7 +1383,7 @@ const getUsersActionsWithPoints = async (
       })
       seen[action.userId] = true
     } else {
-      const index = usersActions.findIndex((userAction) => userAction.userId === action.userId)
+      const index = usersActions.findIndex(userAction => userAction.userId === action.userId)
       if (index !== -1) {
         usersActions[index].action.push(profileActionType(action))
         usersActions[index].totalPoints += action.point
@@ -1491,10 +1450,12 @@ const searchVisibleNFTsForProfile = async (
     logger.debug('searchVisibleNFTsForProfile', { input: args?.input })
     const profile = await repositories.profile.findByURL(args?.input.url, chainId)
     if (!profile) {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
-        profileError.ErrorType.ProfileNotFound,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
+          profileError.ErrorType.ProfileNotFound,
+        ),
+      )
     }
     const cacheKey = `${CacheKeys.SEARCH_VISIBLE_NFTS_FOR_PROFILE}_${chainId}_${args?.input.url}_${args?.input.query}`
     const cachedData = await cache.get(cacheKey)
@@ -1506,7 +1467,7 @@ const searchVisibleNFTsForProfile = async (
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     }
     if (!nfts.length) return Promise.reject(new Error('No NFT found'))
-    const nftIds = nfts.map((nft) => nft.id)
+    const nftIds = nfts.map(nft => nft.id)
     const filter: Partial<entity.Edge> = helper.removeEmpty({
       thisEntityType: defs.EntityType.Profile,
       thisEntityId: profile.id,
@@ -1516,20 +1477,21 @@ const searchVisibleNFTsForProfile = async (
       hide: false,
     })
 
-    return core.paginatedThatEntitiesOfEdgesBy(
-      ctx,
-      repositories.nft,
-      filter,
-      args?.input.pageInput,
-      'weight',
-      'ASC',
-      chainId,
-      'NFT',
-    ).then(result => {
-      // refresh order queue trigger
-      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-        .then(() => Promise.resolve(result))
-    })
+    return core
+      .paginatedThatEntitiesOfEdgesBy(
+        ctx,
+        repositories.nft,
+        filter,
+        args?.input.pageInput,
+        'weight',
+        'ASC',
+        chainId,
+        'NFT',
+      )
+      .then(result => {
+        // refresh order queue trigger
+        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() => Promise.resolve(result))
+      })
   } catch (err) {
     Sentry.captureMessage(`Error in searchVisibleNFTsForProfile: ${err}`)
     return err
@@ -1548,16 +1510,20 @@ const searchNFTsForProfile = async (
     logger.debug('searchNFTsForProfile', { input: args?.input })
     const profile = await repositories.profile.findByURL(args?.input.url, chainId)
     if (!profile) {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
-        profileError.ErrorType.ProfileNotFound,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          profileError.buildProfileUrlNotFoundMsg(args?.input.url, chainId),
+          profileError.ErrorType.ProfileNotFound,
+        ),
+      )
     }
     if (profile.ownerUserId !== user.id) {
-      return Promise.reject(appError.buildNotFound(
-        profileError.buildProfileNotOwnedMsg(args?.input?.url),
-        profileError.ErrorType.ProfileNotOwned,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          profileError.buildProfileNotOwnedMsg(args?.input?.url),
+          profileError.ErrorType.ProfileNotOwned,
+        ),
+      )
     }
     const cacheKey = `${CacheKeys.SEARCH_NFTS_FOR_PROFILE}_${chainId}_${args?.input.url}_${args?.input.query}`
     const cachedData = await cache.get(cacheKey)
@@ -1569,7 +1535,7 @@ const searchNFTsForProfile = async (
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     }
     if (!nfts.length) return Promise.reject(new Error('No NFT found'))
-    const nftIds = nfts.map((nft) => nft.id)
+    const nftIds = nfts.map(nft => nft.id)
     const filter: Partial<entity.Edge> = helper.removeEmpty({
       thisEntityType: defs.EntityType.Profile,
       thisEntityId: profile.id,
@@ -1578,20 +1544,21 @@ const searchNFTsForProfile = async (
       edgeType: defs.EdgeType.Displays,
     })
 
-    return core.paginatedThatEntitiesOfEdgesBy(
-      ctx,
-      repositories.nft,
-      filter,
-      args?.input.pageInput,
-      'weight',
-      'ASC',
-      chainId,
-      'NFT',
-    ).then(result => {
-      // refresh order queue trigger
-      return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId))
-        .then(() => Promise.resolve(result))
-    })
+    return core
+      .paginatedThatEntitiesOfEdgesBy(
+        ctx,
+        repositories.nft,
+        filter,
+        args?.input.pageInput,
+        'weight',
+        'ASC',
+        chainId,
+        'NFT',
+      )
+      .then(result => {
+        // refresh order queue trigger
+        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() => Promise.resolve(result))
+      })
   } catch (err) {
     Sentry.captureMessage(`Error in searchNFTsForProfile: ${err}`)
     return err
@@ -1677,11 +1644,7 @@ const profileVisibleNFTCount = (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     const { profileIds } = args
     const { repositories } = ctx
-    return profileNFTCount(
-      profileIds,
-      repositories,
-      chainId,
-    )
+    return profileNFTCount(profileIds, repositories, chainId)
   } catch (err) {
     Sentry.captureMessage(`Error in profileVisibleNFTCount: ${err}`)
     return err
@@ -1732,18 +1695,11 @@ export default {
       defs.EntityType.Profile,
       defs.EntityType.Wallet,
     ),
-    isOwnedByMe: core.resolveEntityOwnership<gql.Profile>(
-      'ownerUserId',
-      'user',
-      defs.EntityType.Profile,
-    ),
-    isFollowedByMe: core.resolveEdgeOwnership<gql.Profile>(
-      'wallet',
-      defs.EdgeType.Follows,
-    ),
+    isOwnedByMe: core.resolveEntityOwnership<gql.Profile>('ownerUserId', 'user', defs.EntityType.Profile),
+    isFollowedByMe: core.resolveEdgeOwnership<gql.Profile>('wallet', defs.EdgeType.Follows),
     winningBid: getWinningBid,
     usersActionsWithPoints: getUsersActionsWithPoints,
-    likeCount: async (parent) => {
+    likeCount: async parent => {
       if (!parent) {
         return 0
       }
@@ -1754,6 +1710,12 @@ export default {
         return false
       }
       return likeService.isLikedByUser(parent.id, ctx.user.id)
+    },
+    isLikedBy: async (parent, args: gql.ProfileIsLikedByArgs, _ctx) => {
+      if (!parent || !args.likedById) {
+        return false
+      }
+      return likeService.isLikedBy(args.likedById, parent.id)
     },
   },
 }

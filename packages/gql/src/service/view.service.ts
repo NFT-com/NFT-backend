@@ -23,14 +23,12 @@ async function isViewerIdUser(repos: db.Repository, viewerId: string): Promise<b
 }
 
 export function getViewService(repos: db.Repository = db.newRepositories()): ViewService {
-  async function handleView(
-    viewArgs: {
-      viewerId: string
-      viewerType: entity.ViewerType
-      viewedId: string
-      viewedType: entity.ViewableType
-    },
-  ): Promise<entity.View> {
+  async function handleView(viewArgs: {
+    viewerId: string
+    viewerType: entity.ViewerType
+    viewedId: string
+    viewedType: entity.ViewableType
+  }): Promise<entity.View> {
     const { viewerId, viewerType, viewedId, viewedType } = viewArgs
     if (!viewerId || !viewerType || !viewedId || !viewedType) {
       throw new Error(`Missing property or property undefined in ${JSON.stringify(viewArgs)}`)
@@ -41,11 +39,9 @@ export function getViewService(repos: db.Repository = db.newRepositories()): Vie
     if (!Object.values(entity.ViewableType).includes(viewedType)) {
       throw appError.buildInvalid(`Cannot view ${viewedType}`, 'VIEW_INVALID')
     }
-    if (viewerType === entity.ViewerType.ProfileHolder
-      && !(await isViewerIdProfileHolder(repos, viewerId))) {
+    if (viewerType === entity.ViewerType.ProfileHolder && !(await isViewerIdProfileHolder(repos, viewerId))) {
       throw appError.buildInvalid(`Wrong type for viewerId: ${viewerId}, viewerType: ${viewerType}`, 'VIEW_INVALID')
-    } else if (viewerType === entity.ViewerType.User
-      && !(await isViewerIdUser(repos, viewerId))) {
+    } else if (viewerType === entity.ViewerType.User && !(await isViewerIdUser(repos, viewerId))) {
       throw appError.buildInvalid(`Wrong type for viewerId: ${viewerId}, viewerType: ${viewerType}`, 'VIEW_INVALID')
     }
     return repos.view.save(viewArgs)

@@ -11,11 +11,7 @@ import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Wallet, _logger.Context.GraphQL)
 
-const addAddress = (
-  _: any,
-  args: gql.MutationAddAddressArgs,
-  ctx: Context,
-): Promise<gql.Wallet> => {
+const addAddress = (_: any, args: gql.MutationAddAddressArgs, ctx: Context): Promise<gql.Wallet> => {
   const { user, repositories } = ctx
   logger.debug('addAddress', { loggedInUserId: user.id, input: args.input })
 
@@ -27,13 +23,14 @@ const addAddress = (
 
   const { address, chainId, network } = args.input
   const chain = auth.verifyAndGetNetworkChain(network, chainId)
-  return core.getWallet(ctx, args.input)
-    .then(() => repositories.wallet.save({
+  return core.getWallet(ctx, args.input).then(() =>
+    repositories.wallet.save({
       address: ethers.utils.getAddress(address),
       chainId: chain.id,
       chainName: chain.name,
       network,
-    }))
+    }),
+  )
 }
 
 const isAddressWhitelisted = async (
@@ -46,17 +43,15 @@ const isAddressWhitelisted = async (
   const whitelist = helper.getGenesisKeyWhitelist()
   const ensList = helper.getEnsKeyWhitelist()
 
-  const lowercasedWhitelist = whitelist.map(
-    (address) => {
-      try {
-        return address?.toLowerCase()
-      } catch (e) {
-        Sentry.captureException(e)
-        Sentry.captureMessage(`Error in isAddressWhitelisted: ${e}`)
-        return address
-      }
-    },
-  )
+  const lowercasedWhitelist = whitelist.map(address => {
+    try {
+      return address?.toLowerCase()
+    } catch (e) {
+      Sentry.captureException(e)
+      Sentry.captureMessage(`Error in isAddressWhitelisted: ${e}`)
+      return address
+    }
+  })
 
   if (lowercasedWhitelist.includes(args.input?.address?.toLowerCase())) {
     return true
@@ -66,34 +61,36 @@ const isAddressWhitelisted = async (
   }
 }
 
-export const updateWalletProfileId =
-  async (_: any, args: gql.MutationUpdateWalletProfileIdArgs, ctx: Context):
-  Promise<gql.Wallet> => {
-    const schema = Joi.object().keys({
-      profileId: Joi.string().required(),
-    })
-    joi.validateSchema(schema, args)
+export const updateWalletProfileId = async (
+  _: any,
+  args: gql.MutationUpdateWalletProfileIdArgs,
+  ctx: Context,
+): Promise<gql.Wallet> => {
+  const schema = Joi.object().keys({
+    profileId: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args)
 
-    const { repositories, wallet } = ctx
-    const { profileId } = args
-    const profile = await repositories.profile.findById(profileId)
+  const { repositories, wallet } = ctx
+  const { profileId } = args
+  const profile = await repositories.profile.findById(profileId)
 
-    if (!profile) {
-      throw appError.buildNotFound(
-        profileError.buildProfileNotFoundMsg(profileId),
-        profileError.ErrorType.ProfileNotFound,
-      )
-    } else if (profile.ownerWalletId !== wallet.id) {
-      throw appError.buildForbidden(
-        profileError.buildProfileNotOwnedMsg(profile.id),
-        profileError.ErrorType.ProfileNotOwned,
-      )
-    }
-    
-    return await repositories.wallet.updateOneById(wallet.id, {
-      profileId: profile.id,
-    })
+  if (!profile) {
+    throw appError.buildNotFound(
+      profileError.buildProfileNotFoundMsg(profileId),
+      profileError.ErrorType.ProfileNotFound,
+    )
+  } else if (profile.ownerWalletId !== wallet.id) {
+    throw appError.buildForbidden(
+      profileError.buildProfileNotOwnedMsg(profile.id),
+      profileError.ErrorType.ProfileNotOwned,
+    )
   }
+
+  return await repositories.wallet.updateOneById(wallet.id, {
+    profileId: profile.id,
+  })
+}
 
 export default {
   Query: {
@@ -104,11 +101,7 @@ export default {
     updateWalletProfileId: combineResolvers(auth.isAuthenticated, updateWalletProfileId),
   },
   Wallet: {
-    user: core.resolveEntityById<gql.Wallet, entity.User>(
-      'userId',
-      defs.EntityType.Wallet,
-      defs.EntityType.User,
-    ),
+    user: core.resolveEntityById<gql.Wallet, entity.User>('userId', defs.EntityType.Wallet, defs.EntityType.User),
     preferredProfile: core.resolveEntityById<gql.Wallet, entity.Profile>(
       'profileId',
       defs.EntityType.Wallet,

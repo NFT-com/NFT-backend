@@ -18,19 +18,20 @@ const pgClient = new Pool({
 })
 
 const main = async (): Promise<void> => {
-  const spamFromAlchemy: string[] = await (await fetch(`https://eth-mainnet.g.alchemy.com/nft/v2/${process.env.ALCHEMY_API_KEY}/getSpamContracts`, {
-    headers: {
-      accept: 'application/json',
-    },
-  })).json()
-  const notSpamFromDb: string[] = (await pgClient.query('SELECT "contract" FROM collection WHERE "isSpam" = false'))
-    .rows
-    .map((r) => r.contract)
+  const spamFromAlchemy: string[] = await (
+    await fetch(`https://eth-mainnet.g.alchemy.com/nft/v2/${process.env.ALCHEMY_API_KEY}/getSpamContracts`, {
+      headers: {
+        accept: 'application/json',
+      },
+    })
+  ).json()
+  const notSpamFromDb: string[] = (
+    await pgClient.query('SELECT "contract" FROM collection WHERE "isSpam" = false')
+  ).rows.map(r => r.contract)
   const shouldBeSpam = intersectionBy(spamFromAlchemy, notSpamFromDb, toLower)
   for (const contract of shouldBeSpam) {
     process.stdout.write(checkSum(contract) + '\n')
   }
 }
 
-main()
-  .then(() => process.exit())
+main().then(() => process.exit())

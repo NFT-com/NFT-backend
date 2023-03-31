@@ -25,7 +25,7 @@ type NFTMetadata {
   description: String
   imageURL: String
   traits: [NFTTrait]
-#  txHash: String!
+  #  txHash: String!
 }
 
 type NFT {
@@ -39,7 +39,7 @@ type NFT {
   profileId: String
   preferredProfile: Profile
   type: NFTType!
-#  user: User
+  #  user: User
   rarity: String
   wallet: Wallet
   owner: String
@@ -49,10 +49,17 @@ type NFT {
   previewLink: String
   isHide: Boolean
   sortIndex: Int
-  listings(listingsPageInput: PageInput, listingsExpirationType: ActivityExpiration, listingsStatus: ActivityStatus, listingsOwner: Address, protocol: ProtocolType): TxActivitiesOutput
+  listings(
+    listingsPageInput: PageInput
+    listingsExpirationType: ActivityExpiration
+    listingsStatus: ActivityStatus
+    listingsOwner: Address
+    protocol: ProtocolType
+  ): TxActivitiesOutput
   isGKMinted: Boolean
   likeCount: Int
   isLikedByUser: Boolean
+  isLikedBy(likedById: ID!): Boolean
 }
 
 type OfficialCollectionNFT {

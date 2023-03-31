@@ -53,7 +53,9 @@ describe('search engine service', () => {
 
     it('sends an NFT to the search engine', async () => {
       const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])),
+        repos,
+      )
 
       const result = await seService.indexNFTs([nft])
 
@@ -62,7 +64,9 @@ describe('search engine service', () => {
 
     it('notifies of an unsuccessful import', async () => {
       const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])),
+        repos,
+      )
 
       const result = await seService.indexNFTs([nft])
 
@@ -81,9 +85,8 @@ describe('search engine service', () => {
     })
 
     it('calls the search engine client to remove the NFT document', async () => {
-      const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
-      
+      const seService = SearchEngineService(SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
+
       const result = await seService.deleteNFT('123456abc')
 
       expect(result).toBeTruthy()
@@ -108,8 +111,9 @@ describe('search engine service', () => {
 
     it('sends collections to the search engine', async () => {
       const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient(
-          [{ success: true }, { success: true }])), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }, { success: true }])),
+        repos,
+      )
 
       const collections = [
         { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as Collection,
@@ -122,8 +126,9 @@ describe('search engine service', () => {
 
     it('notifies of failed import', async () => {
       const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient(
-          [{ success: false }, { success: true }])), repos)
+        SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }, { success: true }])),
+        repos,
+      )
 
       const collections = [
         { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as Collection,
@@ -146,14 +151,10 @@ describe('search engine service', () => {
     })
 
     it('calls the search engine client to remove the NFT document', async () => {
-      const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
+      const seService = SearchEngineService(SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
 
-      const collections = [
-        { id: '123456abc' } as Collection,
-        { id: '789012def' } as Collection,
-      ]
-      
+      const collections = [{ id: '123456abc' } as Collection, { id: '789012def' } as Collection]
+
       expect.assertions(1)
       await seService.deleteCollections(collections)
       expect(true).toBeTruthy()

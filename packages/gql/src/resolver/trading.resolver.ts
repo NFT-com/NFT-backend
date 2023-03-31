@@ -13,17 +13,7 @@ import {
 } from '@nftcom/gql/defs'
 import { getOwnersOfGenesisKeys, getOwnersOfNFTProfile } from '@nftcom/gql/service/nft.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import {
-  _logger,
-  contracts,
-  db,
-  defs,
-  entity,
-  helper,
-  provider,
-  typechain,
-  utils as dbUtils,
-} from '@nftcom/shared'
+import { _logger, contracts, db, defs, entity, helper, provider, typechain, utils as dbUtils } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { auth, joi, pagination, utils } from '../helper'
@@ -33,11 +23,7 @@ import { activityBuilder } from '../service/txActivity.service'
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
 const seService = SearchEngineService()
 
-const getListings = (
-  _: any,
-  args: gql.QueryGetListingsArgs,
-  ctx: Context,
-): Promise<gql.GetOrders> => {
+const getListings = (_: any, args: gql.QueryGetListingsArgs, ctx: Context): Promise<gql.GetOrders> => {
   const { repositories } = ctx
   logger.debug('getListings', { input: args?.input })
   const chainId = args?.input.chainId || process.env.CHAIN_ID
@@ -52,12 +38,13 @@ const getListings = (
     protocol: defs.ProtocolType.NFTCOM,
     chainId,
   })
-  return core.paginatedEntitiesBy(
-    repositories.txOrder,
-    pageInput,
-    [filter],
-    [], // relations
-  )
+  return core
+    .paginatedEntitiesBy(
+      repositories.txOrder,
+      pageInput,
+      [filter],
+      [], // relations
+    )
     .then(pagination.toPageable(pageInput))
 }
 
@@ -95,12 +82,18 @@ export const validListing = async (
       logger.debug('calculatedStructHash: ', calculatedStructHash)
       logger.debug('marketListingArgs?.input.structHash: ', calculatedStructHash)
 
-      return Promise.reject(new Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketListingArgs?.input.structHash}`))
+      return Promise.reject(
+        new Error(
+          `calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketListingArgs?.input.structHash}`,
+        ),
+      )
     }
 
     if (!result[0]) {
       logger.debug('result[0]: ', result[0])
-      return Promise.reject(new Error(`provided signature ${JSON.stringify(marketListingArgs.input.signature)} doesn't match`))
+      return Promise.reject(
+        new Error(`provided signature ${JSON.stringify(marketListingArgs.input.signature)} doesn't match`),
+      )
     }
   } catch (err) {
     Sentry.captureMessage(`Order validation error: ${err}`)
@@ -125,8 +118,8 @@ const availableToCreateListing = async (
     },
   })
 
-  const filteredOrders = listingOrders.filter((order) =>
-    !order.protocolData.acceptedAt && !order.protocolData.swapTransactionId,
+  const filteredOrders = listingOrders.filter(
+    order => !order.protocolData.acceptedAt && !order.protocolData.swapTransactionId,
   )
   if (!filteredOrders.length) return true
 
@@ -135,7 +128,7 @@ const availableToCreateListing = async (
   logger.debug('==============> assets: ', assets)
 
   // find out active listingOrders which have user's make asset...
-  const activeOrders = filteredOrders.filter((order) => {
+  const activeOrders = filteredOrders.filter(order => {
     if (!order.protocolData.makeAsset) return false
     if (order.activity?.expiration && order.activity?.expiration < now) return false
     else {
@@ -143,10 +136,12 @@ const availableToCreateListing = async (
       else {
         assets.forEach((asset, index) => {
           const isERC721 = NonFungibleAssetAsset.includes(asset.standard.assetClass)
-          const sameContractAddress = ethers.utils.getAddress(asset.standard.contractAddress) ===
+          const sameContractAddress =
+            ethers.utils.getAddress(asset.standard.contractAddress) ===
             ethers.utils.getAddress(order.protocolData.makeAsset[index].standard.contractAddress)
-          const sameTokenId = BigNumber.from(asset.standard.tokenId)
-            .eq(order.protocolData.makeAsset[index].standard.tokenId)
+          const sameTokenId = BigNumber.from(asset.standard.tokenId).eq(
+            order.protocolData.makeAsset[index].standard.tokenId,
+          )
 
           if (isERC721 && sameContractAddress && sameTokenId) {
             logger.debug('====> contractAddress', ethers.utils.getAddress(asset.standard.contractAddress))
@@ -162,7 +157,7 @@ const availableToCreateListing = async (
 
   logger.debug('==============> active asks: ', JSON.stringify(activeOrders, null, 2))
 
-  return (activeOrders.length === 0)
+  return activeOrders.length === 0
 }
 
 const createListing = async (
@@ -182,35 +177,41 @@ const createListing = async (
       auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
       signature: joi.buildSignatureInputSchema(),
       makerAddress: Joi.string().required(),
-      makeAsset: Joi.array().min(1).max(100).items(
-        Joi.object().keys({
-          standard: Joi.object().keys({
-            assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+      makeAsset: Joi.array()
+        .min(1)
+        .max(100)
+        .items(
+          Joi.object().keys({
+            standard: Joi.object().keys({
+              assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+              bytes: Joi.string().required(),
+              contractAddress: Joi.string().required(),
+              tokenId: Joi.optional(),
+              allowAll: Joi.boolean().required(),
+            }),
             bytes: Joi.string().required(),
-            contractAddress: Joi.string().required(),
-            tokenId: Joi.optional(),
-            allowAll: Joi.boolean().required(),
+            value: Joi.required().custom(joi.buildBigNumber),
+            minimumBid: Joi.required().custom(joi.buildBigNumber),
           }),
-          bytes: Joi.string().required(),
-          value: Joi.required().custom(joi.buildBigNumber),
-          minimumBid: Joi.required().custom(joi.buildBigNumber),
-        }),
-      ),
+        ),
       takerAddress: Joi.string().required(),
-      takeAsset: Joi.array().min(0).max(100).items(
-        Joi.object().keys({
-          standard: Joi.object().keys({
-            assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+      takeAsset: Joi.array()
+        .min(0)
+        .max(100)
+        .items(
+          Joi.object().keys({
+            standard: Joi.object().keys({
+              assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+              bytes: Joi.string().required(),
+              contractAddress: Joi.string().required(),
+              tokenId: Joi.optional(),
+              allowAll: Joi.boolean().required(),
+            }),
             bytes: Joi.string().required(),
-            contractAddress: Joi.string().required(),
-            tokenId: Joi.optional(),
-            allowAll: Joi.boolean().required(),
+            value: Joi.required().custom(joi.buildBigNumber),
+            minimumBid: Joi.required().custom(joi.buildBigNumber),
           }),
-          bytes: Joi.string().required(),
-          value: Joi.required().custom(joi.buildBigNumber),
-          minimumBid: Joi.required().custom(joi.buildBigNumber),
-        }),
-      ),
+        ),
       start: Joi.number().required(),
       end: Joi.number().required(),
       salt: Joi.number().required(),
@@ -224,12 +225,13 @@ const createListing = async (
     const takeAssetInput = args?.input.takeAsset
     const takeAssets = convertAssetInput(takeAssetInput)
 
-    if (ethers.utils.getAddress(args?.input.makerAddress) !==
-      ethers.utils.getAddress(wallet.address)) {
-      return Promise.reject(appError.buildForbidden(
-        marketListingError.buildMakerAddressNotOwnedMsg(),
-        marketListingError.ErrorType.MakerAddressNotOwned,
-      ))
+    if (ethers.utils.getAddress(args?.input.makerAddress) !== ethers.utils.getAddress(wallet.address)) {
+      return Promise.reject(
+        appError.buildForbidden(
+          marketListingError.buildMakerAddressNotOwnedMsg(),
+          marketListingError.ErrorType.MakerAddressNotOwned,
+        ),
+      )
     }
 
     const listing = await repositories.txOrder.findOne({
@@ -239,25 +241,32 @@ const createListing = async (
       },
     })
     if (listing) {
-      return Promise.reject(appError.buildExists(
-        marketListingError.buildMarketListingExistingMsg(),
-        marketListingError.ErrorType.MarketListingExisting,
-      ))
+      return Promise.reject(
+        appError.buildExists(
+          marketListingError.buildMarketListingExistingMsg(),
+          marketListingError.ErrorType.MarketListingExisting,
+        ),
+      )
     }
 
     const isValid = await validListing(args, chainId)
     if (!isValid) {
-      return Promise.reject(appError.buildInvalid(
-        marketListingError.buildMarketListingInvalidMsg(),
-        marketListingError.ErrorType.MarketListingInvalid,
-      ))
+      return Promise.reject(
+        appError.buildInvalid(
+          marketListingError.buildMarketListingInvalidMsg(),
+          marketListingError.ErrorType.MarketListingInvalid,
+        ),
+      )
     }
 
     const isAvailable = await availableToCreateListing(wallet.address, makeAssets, repositories)
     if (!isAvailable) {
-      return Promise.reject(appError.buildForbidden(
-        marketListingError.buildMarketListingUnavailableMsg(wallet.address),
-        marketListingError.ErrorType.MarketListingUnavailable))
+      return Promise.reject(
+        appError.buildForbidden(
+          marketListingError.buildMarketListingUnavailableMsg(wallet.address),
+          marketListingError.ErrorType.MarketListingUnavailable,
+        ),
+      )
     }
     const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
     const contracts = parseContractsFromNativeAsset(makeAssets)
@@ -316,11 +325,7 @@ const createListing = async (
   }
 }
 
-const filterListings = (
-  _: any,
-  args: gql.QueryFilterListingsArgs,
-  _ctx: Context,
-): Promise<gql.GetOrders> => {
+const filterListings = (_: any, args: gql.QueryFilterListingsArgs, _ctx: Context): Promise<gql.GetOrders> => {
   logger.debug('filterAsks', { input: args?.input })
   const schema = Joi.object().keys({
     auctionType: Joi.string().valid('FixedPrice', 'English', 'Decreasing'),
@@ -391,7 +396,9 @@ const validOrderMatch = async (
     const calculatedStructHash: string = result?.[1]
 
     if (marketBidArgs?.input.structHash !== calculatedStructHash) {
-      throw Error(`calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketBidArgs?.input.structHash}`)
+      throw Error(
+        `calculated structHash ${calculatedStructHash} doesn't match input structHash ${marketBidArgs?.input.structHash}`,
+      )
     }
   } catch (err) {
     logger.error('order validation error: ', err)
@@ -425,8 +432,11 @@ const validOrderMatch = async (
     // make sure listing taker is valid for Bid
     const listingTaker = listing.takerAddress
     if (
-      !(listingTaker == helper.AddressZero() || listingTaker == '0x' ||
-        helper.checkSum(listingTaker) == helper.checkSum(marketBidArgs?.input.makerAddress))
+      !(
+        listingTaker == helper.AddressZero() ||
+        listingTaker == '0x' ||
+        helper.checkSum(listingTaker) == helper.checkSum(marketBidArgs?.input.makerAddress)
+      )
     ) {
       throw Error(`Bidder ${marketBidArgs?.input.makerAddress} not equal to Listing owner's Taker ${listingTaker}`)
     }
@@ -472,10 +482,7 @@ const validOrderMatch = async (
   return true
 }
 
-const ownedProfileOrGK = async (
-  address: string,
-  chainId: string,
-): Promise<boolean> => {
+const ownedProfileOrGK = async (address: string, chainId: string): Promise<boolean> => {
   try {
     const gkOwners = await getOwnersOfGenesisKeys(chainId)
     const exists = gkOwners[ethers.utils.getAddress(address)]
@@ -488,11 +495,7 @@ const ownedProfileOrGK = async (
   }
 }
 
-const createBid = async (
-  _: any,
-  args: gql.MutationCreateMarketBidArgs,
-  ctx: Context,
-): Promise<gql.TxBidOrder> => {
+const createBid = async (_: any, args: gql.MutationCreateMarketBidArgs, ctx: Context): Promise<gql.TxBidOrder> => {
   const { user, repositories, wallet } = ctx
   const chainId = args?.input.chainId || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
@@ -506,35 +509,41 @@ const createBid = async (
       signature: joi.buildSignatureInputSchema(),
       listingId: Joi.string().required(),
       makerAddress: Joi.string().required(),
-      makeAsset: Joi.array().min(1).max(100).items(
-        Joi.object().keys({
-          standard: Joi.object().keys({
-            assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+      makeAsset: Joi.array()
+        .min(1)
+        .max(100)
+        .items(
+          Joi.object().keys({
+            standard: Joi.object().keys({
+              assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+              bytes: Joi.string().required(),
+              contractAddress: Joi.string().required(),
+              tokenId: Joi.optional(),
+              allowAll: Joi.boolean().required(),
+            }),
             bytes: Joi.string().required(),
-            contractAddress: Joi.string().required(),
-            tokenId: Joi.optional(),
-            allowAll: Joi.boolean().required(),
+            value: Joi.required().custom(joi.buildBigNumber),
+            minimumBid: Joi.required().custom(joi.buildBigNumber),
           }),
-          bytes: Joi.string().required(),
-          value: Joi.required().custom(joi.buildBigNumber),
-          minimumBid: Joi.required().custom(joi.buildBigNumber),
-        }),
-      ),
+        ),
       takerAddress: Joi.string().required(),
-      takeAsset: Joi.array().min(0).max(100).items(
-        Joi.object().keys({
-          standard: Joi.object().keys({
-            assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+      takeAsset: Joi.array()
+        .min(0)
+        .max(100)
+        .items(
+          Joi.object().keys({
+            standard: Joi.object().keys({
+              assetClass: Joi.string().valid('ETH', 'ERC20', 'ERC721', 'ERC1155'),
+              bytes: Joi.string().required(),
+              contractAddress: Joi.string().required(),
+              tokenId: Joi.optional(),
+              allowAll: Joi.boolean().required(),
+            }),
             bytes: Joi.string().required(),
-            contractAddress: Joi.string().required(),
-            tokenId: Joi.optional(),
-            allowAll: Joi.boolean().required(),
+            value: Joi.required().custom(joi.buildBigNumber),
+            minimumBid: Joi.required().custom(joi.buildBigNumber),
           }),
-          bytes: Joi.string().required(),
-          value: Joi.required().custom(joi.buildBigNumber),
-          minimumBid: Joi.required().custom(joi.buildBigNumber),
-        }),
-      ),
+        ),
       start: Joi.number().required(),
       end: Joi.number().required(),
       salt: Joi.number().required(),
@@ -548,36 +557,40 @@ const createBid = async (
     const takeAssetInput = args?.input.takeAsset
     const takeAssets = convertAssetInput(takeAssetInput)
 
-    if (ethers.utils.getAddress(args?.input.makerAddress) !==
-      ethers.utils.getAddress(wallet.address)) {
-      return Promise.reject(appError.buildForbidden(
-        marketBidError.buildMakerAddressNotOwnedMsg(),
-        marketBidError.ErrorType.MakerAddressNotOwned,
-      ))
+    if (ethers.utils.getAddress(args?.input.makerAddress) !== ethers.utils.getAddress(wallet.address)) {
+      return Promise.reject(
+        appError.buildForbidden(
+          marketBidError.buildMakerAddressNotOwnedMsg(),
+          marketBidError.ErrorType.MakerAddressNotOwned,
+        ),
+      )
     }
 
     const listing = await repositories.txOrder.findById(args?.input.listingId)
     if (!listing) {
-      return Promise.reject(appError.buildForbidden(
-        marketBidError.buildMarketListingNotFoundMsg(),
-        marketBidError.ErrorType.MarketListingNotFound,
-      ))
+      return Promise.reject(
+        appError.buildForbidden(
+          marketBidError.buildMarketListingNotFoundMsg(),
+          marketBidError.ErrorType.MarketListingNotFound,
+        ),
+      )
     }
 
     const isValid = await validOrderMatch(listing, args, wallet)
     if (!isValid) {
-      return Promise.reject(appError.buildInvalid(
-        marketBidError.buildMarketBidInvalidMsg(),
-        marketBidError.ErrorType.MarketBidInvalid,
-      ))
+      return Promise.reject(
+        appError.buildInvalid(marketBidError.buildMarketBidInvalidMsg(), marketBidError.ErrorType.MarketBidInvalid),
+      )
     }
 
     const isAvailable = await ownedProfileOrGK(args?.input.makerAddress, chainId)
     if (!isAvailable) {
-      return Promise.reject(appError.buildInvalid(
-        marketBidError.buildMakerNotOwnedProfileOrGK(args?.input.makerAddress),
-        marketBidError.ErrorType.MakerNotOwnedProfileOrGK,
-      ))
+      return Promise.reject(
+        appError.buildInvalid(
+          marketBidError.buildMakerNotOwnedProfileOrGK(args?.input.makerAddress),
+          marketBidError.ErrorType.MakerNotOwnedProfileOrGK,
+        ),
+      )
     }
 
     let bidOrder = await repositories.txOrder.findOne({
@@ -586,10 +599,9 @@ const createBid = async (
       },
     })
     if (bidOrder) {
-      return Promise.reject(appError.buildExists(
-        marketBidError.buildMarketBidExistingMsg(),
-        marketBidError.ErrorType.MarketBidExisting,
-      ))
+      return Promise.reject(
+        appError.buildExists(marketBidError.buildMarketBidExistingMsg(), marketBidError.ErrorType.MarketBidExisting),
+      )
     }
     const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
     const contracts = parseContractsFromNativeAsset(makeAssets)
@@ -651,11 +663,7 @@ const createBid = async (
   }
 }
 
-const getBids = (
-  _: any,
-  args: gql.QueryGetBidsArgs,
-  ctx: Context,
-): Promise<gql.GetOrders> => {
+const getBids = (_: any, args: gql.QueryGetBidsArgs, ctx: Context): Promise<gql.GetOrders> => {
   const { repositories } = ctx
   logger.debug('getBids', { input: args?.input })
   const chainId = args?.input.chainId || process.env.CHAIN_ID
@@ -671,12 +679,13 @@ const getBids = (
     listingId: args?.input.listingOrderId,
     chainId,
   })
-  return core.paginatedEntitiesBy(
-    repositories.txOrder,
-    pageInput,
-    [filter],
-    [], // relations
-  )
+  return core
+    .paginatedEntitiesBy(
+      repositories.txOrder,
+      pageInput,
+      [filter],
+      [], // relations
+    )
     .then(pagination.toPageable(pageInput))
 }
 

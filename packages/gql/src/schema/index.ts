@@ -26,14 +26,13 @@ const gqlWrapper = (...files: any): DocumentNode => {
 export const typeDefs = (): DocumentNode => {
   const filesContent = fs
     .readdirSync(__dirname)
-    .filter((file) => path.extname(file) === '.graphql')
+    .filter(file => path.extname(file) === '.graphql')
     .map(readGraphQLFile)
   return gqlWrapper(...filesContent)
 }
 
 export const rateLimitedSchema = (): GraphQLSchema => {
-  const keyGenerator = (directiveArgs, source, args, context): string =>
-    `${context.user?.id}`
+  const keyGenerator = (directiveArgs, source, args, context): string => `${context.user?.id}`
 
   class DebugRateLimiterMemory extends RateLimiterMemory {
 
@@ -41,7 +40,7 @@ export const rateLimitedSchema = (): GraphQLSchema => {
       logger.debug(`[CONSUME] ${key} for ${pointsToConsume}`)
       return super.consume(key, pointsToConsume, options)
     }
-
+  
   }
 
   const { rateLimitDirectiveTypeDefs, rateLimitDirectiveTransformer } = rateLimitDirective({

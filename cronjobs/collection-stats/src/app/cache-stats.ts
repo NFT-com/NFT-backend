@@ -16,13 +16,14 @@ const envMap = {
 const gqlClient = axios.create({
   baseURL: `https://${envMap[process.env.NODE_ENV]}`,
 })
-const leaderboardQuery = 'query CollectionLeaderboard($input: CollectionLeaderboardInput)' +
-' {\n  collectionLeaderboard(input: $input) {\n    items {\n      contract\n    }\n  }\n}'
+const leaderboardQuery =
+  'query CollectionLeaderboard($input: CollectionLeaderboardInput)' +
+  ' {\n  collectionLeaderboard(input: $input) {\n    items {\n      contract\n    }\n  }\n}'
 
 export const cacheStats = async (): Promise<void> => {
   await getConnection()
   const collectionRepo = db.newRepositories().collection
-  const collections =  await collectionRepo.findAllOfficial()
+  const collections = await collectionRepo.findAllOfficial()
   await updateContractStats(collections)
   await updateCollectionLeaderboard(collectionRepo)
   await cache.del([

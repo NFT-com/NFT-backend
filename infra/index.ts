@@ -48,8 +48,7 @@ const main = async (): Promise<any> => {
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 
   if (deployShared) {
-    return createSharedInfra()
-      .then(sharedOutToJSONFile)
+    return createSharedInfra().then(sharedOutToJSONFile)
   }
 
   if (deployGQL) {
@@ -61,8 +60,7 @@ const main = async (): Promise<any> => {
   }
 }
 
-main()
-  .catch((err) => {
-    console.error(err)
-    process.exit(1)
-  })
+main().catch(err => {
+  console.error(err)
+  process.exit(1)
+})

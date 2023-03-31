@@ -1,5 +1,5 @@
 import { testDBConfig } from '@nftcom/gql/config'
-import { db,defs } from '@nftcom/shared'
+import { db, defs } from '@nftcom/shared'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
@@ -37,10 +37,7 @@ describe('user resolver', () => {
 
   describe('sign up', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
     })
 
     afterAll(async () => {
@@ -77,10 +74,7 @@ describe('user resolver', () => {
         referralId: testMockUser.referralId,
         preferences: testMockUser.preferences,
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
     })
 
     afterAll(async () => {
@@ -112,10 +106,7 @@ describe('user resolver', () => {
         preferences: testMockUser.preferences,
         confirmEmailToken: 'test-token',
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
     })
 
     afterAll(async () => {
@@ -143,10 +134,7 @@ describe('user resolver', () => {
         referralId: testMockUser.referralId,
         preferences: testMockUser.preferences,
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
     })
 
     afterAll(async () => {
@@ -184,10 +172,7 @@ describe('user resolver', () => {
         referralId: testMockUser.referralId,
         preferences: testMockUser.preferences,
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
     })
 
     afterAll(async () => {
@@ -222,10 +207,7 @@ describe('user resolver', () => {
         profileUrl: 'test-profile-url-1',
         destinationAddress: testMockWallet.address,
       })
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
     })
 
     afterAll(async () => {
@@ -235,7 +217,8 @@ describe('user resolver', () => {
 
     it('should ignoreAssociations', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation IgnoreAssociations($eventIdArray: [String]!) { ignoreAssociations(eventIdArray: $eventIdArray) { ignore } }',
+        query:
+          'mutation IgnoreAssociations($eventIdArray: [String]!) { ignoreAssociations(eventIdArray: $eventIdArray) { ignore } }',
         variables: {
           eventIdArray: [event.id, eventA.id],
         },
@@ -249,12 +232,7 @@ describe('user resolver', () => {
 
   describe('me authenticated call', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer({
-
-      },
-      testMockUser,
-      testMockWallet,
-      )
+      testServer = getTestApolloServer({}, testMockUser, testMockWallet)
     })
 
     afterAll(async () => {
@@ -276,8 +254,7 @@ describe('user resolver', () => {
 
   describe('me unauthenticated call', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer({},
-      )
+      testServer = getTestApolloServer({})
     })
 
     afterAll(async () => {
@@ -303,11 +280,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       event = await repositories.event.save({
         chainId: 5,
@@ -350,11 +323,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       event = await repositories.event.save({
         chainId: 5,
@@ -396,11 +365,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.event.save({
         chainId: 5,
@@ -420,7 +385,8 @@ describe('user resolver', () => {
 
     it('should return receivers approved association request', async () => {
       const result = await testServer.executeOperation({
-        query: 'query GetApprovedAssociations($profileUrl: String!) { getApprovedAssociations(profileUrl: $profileUrl) { id receiver } }',
+        query:
+          'query GetApprovedAssociations($profileUrl: String!) { getApprovedAssociations(profileUrl: $profileUrl) { id receiver } }',
         variables: {
           profileUrl: 'test-profile-url',
         },
@@ -436,11 +402,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.event.save({
         chainId: 5,
@@ -461,7 +423,8 @@ describe('user resolver', () => {
 
     it('should return receivers rejected association request', async () => {
       const result = await testServer.executeOperation({
-        query: 'query GetRejectedAssociations($profileUrl: String!) { getRejectedAssociations(profileUrl: $profileUrl) { id receiver } }',
+        query:
+          'query GetRejectedAssociations($profileUrl: String!) { getRejectedAssociations(profileUrl: $profileUrl) { id receiver } }',
         variables: {
           profileUrl: 'test-profile-url',
         },
@@ -477,11 +440,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.event.save({
         chainId: 5,
@@ -515,11 +474,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.event.save({
         chainId: 5,
@@ -540,13 +495,16 @@ describe('user resolver', () => {
 
     it('should return removed associations from receiver', async () => {
       const result = await testServer.executeOperation({
-        query: 'query GetRemovedAssociationsForSender($profileUrl: String!) { getRemovedAssociationsForSender(profileUrl: $profileUrl) { id receiver } }',
+        query:
+          'query GetRemovedAssociationsForSender($profileUrl: String!) { getRemovedAssociationsForSender(profileUrl: $profileUrl) { id receiver } }',
         variables: {
           profileUrl: 'test-profile-url',
         },
       })
       expect(result.data.getRemovedAssociationsForSender.length).toBeGreaterThan(0)
-      expect(result.data.getRemovedAssociationsForSender[0].receiver).toEqual('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
+      expect(result.data.getRemovedAssociationsForSender[0].receiver).toEqual(
+        '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
+      )
     })
   })
 
@@ -556,11 +514,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.incentiveAction.save({
         profileUrl: 'test-profile',
@@ -610,11 +564,7 @@ describe('user resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.incentiveAction.save({
         profileUrl: 'test-profile',
@@ -672,11 +622,7 @@ describe('user resolver', () => {
         chainId: '5',
       })
 
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet, { id: '5', name: 'goerli' })
     })
 
     afterEach(async () => {
@@ -713,7 +659,8 @@ describe('user resolver', () => {
         },
       })
       const result = await testServer.executeOperation({
-        query: 'query GetSentReferralEmails($profileUrl: String!) { getSentReferralEmails(profileUrl: $profileUrl) { email accepted timestamp } }',
+        query:
+          'query GetSentReferralEmails($profileUrl: String!) { getSentReferralEmails(profileUrl: $profileUrl) { email accepted timestamp } }',
         variables: {
           profileUrl: 'test-profile',
         },

@@ -10,7 +10,7 @@ const createEventBridgeRule = (): aws.cloudwatch.EventRule => {
   const resourceName = getResourceName('dbsync-eventRule')
   return new aws.cloudwatch.EventRule('dbsync-eventRule', {
     name: resourceName,
-    scheduleExpression: 'cron(05 09 ? * 1 *)',  // run sundays at 0905 UTC
+    scheduleExpression: 'cron(05 09 ? * 1 *)', // run sundays at 0905 UTC
     tags: getTags(tags),
   })
 }

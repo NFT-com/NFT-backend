@@ -8,11 +8,7 @@ import { _logger, defs, entity, helper } from '@nftcom/shared'
 
 const logger = _logger.Factory(_logger.Context.Approval, _logger.Context.GraphQL)
 
-const approveAmount = (
-  _: any,
-  args: gql.MutationApproveAmountArgs,
-  ctx: Context,
-): Promise<gql.Approval> => {
+const approveAmount = (_: any, args: gql.MutationApproveAmountArgs, ctx: Context): Promise<gql.Approval> => {
   const { user, repositories } = ctx
   logger.debug('approveAmount', { loggedInUserId: user.id, input: args.input })
 
@@ -28,8 +24,8 @@ const approveAmount = (
   })
   const { input } = args
   joi.validateSchema(schema, input)
-  return core.getWallet(ctx, input.wallet)
-    .then(({ id: walletId }) => repositories.approval.save({
+  return core.getWallet(ctx, input.wallet).then(({ id: walletId }) =>
+    repositories.approval.save({
       amount: helper.bigNumberToString(input.amount),
       currency: input.currency,
       deadline: input.deadline,
@@ -40,7 +36,7 @@ const approveAmount = (
       spender: input.spender,
       txHash: input.txHash,
     }),
-    )
+  )
 }
 
 export default {

@@ -1,7 +1,4 @@
-import {
-  buildCurationNotFoundMsg,
-  buildCurationNotOwnedMsg,
-} from './curation.error'
+import { buildCurationNotFoundMsg, buildCurationNotOwnedMsg } from './curation.error'
 
 describe('curation error', () => {
   describe('buildCurationNotFoundMsg', () => {

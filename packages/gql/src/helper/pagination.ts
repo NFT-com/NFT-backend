@@ -41,22 +41,16 @@ export const resolvePage = <T>(
 ): Promise<defs.PageableResult<T>> => {
   logger.debug({ pageInput }, 'resolvePage')
   if (hasAfter(pageInput)) {
-    return hasFirst(pageInput)
-      ? pageResolvers.firstAfter()
-      : pageResolvers.lastAfter()
+    return hasFirst(pageInput) ? pageResolvers.firstAfter() : pageResolvers.lastAfter()
   }
-  return hasFirst(pageInput)
-    ? pageResolvers.firstBefore()
-    : pageResolvers.lastBefore()
+  return hasFirst(pageInput) ? pageResolvers.firstBefore() : pageResolvers.lastBefore()
 }
 
 const isOrderByDate = (orderKey: string): boolean =>
   ['createdAt', 'updatedAt', 'deletedAt', 'offerAcceptedAt'].includes(orderKey)
 
 export const getDefaultCursor = (orderBy: string): DefaultCursor => {
-  return isOrderByDate(orderBy)
-    ? { afterCursor: helper.toDateIsoString() }
-    : { beforeCursor: '0' }
+  return isOrderByDate(orderBy) ? { afterCursor: helper.toDateIsoString() } : { beforeCursor: '0' }
 }
 
 /**
@@ -69,11 +63,7 @@ export const getDefaultCursor = (orderBy: string): DefaultCursor => {
  * @param input
  * @param cursor
  */
-export const safeInput = (
-  input: gql.PageInput,
-  cursor: DefaultCursor,
-  defaultNumItems = 20,
-): gql.PageInput => {
+export const safeInput = (input: gql.PageInput, cursor: DefaultCursor, defaultNumItems = 20): gql.PageInput => {
   if (helper.isEmpty(input)) {
     return {
       first: defaultNumItems,
@@ -127,7 +117,7 @@ export const toPageableFilters = <T>(
       ? helper.lessThan(safePageInput.afterCursor)
       : helper.moreThan(safePageInput.beforeCursor)
   }
-  return filters.map((filter) => ({ ...filter, deletedAt: IsNull(), [orderKey]: cursorValue }))
+  return filters.map(filter => ({ ...filter, deletedAt: IsNull(), [orderKey]: cursorValue }))
 }
 
 const parseCursorValue = (v: Date | string | number): string => {
@@ -164,10 +154,7 @@ export const toPageInfo = <T>(
  * @param {defs.PageableResult<T>} result - the PageableResult object
  * @returns {defs.PageableResult<T>} - the new PageableResult object
  */
-export const toOffsetPageable = <T>({
-  offsetPageInput,
-  result,
-}: ToOffsetPageableArgs<T>): OffsetPageable<T> => {
+export const toOffsetPageable = <T>({ offsetPageInput, result }: ToOffsetPageableArgs<T>): OffsetPageable<T> => {
   const fallbackPageSize = 5000
   return {
     items: result[0],

@@ -12,11 +12,13 @@ import { getListingCurrencyAddress, getListingPrice, listingMapFrom, TxActivityD
 const logger = _logger.Factory('searchEngine.service', _logger.Context.Typesense)
 
 const TYPESENSE_HOST = process.env.TYPESENSE_HOST
-const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
-  '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' : '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D'
+const PROFILE_CONTRACT = TYPESENSE_HOST.startsWith('dev')
+  ? '0x9Ef7A34dcCc32065802B1358129a226B228daB4E'
+  : '0x98ca78e89Dd1aBE48A53dEe5799F24cC1A462F2D'
 
-const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev') ?
-  '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
+const GK_CONTRACT = TYPESENSE_HOST.startsWith('dev')
+  ? '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'
+  : '0x8fB5a7894AB461a59ACdfab8918335768e411414'
 
 const LARGEST_COLLECTIONS = defs.LARGE_COLLECTIONS.slice(0, 3)
 export const SearchEngineService = (client = SearchEngineClient.create(), repos: any = db.newRepositories()): any => {
@@ -26,9 +28,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     const listingsVal = hasListings ? 1 : 0
     const score = curatedVal + officialVal + listingsVal
     if (score === 3) {
-      const multiplier = LARGEST_COLLECTIONS.includes(collection.contract)
-        ? 9_000_000
-        : 10_000_000
+      const multiplier = LARGEST_COLLECTIONS.includes(collection.contract) ? 9_000_000 : 10_000_000
       return score + Math.floor(Math.random() * multiplier)
     }
     return score
@@ -36,9 +36,10 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
     if (!nfts.length) return true
     try {
-      const listingMap: { [k:string]: TxActivityDAO[] } = await listingMapFrom(
-        await repos.txActivity.findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }))
-        
+      const listingMap: { [k: string]: TxActivityDAO[] } = await listingMapFrom(
+        await repos.txActivity.findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }),
+      )
+
       const nftsToIndex = []
       for (const nft of nfts) {
         const ctx = {
@@ -52,32 +53,34 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
 
         let collection
         try {
-          collection = await core.resolveCollectionById<entity.NFT, entity.Collection>(
-            'contract',
-            defs.EntityType.NFT,
-          )(nft, null, ctx)
+          collection = await core.resolveCollectionById<entity.NFT, entity.Collection>('contract', defs.EntityType.NFT)(
+            nft,
+            null,
+            ctx,
+          )
         } catch (err) {
           logger.warn(err, `Collection contract not found in database ${nft.contract}`)
         }
-        
+
         const wallet = await core.resolveEntityById<entity.NFT, entity.Wallet>(
           'walletId',
           defs.EntityType.NFT,
           defs.EntityType.Wallet,
         )(nft, null, ctx)
 
-        const profile = nft.contract === PROFILE_CONTRACT
-          ? await repos.profile.findOne({
-            where: {
-              tokenId: BigNumber.from(nft.tokenId).toString(),
-            },
-          })
-          : undefined
+        const profile =
+          nft.contract === PROFILE_CONTRACT
+            ? await repos.profile.findOne({
+              where: {
+                tokenId: BigNumber.from(nft.tokenId).toString(),
+              },
+            })
+            : undefined
 
         const tokenId = nft.tokenId ? BigNumber.from(nft.tokenId).toString() : 'Unknown'
         let traits = []
         if (nft.metadata.traits.length < 100) {
-          traits = nft.metadata.traits.map((trait) => {
+          traits = nft.metadata.traits.map(trait => {
             return {
               type: trait.type,
               value: `${trait.value}`,
@@ -90,35 +93,27 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         const listings = []
         if (txActivityListings) {
           if (!ownerAddr) {
-            const marketplaces = [...new Set(txActivityListings.map((l) => l.order?.exchange))]
-              .filter((x) => !!x)
+            const marketplaces = [...new Set(txActivityListings.map(l => l.order?.exchange))].filter(x => !!x)
             txActivityListings.sort((a, b) => {
               return b.updatedAt.getTime() - a.updatedAt.getTime()
             })
-            const txActivities = marketplaces.map((m) => txActivityListings.find((l) => l.order?.exchange === m))
+            const txActivities = marketplaces.map(m => txActivityListings.find(l => l.order?.exchange === m))
             for (const txActivity of txActivities) {
               const contractAddress = getListingCurrencyAddress(txActivity)
               listings.push({
                 marketplace: txActivity.order?.exchange,
-                price: +utils.formatUnits(
-                  getListingPrice(txActivity),
-                  await getDecimalsForContract(contractAddress),
-                ),
+                price: +utils.formatUnits(getListingPrice(txActivity), await getDecimalsForContract(contractAddress)),
                 type: undefined,
                 currency: await getSymbolForContract(contractAddress),
               })
             }
           } else {
             for (const txActivity of txActivityListings) {
-              if (txActivity.walletAddress === ownerAddr &&
-                helper.isNotEmpty(txActivity.order.protocolData)) {
+              if (txActivity.walletAddress === ownerAddr && helper.isNotEmpty(txActivity.order.protocolData)) {
                 const contractAddress = getListingCurrencyAddress(txActivity)
                 listings.push({
                   marketplace: txActivity.order?.exchange,
-                  price: +utils.formatUnits(
-                    getListingPrice(txActivity),
-                    await getDecimalsForContract(contractAddress),
-                  ),
+                  price: +utils.formatUnits(getListingPrice(txActivity), await getDecimalsForContract(contractAddress)),
                   type: undefined,
                   currency: await getSymbolForContract(contractAddress),
                 })
@@ -130,7 +125,10 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         const gkExpirationYear = 3021
         nftsToIndex.push({
           id: nft.id,
-          nftName: nft.metadata?.name || getNftName(nft as AlchemyNFTMetaDataResponse, undefined, { name: collection?.name }, tokenId) || `#${tokenId}`,
+          nftName:
+            nft.metadata?.name ||
+            getNftName(nft as AlchemyNFTMetaDataResponse, undefined, { name: collection?.name }, tokenId) ||
+            `#${tokenId}`,
           nftType: nft.type,
           tokenId,
           traits,
@@ -150,7 +148,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           score: _calculateNFTScore(collection, !!listings.length) || 0,
         })
       }
-      return nftsToIndex.length && client.insertDocuments('nfts', nftsToIndex) || true
+      return (nftsToIndex.length && client.insertDocuments('nfts', nftsToIndex)) || true
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err
@@ -171,8 +169,8 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     try {
       const collectionsToIndex = await Promise.all(
         collections
-          .filter((collection) => !collection.isSpam)
-          .map(async (collection) => {
+          .filter(collection => !collection.isSpam)
+          .map(async collection => {
             const nft = await repos.nft.findOne({
               select: ['type'],
               where: {
@@ -209,9 +207,11 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
 
   const deleteCollections = async (collections: entity.Collection[]): Promise<void> => {
     try {
-      await Promise.all(collections.map(async (collection) => {
-        await client.removeDocument('collections', collection.id)
-      }))
+      await Promise.all(
+        collections.map(async collection => {
+          await client.removeDocument('collections', collection.id)
+        }),
+      )
     } catch (err) {
       Sentry.captureMessage(`Error in deleteCollections: ${err}`)
       throw err

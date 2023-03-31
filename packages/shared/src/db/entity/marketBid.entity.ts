@@ -74,7 +74,7 @@ export class MarketBid extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   rejectedReason: string
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   chainId: string
 
 }

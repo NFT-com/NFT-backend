@@ -8,9 +8,11 @@ export const provider = (
   chainId: providers.Networkish = 1, //mainnet default
   infura?: boolean,
 ): ethers.providers.BaseProvider => {
-  if (infura) { // dedicated key
+  if (infura) {
+    // dedicated key
     return new ethers.providers.InfuraProvider(chainId, process.env.INFURA_API_KEY)
-  } else if (process.env.USE_ZMOK == 'true' && Number(chainId) == 1) { // zmok only has support for mainnet and rinkeby (feb 2023)
+  } else if (process.env.USE_ZMOK == 'true' && Number(chainId) == 1) {
+    // zmok only has support for mainnet and rinkeby (feb 2023)
     logger.info('Using zmok provider')
     return new ethers.providers.JsonRpcProvider(`https://api.zmok.io/mainnet/${process.env.ZMOK_API_KEY}`)
   } else if (process.env.USE_INFURA == 'true') {

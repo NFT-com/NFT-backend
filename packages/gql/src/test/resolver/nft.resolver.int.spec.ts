@@ -4,17 +4,12 @@ import { DataSource } from 'typeorm'
 import { testDBConfig } from '@nftcom/gql/config'
 //import { delay } from '@nftcom/gql/service/core.service'
 import * as nftService from '@nftcom/gql/service/nft.service'
-import { defs, helper,typechain } from '@nftcom/shared/'
+import { defs, helper, typechain } from '@nftcom/shared/'
 import { db, entity } from '@nftcom/shared/db'
 import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 import { EdgeType, EntityType } from '@nftcom/shared/defs'
 
-import {
-  nftTestMockData,
-  testMockProfiles,
-  testMockUser,
-  testMockWallet,
-} from '../util/constants'
+import { nftTestMockData, testMockProfiles, testMockUser, testMockWallet } from '../util/constants'
 import { clearDB } from '../util/helpers'
 import { getTestApolloServer } from '../util/testApolloServer'
 
@@ -58,14 +53,14 @@ let profile
 let nft
 
 const mockTestServer = (): any => {
-  const mockArgs ={
+  const mockArgs = {
     contract: nftTestMockData.contract,
     tokenId: nftTestMockData.tokenId,
     chainId: nftTestMockData.chainId,
   }
   testServer = getTestApolloServer({
     nft: {
-      findById: (id) => {
+      findById: id => {
         if (id === nftTestMockData.id) {
           return Promise.resolve({
             id,
@@ -76,14 +71,15 @@ const mockTestServer = (): any => {
         }
         return null
       },
-      findOne: ({ where: mockArgs }) => Promise.resolve({
-        contract: mockArgs.contract,
-        tokenId: mockArgs.tokenId,
-        chainId: mockArgs.chainId,
-      }),
+      findOne: ({ where: mockArgs }) =>
+        Promise.resolve({
+          contract: mockArgs.contract,
+          tokenId: mockArgs.tokenId,
+          chainId: mockArgs.chainId,
+        }),
     },
     profile: {
-      findById: (id) => {
+      findById: id => {
         if (id === testMockProfiles.id) {
           return Promise.resolve({
             id,
@@ -93,8 +89,7 @@ const mockTestServer = (): any => {
         return null
       },
     },
-  },
-  )
+  })
 }
 
 describe('nft resolver', () => {
@@ -114,11 +109,7 @@ describe('nft resolver', () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.wallet.save({
         ...testMockWallet,
@@ -170,7 +161,7 @@ describe('nft resolver', () => {
       currentDate.setDate(currentDate.getDate() + 1)
       activity.expiration = currentDate
       activity.walletAddress = testMockWallet.address
-      activity.nftContract ='0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
+      activity.nftContract = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
       activity.nftId = ['ethereum/0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b/0x0d5415']
       activity.chainId = '5'
 
@@ -199,7 +190,7 @@ describe('nft resolver', () => {
       currentDate.setDate(currentDate.getDate() - 3)
       expiredActivity.expiration = currentDate
       expiredActivity.walletAddress = testMockWallet.address
-      expiredActivity.nftContract ='0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
+      expiredActivity.nftContract = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
       expiredActivity.nftId = ['ethereum/0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b/0x0d5415']
       expiredActivity.chainId = '5'
 
@@ -228,14 +219,14 @@ describe('nft resolver', () => {
       currentDate.setDate(currentDate.getDate() + 10)
       ownedActivity.expiration = currentDate
       ownedActivity.walletAddress = testMockWallet.address
-      ownedActivity.nftContract ='0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
+      ownedActivity.nftContract = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
       ownedActivity.nftId = ['ethereum/0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b/0x0d5416']
       ownedActivity.chainId = '5'
 
       // owned order
       let ownedActivityType = new TxOrder()
       ownedActivityType.id = '0xad38a9ac3a6726d0d73635133ddd8a918a9a9cdc675ab3e7a73bbfeee1c8ef5c'
-      ownedActivityType.activity =ownedActivity
+      ownedActivityType.activity = ownedActivity
       ownedActivityType.exchange = defs.ExchangeType.OpenSea
       ownedActivityType.orderHash = '0xad38a9ac3a6726d0d73635133ddd8a918a9a9cdc675ab3e7a73bbfeee1c8ef5c'
       ownedActivityType.orderType = defs.ActivityType.Listing
@@ -395,15 +386,16 @@ describe('nft resolver', () => {
             first: 2,
           },
           listingsOwner: testMockWallet.address,
-
         },
       })
 
       expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
-      expect(result.data.nft.tokenId).toBe( '0x0d5415')
+      expect(result.data.nft.tokenId).toBe('0x0d5415')
       expect(result.data.nft.chainId).toBe('5')
       expect(result.data.nft.listings.items).toHaveLength(1)
-      expect(result.data.nft.listings.items[0]?.order.id).toBe('0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df')
+      expect(result.data.nft.listings.items[0]?.order.id).toBe(
+        '0x2d74e716df63ecd1c815443c0d86711985e03901119e6a4b22800ca7857c25df',
+      )
     })
 
     it('should return both NFT listing when listing is included and listing expiration type is both', async () => {
@@ -436,7 +428,7 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
-      expect(result.data.nft.tokenId).toBe( '0x0d5415')
+      expect(result.data.nft.tokenId).toBe('0x0d5415')
       expect(result.data.nft.chainId).toBe('5')
       expect(result.data.nft.listings.items).toHaveLength(1)
     })
@@ -471,10 +463,12 @@ describe('nft resolver', () => {
       })
 
       expect(result.data.nft.contract).toBe('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b')
-      expect(result.data.nft.tokenId).toBe( '0x0d5415')
+      expect(result.data.nft.tokenId).toBe('0x0d5415')
       expect(result.data.nft.chainId).toBe('5')
       expect(result.data.nft.listings.items).toHaveLength(1)
-      expect(result.data.nft.listings.items[0]?.order.id).toBe('0xe74f6be6cbed136453eaf2e9656838eb9eb727fc53955eda22411bef3826ce13')
+      expect(result.data.nft.listings.items[0]?.order.id).toBe(
+        '0xe74f6be6cbed136453eaf2e9656838eb9eb727fc53955eda22411bef3826ce13',
+      )
     })
 
     it('should return valid status by default', async () => {
@@ -560,7 +554,7 @@ describe('nft resolver', () => {
             listingsStatus: defs.ActivityStatus.Valid,
           },
         })
-        
+
         expect(result.data.nft.listings.items).toHaveLength(1)
         expect(result.data.nft.collection.contract).toBeDefined()
         expect(result.data.nft.collection.name).toBeDefined()
@@ -623,11 +617,7 @@ describe('nft resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       const wallet = await repositories.wallet.save({
         userId: 'test-user-id',
@@ -656,7 +646,8 @@ describe('nft resolver', () => {
 
     it('should refresh NFTs for associated addresses', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateAssociatedAddresses($input: UpdateAssociatedAddressesInput) { updateAssociatedAddresses(input: $input) { message } }',
+        query:
+          'mutation UpdateAssociatedAddresses($input: UpdateAssociatedAddressesInput) { updateAssociatedAddresses(input: $input) { message } }',
         variables: {
           input: {
             profileUrl: 'gk',
@@ -694,11 +685,7 @@ describe('nft resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       const wallet = await repositories.wallet.save({
         userId: 'test-user-id',
@@ -727,7 +714,8 @@ describe('nft resolver', () => {
 
     it('should update associated contract', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateAssociatedContract($input: UpdateAssociatedContractInput) { updateAssociatedContract(input: $input) { message } }',
+        query:
+          'mutation UpdateAssociatedContract($input: UpdateAssociatedContractInput) { updateAssociatedContract(input: $input) { message } }',
         variables: {
           input: {
             profileUrl: '1',
@@ -748,11 +736,7 @@ describe('nft resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       nft = await repositories.nft.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -776,7 +760,8 @@ describe('nft resolver', () => {
 
     it('should update memo', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTMemo($nftId: ID!, $memo: String!) { updateNFTMemo(nftId: $nftId, memo: $memo) { memo } }',
+        query:
+          'mutation UpdateNFTMemo($nftId: ID!, $memo: String!) { updateNFTMemo(nftId: $nftId, memo: $memo) { memo } }',
         variables: {
           nftId: nft.id,
           memo: 'This is test memo',
@@ -797,11 +782,7 @@ describe('nft resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0x9Ef7A34dcCc32065802B1358129a226B228daB4E'),
@@ -1002,11 +983,7 @@ describe('nft resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       const collection = await repositories.collection.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -1049,7 +1026,8 @@ describe('nft resolver', () => {
 
     it('should return nfts for collections', async () => {
       const result = await testServer.executeOperation({
-        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
+        query:
+          'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
         variables: {
           input: {
             collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
@@ -1070,7 +1048,8 @@ describe('nft resolver', () => {
 
     it('should return less than 100 nfts for collections', async () => {
       const result = await testServer.executeOperation({
-        query: 'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
+        query:
+          'query NftsForCollections($input: NftsForCollectionsInput!) { nftsForCollections(input: $input) { collectionAddress actualNumberOfNFTs nfts { id contract profileId preferredProfile { url } } } }',
         variables: {
           input: {
             collectionAddresses: ['0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
@@ -1092,11 +1071,7 @@ describe('nft resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       const collection = await repositories.collection.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -1134,7 +1109,8 @@ describe('nft resolver', () => {
 
     it('should return less than 100 nfts of collection', async () => {
       const result = await testServer.executeOperation({
-        query: 'query CollectionNFTs($input: CollectionNFTsInput!) { collectionNFTs(input: $input) { items { id contract } totalItems } }',
+        query:
+          'query CollectionNFTs($input: CollectionNFTsInput!) { collectionNFTs(input: $input) { items { id contract } totalItems } }',
         variables: {
           input: {
             collectionAddress: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -1154,11 +1130,7 @@ describe('nft resolver', () => {
     let profileA
     let nftA
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
     })
 
     beforeEach(async () => {
@@ -1195,7 +1167,8 @@ describe('nft resolver', () => {
     })
     it('should insert the profile ID of a profile owned by the user', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
         variables: {
           nftId: nftA.id,
           profileId: profileA.id,
@@ -1211,7 +1184,8 @@ describe('nft resolver', () => {
       })
 
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
         variables: {
           nftId: nftA.id,
           profileId: profileA.id,
@@ -1229,7 +1203,8 @@ describe('nft resolver', () => {
       })
 
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
         variables: {
           nftId: nftA.id,
           profileId: profileA.id,
@@ -1243,7 +1218,8 @@ describe('nft resolver', () => {
 
     it('should return an error if NFT is not found', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
         variables: {
           nftId: 'not-an-nft-id',
           profileId: profileA.id,
@@ -1257,7 +1233,8 @@ describe('nft resolver', () => {
 
     it('should return an error if profile is not found', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
+        query:
+          'mutation UpdateNFTProfileId($nftId: ID!, $profileId: ID!) { updateNFTProfileId(nftId: $nftId, profileId: $profileId) { profileId } }',
         variables: {
           nftId: nftA.id,
           profileId: 'not-a-profile-id',
@@ -1274,11 +1251,7 @@ describe('nft resolver', () => {
     let profileA
     let nftA
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
     })
 
     beforeEach(async () => {
@@ -1337,7 +1310,8 @@ describe('nft resolver', () => {
       })
 
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateNFTsForProfile($input: UpdateNFTsForProfileInput) { updateNFTsForProfile(input: $input) { items { profileId } } }',
+        query:
+          'mutation UpdateNFTsForProfile($input: UpdateNFTsForProfileInput) { updateNFTsForProfile(input: $input) { items { profileId } } }',
         variables: {
           input: {
             profileId: profileA.id,
@@ -1361,11 +1335,7 @@ describe('nft resolver', () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       await repositories.nft.save({
         contract: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',

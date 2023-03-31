@@ -9,10 +9,7 @@ export class ApprovalRepository extends BaseRepository<Approval> {
     super(Approval)
   }
 
-  public findMaxNFTApprovalByUserId = (
-    userId: string,
-    chainId: string | number = 'mainnet',
-  ): Promise<Approval> => {
+  public findMaxNFTApprovalByUserId = (userId: string, chainId: string | number = 'mainnet'): Promise<Approval> => {
     return this.findOne({
       where: {
         userId,

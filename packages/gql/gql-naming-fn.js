@@ -11,9 +11,7 @@ function getName(str) {
     // console.log('returning as is')
     return str
   }
-  let result = pascalCase(str)
-    .replace('Nft', 'NFT')
-    .replace('NfT', 'NFT')
+  let result = pascalCase(str).replace('Nft', 'NFT').replace('NfT', 'NFT')
   // console.log('after pascalCase', result)
   // if (result.includes('Nft') || (result.includes('NfT'))) {
   //   console.log('includes variation of Nft')

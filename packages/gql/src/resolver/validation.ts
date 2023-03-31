@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 
-import { _logger, contracts, db, defs,provider } from '@nftcom/shared'
+import { _logger, contracts, db, defs, provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -28,8 +28,7 @@ export const validateTxHashForCancel = async (
     const repositories = db.newRepositories()
     // check if tx hash has been executed...
     const tx = await chainProvider.getTransaction(txHash)
-    if (!tx.confirmations)
-      return false
+    if (!tx.confirmations) return false
 
     const sourceReceipt = await tx.wait()
     const abi = contracts.marketplaceABIJSON()
@@ -40,7 +39,7 @@ export const validateTxHashForCancel = async (
     // look through events of tx and check it contains Cancel event...
     // if it contains Cancel event, then we validate if id is correct one...
     await Promise.all(
-      sourceReceipt.logs.map(async (log) => {
+      sourceReceipt.logs.map(async log => {
         if (log.topics[0] === topic) {
           const event = iface.parseLog(log)
           if (event.name === 'Cancel') {
@@ -72,10 +71,11 @@ export const validateTxHashForCancel = async (
                 },
               })
             }
-            eventEmitted = (entity !== undefined)
+            eventEmitted = entity !== undefined
           }
         }
-      }))
+      }),
+    )
     return eventEmitted
   } catch (e) {
     logger.debug(`${txHash} is not valid`, e)

@@ -12,17 +12,19 @@ jest.mock('@nftcom/cache', () => ({
     set: jest.fn(),
     zadd: async (...args) => {
       const [key, score, data, ..._rest] = args
-      Object.hasOwn(mockCacheData, key) ?
-        mockCacheData[key].push({ score, data }) :
-        mockCacheData[key] = [{ score, data }]
+      Object.hasOwn(mockCacheData, key)
+        ? mockCacheData[key].push({ score, data })
+        : (mockCacheData[key] = [{ score, data }])
     },
     zrange: async (...args) => {
       const [key, ..._rest] = args
-      return mockCacheData[key] ?
-        mockCacheData[key].sort((a, b) => {
-          return parseInt(b.score) - parseInt(a.score)
-        }).map((v) => v.data) :
-        undefined
+      return mockCacheData[key]
+        ? mockCacheData[key]
+          .sort((a, b) => {
+            return parseInt(b.score) - parseInt(a.score)
+          })
+          .map(v => v.data)
+        : undefined
     },
   },
 }))
@@ -47,7 +49,7 @@ describe('leaderboard', () => {
           { id: '3', contract: '0x0003' },
           { id: '4', contract: '0x0004' },
         ]),
-      }  as unknown as CollectionRepository
+      } as unknown as CollectionRepository
 
       mockFetchData
         .mockResolvedValueOnce({ statistics: { seven_day_volume: 0 } })
@@ -76,12 +78,12 @@ describe('leaderboard', () => {
           { id: '3', contract: '0x0003' },
           { id: '4', contract: '0x0004' },
         ]),
-      }  as unknown as CollectionRepository
+      } as unknown as CollectionRepository
 
       mockFetchData
         .mockResolvedValueOnce({ statistics: { seven_day_volume: 1 } })
         .mockResolvedValueOnce({ statistics: { seven_day_volume: 2 } })
-        .mockResolvedValueOnce({ })
+        .mockResolvedValueOnce({})
         .mockResolvedValueOnce({ statistics: { seven_day_volume: 3 } })
         .mockResolvedValueOnce({ statistics: { seven_day_volume: 4 } })
 
@@ -92,7 +94,7 @@ describe('leaderboard', () => {
         { id: '3', contract: '0x0003', stats: { seven_day_volume: 3 } },
         { id: '1', contract: '0x0001', stats: { seven_day_volume: 2 } },
         { id: '0', contract: '0x0000', stats: { seven_day_volume: 1 } },
-        { id: '2', contract: '0x0002', stats: { } },
+        { id: '2', contract: '0x0002', stats: {} },
       ])
     })
 
@@ -105,12 +107,16 @@ describe('leaderboard', () => {
           { id: '3', contract: '0x0003' },
           { id: '4', contract: '0x0004' },
         ]),
-      }  as unknown as CollectionRepository
+      } as unknown as CollectionRepository
 
       mockFetchData
-        .mockImplementationOnce(() => { throw new Error() })
+        .mockImplementationOnce(() => {
+          throw new Error()
+        })
         .mockResolvedValueOnce({ statistics: { total_volume: 101 } })
-        .mockImplementationOnce(() => { throw new Error() })
+        .mockImplementationOnce(() => {
+          throw new Error()
+        })
         .mockResolvedValueOnce({ statistics: { total_volume: 300 } })
         .mockResolvedValueOnce({ statistics: { total_volume: 400 } })
 
@@ -129,13 +135,12 @@ describe('leaderboard', () => {
 
   describe('hydrateCollectionLeaderboard', () => {
     it('should hydrate given an existing collections array', async () => {
-      const hydratedCollections = await hydrateCollectionLeaderboard(
-        ['0x0000', '0x0001'],
-        { existingCollections: [
+      const hydratedCollections = await hydrateCollectionLeaderboard(['0x0000', '0x0001'], {
+        existingCollections: [
           { id: '0', contract: '0x0000', stats: { seven_day_sales: 2, seven_day_volume: 2, total_volume: 2 } },
           { id: '1', contract: '0x0001', stats: { seven_day_sales: 1, seven_day_volume: 1, total_volume: 1 } },
-        ] as (entity.Collection & {stats?: any})[] },
-      )
+        ] as (entity.Collection & { stats?: any })[],
+      })
 
       expect(hydratedCollections).toEqual([
         { id: '0', contract: '0x0000', stats: { seven_day_sales: 2, seven_day_volume: 2, total_volume: 2 } },
@@ -150,17 +155,14 @@ describe('leaderboard', () => {
           { id: '1', contract: '0x0001' },
           { id: '2', contract: '0x0002' },
         ]),
-      }  as unknown as CollectionRepository
+      } as unknown as CollectionRepository
 
       mockFetchData
         .mockResolvedValueOnce({ statistics: { seven_day_sales: 0, seven_day_volume: 0, total_volume: 0 } })
         .mockResolvedValueOnce({ statistics: { seven_day_sales: 1, seven_day_volume: 1, total_volume: 1 } })
         .mockResolvedValueOnce({ statistics: { seven_day_sales: 2, seven_day_volume: 2, total_volume: 2 } })
 
-      const hydratedCollections = await hydrateCollectionLeaderboard(
-        ['0x0002', '0x0001'],
-        { collectionRepo },
-      )
+      const hydratedCollections = await hydrateCollectionLeaderboard(['0x0002', '0x0001'], { collectionRepo })
 
       expect(hydratedCollections).toEqual([
         { id: '2', contract: '0x0002', stats: { seven_day_sales: 2, seven_day_volume: 2, total_volume: 2 } },

@@ -1,4 +1,8 @@
-import { LooksrareExternalOrder, LooksRareOrderRequest, retrieveMultipleOrdersLooksrare } from '@nftcom/gql/service/looksare.service'
+import {
+  LooksrareExternalOrder,
+  LooksRareOrderRequest,
+  retrieveMultipleOrdersLooksrare,
+} from '@nftcom/gql/service/looksare.service'
 
 describe('looksrare', () => {
   describe('retrieveMultipleOrdersLooksrare', () => {
@@ -16,11 +20,7 @@ describe('looksrare', () => {
         },
       ]
 
-      const orders: LooksrareExternalOrder = await retrieveMultipleOrdersLooksrare(
-        looksrareOrderReq,
-        chainId,
-        true,
-      )
+      const orders: LooksrareExternalOrder = await retrieveMultipleOrdersLooksrare(looksrareOrderReq, chainId, true)
 
       expect(orders.listings).toHaveLength(0)
       expect(orders.offers).toHaveLength(0)

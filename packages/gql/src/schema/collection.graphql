@@ -79,6 +79,7 @@ type Collection {
   likeCount: Int
   isLikedByUser: Boolean
   slug: String
+  isLikedBy(likedById: ID!): Boolean
 }
 
 type NFTPortResults {

@@ -7,22 +7,22 @@ import { BaseEntity } from './base.entity'
 @Index(['contractAddress', 'date', 'tokenId'])
 export class MarketplaceSale extends BaseEntity {
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   date: Date
 
-  @Column( { nullable: true, type: 'numeric' })
+  @Column({ nullable: true, type: 'numeric' })
   priceUSD: number
 
-  @Column( { nullable: true, type: 'numeric' })
+  @Column({ nullable: true, type: 'numeric' })
   price: number
 
-  @Column( { nullable: false, default: '' })
+  @Column({ nullable: false, default: '' })
   symbol: string
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   contractAddress: string
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   tokenId: string
 
   @Column({ type: 'json' })

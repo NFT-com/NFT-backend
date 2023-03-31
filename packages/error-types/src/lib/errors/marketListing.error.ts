@@ -8,7 +8,7 @@ export enum ErrorType {
   MakerAddressNotOwned = 'MAKER_ADDRESS_NOT_OWNED',
   MissingBuyNowInfo = 'MISSING_BUY_NOW_INFO',
   TxHashInvalid = 'TX_HASH_INVALID',
-  AuctionTypeInvalid = 'AUCTION_TYPE_INVALID'
+  AuctionTypeInvalid = 'AUCTION_TYPE_INVALID',
 }
 
 export const buildMarketListingInvalidMsg = (): string => 'MarketListing invalid'
@@ -17,7 +17,8 @@ export const buildMarketListingExistingMsg = (): string => 'MarketListing is alr
 
 export const buildMarketListingNotFoundMsg = (id: string): string => `MarketListing ${id} not found`
 
-export const buildMarketListingNotOwnedMsg = (caller: string, id: string): string => `Caller ${caller} does not own marketListing id: ${id}`
+export const buildMarketListingNotOwnedMsg = (caller: string, id: string): string =>
+  `Caller ${caller} does not own marketListing id: ${id}`
 
 export const buildMarketListingBoughtMsg = (): string => 'MarketListing is already bought'
 
@@ -27,6 +28,7 @@ export const buildTxHashInvalidMsg = (txHash: string): string => `TxHash ${txHas
 
 export const buildAuctionTypeInvalidMsg = (): string => 'Auction type is not valid'
 
-export const buildMarketListingUnavailableMsg = (walletAddress: string): string => `MarketListing with same asset is already existing for wallet ${walletAddress} `
+export const buildMarketListingUnavailableMsg = (walletAddress: string): string =>
+  `MarketListing with same asset is already existing for wallet ${walletAddress} `
 
 export const buildMakerAddressNotOwnedMsg = (): string => 'MakerAddress is not owned'

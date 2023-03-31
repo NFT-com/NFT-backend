@@ -62,7 +62,7 @@ jest.mock('@nftcom/shared', () => {
 })
 
 const repositories = db.newRepositories()
-let connection : DataSource
+let connection: DataSource
 let testServer
 let walletA, walletB
 let profileA, profileB
@@ -82,7 +82,7 @@ describe('profile resolver', () => {
     beforeEach(async () => {
       testServer = getTestApolloServer({
         profile: {
-          findOne: (data) => {
+          findOne: data => {
             if (data.where.url === testMockProfiles.url) {
               return Promise.resolve(testMockProfiles)
             }
@@ -133,52 +133,53 @@ describe('profile resolver', () => {
   // myProfiles
   describe('myProfiles', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer({
-        profile: {
-          find: (filter) => {
-            if (filter?.where?.ownerUserId === testMockUser.id) {
-              return Promise.resolve([testMockProfiles])
-            }
-            return null
+      testServer = getTestApolloServer(
+        {
+          profile: {
+            find: filter => {
+              if (filter?.where?.ownerUserId === testMockUser.id) {
+                return Promise.resolve([testMockProfiles])
+              }
+              return null
+            },
+            findById: id => {
+              if (id === testMockProfiles.id) {
+                return Promise.resolve({ ...testMockProfiles, ownerUserId: testMockUser.id })
+              }
+              return null
+            },
+            save: data => {
+              if (data.url === testMockProfiles.url) {
+                return Promise.resolve(data)
+              }
+              return null
+            },
           },
-          findById: (id) => {
-            if (id === testMockProfiles.id) {
-              return Promise.resolve({ ...testMockProfiles, ownerUserId: testMockUser.id })
-            }
-            return null
+          edge: {
+            find: filter => {
+              if (filter?.where?.thisEntityId === testMockProfiles.id) {
+                return Promise.resolve([])
+              }
+              return []
+            },
           },
-          save: (data) => {
-            if (data.url === testMockProfiles.url) {
-              return Promise.resolve(data)
-            }
-            return null
+          incentiveAction: {
+            findOne: filter => {
+              if (filter?.where?.profileUrl === testMockProfiles.url) {
+                return Promise.resolve(undefined)
+              }
+              return undefined
+            },
+            save: data => {
+              if (data.profileUrl === testMockProfiles.url) {
+                return Promise.resolve(data)
+              }
+              return null
+            },
           },
         },
-        edge: {
-          find: (filter) => {
-            if (filter?.where?.thisEntityId === testMockProfiles.id) {
-              return Promise.resolve([])
-            }
-            return []
-          },
-        },
-        incentiveAction: {
-          findOne: (filter) => {
-            if (filter?.where?.profileUrl === testMockProfiles.url) {
-              return Promise.resolve(undefined)
-            }
-            return undefined
-          },
-          save: (data) => {
-            if (data.profileUrl === testMockProfiles.url) {
-              return Promise.resolve(data)
-            }
-            return null
-          },
-        },
-      },
-      testMockUser,
-      testMockWallet,
+        testMockUser,
+        testMockWallet,
       )
     })
     afterAll(async () => {
@@ -271,8 +272,9 @@ describe('profile resolver', () => {
         }`,
         variables: { input: mockUpdateProfileInput },
       })
-      expect(result?.data?.updateProfile?.deployedContractsVisible)
-        .toBe(mockUpdateProfileInput.deployedContractsVisible)
+      expect(result?.data?.updateProfile?.deployedContractsVisible).toBe(
+        mockUpdateProfileInput.deployedContractsVisible,
+      )
     })
   })
 
@@ -282,11 +284,7 @@ describe('profile resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       walletA = await repositories.wallet.save({
         userId: 'vPVIuNzLVBdIuyAMTm2rZ',
@@ -348,10 +346,7 @@ describe('profile resolver', () => {
 
   describe('updateProfileView', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       await repositories.profile.save({
         url: 'testprofile',
@@ -373,7 +368,8 @@ describe('profile resolver', () => {
 
     it('should update profile view type', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        query:
+          'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
         variables: {
           input: {
             url: 'testprofile',
@@ -388,7 +384,8 @@ describe('profile resolver', () => {
 
     it('should throw error if profile is not existing', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
+        query:
+          'mutation UpdateProfileView($input: UpdateProfileViewInput) { updateProfileView(input: $input) { profileView } }',
         variables: {
           input: {
             url: 'testprofile1',
@@ -403,10 +400,7 @@ describe('profile resolver', () => {
 
   describe('associatedCollectionForProfile', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       await repositories.collection.save({
         contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55',
@@ -435,7 +429,8 @@ describe('profile resolver', () => {
 
     it('should update profile view type', async () => {
       const result = await testServer.executeOperation({
-        query: 'query AssociatedCollectionForProfile($url: String!, $chainId: String) { associatedCollectionForProfile(url:$url, chainId: $chainId) { collection { id contract } } }',
+        query:
+          'query AssociatedCollectionForProfile($url: String!, $chainId: String) { associatedCollectionForProfile(url:$url, chainId: $chainId) { collection { id contract } } }',
         variables: {
           url: 'testprofile',
           chainId: '5',
@@ -451,10 +446,7 @@ describe('profile resolver', () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       await repositories.profile.save({
         url: 'testprofile',
@@ -488,7 +480,8 @@ describe('profile resolver', () => {
 
     it('should update visible NFTs', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation SaveNFTVisibilityForProfiles($count: Int!) { saveNFTVisibilityForProfiles(count:$count) {  message } }',
+        query:
+          'mutation SaveNFTVisibilityForProfiles($count: Int!) { saveNFTVisibilityForProfiles(count:$count) {  message } }',
         variables: {
           count: 100,
         },
@@ -504,10 +497,7 @@ describe('profile resolver', () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       profileA = await repositories.profile.save({
         url: 'testprofile',
@@ -615,10 +605,7 @@ describe('profile resolver', () => {
 
   describe('latestProfiles', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       await repositories.profile.save({
         url: 'testprofile',
@@ -667,7 +654,8 @@ describe('profile resolver', () => {
 
     it('should return sorted profiles by minted date', async () => {
       const result = await testServer.executeOperation({
-        query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id } pageInfo { firstCursor lastCursor } totalItems } }',
+        query:
+          'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id } pageInfo { firstCursor lastCursor } totalItems } }',
         variables: {
           input: {
             sortBy: 'RecentMinted',
@@ -684,7 +672,8 @@ describe('profile resolver', () => {
 
     it('should return sorted profiles by updated date', async () => {
       const result = await testServer.executeOperation({
-        query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id } pageInfo { firstCursor lastCursor } totalItems } }',
+        query:
+          'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id } pageInfo { firstCursor lastCursor } totalItems } }',
         variables: {
           input: {
             sortBy: 'RecentUpdated',
@@ -701,7 +690,8 @@ describe('profile resolver', () => {
 
     it('should return sorted profiles by visible NFTs', async () => {
       const result = await testServer.executeOperation({
-        query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id visibleNFTs index } pageInfo { firstCursor lastCursor } totalItems } }',
+        query:
+          'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id visibleNFTs index } pageInfo { firstCursor lastCursor } totalItems } }',
         variables: {
           input: {
             sortBy: 'MostVisibleNFTs',
@@ -721,7 +711,8 @@ describe('profile resolver', () => {
     it('should include isGKMinted', async () => {
       const gqlCall = async (): Promise<any> => {
         return testServer.executeOperation({
-          query: 'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id isGKMinted expireAt } } }',
+          query:
+            'query LatestProfiles($input: LatestProfilesInput) { latestProfiles(input:$input) {  items { id isGKMinted expireAt } } }',
           variables: {
             input: {
               chainId: '5',
@@ -734,22 +725,19 @@ describe('profile resolver', () => {
       }
 
       const result = await gqlCall()
-      expect(result.data.latestProfiles.items.filter((profile) => profile.isGKMinted).length).toEqual(3)
-      
+      expect(result.data.latestProfiles.items.filter(profile => profile.isGKMinted).length).toEqual(3)
+
       await repositories.profile.updateOneById(result.data.latestProfiles.items[0].id, {
         expireAt: new Date('3020-12-12T23:59:59'),
       })
       const result2 = await gqlCall()
-      expect(result2.data.latestProfiles.items.filter((profile) => profile.isGKMinted).length).toEqual(2)
+      expect(result2.data.latestProfiles.items.filter(profile => profile.isGKMinted).length).toEqual(2)
     })
   })
 
   describe('profilesMintedByGK', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       await repositories.event.save({
         contract: '0x40023d97Ca437B966C8f669C91a9740C639E21C3',
@@ -777,7 +765,8 @@ describe('profile resolver', () => {
 
     it('should return profiles minted by GK', async () => {
       const result = await testServer.executeOperation({
-        query: 'query ProfilesMintedByGK($tokenId: String!, $chainId: String) { profilesMintedByGK(tokenId:$tokenId, chainId:$chainId) { url } }',
+        query:
+          'query ProfilesMintedByGK($tokenId: String!, $chainId: String) { profilesMintedByGK(tokenId:$tokenId, chainId:$chainId) { url } }',
         variables: {
           tokenId: '7307',
           chainId: '5',
@@ -794,10 +783,7 @@ describe('profile resolver', () => {
       testMockUser.chainId = '5'
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       await repositories.event.save({
         contract: '0x40023d97Ca437B966C8f669C91a9740C639E21C3',
@@ -843,11 +829,7 @@ describe('profile resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
 
       walletA = await repositories.wallet.save({
         userId: testMockUser.id,
@@ -897,7 +879,8 @@ describe('profile resolver', () => {
 
     it('should return incentive users actions with total points', async () => {
       const result = await testServer.executeOperation({
-        query: 'query Profile($url: String!, $chainId: String) { profile(url: $url, chainId: $chainId) { usersActionsWithPoints { userId action totalPoints } } }',
+        query:
+          'query Profile($url: String!, $chainId: String) { profile(url: $url, chainId: $chainId) { usersActionsWithPoints { userId action totalPoints } } }',
         variables: {
           url: 'gk',
         },
@@ -932,11 +915,7 @@ describe('profile resolver', () => {
         chainId: '5',
       })
 
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet, { id: '5', name: 'goerli' })
     })
 
     afterAll(async () => {
@@ -946,12 +925,15 @@ describe('profile resolver', () => {
 
     it('should save incentive action for buying NFTs on profile', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation Mutation($profileUrl: String!) { saveUserActionForBuyNFTs(profileUrl: $profileUrl) { message } }',
+        query:
+          'mutation Mutation($profileUrl: String!) { saveUserActionForBuyNFTs(profileUrl: $profileUrl) { message } }',
         variables: {
           profileUrl: 'test-profile',
         },
       })
-      expect(result.data.saveUserActionForBuyNFTs.message).toEqual('Incentive action for buying NFTs is saved. ProfileURL: test-profile')
+      expect(result.data.saveUserActionForBuyNFTs.message).toEqual(
+        'Incentive action for buying NFTs is saved. ProfileURL: test-profile',
+      )
       const incentiveAction = await repositories.incentiveAction.findAll()
       expect(incentiveAction.length).toEqual(1)
     })
@@ -959,10 +941,7 @@ describe('profile resolver', () => {
 
   describe('searchVisibleNFTsForProfile', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
 
       const nftA = await repositories.nft.save({
         contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
@@ -1040,7 +1019,8 @@ describe('profile resolver', () => {
 
     it('should return visible nfts with search query', async () => {
       const result = await testServer.executeOperation({
-        query: 'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { items { id } pageInfo { firstCursor lastCursor } } }',
+        query:
+          'query SearchVisibleNFTsForProfile($input: SearchVisibleNFTsForProfileInput!) { searchVisibleNFTsForProfile(input: $input) { items { id } pageInfo { firstCursor lastCursor } } }',
         variables: {
           input: {
             url: 'testprofile',
@@ -1066,10 +1046,7 @@ describe('profile resolver', () => {
         referralId: testMockUser.referralId,
         preferences: testMockUser.preferences,
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
 
       const nftA = await repositories.nft.save({
         contract: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
@@ -1147,7 +1124,8 @@ describe('profile resolver', () => {
 
     it('should return all nfts with search query', async () => {
       const result = await testServer.executeOperation({
-        query: 'query SearchNFTsForProfile($input: SearchNFTsForProfileInput!) { searchNFTsForProfile(input: $input) { items { id } } }',
+        query:
+          'query SearchNFTsForProfile($input: SearchNFTsForProfileInput!) { searchNFTsForProfile(input: $input) { items { id } } }',
         variables: {
           input: {
             url: 'testprofile',
@@ -1172,10 +1150,7 @@ describe('profile resolver', () => {
         referralId: testMockUser.referralId,
         preferences: testMockUser.preferences,
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
 
       await repositories.profile.save({
         id: 'testProfileA',
@@ -1279,10 +1254,7 @@ describe('profile resolver', () => {
         referralId: testMockUser.referralId,
         preferences: testMockUser.preferences,
       })
-      testServer = getTestApolloServer(repositories,
-        user,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, user, testMockWallet)
 
       await repositories.profile.save({
         id: 'testProfileA',

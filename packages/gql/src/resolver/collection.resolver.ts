@@ -17,7 +17,11 @@ import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { CollectionLeaderboardDateRange, DEFAULT_COLL_LB_DATE_RANGE, getSortedLeaderboard } from '../service/collection.service'
+import {
+  CollectionLeaderboardDateRange,
+  DEFAULT_COLL_LB_DATE_RANGE,
+  getSortedLeaderboard,
+} from '../service/collection.service'
 import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
@@ -25,11 +29,7 @@ const seService = SearchEngineService()
 
 const MAX_SAVE_COUNTS = 500
 
-const getCollection = async (
-  _: any,
-  args: gql.QueryCollectionArgs,
-  ctx: Context,
-): Promise<gql.CollectionInfo> => {
+const getCollection = async (_: any, args: gql.QueryCollectionArgs, ctx: Context): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
     // Validate Inputs
@@ -91,8 +91,11 @@ const getCollectionTraits = async (
   joi.validateSchema(schema, input)
 
   const rawTraitSummary = await ctx.repositories.nft.fetchTraitSummaryData(input.contract)
-  const totalCount = rawTraitSummary.filter(t => rawTraitSummary[0].type === t.type)
-    .reduce((sum, t) => { return sum + parseInt(t.count) }, 0)
+  const totalCount = rawTraitSummary
+    .filter(t => rawTraitSummary[0].type === t.type)
+    .reduce((sum, t) => {
+      return sum + parseInt(t.count)
+    }, 0)
   const traits = []
   for (const t of rawTraitSummary) {
     if (traits.length && traits[traits.length - 1].type === t.type) {
@@ -103,10 +106,12 @@ const getCollectionTraits = async (
     } else {
       traits.push({
         type: t.type,
-        counts: [{
-          count: t.count,
-          value: t.value,
-        }],
+        counts: [
+          {
+            count: t.count,
+            value: t.value,
+          },
+        ],
       })
     }
   }
@@ -126,10 +131,12 @@ const getOfficialCollections = async (
 ): Promise<gql.OfficialCollectionsOutput> => {
   const { repositories } = ctx
   const schema = Joi.object().keys({
-    offsetPageInput: Joi.object().keys({
-      page: Joi.number().optional(),
-      pageSize: Joi.number().optional(),
-    }).optional(),
+    offsetPageInput: Joi.object()
+      .keys({
+        page: Joi.number().optional(),
+        pageSize: Joi.number().optional(),
+      })
+      .optional(),
   })
   const input = args.input || {}
   joi.validateSchema(schema, input)
@@ -149,8 +156,7 @@ const getOfficialCollections = async (
         updatedAt: true,
       },
       cache: defaultCacheDuration,
-    },
-    )
+    })
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getOfficialCollections: ${err}`)
@@ -170,12 +176,12 @@ const removeCollectionDuplicates = async (
     const { contracts } = args
     let removedDuplicates = false
     await Promise.allSettled(
-      contracts.map(async (contract) => {
+      contracts.map(async contract => {
         const collections = await repositories.collection.find({ where: { contract: contract } })
         if (collections.length > 1) {
           const toRemove = collections.slice(1, collections.length)
           await Promise.allSettled(
-            toRemove.map(async (collection) => {
+            toRemove.map(async collection => {
               const edgeVals = {
                 thisEntityType: defs.EntityType.Collection,
                 thatEntityType: defs.EntityType.NFT,
@@ -197,7 +203,7 @@ const removeCollectionDuplicates = async (
           )
 
           if (toRemove.length) {
-            const removeIds = toRemove.map((collection) => collection.id)
+            const removeIds = toRemove.map(collection => collection.id)
             await repositories.collection.hardDeleteByIds(removeIds)
             await seService.deleteCollections(toRemove)
             removedDuplicates = true
@@ -213,10 +219,7 @@ const removeCollectionDuplicates = async (
   }
 }
 
-const fetchAndSaveCollectionInfo = async (
-  repositories: db.Repository,
-  contract: string,
-): Promise<void> => {
+const fetchAndSaveCollectionInfo = async (repositories: db.Repository, contract: string): Promise<void> => {
   try {
     const nfts = await repositories.nft.find({
       where: {
@@ -224,11 +227,7 @@ const fetchAndSaveCollectionInfo = async (
       },
     })
     if (nfts.length) {
-      const collectionName = await getCollectionNameFromDataProvider(
-        nfts[0].contract,
-        nfts[0].chainId,
-        nfts[0].type,
-      )
+      const collectionName = await getCollectionNameFromDataProvider(nfts[0].contract, nfts[0].chainId, nfts[0].type)
       const collection = await repositories.collection.save({
         contract: helper.checkSum(contract),
         chainId: nfts[0]?.chainId || process.env.CHAIN_ID,
@@ -237,7 +236,7 @@ const fetchAndSaveCollectionInfo = async (
       await seService.indexCollections([collection])
 
       await Promise.allSettled(
-        nfts.map(async (nft) => {
+        nfts.map(async nft => {
           const edgeVals = {
             thisEntityType: defs.EntityType.Collection,
             thatEntityType: defs.EntityType.NFT,
@@ -269,7 +268,7 @@ const syncCollectionsWithNFTs = async (
     const contracts = await repositories.nft.findDistinctContracts()
     const missingContracts = []
     await Promise.allSettled(
-      contracts.map(async (contract) => {
+      contracts.map(async contract => {
         const collection = await repositories.collection.findOne({
           where: { contract: ethers.utils.getAddress(contract.nft_contract) },
         })
@@ -279,7 +278,7 @@ const syncCollectionsWithNFTs = async (
     const length = missingContracts.length > count ? count : missingContracts.length
     const toSaveContracts = missingContracts.slice(0, length)
     await Promise.allSettled(
-      toSaveContracts.map(async (contract) => {
+      toSaveContracts.map(async contract => {
         await fetchAndSaveCollectionInfo(repositories, contract)
       }),
     )
@@ -351,7 +350,7 @@ export const associatedAddressesForContract = async (
 
     // Retrieve collection from database or blockchain
     const collection = await repositories.collection.findOne({ where: { contract: helper.checkSum(args?.contract) } })
-    const collectionDeployer = collection?.deployer || await getCollectionDeployer(args?.contract, chainId)
+    const collectionDeployer = collection?.deployer || (await getCollectionDeployer(args?.contract, chainId))
 
     // Update collection deployer if defined
     if (collectionDeployer && !collection?.deployer) {
@@ -369,7 +368,7 @@ export const associatedAddressesForContract = async (
     // Retrieve associated addresses for each profile
     const addresses: string[] = []
     await Promise.allSettled(
-      profiles.map(async (profile) => {
+      profiles.map(async profile => {
         const key = `associated_addresses_${profile.url}_${chainId}`
         const cachedData = await cache.get(key)
         let addrs
@@ -381,7 +380,7 @@ export const associatedAddressesForContract = async (
             provider.provider(Number(chainId)),
           )
           const associatedAddresses = await nftResolverContract.associatedAddresses(profile.url)
-          addrs = associatedAddresses.map((item) => item.chainAddr)
+          addrs = associatedAddresses.map(item => item.chainAddr)
           await cache.set(key, JSON.stringify(addrs), 'EX', 60 * 10)
         }
         addresses.push(...addrs)
@@ -392,10 +391,10 @@ export const associatedAddressesForContract = async (
     return {
       deployerAddress: collectionDeployer,
       associatedAddresses: addresses,
-      deployerIsAssociated: collectionDeployer ?
-        (addresses.indexOf(helper.checkSum(collectionDeployer)) !== -1 ||
+      deployerIsAssociated: collectionDeployer
+        ? addresses.indexOf(helper.checkSum(collectionDeployer)) !== -1 ||
           helper.checkSum(collectionDeployer) === wallet.address
-        ) : false,
+        : false,
     }
   } catch (err) {
     Sentry.captureMessage(`Error in associatedAddressesForContract: ${err}`)
@@ -424,7 +423,7 @@ const updateCollectionImageUrls = async (
     const length = collections.length > count ? count : collections.length
     const toUpdate = collections.slice(0, length)
     await Promise.allSettled(
-      toUpdate.map(async (collection) => {
+      toUpdate.map(async collection => {
         try {
           await getCollectionInfo({
             chainId,
@@ -468,7 +467,7 @@ const updateCollectionName = async (
     const length = Math.min(collections.length, count)
     const toUpdate = collections.slice(0, length)
     await Promise.allSettled(
-      toUpdate.map(async (collection) => {
+      toUpdate.map(async collection => {
         const nft = await repositories.nft.findOne({
           where: {
             contract: helper.checkSum(collection.contract),
@@ -510,7 +509,7 @@ const updateSpamStatus = async (
     const { contracts, isSpam } = args
     const toUpdate: entity.Collection[] = []
     await Promise.allSettled(
-      contracts.map(async (contract) => {
+      contracts.map(async contract => {
         const collection = await repositories.collection.findOne({
           where: {
             contract: helper.checkSum(contract),
@@ -527,24 +526,31 @@ const updateSpamStatus = async (
       await repositories.collection.saveMany(toUpdate, { chunk: MAX_SAVE_COUNTS })
       if (isSpam) {
         seService.deleteCollections(toUpdate)
-        await Promise.all((await repositories.nft.find({
-          where: {
-            contract: In(toUpdate.map(coll => coll.contract)),
-          },
-        })).map(async (nft) => {
-          await seService.deleteNFT(nft.id)
-        }))
+        await Promise.all(
+          (
+            await repositories.nft.find({
+              where: {
+                contract: In(toUpdate.map(coll => coll.contract)),
+              },
+            })
+          ).map(async nft => {
+            await seService.deleteNFT(nft.id)
+          }),
+        )
       } else {
         seService.indexCollections(toUpdate)
-        seService.indexNFTs(await repositories.nft.find({
-          where: {
-            contract: In(toUpdate.map(coll => coll.contract)),
-          },
-        }))
+        seService.indexNFTs(
+          await repositories.nft.find({
+            where: {
+              contract: In(toUpdate.map(coll => coll.contract)),
+            },
+          }),
+        )
       }
     }
     return {
-      message: isSpam ? `${toUpdate.length} collections are set as spam`
+      message: isSpam
+        ? `${toUpdate.length} collections are set as spam`
         : `${toUpdate.length} collections are set as not spam`,
     }
   } catch (err) {
@@ -554,11 +560,7 @@ const updateSpamStatus = async (
   }
 }
 
-const getNumberOfNFTs = async (
-  _: any,
-  args: gql.QueryNumberOfNFTsArgs,
-  ctx: Context,
-): Promise<number> => {
+const getNumberOfNFTs = async (_: any, args: gql.QueryNumberOfNFTsArgs, ctx: Context): Promise<number> => {
   try {
     const { repositories } = ctx
     logger.debug('getNumberOfNFTs', { contract: args?.contract, chainId: args?.chainId })
@@ -611,12 +613,9 @@ const updateOfficialCollections = async (
       if (contracts.length) {
         const updatedList = []
         await Promise.allSettled(
-          contracts.map(async (contract) => {
+          contracts.map(async contract => {
             try {
-              const collection = await repositories.collection.findByContractAddress(
-                helper.checkSum(contract),
-                chainId,
-              )
+              const collection = await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
               if (collection && !collection?.isOfficial) {
                 const updated = await repositories.collection.updateOneById(collection.id, { isOfficial: true })
                 updatedList.push(updated)
@@ -651,20 +650,21 @@ const getCollectionLeaderboard = async (
   const { pageInput, dateRange: dateRangeInput } = input
   const { repositories } = ctx
 
-  const dateRange = dateRangeInput as CollectionLeaderboardDateRange || DEFAULT_COLL_LB_DATE_RANGE
+  const dateRange = (dateRangeInput as CollectionLeaderboardDateRange) || DEFAULT_COLL_LB_DATE_RANGE
   const defaultNumItems = 10
   const cacheKey = `COLLECTION_LEADERBOARD_HYDRATED_${dateRange}`
   const cachedLeaderboard = await cache.get(cacheKey)
-  const leaderboard = cachedLeaderboard ?
-    JSON.parse(cachedLeaderboard) :
-    await getSortedLeaderboard(repositories.collection, { dateRange })
+  const leaderboard = cachedLeaderboard
+    ? JSON.parse(cachedLeaderboard)
+    : await getSortedLeaderboard(repositories.collection, { dateRange })
   if (!cachedLeaderboard && leaderboard.length) {
     await cache.set(cacheKey, JSON.stringify(leaderboard), 'EX', 60 * 60)
   }
 
-  const defaultCursor = pageInput && pagination.hasLast(pageInput) ?
-    { beforeCursor: (pageInput && pageInput.beforeCursor) || '-1' } :
-    { afterCursor: (pageInput && pageInput.afterCursor) || '-1' }
+  const defaultCursor =
+    pageInput && pagination.hasLast(pageInput)
+      ? { beforeCursor: (pageInput && pageInput.beforeCursor) || '-1' }
+      : { afterCursor: (pageInput && pageInput.afterCursor) || '-1' }
   const safePageInput = pagination.safeInput(pageInput, defaultCursor, defaultNumItems)
   const [paginatedLeaderboard, leaderboardLength] = await core.paginateEntityArray(leaderboard, safePageInput)
 
@@ -676,9 +676,11 @@ const getCollectionLeaderboard = async (
   )([paginatedLeaderboard, leaderboardLength])
 }
 
-export const refreshCollectionRarity = async (_: any,
+export const refreshCollectionRarity = async (
+  _: any,
   args: gql.MutationRefreshNFTOrderArgs,
-  ctx: Context): Promise<string> => {
+  ctx: Context,
+): Promise<string> => {
   const { repositories, chain } = ctx
   logger.debug('refreshCollectionRarity', { id: args?.id })
   const schema = Joi.object().keys({
@@ -690,13 +692,18 @@ export const refreshCollectionRarity = async (_: any,
   try {
     const collection = await repositories.collection.findById(args?.id)
     if (!collection) {
-      return Promise.reject(appError.buildNotFound(
-        collectionError.buildCollectionNotFoundMsg('NFT: ' + args?.id),
-        collectionError.ErrorType.CollectionNotFound,
-      ))
+      return Promise.reject(
+        appError.buildNotFound(
+          collectionError.buildCollectionNotFoundMsg('NFT: ' + args?.id),
+          collectionError.ErrorType.CollectionNotFound,
+        ),
+      )
     }
 
-    const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chain.id}`, `${collection.contract}`)
+    const recentlyRefreshed: string = await cache.zscore(
+      `${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chain.id}`,
+      `${collection.contract}`,
+    )
     if (!args.force && recentlyRefreshed) {
       return 'Refreshed Recently! Try in sometime!'
     }
@@ -734,8 +741,7 @@ export default {
     collectionLeaderboard: getCollectionLeaderboard,
     collectionTraits: getCollectionTraits,
     officialCollections: combineResolvers(auth.isTeamKeyAuthenticated, getOfficialCollections),
-    associatedAddressesForContract:
-      combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
+    associatedAddressesForContract: combineResolvers(auth.isAuthenticated, associatedAddressesForContract),
     numberOfNFTs: getNumberOfNFTs,
   },
   Mutation: {
@@ -749,7 +755,7 @@ export default {
     updateOfficialCollections: combineResolvers(auth.isAuthenticated, updateOfficialCollections),
   },
   Collection: {
-    likeCount: async (parent) => {
+    likeCount: async parent => {
       if (!parent) {
         return 0
       }
@@ -760,6 +766,12 @@ export default {
         return false
       }
       return likeService.isLikedByUser(parent.id, ctx.user.id)
+    },
+    isLikedBy: async (parent, args: gql.CollectionIsLikedByArgs, _ctx) => {
+      if (!parent || !args.likedById) {
+        return false
+      }
+      return likeService.isLikedBy(args.likedById, parent.id)
     },
   },
 }

@@ -65,7 +65,7 @@ export class MarketAsk extends BaseEntity {
   @Column({ type: 'timestamp with time zone', nullable: true })
   offerAcceptedAt: Date
 
-  @Column( { nullable: false })
+  @Column({ nullable: false })
   chainId: string
 
 }

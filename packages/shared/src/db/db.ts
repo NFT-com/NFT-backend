@@ -7,11 +7,7 @@ import { _logger, helper } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
-const {
-  DB_HOST,
-  DB_HOST_RO,
-  DB_USE_SSL,
-} = process.env
+const { DB_HOST, DB_HOST_RO, DB_USE_SSL } = process.env
 
 const logger = _logger.Factory(_logger.Context.General)
 
@@ -163,10 +159,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     synchronize: false,
     logging: dbConfig.logging,
     migrationsRun: true,
-    migrations: [
-      `${__dirname}/migration/*.ts`,
-      `${__dirname}/migration/*.js`,
-    ],
+    migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
     ssl,
     entities,
   })
@@ -190,12 +183,13 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entities,
   })
 
-  return Promise.all([defaultDataSource.initialize(), readOnlyDataSource.initialize()])
-    .then(([defaultConnection, roConnection]) => {
+  return Promise.all([defaultDataSource.initialize(), readOnlyDataSource.initialize()]).then(
+    ([defaultConnection, roConnection]) => {
       connection = defaultConnection
       readOnlyConnection = roConnection
       logger.info('Connected to database :)!!')
-    })
+    },
+  )
 }
 
 export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>): Promise<DataSource> => {
@@ -209,15 +203,13 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
     logging: dbConfig.logging,
     synchronize: false,
     migrationsRun: true,
-    migrations: [
-      `${__dirname}/migration/*.ts`,
-      `${__dirname}/migration/*.js`,
-    ],
+    migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
     ssl: false,
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
-  }).initialize()
-    .then((con) => {
+  })
+    .initialize()
+    .then(con => {
       connection = con
       readOnlyConnection = con
       return con

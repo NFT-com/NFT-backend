@@ -17,11 +17,7 @@ import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
-const signUp = (
-  _: any,
-  args: gql.MutationSignUpArgs,
-  ctx: Context,
-): Promise<gql.User> => {
+const signUp = (_: any, args: gql.MutationSignUpArgs, ctx: Context): Promise<gql.User> => {
   const { repositories } = ctx
   logger.debug('signUp', { input: args.input })
 
@@ -46,23 +42,25 @@ const signUp = (
   ])
     .then(([userExists, addressExists]) => {
       if (userExists) {
-        return Promise.reject(appError.buildExists(
-          userError.buildUsernameExistsMsg(username),
-          userError.ErrorType.UsernameAlreadyExists,
-        ))
+        return Promise.reject(
+          appError.buildExists(userError.buildUsernameExistsMsg(username), userError.ErrorType.UsernameAlreadyExists),
+        )
       }
       if (addressExists) {
-        return Promise.reject(appError.buildExists(
-          walletError.buildAddressExistsMsg(network, chain, address),
-          walletError.ErrorType.AddressAlreadyExists,
-        ))
+        return Promise.reject(
+          appError.buildExists(
+            walletError.buildAddressExistsMsg(network, chain, address),
+            walletError.ErrorType.AddressAlreadyExists,
+          ),
+        )
       }
       return referredBy
     })
-    .then(fp.thruIfNotEmpty((refId: string) => {
-      return repositories.user.findByReferralId(refId)
-        .then((user) => user?.id)
-    }))
+    .then(
+      fp.thruIfNotEmpty((refId: string) => {
+        return repositories.user.findByReferralId(refId).then(user => user?.id)
+      }),
+    )
     .then((referredUserId: string) => {
       let referredInfo
       if (!referredUserId || !referredUserId.length) {
@@ -75,24 +73,25 @@ const signUp = (
       }
       // if referralId is existing in variable, it means we don't need to create new user because it's referred by someone from our platform
       if (referralId && referralId.length) {
-        return repositories.user.findByReferralId(referralId)
-          .then((existingUser) => {
-            if (existingUser) {
-              return repositories.user.updateOneById(existingUser.id, {
-                username,
-                referredBy: referredInfo || null,
-                avatarURL,
-                isEmailConfirmed: true,
-                confirmEmailToken: null,
-                confirmEmailTokenExpiresAt: null,
-              })
-            } else {
-              return Promise.reject(appError.buildInvalid(
+        return repositories.user.findByReferralId(referralId).then(existingUser => {
+          if (existingUser) {
+            return repositories.user.updateOneById(existingUser.id, {
+              username,
+              referredBy: referredInfo || null,
+              avatarURL,
+              isEmailConfirmed: true,
+              confirmEmailToken: null,
+              confirmEmailTokenExpiresAt: null,
+            })
+          } else {
+            return Promise.reject(
+              appError.buildInvalid(
                 userError.buildInvalidReferralId(referralId),
                 userError.ErrorType.InvalidReferralId,
-              ))
-            }
-          })
+              ),
+            )
+          }
+        })
       } else {
         const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
         const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
@@ -108,23 +107,23 @@ const signUp = (
         })
       }
     })
-    .then(fp.tapWait<entity.User, unknown>((user) => Promise.all([
-      repositories.wallet.save({
-        userId: user.id,
-        network,
-        chainId: chain.id,
-        chainName: chain.name,
-        address,
-      }),
-      sendgrid.sendEmailVerificationCode(user),
-    ])))
+    .then(
+      fp.tapWait<entity.User, unknown>(user =>
+        Promise.all([
+          repositories.wallet.save({
+            userId: user.id,
+            network,
+            chainId: chain.id,
+            chainName: chain.name,
+            address,
+          }),
+          sendgrid.sendEmailVerificationCode(user),
+        ]),
+      ),
+    )
 }
 
-const updateEmail = (
-  _: any,
-  args: gql.MutationSignUpArgs,
-  ctx: Context,
-): Promise<entity.User> => {
+const updateEmail = (_: any, args: gql.MutationSignUpArgs, ctx: Context): Promise<entity.User> => {
   const { user, repositories } = ctx
   logger.debug('updateEmail', { input: args.input })
 
@@ -137,38 +136,38 @@ const updateEmail = (
 
   const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
   const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
-  return repositories.user.save({
-    ...user,
-    email,
-    confirmEmailToken,
-    confirmEmailTokenExpiresAt,
-  })
+  return repositories.user
+    .save({
+      ...user,
+      email,
+      confirmEmailToken,
+      confirmEmailTokenExpiresAt,
+    })
     .then(fp.tapWait(sendgrid.sendEmailVerificationCode))
 }
 
 const updateReferral = (ctx: Context) => {
   return (otherUser: entity.User): Promise<boolean> => {
     const { user } = ctx
-    return core.createEdge(ctx,{
-      thisEntityId: otherUser.id,
-      thisEntityType: defs.EntityType.User,
-      thatEntityId: user.id,
-      thatEntityType: defs.EntityType.User,
-      edgeType: defs.EdgeType.Referred,
-    })
-      .then(() => core.countEdges(ctx, {
+    return core
+      .createEdge(ctx, {
         thisEntityId: otherUser.id,
+        thisEntityType: defs.EntityType.User,
+        thatEntityId: user.id,
+        thatEntityType: defs.EntityType.User,
         edgeType: defs.EdgeType.Referred,
-      }))
-      .then((count) => sendgrid.sendReferredBy(otherUser, count))
+      })
+      .then(() =>
+        core.countEdges(ctx, {
+          thisEntityId: otherUser.id,
+          edgeType: defs.EdgeType.Referred,
+        }),
+      )
+      .then(count => sendgrid.sendReferredBy(otherUser, count))
   }
 }
 
-const confirmEmail = (
-  _: any,
-  args: gql.MutationConfirmEmailArgs,
-  ctx: Context,
-): Promise<boolean> => {
+const confirmEmail = (_: any, args: gql.MutationConfirmEmailArgs, ctx: Context): Promise<boolean> => {
   logger.debug('confirmEmail', { input: args })
   const { repositories } = ctx
 
@@ -182,21 +181,23 @@ const confirmEmail = (
     userError.buildInvalidEmailTokenMsg(token),
     userError.ErrorType.InvalidEmailConfirmToken,
   )
-  return repositories.user.findByEmailConfirmationToken(token)
+  return repositories.user
+    .findByEmailConfirmationToken(token)
     .then(fp.rejectIfEmpty(invalidTokenError))
-    .then((user) => repositories.user.save({
-      ...user,
-      isEmailConfirmed: true,
-      confirmEmailToken: null,
-      confirmEmailTokenExpiresAt: null,
-    }))
-    .then((user) => {
+    .then(user =>
+      repositories.user.save({
+        ...user,
+        isEmailConfirmed: true,
+        confirmEmailToken: null,
+        confirmEmailTokenExpiresAt: null,
+      }),
+    )
+    .then(user => {
       if (helper.isEmpty(user.referredBy)) {
         return user
       }
       const referredUserId = user.referredBy.split('::')[0]
-      return repositories.user.findById(referredUserId)
-        .then(fp.tap(updateReferral(ctx)))
+      return repositories.user.findById(referredUserId).then(fp.tap(updateReferral(ctx)))
     })
     .then(() => true)
 }
@@ -210,11 +211,7 @@ const buildPreferencesInputSchema = (): Joi.ObjectSchema =>
     promotionalNotifications: Joi.boolean().required(),
   })
 
-const updateMe = (
-  _: any,
-  args: gql.MutationUpdateMeArgs,
-  ctx: Context,
-): Promise<gql.User> => {
+const updateMe = (_: any, args: gql.MutationUpdateMeArgs, ctx: Context): Promise<gql.User> => {
   const { user, repositories } = ctx
   logger.debug('updateMe', { loggedInUserId: user.id, input: args.input })
 
@@ -226,52 +223,38 @@ const updateMe = (
 
   joi.validateSchema(schema, args.input)
 
-  const {
-    avatarURL = user.avatarURL,
-    preferences = user.preferences,
-    email,
-  } = args.input
-  return repositories.user.updateOneById(user.id, { avatarURL, preferences })
-    .then((user) => {
-      if (email.length && email !== user.email) {
-        return core.sendEmailVerificationCode(email, user, repositories)
-          .then(() => user)
-      } else if (email === user.email) {
-        // if token is expired...
-        if (!user.isEmailConfirmed && new Date(user.confirmEmailTokenExpiresAt) <= new Date()) {
-          return core.sendEmailVerificationCode(email, user, repositories)
-            .then(() => user)
-        } else {
-          return user
-        }
+  const { avatarURL = user.avatarURL, preferences = user.preferences, email } = args.input
+  return repositories.user.updateOneById(user.id, { avatarURL, preferences }).then(user => {
+    if (email.length && email !== user.email) {
+      return core.sendEmailVerificationCode(email, user, repositories).then(() => user)
+    } else if (email === user.email) {
+      // if token is expired...
+      if (!user.isEmailConfirmed && new Date(user.confirmEmailTokenExpiresAt) <= new Date()) {
+        return core.sendEmailVerificationCode(email, user, repositories).then(() => user)
       } else {
         return user
       }
-    })
+    } else {
+      return user
+    }
+  })
 }
 
-const resendEmailConfirm = (
-  _: any,
-  args: any,
-  ctx: Context,
-): Promise<entity.User> => {
+const resendEmailConfirm = (_: any, args: any, ctx: Context): Promise<entity.User> => {
   const { user, repositories } = ctx
   logger.debug('resendEmailConfirm', { loggedInUserId: user.id })
   const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
   const confirmEmailTokenExpiresAt = addDays(helper.toUTCDate(), 1)
-  return repositories.user.save({
-    ...user,
-    confirmEmailToken,
-    confirmEmailTokenExpiresAt,
-  })
+  return repositories.user
+    .save({
+      ...user,
+      confirmEmailToken,
+      confirmEmailTokenExpiresAt,
+    })
     .then(fp.tapWait(sendgrid.sendEmailVerificationCode))
 }
 
-const getMyAddresses = (
-  parent: gql.User,
-  _: unknown,
-  ctx: Context,
-): Promise<gql.Wallet[]> => {
+const getMyAddresses = (parent: gql.User, _: unknown, ctx: Context): Promise<gql.Wallet[]> => {
   const { user, repositories } = ctx
   logger.debug('getMyAddresses', { userId: parent.id, loggedInUserId: user.id })
   if (user.id !== parent.id) {
@@ -291,21 +274,25 @@ const ignoreAssociations = (
   logger.debug('ignoreAssocations', { loggedInUserId: user.id, wallet: wallet.address, args: args?.eventIdArray })
 
   return args?.eventIdArray.map(e =>
-    repositories.event.findOne({ where:
-      {
-        id: e,
-        destinationAddress: helper.checkSum(wallet.address),
-      },
-    }).then(e => {
-      if (e) {
-        return repositories.event.save({ ...e, ignore: true })
-      } else {
-        return Promise.reject(appError.buildForbidden(
-          userError.buildForbiddenActionMsg(' event id doesn\'t exist under your user'),
-          userError.ErrorType.ForbiddenAction,
-        ))
-      }
-    }),
+    repositories.event
+      .findOne({
+        where: {
+          id: e,
+          destinationAddress: helper.checkSum(wallet.address),
+        },
+      })
+      .then(e => {
+        if (e) {
+          return repositories.event.save({ ...e, ignore: true })
+        } else {
+          return Promise.reject(
+            appError.buildForbidden(
+              userError.buildForbiddenActionMsg(' event id doesn\'t exist under your user'),
+              userError.ErrorType.ForbiddenAction,
+            ),
+          )
+        }
+      }),
   )
 }
 
@@ -383,7 +370,7 @@ const getMyPendingAssociations = async (
   }
 
   return matches
-    .filter((o) => {
+    .filter(o => {
       const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${o.profileUrl}`
       const latestBlock = clearAllLatestMap[key]
 
@@ -393,7 +380,7 @@ const getMyPendingAssociations = async (
         return o.blockNumber >= latestBlock
       }
     })
-    .filter((o) => {
+    .filter(o => {
       const key = `${o.chainId}_${helper.checkSum(o.ownerAddress)}_${helper.checkSum(o.destinationAddress)}`
       if (Number(cancellationsMap[key]) > 0) {
         cancellationsMap[key] = Number(cancellationsMap[key]) - 1
@@ -435,14 +422,13 @@ const getApprovedAssociations = async (
     },
   })
 
-  return approvals
-    .map(e => {
-      return {
-        id: e.id,
-        receiver: e.destinationAddress,
-        hidden: e.hidden,
-      }
-    })
+  return approvals.map(e => {
+    return {
+      id: e.id,
+      receiver: e.destinationAddress,
+      hidden: e.hidden,
+    }
+  })
 }
 
 const getRejectedAssociations = async (
@@ -468,14 +454,13 @@ const getRejectedAssociations = async (
     },
   })
 
-  return rejections
-    .map(e => {
-      return {
-        id: e.id,
-        receiver: e.destinationAddress,
-        hidden: e.hidden,
-      }
-    })
+  return rejections.map(e => {
+    return {
+      id: e.id,
+      receiver: e.destinationAddress,
+      hidden: e.hidden,
+    }
+  })
 }
 
 const getRemovedAssociationsForReceiver = async (
@@ -501,15 +486,14 @@ const getRemovedAssociationsForReceiver = async (
     },
   })
 
-  return removals
-    .map(e => {
-      return {
-        id: e.id,
-        url: e.profileUrl,
-        owner: e.ownerAddress,
-        hidden: e.hidden,
-      }
-    })
+  return removals.map(e => {
+    return {
+      id: e.id,
+      url: e.profileUrl,
+      owner: e.ownerAddress,
+      hidden: e.hidden,
+    }
+  })
 }
 
 const getRemovedAssociationsForSender = async (
@@ -536,31 +520,23 @@ const getRemovedAssociationsForSender = async (
     },
   })
 
-  return removals
-    .map(e => {
-      return {
-        id: e.id,
-        receiver: e.destinationAddress,
-        hidden: e.hidden,
-      }
-    })
+  return removals.map(e => {
+    return {
+      id: e.id,
+      receiver: e.destinationAddress,
+      hidden: e.hidden,
+    }
+  })
 }
 
-const getMyGenesisKeys = async (
-  _: any,
-  args: unknown,
-  ctx: Context,
-): Promise<Array<gql.GkOutput>> => {
+const getMyGenesisKeys = async (_: any, args: unknown, ctx: Context): Promise<Array<gql.GkOutput>> => {
   const { user, repositories } = ctx
   logger.debug('getMyGenesisKeys', { loggedInUserId: user.id })
 
-  return repositories.wallet.findByUserId(user.id)
-    .then(fp.rejectIfEmpty(
-      appError.buildNotFound(
-        mintError.buildWalletEmpty(),
-        mintError.ErrorType.WalletEmpty,
-      ),
-    )).then(async (wallet) => {
+  return repositories.wallet
+    .findByUserId(user.id)
+    .then(fp.rejectIfEmpty(appError.buildNotFound(mintError.buildWalletEmpty(), mintError.ErrorType.WalletEmpty)))
+    .then(async wallet => {
       const address = wallet[0]?.address
       const cacheKey = `${CacheKeys.CACHED_GKS}_${wallet[0].chainId}_${contracts.genesisKeyAddress(wallet[0].chainId)}`
       const cachedGks = await cache.get(cacheKey)
@@ -605,7 +581,7 @@ const getMyGenesisKeys = async (
       const strippedUri = uri.replace('ipfs://', '')
       const ipfsHash = strippedUri.split('/')[0]
 
-      return keyIds.map(async (keyId) => {
+      return keyIds.map(async keyId => {
         const fullUrl = `https://nft-llc.mypinata.cloud/ipfs/${ipfsHash}/${keyId}`
 
         const cachedGkData = await cache.get(fullUrl)
@@ -619,11 +595,7 @@ const getMyGenesisKeys = async (
     })
 }
 
-const getMyApprovals = (
-  parent: gql.User,
-  _: unknown,
-  ctx: Context,
-): Promise<gql.Approval[]> => {
+const getMyApprovals = (parent: gql.User, _: unknown, ctx: Context): Promise<gql.Approval[]> => {
   const { user, repositories } = ctx
   logger.debug('getMyApprovals', { userId: parent.id, loggedInUserId: user.id })
   if (user.id !== parent.id) {
@@ -661,15 +633,21 @@ export const updateHideIgnored = async (
           await repositories.event.updateOneById(event.id, { hideIgnored: false, ignore: false })
         }
       } else {
-        return Promise.reject(appError.buildExists(
-          userError.buildEventNotFoundMsg(`event id ${id} not found with ownerAddress ${helper.checkSum(wallet.address)} and ignore = true`),
-          userError.ErrorType.EventAction,
-        ))
+        return Promise.reject(
+          appError.buildExists(
+            userError.buildEventNotFoundMsg(
+              `event id ${id} not found with ownerAddress ${helper.checkSum(wallet.address)} and ignore = true`,
+            ),
+            userError.ErrorType.EventAction,
+          ),
+        )
       }
     }
 
     return {
-      message: args?.input.hideIgnored ? 'Updated hidden events to be invisible' : 'Updated hidden events to be visible',
+      message: args?.input.hideIgnored
+        ? 'Updated hidden events to be invisible'
+        : 'Updated hidden events to be visible',
     }
   } catch (err) {
     Sentry.captureMessage(`Error in updateHideIgnored: ${err}`)
@@ -692,12 +670,14 @@ export const updateHidden = async (
       const id = args?.input?.eventIdArray[i]
       const event = await repositories.event.findById(id)
       if (event) {
-        await repositories.event.updateOneById(event.id, { hidden: args?.input.hidden  })
+        await repositories.event.updateOneById(event.id, { hidden: args?.input.hidden })
       } else {
-        return Promise.reject(appError.buildExists(
-          userError.buildEventNotFoundMsg(`event id ${id} not found`),
-          userError.ErrorType.EventAction,
-        ))
+        return Promise.reject(
+          appError.buildExists(
+            userError.buildEventNotFoundMsg(`event id ${id} not found`),
+            userError.ErrorType.EventAction,
+          ),
+        )
       }
     }
 
@@ -721,12 +701,7 @@ export const updateCache = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('updateCache', { input: args?.input })
     if (args?.input.expireSeconds) {
-      await cache.set(
-        args?.input.key,
-        args?.input.value,
-        'EX',
-        Number(args?.input.expireSeconds),
-      )
+      await cache.set(args?.input.key, args?.input.value, 'EX', Number(args?.input.expireSeconds))
     } else {
       await cache.set(args?.input.key, args?.input.value)
     }
@@ -787,7 +762,7 @@ export const sendReferEmail = async (
     const unconfirmedEmails = []
     const sentEmails = []
     await Promise.allSettled(
-      emails.map(async (email) => {
+      emails.map(async email => {
         const referralId = cryptoRandomString({ length: 10, type: 'url-safe' })
         const referredBy = profileOwner.referralId + '::' + profileUrl
         const confirmEmailToken = cryptoRandomString({ length: 36, type: 'url-safe' })
@@ -807,7 +782,7 @@ export const sendReferEmail = async (
           const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl, referralId)
           if (res) {
             sentEmails.push(email)
-            sent ++
+            sent++
           } else {
             logger.error('Something went wrong with sending referral email')
           }
@@ -817,9 +792,7 @@ export const sendReferEmail = async (
             confirmedEmails.push(email)
           } else {
             const now = helper.toUTCDate()
-            if (existingUser.confirmEmailTokenExpiresAt &&
-              existingUser.confirmEmailTokenExpiresAt > now
-            ) {
+            if (existingUser.confirmEmailTokenExpiresAt && existingUser.confirmEmailTokenExpiresAt > now) {
               unconfirmedEmails.push(email)
             } else {
               // extend confirmEmailTokenExpiresAt of user one day
@@ -830,7 +803,7 @@ export const sendReferEmail = async (
               const res = await sendgrid.sendReferralEmail(email, profileOwner.referralId, profileUrl, referralId)
               if (res) {
                 sentEmails.push(email)
-                sent ++
+                sent++
               } else {
                 logger.error('Something went wrong with sending referral email')
               }
@@ -852,21 +825,17 @@ export const sendReferEmail = async (
   }
 }
 
-const getProfileActions = async (
-  _: any,
-  args: any,
-  ctx: Context,
-): Promise<Array<gql.ProfileActionOutput>> => {
+const getProfileActions = async (_: any, args: any, ctx: Context): Promise<Array<gql.ProfileActionOutput>> => {
   const { user, repositories, wallet, chain } = ctx
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
   logger.debug('getProfileActions', { loggedInUserId: user.id, wallet: wallet.address })
-  const actions =  await repositories.incentiveAction.find({
+  const actions = await repositories.incentiveAction.find({
     where: {
       userId: user.id,
     },
   })
-  return actions.map((action) => {
+  return actions.map(action => {
     return {
       profileUrl: action.profileUrl,
       action: profileActionType(action),
@@ -883,7 +852,7 @@ const getProfilesActionsWithPoints = async (
   const { user, repositories, chain } = ctx
   const chainId = chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
-  const actions =  await repositories.incentiveAction.find({
+  const actions = await repositories.incentiveAction.find({
     where: {
       userId: user.id,
     },
@@ -899,7 +868,7 @@ const getProfilesActionsWithPoints = async (
       })
       seen[action.profileUrl] = true
     } else {
-      const index = profilesActions.findIndex((profileAction) => profileAction.url === action.profileUrl)
+      const index = profilesActions.findIndex(profileAction => profileAction.url === action.profileUrl)
       if (index !== -1) {
         profilesActions[index].action.push(profileActionType(action))
         profilesActions[index].totalPoints += action.point
@@ -920,7 +889,7 @@ const getSentReferralEmails = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     logger.debug('getSentReferralEmails', { loggedInUserId: user.id, wallet: wallet.address })
 
-    const referralKey =`${user.referralId}::${args?.profileUrl}`
+    const referralKey = `${user.referralId}::${args?.profileUrl}`
     const referredUsers = await repositories.user.find({
       where: {
         referredBy: referralKey,
@@ -930,7 +899,7 @@ const getSentReferralEmails = async (
     logger.info(`getSentReferralEmails ${referralKey}, length=${referredUsers.length}`)
     const res = []
     await Promise.allSettled(
-      referredUsers.map(async (referUser) => {
+      referredUsers.map(async referUser => {
         let accepted = false
         if (referUser.isEmailConfirmed) {
           const profile = await repositories.profile.findOne({
@@ -945,7 +914,9 @@ const getSentReferralEmails = async (
           accepted,
           timestamp: referUser.createdAt,
         })
-        logger.info(`getSentReferralEmails ${referralKey}, email=${referUser.email}, accepted=${accepted}, timestamp=${referUser.createdAt}`)
+        logger.info(
+          `getSentReferralEmails ${referralKey}, email=${referUser.email}, accepted=${accepted}, timestamp=${referUser.createdAt}`,
+        )
       }),
     )
 
@@ -964,14 +935,10 @@ export default {
     getMyPendingAssociations: combineResolvers(auth.isAuthenticated, getMyPendingAssociations),
     getApprovedAssociations: combineResolvers(auth.isAuthenticated, getApprovedAssociations),
     getRejectedAssociations: combineResolvers(auth.isAuthenticated, getRejectedAssociations),
-    getRemovedAssociationsForReceiver:
-      combineResolvers(auth.isAuthenticated, getRemovedAssociationsForReceiver),
-    getRemovedAssociationsForSender:
-      combineResolvers(auth.isAuthenticated, getRemovedAssociationsForSender),
-    getProfileActions:
-    combineResolvers(auth.isAuthenticated, getProfileActions),
-    getSentReferralEmails:
-    combineResolvers(auth.isAuthenticated, getSentReferralEmails),
+    getRemovedAssociationsForReceiver: combineResolvers(auth.isAuthenticated, getRemovedAssociationsForReceiver),
+    getRemovedAssociationsForSender: combineResolvers(auth.isAuthenticated, getRemovedAssociationsForSender),
+    getProfileActions: combineResolvers(auth.isAuthenticated, getProfileActions),
+    getSentReferralEmails: combineResolvers(auth.isAuthenticated, getSentReferralEmails),
   },
   Mutation: {
     signUp,

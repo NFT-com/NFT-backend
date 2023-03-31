@@ -21,19 +21,19 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
 
   // Utilize resources created from gql.shared stack
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
-  const subnets = await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds')) as string[]
-  const privateSubnets = await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds')) as string[]
-  const internalEcsSGId = await pulumiOutToValue(sharedStack.getOutput('internalEcsSGId')) as string
+  const subnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
+  const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
+  const internalEcsSGId = (await pulumiOutToValue(sharedStack.getOutput('internalEcsSGId'))) as string
 
   // START: CRONJOB - MINTRUNNER
   if (isProduction()) {
-    createAnalyticsDatabase()  // only create in prod, dont need db per env
+    createAnalyticsDatabase() // only create in prod, dont need db per env
   }
   const task = createMintRunnerTaskDefinition()
   const cluster = createEcsCluster()
   createEventBridgeTarget(task, subnets, cluster)
   // END: CRONJOB - MINTRUNNER
-  
+
   // START: CRONJOB - SALES PROCESSOR
   if (stage !== 'dev') {
     const spTask = createSalesProcessorTaskDefinition()
@@ -41,7 +41,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     createSalesProcessorEventBridgeTarget(spTask, subnets, internalEcsSGId, spCluster)
   }
   // END: CRONJOB - SALES PROCESSOR
-  
+
   // START: CRONJOB - COLLECTION STATS
   if (stage !== 'dev') {
     const csTask = createCollectionStatsTaskDefinition()
@@ -64,9 +64,7 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   // END: CRONJOB - DB SYNC
 }
 
-export const createCronJobs = (
-  preview?: boolean,
-): Promise<pulumi.automation.OutputMap> => {
+export const createCronJobs = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
   const stackName = `${process.env.STAGE}.cronjobs.${process.env.AWS_REGION}`
   const workDir = upath.joinSafe(__dirname, 'stack')
   return deployInfra(stackName, workDir, pulumiProgram, preview)

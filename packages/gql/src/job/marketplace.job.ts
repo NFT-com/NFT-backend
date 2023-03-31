@@ -18,7 +18,7 @@ const marketplaceABI = contracts.marketplaceABIJSON()
 const eventIface = new utils.Interface(eventABI)
 const marketplaceIface = new utils.Interface(marketplaceABI)
 
-const defaultBlock: {[chainId: number] : number} = {
+const defaultBlock: { [chainId: number]: number } = {
   4: 10184159, // block number which marketplace contract created
 }
 
@@ -54,18 +54,10 @@ export const getPastLogs = async (
   const max_Blocks = maxBlocks ? maxBlocks : MAX_BLOCKS
   try {
     // if there are too many blocks, we will split it up...
-    if ((toBlock - fromBlock) > max_Blocks) {
+    if (toBlock - fromBlock > max_Blocks) {
       logger.debug(`recursive getting logs from ${fromBlock} to ${toBlock}`)
       // eslint-disable-next-line no-use-before-define
-      return await splitGetLogs(
-        provider,
-        fromBlock,
-        toBlock,
-        address,
-        topics,
-        max_Blocks,
-        currentStackLv,
-      )
+      return await splitGetLogs(provider, fromBlock, toBlock, address, topics, max_Blocks, currentStackLv)
     } else {
       // we just get logs using provider...
       logger.debug(`getting logs from ${fromBlock} to ${toBlock}`)
@@ -105,13 +97,11 @@ const splitGetLogs = async (
   currentStackLv: number,
 ): Promise<ethers.providers.Log[]> => {
   // split block range in half...
-  const midBlock =  (fromBlock.valueOf() + toBlock.valueOf()) >> 1
+  const midBlock = (fromBlock.valueOf() + toBlock.valueOf()) >> 1
   // eslint-disable-next-line no-use-before-define
-  const first = await getPastLogs(provider, address, topics,
-    fromBlock, midBlock, maxBlocks, currentStackLv + 1)
+  const first = await getPastLogs(provider, address, topics, fromBlock, midBlock, maxBlocks, currentStackLv + 1)
   // eslint-disable-next-line no-use-before-define
-  const last = await getPastLogs(provider, address, topics,
-    midBlock + 1, toBlock, maxBlocks,currentStackLv + 1)
+  const last = await getPastLogs(provider, address, topics, midBlock + 1, toBlock, maxBlocks, currentStackLv + 1)
   return [...first, ...last]
 }
 
@@ -130,15 +120,13 @@ const listenApprovalEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const topics = [
-    utils.id('Approval(bytes32,address)'),
-  ]
+  const topics = [utils.id('Approval(bytes32,address)')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Approval logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = marketplaceIface.parseLog(log)
       const structHash = event.args.structHash
       const makerAddress = event.args.maker
@@ -196,15 +184,13 @@ const listenNonceIncrementedEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const topics = [
-    utils.id('NonceIncremented(address,uint)'),
-  ]
+  const topics = [utils.id('NonceIncremented(address,uint)')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('NonceIncremented logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = marketplaceIface.parseLog(log)
       const makerAddress = event.args.maker
       const nonce = Number(event.args.newNonce)
@@ -217,13 +203,15 @@ const listenNonceIncrementedEvents = async (
           cancelTxHash: IsNull(),
         },
       })
-      const filteredAsks = marketAsks.filter((ask) => ask.nonce < nonce)
+      const filteredAsks = marketAsks.filter(ask => ask.nonce < nonce)
       if (filteredAsks.length) {
-        await Promise.all(filteredAsks.map(async (marketAsk) => {
-          await repositories.marketAsk.updateOneById(marketAsk.id, {
-            cancelTxHash: log.transactionHash,
-          })
-        }))
+        await Promise.all(
+          filteredAsks.map(async marketAsk => {
+            await repositories.marketAsk.updateOneById(marketAsk.id, {
+              cancelTxHash: log.transactionHash,
+            })
+          }),
+        )
       } else {
         const marketBids = await repositories.marketBid.find({
           where: {
@@ -234,12 +222,14 @@ const listenNonceIncrementedEvents = async (
             cancelTxHash: IsNull(),
           },
         })
-        const filteredBids = marketBids.filter((bid) => bid.nonce < nonce)
-        await Promise.all(filteredBids.map(async (marketBid) => {
-          await repositories.marketBid.updateOneById(marketBid.id, {
-            cancelTxHash: log.transactionHash,
-          })
-        }))
+        const filteredBids = marketBids.filter(bid => bid.nonce < nonce)
+        await Promise.all(
+          filteredBids.map(async marketBid => {
+            await repositories.marketBid.updateOneById(marketBid.id, {
+              cancelTxHash: log.transactionHash,
+            })
+          }),
+        )
       }
     })
 
@@ -266,15 +256,13 @@ const listenCancelEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.nftMarketplaceAddress(chainId)
-  const topics = [
-    utils.id('Cancel(bytes32,address)'),
-  ]
+  const topics = [utils.id('Cancel(bytes32,address)')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Cancel logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = marketplaceIface.parseLog(log)
       const structHash = event.args.structHash
       const makerAddress = event.args.maker
@@ -326,7 +314,7 @@ const parseAsset = async (
 ): Promise<defs.MarketplaceAsset[]> => {
   const asset: defs.MarketplaceAsset[] = []
   const promises = assetData.map(async (data, index) => {
-    const parsedAssetData = defaultAbiCoder.decode(['uint256','uint256'], data)
+    const parsedAssetData = defaultAbiCoder.decode(['uint256', 'uint256'], data)
     let assetClassData
     let assetTypeData
     switch (assetClass[index]) {
@@ -356,8 +344,9 @@ const parseAsset = async (
         contract: assetTypeData[0].toLowerCase(),
       },
     })
-    const nft = nfts.find((nft) => BigNumber.from(nft.tokenId).toHexString()
-      === (assetTypeData[1] as BigNumber).toHexString())
+    const nft = nfts.find(
+      nft => BigNumber.from(nft.tokenId).toHexString() === (assetTypeData[1] as BigNumber).toHexString(),
+    )
 
     asset.push({
       nftId: nft ? nft.id : '',
@@ -393,26 +382,25 @@ const listenMatchEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.marketplaceEventAddress(chainId)
-  const topics = [
-    utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)'),
-  ]
+  const topics = [utils.id('Match(bytes32,bytes32,uint8,(uint8,bytes32,bytes32),(uint8,bytes32,bytes32),bool)')]
 
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Match logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       try {
         const event = eventIface.parseLog(log)
         const makerHash = log.topics[1]
         const takerHash = log.topics[2]
         const privateSale = event.args.privateSale
-        const auctionType = event.args.auctionType == 0 ?
-          defs.AuctionType.FixedPrice :
-          event.args.auctionType == 1 ?
-            defs.AuctionType.English :
-            defs.AuctionType.Decreasing
+        const auctionType =
+          event.args.auctionType == 0
+            ? defs.AuctionType.FixedPrice
+            : event.args.auctionType == 1
+              ? defs.AuctionType.English
+              : defs.AuctionType.Decreasing
         const makerSig = event.args.makerSig
         const takerSig = event.args.takerSig
 
@@ -540,15 +528,13 @@ const listenMatchTwoAEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.marketplaceEventAddress(chainId)
-  const topics = [
-    utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
-  ]
+  const topics = [utils.id('Match2A(bytes32,address,address,uint256,uint256,uint256,uint256)')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Match2A logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = eventIface.parseLog(log)
       const makerHash = log.topics[1]
       const makerAddress = event.args.makerAddress
@@ -558,8 +544,11 @@ const listenMatchTwoAEvents = async (
       const nonce = Number(event.args.nonce)
       const salt = Number(event.args.salt)
 
-      let marketAsk = await repositories.marketAsk.findOne({ where: {
-        structHash: makerHash } })
+      let marketAsk = await repositories.marketAsk.findOne({
+        where: {
+          structHash: makerHash,
+        },
+      })
 
       if (!marketAsk) {
         marketAsk = await repositories.marketAsk.save({
@@ -621,15 +610,13 @@ const listenMatchTwoBEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.marketplaceEventAddress(chainId)
-  const topics = [
-    utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
-  ]
+  const topics = [utils.id('Match2B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Match2B logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = eventIface.parseLog(log)
 
       const makerHash = log.topics[1]
@@ -652,8 +639,11 @@ const listenMatchTwoBEvents = async (
         sellerTakerOrderAssetTypeData,
       )
 
-      let marketAsk = await repositories.marketAsk.findOne({ where: {
-        structHash: makerHash } })
+      let marketAsk = await repositories.marketAsk.findOne({
+        where: {
+          structHash: makerHash,
+        },
+      })
       if (!marketAsk) {
         // no marketAsk -> populate
         marketAsk = await repositories.marketAsk.save({
@@ -711,15 +701,13 @@ const listenMatchThreeAEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.marketplaceEventAddress(chainId)
-  const topics = [
-    utils.id('Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)'),
-  ]
+  const topics = [utils.id('Match3A(bytes32,address,address,uint256,uint256,uint256,uint256)')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Match3A logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = eventIface.parseLog(log)
       const takerHash = log.topics[1]
       const makerAddress = event.args.makerAddress
@@ -792,15 +780,13 @@ const listenMatchThreeBEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.marketplaceEventAddress(chainId)
-  const topics = [
-    utils.id('Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])'),
-  ]
+  const topics = [utils.id('Match3B(bytes32,bytes[],bytes[],bytes4[],bytes[],bytes[],bytes4[])')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('Match3B logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = eventIface.parseLog(log)
       const takerHash = log.topics[1]
 
@@ -880,15 +866,13 @@ const listenBuyNowInfoEvents = async (
   latestBlock: number,
 ): Promise<void[]> => {
   const address = contracts.marketplaceEventAddress(chainId)
-  const topics = [
-    utils.id('BuyNowInfo(bytes32,address)'),
-  ]
+  const topics = [utils.id('BuyNowInfo(bytes32,address)')]
   try {
     const logs = await getPastLogs(provider, address, topics, cachedBlock, latestBlock)
 
     logger.debug('BuyNowInfo logs', logs.length)
 
-    const promises = logs.map(async (log) => {
+    const promises = logs.map(async log => {
       const event = eventIface.parseLog(log)
 
       const makerHash = log.topics[1]
@@ -923,8 +907,7 @@ const getCachedBlock = async (chainId: number, key: string): Promise<number> => 
     const cachedBlock = await cache.get(key)
 
     // get 1000 blocks before incase of some blocks not being handled correctly
-    if (cachedBlock) return Number(cachedBlock) > 10000
-      ? Number(cachedBlock) - 10000 : Number(cachedBlock)
+    if (cachedBlock) return Number(cachedBlock) > 10000 ? Number(cachedBlock) - 10000 : Number(cachedBlock)
     else return defaultBlock[chainId]
   } catch (e) {
     Sentry.captureException(e)
@@ -956,7 +939,7 @@ export const syncMarketplace = async (job: Job): Promise<any> => {
     await cache.set(`cached_block_${chainId}`, latestBlock.number)
   } catch (err) {
     logger.debug('error', err)
-    
+
     Sentry.captureMessage(`Error in syncMarketplace: ${err}`)
   }
 }

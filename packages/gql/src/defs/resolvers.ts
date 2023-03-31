@@ -40,8 +40,11 @@ export type PaginatedResultsFromEntityByArgs<T> = {
   select?: FindOptionsSelect<Partial<T>>
 }
 
-export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<PaginatedResultsFromEntityByArgs<T>, 'pageInput' | 'relations'> & Pick<FindOneOptions<T>, 'cache'> &
-{
+export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<
+PaginatedResultsFromEntityByArgs<T>,
+'pageInput' | 'relations'
+> &
+Pick<FindOneOptions<T>, 'cache'> & {
   offsetPageInput: gql.OffsetPageInput
   relations?: string[]
 }

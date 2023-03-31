@@ -6,9 +6,9 @@ import { LoggerContext, LogLevel } from './types'
 
 export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({
   enabled: !process.env.DISABLE_LOGGER,
-  level:  (process.env.LOG_LEVEL || LogLevel.Info).toLowerCase(),
+  level: (process.env.LOG_LEVEL || LogLevel.Info).toLowerCase(),
   formatters: {
-    level: (label) => {
+    level: label => {
       return { level: label }
     },
   },
@@ -18,9 +18,7 @@ class AppLogger {
 
   private logger
 
-  constructor(
-    name?: string,
-    context: LoggerContext = LoggerContext.General) {
+  constructor(name?: string, context: LoggerContext = LoggerContext.General) {
     this.logger = rootLogger.child({ name, context })
   }
 
@@ -83,5 +81,4 @@ class AppLogger {
 
 }
 
-export const LoggerFactory = (name: string, context?: LoggerContext): AppLogger =>
-  new AppLogger(name, context)
+export const LoggerFactory = (name: string, context?: LoggerContext): AppLogger => new AppLogger(name, context)

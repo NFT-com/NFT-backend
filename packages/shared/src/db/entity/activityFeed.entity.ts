@@ -1,4 +1,4 @@
-import { Column, Entity  } from 'typeorm'
+import { Column, Entity } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
 
@@ -15,7 +15,7 @@ export enum ActivityFeedTradeType {
 export enum ActivityFeedCurrency {
   ETH = 'ETH',
   WETH = 'WETH',
-  BLUR_POOL = 'BLUR_POOL'
+  BLUR_POOL = 'BLUR_POOL',
 }
 
 @Entity()
@@ -32,7 +32,7 @@ export class ActivityFeed extends BaseEntity {
 
   @Column()
   tokenId: string
-  
+
   @Column({ type: 'enum', enum: ActivityFeedERCType })
   ercType: ActivityFeedERCType
 

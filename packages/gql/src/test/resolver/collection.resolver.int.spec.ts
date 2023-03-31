@@ -67,10 +67,7 @@ describe('collection resolver', () => {
   beforeAll(async () => {
     connection = await db.connectTestDB(testDBConfig)
 
-    testServer = getTestApolloServer(repositories,
-      testMockUser,
-      testMockWallet,
-    )
+    testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
   })
 
   afterAll(async () => {
@@ -117,7 +114,8 @@ describe('collection resolver', () => {
         type: defs.NFTType.ERC721,
         metadata: {
           name: 'The Elon Musk Twitter Experience #5',
-          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+          description:
+            'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
         },
       })
       const collectionA = await repositories.collection.save({
@@ -164,7 +162,8 @@ describe('collection resolver', () => {
 
     it('should remove duplicated collections', async () => {
       let result = await testServer.executeOperation({
-        query: 'mutation removeDuplicates($contracts: [Address!]!) { removeDuplicates(contracts: $contracts) { message } }',
+        query:
+          'mutation removeDuplicates($contracts: [Address!]!) { removeDuplicates(contracts: $contracts) { message } }',
         variables: {
           contracts: ['0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b', '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'],
         },
@@ -176,7 +175,8 @@ describe('collection resolver', () => {
       expect(existingCollections.length).toEqual(2)
 
       result = await testServer.executeOperation({
-        query: 'query CollectionNFTs($input: CollectionNFTsInput!) { collectionNFTs(input: $input) { items { id contract } } }',
+        query:
+          'query CollectionNFTs($input: CollectionNFTsInput!) { collectionNFTs(input: $input) { items { id contract } } }',
         variables: {
           input: {
             collectionAddress: '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b',
@@ -236,7 +236,8 @@ describe('collection resolver', () => {
         type: defs.NFTType.ERC721,
         metadata: {
           name: 'The Elon Musk Twitter Experience #5',
-          description: 'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
+          description:
+            'MuskTweetz, Elon Musk, Tesla, OmniRhinos, OxPokemon, JellyFarm NFT Collection, Stoptrippin all Rights Reserved.',
         },
       })
     })
@@ -263,10 +264,7 @@ describe('collection resolver', () => {
 
   describe('updateCollectionImageUrls', () => {
     beforeAll(async () => {
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet)
       cA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'MultiFaucet NFT',
@@ -314,7 +312,8 @@ describe('collection resolver', () => {
 
     it('should update collections image urls', async () => {
       const result = await testServer.executeOperation({
-        query: 'mutation UpdateCollectionImageUrls($count: Int!) { updateCollectionImageUrls(count: $count) { message } }',
+        query:
+          'mutation UpdateCollectionImageUrls($count: Int!) { updateCollectionImageUrls(count: $count) { message } }',
         variables: {
           count: 1000,
         },
@@ -337,11 +336,7 @@ describe('collection resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
       cA = await repositories.collection.save({
         contract: ethers.utils.getAddress('0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'),
         name: 'Unknown Name',
@@ -411,12 +406,7 @@ describe('collection resolver', () => {
       testMockWallet.chainName = 'goerli'
 
       const teamKey = process.env.TEAM_AUTH_TOKEN
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-        teamKey,
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' }, teamKey)
 
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0x9Ef7A34dcCc32065802B1358129a226B228daB4E'),
@@ -509,7 +499,8 @@ describe('collection resolver', () => {
       expect(result.data.myNFTs).toBeDefined()
       expect(result.data.myNFTs.items.length).toEqual(2)
       result = await testServer.executeOperation({
-        query: 'mutation UpdateSpamStatus($contracts: [Address!]!, $isSpam: Boolean!) { updateSpamStatus(contracts: $contracts, isSpam: $isSpam) { message } }',
+        query:
+          'mutation UpdateSpamStatus($contracts: [Address!]!, $isSpam: Boolean!) { updateSpamStatus(contracts: $contracts, isSpam: $isSpam) { message } }',
         variables: {
           contracts: ['0x9Ef7A34dcCc32065802B1358129a226B228daB4E'],
           isSpam: true,
@@ -549,11 +540,7 @@ describe('collection resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         name: 'NFT.com Genesis Key',
@@ -614,11 +601,7 @@ describe('collection resolver', () => {
       testMockWallet.chainId = '5'
       testMockWallet.chainName = 'goerli'
 
-      testServer = getTestApolloServer(repositories,
-        testMockUser,
-        testMockWallet,
-        { id: '5', name: 'goerli' },
-      )
+      testServer = getTestApolloServer(repositories, testMockUser, testMockWallet, { id: '5', name: 'goerli' })
       await repositories.collection.save({
         contract: ethers.utils.getAddress('0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55'),
         name: 'NFT.com Genesis Key',
@@ -640,7 +623,7 @@ describe('collection resolver', () => {
       const file = fs.createReadStream(join(__dirname, '..', 'resource', filename))
       // const file = Readable.from(Buffer.from('hello upload', 'utf-8'))
       const upload = new Upload()
-      upload.promise = new Promise((resolve) =>
+      upload.promise = new Promise(resolve =>
         resolve({
           createReadStream: () => file,
           filename: filename,

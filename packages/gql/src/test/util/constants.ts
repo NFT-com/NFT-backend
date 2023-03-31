@@ -1,7 +1,19 @@
 import { DeepPartial } from 'typeorm'
 
 import { gql } from '@nftcom/gql/defs'
-import { NFT, NFTType, Profile, ProfileDisplayType, ProfileLayoutType, ProfileStatus, ProtocolData, TxActivity, UpdateProfileInput, User, Wallet } from '@nftcom/gql/defs/gql'
+import {
+  NFT,
+  NFTType,
+  Profile,
+  ProfileDisplayType,
+  ProfileLayoutType,
+  ProfileStatus,
+  ProtocolData,
+  TxActivity,
+  UpdateProfileInput,
+  User,
+  Wallet,
+} from '@nftcom/gql/defs/gql'
 import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared'
@@ -72,11 +84,9 @@ export const testMockProfiles: Profile = {
   photoURL: 'https://cdn.nft.com/dev/profiles/1657467089107-rohantest.svg',
   status: ProfileStatus.Owned,
   url: 'testprofile',
-
 }
 
-export const mockUpdateProfileInput: UpdateProfileInput =
-{
+export const mockUpdateProfileInput: UpdateProfileInput = {
   description: 'test description',
   id: 'TQ2tZbp3y3DyXD9iSHUL8',
   deployedContractsVisible: true,
@@ -180,7 +190,7 @@ export const mockProfilesData: Array<DeepPartial<Profile>> = [
   },
 ]
 
-export const testSeaportOrder : SeaportOrder = {
+export const testSeaportOrder: SeaportOrder = {
   created_date: 'test-created-date',
   closing_date: 'test-closing-date',
   closing_extendable: false,
@@ -201,13 +211,15 @@ export const testSeaportOrder : SeaportOrder = {
   protocol_data: {
     parameters: {
       offerer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-      offer: [{
-        itemType: 3,
-        token: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-        identifierOrCriteria: '1234',
-        startAmount: '1',
-        endAmount: '1',
-      }],
+      offer: [
+        {
+          itemType: 3,
+          token: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+          identifierOrCriteria: '1234',
+          startAmount: '1',
+          endAmount: '1',
+        },
+      ],
       consideration: [],
       startTime: '12345',
       endTime: '12345',
@@ -222,12 +234,14 @@ export const testSeaportOrder : SeaportOrder = {
     signature: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
   },
   protocol_address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  maker_fees: [{
-    account: {
-      address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+  maker_fees: [
+    {
+      account: {
+        address: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
+      },
+      basis_points: '250',
     },
-    basis_points: '250',
-  }],
+  ],
   taker_fees: null,
   side: 'ask',
   order_type: 'basic',
@@ -348,7 +362,8 @@ export const seaportProtocolData: ProtocolData = {
     totalOriginalConsiderationItems: 3,
     counter: 1,
   },
-  signature: '0x13cb5579ce2c24c79316577862338fca160b85bf49a520c1cb4288ba93d9c0094bca5295861751c76fe847c2ccad572b8e693cbcb94a9146e930243823032f141b',
+  signature:
+    '0x13cb5579ce2c24c79316577862338fca160b85bf49a520c1cb4288ba93d9c0094bca5295861751c76fe847c2ccad572b8e693cbcb94a9146e930243823032f141b',
 }
 
 export const looksrareProtocolData: ProtocolData = {

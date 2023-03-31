@@ -11,7 +11,9 @@ const taskRole = 'arn:aws:iam::016437323894:role/ECSServiceTask'
 
 export const createCollectionStatsTaskDefinition = (): aws.ecs.TaskDefinition => {
   const resourceName = getResourceName('collectionStats')
-  const ecrImage = `${process.env.ECR_REGISTRY}/collection-stats:${process.env.STAGE}-${process.env.GIT_SHA || 'latest'}`
+  const ecrImage = `${process.env.ECR_REGISTRY}/collection-stats:${process.env.STAGE}-${
+    process.env.GIT_SHA || 'latest'
+  }`
 
   return new aws.ecs.TaskDefinition('collectionStats-td', {
     containerDefinitions: JSON.stringify([
@@ -63,7 +65,8 @@ export const createCollectionStatsTaskDefinition = (): aws.ecs.TaskDefinition =>
             Value: process.env.NODE_ENV,
           },
         ],
-      }]),
+      },
+    ]),
     cpu: '512',
     executionRoleArn: execRole,
     family: resourceName,
@@ -80,31 +83,30 @@ export const createCollectionStatsTaskDefinition = (): aws.ecs.TaskDefinition =>
 
 export const createCollectionStatsEcsCluster = (): aws.ecs.Cluster => {
   const resourceName = 'cronjob-collection-stats' // static name to allow each env to share the same ecs cluster
-  const cluster = new aws.ecs.Cluster('collectionStats-cluster',
-    {
-      name: resourceName,
-      settings: [
-        {
-          name: 'containerInsights',
-          value: 'disabled',
-        }],
-      capacityProviders: [
-        'FARGATE_SPOT',
-        'FARGATE',
-      ],
-      configuration: {
-        executeCommandConfiguration: {
-          logging: 'DEFAULT',
-        },
+  const cluster = new aws.ecs.Cluster('collectionStats-cluster', {
+    name: resourceName,
+    settings: [
+      {
+        name: 'containerInsights',
+        value: 'disabled',
       },
-      tags: {
-        cronjob: 'collection-stats',
+    ],
+    capacityProviders: ['FARGATE_SPOT', 'FARGATE'],
+    configuration: {
+      executeCommandConfiguration: {
+        logging: 'DEFAULT',
       },
-      defaultCapacityProviderStrategies: [{
+    },
+    tags: {
+      cronjob: 'collection-stats',
+    },
+    defaultCapacityProviderStrategies: [
+      {
         capacityProvider: 'FARGATE',
         weight: 1,
-      }],
-    })
+      },
+    ],
+  })
 
   return cluster
 }

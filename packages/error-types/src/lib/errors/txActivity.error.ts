@@ -9,7 +9,7 @@ export enum ErrorType {
   NullInput = 'NullInput',
   OpenSea = 'OPENSEA_ERROR',
   LooksRare = 'LOOKSRARE_ERROR',
-  X2Y2 = 'X2Y2_ERROR'
+  X2Y2 = 'X2Y2_ERROR',
 }
 
 export const buildNoActivityId = (): string => 'No Activity Ids Sent'

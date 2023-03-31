@@ -1,4 +1,4 @@
-import { retrieveMultipleOrdersX2Y2,X2Y2ExternalOrder, X2Y2OrderRequest } from '@nftcom/gql/service/x2y2.service'
+import { retrieveMultipleOrdersX2Y2, X2Y2ExternalOrder, X2Y2OrderRequest } from '@nftcom/gql/service/x2y2.service'
 
 describe('x2y2', () => {
   describe('retrieveMultipleOrdersX2Y2', () => {
@@ -16,12 +16,8 @@ describe('x2y2', () => {
         },
       ]
 
-      const orders: X2Y2ExternalOrder = await retrieveMultipleOrdersX2Y2(
-        x2y2OrderReq,
-        chainId,
-        true,
-      )
-      
+      const orders: X2Y2ExternalOrder = await retrieveMultipleOrdersX2Y2(x2y2OrderReq, chainId, true)
+
       expect(orders.listings).toHaveLength(0)
       expect(orders.offers).toHaveLength(0)
     })

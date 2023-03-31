@@ -38,40 +38,29 @@ export const DEFAULT_NFT_IMAGE = 'https://cdn.nft.com/Medallion.jpg'
 // TODO implement cache using data loader otherwise
 //  some of these functions will have too many db calls
 
-const getDefaultOrFindById = <T>(
-  obj: T,
-  id: string,
-  findFn: (id: string) => Promise<T>,
-  key = 'id',
-): Promise<T> => {
+const getDefaultOrFindById = <T>(obj: T, id: string, findFn: (id: string) => Promise<T>, key = 'id'): Promise<T> => {
   if (helper.isEmpty(id) || obj?.[key] === id) {
     return Promise.resolve(obj)
   }
   return findFn(id)
 }
 
-export const getWallet = (
-  ctx: Context,
-  input: gql.WalletInput,
-): Promise<entity.Wallet> => {
+export const getWallet = (ctx: Context, input: gql.WalletInput): Promise<entity.Wallet> => {
   const { user, repositories } = ctx
   const { network, chainId, address } = input
   logger.debug('getWallet', { loggedInUserId: user?.id, input })
 
   return repositories.wallet
     .findByNetworkChainAddress(network, chainId, address)
-    .then(fp.rejectIfEmpty(appError.buildExists(
-      walletError.buildAddressNotFoundMsg(),
-      walletError.ErrorType.AddressNotFound,
-    )))
+    .then(
+      fp.rejectIfEmpty(
+        appError.buildExists(walletError.buildAddressNotFoundMsg(), walletError.ErrorType.AddressNotFound),
+      ),
+    )
 }
 
 // TODO can we use generics instead of any?
-export const entityById = (
-  ctx: Context,
-  id: string,
-  entityType: defs.EntityType,
-): Promise<any> => {
+export const entityById = (ctx: Context, id: string, entityType: defs.EntityType): Promise<any> => {
   const { repositories, user, wallet } = ctx
 
   switch (entityType) {
@@ -104,10 +93,7 @@ export const resolveEntityFromContext = <T>(key: string) => {
   }
 }
 
-export const getCollection = (
-  ctx: Context,
-  contractAddress: string,
-): Promise<any> => {
+export const getCollection = (ctx: Context, contractAddress: string): Promise<any> => {
   const { user, repositories } = ctx
   logger.debug('getCollection', { loggedInUserId: user?.id, contractAddress })
 
@@ -116,46 +102,32 @@ export const getCollection = (
     .then(fp.rejectIfEmpty(appError.buildCustom(`collection ${contractAddress} not found`)))
 }
 
-export const resolveCollectionById = <T, K>(
-  key: string,
-  parentType: defs.EntityType,
-) => {
+export const resolveCollectionById = <T, K>(key: string, parentType: defs.EntityType) => {
   return (parent: T, args: unknown, ctx: Context): Promise<K> => {
-    return entityById(ctx, parent?.['id'], parentType)
-      .then((p) => {
-        if (helper.isEmpty(p?.[key])) {
-          return null
-        }
-        return getCollection(ctx, p?.[key])
-      })
+    return entityById(ctx, parent?.['id'], parentType).then(p => {
+      if (helper.isEmpty(p?.[key])) {
+        return null
+      }
+      return getCollection(ctx, p?.[key])
+    })
   }
 }
 
-export const resolveEntityById = <T, K>(
-  key: string,
-  parentType: defs.EntityType,
-  resolvingType: defs.EntityType,
-) => {
+export const resolveEntityById = <T, K>(key: string, parentType: defs.EntityType, resolvingType: defs.EntityType) => {
   return (parent: T, args: unknown, ctx: Context): Promise<K> => {
-    return entityById(ctx, parent?.['id'], parentType)
-      .then((p) => {
-        if (helper.isEmpty(p?.[key])) {
-          return null
-        }
-        return entityById(ctx, p?.[key], resolvingType)
-      })
+    return entityById(ctx, parent?.['id'], parentType).then(p => {
+      if (helper.isEmpty(p?.[key])) {
+        return null
+      }
+      return entityById(ctx, p?.[key], resolvingType)
+    })
   }
 }
 
-export const resolveEntityOwnership = <T>(
-  key: string,
-  ctxKey: string,
-  parentType: defs.EntityType,
-) => {
+export const resolveEntityOwnership = <T>(key: string, ctxKey: string, parentType: defs.EntityType) => {
   return (parent: T, _: unknown, ctx: Context): Promise<boolean> => {
     const ctxObj = ctx[ctxKey]
-    return entityById(ctx, parent?.['id'], parentType)
-      .then((p) => ctxObj?.['id'] === p?.[key])
+    return entityById(ctx, parent?.['id'], parentType).then(p => ctxObj?.['id'] === p?.[key])
   }
 }
 
@@ -227,15 +199,21 @@ export const paginatedEntitiesBy = <T>(
   return pagination.resolvePage<T>(pageInput, {
     firstAfter: () => repo.findPageable(pageOptions as FindManyOptions<T>),
     firstBefore: () => repo.findPageable(pageOptions as FindManyOptions<T>),
-    lastAfter: () => repo.findPageable({
-      ...pageOptions,
-      take: pageInput.last,
-    } as FindManyOptions<T>).then(pagination.reverseResult),
-    lastBefore: () => repo.findPageable({
-      ...pageOptions,
-      order: reversedOrderBy,
-      take: pageInput.last,
-    } as FindManyOptions<T>).then(pagination.reverseResult),
+    lastAfter: () =>
+      repo
+        .findPageable({
+          ...pageOptions,
+          take: pageInput.last,
+        } as FindManyOptions<T>)
+        .then(pagination.reverseResult),
+    lastBefore: () =>
+      repo
+        .findPageable({
+          ...pageOptions,
+          order: reversedOrderBy,
+          take: pageInput.last,
+        } as FindManyOptions<T>)
+        .then(pagination.reverseResult),
   })
 }
 
@@ -253,7 +231,7 @@ export const paginatedEntitiesBy = <T>(
  * @param {string[]} select - The fields to select.
  * @returns {Promise<Pageable<T>>} Page of db results.
  */
-export const paginatedResultsFromEntitiesBy = async<T>({
+export const paginatedResultsFromEntitiesBy = async <T>({
   repo,
   pageInput,
   filters,
@@ -290,7 +268,7 @@ export const paginatedResultsFromEntitiesBy = async<T>({
  * @param {string} [orderDirection] - The direction to order the results by.
  * @
  */
-export const paginatedOffsetResultsFromEntitiesBy = async<T>({
+export const paginatedOffsetResultsFromEntitiesBy = async <T>({
   repo,
   filters = [],
   relations = [],
@@ -301,7 +279,7 @@ export const paginatedOffsetResultsFromEntitiesBy = async<T>({
   cache = true,
 }: PaginatedOffsetResultsFromEntityByArgs<T>): Promise<OffsetPageable<T>> => {
   const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
-  const pageableFilters = filters.map(((filter) => ({ ...filter, deletedAt: IsNull() })))
+  const pageableFilters = filters.map(filter => ({ ...filter, deletedAt: IsNull() }))
 
   const pageOptions = {
     select,
@@ -318,33 +296,26 @@ export const paginatedOffsetResultsFromEntitiesBy = async<T>({
   return pagination.toOffsetPageable({ offsetPageInput, result })
 }
 
-export const paginatedResultFromIndexedArray = (
-  array: Array<any>,
-  pageInput: gql.PageInput,
-): Pageable<any> => {
+export const paginatedResultFromIndexedArray = (array: Array<any>, pageInput: gql.PageInput): Pageable<any> => {
   let paginatedArray: Array<any>
   let defaultCursor
   if (!pagination.hasAfter(pageInput) && !pagination.hasBefore(pageInput)) {
-    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } :
-      { afterCursor: array.length.toString() }
+    defaultCursor = pagination.hasFirst(pageInput) ? { beforeCursor: '-1' } : { afterCursor: array.length.toString() }
   }
 
   const safePageInput = safeInput(pageInput, defaultCursor)
 
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
-    const cursor = pagination.hasAfter(safePageInput) ?
-      safePageInput.afterCursor : safePageInput.beforeCursor
-    paginatedArray = array.filter((item) => item.index > Number(cursor))
+    const cursor = pagination.hasAfter(safePageInput) ? safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedArray = array.filter(item => item.index > Number(cursor))
     totalItems = paginatedArray.length
     paginatedArray = paginatedArray.slice(0, safePageInput.first)
   } else {
-    const cursor = pagination.hasAfter(safePageInput) ?
-      safePageInput.afterCursor : safePageInput.beforeCursor
-    paginatedArray = array.filter((item) => item.index < Number(cursor))
+    const cursor = pagination.hasAfter(safePageInput) ? safePageInput.afterCursor : safePageInput.beforeCursor
+    paginatedArray = array.filter(item => item.index < Number(cursor))
     totalItems = paginatedArray.length
-    paginatedArray =
-      paginatedArray.slice(paginatedArray.length - safePageInput.last)
+    paginatedArray = paginatedArray.slice(paginatedArray.length - safePageInput.last)
   }
 
   return pagination.toPageable(
@@ -360,7 +331,7 @@ const entitiesOfEdges = <T>(
   edges: entity.Edge[],
   mapper: <T>(ctx: Context, edge: entity.Edge) => Promise<T>,
 ): Promise<T[]> => {
-  return fp.promiseMap<entity.Edge, T>((edge) => mapper<T>(ctx, edge))(edges)
+  return fp.promiseMap<entity.Edge, T>(edge => mapper<T>(ctx, edge))(edges)
 }
 
 export const thisEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
@@ -373,13 +344,9 @@ export const thisEntitiesOfEdges = <T>(ctx: Context) => {
   }
 }
 
-export const thisEntitiesOfEdgesBy = <T>(
-  ctx: Context,
-  filter: Partial<entity.Edge>,
-): Promise<T[]> => {
+export const thisEntitiesOfEdgesBy = <T>(ctx: Context, filter: Partial<entity.Edge>): Promise<T[]> => {
   const { repositories } = ctx
-  return entitiesBy(repositories.edge, filter)
-    .then(thisEntitiesOfEdges<T>(ctx))
+  return entitiesBy(repositories.edge, filter).then(thisEntitiesOfEdges<T>(ctx))
 }
 
 export const thatEntityOfEdge = <T>(ctx: Context, edge: entity.Edge): Promise<T> => {
@@ -392,9 +359,7 @@ export const thatEntitiesOfEdges = <T>(ctx: Context) => {
   }
 }
 
-export const stringifyTraits = (
-  nft: entity.NFT,
-): entity.NFT => {
+export const stringifyTraits = (nft: entity.NFT): entity.NFT => {
   if (nft.metadata && nft.metadata?.traits && nft.metadata.traits?.length) {
     for (let i = 0; i < nft.metadata.traits.length; i++) {
       if (nft.metadata.traits[i].value) {
@@ -424,67 +389,62 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
   entityFilter?: Partial<any>,
 ): Promise<any> => {
   const { repositories } = ctx
-  return paginatedEntitiesBy(
-    repositories.edge,
-    pageInput,
-    [{ ...filter }],
-    [],
-    orderKey,
-    orderDirection,
-  ).then((result: defs.PageableResult<entity.Edge>) => {
-    const edges = result[0] as entity.Edge[]
-    if (entityName === 'NFT') {
-      return Promise.all(
-        edges.map((edge: entity.Edge) => {
-          return entityFilter ?
-            repositories.nft.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
-            repositories.nft.findOne({ where: { id: edge.thatEntityId } })
-              .then(fp.thruIfNotEmpty((entry: entity.NFT) => {
-                // fix (short-term) : trait value
-                const updatedEntry = stringifyTraits(entry)
-                // include visibility to entry
-                const newEntry = {
-                  ...updatedEntry,
-                  isHide: edge.hide,
-                }
-                return repositories.collection.findOne({
-                  where: {
-                    contract: entry.contract,
-                    isSpam: false,
-                    chainId,
-                  },
-                })
-                  .then(fp.thruIfNotEmpty(() => newEntry))
-              }))
-        }),
-      ).then((entries: T[]) => {
-        const filteredEntries = entries.filter((entry) => !isNil(entry))
-        return [filteredEntries, result[1]]
-      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1], orderKey))
-    } else {
-      return Promise.all(
-        edges.map((edge: entity.Edge) => {
-          return entityFilter ?
-            repo.findOne({ where: { id: edge.thatEntityId, ...entityFilter } }) :
-            repo.findOne({ where: { id: edge.thatEntityId } })
-              .then(fp.thruIfNotEmpty((entry: T) => entry,
-              ))
-        }),
-      ).then((entries: T[]) => {
-        const filteredEntries = entries.filter((entry) => entry !== undefined)
-        return [filteredEntries, result[1]]
-      }).then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1], orderKey))
-    }
-  })
+  return paginatedEntitiesBy(repositories.edge, pageInput, [{ ...filter }], [], orderKey, orderDirection).then(
+    (result: defs.PageableResult<entity.Edge>) => {
+      const edges = result[0] as entity.Edge[]
+      if (entityName === 'NFT') {
+        return Promise.all(
+          edges.map((edge: entity.Edge) => {
+            return entityFilter
+              ? repositories.nft.findOne({ where: { id: edge.thatEntityId, ...entityFilter } })
+              : repositories.nft.findOne({ where: { id: edge.thatEntityId } }).then(
+                fp.thruIfNotEmpty((entry: entity.NFT) => {
+                  // fix (short-term) : trait value
+                  const updatedEntry = stringifyTraits(entry)
+                  // include visibility to entry
+                  const newEntry = {
+                    ...updatedEntry,
+                    isHide: edge.hide,
+                  }
+                  return repositories.collection
+                    .findOne({
+                      where: {
+                        contract: entry.contract,
+                        isSpam: false,
+                        chainId,
+                      },
+                    })
+                    .then(fp.thruIfNotEmpty(() => newEntry))
+                }),
+              )
+          }),
+        )
+          .then((entries: T[]) => {
+            const filteredEntries = entries.filter(entry => !isNil(entry))
+            return [filteredEntries, result[1]]
+          })
+          .then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1], orderKey))
+      } else {
+        return Promise.all(
+          edges.map((edge: entity.Edge) => {
+            return entityFilter
+              ? repo.findOne({ where: { id: edge.thatEntityId, ...entityFilter } })
+              : repo.findOne({ where: { id: edge.thatEntityId } }).then(fp.thruIfNotEmpty((entry: T) => entry))
+          }),
+        )
+          .then((entries: T[]) => {
+            const filteredEntries = entries.filter(entry => entry !== undefined)
+            return [filteredEntries, result[1]]
+          })
+          .then(pagination.toPageable(pageInput, edges[0], edges[edges.length - 1], orderKey))
+      }
+    },
+  )
 }
 
-export const thatEntitiesOfEdgesBy = <T>(
-  ctx: Context,
-  filter: Partial<entity.Edge>,
-): Promise<T[]> => {
+export const thatEntitiesOfEdgesBy = <T>(ctx: Context, filter: Partial<entity.Edge>): Promise<T[]> => {
   const { repositories } = ctx
-  return entitiesBy(repositories.edge, filter)
-    .then(thatEntitiesOfEdges(ctx))
+  return entitiesBy(repositories.edge, filter).then(thatEntitiesOfEdges(ctx))
 }
 // TODO use EdgeStats table
 
@@ -842,12 +802,11 @@ export const OFAC = {
 const ethereumRegex = /^(0x)[0-9A-Fa-f]{40}$/
 const validProfileRegex = /^[0-9a-z_]{1,100}$/
 export const blacklistBool = (inputUrl: string, blockReserved: boolean): boolean => {
-  const blacklisted = blacklistProfilePatterns.find((pattern) => pattern.test(inputUrl)) != null
+  const blacklisted = blacklistProfilePatterns.find(pattern => pattern.test(inputUrl)) != null
   if (!blockReserved) {
     return blacklisted
   }
-  const reserved = Object.keys(reservedProfiles)
-    .find((address) => reservedProfiles[address].includes(inputUrl)) != null
+  const reserved = Object.keys(reservedProfiles).find(address => reservedProfiles[address].includes(inputUrl)) != null
   return blacklisted || reserved
 }
 
@@ -859,9 +818,7 @@ const getSTS = (): STS => {
   return cachedSTS
 }
 
-export const convertEthAddressToEns = async (
-  ethAddress: string,
-): Promise<string> => {
+export const convertEthAddressToEns = async (ethAddress: string): Promise<string> => {
   try {
     const ens = await provider.provider().lookupAddress(ethAddress)
     return ens
@@ -872,9 +829,7 @@ export const convertEthAddressToEns = async (
   }
 }
 
-export const convertEnsToEthAddress = async (
-  ensAddress: string,
-): Promise<string> => {
+export const convertEnsToEthAddress = async (ensAddress: string): Promise<string> => {
   try {
     const address = await provider.provider().resolveName(ensAddress?.toLowerCase())
     return address
@@ -911,10 +866,7 @@ export const s3ToCdn = (s3URL: string): string => {
   }
 }
 
-export const generateCompositeImage = async (
-  profileURL: string,
-  defaultImagePath: string,
-): Promise<string> => {
+export const generateCompositeImage = async (profileURL: string, defaultImagePath: string): Promise<string> => {
   const url = profileURL.length > 14 ? profileURL.slice(0, 12).concat('...') : profileURL
   // 1. generate placeholder image buffer with profile url...
   let buffer
@@ -954,10 +906,7 @@ export const generateCompositeImage = async (
   }
 }
 
-export const sendSlackMessage = (
-  channel: string,
-  text: string,
-): Promise<void> => {
+export const sendSlackMessage = (channel: string, text: string): Promise<void> => {
   const url = 'https://slack.com/api/chat.postMessage'
   try {
     // only in prod
@@ -1023,21 +972,16 @@ export const fetchDataUsingMulticall = async (
 
     // 1. create contract using multicall contract address and abi...
     const multicallAddress = process.env.MULTICALL_CONTRACT
-    const multicallContract = new Contract(
-      multicallAddress.toLowerCase(),
-      multicall2ABI,
-      callProvider,
-    )
+    const multicallContract = new Contract(multicallAddress.toLowerCase(), multicall2ABI, callProvider)
     const abiInterface = new ethers.utils.Interface(abi)
-    const callData = calls.map((call) => [
+    const callData = calls.map(call => [
       call.contract.toLowerCase(),
       abiInterface.encodeFunctionData(call.name, call.params),
     ])
 
     logger.info(`fetchDataUsingMulticall callData: ${JSON.stringify(callData)}`)
     // 2. get bytes array from multicall contract by process aggregate method...
-    const results: MulticallResponse[] =
-      await multicallContract.tryAggregate(false, callData)
+    const results: MulticallResponse[] = await multicallContract.tryAggregate(false, callData)
 
     if (returnRawResults) {
       return results
@@ -1050,10 +994,7 @@ export const fetchDataUsingMulticall = async (
         return undefined
       } else {
         try {
-          return abiInterface.decodeFunctionResult(
-            calls[i].name,
-            result.returnData,
-          )
+          return abiInterface.decodeFunctionResult(calls[i].name, result.returnData)
         } catch (err) {
           logger.error({ err, result }, `fetchDataUsingMulticall unable to decode result for ${calls[i].name}`)
           return undefined
@@ -1061,18 +1002,16 @@ export const fetchDataUsingMulticall = async (
       }
     })
   } catch (error) {
-    logger.error(error,
-      'Failed to fetch data using multicall',
-    )
+    logger.error(error, 'Failed to fetch data using multicall')
     return []
   }
 }
 
 const toCGId = (symbol: string): string => {
   return {
-    'ETH': 'ethereum',
-    'WETH': 'weth',
-    'USDC': 'usdc-coin',
+    ETH: 'ethereum',
+    WETH: 'weth',
+    USDC: 'usdc-coin',
   }[symbol]
 }
 
@@ -1087,7 +1026,9 @@ export const getSymbolInUsd = async (symbol: string): Promise<number> => {
     if (cachedData) {
       return Number(cachedData)
     } else {
-      const cgResponse = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${toCGId(symbol)}&vs_currencies=usd`)
+      const cgResponse = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${toCGId(symbol)}&vs_currencies=usd`,
+      )
       const cgResult = await cgResponse.json()
       const cgEthUsd = cgResult?.data?.['ethereum']?.['usd']
 
@@ -1119,7 +1060,7 @@ const getDurationFromNow = (unixTimestamp: number): string => {
   const seconds = Math.floor(diff % 60)
   const minutes = Math.floor((diff / 60) % 60)
   const hours = Math.floor((diff / 3600) % 24)
-  const days = Math.floor(diff / (3600 * 24) % 365)
+  const days = Math.floor((diff / (3600 * 24)) % 365)
   const years = Math.floor(diff / (3600 * 24 * 365))
 
   const yearStr = years > 0 ? `${years} year${years > 1 ? 's' : ''}` : ''
@@ -1128,67 +1069,73 @@ const getDurationFromNow = (unixTimestamp: number): string => {
   const minuteStr = minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : ''
   const secondStr = seconds > 0 ? `${seconds} second${seconds > 1 ? 's' : ''}` : ''
 
-  const timeArr = [yearStr, dayStr, hourStr, minuteStr, secondStr].filter((str) => str !== '')
+  const timeArr = [yearStr, dayStr, hourStr, minuteStr, secondStr].filter(str => str !== '')
   const timeStr = timeArr.slice(0, 2).join(', ') + ' and ' + timeArr.slice(2).join(', ')
 
   return `in ${timeStr}`
 }
 
-export const createProfile = (
-  ctx: Context,
-  profile: Partial<entity.Profile>,
-): Promise<entity.Profile> => {
-  return ctx.repositories.profile.findOne({ where: { url: profile.url, chainId: profile.chainId } })
-    .then(fp.thruIfEmpty(() => {
-      return Promise.all([
-        fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
-          appError.buildExists(
-            profileError.buildProfileInvalidCharMsg(profile.url),
-            profileError.ErrorType.ProfileInvalid,
-          )),
-        fp.rejectIf((profile: Partial<entity.Profile>) => ethereumRegex.test(profile.url))(
-          appError.buildExists(
-            profileError.buildProfileInvalidEthMsg(profile.url),
-            profileError.ErrorType.ProfileInvalid,
-          )),
-        fp.rejectIf((profile: Partial<entity.Profile>) => blacklistBool(profile.url, false))(
-          appError.buildExists(
-            profileError.buildProfileInvalidBlacklistMsg(profile.url),
-            profileError.ErrorType.ProfileInvalid,
-          )),
-      ])
-    }))
+export const createProfile = (ctx: Context, profile: Partial<entity.Profile>): Promise<entity.Profile> => {
+  return ctx.repositories.profile
+    .findOne({ where: { url: profile.url, chainId: profile.chainId } })
+    .then(
+      fp.thruIfEmpty(() => {
+        return Promise.all([
+          fp.rejectIf((profile: Partial<entity.Profile>) => !validProfileRegex.test(profile.url))(
+            appError.buildExists(
+              profileError.buildProfileInvalidCharMsg(profile.url),
+              profileError.ErrorType.ProfileInvalid,
+            ),
+          ),
+          fp.rejectIf((profile: Partial<entity.Profile>) => ethereumRegex.test(profile.url))(
+            appError.buildExists(
+              profileError.buildProfileInvalidEthMsg(profile.url),
+              profileError.ErrorType.ProfileInvalid,
+            ),
+          ),
+          fp.rejectIf((profile: Partial<entity.Profile>) => blacklistBool(profile.url, false))(
+            appError.buildExists(
+              profileError.buildProfileInvalidBlacklistMsg(profile.url),
+              profileError.ErrorType.ProfileInvalid,
+            ),
+          ),
+        ])
+      }),
+    )
     .then(() => {
-      return ctx.repositories.profile.save(profile)
-        .then(async (savedProfile: entity.Profile) => {
-          try {
-            const abi = contracts.NftProfileABI()
-            const calls = [{
+      return ctx.repositories.profile.save(profile).then(async (savedProfile: entity.Profile) => {
+        try {
+          const abi = contracts.NftProfileABI()
+          const calls = [
+            {
               contract: contracts.nftProfileAddress(process.env.CHAIN_ID),
               name: 'getExpiryTimeline',
               params: [[profile.url]],
-            }]
-            const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
-            const timestamp = Number(res[0][0][0])
-            sendSlackMessage('sub-nftdotcom-analytics', `New profile minted: https://www.nft.com/${profile.url}${timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`}`)
-          } catch (err) {
-            logger.error('error while creating profile and sending message: ', err)
-          }
+            },
+          ]
+          const res = await fetchDataUsingMulticall(calls, abi, process.env.CHAIN_ID)
+          const timestamp = Number(res[0][0][0])
+          sendSlackMessage(
+            'sub-nftdotcom-analytics',
+            `New profile minted: https://www.nft.com/${profile.url}${
+              timestamp ? `, expires ${getDurationFromNow(timestamp)}` : `, res: ${JSON.stringify(res)}`
+            }`,
+          )
+        } catch (err) {
+          logger.error('error while creating profile and sending message: ', err)
+        }
 
-          if (!savedProfile.photoURL) {
-            const imageURL = await generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
-            return ctx.repositories.profile.updateOneById(
-              savedProfile.id,
-              {
-                photoURL: imageURL,
-                bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
-                description: `NFT.com profile for ${savedProfile.url}`,
-              },
-            )
-          }
+        if (!savedProfile.photoURL) {
+          const imageURL = await generateCompositeImage(savedProfile.url, DEFAULT_NFT_IMAGE)
+          return ctx.repositories.profile.updateOneById(savedProfile.id, {
+            photoURL: imageURL,
+            bannerURL: 'https://cdn.nft.com/profile-banner-default-logo-key.png',
+            description: `NFT.com profile for ${savedProfile.url}`,
+          })
+        }
 
-          return savedProfile
-        })
+        return savedProfile
+      })
     })
 }
 
@@ -1282,10 +1229,12 @@ export const createProfileFromEvent = async (
           },
         })
 
-        logger.info(`ensuring >= 5 REFER_NETWORK for ${referralKey}, userMadeReferral id: ${userMadeReferral.id} referredUsers length=${referredUsers.length}`)
+        logger.info(
+          `ensuring >= 5 REFER_NETWORK for ${referralKey}, userMadeReferral id: ${userMadeReferral.id} referredUsers length=${referredUsers.length}`,
+        )
         let accepted = 0
         await Promise.allSettled(
-          referredUsers.map(async (referUser) => {
+          referredUsers.map(async referUser => {
             if (referUser.isEmailConfirmed) {
               const profile = await repositories.profile.findOne({
                 where: {
@@ -1350,10 +1299,7 @@ export const optionallySaveUserAndWalletForAssociatedAddress = async (
   address: string,
   repositories: db.Repository,
 ): Promise<entity.Wallet> => {
-  const wallet = await repositories.wallet.findByChainAddress(
-    chainId,
-    ethers.utils.getAddress(address),
-  )
+  const wallet = await repositories.wallet.findByChainAddress(chainId, ethers.utils.getAddress(address))
   if (!wallet) {
     const chain = auth.verifyAndGetNetworkChain('ethereum', chainId)
     let user = await repositories.user.findOne({
@@ -1379,10 +1325,7 @@ export const optionallySaveUserAndWalletForAssociatedAddress = async (
   } else return wallet
 }
 
-export const createEdge = (
-  ctx: Context,
-  edge: Partial<entity.Edge>,
-): Promise<entity.Edge> => {
+export const createEdge = (ctx: Context, edge: Partial<entity.Edge>): Promise<entity.Edge> => {
   return ctx.repositories.edge.save(edge)
 }
 
@@ -1485,10 +1428,7 @@ export const midWeight = (prev: string, next: string): string => {
  * @param repositories
  * @param profileId
  */
-export const getLastWeight = async (
-  repositories: db.Repository,
-  profileId: string,
-): Promise<string | undefined> => {
+export const getLastWeight = async (repositories: db.Repository, profileId: string): Promise<string | undefined> => {
   logger.info(`getLastWeight for profile ${profileId} is called`)
 
   const lastVisibleEdge = await repositories.edge.findOne({
@@ -1589,10 +1529,7 @@ export const processIPFSURL = (image: string): string => {
   }
 }
 
-export const fetchWithTimeout = async (
-  resource: any,
-  options: any,
-): Promise<any> => {
+export const fetchWithTimeout = async (resource: any, options: any): Promise<any> => {
   const { timeout = 8000 } = options
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), timeout)
@@ -1604,79 +1541,78 @@ export const fetchWithTimeout = async (
   return response
 }
 
-export const generateSVGFromBase64String = (
-  base64String: string,
-): string => {
+export const generateSVGFromBase64String = (base64String: string): string => {
   return `<svg width="600" height="600"
   xmlns="http://www.w3.org/2000/svg">
   <image xmlns="http://www.w3.org/2000/svg" href="${base64String}" width="600" height="600"/>
 </svg>`
 }
 
-export const profileActionType = (
-  action: entity.IncentiveAction,
-): gql.ProfileActionType => {
-  if (action.task === ProfileTask.CREATE_NFT_PROFILE)
-    return gql.ProfileActionType.CreateNFTProfile
-  else if (action.task === ProfileTask.CUSTOMIZE_PROFILE)
-    return gql.ProfileActionType.CustomizeProfile
-  else if (action.task === ProfileTask.REFER_NETWORK)
-    return gql.ProfileActionType.ReferNetwork
-  else if (action.task === ProfileTask.BUY_NFTS)
-    return gql.ProfileActionType.BuyNFTs
-  else if (action.task === ProfileTask.LIST_NFTS)
-    return gql.ProfileActionType.ListNFTs
-  else if (action.task === ProfileTask.ISSUE_NFTS)
-    return gql.ProfileActionType.IssueNFTs
+export const profileActionType = (action: entity.IncentiveAction): gql.ProfileActionType => {
+  if (action.task === ProfileTask.CREATE_NFT_PROFILE) return gql.ProfileActionType.CreateNFTProfile
+  else if (action.task === ProfileTask.CUSTOMIZE_PROFILE) return gql.ProfileActionType.CustomizeProfile
+  else if (action.task === ProfileTask.REFER_NETWORK) return gql.ProfileActionType.ReferNetwork
+  else if (action.task === ProfileTask.BUY_NFTS) return gql.ProfileActionType.BuyNFTs
+  else if (action.task === ProfileTask.LIST_NFTS) return gql.ProfileActionType.ListNFTs
+  else if (action.task === ProfileTask.ISSUE_NFTS) return gql.ProfileActionType.IssueNFTs
 }
 
-const firstEntitiesAfter =
-  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-    const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
-    return [
-      entities.slice(index, index + pageInput.first),
-      entities.length,
-    ]
-  }
+const firstEntitiesAfter = async <T>(
+  entities: T[],
+  pageInput: gql.PageInput,
+  property: string,
+): Promise<defs.PageableResult<T>> => {
+  const index = entities.findIndex(e => e[property] === pageInput.afterCursor) + 1
+  return [entities.slice(index, index + pageInput.first), entities.length]
+}
 
-const firstEntitiesBefore =
-  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-    return [
-      entities.slice(0, Math.min(
+const firstEntitiesBefore = async <T>(
+  entities: T[],
+  pageInput: gql.PageInput,
+  property: string,
+): Promise<defs.PageableResult<T>> => {
+  return [
+    entities.slice(
+      0,
+      Math.min(
         pageInput.first,
-        entities.findIndex((e) => e[property] === pageInput.beforeCursor),
-      )),
-      entities.length,
-    ]
-  }
+        entities.findIndex(e => e[property] === pageInput.beforeCursor),
+      ),
+    ),
+    entities.length,
+  ]
+}
 
-const lastEntitiesAfter =
-  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-    const index = entities.findIndex((e) => e[property] === pageInput.afterCursor) + 1
-    return [
-      entities.slice(Math.max(index, entities.length - pageInput.last)),
-      entities.length,
-    ]
-  }
+const lastEntitiesAfter = async <T>(
+  entities: T[],
+  pageInput: gql.PageInput,
+  property: string,
+): Promise<defs.PageableResult<T>> => {
+  const index = entities.findIndex(e => e[property] === pageInput.afterCursor) + 1
+  return [entities.slice(Math.max(index, entities.length - pageInput.last)), entities.length]
+}
 
-const lastEntitiesBefore =
-  async <T>(entities: T[], pageInput: gql.PageInput, property: string): Promise<defs.PageableResult<T>> => {
-    const index = entities.findIndex((e) => e[property] === pageInput.beforeCursor)
-    return [
-      entities.slice(Math.max(0, index - pageInput.last), index),
-      entities.length,
-    ]
-  }
+const lastEntitiesBefore = async <T>(
+  entities: T[],
+  pageInput: gql.PageInput,
+  property: string,
+): Promise<defs.PageableResult<T>> => {
+  const index = entities.findIndex(e => e[property] === pageInput.beforeCursor)
+  return [entities.slice(Math.max(0, index - pageInput.last), index), entities.length]
+}
 
-export const paginateEntityArray =
-  <T>(entities: T[], pageInput: gql.PageInput, cursorProp = 'id'): Promise<defs.PageableResult<T>> => {
-    return pagination.resolvePage<T>(pageInput, {
-      firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
-      firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
-      lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
-      lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
-    })
-  }
+export const paginateEntityArray = <T>(
+  entities: T[],
+  pageInput: gql.PageInput,
+  cursorProp = 'id',
+): Promise<defs.PageableResult<T>> => {
+  return pagination.resolvePage<T>(pageInput, {
+    firstAfter: () => firstEntitiesAfter(entities, pageInput, cursorProp),
+    firstBefore: () => firstEntitiesBefore(entities, pageInput, cursorProp),
+    lastAfter: () => lastEntitiesAfter(entities, pageInput, cursorProp),
+    lastBefore: () => lastEntitiesBefore(entities, pageInput, cursorProp),
+  })
+}
 
 export const sendEmailVerificationCode = async (
   email: string,
@@ -1695,9 +1631,7 @@ export const sendEmailVerificationCode = async (
   }
 }
 
-export const checkAddressIsSanctioned = async (
-  address: string,
-): Promise<boolean> => {
+export const checkAddressIsSanctioned = async (address: string): Promise<boolean> => {
   try {
     const key = `OFAC_RESULT_${ethers.utils.getAddress(address)}`
     const cachedData = await cache.get(key)
@@ -1707,7 +1641,7 @@ export const checkAddressIsSanctioned = async (
     }
     const headers = {
       'X-API-Key': process.env.OFAC_API_KEY,
-      'Accept': 'application/json',
+      Accept: 'application/json',
     }
     const url = `https://public.chainalysis.com/api/v1/address/${address}`
     const res = await axios.get(url, { headers })
