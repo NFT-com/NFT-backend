@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers'
 import { EventEmitter } from 'stream'
 
-import { _logger, contracts, db } from '@nftcom/shared'
+import { _logger, contracts, db, entity } from '@nftcom/shared'
 
 import { CommonLikeArgs } from './like.service'
 
@@ -24,7 +24,7 @@ export function getLikeReciprocalService(repos: db.Repository = db.newRepositori
           tokenId: BigNumber.from(profile.tokenId).toHexString(),
         },
       })
-      await repos.like.save({ ...setLikeArgs, likedId: nft.id })
+      await repos.like.save({ ...setLikeArgs, likedId: nft.id, likedType: entity.LikeableType.NFT })
     } catch (err) {
       logger.error(err, `Unable to set like reciprocally for profile: ${setLikeArgs.likedId}`)
     }
@@ -40,7 +40,7 @@ export function getLikeReciprocalService(repos: db.Repository = db.newRepositori
             url: nft.metadata.name,
           },
         })
-        await repos.like.save({ ...setLikeArgs, likedId: profile.id })
+        await repos.like.save({ ...setLikeArgs, likedId: profile.id, likedType: entity.LikeableType.Profile })
       }
     } catch (err) {
       logger.error(err, `Unable to set like reciprocally for nft: ${setLikeArgs.likedId}`)
@@ -61,6 +61,7 @@ export function getLikeReciprocalService(repos: db.Repository = db.newRepositori
         where: {
           ...unsetLikeArgs,
           likedId: nft.id,
+          likedType: entity.LikeableType.NFT,
         },
       })
       await repos.like.hardDeleteByIds([like.id])
@@ -83,6 +84,7 @@ export function getLikeReciprocalService(repos: db.Repository = db.newRepositori
           where: {
             ...unsetLikeArgs,
             likedId: profile.id,
+            likedType: entity.LikeableType.Profile,
           },
         })
         await repos.like.hardDeleteByIds([like.id])
