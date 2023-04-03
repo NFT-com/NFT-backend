@@ -27,7 +27,6 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
-  nftAbi,
   optionallySaveUserAndWalletForAssociatedAddress,
   paginatedOffsetResultsFromEntitiesBy,
   processIPFSURL,
@@ -37,6 +36,7 @@ import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { NFTPortNFT, retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
+import { nftAbi, tokenUriAbi } from '@nftcom/gql/src/config/core'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -55,6 +55,12 @@ const TEST_WALLET_ID = 'test'
 
 let alchemyUrl: string
 let chainId = process.env.CHAIN_ID
+
+interface TokenRequest {
+  schema: 'erc721' | 'erc1155'
+  contractAddress: string
+  tokenId: string
+}
 
 interface AlchemyContractMetaData {
   name?: string
@@ -582,6 +588,39 @@ export const getNFTsForCollection = async (contractAddress: string): Promise<any
   }
 }
 
+export const batchCallTokenURI = async (
+  tokens: Array<TokenRequest>,
+  chainId: string,
+): Promise<Array<string | undefined>> => {
+  try {
+    // Generate arguments for multicall based on schema (ERC721 or ERC1155)
+    const multicallArgs = tokens.map(({ schema, contractAddress, tokenId }) => {
+      return {
+        contract: contractAddress,
+        name: schema === 'erc721' ? 'tokenURI' : 'uri',
+        params: [BigNumber.from(tokenId)],
+      }
+    })
+
+    // Use multicall to batch fetch token URIs
+    const tokenUris = await fetchDataUsingMulticall(
+      multicallArgs,
+      tokenUriAbi,
+      chainId,
+      false,
+      provider.provider(Number(chainId)), // Web3 provider
+    )
+
+    // Extract token URIs from the response
+    const uris = tokenUris.map((data) => (data ? data[0] : undefined))
+
+    return uris
+  } catch (err) {
+    logger.error(err, `Error in batchCallTokenURI ${err}`)
+    return []
+  }
+}
+
 /**
  * Gets the NFTs for a given official collection address.
  * @param {GetOfficialCollectionNFTsArgs} args - The arguments to pass to the function.
@@ -833,7 +872,7 @@ export const getNftName = (
   tokenId: string = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
-  logger.info(
+  logger.debug(
     `=======> getNftName: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(
       alchemyContractMetadata,
     )}, ${tokenId}, ${metadataProvider}`,

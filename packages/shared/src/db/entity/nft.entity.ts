@@ -56,6 +56,9 @@ export class NFT extends BaseEntity {
   rarity: string
 
   @Column({ nullable: true })
+  uriString: string
+
+  @Column({ nullable: true })
   owner: string
 
 }
