@@ -657,11 +657,10 @@ export const batchCallTokenURI = async (
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
     const { name, image, image_url, attributes, description } = apiResponse
-    const image = image || image_url || '' // Use image_url if image is not available
     const traits = attributes.map(attr => ({ type: attr.trait_type, value: attr.value }))
     return {
       name,
-      image,
+      image: image || image_url || '',
       traits,
       description: description || null
     }
