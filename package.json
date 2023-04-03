@@ -21,7 +21,9 @@
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
     "generate:coverage": "cd packages/gql && npm run test",
-    "prepare": "npx husky install"
+    "prepare": "npx husky install",
+    "docker:start": "docker-compose -f docker-compose.yml up -d",
+    "docker:stop": "docker-compose -f docker-compose.yml down"
   },
   "commitlint": {
     "extends": [

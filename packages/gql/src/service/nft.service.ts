@@ -5,14 +5,15 @@ import { BigNumber, utils as ethersUtils } from 'ethers'
 import { chunk } from 'lodash'
 import { performance } from 'perf_hooks'
 import * as typeorm from 'typeorm'
-import { In } from 'typeorm'
+import { ILike, In } from 'typeorm'
 
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers } from '@nftcom/cache'
-import { appError, nftError } from '@nftcom/error-types'
+import { appError, collectionError, nftError } from '@nftcom/error-types'
 import { assetBucket } from '@nftcom/gql/config'
 import { gql, Pageable } from '@nftcom/gql/defs'
 import { Context } from '@nftcom/gql/defs'
+import { GetCollectionInfoArgs } from '@nftcom/gql/defs'
 import { auth, pagination } from '@nftcom/gql/helper'
 import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
 import { delay } from '@nftcom/gql/service/core.service'
@@ -2776,150 +2777,189 @@ export const saveProfileScore = async (repositories: db.Repository, profile: ent
   }
 }
 
-export const getCollectionInfo = async (
-  contract: string,
-  chainId: string,
-  repositories: db.Repository,
+export const getCollectionInfo = async (args: GetCollectionInfoArgs,
 ): Promise<any> => {
   try {
-    const key = `${contract.toLowerCase()}-${chainId}`
+    // Set variables
+    const { chainId, repositories } = args
+    let slug
+    let collection
+    let contract
+    let description = null
+    let nftPortResults = undefined
+    let bannerUrl = 'https://cdn.nft.com/collectionBanner_default.png'
+    let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
+    const uploadPath = `collections/${chainId}/`
+
+    if ('contract' in args) {
+      contract = args.contract
+    }
+
+    if ('slug' in args) {
+      slug = args.slug
+    }
+
+    const key = `${contract ?
+      contract.toLowerCase() :
+      slug.toLowerCase()
+    }-${chainId}`
     const cachedData = await cache.get(key)
 
     if (cachedData) {
       return JSON.parse(cachedData)
-    } else {
-      let collection = await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
-      let nftPortResults = undefined
+    }
 
-      if (!collection) {
-        return {
-          collection,
-          nftPortResults,
-        }
+    collection = contract ? await repositories.collection.findByContractAddress(
+      helper.checkSum(contract),
+      chainId,
+    ) : await repositories.collection.findOne({
+      where: {
+        chainId,
+        deletedAt: null,
+        isOfficial: true,
+        slug: ILike(`%${slug}%`),
+      },
+    })
+
+    if (!collection) {
+      if (slug) { // throw err if name lookup fails
+        throw appError.buildNotFound(
+          collectionError.buildOfficialCollectionNotFoundMsg(`with the following slug "${slug}" on chain ${chainId}`),
+          collectionError.ErrorType.CollectionNotFound,
+        )
       }
-
-      if (collection && (collection.deployer == null || helper.checkSum(collection.deployer) !== collection.deployer)) {
-        const collectionDeployer = await getCollectionDeployer(contract, chainId)
-        collection = await repositories.collection.save({
-          ...collection,
-          deployer: collectionDeployer,
-        })
-        // await seService.indexCollections([collection])
-      }
-
-      const nft = await repositories.nft.findOne({
-        where: {
-          contract: helper.checkSum(contract),
-          chainId,
-        },
-      })
-
-      if (!nft) {
-        return {
-          collection,
-          nftPortResults,
-        }
-      }
-
-      let bannerUrl = 'https://cdn.nft.com/collectionBanner_default.png'
-      let logoUrl = 'https://cdn.nft.com/profile-image-default.svg'
-      let description = null
-      const uploadPath = `collections/${chainId}/`
-
-      // check if logoUrl, bannerUrl, description are null or default -> if not, return, else, proceed
-      const notAllowedToProceed: boolean =
-        !!collection.bannerUrl &&
-        !exceptionBannerUrlRegex.test(collection.bannerUrl) &&
-        !!collection.logoUrl &&
-        collection.logoUrl !== logoUrl &&
-        !!collection.description
-
-      if (notAllowedToProceed) {
-        return {
-          collection,
-          nftPortResults,
-        }
-      }
-
-      const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
-      if (details) {
-        if (details.contract) {
-          if (details.contract.metadata?.cached_banner_url && details.contract.metadata?.cached_banner_url?.length) {
-            const filename = details.contract.metadata.cached_banner_url.split('/').pop()
-            const banner = await uploadImageToS3(
-              details.contract.metadata.cached_banner_url,
-              filename,
-              chainId,
-              contract,
-              uploadPath,
-            )
-
-            if (banner) {
-              bannerUrl = banner
-            } else {
-              if (nft.metadata?.imageURL) {
-                bannerUrl = nft.metadata.imageURL
-              }
-            }
-          }
-          if (
-            details.contract.metadata?.cached_thumbnail_url &&
-            details.contract.metadata?.cached_thumbnail_url?.length
-          ) {
-            const filename = details.contract.metadata.cached_thumbnail_url.split('/').pop()
-            const logo = await uploadImageToS3(
-              details.contract.metadata.cached_thumbnail_url,
-              filename,
-              chainId,
-              contract,
-              uploadPath,
-            )
-            logoUrl = logo ? logo : logoUrl
-          }
-          if (details.contract.metadata?.description) {
-            description = details.contract.metadata?.description?.length
-              ? details.contract.metadata.description
-              : description
-          }
-        }
-        const updatedCollection = await repositories.collection.updateOneById(collection.id, {
-          bannerUrl,
-          logoUrl,
-          description,
-        })
-        await seService.indexCollections([updatedCollection])
-        collection = await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
-        nftPortResults = {
-          name: details.contract?.name,
-          symbol: details.contract?.symbol,
-          bannerUrl: details.contract?.metadata?.cached_banner_url,
-          logoUrl: details.contract?.metadata?.cached_thumbnail_url,
-          description: details.contract?.metadata?.description,
-        }
-      } else {
-        if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
-          if (nft.metadata?.imageURL) {
-            bannerUrl = nft.metadata.imageURL
-          }
-          await seService.indexCollections([
-            await repositories.collection.updateOneById(collection.id, {
-              bannerUrl,
-              logoUrl,
-              description,
-            }),
-          ])
-          collection = await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
-        }
-      }
-
-      const returnObject = {
+      return {
         collection,
         nftPortResults,
       }
-
-      await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * 5)
-      return returnObject
     }
+
+    // Set contract if collection is found by name
+    if (collection && collection.contract && !contract) {
+      contract = collection.contract
+    }
+
+    if (collection && (
+      collection.deployer == null ||
+      helper.checkSum(collection.deployer) !== collection.deployer
+    )) {
+      const collectionDeployer = await getCollectionDeployer(contract, chainId)
+      collection = await repositories.collection.save({
+        ...collection,
+        deployer: collectionDeployer,
+      })
+    }
+
+    const nft = await repositories.nft.findOne({
+      where: {
+        contract: helper.checkSum(contract),
+        chainId,
+      },
+    })
+
+    if (!nft) {
+      return {
+        collection,
+        nftPortResults,
+      }
+    }
+
+    // check if logoUrl, bannerUrl, description are null or default -> if not, return, else, proceed
+    const notAllowedToProceed: boolean = !!collection.bannerUrl
+      && !exceptionBannerUrlRegex.test(collection.bannerUrl)
+      && !!collection.logoUrl
+      && collection.logoUrl !== logoUrl
+      && !!collection.description
+
+    if (notAllowedToProceed) {
+      return {
+        collection,
+        nftPortResults,
+      }
+    }
+
+    const details = await retrieveNFTDetailsNFTPort(nft.contract, nft.tokenId, nft.chainId)
+    if (details) {
+      if (details.contract) {
+        if (details.contract.metadata?.cached_banner_url && details.contract.metadata?.cached_banner_url?.length) {
+          const filename = details.contract.metadata.cached_banner_url.split('/').pop()
+          const banner = await uploadImageToS3(
+            details.contract.metadata.cached_banner_url,
+            filename,
+            chainId,
+            contract,
+            uploadPath,
+          )
+
+          if (banner) {
+            bannerUrl = banner
+          } else {
+            if (nft.metadata?.imageURL) {
+              bannerUrl = nft.metadata.imageURL
+            }
+          }
+        }
+        if (details.contract.metadata?.cached_thumbnail_url &&
+          details.contract.metadata?.cached_thumbnail_url?.length
+        ) {
+          const filename = details.contract.metadata.cached_thumbnail_url.split('/').pop()
+          const logo = await uploadImageToS3(
+            details.contract.metadata.cached_thumbnail_url,
+            filename,
+            chainId,
+            contract,
+            uploadPath,
+          )
+          logoUrl = logo ? logo : logoUrl
+        }
+        if (details.contract.metadata?.description) {
+          description = details.contract.metadata?.description?.length ?
+            details.contract.metadata.description : description
+        }
+      }
+      const updatedCollection = await repositories.collection.updateOneById(collection.id, {
+        bannerUrl,
+        logoUrl,
+        description,
+      })
+      await seService.indexCollections([updatedCollection])
+      collection = await repositories.collection.findByContractAddress(
+        helper.checkSum(contract),
+        chainId,
+      )
+      nftPortResults = {
+        name: details.contract?.name,
+        symbol: details.contract?.symbol,
+        bannerUrl: details.contract?.metadata?.cached_banner_url,
+        logoUrl: details.contract?.metadata?.cached_thumbnail_url,
+        description: details.contract?.metadata?.description,
+      }
+    } else {
+      if (!collection.bannerUrl || !collection.logoUrl || !collection.description) {
+        if (nft.metadata?.imageURL) {
+          bannerUrl = nft.metadata.imageURL
+        }
+        await seService.indexCollections([
+          await repositories.collection.updateOneById(collection.id, {
+            bannerUrl,
+            logoUrl,
+            description,
+          }),
+        ])
+        collection = await repositories.collection.findByContractAddress(
+          helper.checkSum(contract),
+          chainId,
+        )
+      }
+    }
+
+    const returnObject = {
+      collection,
+      nftPortResults,
+    }
+
+    await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
+    return returnObject
   } catch (err) {
     logger.error(`Error in getCollectionInfo: ${err}`)
     Sentry.captureMessage(`Error in getCollectionInfo: ${err}`)

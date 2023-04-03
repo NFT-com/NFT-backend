@@ -79,6 +79,7 @@ type Collection {
   comments(pageInput: PageInput): CommentsOutput
   likeCount: Int
   isLikedByUser: Boolean
+  slug: String
   isLikedBy(likedById: ID!): Boolean
 }
 
@@ -96,8 +97,9 @@ type CollectionInfo {
 }
 
 input CollectionInput {
-  contract: Address!
+  contract: Address
   chainId: String
+  slug: String
   network: String!
 }
 
@@ -184,7 +186,7 @@ Basic collection type of `isOfficial=true` only collections.
 """
 type OfficialCollection {
   id: ID!
-  name: String!
+  slug: String!
   contract: Address!
   chainId: String!
   updatedAt: DateTime!

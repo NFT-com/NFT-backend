@@ -10,7 +10,11 @@
     "compile": "tsc && tsc-alias",
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ../../node_modules/typeorm/cli",
     "typeorm:gen": "npm run typeorm:cli -- migration:generate -d ./src/db/data-source.ts",
-    "typeorm:revert": "npm run typeorm:cli --  migration:revert",
+    "typeorm:migration:run": "npm run typeorm:cli -- migration:run -d ./src/db/data-source.ts",
+    "typeorm:migration:create": "npm run typeorm:cli -- migration:create -n",
+    "typeorm:revert": "npm run typeorm:cli --  migration:revert -d ./src/db/data-source.ts",
+    "typeorm:show": "npm run typeorm:cli -- migration:show -d ./src/db/data-source.ts",
+    "typeorm:sync": "npm run typeorm:cli -- schema:sync",
     "typechain": "typechain --target=ethers-v5 ./src/helper/abis/*.json --out-dir ./src/helper/typechain"
   },
   "dependencies": {
@@ -21,8 +25,9 @@
     "lodash": "^4.17.21",
     "nanoid": "^3.1.30",
     "node-fetch": "^2.6.6",
-    "pg": "^8.7.1",
+    "pg": "^8.10.0",
     "pino": "^8.4.2",
+    "slugify": "^1.6.6",
     "typeorm": "^0.3.10"
   },
   "devDependencies": {

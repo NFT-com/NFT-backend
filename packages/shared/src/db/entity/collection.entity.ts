@@ -52,4 +52,7 @@ export class Collection extends BaseEntity {
   @Column({ nullable: true, type: 'timestamptz' })
   issuanceDate: Date
 
+  @Column({ unique: true, nullable: true })
+  slug: string
+
 }
