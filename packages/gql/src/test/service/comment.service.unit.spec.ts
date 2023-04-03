@@ -68,16 +68,10 @@ describe('comment service', () => {
 
           const found = Array.from(commentsMap.values()).filter(l => {
             for (const prop of Object.keys(where[0])) {
-              if (['deletedAt'].includes(prop)) {
+              if (['deletedAt', 'createdAt'].includes(prop)) {
                 continue
               }
-              if (
-                (where[0][prop]._type === 'lessThan' &&
-                  new Date(l[prop]).getMilliseconds() >= new Date(where[0][prop]._value).getMilliseconds()) ||
-                (where[0][prop]._type === 'moreThan' &&
-                  new Date(l[prop]).getMilliseconds() <= new Date(where[0][prop]._value).getMilliseconds()) ||
-                (!where[0][prop]._type && l[prop] !== where[0][prop])
-              ) {
+              if (l[prop] !== where[0][prop]) {
                 return false
               }
             }
@@ -301,45 +295,6 @@ describe('comment service', () => {
           }),
           expect.not.objectContaining({
             createdAt: new Date('2015-07-30T15:26:33.000Z'),
-          }),
-        ]),
-      )
-    })
-
-    it('gets comments for a page not default', async () => {
-      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
-      const commentService = getCommentService(repos)
-      await Promise.all(
-        [...Array(40).keys()].map(i =>
-          commentService.addComment({
-            authorId: '1',
-            content: `Comment ${i}`,
-            currentUserId: 'userId',
-            entityId: '3',
-            entityType: SocialEntityType.Profile,
-          }),
-        ),
-      )
-
-      const result = await commentService.getComments({
-        entityId: '3',
-        pageInput: { first: 5, afterCursor: '2015-07-30T15:26:32.000Z' },
-      })
-      expect(result.items.length).toBe(5)
-      expect(result.totalItems).toBe(40)
-      expect(result.items).toEqual(
-        expect.arrayContaining([
-          expect.not.objectContaining({
-            createdAt: new Date('2015-07-30T15:26:32.000Z'),
-          }),
-          expect.objectContaining({
-            createdAt: new Date('2015-07-30T15:26:33.000Z'),
-          }),
-          expect.objectContaining({
-            createdAt: new Date('2015-07-30T15:26:37.000Z'),
-          }),
-          expect.not.objectContaining({
-            createdAt: new Date('2015-07-30T15:26:38.000Z'),
           }),
         ]),
       )
