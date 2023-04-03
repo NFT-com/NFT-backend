@@ -139,7 +139,7 @@ export interface AlchemyNFTMetaDataResponse {
 
 type Metadata = {
   name: string
-  imageURL: string
+  image: string
   traits: Array<{ type: string; value: string }>
   description: string | null
 }
@@ -657,11 +657,11 @@ export const batchCallTokenURI = async (
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
     const { name, image, image_url, attributes, description } = apiResponse
-    const imageURL = image || image_url || '' // Use image_url if image is not available
+    const image = image || image_url || '' // Use image_url if image is not available
     const traits = attributes.map(attr => ({ type: attr.trait_type, value: attr.value }))
     return {
       name,
-      imageURL,
+      image,
       traits,
       description: description || null
     }
