@@ -15,12 +15,18 @@ interface AddCommentArgs {
   entityType: entity.SocialEntityType
 }
 
+interface DeleteCommentArgs {
+  commentId: string
+  currentUserId: string
+}
+
 interface GetCommentsArgs {
   entityId: string
   pageInput?: any
 }
 interface CommentService {
   addComment(addCommentArgs: AddCommentArgs): Promise<entity.Comment>
+  deleteComment(deleteCommentArgs: DeleteCommentArgs): Promise<boolean>
   getComments(getCommentsArgs: GetCommentsArgs): Promise<Pageable<entity.Comment>>
 }
 export function getCommentService(repos: db.Repository = db.newRepositories()): CommentService {
@@ -36,6 +42,27 @@ export function getCommentService(repos: db.Repository = db.newRepositories()): 
       throw appError.buildForbidden(`User cannot comment with profile: ${authorId}`, 'COMMENT_FORBIDDEN')
     }
     return repos.comment.save(addCommentArgs)
+  }
+
+  async function deleteComment(deleteCommentArgs: DeleteCommentArgs): Promise<boolean> {
+    const { commentId, currentUserId } = deleteCommentArgs
+    if (!commentId || !currentUserId) {
+      throw appError.buildInvalid(
+        `Missing property or property undefined in ${JSON.stringify(deleteCommentArgs)}`,
+        'DELETE_COMMENT_INVALID',
+      )
+    }
+    const comment = await repos.comment.findById(commentId)
+    if (!comment) {
+      return Promise.resolve(false)
+    }
+    if (!(await profileService.isProfileOwnedByUser({ profileId: comment.authorId, userId: currentUserId }))) {
+      throw appError.buildForbidden(
+        `User cannot delete comment with profile: ${comment.authorId}`,
+        'DELETE_COMMENT_FORBIDDEN',
+      )
+    }
+    return repos.comment.deleteById(commentId)
   }
 
   async function getComments(getCommentsArgs: GetCommentsArgs): Promise<Pageable<entity.Comment>> {
@@ -59,6 +86,7 @@ export function getCommentService(repos: db.Repository = db.newRepositories()): 
 
   return {
     addComment,
+    deleteComment,
     getComments,
   }
 }

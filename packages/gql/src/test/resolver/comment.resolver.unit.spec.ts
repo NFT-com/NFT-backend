@@ -1,4 +1,4 @@
-import { addComment, comments, MAX_COMMENT_LENGTH } from '@nftcom/gql/resolver/comment.resolver'
+import { addComment, comments, deleteComment, MAX_COMMENT_LENGTH } from '@nftcom/gql/resolver/comment.resolver'
 import { Comment, SocialEntityType } from '@nftcom/shared/db/entity'
 
 import { Context } from '../../defs'
@@ -149,6 +149,14 @@ describe('like resolver', () => {
   describe('comments', () => {
     it('should reject requests without entityId', async () => {
       await expect(comments(undefined, { input: { entityId: undefined } }, undefined)).rejects.toThrow(
+        /^Invalid schema provided: .*$/,
+      )
+    })
+  })
+
+  describe('deleteComment', () => {
+    it('should reject requests without commentId', async () => {
+      await expect(deleteComment(undefined, { input: { commentId: undefined } }, undefined)).rejects.toThrow(
         /^Invalid schema provided: .*$/,
       )
     })

@@ -60,9 +60,27 @@ export const comments = async (_: any, args: gql.QueryCommentsArgs, _ctx: Contex
   }
 }
 
+export const deleteComment = async (_: any, args: gql.MutationDeleteCommentArgs, ctx: Context): Promise<boolean> => {
+  const schema = Joi.object().keys({
+    commentId: Joi.string().required(),
+  })
+  joi.validateSchema(schema, args.input)
+
+  try {
+    return commentService.deleteComment({ ...args.input, currentUserId: ctx.user.id })
+  } catch (err) {
+    logger.error({ err, addCommentOptions: args.input }, 'Unable to add comment for input')
+    if (!(err.originalError instanceof ApolloError)) {
+      throw appError.buildInternal()
+    }
+    throw err
+  }
+}
+
 export default {
   Mutation: {
     addComment: combineResolvers(auth.isAuthenticated, addComment),
+    deleteComment: combineResolvers(auth.isAuthenticated, deleteComment),
   },
   Query: {
     comments,
