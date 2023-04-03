@@ -18,6 +18,9 @@ describe('comment service', () => {
     nextId = 1
     repos = {
       comment: {
+        deleteById: (id: string) => {
+          return Promise.resolve(commentsMap.delete(id))
+        },
         save: (comment: any) => {
           lastId = nextId++
           commentsMap.set(lastId, {
@@ -229,6 +232,77 @@ describe('comment service', () => {
           entityType: SocialEntityType.Profile,
         }),
       ).rejects.toThrow('User cannot comment with profile: 1')
+    })
+  })
+
+  describe('deleteComment', () => {
+    it('deletes a comment', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
+      const commentService = getCommentService(repos)
+      await commentService.addComment({
+        authorId: '1',
+        content: 'This NFT is awesome!',
+        currentUserId: 'userId',
+        entityId: '2',
+        entityType: SocialEntityType.NFT,
+      })
+
+      const result = await commentService.deleteComment({
+        commentId: lastId,
+        currentUserId: 'userId',
+      })
+
+      expect(result).toEqual(true)
+    })
+
+    it('does not delete a comment not found', async () => {
+      const commentService = getCommentService(repos)
+
+      const result = await commentService.deleteComment({
+        commentId: lastId,
+        currentUserId: 'userId',
+      })
+
+      expect(result).toEqual(false)
+    })
+
+    it('does not delete a comment belonging to another profile', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValueOnce(true).mockResolvedValue(false)
+      const commentService = getCommentService(repos)
+      await commentService.addComment({
+        authorId: '1',
+        content: 'This NFT is awesome!',
+        currentUserId: 'userId',
+        entityId: '2',
+        entityType: SocialEntityType.NFT,
+      })
+
+      await expect(
+        commentService.deleteComment({
+          commentId: lastId,
+          currentUserId: 'userId2',
+        }),
+      ).rejects.toThrow('User cannot delete comment with profile: 1')
+    })
+
+    it('requires commentId', async () => {
+      const commentService = getCommentService(repos)
+      await expect(
+        commentService.deleteComment({
+          commentId: undefined,
+          currentUserId: 'userId',
+        }),
+      ).rejects.toThrow(/^Missing property or property undefined in .*$/)
+    })
+
+    it('requires currentUserId', async () => {
+      const commentService = getCommentService(repos)
+      await expect(
+        commentService.deleteComment({
+          commentId: lastId,
+          currentUserId: undefined,
+        }),
+      ).rejects.toThrow(/^Missing property or property undefined in .*$/)
     })
   })
 

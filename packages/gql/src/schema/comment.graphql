@@ -32,8 +32,13 @@ type CommentsOutput {
   totalItems: Int
 }
 
+input DeleteCommentInput {
+  commentId: ID!
+}
+
 extend type Mutation {
   addComment(input: AddCommentInput!): Comment
+  deleteComment(input: DeleteCommentInput!): Boolean
 }
 
 extend type Query {
