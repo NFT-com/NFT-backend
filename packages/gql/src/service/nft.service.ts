@@ -704,6 +704,8 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     let resolvedUriString = uriString
     if (uriString.includes('0x{id}') && tokenId) {
       resolvedUriString = uriString.replace('0x{id}', tokenId)
+    } else if (uriString.includes('{id}') && tokenId) {
+      resolvedUriString = uriString.replace('{id}', tokenId)
     }
 
     if (resolvedUriString.startsWith('ipfs://')) {
