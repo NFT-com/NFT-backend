@@ -710,7 +710,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       const cid = resolvedUriString.replace('ipfs://', '')
       const content = await fetchDataFromIPFS(cid)
       logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
-      return formatMetadata(JSON.parse(content.toString()))
+      return formatMetadata(content)
     }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
@@ -728,7 +728,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
   } catch (error) {
-    logger.error(error, `Failed to parse URI string: ${error}`)
+    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}`)
     return null
   }
 }
