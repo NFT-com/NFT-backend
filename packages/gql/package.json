@@ -2,8 +2,8 @@
   "name": "@nftcom/gql",
   "version": "1.0.0",
   "description": "NFT.com's GraphQL server",
-  "main": "src/index",
-  "types": "src/index",
+  "main": "dist/packages/gql/src/index",
+  "types": "dist/packages/gql/src/index",
   "scripts": {
     "prebuild": "npm run gql:gen",
     "build": "npm run clean && npm run compile && npm run copy:schema",
