@@ -47,6 +47,12 @@ const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = SearchEngineService()
 
+// Free Account from Infura
+const infuraCredentials = [
+  { apiKey: '7f0f9c6e2d3b4b65a2490e608be9472f', secret: 'f6b6002741b745a5b7da9849971bf2ef' },
+  { apiKey: '9a563c93c3d946788e0b92bbb1b5d38d', secret: 'f0a2759e9d3c4643a986df1eb755f68e' },
+  { apiKey: 'd9a7b76ecd5d479c84b278c7be98db4d', secret: '97183b37c71a4e759c2f41df3dc3ea0b' }
+]
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
@@ -131,6 +137,33 @@ export interface AlchemyNFTMetaDataResponse {
   }
   timeLastUpdated?: string
   contractMetadata?: AlchemyContractMetaData
+}
+
+type Metadata = {
+  name: string
+  imageURL: string
+  traits: Array<{ type: string; value: string }>
+}
+
+type ApiResponse = {
+  name: string
+  description?: string
+  image?: string
+  image_url?: string
+  created_by?: string
+  external_url?: string
+  attributes: Array<{ trait_type: string; value: string; display_type?: string }>
+  animation_details?: any
+  animation?: string
+  animation_url?: string
+  image_details?: any
+  dna?: string
+  edition?: number
+  date?: number
+  compiler?: string
+  imageHash?: string
+  header?: string
+  reward_bitmask?: number
 }
 
 type NFTOrder = {
@@ -619,6 +652,74 @@ export const batchCallTokenURI = async (
   } catch (err) {
     logger.error(err, `Error in batchCallTokenURI ${err}`)
     return []
+  }
+}
+
+const formatMetadata = (apiResponse: ApiResponse): Metadata => {
+  try {
+    const { name, image, image_url, attributes } = apiResponse
+    const imageURL = image || image_url || '' // Use image_url if image is not available
+    const traits = attributes.map(attr => ({ type: attr.trait_type, value: attr.value }))
+    return {
+      name,
+      imageURL,
+      traits
+    }
+  } catch (error) {
+    logger.error(error, `Failed to format metadata: ${error}, raw: ${JSON.stringify(apiResponse)}`)
+    return null
+  }
+}
+
+// Function to get a random Infura credential
+const getRandomInfuraCredential = (): { apiKey: string; secret: string } => {
+  const randomIndex = Math.floor(Math.random() * infuraCredentials.length)
+  return infuraCredentials[randomIndex]
+}
+
+// Define the fetchDataFromIPFS function using const
+const fetchDataFromIPFS = async (cid): Promise<ApiResponse | any> => {
+  const { apiKey, secret } = getRandomInfuraCredential()
+  const auth = 'Basic ' + Buffer.from(apiKey + ':' + secret).toString('base64')
+  const url = `https://ipfs.infura.io:5001/api/v0/cat?arg=${cid}`
+  const response = await fetch(url, {
+    headers: {
+      authorization: auth
+    }
+  })
+  const data = await response.text()
+  return data
+}
+
+export const parseNFTUriString = async (uriString: string, tokenId?: string): Promise<Metadata | null> => {
+  try {
+    // Handle OpenSea metadata API format with 0x{id} placeholder
+    let resolvedUriString = uriString
+    if (uriString.includes('0x{id}') && tokenId) {
+      resolvedUriString = uriString.replace('0x{id}', tokenId)
+    }
+
+    if (resolvedUriString.startsWith('ipfs://')) {
+      const cid = resolvedUriString.replace('ipfs://', '')
+      const content = await fetchDataFromIPFS(cid)
+      return formatMetadata(JSON.parse(content.toString()))
+    }
+
+    if (resolvedUriString.startsWith('data:application/json;base64,')) {
+      const base64Data = resolvedUriString.replace('data:application/json;base64,', '')
+      const jsonStr = Buffer.from(base64Data, 'base64').toString()
+      return formatMetadata(JSON.parse(jsonStr))
+    }
+
+    if (resolvedUriString.startsWith('https://arweave.net/') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://')) {
+      const response = await axios.get<ApiResponse>(resolvedUriString)
+      return formatMetadata(response.data)
+    }
+
+    throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
+  } catch (error) {
+    logger.error(error, `Failed to parse URI string: ${error}`)
+    return null
   }
 }
 
