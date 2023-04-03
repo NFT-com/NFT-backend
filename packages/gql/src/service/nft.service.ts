@@ -26,17 +26,16 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
-  nftAbi,
   optionallySaveUserAndWalletForAssociatedAddress,
   paginatedOffsetResultsFromEntitiesBy,
   processIPFSURL,
   s3ToCdn,
-  tokenUriAbi,
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { NFTPortNFT, retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
+import { nftAbi, tokenUriAbi } from '@nftcom/gql/src/config/core'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
