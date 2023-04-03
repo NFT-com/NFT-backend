@@ -57,6 +57,7 @@ type NFT {
     protocol: ProtocolType
   ): TxActivitiesOutput
   isGKMinted: Boolean
+  comments(pageInput: PageInput): CommentsOutput
   likeCount: Int
   isLikedByUser: Boolean
   isLikedBy(likedById: ID!): Boolean

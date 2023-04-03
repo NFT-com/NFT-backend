@@ -7,26 +7,31 @@ import { getCommentService } from '../../service/comment.service'
 import { profileService } from '../../service/profile.service'
 
 describe('comment service', () => {
-  let repos, likesMap: Map<string, any>, nextId, lastId
+  let repos, commentsMap: Map<string, any>, nextId, lastId, incrementCreatedAt, createdAtDate
   const firstEthDate = 1438269973000
+  beforeAll(() => {
+    createdAtDate = firstEthDate
+    incrementCreatedAt = false
+  })
   beforeEach(() => {
-    likesMap = new Map()
+    commentsMap = new Map()
     nextId = 1
     repos = {
       comment: {
         save: (comment: any) => {
           lastId = nextId++
-          likesMap.set(lastId, {
+          commentsMap.set(lastId, {
             id: lastId,
-            createdAt: new Date(firstEthDate),
-            updatedAt: new Date(firstEthDate),
+            createdAt: new Date(createdAtDate),
+            updatedAt: new Date(createdAtDate),
             ...comment,
           })
-          return Promise.resolve(likesMap.get(lastId))
+          if (incrementCreatedAt) createdAtDate = createdAtDate + 1000
+          return Promise.resolve(commentsMap.get(lastId))
         },
         find: (opts: FindManyOptions<entity.Comment>) => {
           return Promise.resolve(
-            Array.from(likesMap.values()).filter(l => {
+            Array.from(commentsMap.values()).filter(l => {
               for (const prop of Object.keys(opts.where)) {
                 if (l[prop] !== opts.where[prop]) {
                   return false
@@ -38,7 +43,7 @@ describe('comment service', () => {
         },
         findOne: (opts: FindManyOptions<entity.Comment>) => {
           return Promise.resolve(
-            Array.from(likesMap.values()).filter(l => {
+            Array.from(commentsMap.values()).filter(l => {
               for (const prop of Object.keys(opts.where)) {
                 if (opts.where[prop] instanceof FindOperator && opts.where[prop]._type === 'in') {
                   if (!opts.where[prop]._value.some(v => v === l[prop])) {
@@ -55,7 +60,24 @@ describe('comment service', () => {
           )
         },
         findById: (id: string) => {
-          return Promise.resolve(likesMap.get(id))
+          return Promise.resolve(commentsMap.get(id))
+        },
+        findPageable: ({ where, skip, take }: FindManyOptions<Partial<entity.Comment>>): Promise<any> => {
+          const defaultPageSkip = 0
+          const defaultPageSize = 5000
+
+          const found = Array.from(commentsMap.values()).filter(l => {
+            for (const prop of Object.keys(where[0])) {
+              if (['deletedAt', 'createdAt'].includes(prop)) {
+                continue
+              }
+              if (l[prop] !== where[0][prop]) {
+                return false
+              }
+            }
+            return true
+          })
+          return Promise.resolve([found.slice(skip || defaultPageSkip, take || defaultPageSize), found.length])
         },
       },
       profile: {
@@ -195,7 +217,7 @@ describe('comment service', () => {
       ).rejects.toThrow(/^Missing property or property undefined in .*$/)
     })
 
-    it('requires user to own profile likedBy', async () => {
+    it('requires user to own profile of authorId', async () => {
       jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(false)
       const commentService = getCommentService(repos)
       await expect(
@@ -207,6 +229,113 @@ describe('comment service', () => {
           entityType: SocialEntityType.Profile,
         }),
       ).rejects.toThrow('User cannot comment with profile: 1')
+    })
+  })
+
+  describe('getComments', () => {
+    beforeEach(() => {
+      createdAtDate = firstEthDate
+      incrementCreatedAt = true
+    })
+    it('gets comments less than first page', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
+      const commentService = getCommentService(repos)
+      await Promise.all(
+        [1].map(i =>
+          commentService.addComment({
+            authorId: '1',
+            content: `Comment ${i}`,
+            currentUserId: 'userId',
+            entityId: '2',
+            entityType: SocialEntityType.Profile,
+          }),
+        ),
+      )
+
+      const result = await commentService.getComments({ entityId: '2' })
+      expect(result.items).toEqual([
+        {
+          authorId: '1',
+          content: `Comment 1`,
+          currentUserId: 'userId',
+          entityId: '2',
+          entityType: SocialEntityType.Profile,
+          id: lastId,
+          createdAt: new Date('2015-07-30T15:26:13.000Z'),
+          updatedAt: new Date('2015-07-30T15:26:13.000Z'),
+        },
+      ])
+    })
+
+    it('gets comments for first page', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
+      const commentService = getCommentService(repos)
+      await Promise.all(
+        [...Array(40).keys()].map(i =>
+          commentService.addComment({
+            authorId: '1',
+            content: `Comment ${i}`,
+            currentUserId: 'userId',
+            entityId: '3',
+            entityType: SocialEntityType.Profile,
+          }),
+        ),
+      )
+
+      const result = await commentService.getComments({ entityId: '3' })
+      expect(result.items.length).toBe(20)
+      expect(result.totalItems).toBe(40)
+      expect(result.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            createdAt: new Date('2015-07-30T15:26:13.000Z'),
+          }),
+          expect.objectContaining({
+            createdAt: new Date('2015-07-30T15:26:32.000Z'),
+          }),
+          expect.not.objectContaining({
+            createdAt: new Date('2015-07-30T15:26:33.000Z'),
+          }),
+        ]),
+      )
+    })
+
+    it('does not get comments for other entity', async () => {
+      jest.spyOn(profileService, 'isProfileOwnedByUser').mockResolvedValue(true)
+      const commentService = getCommentService(repos)
+      await Promise.all(
+        [...Array(40).keys()].map(i =>
+          commentService.addComment({
+            authorId: '1',
+            content: `Comment ${i}`,
+            currentUserId: 'userId',
+            entityId: '4',
+            entityType: SocialEntityType.Profile,
+          }),
+        ),
+      )
+      await Promise.all(
+        [...Array(10).keys()].map(i =>
+          commentService.addComment({
+            authorId: '1',
+            content: `Comment ${i}`,
+            currentUserId: 'userId',
+            entityId: '5',
+            entityType: SocialEntityType.Profile,
+          }),
+        ),
+      )
+
+      const result = await commentService.getComments({ entityId: '5' })
+      expect(result.items.length).toBe(10)
+      expect(result.totalItems).toBe(10)
+      expect(result.items).toEqual(
+        expect.arrayContaining([
+          expect.not.objectContaining({
+            entityId: '4',
+          }),
+        ]),
+      )
     })
   })
 })
