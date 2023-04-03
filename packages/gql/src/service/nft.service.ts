@@ -31,6 +31,7 @@ import {
   paginatedOffsetResultsFromEntitiesBy,
   processIPFSURL,
   s3ToCdn,
+  tokenUriAbi,
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { NFTPortNFT, retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
@@ -54,6 +55,12 @@ const TEST_WALLET_ID = 'test'
 
 let alchemyUrl: string
 let chainId = process.env.CHAIN_ID
+
+interface TokenRequest {
+  schema: 'erc721' | 'erc1155' | 'other'
+  contractAddress: string
+  tokenId: string
+}
 
 interface AlchemyContractMetaData {
   name?: string
@@ -581,6 +588,38 @@ export const getNFTsForCollection = async (contractAddress: string): Promise<any
   }
 }
 
+export const batchCallTokenURI = async (
+  tokens: Array<TokenRequest>,
+): Promise<Array<string | undefined>> => {
+  try {
+    // Generate arguments for multicall based on schema (ERC721 or ERC1155)
+    const multicallArgs = tokens.map(({ schema, contractAddress, tokenId }) => {
+      return {
+        contract: contractAddress,
+        name: schema === 'erc721' ? 'tokenURI' : 'uri',
+        params: [BigNumber.from(tokenId)],
+      }
+    })
+
+    // Use multicall to batch fetch token URIs
+    const tokenUris = await fetchDataUsingMulticall(
+      multicallArgs,
+      tokenUriAbi,
+      '1', // Chain ID (e.g., 1 for Ethereum mainnet)
+      false,
+      provider.provider(Number(chainId)), // Web3 provider
+    )
+
+    // Extract token URIs from the response
+    const uris = tokenUris.map((data) => (data ? data[0] : undefined))
+
+    return uris
+  } catch (err) {
+    logger.error(err, `Error in batchCallTokenURI ${err}`)
+    return []
+  }
+}
+
 /**
  * Gets the NFTs for a given official collection address.
  * @param {GetOfficialCollectionNFTsArgs} args - The arguments to pass to the function.
@@ -1005,6 +1044,8 @@ export const getNftType = (
     return undefined
   }
 }
+
+
 
 export const getNFTMetaData = async (
   contract: string,
