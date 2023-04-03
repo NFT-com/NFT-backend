@@ -57,7 +57,7 @@ let alchemyUrl: string
 let chainId = process.env.CHAIN_ID
 
 interface TokenRequest {
-  schema: 'erc721' | 'erc1155' | 'other'
+  schema: 'erc721' | 'erc1155'
   contractAddress: string
   tokenId: string
 }
@@ -590,6 +590,7 @@ export const getNFTsForCollection = async (contractAddress: string): Promise<any
 
 export const batchCallTokenURI = async (
   tokens: Array<TokenRequest>,
+  chainId: string,
 ): Promise<Array<string | undefined>> => {
   try {
     // Generate arguments for multicall based on schema (ERC721 or ERC1155)
@@ -605,7 +606,7 @@ export const batchCallTokenURI = async (
     const tokenUris = await fetchDataUsingMulticall(
       multicallArgs,
       tokenUriAbi,
-      '1', // Chain ID (e.g., 1 for Ethereum mainnet)
+      chainId,
       false,
       provider.provider(Number(chainId)), // Web3 provider
     )
