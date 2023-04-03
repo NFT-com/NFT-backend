@@ -539,8 +539,7 @@ export const shortenAddress = (address: string, chars = 4): string => {
   return `${parsed.substring(0, chars + 2)}...${parsed.substring(42 - chars)}`
 }
 
-export const toFixedValue = (price: string, units = 18): string =>
-  utils.formatUnits(bigNumber(price), units)
+export const toFixedValue = (price: string, units = 18): string => utils.formatUnits(bigNumber(price), units)
 
 /**
  * Generates a slug from the given string value using the provided options.
@@ -556,20 +555,20 @@ export const generateSlug = ({
 }: {
   value: string
   options?:
-  | {
+    | {
+        /** string to replace the removed characters with (default is '-') */
+        replacement?: string
+        /** RegExp to remove characters (default is /[*+~.()'"!:@]/g) */
+        remove?: RegExp
+        /** boolean to convert the slug to lowercase (default is true) */
+        lower?: boolean
+        /** boolean to strip special characters (default is false) */
+        strict?: boolean
+        /** string representing the locale to use (default is 'en') */
+        locale?: string
+        /** trim leading & trailing replacement chars (default is `true`) */
+        trim?: boolean
+      }
     /** string to replace the removed characters with (default is '-') */
-    replacement?: string
-    /** RegExp to remove characters (default is /[*+~.()'"!:@]/g) */
-    remove?: RegExp
-    /** boolean to convert the slug to lowercase (default is true) */
-    lower?: boolean
-    /** boolean to strip special characters (default is false) */
-    strict?: boolean
-    /** string representing the locale to use (default is 'en') */
-    locale?: string
-    /** trim leading & trailing replacement chars (default is `true`) */
-    trim?: boolean
-  }
-  /** string to replace the removed characters with (default is '-') */
-  | string
+    | string
 }): string => slugify(value, options)

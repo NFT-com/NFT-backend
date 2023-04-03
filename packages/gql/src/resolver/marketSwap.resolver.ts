@@ -24,8 +24,8 @@ const getSwaps = (_: any, args: gql.QueryGetSwapsArgs, ctx: Context): Promise<gq
           askIdToFind == null
             ? null
             : {
-              id: askIdToFind,
-            },
+                id: askIdToFind,
+              },
       }),
     ),
     ...(marketBidIds ?? []).map(bidIdToFind =>
@@ -34,8 +34,8 @@ const getSwaps = (_: any, args: gql.QueryGetSwapsArgs, ctx: Context): Promise<gq
           bidIdToFind == null
             ? null
             : {
-              id: bidIdToFind,
-            },
+                id: bidIdToFind,
+              },
       }),
     ),
   ]
@@ -119,8 +119,8 @@ const validateTxHashForSwapNFT = async (
               event.args.auctionType == 0
                 ? defs.AuctionType.FixedPrice
                 : event.args.auctionType == 1
-                  ? defs.AuctionType.English
-                  : defs.AuctionType.Decreasing
+                ? defs.AuctionType.English
+                : defs.AuctionType.Decreasing
             if (auctionType !== defs.AuctionType.English) eventEmitted = false
             else {
               let marketAsk

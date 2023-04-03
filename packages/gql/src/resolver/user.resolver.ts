@@ -287,7 +287,7 @@ const ignoreAssociations = (
         } else {
           return Promise.reject(
             appError.buildForbidden(
-              userError.buildForbiddenActionMsg(' event id doesn\'t exist under your user'),
+              userError.buildForbiddenActionMsg(" event id doesn't exist under your user"),
               userError.ErrorType.ForbiddenAction,
             ),
           )

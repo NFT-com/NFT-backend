@@ -5,7 +5,6 @@ import { User } from '@nftcom/shared/db/entity'
 import { BaseRepository } from './base.repository'
 
 export class UserRepository extends BaseRepository<User> {
-
   constructor() {
     super(User)
   }
@@ -30,5 +29,4 @@ export class UserRepository extends BaseRepository<User> {
       },
     })
   }
-
 }

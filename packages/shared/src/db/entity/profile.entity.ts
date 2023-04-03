@@ -17,7 +17,6 @@ import { BaseEntity } from './base.entity'
 @Unique(['tokenId', 'chainId'])
 @Unique(['url', 'tokenId'])
 export class Profile extends BaseEntity {
-
   @Index()
   @Column({ nullable: false })
   url: string
@@ -108,5 +107,4 @@ export class Profile extends BaseEntity {
   get isGKMinted(): boolean {
     return this.expireAt?.getFullYear() >= GK_EXPIRATION_YEAR
   }
-
 }

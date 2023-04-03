@@ -16,7 +16,6 @@ export enum ViewableType {
 
 @Entity()
 export class View extends BaseEntity {
-
   @Column()
   viewerId: string
 
@@ -28,5 +27,4 @@ export class View extends BaseEntity {
 
   @Column({ type: 'enum', enum: ViewableType })
   viewedType: ViewableType
-
 }

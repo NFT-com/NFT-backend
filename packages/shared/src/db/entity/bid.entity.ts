@@ -11,7 +11,6 @@ import { BaseEntity } from './base.entity'
 @Index(['walletId', 'deletedAt', 'createdAt'])
 @Index(['userId', 'deletedAt', 'createdAt'])
 export class Bid extends BaseEntity {
-
   @Column({ type: 'enum', enum: NFTType, nullable: false })
   nftType: NFTType
 
@@ -41,5 +40,4 @@ export class Bid extends BaseEntity {
 
   @Column({ nullable: true })
   chainId: string
-
 }

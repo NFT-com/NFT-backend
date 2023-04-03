@@ -3,7 +3,6 @@ import { Wallet } from '@nftcom/shared/db/entity'
 import { BaseRepository } from './base.repository'
 
 export class WalletRepository extends BaseRepository<Wallet> {
-
   constructor() {
     super(Wallet)
   }
@@ -19,5 +18,4 @@ export class WalletRepository extends BaseRepository<Wallet> {
   ): Promise<Wallet | undefined> => {
     return this.findOne({ where: { network, chainId, address } })
   }
-
 }

@@ -6,7 +6,6 @@ import { BaseEntity } from './base.entity'
 @Index(['contractAddress', 'date'])
 @Index(['contractAddress', 'date', 'tokenId'])
 export class MarketplaceSale extends BaseEntity {
-
   @Column({ nullable: false })
   date: Date
 
@@ -27,5 +26,4 @@ export class MarketplaceSale extends BaseEntity {
 
   @Column({ type: 'json' })
   transaction: any
-
 }

@@ -8,7 +8,6 @@ import { BaseEntity } from './base.entity'
 @Index(['confirmEmailToken', 'confirmEmailTokenExpiresAt'])
 @Unique(['username'])
 export class User extends BaseEntity {
-
   @Column({ nullable: true, unique: true })
   email: string
 
@@ -45,5 +44,4 @@ export class User extends BaseEntity {
     },
   })
   preferences: UserPreferences
-
 }

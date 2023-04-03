@@ -10,7 +10,6 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 const { HCS_ACCOUNT_ID, HCS_ENABLED, HCS_PRIVATE_KEY, HCS_TOPIC_ID } = process.env
 
 class _HederaConsensusService implements IHederaConsensusService {
-
   HCS: SubscriptionHandle
   client: Client
   topicId: string
@@ -80,7 +79,6 @@ class _HederaConsensusService implements IHederaConsensusService {
     // specify topic id and submit a new message to HCS
     await new TopicMessageSubmitTransaction().setTopicId(this.topicId).setMessage(message).execute(this.client)
   }
-
 }
 
 const HederaConsensusService = new _HederaConsensusService()

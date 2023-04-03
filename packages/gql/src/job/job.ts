@@ -155,17 +155,17 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
     return Promise.all(
       chainIds.map(chainId => {
         switch (chainId) {
-        case QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE:
-          return queues.get(QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE).add(
-            { GENERATE_COMPOSITE_IMAGE: QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE },
-            {
-              removeOnComplete: true,
-              removeOnFail: true,
-              // repeat every  2 minutes
-              repeat: { every: 2 * 60000 },
-              jobId: 'generate_composite_image',
-            },
-          )
+          case QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE:
+            return queues.get(QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE).add(
+              { GENERATE_COMPOSITE_IMAGE: QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE },
+              {
+                removeOnComplete: true,
+                removeOnFail: true,
+                // repeat every  2 minutes
+                repeat: { every: 2 * 60000 },
+                jobId: 'generate_composite_image',
+              },
+            )
           // case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
           //   return queues.get(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS)
           //     .add({
@@ -178,36 +178,36 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
           //       repeat: { every: NFT_EXTERNAL_ORDER_REFRESH_DURATION * 60000 },
           //       jobId: 'fetch_external_orders',
           //     })
-        case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
-          return queues.get(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND).add(
-            {
-              FETCH_EXTERNAL_ORDERS_ON_DEMAND: QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND,
-              chainId: process.env.CHAIN_ID,
-            },
-            {
-              attempts: 5,
-              removeOnComplete: true,
-              removeOnFail: true,
-              backoff: {
-                type: 'exponential',
-                delay: 2000,
+          case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
+            return queues.get(QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND).add(
+              {
+                FETCH_EXTERNAL_ORDERS_ON_DEMAND: QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND,
+                chainId: process.env.CHAIN_ID,
               },
-              // repeat every  2 minutes
-              repeat: { every: 2 * 60000 },
-              jobId: 'fetch_external_orders_on_demand',
-            },
-          )
-        default:
-          return queues.get(chainId).add(
-            { chainId },
-            {
-              removeOnComplete: true,
-              removeOnFail: true,
-              // repeat every 3 minutes
-              repeat: { every: 3 * 60000 },
-              jobId: `chainid_${chainId}_job`,
-            },
-          )
+              {
+                attempts: 5,
+                removeOnComplete: true,
+                removeOnFail: true,
+                backoff: {
+                  type: 'exponential',
+                  delay: 2000,
+                },
+                // repeat every  2 minutes
+                repeat: { every: 2 * 60000 },
+                jobId: 'fetch_external_orders_on_demand',
+              },
+            )
+          default:
+            return queues.get(chainId).add(
+              { chainId },
+              {
+                removeOnComplete: true,
+                removeOnFail: true,
+                // repeat every 3 minutes
+                repeat: { every: 3 * 60000 },
+                jobId: `chainid_${chainId}_job`,
+              },
+            )
         }
       }),
     ).then(() => undefined)
@@ -219,17 +219,17 @@ const publishJobs = (shouldPublish: boolean): Promise<void> => {
 const listenToJobs = async (): Promise<void> => {
   for (const queue of queues.values()) {
     switch (queue.name) {
-    case QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE:
-      queue.process(generateCompositeImages)
-      break
-    case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
-      // queue.process(nftExternalOrders)
-      break
-    case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
-      queue.process(nftExternalOrdersOnDemand)
-      break
-    default:
-      queue.process(getEthereumEvents)
+      case QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE:
+        queue.process(generateCompositeImages)
+        break
+      case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS:
+        // queue.process(nftExternalOrders)
+        break
+      case QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND:
+        queue.process(nftExternalOrdersOnDemand)
+        break
+      default:
+        queue.process(getEthereumEvents)
     }
   }
 }

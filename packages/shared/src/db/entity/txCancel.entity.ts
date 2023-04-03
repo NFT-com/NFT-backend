@@ -6,7 +6,6 @@ import { BaseEntity, TxActivity } from '.'
 
 @Entity()
 export class TxCancel extends BaseEntity {
-
   @OneToOne(() => TxActivity, activity => activity.activityTypeId, {
     nullable: false,
     cascade: ['insert', 'update'],
@@ -34,5 +33,4 @@ export class TxCancel extends BaseEntity {
 
   @Column({ nullable: true })
   chainId: string
-
 }

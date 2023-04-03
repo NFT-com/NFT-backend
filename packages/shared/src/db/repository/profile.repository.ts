@@ -3,7 +3,6 @@ import { Profile, Wallet } from '@nftcom/shared/db/entity'
 import { BaseRepository } from './base.repository'
 
 export class ProfileRepository extends BaseRepository<Profile> {
-
   constructor() {
     super(Profile)
   }
@@ -22,5 +21,4 @@ export class ProfileRepository extends BaseRepository<Profile> {
       .leftJoinAndMapOne('profile.wallet', Wallet, 'wallet', 'profile.ownerWalletId = wallet.id')
       .getMany()
   }
-
 }

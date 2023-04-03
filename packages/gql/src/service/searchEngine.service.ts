@@ -71,10 +71,10 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
         const profile =
           nft.contract === PROFILE_CONTRACT
             ? await repos.profile.findOne({
-              where: {
-                tokenId: BigNumber.from(nft.tokenId).toString(),
-              },
-            })
+                where: {
+                  tokenId: BigNumber.from(nft.tokenId).toString(),
+                },
+              })
             : undefined
 
         const tokenId = nft.tokenId ? BigNumber.from(nft.tokenId).toString() : 'Unknown'

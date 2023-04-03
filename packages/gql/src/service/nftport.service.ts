@@ -152,18 +152,18 @@ export const retrieveContractNFTs = async (
 const marketplaceString = (marketplace: string | null): defs.NFTPortMarketplace | null => {
   if (!marketplace) return null
   switch (marketplace) {
-  case 'opensea':
-    return defs.NFTPortMarketplace.OpenSea
-  case 'rarible':
-    return defs.NFTPortMarketplace.Rarible
-  case 'cryptopunks':
-    return defs.NFTPortMarketplace.Cryptopunks
-  case 'looksrare':
-    return defs.NFTPortMarketplace.LooksRare
-  case 'x2y2':
-    return defs.NFTPortMarketplace.X2Y2
-  default:
-    return null
+    case 'opensea':
+      return defs.NFTPortMarketplace.OpenSea
+    case 'rarible':
+      return defs.NFTPortMarketplace.Rarible
+    case 'cryptopunks':
+      return defs.NFTPortMarketplace.Cryptopunks
+    case 'looksrare':
+      return defs.NFTPortMarketplace.LooksRare
+    case 'x2y2':
+      return defs.NFTPortMarketplace.X2Y2
+    default:
+      return null
   }
 }
 

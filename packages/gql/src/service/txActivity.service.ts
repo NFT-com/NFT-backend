@@ -191,40 +191,40 @@ export const orderEntityBuilder = async (
   let x2y2Order: X2Y2Order
   const checksumContract: string = helper.checkSum(contract)
   switch (protocol) {
-  case defs.ProtocolType.Seaport:
-    seaportOrder = order as SeaportOrder
-    orderHash = seaportOrder.order_hash
-    walletAddress = helper.checkSum(seaportOrder?.protocol_data?.parameters?.offerer)
-    timestampFromSource = Number(seaportOrder?.protocol_data?.parameters?.startTime)
-    expirationFromSource = Number(seaportOrder?.protocol_data?.parameters?.endTime)
-    nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
-      tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
-      return `ethereum/${checksumContract}/${tokenId}`
-    })
-    orderEntity = seaportOrderBuilder(seaportOrder)
-    break
-  case defs.ProtocolType.LooksRare:
-    looksrareOrder = order as LooksRareOrder
-    orderHash = looksrareOrder.hash
-    walletAddress = helper.checkSum(looksrareOrder.signer)
-    tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
-    timestampFromSource = Number(looksrareOrder.startTime)
-    expirationFromSource = Number(looksrareOrder.endTime)
-    nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = looksrareOrderBuilder(looksrareOrder)
-    break
-  case defs.ProtocolType.X2Y2:
-    x2y2Order = order as X2Y2Order
-    orderHash = x2y2Order.item_hash
-    walletAddress = helper.checkSum(x2y2Order.maker)
-    tokenId = BigNumber.from(x2y2Order.token.token_id || 0).toHexString()
-    timestampFromSource = Number(x2y2Order.created_at)
-    expirationFromSource = Number(x2y2Order.end_at)
-    nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = x2y2OrderBuilder(x2y2Order)
-    break
-  default:
-    break
+    case defs.ProtocolType.Seaport:
+      seaportOrder = order as SeaportOrder
+      orderHash = seaportOrder.order_hash
+      walletAddress = helper.checkSum(seaportOrder?.protocol_data?.parameters?.offerer)
+      timestampFromSource = Number(seaportOrder?.protocol_data?.parameters?.startTime)
+      expirationFromSource = Number(seaportOrder?.protocol_data?.parameters?.endTime)
+      nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
+        tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
+        return `ethereum/${checksumContract}/${tokenId}`
+      })
+      orderEntity = seaportOrderBuilder(seaportOrder)
+      break
+    case defs.ProtocolType.LooksRare:
+      looksrareOrder = order as LooksRareOrder
+      orderHash = looksrareOrder.hash
+      walletAddress = helper.checkSum(looksrareOrder.signer)
+      tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
+      timestampFromSource = Number(looksrareOrder.startTime)
+      expirationFromSource = Number(looksrareOrder.endTime)
+      nftIds = [`ethereum/${checksumContract}/${tokenId}`]
+      orderEntity = looksrareOrderBuilder(looksrareOrder)
+      break
+    case defs.ProtocolType.X2Y2:
+      x2y2Order = order as X2Y2Order
+      orderHash = x2y2Order.item_hash
+      walletAddress = helper.checkSum(x2y2Order.maker)
+      tokenId = BigNumber.from(x2y2Order.token.token_id || 0).toHexString()
+      timestampFromSource = Number(x2y2Order.created_at)
+      expirationFromSource = Number(x2y2Order.end_at)
+      nftIds = [`ethereum/${checksumContract}/${tokenId}`]
+      orderEntity = x2y2OrderBuilder(x2y2Order)
+      break
+    default:
+      break
   }
 
   const activity: entity.TxActivity = await activityBuilder(
@@ -511,40 +511,40 @@ export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
 
 export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
   switch (listing?.order?.protocol) {
-  case defs.ProtocolType.LooksRare:
-  case defs.ProtocolType.X2Y2: {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.price || 0)
-  }
-  case defs.ProtocolType.Seaport: {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration?.reduce(
-      (total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)),
-      BigNumber.from(0),
-    )
-  }
-  case defs.ProtocolType.NFTCOM: {
-    const order = listing?.order?.protocolData
-    return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
-  }
+    case defs.ProtocolType.LooksRare:
+    case defs.ProtocolType.X2Y2: {
+      const order = listing?.order?.protocolData
+      return BigNumber.from(order?.price || 0)
+    }
+    case defs.ProtocolType.Seaport: {
+      const order = listing?.order?.protocolData
+      return order?.parameters?.consideration?.reduce(
+        (total, consideration) => total.add(BigNumber.from(consideration?.startAmount || 0)),
+        BigNumber.from(0),
+      )
+    }
+    case defs.ProtocolType.NFTCOM: {
+      const order = listing?.order?.protocolData
+      return BigNumber.from(order?.takeAsset[0]?.value ?? 0)
+    }
   }
 }
 
 export const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   switch (listing?.order?.protocol) {
-  case defs.ProtocolType.LooksRare:
-  case defs.ProtocolType.X2Y2: {
-    const order = listing?.order?.protocolData
-    return order?.currencyAddress ?? order?.['currency']
-  }
-  case defs.ProtocolType.Seaport: {
-    const order = listing?.order?.protocolData
-    return order?.parameters?.consideration?.[0]?.token
-  }
-  case defs.ProtocolType.NFTCOM: {
-    const order = listing?.order?.protocolData
-    return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
-  }
+    case defs.ProtocolType.LooksRare:
+    case defs.ProtocolType.X2Y2: {
+      const order = listing?.order?.protocolData
+      return order?.currencyAddress ?? order?.['currency']
+    }
+    case defs.ProtocolType.Seaport: {
+      const order = listing?.order?.protocolData
+      return order?.parameters?.consideration?.[0]?.token
+    }
+    case defs.ProtocolType.NFTCOM: {
+      const order = listing?.order?.protocolData
+      return order?.takeAsset[0]?.standard?.contractAddress ?? order?.['currency']
+    }
   }
 }
 

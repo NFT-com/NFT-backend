@@ -7,7 +7,6 @@ import { BaseEntity } from './base.entity'
 @Unique(['txHash', 'profileUrl'])
 @Entity()
 export class Event extends BaseEntity {
-
   @Column({ nullable: false })
   chainId: number
 
@@ -43,5 +42,4 @@ export class Event extends BaseEntity {
 
   @Column({ nullable: true })
   tokenId: string
-
 }

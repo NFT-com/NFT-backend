@@ -6,7 +6,6 @@ import { BaseEntity } from './base.entity'
 
 @Entity()
 export class Approval extends BaseEntity {
-
   @Column({ nullable: false })
   amount: string
 
@@ -35,5 +34,4 @@ export class Approval extends BaseEntity {
 
   @Column({ nullable: false })
   spender: string
-
 }

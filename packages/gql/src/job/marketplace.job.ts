@@ -318,24 +318,24 @@ const parseAsset = async (
     let assetClassData
     let assetTypeData
     switch (assetClass[index]) {
-    case helper.ETH_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ETH
-      assetTypeData = [helper.AddressZero()]
-      break
-    case helper.ERC20_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ERC20
-      assetTypeData = defaultAbiCoder.decode(['address'], assetType[index])
-      break
-    case helper.ERC721_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ERC721
-      assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
-      break
-    case helper.ERC1155_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ERC1155
-      assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
-      break
-    default:
-      break
+      case helper.ETH_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ETH
+        assetTypeData = [helper.AddressZero()]
+        break
+      case helper.ERC20_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ERC20
+        assetTypeData = defaultAbiCoder.decode(['address'], assetType[index])
+        break
+      case helper.ERC721_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ERC721
+        assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
+        break
+      case helper.ERC1155_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ERC1155
+        assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
+        break
+      default:
+        break
     }
 
     // fetch ID from nft table...
@@ -399,8 +399,8 @@ const listenMatchEvents = async (
           event.args.auctionType == 0
             ? defs.AuctionType.FixedPrice
             : event.args.auctionType == 1
-              ? defs.AuctionType.English
-              : defs.AuctionType.Decreasing
+            ? defs.AuctionType.English
+            : defs.AuctionType.Decreasing
         const makerSig = event.args.makerSig
         const takerSig = event.args.takerSig
 

@@ -103,9 +103,9 @@ export const listingsByNFTExpired = new DataLoader<entity.NFT & { args: any }, P
 )
 
 export const listingsByNFTExpiredAndCancelled = new DataLoader<
-entity.NFT & { args: any },
-Pageable<entity.TxActivity>,
-string
+  entity.NFT & { args: any },
+  Pageable<entity.TxActivity>,
+  string
 >(
   async keys => {
     const listings = await repositories.txActivity.findActivitiesForNFTs([...keys], defs.ActivityType.Listing, {
@@ -121,9 +121,9 @@ string
 )
 
 export const listingsByNFTExpiredAndExecuted = new DataLoader<
-entity.NFT & { args: any },
-Pageable<entity.TxActivity>,
-string
+  entity.NFT & { args: any },
+  Pageable<entity.TxActivity>,
+  string
 >(
   async keys => {
     const listings = await repositories.txActivity.findActivitiesForNFTs([...keys], defs.ActivityType.Listing, {

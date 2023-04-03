@@ -41,13 +41,13 @@ export type PaginatedResultsFromEntityByArgs<T> = {
 }
 
 export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<
-PaginatedResultsFromEntityByArgs<T>,
-'pageInput' | 'relations'
+  PaginatedResultsFromEntityByArgs<T>,
+  'pageInput' | 'relations'
 > &
-Pick<FindOneOptions<T>, 'cache'> & {
-  offsetPageInput: gql.OffsetPageInput
-  relations?: string[]
-}
+  Pick<FindOneOptions<T>, 'cache'> & {
+    offsetPageInput: gql.OffsetPageInput
+    relations?: string[]
+  }
 
 export type ToOffsetPageableArgs<T> = {
   offsetPageInput: gql.OffsetPageInput

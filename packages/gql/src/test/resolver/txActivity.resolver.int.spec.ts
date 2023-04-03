@@ -65,46 +65,46 @@ describe('transaction activity resolver', () => {
 
         let activityType
         switch (table) {
-        case 'txOrder':
-          // listing
-          activityType = new TxOrder()
-          activityType.id = orderHash
-          activityType.activity = activity
-          activityType.exchange = ExchangeType.OpenSea
-          activityType.orderHash = orderHash
-          activityType.orderType = ActivityType.Listing
-          activityType.makerAddress = ''
-          activityType.protocol = ProtocolType.Seaport
-          activityType.protocolData = {}
-          activityType.chainId = '5'
+          case 'txOrder':
+            // listing
+            activityType = new TxOrder()
+            activityType.id = orderHash
+            activityType.activity = activity
+            activityType.exchange = ExchangeType.OpenSea
+            activityType.orderHash = orderHash
+            activityType.orderType = ActivityType.Listing
+            activityType.makerAddress = ''
+            activityType.protocol = ProtocolType.Seaport
+            activityType.protocolData = {}
+            activityType.chainId = '5'
 
-          activity = await repositories.txActivity.save(activity)
-          activityType.activity = activity
-          activityType = await repositories.txOrder.save(activityType)
+            activity = await repositories.txActivity.save(activity)
+            activityType.activity = activity
+            activityType = await repositories.txOrder.save(activityType)
 
-          break
-        case 'txTransaction':
-          // purchase
-          activityType = new TxTransaction()
-          activityType.id = orderHash
-          activityType.activity = activityA
-          activityType.exchange = ExchangeType.NFTCOM
-          activityType.transactionType = ActivityType.Sale
-          activityType.protocol = ProtocolType.NFTCOM
-          activityType.protocolData = []
-          activityType.transactionHash =
+            break
+          case 'txTransaction':
+            // purchase
+            activityType = new TxTransaction()
+            activityType.id = orderHash
+            activityType.activity = activityA
+            activityType.exchange = ExchangeType.NFTCOM
+            activityType.transactionType = ActivityType.Sale
+            activityType.protocol = ProtocolType.NFTCOM
+            activityType.protocolData = []
+            activityType.transactionHash =
               '0x2bde65660d85e566a975ae592961aad79ffb13ccd7fcff17a9c16264ff309185:orderHash'
-          activityType.blockNumber = 16594516
-          activityType.maker = '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'
-          activityType.taker = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
-          activityType.chainId = '5'
+            activityType.blockNumber = 16594516
+            activityType.maker = '0x487F09bD7554e66f131e24edC1EfEe0e0Dfa7fD1'
+            activityType.taker = '0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b'
+            activityType.chainId = '5'
 
-          activityA = await repositories.txActivity.save(activityA)
-          activityType.activity = activityA
-          activityType = await repositories.txTransaction.save(activityType)
-          break
-        default:
-          return
+            activityA = await repositories.txActivity.save(activityA)
+            activityType.activity = activityA
+            activityType = await repositories.txTransaction.save(activityType)
+            break
+          default:
+            return
         }
         return Promise.resolve({ table, activity, activityType })
       }),

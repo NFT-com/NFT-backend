@@ -1,7 +1,6 @@
 import { NullClient } from '@nftcom/gql/adapter'
 
 export class NullTypesenseClient implements NullClient {
-
   private _importResponse: any[]
 
   constructor(importResponse: any[]) {
@@ -24,5 +23,4 @@ export class NullTypesenseClient implements NullClient {
       },
     }
   }
-
 }

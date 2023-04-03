@@ -12,7 +12,6 @@ import { BaseEntity } from './base.entity'
 @Index(['contract', 'deletedAt', 'createdAt'])
 @Unique(['contract', 'tokenId', 'chainId'])
 export class NFT extends BaseEntity {
-
   @Column({ nullable: true })
   contract: string
 
@@ -60,5 +59,4 @@ export class NFT extends BaseEntity {
 
   @Column({ nullable: true })
   owner: string
-
 }

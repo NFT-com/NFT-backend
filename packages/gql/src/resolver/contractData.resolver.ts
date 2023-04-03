@@ -529,10 +529,10 @@ export const getTxByNFT = async (_: any, args: gql.QueryGetTxByNFTArgs, _ctx: Co
             index !== -1
               ? await parsePriceDetailFromAsset(activityDAO.transaction.protocolData.takeAsset[index])
               : {
-                assetType: null,
-                contractAddress: null,
-                price: null,
-              }
+                  assetType: null,
+                  contractAddress: null,
+                  price: null,
+                }
           activity = {
             ...activity,
             transactionHash: activityDAO.transaction.transactionHash,

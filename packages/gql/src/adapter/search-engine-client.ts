@@ -21,7 +21,6 @@ const typesenseClient: Client = new Client({
 
 export type NullClient = Record<string, unknown> // Null object passed in for testing
 export class SearchEngineClient {
-
   private _client: Client | Partial<Client>
 
   static create(): SearchEngineClient {
@@ -66,5 +65,4 @@ export class SearchEngineClient {
     }
     return false
   }
-
 }

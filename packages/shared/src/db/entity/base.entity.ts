@@ -3,7 +3,6 @@ import { BeforeInsert, CreateDateColumn, DeleteDateColumn, Entity, PrimaryColumn
 
 @Entity()
 export class BaseEntity {
-
   @PrimaryColumn()
   id: string
 
@@ -20,5 +19,4 @@ export class BaseEntity {
   addId(): void {
     this.id = this.id ? this.id : nanoid()
   }
-
 }

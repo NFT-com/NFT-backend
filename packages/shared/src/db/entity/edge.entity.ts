@@ -14,7 +14,6 @@ import { BaseEntity } from './base.entity'
 @Unique(['thisEntityType', 'thatEntityType', 'thisEntityId', 'thatEntityId', 'edgeType'])
 @Entity()
 export class Edge extends BaseEntity {
-
   // multiple edges can have the same collectionId+thisEntityId combination
   @Column({ nullable: true })
   collectionId: string
@@ -39,5 +38,4 @@ export class Edge extends BaseEntity {
 
   @Column({ nullable: true })
   hide: boolean
-
 }

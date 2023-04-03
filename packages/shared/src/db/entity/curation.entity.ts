@@ -7,7 +7,6 @@ import { BaseEntity } from './base.entity'
 @Entity()
 @Index(['userId'])
 export class Curation extends BaseEntity {
-
   @Column('json', {
     nullable: false,
     default: [],
@@ -16,5 +15,4 @@ export class Curation extends BaseEntity {
 
   @Column({ nullable: false })
   userId: string
-
 }

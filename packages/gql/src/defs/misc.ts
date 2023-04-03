@@ -7,33 +7,33 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 const encodeAssetType = (asset: gql.MarketplaceAssetInput): string => {
   switch (asset.standard.assetClass) {
-  case 'ETH':
-    return helper.encode(['address'], [helper.AddressZero()])
-  case 'ERC20':
-    return helper.encode(['address'], [asset.standard.contractAddress])
-  case 'ERC721':
-  case 'ERC1155':
-    return helper.encode(
-      ['address', 'uint256', 'bool'],
-      [asset.standard.contractAddress, asset.standard.tokenId, asset.standard.allowAll],
-    )
-  default:
-    return ''
+    case 'ETH':
+      return helper.encode(['address'], [helper.AddressZero()])
+    case 'ERC20':
+      return helper.encode(['address'], [asset.standard.contractAddress])
+    case 'ERC721':
+    case 'ERC1155':
+      return helper.encode(
+        ['address', 'uint256', 'bool'],
+        [asset.standard.contractAddress, asset.standard.tokenId, asset.standard.allowAll],
+      )
+    default:
+      return ''
   }
 }
 
 const encodeAssetClass = (assetClass: gql.AssetClass): string => {
   switch (assetClass) {
-  case 'ETH':
-    return helper.ETH_ASSET_CLASS
-  case 'ERC20':
-    return helper.ERC20_ASSET_CLASS
-  case 'ERC721':
-    return helper.ERC721_ASSET_CLASS
-  case 'ERC1155':
-    return helper.ERC1155_ASSET_CLASS
-  default:
-    return ''
+    case 'ETH':
+      return helper.ETH_ASSET_CLASS
+    case 'ERC20':
+      return helper.ERC20_ASSET_CLASS
+    case 'ERC721':
+      return helper.ERC721_ASSET_CLASS
+    case 'ERC1155':
+      return helper.ERC1155_ASSET_CLASS
+    default:
+      return ''
   }
 }
 

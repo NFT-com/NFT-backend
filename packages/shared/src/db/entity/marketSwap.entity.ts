@@ -7,7 +7,6 @@ import { BaseEntity } from './base.entity'
 
 @Entity()
 export class MarketSwap extends BaseEntity {
-
   @Column({ nullable: false })
   txHash: string
 
@@ -24,5 +23,4 @@ export class MarketSwap extends BaseEntity {
   @OneToOne(() => MarketBid)
   @JoinColumn()
   marketBid: MarketBid
-
 }

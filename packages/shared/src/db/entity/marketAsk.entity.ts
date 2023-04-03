@@ -6,7 +6,6 @@ import { BaseEntity } from './base.entity'
 
 @Entity()
 export class MarketAsk extends BaseEntity {
-
   @Column({ nullable: false })
   structHash: string
 
@@ -67,5 +66,4 @@ export class MarketAsk extends BaseEntity {
 
   @Column({ nullable: false })
   chainId: string
-
 }

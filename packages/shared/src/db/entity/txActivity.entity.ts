@@ -7,7 +7,6 @@ import { BaseEntity } from '.'
 @Index(['walletAddress', 'timestamp'])
 @Entity()
 export class TxActivity extends BaseEntity {
-
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   activityType: ActivityType
 
@@ -46,5 +45,4 @@ export class TxActivity extends BaseEntity {
 
   @Column({ nullable: true })
   chainId: string
-
 }
