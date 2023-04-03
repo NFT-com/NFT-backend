@@ -710,7 +710,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       const cid = resolvedUriString.replace('ipfs://', '')
       const content = await fetchDataFromIPFS(cid)
       logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
-      return formatMetadata(content)
+      return formatMetadata(JSON.parse(content?.toString()))
     }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
