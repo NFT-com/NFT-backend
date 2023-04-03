@@ -872,7 +872,7 @@ export const getNftName = (
   tokenId: string = undefined,
   metadataProvider: MetadataProvider = MetadataProvider.All, // by default gets all
 ): string => {
-  logger.info(
+  logger.debug(
     `=======> getNftName: ${JSON.stringify(alchemyMetadata)}, ${JSON.stringify(nftPortDetails)}, ${JSON.stringify(
       alchemyContractMetadata,
     )}, ${tokenId}, ${metadataProvider}`,
