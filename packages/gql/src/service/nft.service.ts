@@ -143,6 +143,7 @@ type Metadata = {
   name: string
   imageURL: string
   traits: Array<{ type: string; value: string }>
+  description: string | null
 }
 
 type ApiResponse = {
@@ -657,13 +658,14 @@ export const batchCallTokenURI = async (
 
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
-    const { name, image, image_url, attributes } = apiResponse
+    const { name, image, image_url, attributes, description } = apiResponse
     const imageURL = image || image_url || '' // Use image_url if image is not available
     const traits = attributes.map(attr => ({ type: attr.trait_type, value: attr.value }))
     return {
       name,
       imageURL,
-      traits
+      traits,
+      description: description || null
     }
   } catch (error) {
     logger.error(error, `Failed to format metadata: ${error}, raw: ${JSON.stringify(apiResponse)}`)
