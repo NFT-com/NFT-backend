@@ -1215,7 +1215,11 @@ const getAssociatedCollectionForProfile = async (
     }
     if (profile.profileView === defs.ProfileViewType.Collection) {
       if (profile.associatedContract) {
-        return await getCollectionInfo(profile.associatedContract, chainId, repositories)
+        return await getCollectionInfo({
+          chainId,
+          contract: profile.associatedContract,
+          repositories,
+        })
       } else {
         return Promise.reject(
           appError.buildNotFound(

@@ -29,4 +29,5 @@ export default new DataSource({
   migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
   ssl,
   entities: [`${__dirname}/entity/*.entity.ts`],
+  subscribers: [`${__dirname}/subscriber/*.subscriber.ts`],
 })

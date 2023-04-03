@@ -11,6 +11,7 @@
     "compile": "tsc -p tsconfig.app.json && tsc-alias -p tsconfig.app.json",
     "copy:schema": "cp -r ./src/schema/*.graphql ./dist/packages/gql/src/schema/",
     "dev": "doppler run -- concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon | pino-pretty\"",
+    "dev:local": "concurrently -k -r \"npm:gql:gen -- --watch\" \"nodemon | pino-pretty\"",
     "test:local": "LOG_LEVEL=debug doppler run --preserve-env -- jest --runInBand --detectOpenHandles",
     "test:local-file": "LOG_LEVEL=debug doppler run --preserve-env -- jest --runInBand --detectOpenHandles --testPathPattern=test/resolver.txActivity.resolver.int.spec.ts",
     "test": "jest --coverage --runInBand",

@@ -33,9 +33,28 @@ const MAX_SAVE_COUNTS = 500
 const getCollection = async (_: any, args: gql.QueryCollectionArgs, ctx: Context): Promise<gql.CollectionInfo> => {
   try {
     logger.debug('getCollection', { input: args?.input })
+    // Validate Inputs
+    const input = args.input || {}
     const chainId = args?.input?.chainId || process.env.CHAIN_ID
+    const options = { chainId, repositories: ctx.repositories }
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    return await getCollectionInfo(args?.input?.contract, chainId, ctx.repositories)
+
+    const schema = Joi.object().keys({
+      chainId: Joi.string().trim().optional(),
+      contract: Joi.string().trim(),
+      slug: Joi.string().trim(),
+      network: Joi.string().trim().required(),
+    }).or('contract', 'slug').nand('contract', 'slug') // Requires either contract|slug
+
+    joi.validateSchema(schema, input)
+
+    return await getCollectionInfo(args?.input?.contract ? {
+      contract: args?.input?.contract,
+      ...options,
+    } : {
+      slug: args?.input?.slug,
+      ...options,
+    })
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
     return err
@@ -134,7 +153,7 @@ const getOfficialCollections = async (
         id: true,
         chainId: true,
         contract: true,
-        name: true,
+        slug: true,
         updatedAt: true,
       },
       cache: defaultCacheDuration,
@@ -407,7 +426,11 @@ const updateCollectionImageUrls = async (
     await Promise.allSettled(
       toUpdate.map(async collection => {
         try {
-          await getCollectionInfo(collection.contract, chainId, repositories)
+          await getCollectionInfo({
+            chainId,
+            contract: collection.contract,
+            repositories,
+          })
         } catch (err) {
           logger.error(`Error in updateCollectionImageUrls: ${err}`)
           Sentry.captureMessage(`Error in updateCollectionImageUrls: ${err}`)
