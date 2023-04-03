@@ -704,17 +704,20 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     if (resolvedUriString.startsWith('ipfs://')) {
       const cid = resolvedUriString.replace('ipfs://', '')
       const content = await fetchDataFromIPFS(cid)
+      logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
       return formatMetadata(JSON.parse(content.toString()))
     }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
       const base64Data = resolvedUriString.replace('data:application/json;base64,', '')
       const jsonStr = Buffer.from(base64Data, 'base64').toString()
+      logger.info(`[parseNFTUriString]: Fetched metadata from base64: ${jsonStr}`)
       return formatMetadata(JSON.parse(jsonStr))
     }
 
     if (resolvedUriString.startsWith('https://arweave.net/') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://')) {
       const response = await axios.get<ApiResponse>(resolvedUriString)
+      logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
       return formatMetadata(response.data)
     }
 
