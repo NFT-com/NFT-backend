@@ -35,8 +35,36 @@ export const addComment = async (_: any, args: gql.MutationAddCommentArgs, ctx: 
   }
 }
 
+export const comments = async (_: any, args: gql.QueryCommentsArgs, _ctx: Context): Promise<gql.CommentsOutput> => {
+  const schema = Joi.object().keys({
+    entityId: Joi.string().required(),
+    pageInput: Joi.object()
+      .keys({
+        first: Joi.number().optional(),
+        last: Joi.number().optional(),
+        afterCursor: Joi.string().optional(),
+        beforeCursor: Joi.string().optional(),
+      })
+      .optional(),
+  })
+  joi.validateSchema(schema, args.input)
+
+  try {
+    return commentService.getComments({ ...args.input })
+  } catch (err) {
+    logger.error({ err, getCommentsOptions: args.input }, 'Unable to get comments for input')
+    if (!(err.originalError instanceof ApolloError)) {
+      throw appError.buildInternal()
+    }
+    throw err
+  }
+}
+
 export default {
   Mutation: {
     addComment: combineResolvers(auth.isAuthenticated, addComment),
+  },
+  Query: {
+    comments,
   },
 }

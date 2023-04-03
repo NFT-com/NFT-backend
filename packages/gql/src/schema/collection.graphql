@@ -76,6 +76,7 @@ type Collection {
   totalVolume: Float
   averagePrice: Float
   stats: NFTPortStatistics
+  comments(pageInput: PageInput): CommentsOutput
   likeCount: Int
   isLikedByUser: Boolean
   isLikedBy(likedById: ID!): Boolean

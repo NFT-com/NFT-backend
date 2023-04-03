@@ -10,6 +10,7 @@ import { core } from '@nftcom/gql/service'
 import { _logger, contracts, db, defs, entity, fp, helper, utils as dbUtils } from '@nftcom/shared'
 
 import { likeService } from '../service/like.service'
+import { comments as commentsResolver } from './comment.resolver'
 
 const logger = _logger.Factory(_logger.Context.NFT, _logger.Context.GraphQL)
 
@@ -1326,6 +1327,9 @@ export default {
         return listingsByNFTExecuted.load({ ...parent, args })
       }
       return listingsByNFT.load({ ...parent, args })
+    },
+    comments: async (parent: gql.NFT, args: gql.NFTCommentsArgs, ctx: Context) => {
+      return commentsResolver(parent, { input: { entityId: parent.id, pageInput: args.pageInput } }, ctx)
     },
     likeCount: async parent => {
       if (!parent) {
