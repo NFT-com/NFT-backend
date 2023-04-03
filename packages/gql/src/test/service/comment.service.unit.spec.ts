@@ -232,7 +232,7 @@ describe('comment service', () => {
     })
   })
 
-  fdescribe('getComments', () => {
+  describe('getComments', () => {
     beforeEach(() => {
       createdAtDate = firstEthDate
       incrementCreatedAt = true
