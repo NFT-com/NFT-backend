@@ -49,9 +49,7 @@ const seService = SearchEngineService()
 
 // Free Account from Infura
 const infuraCredentials = [
-  { apiKey: '7f0f9c6e2d3b4b65a2490e608be9472f', secret: 'f6b6002741b745a5b7da9849971bf2ef' },
-  { apiKey: '9a563c93c3d946788e0b92bbb1b5d38d', secret: 'f0a2759e9d3c4643a986df1eb755f68e' },
-  { apiKey: 'd9a7b76ecd5d479c84b278c7be98db4d', secret: '97183b37c71a4e759c2f41df3dc3ea0b' }
+  { apiKey: '2NvtbGeEmgbJMojDAobTdIUXsTH', secret: '99d5962cdb1b722fc57feb8c0266989c' }
 ]
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
@@ -687,8 +685,15 @@ const fetchDataFromIPFS = async (cid): Promise<ApiResponse | any> => {
   const response = await fetch(url, {
     headers: {
       authorization: auth
-    }
+    },
+    method: 'POST',
   })
+
+  if (!response.ok) {
+    logger.error('Error:', response.statusText);
+    throw new Error(`Failed to fetch data from IPFS: ${response.statusText}`);
+  }
+
   const data = await response.text()
   return data
 }
