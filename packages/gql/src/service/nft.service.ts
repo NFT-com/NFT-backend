@@ -2214,80 +2214,69 @@ export const updateNFTsOrder = async (profileId: string, orders: Array<NFTOrder>
   }
 }
 
+/**
+ * Deletes extra edges that do not satisfy the criteria for valid edges.
+ * Criteria for deletion include:
+ * - NFT does not exist.
+ * - NFT exists, but the owner of the NFT is different or not associated with the profile.
+ * - Duplicate edges connecting to the same NFT.
+ * 
+ * @param edges - An array of edges to be processed for potential deletion.
+ */
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
   const uniqueProfileIds = [...new Set(edges.map(e => e.thisEntityId))]
-  logger.info(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
+  logger.debug(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
 
   const allProfileWalletAndUserIds = await repositories.profile
-    .find({
-      where: {
-        id: In(uniqueProfileIds),
-      },
-    })
+    .find({ where: { id: In(uniqueProfileIds) } })
     .then(profiles =>
       profiles.map(p => ({
         profileId: p.id,
         walletId: p.ownerWalletId,
         userId: p.ownerUserId,
         associatedAddresses: p.associatedAddresses,
-      })),
+      }))
     )
 
-  logger.info(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
+  logger.debug(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
 
-  const profileWalletAndUserIds = allProfileWalletAndUserIds.reduce((acc, p) => {
+  // Create a lookup map for profiles
+  const profileLookup = allProfileWalletAndUserIds.reduce<Record<string, typeof allProfileWalletAndUserIds[number]>>((acc, p) => {
     acc[p.profileId] = p
     return acc
   }, {})
-  logger.info(`[deleteExtraEdges] profileWalletAndUserIds: ${JSON.stringify(profileWalletAndUserIds)}`)
+  logger.debug(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
-  const disconnectedEdgeIds: string[] = (await nftLoader.loadMany(edges.map(e => e.thatEntityId))).reduce(
-    (disconnectedEdges, nft: entity.NFT, i) => {
-      // Delete edges where NFT does not exist
-      if (!nft) disconnectedEdges.push(edges[i].id)
-      else {
-        // Delete edges where owner of nft is different / not associated
-        const profileId = edges[i].thisEntityId
+  const disconnectedEdgeIds: string[] = []
+  const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map(e => e.id)
+  
+  // Load NFTs for processing
+  const nfts = await nftLoader.loadMany(edges.map(e => e.thatEntityId))
+  
+  nfts.forEach((nft: entity.NFT, i) => {
+    // Delete edges where NFT does not exist
+    if (!nft) {
+      disconnectedEdgeIds.push(edges[i].id)
+      return
+    }
 
-        const foundProfile = profileWalletAndUserIds[profileId]
-        logger.info(
-          `[deleteExtraEdges] foundProfile: ${JSON.stringify(foundProfile)}, nft.userId=${nft?.userId}, nft.walletId=${
-            nft?.walletId
-          }, nft=${JSON.stringify(nft)}`,
-        )
+    // Delete edges where owner of NFT is different or not associated
+    const profileId = edges[i].thisEntityId
+    const foundProfile = profileLookup[profileId]
 
-        if (
-          nft?.userId &&
-          nft?.walletId &&
-          (foundProfile.userId != nft?.userId || foundProfile.walletId != nft?.walletId)
-        ) {
-          logger.info(
-            `[deleteExtraEdges] foundProfile mis-match: ${JSON.stringify(foundProfile)}, nft.userId=${
-              nft?.userId
-            }, nft.walletId=${nft?.walletId}, nft=${JSON.stringify(nft)}`,
-          )
-
-          // if the profile is not associated with nft owner, delete the edge
-          if (!foundProfile.associatedAddresses.includes(nft?.owner)) {
-            logger.info(
-              `[deleteExtraEdges] foundProfile.associatedAddresses mis-match: ${JSON.stringify(
-                foundProfile.associatedAddresses,
-              )}, owner=${nft?.owner}`,
-            )
-            disconnectedEdges.push(edges[i].id)
-          }
-        }
-      }
-      return disconnectedEdges
-    },
-    [],
-  )
+    if (
+      nft.userId &&
+      nft.walletId &&
+      (foundProfile.userId !== nft.userId || foundProfile.walletId !== nft.walletId) &&
+      !foundProfile.associatedAddresses.includes(nft.owner)
+    ) {
+      disconnectedEdgeIds.push(edges[i].id)
+    }
+  })
 
   // Delete edges that are duplicate connections on an NFT
-  const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map(e => e.id)
-
   const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
   if (edgeIdsToDelete.length) await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
 }
