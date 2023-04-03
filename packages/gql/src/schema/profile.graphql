@@ -67,6 +67,7 @@ type Profile {
   expireAt: DateTime
   ownerUserId: String
   ownerWalletId: String
+  comments(pageInput: PageInput): CommentsOutput
   likeCount: Int
   isLikedByUser: Boolean
   isLikedBy(likedById: ID!): Boolean

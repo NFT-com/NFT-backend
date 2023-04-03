@@ -42,6 +42,7 @@ import * as Sentry from '@sentry/node'
 
 import { blacklistBool } from '../service/core.service'
 import { likeService } from '../service/like.service'
+import { comments as commentsResolver } from './comment.resolver'
 
 const logger = _logger.Factory(_logger.Context.Profile, _logger.Context.GraphQL)
 
@@ -1699,6 +1700,9 @@ export default {
     isFollowedByMe: core.resolveEdgeOwnership<gql.Profile>('wallet', defs.EdgeType.Follows),
     winningBid: getWinningBid,
     usersActionsWithPoints: getUsersActionsWithPoints,
+    comments: async (parent: gql.Profile, args: gql.ProfileCommentsArgs, ctx: Context) => {
+      return commentsResolver(parent, { input: { entityId: parent.id, pageInput: args.pageInput } }, ctx)
+    },
     likeCount: async parent => {
       if (!parent) {
         return 0

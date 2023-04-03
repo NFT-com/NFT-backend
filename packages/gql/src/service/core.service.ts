@@ -64,26 +64,26 @@ export const entityById = (ctx: Context, id: string, entityType: defs.EntityType
   const { repositories, user, wallet } = ctx
 
   switch (entityType) {
-  case defs.EntityType.Approval:
-    return repositories.approval.findById(id)
-  case defs.EntityType.Bid:
-    return repositories.bid.findById(id)
-  case defs.EntityType.Curation:
-    return repositories.curation.findById(id)
-  case defs.EntityType.Collection:
-    return repositories.collection.findById(id)
-  case defs.EntityType.Edge:
-    return repositories.edge.findById(id)
-  case defs.EntityType.NFT:
-    return repositories.nft.findById(id)
-  case defs.EntityType.Profile:
-    return repositories.profile.findById(id)
-  case defs.EntityType.User:
-    return getDefaultOrFindById(user, id, repositories.user.findById)
-  case defs.EntityType.Wallet:
-    return getDefaultOrFindById(wallet, id, repositories.wallet.findById)
-  default:
-    throw new Error(`Cannot resolve entityType: ${entityType}`)
+    case defs.EntityType.Approval:
+      return repositories.approval.findById(id)
+    case defs.EntityType.Bid:
+      return repositories.bid.findById(id)
+    case defs.EntityType.Curation:
+      return repositories.curation.findById(id)
+    case defs.EntityType.Collection:
+      return repositories.collection.findById(id)
+    case defs.EntityType.Edge:
+      return repositories.edge.findById(id)
+    case defs.EntityType.NFT:
+      return repositories.nft.findById(id)
+    case defs.EntityType.Profile:
+      return repositories.profile.findById(id)
+    case defs.EntityType.User:
+      return getDefaultOrFindById(user, id, repositories.user.findById)
+    case defs.EntityType.Wallet:
+      return getDefaultOrFindById(wallet, id, repositories.wallet.findById)
+    default:
+      throw new Error(`Cannot resolve entityType: ${entityType}`)
   }
 }
 
@@ -398,25 +398,25 @@ export const paginatedThatEntitiesOfEdgesBy = <T>(
             return entityFilter
               ? repositories.nft.findOne({ where: { id: edge.thatEntityId, ...entityFilter } })
               : repositories.nft.findOne({ where: { id: edge.thatEntityId } }).then(
-                fp.thruIfNotEmpty((entry: entity.NFT) => {
-                  // fix (short-term) : trait value
-                  const updatedEntry = stringifyTraits(entry)
-                  // include visibility to entry
-                  const newEntry = {
-                    ...updatedEntry,
-                    isHide: edge.hide,
-                  }
-                  return repositories.collection
-                    .findOne({
-                      where: {
-                        contract: entry.contract,
-                        isSpam: false,
-                        chainId,
-                      },
-                    })
-                    .then(fp.thruIfNotEmpty(() => newEntry))
-                }),
-              )
+                  fp.thruIfNotEmpty((entry: entity.NFT) => {
+                    // fix (short-term) : trait value
+                    const updatedEntry = stringifyTraits(entry)
+                    // include visibility to entry
+                    const newEntry = {
+                      ...updatedEntry,
+                      isHide: edge.hide,
+                    }
+                    return repositories.collection
+                      .findOne({
+                        where: {
+                          contract: entry.contract,
+                          isSpam: false,
+                          chainId,
+                        },
+                      })
+                      .then(fp.thruIfNotEmpty(() => newEntry))
+                  }),
+                )
           }),
         )
           .then((entries: T[]) => {
@@ -1465,28 +1465,28 @@ export const extensionFromFilename = (filename: string): string | undefined => {
 
 export const contentTypeFromExt = (ext: string): string | undefined => {
   switch (ext.toLowerCase()) {
-  case 'jpg':
-    return 'image/jpeg'
-  case 'jpeg':
-    return 'image/jpeg'
-  case 'png':
-    return 'image/png'
-  case 'svg':
-    return 'image/svg+xml'
-  case 'gif':
-    return 'image/gif'
-  case 'webp':
-    return 'image/webp'
-  case 'avif':
-    return 'image/avif'
-  case 'mp4':
-    return 'video/mp4'
-  case 'bmp':
-    return 'image/bmp'
-  case 'tiff':
-    return 'image/tiff'
-  default:
-    return undefined
+    case 'jpg':
+      return 'image/jpeg'
+    case 'jpeg':
+      return 'image/jpeg'
+    case 'png':
+      return 'image/png'
+    case 'svg':
+      return 'image/svg+xml'
+    case 'gif':
+      return 'image/gif'
+    case 'webp':
+      return 'image/webp'
+    case 'avif':
+      return 'image/avif'
+    case 'mp4':
+      return 'video/mp4'
+    case 'bmp':
+      return 'image/bmp'
+    case 'tiff':
+      return 'image/tiff'
+    default:
+      return undefined
   }
 }
 
