@@ -1013,6 +1013,7 @@ export const getNFTMetaData = async (
   chainId: string,
   refreshMetadata = true,
   onlyNftPort = false, // if true, processes only nftPort
+  onlyAlchemy = false, // if true, processes only alchemy
 ): Promise<NFTMetaData | undefined> => {
   try {
     if (onlyNftPort) {
@@ -1071,7 +1072,7 @@ export const getNFTMetaData = async (
       // Useful for non cron based updates -> like individual metadata refresh
       const alchemyMetadata: AlchemyNFTMetaDataResponse = await getNFTMetaDataFromAlchemy(contract, tokenId)
 
-      const nftPortMetadata = await retrieveNFTDetailsNFTPort(
+      const nftPortMetadata = onlyAlchemy ? undefined : await retrieveNFTDetailsNFTPort(
         contract,
         tokenId,
         chainId || process.env.CHAIN_ID,
