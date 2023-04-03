@@ -727,6 +727,19 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       return formatMetadata(response.data)
     }
 
+    // Handle ar:// format
+    if (resolvedUriString.startsWith('ar://')) {
+      // Extract the Arweave transaction ID and optional path from the ar:// URL
+      const arweaveTxId = resolvedUriString.split('/')[2]
+      const optionalPath = resolvedUriString.split('/').slice(3).join('/') || '';
+      // Construct the Arweave data URL
+      const arweaveUrl = `https://arweave.net/${arweaveTxId}/${optionalPath}`
+      // Fetch metadata from Arweave
+      const response = await axios.get<ApiResponse>(arweaveUrl)
+      logger.info(`[parseNFTUriString]: Fetched metadata from Arweave: ${arweaveUrl}, response: ${JSON.stringify(response.data)}`)
+      return formatMetadata(response.data)
+    }
+
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
   } catch (error) {
     logger.error(error, `Failed to parse URI string: ${error}, ${uriString}`)
