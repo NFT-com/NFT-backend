@@ -1045,8 +1045,6 @@ export const getNftType = (
   }
 }
 
-
-
 export const getNFTMetaData = async (
   contract: string,
   tokenId: string,
