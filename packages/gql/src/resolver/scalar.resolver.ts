@@ -16,7 +16,7 @@ const validateAddress = (value: string): string => {
 
 const Address = new GraphQLScalarType({
   name: 'Address',
-  description: 'Equivalent to solidity\'s address type',
+  description: "Equivalent to solidity's address type",
   serialize: validateAddress,
   parseValue: validateAddress,
   parseLiteral(ast) {
@@ -38,7 +38,7 @@ const validateBytes = (value: string): string => {
 
 const Bytes = new GraphQLScalarType({
   name: 'Bytes',
-  description: 'Equivalent to solidity\'s bytes type',
+  description: "Equivalent to solidity's bytes type",
   serialize: validateBytes,
   parseValue: validateBytes,
   parseLiteral(ast) {
@@ -53,7 +53,7 @@ const invalidUint256Error = appError.buildInvalid('Value is not Uint256', 'INVAL
 
 const Uint256 = new GraphQLScalarType({
   name: 'Uint256',
-  description: 'Equivalent to solidity\'s uint256 type',
+  description: "Equivalent to solidity's uint256 type",
   serialize: value => value.toString(),
   parseValue: value => helper.bigNumber(value),
   parseLiteral(ast) {

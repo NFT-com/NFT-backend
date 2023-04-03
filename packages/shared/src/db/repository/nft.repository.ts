@@ -5,7 +5,6 @@ import { ProfileSearchNFT } from '@nftcom/shared/defs'
 import { BaseRepository } from './base.repository'
 
 export class NFTRepository extends BaseRepository<NFT> {
-
   constructor() {
     super(NFT)
   }
@@ -116,5 +115,4 @@ export class NFTRepository extends BaseRepository<NFT> {
       [profileId, nftIds].filter(x => !!x),
     )
   }
-
 }

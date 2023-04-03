@@ -6,7 +6,6 @@ import { ActivityStatus, ActivityType, ProtocolType } from '@nftcom/shared/defs'
 import { BaseRepository } from './base.repository'
 
 export class TxTransactionRepository extends BaseRepository<TxTransaction> {
-
   constructor() {
     super(TxTransaction)
   }
@@ -52,5 +51,4 @@ export class TxTransactionRepository extends BaseRepository<TxTransaction> {
         .getMany()
     }
   }
-
 }

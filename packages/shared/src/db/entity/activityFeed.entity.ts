@@ -20,7 +20,6 @@ export enum ActivityFeedCurrency {
 
 @Entity()
 export class ActivityFeed extends BaseEntity {
-
   @Column()
   txHash: string
 
@@ -68,5 +67,4 @@ export class ActivityFeed extends BaseEntity {
 
   @Column({ nullable: true })
   txValue: string
-
 }

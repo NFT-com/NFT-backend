@@ -20,10 +20,10 @@ jest.mock('@nftcom/cache', () => ({
       const [key, ..._rest] = args
       return mockCacheData[key]
         ? mockCacheData[key]
-          .sort((a, b) => {
-            return b.score - a.score
-          })
-          .map(v => v.data)
+            .sort((a, b) => {
+              return b.score - a.score
+            })
+            .map(v => v.data)
         : undefined
     },
   },

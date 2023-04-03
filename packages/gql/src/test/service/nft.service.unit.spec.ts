@@ -188,8 +188,7 @@ describe('nft service', () => {
         chainId,
         contract,
         repositories,
-      },
-      )
+      })
       expect(collectionInfo.collection.bannerUrl).not.toEqual('https://cdn.nft.com/collectionBanner_default.png')
       expect(collectionInfo.collection.logoUrl).not.toEqual('https://cdn.nft.com/profile-image-default.svg')
       expect(collectionInfo.collection.description).not.toEqual(null)

@@ -4,7 +4,6 @@ import { nftTokenAddress } from '@nftcom/shared/helper/contracts'
 import { BaseRepository } from './base.repository'
 
 export class ApprovalRepository extends BaseRepository<Approval> {
-
   constructor() {
     super(Approval)
   }
@@ -19,5 +18,4 @@ export class ApprovalRepository extends BaseRepository<Approval> {
       order: { amount: 'DESC' },
     })
   }
-
 }

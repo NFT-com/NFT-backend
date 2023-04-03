@@ -7,7 +7,6 @@ import { BaseEntity, TxActivity } from '.'
 @Entity()
 @Index(['makerAddress', 'exchange', 'nonce'])
 export class TxOrder extends BaseEntity {
-
   @OneToOne(() => TxActivity, activity => activity.activityTypeId, {
     nullable: false,
     cascade: ['insert', 'update'],
@@ -59,5 +58,4 @@ export class TxOrder extends BaseEntity {
   // only required for native trading
   @Column({ nullable: true })
   memo: string
-
 }

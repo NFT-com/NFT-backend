@@ -7,7 +7,6 @@ import { BaseEntity, TxActivity } from '.'
 @Index(['taker'])
 @Entity()
 export class TxTransaction extends BaseEntity {
-
   @OneToOne(() => TxActivity, activity => activity.activityTypeId, {
     nullable: false,
     cascade: ['insert', 'update'],
@@ -53,5 +52,4 @@ export class TxTransaction extends BaseEntity {
 
   @Column({ nullable: true })
   chainId: string
-
 }

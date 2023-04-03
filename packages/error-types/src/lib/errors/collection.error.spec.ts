@@ -1,7 +1,4 @@
-import {
-  buildCollectionNotFoundMsg,
-  buildOfficialCollectionNotFoundMsg,
-} from './collection.error'
+import { buildCollectionNotFoundMsg, buildOfficialCollectionNotFoundMsg } from './collection.error'
 
 describe('collection error', () => {
   describe('buildCollectionNotFoundMsg', () => {

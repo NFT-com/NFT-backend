@@ -18,7 +18,7 @@ export const getSortedLeaderboard = async (
     cachedLeaderboard && cachedLeaderboard.length
       ? await hydrateCollectionLeaderboard(cachedLeaderboard, { collectionRepo })
       : // This should never be called in prod, but is here as a fall-back just incase
-      await updateCollectionLeaderboard(collectionRepo, cacheKey)
+        await updateCollectionLeaderboard(collectionRepo, cacheKey)
 
   return leaderboard
 }

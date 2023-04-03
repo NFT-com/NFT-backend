@@ -21,7 +21,6 @@ export enum CommentStatus {
 @Entity()
 @Index(['authorId', 'entityId', 'entityType'])
 export class Comment extends BaseEntity {
-
   @Column()
   authorId: string
 
@@ -36,5 +35,4 @@ export class Comment extends BaseEntity {
 
   @Column({ type: 'enum', enum: CommentStatus, default: CommentStatus.Published })
   status: CommentStatus
-
 }

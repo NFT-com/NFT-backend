@@ -12,7 +12,6 @@ export enum LikeableType {
 @Index(['likedById', 'likedId', 'likedType'])
 @Unique(['likedById', 'likedId', 'likedType'])
 export class Like extends BaseEntity {
-
   @Column()
   likedById: string
 
@@ -21,5 +20,4 @@ export class Like extends BaseEntity {
 
   @Column({ type: 'enum', enum: LikeableType })
   likedType: LikeableType
-
 }

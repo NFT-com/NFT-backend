@@ -35,12 +35,10 @@ export const rateLimitedSchema = (): GraphQLSchema => {
   const keyGenerator = (directiveArgs, source, args, context): string => `${context.user?.id}`
 
   class DebugRateLimiterMemory extends RateLimiterMemory {
-
     consume(key, pointsToConsume, options): any {
       logger.debug(`[CONSUME] ${key} for ${pointsToConsume}`)
       return super.consume(key, pointsToConsume, options)
     }
-  
   }
 
   const { rateLimitDirectiveTypeDefs, rateLimitDirectiveTransformer } = rateLimitDirective({

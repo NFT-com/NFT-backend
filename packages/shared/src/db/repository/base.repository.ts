@@ -6,7 +6,6 @@ import { PageableQuery, PageableResult, UpsertOptions } from '@nftcom/shared/def
 import { helper } from '@nftcom/shared/helper'
 
 export class BaseRepository<T> {
-
   private readonly entity: typeorm.EntityTarget<T>
   private repository: typeorm.Repository<T>
   private readOnlyRepository: typeorm.Repository<T>
@@ -173,5 +172,4 @@ export class BaseRepository<T> {
   public count = (opts: FindOptionsWhere<T>): Promise<number> => {
     return this.getRepository(true).count({ where: opts })
   }
-
 }

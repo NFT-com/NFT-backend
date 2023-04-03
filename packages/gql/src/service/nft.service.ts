@@ -27,16 +27,17 @@ import {
   getAWSConfig,
   getLastWeight,
   midWeight,
+  nftAbi,
   optionallySaveUserAndWalletForAssociatedAddress,
   paginatedOffsetResultsFromEntitiesBy,
   processIPFSURL,
   s3ToCdn,
+  tokenUriAbi
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { NFTPortNFT, retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
-import { nftAbi, tokenUriAbi } from '@nftcom/gql/src/config/core'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -612,7 +613,7 @@ export const batchCallTokenURI = async (
     )
 
     // Extract token URIs from the response
-    const uris = tokenUris.map((data) => (data ? data[0] : undefined))
+    const uris = tokenUris.map(data => (data ? data[0] : undefined))
 
     return uris
   } catch (err) {
@@ -879,9 +880,9 @@ export const getNftName = (
   )
   const tokenName = tokenId
     ? [
-      `${alchemyContractMetadata?.name || alchemyContractMetadata?.openSea?.collectionName || ''}`,
-      `#${BigNumber.from(tokenId).toString()}`,
-    ].join(' ')
+        `${alchemyContractMetadata?.name || alchemyContractMetadata?.openSea?.collectionName || ''}`,
+        `#${BigNumber.from(tokenId).toString()}`,
+      ].join(' ')
     : ''
 
   if (metadataProvider === MetadataProvider.Alchemy) {
@@ -1111,12 +1112,9 @@ export const getNFTMetaData = async (
       // Useful for non cron based updates -> like individual metadata refresh
       const alchemyMetadata: AlchemyNFTMetaDataResponse = await getNFTMetaDataFromAlchemy(contract, tokenId)
 
-      const nftPortMetadata = onlyAlchemy ? undefined : await retrieveNFTDetailsNFTPort(
-        contract,
-        tokenId,
-        chainId || process.env.CHAIN_ID,
-        refreshMetadata,
-      )
+      const nftPortMetadata = onlyAlchemy
+        ? undefined
+        : await retrieveNFTDetailsNFTPort(contract, tokenId, chainId || process.env.CHAIN_ID, refreshMetadata)
 
       const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(contract)
 
@@ -2261,7 +2259,7 @@ export const updateNFTsOrder = async (profileId: string, orders: Array<NFTOrder>
  * - NFT does not exist.
  * - NFT exists, but the owner of the NFT is different or not associated with the profile.
  * - Duplicate edges connecting to the same NFT.
- * 
+ *
  * @param edges - An array of edges to be processed for potential deletion.
  */
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
@@ -2278,24 +2276,27 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
         walletId: p.ownerWalletId,
         userId: p.ownerUserId,
         associatedAddresses: p.associatedAddresses,
-      }))
+      })),
     )
 
   logger.debug(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
 
   // Create a lookup map for profiles
-  const profileLookup = allProfileWalletAndUserIds.reduce<Record<string, typeof allProfileWalletAndUserIds[number]>>((acc, p) => {
-    acc[p.profileId] = p
-    return acc
-  }, {})
+  const profileLookup = allProfileWalletAndUserIds.reduce<Record<string, (typeof allProfileWalletAndUserIds)[number]>>(
+    (acc, p) => {
+      acc[p.profileId] = p
+      return acc
+    },
+    {},
+  )
   logger.debug(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
   const disconnectedEdgeIds: string[] = []
   const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map(e => e.id)
-  
+
   // Load NFTs for processing
   const nfts = await nftLoader.loadMany(edges.map(e => e.thatEntityId))
-  
+
   nfts.forEach((nft: entity.NFT, i) => {
     // Delete edges where NFT does not exist
     if (!nft) {
@@ -2777,8 +2778,7 @@ export const saveProfileScore = async (repositories: db.Repository, profile: ent
   }
 }
 
-export const getCollectionInfo = async (args: GetCollectionInfoArgs,
-): Promise<any> => {
+export const getCollectionInfo = async (args: GetCollectionInfoArgs): Promise<any> => {
   try {
     // Set variables
     const { chainId, repositories } = args
@@ -2799,30 +2799,27 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
       slug = args.slug
     }
 
-    const key = `${contract ?
-      contract.toLowerCase() :
-      slug.toLowerCase()
-    }-${chainId}`
+    const key = `${contract ? contract.toLowerCase() : slug.toLowerCase()}-${chainId}`
     const cachedData = await cache.get(key)
 
     if (cachedData) {
       return JSON.parse(cachedData)
     }
 
-    collection = contract ? await repositories.collection.findByContractAddress(
-      helper.checkSum(contract),
-      chainId,
-    ) : await repositories.collection.findOne({
-      where: {
-        chainId,
-        deletedAt: null,
-        isOfficial: true,
-        slug: ILike(`%${slug}%`),
-      },
-    })
+    collection = contract
+      ? await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
+      : await repositories.collection.findOne({
+          where: {
+            chainId,
+            deletedAt: null,
+            isOfficial: true,
+            slug: ILike(`%${slug}%`),
+          },
+        })
 
     if (!collection) {
-      if (slug) { // throw err if name lookup fails
+      if (slug) {
+        // throw err if name lookup fails
         throw appError.buildNotFound(
           collectionError.buildOfficialCollectionNotFoundMsg(`with the following slug "${slug}" on chain ${chainId}`),
           collectionError.ErrorType.CollectionNotFound,
@@ -2839,10 +2836,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
       contract = collection.contract
     }
 
-    if (collection && (
-      collection.deployer == null ||
-      helper.checkSum(collection.deployer) !== collection.deployer
-    )) {
+    if (collection && (collection.deployer == null || helper.checkSum(collection.deployer) !== collection.deployer)) {
       const collectionDeployer = await getCollectionDeployer(contract, chainId)
       collection = await repositories.collection.save({
         ...collection,
@@ -2865,11 +2859,12 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
     }
 
     // check if logoUrl, bannerUrl, description are null or default -> if not, return, else, proceed
-    const notAllowedToProceed: boolean = !!collection.bannerUrl
-      && !exceptionBannerUrlRegex.test(collection.bannerUrl)
-      && !!collection.logoUrl
-      && collection.logoUrl !== logoUrl
-      && !!collection.description
+    const notAllowedToProceed: boolean =
+      !!collection.bannerUrl &&
+      !exceptionBannerUrlRegex.test(collection.bannerUrl) &&
+      !!collection.logoUrl &&
+      collection.logoUrl !== logoUrl &&
+      !!collection.description
 
     if (notAllowedToProceed) {
       return {
@@ -2899,7 +2894,8 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
             }
           }
         }
-        if (details.contract.metadata?.cached_thumbnail_url &&
+        if (
+          details.contract.metadata?.cached_thumbnail_url &&
           details.contract.metadata?.cached_thumbnail_url?.length
         ) {
           const filename = details.contract.metadata.cached_thumbnail_url.split('/').pop()
@@ -2913,8 +2909,9 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
           logoUrl = logo ? logo : logoUrl
         }
         if (details.contract.metadata?.description) {
-          description = details.contract.metadata?.description?.length ?
-            details.contract.metadata.description : description
+          description = details.contract.metadata?.description?.length
+            ? details.contract.metadata.description
+            : description
         }
       }
       const updatedCollection = await repositories.collection.updateOneById(collection.id, {
@@ -2923,10 +2920,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
         description,
       })
       await seService.indexCollections([updatedCollection])
-      collection = await repositories.collection.findByContractAddress(
-        helper.checkSum(contract),
-        chainId,
-      )
+      collection = await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
       nftPortResults = {
         name: details.contract?.name,
         symbol: details.contract?.symbol,
@@ -2946,10 +2940,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
             description,
           }),
         ])
-        collection = await repositories.collection.findByContractAddress(
-          helper.checkSum(contract),
-          chainId,
-        )
+        collection = await repositories.collection.findByContractAddress(helper.checkSum(contract), chainId)
       }
     }
 
@@ -2958,7 +2949,7 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs,
       nftPortResults,
     }
 
-    await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * (5))
+    await cache.set(key, JSON.stringify(returnObject), 'EX', 60 * 5)
     return returnObject
   } catch (err) {
     logger.error(`Error in getCollectionInfo: ${err}`)
@@ -3173,8 +3164,8 @@ export const queryNFTsForProfile = async (
 
   const edges = onlyVisible
     ? await repositories.edge.find({
-      where: { ...whereQuery, hide: false },
-    })
+        where: { ...whereQuery, hide: false },
+      })
     : await repositories.edge.find({ where: whereQuery })
   const nfts: entity.NFT[] = []
   await Promise.allSettled(

@@ -6,7 +6,6 @@ import { BaseEntity } from './base.entity'
 @Entity()
 @Unique(['address', 'network', 'chainId'])
 export class Wallet extends BaseEntity {
-
   @Index()
   @Column({ nullable: false })
   userId: string
@@ -25,5 +24,4 @@ export class Wallet extends BaseEntity {
 
   @Column({ nullable: true })
   profileId: string
-
 }

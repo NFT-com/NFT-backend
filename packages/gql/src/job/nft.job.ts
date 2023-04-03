@@ -241,16 +241,16 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
         const currentTime: Date = new Date()
         let date: Date
         switch (ttlCondition) {
-        case 'manual':
-          currentTime.setMinutes(currentTime.getMinutes() + 5)
-          date = currentTime
-          break
-        case 'automated':
-          date = new Date(Number(nftSplit?.[2]))
-          break
-        case 'force':
-        default:
-          break
+          case 'manual':
+            currentTime.setMinutes(currentTime.getMinutes() + 5)
+            date = currentTime
+            break
+          case 'automated':
+            date = new Date(Number(nftSplit?.[2]))
+            break
+          case 'force':
+          default:
+            break
         }
         const ttl: number = ttlForTimestampedZsetMembers(date)
         acc.push(...[ttl, nft])

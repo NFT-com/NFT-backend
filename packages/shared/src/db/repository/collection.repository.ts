@@ -6,7 +6,6 @@ import { Collection } from '@nftcom/shared/db/entity'
 import { BaseRepository } from './base.repository'
 
 export class CollectionRepository extends BaseRepository<Collection> {
-
   constructor() {
     super(Collection)
   }
@@ -44,8 +43,8 @@ export class CollectionRepository extends BaseRepository<Collection> {
   findAllOfficial<T extends FindOptionsSelect<Collection>>(
     select?: T,
   ): T extends Pick<FindOneOptions<Collection>, 'select'>
-      ? Promise<Pick<FindOneOptions<Collection>, 'select'>[]>
-      : Promise<Collection[]> {
+    ? Promise<Pick<FindOneOptions<Collection>, 'select'>[]>
+    : Promise<Collection[]> {
     return this.getRepository(true).find({
       where: {
         isOfficial: true,
@@ -53,5 +52,4 @@ export class CollectionRepository extends BaseRepository<Collection> {
       select: select as FindOptionsSelect<any>,
     })
   }
-
 }

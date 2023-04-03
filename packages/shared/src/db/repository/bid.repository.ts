@@ -3,7 +3,6 @@ import { Bid } from '@nftcom/shared/db/entity'
 import { BaseRepository } from './base.repository'
 
 export class BidRepository extends BaseRepository<Bid> {
-
   constructor() {
     super(Bid)
   }
@@ -21,5 +20,4 @@ export class BidRepository extends BaseRepository<Bid> {
       order: { updatedAt: 'DESC' },
     })
   }
-
 }

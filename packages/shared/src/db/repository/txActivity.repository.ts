@@ -19,7 +19,6 @@ interface EntityNameAndType {
 }
 
 export class TxActivityRepository extends BaseRepository<TxActivity> {
-
   constructor() {
     super(TxActivity)
   }
@@ -427,5 +426,4 @@ export class TxActivityRepository extends BaseRepository<TxActivity> {
       .cache(true)
       .getMany()
   }
-
 }

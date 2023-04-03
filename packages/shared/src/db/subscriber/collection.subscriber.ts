@@ -10,7 +10,6 @@ import { Collection } from '../entity'
  */
 @EventSubscriber()
 export class CollectionSubscriber implements EntitySubscriberInterface<Collection> {
-
   private repository: Repository<Collection>
 
   constructor(repository: Repository<Collection>) {
@@ -51,5 +50,4 @@ export class CollectionSubscriber implements EntitySubscriberInterface<Collectio
       entity.slug = `${initialSlug}-${matchCount + 1}`
     }
   }
-
 }

@@ -39,22 +39,29 @@ const getCollection = async (_: any, args: gql.QueryCollectionArgs, ctx: Context
     const options = { chainId, repositories: ctx.repositories }
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-    const schema = Joi.object().keys({
-      chainId: Joi.string().trim().optional(),
-      contract: Joi.string().trim(),
-      slug: Joi.string().trim(),
-      network: Joi.string().trim().required(),
-    }).or('contract', 'slug').nand('contract', 'slug') // Requires either contract|slug
+    const schema = Joi.object()
+      .keys({
+        chainId: Joi.string().trim().optional(),
+        contract: Joi.string().trim(),
+        slug: Joi.string().trim(),
+        network: Joi.string().trim().required(),
+      })
+      .or('contract', 'slug')
+      .nand('contract', 'slug') // Requires either contract|slug
 
     joi.validateSchema(schema, input)
 
-    return await getCollectionInfo(args?.input?.contract ? {
-      contract: args?.input?.contract,
-      ...options,
-    } : {
-      slug: args?.input?.slug,
-      ...options,
-    })
+    return await getCollectionInfo(
+      args?.input?.contract
+        ? {
+            contract: args?.input?.contract,
+            ...options,
+          }
+        : {
+            slug: args?.input?.slug,
+            ...options,
+          },
+    )
   } catch (err) {
     Sentry.captureMessage(`Error in getCollection: ${err}`)
     return err

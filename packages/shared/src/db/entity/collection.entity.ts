@@ -6,7 +6,6 @@ import { BaseEntity } from './base.entity'
 @Index(['contract'])
 @Unique(['contract', 'chainId'])
 export class Collection extends BaseEntity {
-
   @Column({ nullable: false })
   contract: string
 
@@ -54,5 +53,4 @@ export class Collection extends BaseEntity {
 
   @Column({ unique: true, nullable: true })
   slug: string
-
 }

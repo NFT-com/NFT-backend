@@ -15,7 +15,6 @@ export const rootLogger: pino.Logger<pino.LoggerOptions> = pino({
 })
 
 class AppLogger {
-
   private logger
 
   constructor(name?: string, context: LoggerContext = LoggerContext.General) {
@@ -78,7 +77,6 @@ class AppLogger {
       breakLength: Infinity,
     })
   }
-
 }
 
 export const LoggerFactory = (name: string, context?: LoggerContext): AppLogger => new AppLogger(name, context)
