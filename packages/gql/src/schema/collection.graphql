@@ -79,6 +79,7 @@ type Collection {
   comments(pageInput: PageInput): CommentsOutput
   likeCount: Int
   isLikedByUser: Boolean
+  isLikedBy(likedById: ID!): Boolean
 }
 
 type NFTPortResults {

@@ -70,6 +70,7 @@ type Profile {
   comments(pageInput: PageInput): CommentsOutput
   likeCount: Int
   isLikedByUser: Boolean
+  isLikedBy(likedById: ID!): Boolean
 }
 
 type UsersActionOutput {

@@ -26,7 +26,6 @@ import { createLooksrareListing } from '@nftcom/gql/service/looksare.service'
 import {
   checkNFTContractAddresses,
   getNFTsForOfficialCollection,
-  getUserWalletFromNFT,
   initiateWeb3,
   profileGKNFT,
   profileOwner,
@@ -865,7 +864,14 @@ export const refreshNft = async (_: any, args: gql.MutationRefreshNFTArgs, ctx: 
         },
       }
 
-      const wallet = await getUserWalletFromNFT(nft.contract, nft.tokenId, chainId)
+      // just get current wallet
+      const wallet = await repositories.wallet.findOne({
+        where: {
+          address: nft.owner,
+          chainId,
+        },
+      })
+
       let refreshedNFT
       if (!wallet) {
         logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
@@ -1336,6 +1342,12 @@ export default {
         return false
       }
       return likeService.isLikedByUser(parent.id, ctx.user.id)
+    },
+    isLikedBy: async (parent, args: gql.NFTIsLikedByArgs, _ctx) => {
+      if (!parent || !args.likedById) {
+        return false
+      }
+      return likeService.isLikedBy(args.likedById, parent.id)
     },
   },
 }

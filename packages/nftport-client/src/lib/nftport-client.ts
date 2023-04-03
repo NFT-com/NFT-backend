@@ -72,24 +72,29 @@ export type FetchDataOpts = {
   cacheSeconds?: number
 }
 export const fetchData = async (endpoint: string, args: string[], opts: FetchDataOpts = {}): Promise<any> => {
-  const { extraHeaders = {}, queryParams = {}, cacheSeconds } = opts
-  const key = getCacheKey(endpoint, args, queryParams.continuation, queryParams.page_size)
-  const cachedData = await cache.get(key)
-  if (cachedData) {
-    return JSON.parse(cachedData)
-  }
-  const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
-  const { data } = await sendRequest(url, extraHeaders, queryParams)
-  if (data.response === 'OK') {
-    await cache.set(
-      key,
-      JSON.stringify(data),
-      'EX',
-      cacheSeconds || 60 * 60, // 60 minutes
-    )
-  } else {
-    logger.error(data, `Unsuccessful response from ${url}`)
-  }
+  try {
+    const { extraHeaders = {}, queryParams = {}, cacheSeconds } = opts
+    const key = getCacheKey(endpoint, args, queryParams.continuation, queryParams.page_size)
+    const cachedData = await cache.get(key)
+    if (cachedData) {
+      return JSON.parse(cachedData)
+    }
+    const url = format(NFTPORT_ENDPOINTS[endpoint], ...args)
+    const { data } = await sendRequest(url, extraHeaders, queryParams)
+    if (data.response === 'OK') {
+      await cache.set(
+        key,
+        JSON.stringify(data),
+        'EX',
+        cacheSeconds || 60 * 60, // 60 minutes
+      )
+    } else {
+      logger.error(data, `Unsuccessful response from ${url}`)
+    }
 
-  return data
+    return data
+  } catch (error) {
+    logger.error(error, `Error fetching data from NFTPort with url = ${format(NFTPORT_ENDPOINTS[endpoint], ...args)}`)
+    throw error
+  }
 }
