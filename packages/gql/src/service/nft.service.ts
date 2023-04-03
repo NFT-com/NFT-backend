@@ -711,6 +711,7 @@ export const updateCollectionForNFTs = async (nfts: Array<entity.NFT>): Promise<
     )
     await repositories.edge.saveMany(edges, { chunk: MAX_SAVE_COUNTS })
   } catch (err) {
+    logger.error(err, `Error in updateCollectionForNFTs: ${err}`)
     Sentry.captureMessage(`Error in updateCollectionForNFTs: ${err}`)
     return err
   }
