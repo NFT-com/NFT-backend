@@ -702,17 +702,42 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     // Handle OpenSea metadata API format with 0x{id} placeholder
     let resolvedUriString = uriString
     if (uriString.includes('0x{id}') && tokenId) {
-      resolvedUriString = uriString.replace('0x{id}', tokenId)
+      resolvedUriString = uriString.replace('0x{id}', tokenId) + '?format=json'
     } else if (uriString.includes('{id}') && tokenId) {
-      resolvedUriString = uriString.replace('{id}', tokenId)
+      // Replace {id} with tokenId (without 0x prefix) if the format matches https://metadata.mikehager.de/themintmemes/{id}
+      const themintmemesRegex = /^https:\/\/metadata\.mikehager\.de\/themintmemes\//;
+      if (themintmemesRegex.test(uriString)) {
+        const hexTokenWithoutPrefix = tokenId.replace(/^0x/, '');
+        resolvedUriString = uriString.replace('{id}', hexTokenWithoutPrefix);
+      } else {
+        resolvedUriString = uriString.replace('{id}', tokenId);
+      }
+    }
+
+    // Handle IPFS hash format (e.g., QmUpPCBsGayB41RWVn81NUmscZbmPHNQYzY7fyh2LVLkCV)
+    if (/^Qm[a-zA-Z0-9]{44}$/.test(resolvedUriString)) {
+      const content = await fetchDataFromIPFS(resolvedUriString);
+      logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${resolvedUriString}, content: ${content}`);
+      return formatMetadata(JSON.parse(content?.toString()));
     }
 
     if (resolvedUriString.startsWith('ipfs://')) {
-      const cid = resolvedUriString.replace('ipfs://', '')
+      // Remove the 'ipfs://' prefix and also handle cases where 'ipfs/' is present after the prefix
+      const cid = resolvedUriString.replace(/^ipfs:\/\/(ipfs\/)?/, '')
       const content = await fetchDataFromIPFS(cid)
       logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
       return formatMetadata(JSON.parse(content?.toString()))
     }
+
+      // Handle data:application/json;utf8, format
+      if (resolvedUriString.startsWith('data:application/json;utf8,')) {
+        // Extract JSON string from the data URI
+        const jsonStr = resolvedUriString.replace('data:application/json;utf8,', '')
+        // Parse and format the metadata
+        const metadata = JSON.parse(jsonStr)
+        logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
+        return formatMetadata(metadata)
+      }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
       const base64Data = resolvedUriString.replace('data:application/json;base64,', '')
@@ -721,10 +746,25 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       return formatMetadata(JSON.parse(jsonStr))
     }
 
-    if (resolvedUriString.startsWith('https://arweave.net/') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://')) {
-      const response = await axios.get<ApiResponse>(resolvedUriString)
-      logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
-      return formatMetadata(response.data)
+    // Handle https://, http://, and arweave URLs
+    if (resolvedUriString.startsWith('https://') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://arweave.net/')) {
+      try {
+        const response = await axios.get<ApiResponse>(resolvedUriString);
+        logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`);
+        return formatMetadata(response.data);
+      } catch (error) {
+        // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
+        const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)\//;
+        const ipfsMatch = resolvedUriString.match(ipfsRegex);
+        if (ipfsMatch) {
+          const ipfsHash = ipfsMatch[1];
+          const content = await fetchDataFromIPFS(ipfsHash);
+          logger.info(`[parseNFTUriString]: Retrying and fetched metadata from IPFS: ${ipfsHash}, content: ${content}`);
+          return formatMetadata(JSON.parse(content?.toString()));
+        }
+        // If no IPFS hash found, throw the original error
+        throw error;
+      }
     }
 
     // Handle ar:// format
@@ -742,7 +782,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
   } catch (error) {
-    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}`)
+    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}`)
     return null
   }
 }
