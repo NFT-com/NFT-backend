@@ -151,6 +151,7 @@ type ApiResponse = {
   description?: string
   image?: string
   image_url?: string
+  imageUrl?: string
   image_data?: string
   created_by?: string
   external_url?: string
@@ -659,11 +660,11 @@ export const batchCallTokenURI = async (
 
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
-    const { animation_url, name, image, image_url, image_data, attributes, description } = apiResponse
+    const { animation_url, name, image, image_url, imageUrl, image_data, attributes, description } = apiResponse
     const traits = attributes?.map(attr => ({ type: attr.trait_type, value: attr.value })) || []
     return {
       name,
-      image: image || image_url || image_data || animation_url || '',
+      image: image || image_url || image_data || animation_url || imageUrl || '',
       traits,
       description: description || null
     }
