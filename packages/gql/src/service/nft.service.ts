@@ -151,6 +151,7 @@ type ApiResponse = {
   description?: string
   image?: string
   image_url?: string
+  image_data?: string
   created_by?: string
   external_url?: string
   attributes: Array<{ trait_type: string; value: string; display_type?: string }>
@@ -658,11 +659,11 @@ export const batchCallTokenURI = async (
 
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
-    const { name, image, image_url, attributes, description } = apiResponse
+    const { name, image, image_url, image_data, attributes, description } = apiResponse
     const traits = attributes?.map(attr => ({ type: attr.trait_type, value: attr.value })) || []
     return {
       name,
-      image: image || image_url || '',
+      image: image || image_url || image_data || '',
       traits,
       description: description || null
     }
@@ -725,9 +726,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     if (uriString.includes('0x{id}') && tokenId) {
       resolvedUriString = uriString.replace('0x{id}', tokenId) + '?format=json'
     } else if (uriString.includes('{id}') && tokenId) {
-      // Replace {id} with tokenId (without 0x prefix) if the format matches https://metadata.mikehager.de/themintmemes/{id}
-      const themintmemesRegex = /^https:\/\/metadata\.mikehager\.de\/themintmemes\//;
-      if (themintmemesRegex.test(uriString)) {
+      if (uriString.includes('mikehager.de')) {
         const hexTokenWithoutPrefix = tokenId.replace(/^0x/, '');
         resolvedUriString = uriString.replace('{id}', hexTokenWithoutPrefix);
       } else {
@@ -750,15 +749,15 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       return formatMetadata(JSON.parse(content?.toString()))
     }
 
-      // Handle data:application/json;utf8, format
-      if (resolvedUriString.startsWith('data:application/json;utf8,')) {
-        // Extract JSON string from the data URI
-        const jsonStr = resolvedUriString.replace('data:application/json;utf8,', '')
-        // Parse and format the metadata
-        const metadata = JSON.parse(jsonStr)
-        logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
-        return formatMetadata(metadata)
-      }
+    // Handle data:application/json;utf8, format
+    if (resolvedUriString.startsWith('data:application/json;utf8,')) {
+      // Extract JSON string from the data URI
+      const jsonStr = resolvedUriString.replace('data:application/json;utf8,', '')
+      // Parse and format the metadata
+      const metadata = JSON.parse(jsonStr)
+      logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
+      return formatMetadata(metadata)
+    }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
       const base64Data = resolvedUriString.replace('data:application/json;base64,', '')
@@ -766,6 +765,19 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       logger.info(`[parseNFTUriString]: Fetched metadata from base64: ${jsonStr}`)
       return formatMetadata(JSON.parse(jsonStr))
     }
+
+    // Handle data:application/json, format (without utf8 and base64 encoding)
+    if (resolvedUriString.startsWith('data:application/json,')) {
+      // Extract JSON string from the data URI
+      const jsonStr = decodeURIComponent(resolvedUriString.replace('data:application/json,', ''));
+      
+      // Parse the JSON string into a metadata object
+      const metadata = JSON.parse(jsonStr);
+      logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`);
+      // Use the formatMetadata function to format the metadata object
+      return formatMetadata(metadata);
+    }
+    
 
     // Handle https://, http://, and arweave URLs
     if (resolvedUriString.startsWith('https://') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://arweave.net/')) {
