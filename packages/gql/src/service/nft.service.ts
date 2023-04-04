@@ -55,6 +55,8 @@ const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
 const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
+const MAX_RETRIES = 3;
+const INITIAL_DELAY_MS = 1000;
 const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
 const TEST_WALLET_ID = 'test'
 
@@ -657,7 +659,7 @@ export const batchCallTokenURI = async (
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
     const { name, image, image_url, attributes, description } = apiResponse
-    const traits = attributes.map(attr => ({ type: attr.trait_type, value: attr.value }))
+    const traits = attributes?.map(attr => ({ type: attr.trait_type, value: attr.value })) || []
     return {
       name,
       image: image || image_url || '',
@@ -695,6 +697,25 @@ const fetchDataFromIPFS = async (cid): Promise<ApiResponse | any> => {
 
   const data = await response.text()
   return data
+}
+
+const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
+  try {
+    const response = await axios.get(url)
+    return response.data
+  } catch (error) {
+    if (error.response && error.response.status === 429) {
+      if (retries < MAX_RETRIES) {
+        const delayMs = INITIAL_DELAY_MS * Math.pow(2, retries)
+        logger.info(`Rate-limited. Retrying in ${delayMs} ms...`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        return getWithRetry(url, retries + 1)
+      }
+      logger.info('Reached maximum retries. Aborting request.')
+      throw error
+    }
+    throw error
+  }
 }
 
 export const parseNFTUriString = async (uriString: string, tokenId?: string): Promise<Metadata | null> => {
@@ -749,21 +770,24 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     // Handle https://, http://, and arweave URLs
     if (resolvedUriString.startsWith('https://') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://arweave.net/')) {
       try {
-        const response = await axios.get<ApiResponse>(resolvedUriString);
-        logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`);
-        return formatMetadata(response.data);
+        const response = await getWithRetry(resolvedUriString)
+        logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
+        return formatMetadata(response)
       } catch (error) {
         // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
-        const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)\//;
-        const ipfsMatch = resolvedUriString.match(ipfsRegex);
+        const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)(?:\/(\d+))?\/?/
+        const ipfsMatch = resolvedUriString.match(ipfsRegex)
         if (ipfsMatch) {
-          const ipfsHash = ipfsMatch[1];
-          const content = await fetchDataFromIPFS(ipfsHash);
-          logger.info(`[parseNFTUriString]: Retrying and fetched metadata from IPFS: ${ipfsHash}, content: ${content}`);
-          return formatMetadata(JSON.parse(content?.toString()));
+          const ipfsHash = ipfsMatch[1]
+          const capturedTokenId = ipfsMatch[2]
+          // Construct the IPFS URL with optional token ID
+          const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
+          const content = await fetchDataFromIPFS(ipfsUrl)
+          logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
+          return formatMetadata(JSON.parse(content?.toString()))
         }
         // If no IPFS hash found, throw the original error
-        throw error;
+        throw error
       }
     }
 
@@ -771,7 +795,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     if (resolvedUriString.startsWith('ar://')) {
       // Extract the Arweave transaction ID and optional path from the ar:// URL
       const arweaveTxId = resolvedUriString.split('/')[2]
-      const optionalPath = resolvedUriString.split('/').slice(3).join('/') || '';
+      const optionalPath = resolvedUriString.split('/').slice(3).join('/') || ''
       // Construct the Arweave data URL
       const arweaveUrl = `https://arweave.net/${arweaveTxId}/${optionalPath}`
       // Fetch metadata from Arweave
