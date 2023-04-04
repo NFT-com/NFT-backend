@@ -798,7 +798,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
           logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
           return formatMetadata(JSON.parse(content?.toString()))
         }
-        // If no IPFS hash found, throw the original error
+        // If no IPFS hash found, throw the original error.
         throw error
       }
     }
