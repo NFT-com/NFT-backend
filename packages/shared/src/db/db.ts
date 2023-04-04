@@ -45,9 +45,9 @@ export const connectPg = async (): Promise<void> => {
 
   const ssl = helper.parseBoolean(DB_USE_SSL)
     ? {
-        ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
-        rejectUnauthorized: DB_HOST !== 'localhost',
-      }
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: DB_HOST !== 'localhost',
+    }
     : undefined
 
   pgClient = new Pool({
@@ -76,9 +76,9 @@ export const connectPg = async (): Promise<void> => {
 export const connectTestPg = async (): Promise<void> => {
   const ssl = helper.parseBoolean(DB_USE_SSL)
     ? {
-        ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
-        rejectUnauthorized: process.env.TEST_DB_HOST !== 'localhost',
-      }
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: process.env.TEST_DB_HOST !== 'localhost',
+    }
     : undefined
 
   pgClient = new Pool({
@@ -116,9 +116,9 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
 
   const ssl = helper.parseBoolean(DB_USE_SSL)
     ? {
-        ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
-        rejectUnauthorized: DB_HOST !== 'localhost',
-      }
+      ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
+      rejectUnauthorized: DB_HOST !== 'localhost',
+    }
     : null
 
   const entities = [
@@ -161,6 +161,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
     ssl,
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`],
     entities,
   })
 
@@ -205,6 +206,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
     ssl: false,
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`],
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
   })
