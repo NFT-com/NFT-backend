@@ -434,7 +434,7 @@ const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Cont
     sortedActivities.map(activity => {
       indexedActivities.push({
         index,
-        ...activity,
+        ...activity as gql.TxActivity,
       })
       index++
     })
