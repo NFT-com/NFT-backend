@@ -679,25 +679,57 @@ const getRandomInfuraCredential = (): { apiKey: string; secret: string } => {
   return infuraCredentials[randomIndex]
 }
 
-// Define the fetchDataFromIPFS function using const
-const fetchDataFromIPFS = async (cid): Promise<ApiResponse | any> => {
-  const { apiKey, secret } = getRandomInfuraCredential()
-  const auth = 'Basic ' + Buffer.from(apiKey + ':' + secret).toString('base64')
-  const url = `https://ipfs.infura.io:5001/api/v0/cat?arg=${cid}`
+// Function to attempt fetching data from IPFS with the provided URL
+const fetchMetadataFromIPFSUrl = async (url: string, auth: string): Promise<string> => {
   const response = await fetch(url, {
     headers: {
       authorization: auth
     },
-    method: 'POST',
+    method: 'POST'
   })
 
   if (!response.ok) {
-    logger.error('Error:', response.statusText);
-    throw new Error(`Failed to fetch data from IPFS: ${response.statusText}`);
+    throw new Error(`Failed to fetch data from IPFS: ${response.statusText}`)
   }
 
-  const data = await response.text()
-  return data
+  return await response.text()
+}
+
+const fetchDataFromIPFS = async (cid: string): Promise<string> => {
+  const { apiKey, secret } = getRandomInfuraCredential()
+  const auth = 'Basic ' + Buffer.from(apiKey + ':' + secret).toString('base64')
+  const ipfsApiUrl = 'https://ipfs.infura.io:5001/api/v0/cat?arg='
+
+  try {
+    // Attempt to fetch metadata using the original CID
+    return await fetchMetadataFromIPFSUrl(ipfsApiUrl + cid, auth)
+  } catch (error) {
+    logger.error('Error:', error.message)
+
+    // Check if the CID ends with a hex token ID, with or without .json
+    const hexTokenIdMatch = cid.match(/\/0x([0-9a-fA-F]+)(?:\.json)?$/)
+    if (hexTokenIdMatch) {
+      // Extract and convert hex token ID to zero-padded and plain number format
+      const hexTokenId = hexTokenIdMatch[1]
+      const numTokenId = parseInt(hexTokenId, 16).toString().padStart(64, '0')
+      const plainNumTokenId = parseInt(hexTokenId, 16).toString()
+
+      // Attempt to fetch metadata using zero-padded number token ID
+      const zeroPaddedCid = cid.replace('0x' + hexTokenId, numTokenId)
+      try {
+        return await fetchMetadataFromIPFSUrl(ipfsApiUrl + zeroPaddedCid, auth)
+      } catch (error) {
+        logger.error('Error:', error.message)
+
+        // If fetching with zero-padded number fails, try fetching with plain number
+        const plainNumCid = cid.replace('0x' + hexTokenId, plainNumTokenId)
+        return await fetchMetadataFromIPFSUrl(ipfsApiUrl + plainNumCid, auth)
+      }
+    }
+
+    // If not a hex token ID, throw the original error
+    throw error
+  }
 }
 
 const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
