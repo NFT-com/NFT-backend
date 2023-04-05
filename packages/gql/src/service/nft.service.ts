@@ -36,6 +36,7 @@ import {
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { NFTPortNFT, retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
+import { getOpenseaInterceptor } from '@nftcom/gql/service/opensea.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
@@ -814,25 +815,34 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
 
     // Handle https://, http://, and arweave URLs
     if (resolvedUriString.startsWith('https://') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://arweave.net/')) {
-      try {
-        const response = await getWithRetry(resolvedUriString)
-        logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
-        return formatMetadata(response)
-      } catch (error) {
-        // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
-        const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)(?:\/(\d+))?\/?/
-        const ipfsMatch = resolvedUriString.match(ipfsRegex)
-        if (ipfsMatch) {
-          const ipfsHash = ipfsMatch[1]
-          const capturedTokenId = ipfsMatch[2]
-          // Construct the IPFS URL with optional token ID
-          const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
-          const content = await fetchDataFromIPFS(ipfsUrl)
-          logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
-          return formatMetadata(JSON.parse(content?.toString()))
+      // Check if URL is from OpenSea
+      if (resolvedUriString.startsWith('https://opensea.io')) {
+        // Fetch metadata using the OpenSea API
+        const openseaInstance = getOpenseaInterceptor(resolvedUriString, chainId, process.env.OPENSEA_ORDERS_API_KEY)
+        const response = await openseaInstance.get('')
+        logger.info(`[parseNFTUriString]: Fetched metadata from OpenSea API: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
+        return formatMetadata(response.data)
+      } else {
+        try {
+          const response = await getWithRetry(resolvedUriString)
+          logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
+          return formatMetadata(response)
+        } catch (error) {
+          // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
+          const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)(?:\/(\d+))?\/?/
+          const ipfsMatch = resolvedUriString.match(ipfsRegex)
+          if (ipfsMatch) {
+            const ipfsHash = ipfsMatch[1]
+            const capturedTokenId = ipfsMatch[2]
+            // Construct the IPFS URL with optional token ID
+            const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
+            const content = await fetchDataFromIPFS(ipfsUrl)
+            logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
+            return formatMetadata(JSON.parse(content?.toString()))
+          }
+          // If no IPFS hash found, throw the original error.
+          throw error
         }
-        // If no IPFS hash found, throw the original error.
-        throw error
       }
     }
 
