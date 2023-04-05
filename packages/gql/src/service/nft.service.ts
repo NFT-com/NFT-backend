@@ -40,6 +40,8 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
+import { nft as nftLoader } from '../dataloader'
+
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const seService = SearchEngineService()
@@ -2532,29 +2534,30 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   logger.info(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
   const disconnectedEdgeIds: string[] = []
-  for (const edge of edges) {
-    // Fetch the NFT based on the entityId from the edge
-    const nft: entity.NFT = await repositories.nft.findById(edge.thatEntityId);
-  
+
+  // Load NFTs for processing
+  const nfts = await nftLoader.loadMany(edges.map(e => e.thatEntityId))
+
+  nfts.forEach((nft: entity.NFT, i) => {
     // Delete edges where NFT does not exist
     if (!nft) {
-      disconnectedEdgeIds.push(edge.id);
-      continue;
+      disconnectedEdgeIds.push(edges[i].id)
+      return
     }
-  
+
     // Delete edges where owner of NFT is different or not associated
-    const profileId = edge.thisEntityId;
-    const foundProfile = profileLookup[profileId];
-  
+    const profileId = edges[i].thisEntityId
+    const foundProfile = profileLookup[profileId]
+
     if (
       nft.userId &&
       nft.walletId &&
       (foundProfile.userId !== nft.userId || foundProfile.walletId !== nft.walletId) &&
       !foundProfile.associatedAddresses.includes(nft.owner)
     ) {
-      disconnectedEdgeIds.push(edge.id);
+      disconnectedEdgeIds.push(edges[i].id)
     }
-  }
+  })
 
   // Delete edges that are duplicate connections on an NFT
   const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds])]
