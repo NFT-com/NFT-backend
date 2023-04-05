@@ -1,4 +1,3 @@
-// import { queue } from 'async'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, utils as ethersUtils } from 'ethers'
@@ -22,7 +21,6 @@ import {
   extensionFromFilename,
   fetchDataUsingMulticall,
   fetchWithTimeout,
-  findDuplicatesByProperty,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -42,7 +40,7 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { nft as nftLoader } from '../dataloader'
+import { clearNftCache, nft as nftLoader } from '../dataloader'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -2507,10 +2505,10 @@ export const updateNFTsOrder = async (profileId: string, orders: Array<NFTOrder>
  * @param edges - An array of edges to be processed for potential deletion.
  */
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
-  logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
+  logger.info({ edges }, `${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
   const uniqueProfileIds = [...new Set(edges.map(e => e.thisEntityId))]
-  logger.debug(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
+  logger.info(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
 
   const allProfileWalletAndUserIds = await repositories.profile
     .find({ where: { id: In(uniqueProfileIds) } })
@@ -2523,7 +2521,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
       })),
     )
 
-  logger.debug(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
+  logger.info(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
 
   // Create a lookup map for profiles
   const profileLookup = allProfileWalletAndUserIds.reduce<Record<string, (typeof allProfileWalletAndUserIds)[number]>>(
@@ -2533,10 +2531,9 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
     },
     {},
   )
-  logger.debug(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
+  logger.info(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
   const disconnectedEdgeIds: string[] = []
-  const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map(e => e.id)
 
   // Load NFTs for processing
   const nfts = await nftLoader.loadMany(edges.map(e => e.thatEntityId))
@@ -2563,8 +2560,19 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   })
 
   // Delete edges that are duplicate connections on an NFT
-  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
+  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds])]
+  logger.info(`[deleteExtraEdges] Deleting ${edgeIdsToDelete.length} edges, edgeIdsToDelete: ${JSON.stringify(edgeIdsToDelete)}`)
   if (edgeIdsToDelete.length) await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
+}
+
+export const clearDataloaderCache = async (nftIds: string[]): Promise<void> => {
+  try {
+    await clearNftCache(nftIds)
+  } catch (err) {
+    logger.error(err, `Error in clearDataloaderCache: ${err}`)
+    Sentry.captureMessage(`Error in clearDataloaderCache: ${err}`)
+    throw err
+  }
 }
 
 export const syncEdgesWithNFTs = async (profileId: string): Promise<void> => {
