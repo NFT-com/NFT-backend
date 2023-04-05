@@ -40,7 +40,7 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { nft as nftLoader } from '../dataloader'
+import { clearNftCache, nft as nftLoader } from '../dataloader'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -2563,6 +2563,16 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds])]
   logger.info(`[deleteExtraEdges] Deleting ${edgeIdsToDelete.length} edges, edgeIdsToDelete: ${JSON.stringify(edgeIdsToDelete)}`)
   if (edgeIdsToDelete.length) await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
+}
+
+export const clearDataloaderCache = async (nftIds: string[]): Promise<void> => {
+  try {
+    await clearNftCache(nftIds)
+  } catch (err) {
+    logger.error(err, `Error in clearDataloaderCache: ${err}`)
+    Sentry.captureMessage(`Error in clearDataloaderCache: ${err}`)
+    throw err
+  }
 }
 
 export const syncEdgesWithNFTs = async (profileId: string): Promise<void> => {
