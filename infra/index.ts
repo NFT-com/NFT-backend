@@ -64,6 +64,10 @@ const main = async (): Promise<any> => {
   if (deployCronjobs) {
     return createCronJobs()
   }
+
+  if (deploySubstreams){
+    return createSubStreams()
+  }
 }
 
 main().catch(err => {
