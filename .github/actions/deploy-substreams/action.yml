@@ -1,0 +1,71 @@
+name: Deploy Substream Infra
+description: Deploys the infrastrcuture and apps to an environment
+inputs:
+  stage:
+    description: Environment to deploy on
+    required: true
+    default: dev
+  secrets:
+    description: Secrets
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ fromJSON(inputs.secrets).AWS_ACCESS_KEY_ID }}
+        aws-region: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+        aws-secret-access-key: ${{ fromJSON(inputs.secrets).AWS_SECRET_ACCESS_KEY }}
+    - name: Login to AWS ECR
+      id: login_ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Install pulumi
+      uses: pulumi/setup-pulumi@v2
+    - name: Login to Pulumi backend
+      shell: bash
+      run: pulumi login s3://nftcom-pulumi-state
+    - name: Install Infra Deps
+      working-directory: infra
+      shell: bash
+      run: npm install
+    - name: Deploy Cronjob Infra
+      shell: bash
+      working-directory: infra
+      env:
+        STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        AWS_ACCESS_KEY_ID: ${{ fromJSON(inputs.secrets).AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ fromJSON(inputs.secrets).AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        GIT_SHA: ${{ github.sha }}
+        ENV: ${{ fromJSON(inputs.secrets).ENV }}
+        ANALYTICS_DB_HOST: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_HOST }}
+        ANALYTICS_DB_PORT: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_PORT }}
+        ANALYTICS_DB_NAME: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_NAME }}
+        ANALYTICS_DB_USER: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_USER }}
+        ANALYTICS_DB_PASS: ${{ fromJSON(inputs.secrets).ANALYTICS_DB_PASS }}
+        ETH_NODE_URL: ${{ fromJSON(inputs.secrets).ETH_NODE_URL }}
+        ETHERSCAN_API_KEY: ${{ fromJSON(inputs.secrets).ETHERSCAN_API_KEY }}
+        PROFILE_PER_GK: ${{ fromJSON(inputs.secrets).PROFILE_PER_GK }}
+        MINT_TABLE_NAME: ${{ fromJSON(inputs.secrets).MINT_TABLE_NAME }}
+        GQL_DB_HOST: ${{ fromJSON(inputs.secrets).GQL_DB_HOST }}
+        GQL_DB_HOST_RO: ${{ fromJSON(inputs.secrets).GQL_DB_HOST_RO }}
+        GQL_DB_PORT: ${{ fromJSON(inputs.secrets).GQL_DB_PORT }}
+        GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).GQL_DB_PASSWORD }}
+        GQL_DB_USE_SSL: ${{ fromJSON(inputs.secrets).GQL_DB_USE_SSL }}
+        STG_GQL_DB_HOST: ${{ fromJSON(inputs.secrets).STG_GQL_DB_HOST }} 
+        STG_GQL_DB_PASSWORD: ${{ fromJSON(inputs.secrets).STG_GQL_DB_PASSWORD }}
+        PROD_DB_BASTION_CONN: ${{ fromJSON(inputs.secrets).PROD_DB_BASTION_CONN }}
+        PROD_DB_SSH_KEY:  ${{ fromJSON(inputs.secrets).PROD_DB_SSH_KEY }}
+        REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
+        REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
+        NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
+        NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY }}
+        ALCHEMY_API_URL: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL }}
+      run: npm run deploy:substreams

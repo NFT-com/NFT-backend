@@ -9,6 +9,7 @@ import { createCronJobs } from './cronjobs'
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer } from './gql'
 import { createSharedInfra } from './shared'
+import { createSubStreams } from './substreams'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
   const assetBucket = outMap.assetBucket.value
@@ -20,6 +21,8 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
   const privateSubnets = outMap.privateSubnetIds.value
   const vpcId = outMap.vpcId.value
   const typesenseSGId = outMap.typesenseSGId.value
+  const subStreamEc2SGId = outMap.subStreamEc2SGId.value
+  const subStreamRDSSGId = outMap.subStreamRDSSGId.value
   const webSGId = outMap.webSGId.value
   const webEcsSGId = outMap.webEcsSGId.value
   const sharedOutput: SharedInfraOutput = {
@@ -30,6 +33,8 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
     redisHost,
     publicSubnets,
     privateSubnets,
+    subStreamEc2SGId,
+    subStreamRDSSGId,
     vpcId,
     typesenseSGId,
     webSGId,
@@ -44,6 +49,7 @@ const main = async (): Promise<any> => {
   const deployShared = args?.[0] === 'deploy:shared' || false
   const deployGQL = args?.[0] === 'deploy:gql' || false
   const deployCronjobs = args?.[0] === 'deploy:cronjobs' || false
+  const deploySubstreams = args?.[0] === 'deploy:substreams' || false
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 

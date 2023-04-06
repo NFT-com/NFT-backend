@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+
 import { EngineType } from '@pulumi/aws/types/enums/rds';
 import { ec2 } from '@pulumi/awsx';
 
@@ -22,7 +23,6 @@ const createMain = (
     sg: aws.ec2.SecurityGroup,
     zones: string[],
   ): aws.rds.Cluster => {
-
     const subnetGroup = getSubnetGroup(vpc);
     const engineType = EngineType.AuroraPostgresql; 
     const sf_cluster = new aws.rds.Cluster("sf-cluster", {
@@ -73,7 +73,7 @@ const createMain = (
 
 }
 
-export const createAuroraClusters = (
+export const createSubstreamClusters = (
     config: pulumi.Config,
     vpc: ec2.Vpc,
     sg: aws.ec2.SecurityGroup,

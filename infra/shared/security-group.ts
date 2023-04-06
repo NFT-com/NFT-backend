@@ -11,6 +11,8 @@ export type SGOutput = {
   typesense: awsEC2.SecurityGroup
   web: awsEC2.SecurityGroup
   webEcs: awsEC2.SecurityGroup
+  subStreamRDS: awsEC2.SecurityGroup,
+  subStreamEC2: awsEC2.SecurityGroup
 }
 
 const buildIngressRule = (
@@ -127,6 +129,30 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     egress: [buildEgressRule(0, '-1')],
   })
 
+  const subStreamEC2 = new awsEC2.SecurityGroup('sg_substream_ec2', 
+  {
+    description: 'Allow traffic to Substreams EC2',
+    name: getResourceName('substream-ec2'),
+    vpcId: vpc.id,
+    ingress: [
+      buildIngressRule(6061),
+      buildIngressRule(8081),
+      buildIngressRule(8545),
+      buildIngressRule(30303),
+      buildIngressRule(9551),
+      buildIngressRule(22)
+
+    ],
+    egress: [buildEgressRule(0, '-1')]
+  })
+
+  const subStreamRDS = new awsEC2.SecurityGroup('sg_substream_rds',{
+    name: getResourceName('substream-rds'),
+    vpcId: vpc.id,
+    ingress: [buildIngressRule(5432)],
+    egress: [buildEgressRule(0, '-1')]
+
+  })
   return {
     aurora,
     internalEcs,
@@ -134,5 +160,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     typesense,
     web,
     webEcs,
+    subStreamRDS,
+    subStreamEC2
   }
 }
