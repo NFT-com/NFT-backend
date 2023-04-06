@@ -101,7 +101,7 @@ jobs:
           stage: prod
   deploy-dev-substreams:
     runs-on: ubuntu-latest
-    environment: nftcom_prod_cronjobs
+    environment: nftcom_dev
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-substreams
