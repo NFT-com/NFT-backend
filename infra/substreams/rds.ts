@@ -13,10 +13,10 @@ export type SubstreamRDSOutput = {
     main: aws.rds.Cluster
 }
 
-const getSubnetGroup = (vpc: ec2.Vpc): aws.rds.SubnetGroup => {
+const getSubnetGroup = (sharedOutput: SharedInfraOutput): aws.rds.SubnetGroup => {
     return new aws.rds.SubnetGroup('aurora_subnet_group', {
       name: getResourceName('substreams'),
-      subnetIds: isProduction() ? vpc.privateSubnetIds : vpc.publicSubnetIds,
+      subnetIds: isProduction() ? sharedOutput.privateSubnets : sharedOutput.publicSubnets,
     })
   }
 
@@ -72,7 +72,7 @@ const createMain = (
         )
     )
    }
-
+   return sf_cluster; 
 }
 
 export const createSubstreamClusters = (

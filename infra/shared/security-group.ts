@@ -11,7 +11,7 @@ export type SGOutput = {
   typesense: awsEC2.SecurityGroup
   web: awsEC2.SecurityGroup
   webEcs: awsEC2.SecurityGroup
-  subStreamRDS: awsEC2.SecurityGroup,
+  subStreamRDS: awsEC2.SecurityGroup
   subStreamEC2: awsEC2.SecurityGroup
 }
 
@@ -161,6 +161,6 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     web,
     webEcs,
     subStreamRDS,
-    subStreamEC2
+    subStreamEC2,
   }
 }
