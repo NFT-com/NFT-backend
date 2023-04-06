@@ -17,8 +17,8 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     const subStreamEC2SG = sharedInfraOutput.subStreamEc2SGId; 
     const subStreamrdsSG = sharedInfraOutput.subStreamRDSSGId; 
 
-    createSubstreamInstance(subStreamEC2SG);   
-    createSubstreamClusters(zones, vpc, subStreamrdsSG); 
+    createSubstreamInstance(sharedInfraOutput);   
+    createSubstreamClusters(config, sharedInfraOutput, zones); 
     
   }
   

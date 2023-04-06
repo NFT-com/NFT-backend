@@ -5,7 +5,7 @@ import { SharedInfraOutput } from '../defs'
 import { getStage } from '../helper'
 
 
-export const createSubstreamInstance = (sg: aws.ec2.SecurityGroup): aws.ec2.Instance => {
+export const createSubstreamInstance = (infraOutput: SharedInfraOutput): aws.ec2.Instance => {
     const stage = getStage();
     return new aws.ec2.Instance("sf-substream-instance", {
         ami: "ami-02f3f602d23f1659d",
@@ -36,7 +36,7 @@ export const createSubstreamInstance = (sg: aws.ec2.SecurityGroup): aws.ec2.Inst
         tags: {
             Name: `${stage}-sf-substreams`,
         },
-        vpcSecurityGroupIds: [sg],
+        vpcSecurityGroupIds: [infraOutput.subStreamEc2SGId],
     });
 
 }

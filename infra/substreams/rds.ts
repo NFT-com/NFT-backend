@@ -4,6 +4,9 @@ import * as aws from "@pulumi/aws";
 import { EngineType } from '@pulumi/aws/types/enums/rds';
 import { ec2 } from '@pulumi/awsx';
 
+import { SharedInfraOutput } from '../defs'
+
+
 import { getResourceName, isProduction } from "../helper";
 
 export type SubstreamRDSOutput = {
@@ -19,17 +22,16 @@ const getSubnetGroup = (vpc: ec2.Vpc): aws.rds.SubnetGroup => {
 
 const createMain = (
     config: pulumi.Config,
-    vpc: ec2.Vpc,
-    sg: aws.ec2.SecurityGroup,
+    infraOutput: SharedInfraOutput,
     zones: string[],
   ): aws.rds.Cluster => {
-    const subnetGroup = getSubnetGroup(vpc);
+    const subnetGroup = getSubnetGroup(infraOutput.vpcId);
     const engineType = EngineType.AuroraPostgresql; 
     const sf_cluster = new aws.rds.Cluster("sf-cluster", {
         engine: engineType,
         engineVersion: "14.6",
         availabilityZones: zones,
-        vpcSecurityGroupIds: [sg.id],
+        vpcSecurityGroupIds: [infraOutput.subStreamRDSSGId],
         dbSubnetGroupName: subnetGroup.name,   
         dbClusterParameterGroupName: "default.aurora-postgresql14",
         storageEncrypted: true, 
@@ -75,11 +77,10 @@ const createMain = (
 
 export const createSubstreamClusters = (
     config: pulumi.Config,
-    vpc: ec2.Vpc,
-    sg: aws.ec2.SecurityGroup,
+    infraOutput: SharedInfraOutput,
     zones: string[],
   ): SubstreamRDSOutput => {
-    const main = createMain(config, vpc, sg, zones)
+    const main = createMain(config, infraOutput, zones)
     return { main }
   }
   
