@@ -1079,6 +1079,9 @@ export const fetchDataUsingMulticall = async (
           let decodedResult
           try {
             decodedResult = abiInterface.decodeFunctionResult(calls[i].name, result.returnData)
+
+            // IMPORTANT: this debug line is important for detecting the decodedResult, which only errors when being read/printed out for some reason
+            // DON'T REMOVE THIS LINE
             logger.debug(`fetchDataUsingMulticall decodedResult: ${JSON.stringify(decodedResult)}`)
           } catch (innerErr) {
             // Handle errors that may occur during string decoding
