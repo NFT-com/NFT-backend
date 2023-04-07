@@ -1602,15 +1602,19 @@ export const processIPFSURL = (image: string): string => {
 }
 
 export const fetchWithTimeout = async (resource: any, options: any): Promise<any> => {
-  const { timeout = 8000 } = options
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeout)
-  const response = await fetch(resource, {
-    ...options,
-    signal: controller.signal,
-  })
-  clearTimeout(id)
-  return response
+  try {
+    const { timeout = 8000 } = options
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeout)
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal,
+    })
+    clearTimeout(id)
+    return response
+  } catch (error) {
+    logger.error(error, `fetchWithTimeout error, resource: ${resource}, options: ${options}`)
+  }
 }
 
 export const generateSVGFromBase64String = (base64String: string): string => {
