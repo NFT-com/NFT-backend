@@ -43,7 +43,7 @@ const createMain = (
         
         databaseName: "app",
         masterUsername: "app",
-        masterPassword: "bar",
+        masterPassword: "toTheM00N",
         port: 5432,
 
 
