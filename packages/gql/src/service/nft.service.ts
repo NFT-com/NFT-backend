@@ -740,11 +740,11 @@ const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
     if (error.response && error.response.status === 429) {
       if (retries < MAX_RETRIES) {
         const delayMs = INITIAL_DELAY_MS * Math.pow(2, retries)
-        logger.info(`Rate-limited. Retrying in ${delayMs} ms...`)
+        logger.debug(`Rate-limited. Retrying in ${delayMs} ms...`)
         await new Promise(resolve => setTimeout(resolve, delayMs))
         return getWithRetry(url, retries + 1)
       }
-      logger.info('Reached maximum retries. Aborting request.')
+      logger.debug('Reached maximum retries. Aborting request.')
       throw error
     }
     throw error
@@ -2505,10 +2505,10 @@ export const updateNFTsOrder = async (profileId: string, orders: Array<NFTOrder>
  * @param edges - An array of edges to be processed for potential deletion.
  */
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
-  logger.info({ edges }, `${edges.length} edges to be synced in syncEdgesWithNFTs`)
+  logger.debug({ edges }, `${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
   const uniqueProfileIds = [...new Set(edges.map(e => e.thisEntityId))]
-  logger.info(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
+  logger.debug(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
 
   const allProfileWalletAndUserIds = await repositories.profile
     .find({ where: { id: In(uniqueProfileIds) } })
@@ -2521,7 +2521,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
       })),
     )
 
-  logger.info(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
+  logger.debug(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
 
   // Create a lookup map for profiles
   const profileLookup = allProfileWalletAndUserIds.reduce<Record<string, (typeof allProfileWalletAndUserIds)[number]>>(
@@ -2531,7 +2531,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
     },
     {},
   )
-  logger.info(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
+  logger.debug(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
   const disconnectedEdgeIds: string[] = []
 
@@ -2561,7 +2561,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
 
   // Delete edges that are duplicate connections on an NFT
   const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds])]
-  logger.info(`[deleteExtraEdges] Deleting ${edgeIdsToDelete.length} edges, edgeIdsToDelete: ${JSON.stringify(edgeIdsToDelete)}`)
+  logger.debug(`[deleteExtraEdges] Deleting ${edgeIdsToDelete.length} edges, edgeIdsToDelete: ${JSON.stringify(edgeIdsToDelete)}`)
   if (edgeIdsToDelete.length) await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
 }
 
