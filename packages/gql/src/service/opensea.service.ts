@@ -234,7 +234,7 @@ export interface OpenseaOrderRequest {
   chainId: string
 }
 
-const getOpenseaInterceptor = (baseURL: string, chainId: string, apiKey?: string): AxiosInstance => {
+export const getOpenseaInterceptor = (baseURL: string, chainId: string, apiKey?: string): AxiosInstance => {
   const apiKeyApplied: string = apiKey ? apiKey : OPENSEA_API_KEY
   const openseaInstance = axios.create({
     baseURL,

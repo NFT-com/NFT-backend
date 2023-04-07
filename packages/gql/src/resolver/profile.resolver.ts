@@ -343,9 +343,13 @@ const getProfileByURL = (_: any, args: gql.QueryProfileArgs, ctx: Context): Prom
       fp.thruIfEmpty(() =>
         nftProfileContract
           .getTokenId(args.url)
+          .catch(err => {
+            logger.error(err, `getTokenId failed for: ${args.url}`)
+            return
+          })
           .then(
             fp.rejectIfEmpty(
-              appError.buildExists(
+              appError.buildNotFound(
                 profileError.buildProfileNotFoundMsg(args.url),
                 profileError.ErrorType.ProfileNotFound,
               ),

@@ -1,4 +1,3 @@
-// import { queue } from 'async'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, utils as ethersUtils } from 'ethers'
@@ -22,7 +21,6 @@ import {
   extensionFromFilename,
   fetchDataUsingMulticall,
   fetchWithTimeout,
-  findDuplicatesByProperty,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -36,12 +34,13 @@ import {
 } from '@nftcom/gql/service/core.service'
 import { NFTPortRarityAttributes } from '@nftcom/gql/service/nftport.service'
 import { NFTPortNFT, retrieveNFTDetailsNFTPort } from '@nftcom/gql/service/nftport.service'
+import { getOpenseaInterceptor } from '@nftcom/gql/service/opensea.service'
 import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
 import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { nft as nftLoader } from '../dataloader'
+import { clearNftCache, nft as nftLoader } from '../dataloader'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -151,6 +150,7 @@ type ApiResponse = {
   description?: string
   image?: string
   image_url?: string
+  imageUrl?: string
   image_data?: string
   created_by?: string
   external_url?: string
@@ -659,11 +659,11 @@ export const batchCallTokenURI = async (
 
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
-    const { name, image, image_url, image_data, attributes, description } = apiResponse
+    const { animation_url, name, image, image_url, imageUrl, image_data, attributes, description } = apiResponse
     const traits = attributes?.map(attr => ({ type: attr.trait_type, value: attr.value })) || []
     return {
       name,
-      image: image || image_url || image_data || '',
+      image: image || image_url || image_data || animation_url || imageUrl || '',
       traits,
       description: description || null
     }
@@ -679,25 +679,57 @@ const getRandomInfuraCredential = (): { apiKey: string; secret: string } => {
   return infuraCredentials[randomIndex]
 }
 
-// Define the fetchDataFromIPFS function using const
-const fetchDataFromIPFS = async (cid): Promise<ApiResponse | any> => {
-  const { apiKey, secret } = getRandomInfuraCredential()
-  const auth = 'Basic ' + Buffer.from(apiKey + ':' + secret).toString('base64')
-  const url = `https://ipfs.infura.io:5001/api/v0/cat?arg=${cid}`
+// Function to attempt fetching data from IPFS with the provided URL
+const fetchMetadataFromIPFSUrl = async (url: string, auth: string): Promise<string> => {
   const response = await fetch(url, {
     headers: {
       authorization: auth
     },
-    method: 'POST',
+    method: 'POST'
   })
 
   if (!response.ok) {
-    logger.error('Error:', response.statusText);
-    throw new Error(`Failed to fetch data from IPFS: ${response.statusText}`);
+    throw new Error(`Failed to fetch data from IPFS: ${response.statusText}`)
   }
 
-  const data = await response.text()
-  return data
+  return await response.text()
+}
+
+const fetchDataFromIPFS = async (cid: string): Promise<string> => {
+  const { apiKey, secret } = getRandomInfuraCredential()
+  const auth = 'Basic ' + Buffer.from(apiKey + ':' + secret).toString('base64')
+  const ipfsApiUrl = 'https://ipfs.infura.io:5001/api/v0/cat?arg='
+
+  try {
+    // Attempt to fetch metadata using the original CID
+    return await fetchMetadataFromIPFSUrl(ipfsApiUrl + cid, auth)
+  } catch (error) {
+    logger.error('Error:', error.message)
+
+    // Check if the CID ends with a hex token ID, with or without .json
+    const hexTokenIdMatch = cid.match(/\/0x([0-9a-fA-F]+)(?:\.json)?$/)
+    if (hexTokenIdMatch) {
+      // Extract and convert hex token ID to zero-padded and plain number format
+      const hexTokenId = hexTokenIdMatch[1]
+      const numTokenId = parseInt(hexTokenId, 16).toString().padStart(64, '0')
+      const plainNumTokenId = parseInt(hexTokenId, 16).toString()
+
+      // Attempt to fetch metadata using zero-padded number token ID
+      const zeroPaddedCid = cid.replace('0x' + hexTokenId, numTokenId)
+      try {
+        return await fetchMetadataFromIPFSUrl(ipfsApiUrl + zeroPaddedCid, auth)
+      } catch (error) {
+        logger.error('Error:', error.message)
+
+        // If fetching with zero-padded number fails, try fetching with plain number
+        const plainNumCid = cid.replace('0x' + hexTokenId, plainNumTokenId)
+        return await fetchMetadataFromIPFSUrl(ipfsApiUrl + plainNumCid, auth)
+      }
+    }
+
+    // If not a hex token ID, throw the original error
+    throw error
+  }
 }
 
 const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
@@ -781,25 +813,34 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
 
     // Handle https://, http://, and arweave URLs
     if (resolvedUriString.startsWith('https://') || resolvedUriString.startsWith('http://') || resolvedUriString.startsWith('https://arweave.net/')) {
-      try {
-        const response = await getWithRetry(resolvedUriString)
-        logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
-        return formatMetadata(response)
-      } catch (error) {
-        // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
-        const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)(?:\/(\d+))?\/?/
-        const ipfsMatch = resolvedUriString.match(ipfsRegex)
-        if (ipfsMatch) {
-          const ipfsHash = ipfsMatch[1]
-          const capturedTokenId = ipfsMatch[2]
-          // Construct the IPFS URL with optional token ID
-          const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
-          const content = await fetchDataFromIPFS(ipfsUrl)
-          logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
-          return formatMetadata(JSON.parse(content?.toString()))
+      // Check if URL is from OpenSea
+      if (resolvedUriString.startsWith('https://opensea.io')) {
+        // Fetch metadata using the OpenSea API
+        const openseaInstance = getOpenseaInterceptor(resolvedUriString, chainId, process.env.OPENSEA_ORDERS_API_KEY)
+        const response = await openseaInstance.get('')
+        logger.info(`[parseNFTUriString]: Fetched metadata from OpenSea API: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
+        return formatMetadata(response.data)
+      } else {
+        try {
+          const response = await getWithRetry(resolvedUriString)
+          logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
+          return formatMetadata(response)
+        } catch (error) {
+          // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
+          const ipfsRegex = /ipfs\/(Qm[a-zA-Z0-9]+)(?:\/(\d+))?\/?/
+          const ipfsMatch = resolvedUriString.match(ipfsRegex)
+          if (ipfsMatch) {
+            const ipfsHash = ipfsMatch[1]
+            const capturedTokenId = ipfsMatch[2]
+            // Construct the IPFS URL with optional token ID
+            const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
+            const content = await fetchDataFromIPFS(ipfsUrl)
+            logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
+            return formatMetadata(JSON.parse(content?.toString()))
+          }
+          // If no IPFS hash found, throw the original error.
+          throw error
         }
-        // If no IPFS hash found, throw the original error.
-        throw error
       }
     }
 
@@ -2464,10 +2505,10 @@ export const updateNFTsOrder = async (profileId: string, orders: Array<NFTOrder>
  * @param edges - An array of edges to be processed for potential deletion.
  */
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
-  logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
+  logger.info({ edges }, `${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
   const uniqueProfileIds = [...new Set(edges.map(e => e.thisEntityId))]
-  logger.debug(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
+  logger.info(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
 
   const allProfileWalletAndUserIds = await repositories.profile
     .find({ where: { id: In(uniqueProfileIds) } })
@@ -2480,7 +2521,7 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
       })),
     )
 
-  logger.debug(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
+  logger.info(`[deleteExtraEdges] allProfileWalletAndUserIds: ${JSON.stringify(allProfileWalletAndUserIds)}`)
 
   // Create a lookup map for profiles
   const profileLookup = allProfileWalletAndUserIds.reduce<Record<string, (typeof allProfileWalletAndUserIds)[number]>>(
@@ -2490,10 +2531,9 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
     },
     {},
   )
-  logger.debug(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
+  logger.info(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
   const disconnectedEdgeIds: string[] = []
-  const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map(e => e.id)
 
   // Load NFTs for processing
   const nfts = await nftLoader.loadMany(edges.map(e => e.thatEntityId))
@@ -2520,8 +2560,19 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   })
 
   // Delete edges that are duplicate connections on an NFT
-  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
+  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds])]
+  logger.info(`[deleteExtraEdges] Deleting ${edgeIdsToDelete.length} edges, edgeIdsToDelete: ${JSON.stringify(edgeIdsToDelete)}`)
   if (edgeIdsToDelete.length) await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
+}
+
+export const clearDataloaderCache = async (nftIds: string[]): Promise<void> => {
+  try {
+    await clearNftCache(nftIds)
+  } catch (err) {
+    logger.error(err, `Error in clearDataloaderCache: ${err}`)
+    Sentry.captureMessage(`Error in clearDataloaderCache: ${err}`)
+    throw err
+  }
 }
 
 export const syncEdgesWithNFTs = async (profileId: string): Promise<void> => {
