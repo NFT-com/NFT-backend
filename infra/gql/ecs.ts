@@ -280,12 +280,8 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
               Value: process.env.ALCHEMY_API_KEY,
             },
             {
-              Name: 'ALCHEMY_API_URL',
-              Value: process.env.ALCHEMY_API_URL,
-            },
-            {
-              Name: 'ALCHEMY_API_URL_GOERLI',
-              Value: process.env.ALCHEMY_API_URL_GOERLI,
+              Name: 'ALCHEMY_TESTNET_KEY',
+              Value: process.env.ALCHEMY_TESTNET_KEY,
             },
             {
               Name: 'SENTRY_DSN',

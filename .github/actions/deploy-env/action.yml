@@ -90,9 +90,7 @@ runs:
         ZMOK_API_URL: ${{ fromJSON(inputs.secrets).ZMOK_API_URL }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
         ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
-        ALCHEMY_API_URL: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL }}
-        ALCHEMY_API_URL_RINKEBY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL_RINKEBY }}
-        ALCHEMY_API_URL_GOERLI: ${{ fromJSON(inputs.secrets).ALCHEMY_API_URL_GOERLI }}
+        ALCHEMY_TESTNET_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_TESTNET_KEY }}
         SENTRY_DSN: ${{ fromJSON(inputs.secrets).SENTRY_DSN }}
         PUBLIC_SALE_KEY: ${{ fromJSON(inputs.secrets).PUBLIC_SALE_KEY }}
         SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}

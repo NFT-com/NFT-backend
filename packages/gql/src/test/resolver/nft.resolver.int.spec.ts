@@ -2,7 +2,6 @@ import { ethers } from 'ethers'
 import { DataSource } from 'typeorm'
 
 import { testDBConfig } from '@nftcom/gql/config'
-//import { delay } from '@nftcom/gql/service/core.service'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import { defs, helper, typechain } from '@nftcom/shared/'
 import { db, entity } from '@nftcom/shared/db'

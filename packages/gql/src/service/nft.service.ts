@@ -51,8 +51,6 @@ const infuraCredentials = [
   { apiKey: '2NvtbGeEmgbJMojDAobTdIUXsTH', secret: '99d5962cdb1b722fc57feb8c0266989c' }
 ]
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
-const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
-const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
@@ -183,14 +181,19 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
+export const getAlchemyApiUrl = (chainId: string): string => {
+  const apiKey = chainId === '1' ? process.env.ALCHEMY_API_KEY : process.env.ALCHEMY_TESTNET_KEY
+  return `https://eth-mainnet.alchemyapi.io/v2/${apiKey}`
+}
+
 export const initiateWeb3 = (cid?: string): void => {
   chainId = cid || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
+  alchemyUrl = getAlchemyApiUrl(chainId)
 }
 
 export const getAlchemyInterceptor = (chainId: string, customApiKey?: string): AxiosInstance => {
   const alchemyInstance = axios.create({
-    baseURL: customApiKey ?? Number(chainId || process.env.CHAIN_ID) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
+    baseURL: customApiKey ?? getAlchemyApiUrl(chainId || process.env.CHAIN_ID),
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -1957,8 +1960,8 @@ export const refreshNFTMetadata = async (nft: entity.NFT): Promise<entity.NFT> =
   try {
     // hard refresh for now
     // until Alchemy SDK incorporates this
-    // TODO: remove in future
-    const alchemy_api_url = nft.chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const alchemy_api_url = getAlchemyApiUrl(nft.chainId)
+
     await axios.get(
       `${alchemy_api_url}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(
         nft.tokenId,
@@ -2016,8 +2019,7 @@ export const getOwnersOfGenesisKeys = async (chainId: string): Promise<object> =
       return JSON.parse(cachedData) as object
     }
     // until Alchemy SDK incorporates this
-    // TODO: remove in future
-    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const alchemy_api_url = getAlchemyApiUrl(chainId)
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
     if (res && res?.data && res.data?.ownerAddresses) {
       const gkOwners = res.data.ownerAddresses as string[]
@@ -2070,7 +2072,7 @@ export const getOwnersOfNFTProfile = async (chainId: string): Promise<object> =>
       return JSON.parse(cachedData) as object
     }
 
-    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const alchemy_api_url = getAlchemyApiUrl(chainId)
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
     if (res && res?.data && res.data?.ownerAddresses) {
       const profileOwners = res.data.ownerAddresses as string[]
