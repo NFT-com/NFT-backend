@@ -28,7 +28,7 @@ jobs:
             - 'infra/cronjobs/**'
   deploy-dev:
     needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
+    if: ${{ github.ref_name == 'develop' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: [self-hosted]
     environment: nftcom_dev
     steps:
@@ -40,7 +40,7 @@ jobs:
           stage: dev
   deploy-staging:
     needs: deployment-triggers
-    if: ${{ (github.ref_name == 'main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'staging'))) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
+    if: ${{ startsWith(github.ref_name, 'release') && needs.deployment-triggers.outputs.gql-changed == 'true' }}
     runs-on: [self-hosted]
     environment: nftcom_staging
     steps:
@@ -51,7 +51,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
   deploy-prod:
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.gql-changed == 'true' }}
     runs-on: [self-hosted]
     environment: nftcom_prod
     steps:
@@ -63,7 +63,7 @@ jobs:
           stage: prod
   deploy-dev-cronjobs:
     needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
+    if: ${{ github.ref_name == 'develop' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_cronjobs
     steps:
@@ -75,7 +75,7 @@ jobs:
           stage: dev
   deploy-staging-cronjobs:
     needs: deployment-triggers
-    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
+    if: ${{ startsWith(github.ref_name, 'release') && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_staging_cronjobs
     steps:
@@ -86,7 +86,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
   deploy-prod-cronjobs:
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'cronjob-rel') }}
+    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_prod_cronjobs
     steps:
