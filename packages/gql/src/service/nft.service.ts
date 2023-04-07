@@ -56,6 +56,8 @@ const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
+const BATCH_LOG_SIZE = 100
+let logInfoBatch = []
 const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
 const TEST_WALLET_ID = 'test'
 
@@ -769,7 +771,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     // Handle IPFS hash format (e.g., QmUpPCBsGayB41RWVn81NUmscZbmPHNQYzY7fyh2LVLkCV)
     if (/^Qm[a-zA-Z0-9]{44}$/.test(resolvedUriString)) {
       const content = await fetchDataFromIPFS(resolvedUriString);
-      logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${resolvedUriString}, content: ${content}`);
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from IPFS: ${resolvedUriString}, content: ${content}`);
       return formatMetadata(JSON.parse(content?.toString()));
     }
 
@@ -777,7 +779,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       // Remove the 'ipfs://' prefix and also handle cases where 'ipfs/' is present after the prefix
       const cid = resolvedUriString.replace(/^ipfs:\/\/(ipfs\/)?/, '')
       const content = await fetchDataFromIPFS(cid)
-      logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
       return formatMetadata(JSON.parse(content?.toString()))
     }
 
@@ -787,14 +789,14 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       const jsonStr = resolvedUriString.replace('data:application/json;utf8,', '')
       // Parse and format the metadata
       const metadata = JSON.parse(jsonStr)
-      logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
       return formatMetadata(metadata)
     }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
       const base64Data = resolvedUriString.replace('data:application/json;base64,', '')
       const jsonStr = Buffer.from(base64Data, 'base64').toString()
-      logger.info(`[parseNFTUriString]: Fetched metadata from base64: ${jsonStr}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from base64: ${jsonStr}`)
       return formatMetadata(JSON.parse(jsonStr))
     }
 
@@ -805,7 +807,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       
       // Parse the JSON string into a metadata object
       const metadata = JSON.parse(jsonStr);
-      logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`);
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`);
       // Use the formatMetadata function to format the metadata object
       return formatMetadata(metadata);
     }
@@ -818,12 +820,12 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
         // Fetch metadata using the OpenSea API
         const openseaInstance = getOpenseaInterceptor(resolvedUriString, chainId, process.env.OPENSEA_ORDERS_API_KEY)
         const response = await openseaInstance.get('')
-        logger.info(`[parseNFTUriString]: Fetched metadata from OpenSea API: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
+        logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from OpenSea API: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
         return formatMetadata(response.data)
       } else {
         try {
           const response = await getWithRetry(resolvedUriString)
-          logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
+          logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
           return formatMetadata(response)
         } catch (error) {
           // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
@@ -835,7 +837,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
             // Construct the IPFS URL with optional token ID
             const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
             const content = await fetchDataFromIPFS(ipfsUrl)
-            logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
+            logInfoBatch.push(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
             return formatMetadata(JSON.parse(content?.toString()))
           }
           // If no IPFS hash found, throw the original error.
@@ -853,8 +855,14 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       const arweaveUrl = `https://arweave.net/${arweaveTxId}/${optionalPath}`
       // Fetch metadata from Arweave
       const response = await axios.get<ApiResponse>(arweaveUrl)
-      logger.info(`[parseNFTUriString]: Fetched metadata from Arweave: ${arweaveUrl}, response: ${JSON.stringify(response.data)}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from Arweave: ${arweaveUrl}, response: ${JSON.stringify(response.data)}`)
       return formatMetadata(response.data)
+    }
+
+    // batched logs
+    if (logInfoBatch.length >= BATCH_LOG_SIZE) {
+      logger.info(logInfoBatch.join('\n'))
+      logInfoBatch = []
     }
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
