@@ -25,7 +25,7 @@ const createMain = (
     infraOutput: SharedInfraOutput,
     zones: string[],
   ): aws.rds.Cluster => {
-    const subnetGroup = getSubnetGroup(infraOutput.vpcId);
+    const subnetGroup = getSubnetGroup(infraOutput);
     const engineType = EngineType.AuroraPostgresql; 
     const sf_cluster = new aws.rds.Cluster("sf-cluster", {
         engine: engineType,
