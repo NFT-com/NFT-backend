@@ -59,7 +59,7 @@ const createMain = (
             instanceClass: "db.t3.medium",
             engine: engineType,
             engineVersion: sf_cluster.engineVersion,
-            parameterGroupName: "default.aurora-postgresql14",
+            dbParameterGroupName: "default.aurora-postgresql14",
             dbSubnetGroupName: subnetGroup.name,
             availabilityZone: zones[0],
 
