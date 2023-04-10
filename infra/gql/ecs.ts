@@ -268,10 +268,6 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
               Value: process.env.HCS_PRIVATE_KEY,
             },
             {
-              Name: 'ZMOK_API_URL',
-              Value: process.env.ZMOK_API_URL,
-            },
-            {
               Name: 'INFURA_API_KEY',
               Value: process.env.INFURA_API_KEY,
             },

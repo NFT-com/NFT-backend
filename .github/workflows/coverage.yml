@@ -59,7 +59,6 @@ jobs:
         envkey_HCS_ENABLED: ${{ secrets.HCS_ENABLED }}
         envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
-        envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
         envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
         envkey_CHAIN_ID: ${{ secrets.CHAIN_ID }}
         envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
