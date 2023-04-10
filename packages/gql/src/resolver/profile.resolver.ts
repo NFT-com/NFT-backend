@@ -416,7 +416,7 @@ const updateProfile = async (_: any, args: gql.MutationUpdateProfileArgs, ctx: C
 
   const schema = Joi.object().keys({
     id: Joi.string().required(),
-    associatedContract: Joi.string().uri().allow(null),
+    associatedContract: Joi.string().allow(null),
     bannerURL: Joi.string().uri().allow(null),
     description: Joi.string().allow(null),
     photoURL: Joi.string().uri().allow(null),
