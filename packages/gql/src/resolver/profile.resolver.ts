@@ -410,12 +410,13 @@ const addCustomizeIncentiveAction = async (repositories: db.Repository, profile:
   }
 }
 
-const updateProfile = (_: any, args: gql.MutationUpdateProfileArgs, ctx: Context): Promise<gql.Profile> => {
+const updateProfile = async (_: any, args: gql.MutationUpdateProfileArgs, ctx: Context): Promise<gql.Profile> => {
   const { user, repositories, wallet } = ctx
   logger.debug('updateProfile', { loggedInUserId: user.id, input: args.input })
 
   const schema = Joi.object().keys({
     id: Joi.string().required(),
+    associatedContract: Joi.string().uri().allow(null),
     bannerURL: Joi.string().uri().allow(null),
     description: Joi.string().allow(null),
     photoURL: Joi.string().uri().allow(null),
@@ -438,58 +439,59 @@ const updateProfile = (_: any, args: gql.MutationUpdateProfileArgs, ctx: Context
       .allow(null),
   })
   joi.validateSchema(schema, args.input)
+  const { showNFTIds, hideNFTIds, showAllNFTs, hideAllNFTs, ...profileUpdates } = args.input
 
   const notOwner = (p: entity.Profile): boolean => p.ownerUserId !== user.id
   const { id } = args.input
 
-  return getProfile(id, repositories.profile.findById)
-    .then(
-      fp.rejectIf(notOwner)(
-        appError.buildForbidden(profileError.buildProfileNotOwnedMsg(id), profileError.ErrorType.ProfileNotOwned),
+  const profile = await getProfile(id, repositories.profile.findById)
+
+  if (notOwner(profile)) {
+    return Promise.reject(
+      appError.buildForbidden(
+        profileError.buildProfileNotOwnedMsg(id),
+        profileError.ErrorType.ProfileNotOwned
+      )
+    )
+  }
+
+  if (args?.input.description && args?.input.description.length > 300) {
+    return Promise.reject(
+      appError.buildForbidden(
+        profileError.buildProfileDescriptionLength(),
+        profileError.ErrorType.ProfileDescriptionLength,
       ),
     )
-    .then((p: entity.Profile) => {
-      if (args?.input.description && args?.input.description.length > 300) {
-        return Promise.reject(
-          appError.buildForbidden(
-            profileError.buildProfileDescriptionLength(),
-            profileError.ErrorType.ProfileDescriptionLength,
-          ),
-        )
-      } else {
-        p.bannerURL = args.input.bannerURL ?? p.bannerURL
-        p.description = args.input.description ?? p.description
-        p.photoURL = args.input.photoURL ?? p.photoURL
-        p.displayType = args.input.displayType ?? p.displayType
-        p.hideCustomization = args.input.hideCustomization ?? p.hideCustomization
-        p.layoutType = args.input.layoutType ?? p.layoutType
-        p.gkIconVisible = args.input.gkIconVisible ?? p.gkIconVisible
-        p.nftsDescriptionsVisible = args.input.nftsDescriptionsVisible ?? p.nftsDescriptionsVisible
-        p.deployedContractsVisible = args.input.deployedContractsVisible ?? p.deployedContractsVisible
-        return changeNFTsVisibility(
-          repositories,
-          wallet.id,
-          p.id, // profileId
-          args.input.showAllNFTs,
-          args.input.hideAllNFTs,
-          args.input.showNFTIds,
-          args.input.hideNFTIds,
-          p.chainId,
-        )
-          .then(() => {
-            return repositories.profile.save(p).then((profile: entity.Profile) => {
-              return addCustomizeIncentiveAction(repositories, profile)
-                .then(() => profile)
-                .catch(err => {
-                  return Promise.reject(new Error(`Something went wrong to save incentive action. Error: ${err}`))
-                })
-            })
-          })
-          .catch(err => {
-            return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
-          })
-      }
-    })
+  }
+
+  if (showAllNFTs || hideAllNFTs || showNFTIds || hideNFTIds) {
+    try {
+      changeNFTsVisibility(
+        repositories,
+        wallet.id,
+        profile.id,
+        showAllNFTs,
+        hideAllNFTs,
+        showNFTIds,
+        hideNFTIds,
+        profile.chainId,
+      )
+    } catch(err) {
+      return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
+    } 
+  }
+
+  try {
+    const updatedProfile = await repositories.profile.save({ ...profile, ...profileUpdates })
+    try {
+      await addCustomizeIncentiveAction(repositories, updatedProfile)
+    } catch (err) {
+      return Promise.reject(new Error(`Something went wrong to save incentive action. Error: ${err}`))
+    }
+    return updatedProfile
+  } catch (err) {
+    logger.error({ err, input: args.input }, `Unable to update profile: ${profile.url}`)
+  }
 }
 
 const getFollowersCount = (parent: gql.Profile, _: unknown, ctx: Context): Promise<number> => {
