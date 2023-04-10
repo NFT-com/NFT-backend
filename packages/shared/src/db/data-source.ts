@@ -5,7 +5,7 @@ import { helper } from '../helper'
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 10030,
+  port: 10030,
   username: process.env.DB_USERNAME || 'app',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'app',

@@ -216,10 +216,6 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
               Value: process.env.DB_PASSWORD,
             },
             {
-              Name: 'DB_PORT',
-              Value: process.env.DB_PORT,
-            },
-            {
               Name: 'CHAIN_ID',
               Value: process.env.CHAIN_ID,
             },
@@ -354,10 +350,6 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
             {
               Name: 'TEST_DB_USERNAME',
               Value: process.env.TEST_DB_USERNAME,
-            },
-            {
-              Name: 'TEST_DB_PORT',
-              Value: process.env.TEST_DB_PORT,
             },
             {
               Name: 'TEST_DB_PASSWORD',
