@@ -116,6 +116,7 @@ input UpdateProfileInput {
   deployedContractsVisible: Boolean
   displayType: ProfileDisplayType
   layoutType: ProfileLayoutType
+  associatedContract: Address
 }
 
 input ProfileClaimedInput {
