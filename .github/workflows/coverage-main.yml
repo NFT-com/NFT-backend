@@ -82,7 +82,6 @@ jobs:
         envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
         envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
         envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-        envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         envkey_REFRESH_NFT_DURATION: ${{ secrets.REFRESH_NFT_DURATION }}
         envkey_IPFS_WEB_GATEWAY: ${{ secrets.IPFS_WEB_GATEWAY }}
         envkey_DEFAULT_TTL_MINS: ${{ secrets.DEFAULT_TTL_MINS }}

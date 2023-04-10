@@ -208,10 +208,6 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
               Value: process.env.DB_HOST_RO,
             },
             {
-              Name: 'DB_USE_SSL',
-              Value: process.env.DB_USE_SSL,
-            },
-            {
               Name: 'DB_PASSWORD',
               Value: process.env.DB_PASSWORD,
             },
@@ -354,10 +350,6 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
             {
               Name: 'TEST_DB_PASSWORD',
               Value: process.env.TEST_DB_PASSWORD,
-            },
-            {
-              Name: 'TEST_DB_USE_SSL',
-              Value: process.env.TEST_DB_USE_SSL,
             },
             {
               Name: 'ACTIVITY_ENDPOINTS_ENABLED',
