@@ -7,6 +7,7 @@ import { appError, curationError, nftError, profileError, txActivityError } from
 import { Context, gql, Pageable } from '@nftcom/gql/defs'
 import { auth, joi, pagination } from '@nftcom/gql/helper'
 import { core } from '@nftcom/gql/service'
+import { getAlchemyApiUrl } from '@nftcom/gql/service/nft.service'
 import { _logger, contracts, db, defs, entity, fp, helper, utils as dbUtils } from '@nftcom/shared'
 
 import { likeService } from '../service/like.service'
@@ -655,7 +656,7 @@ const getGkNFTs = async (_: any, args: gql.QueryGkNFTsArgs, ctx: Context): Promi
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
-    const ALCHEMY_API_URL = Number(chainId) == 1 ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const ALCHEMY_API_URL = getAlchemyApiUrl(chainId)
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
     try {

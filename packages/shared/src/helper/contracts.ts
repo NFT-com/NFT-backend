@@ -338,40 +338,39 @@ export interface GasInfo {
   gasPrice: number
 }
 
-export function getEthGasInfo(chainId: number): Promise<GasInfo> {
+export async function getEthGasInfo(chainId: number): Promise<GasInfo> {
   const gasLimit = 1500000
   const defaultPriceGwei = 200
   const endpoint =
     'https://data-api.defipulse.com/api/v1/egs/api/ethgasAPI.json?api-key=' + process.env.ETH_GAS_STATION_API_KEY
 
-  return fetch(endpoint, {
-    headers: {
-      Accept: 'application/json',
-    },
-  })
-    .then(response => response.json())
-    .then((response: any) => {
-      const priceGwei = response?.fastest ? response?.fastest / 10 : defaultPriceGwei
-
-      // only use gas station for mainnet, otherwise apply gas manually
-      if (chainId === 1) {
-        return {
-          gasLimit,
-          gasPrice: priceGwei,
-        }
-      } else {
-        return {
-          gasLimit: 1500000,
-          gasPrice: 3000000000,
-        }
-      }
+  try {
+    const response = await fetch(endpoint, {
+      headers: {
+        Accept: 'application/json',
+      },
     })
-    .catch(() => {
+    const responseJson: any = await response.json()
+    const priceGwei = responseJson?.fastest ? responseJson?.fastest / 10 : defaultPriceGwei
+
+    // only use gas station for mainnet, otherwise apply gas manually
+    if (chainId === 1) {
       return {
         gasLimit,
-        gasPrice: defaultPriceGwei,
+        gasPrice: priceGwei,
       }
-    })
+    } else {
+      return {
+        gasLimit: 1500000,
+        gasPrice: 3000000000,
+      }
+    }
+  } catch {
+    return {
+      gasLimit,
+      gasPrice: defaultPriceGwei,
+    }
+  }
 }
 
 export function getProfileAuctionMnemonic(chainId: string | number): string {

@@ -63,10 +63,8 @@ jobs:
         envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
         envkey_CHAIN_ID: ${{ secrets.CHAIN_ID }}
         envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+        envkey_ALCHEMY_TESTNET_KEY: ${{ secrets.ALCHEMY_TESTNET_KEY }}
         envkey_ACTIVITY_ENDPOINTS_ENABLED: ${{ secrets.ACTIVITY_ENDPOINTS_ENABLED }}
-        envkey_ALCHEMY_API_URL: ${{ secrets.ALCHEMY_API_URL }}
-        envkey_ALCHEMY_API_URL_RINKEBY: ${{ secrets.ALCHEMY_API_URL_RINKEBY }}
-        envkey_ALCHEMY_API_URL_GOERLI: ${{ secrets.ALCHEMY_API_URL_GOERLI }}
         envkey_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         envkey_PUBLIC_SALE_KEY: ${{ secrets.PUBLIC_SALE_KEY }}
         envkey_SERVER_CONFIG: ${{ secrets.SERVER_CONFIG }}

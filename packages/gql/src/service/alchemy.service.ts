@@ -2,13 +2,11 @@ import axios from 'axios'
 import { ethers } from 'ethers'
 
 import { cache } from '@nftcom/cache'
+import { getAlchemyApiUrl } from '@nftcom/gql/service/nft.service'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 const logger = _logger.Factory('alchemy.service', _logger.Context.GraphQL)
-
-const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
-const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 
 export const getLatestBlockNumber = (url: string): Promise<string> => {
   const payload = {
@@ -123,7 +121,7 @@ export const getCollectionDeployer = async (contractAddress: string, chainId: st
       return cached
     } else {
       chainId = chainId ?? process.env.CHAIN_ID
-      const REQUEST_URL = chainId === '1' ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
+      const REQUEST_URL = getAlchemyApiUrl(chainId)
       const lastBlock = await getLatestBlockNumber(REQUEST_URL)
 
       const deployedBlockNumber = await binarySearch(
