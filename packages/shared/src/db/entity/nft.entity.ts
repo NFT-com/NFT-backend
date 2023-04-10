@@ -1,8 +1,9 @@
-import { Column, Entity, Index, Unique } from 'typeorm'
+import { Column, Entity, Index, OneToMany, Unique } from 'typeorm'
 
 import { NFTMetadata, NFTType } from '@nftcom/shared/defs'
 
 import { BaseEntity } from './base.entity'
+import { NFTOwner } from './nftOwner.entity'
 
 // TODO recheck indexes after some data is available
 @Entity()
@@ -59,4 +60,7 @@ export class NFT extends BaseEntity {
 
   @Column({ nullable: true })
   owner: string
+
+  @OneToMany(() => NFTOwner, nftOwner => nftOwner.nft)
+  nftOwners: NFTOwner[]
 }
