@@ -9,7 +9,7 @@ const pgClient = new Pool({
   password: process.env.DB_PASSWORD || 'password',
   host: process.env.DB_HOST || 'localhost',
   database: process.env.DB_DATABASE || 'app',
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: parseInt('5432'),
   ssl: {
     rejectUnauthorized: false,
   },

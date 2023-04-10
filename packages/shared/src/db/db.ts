@@ -7,8 +7,9 @@ import { _logger, helper } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
-const { DB_HOST, DB_HOST_RO, DB_USE_SSL } = process.env
+const { DB_HOST, DB_HOST_RO } = process.env
 
+const DB_USE_SSL = 'true'
 const logger = _logger.Factory(_logger.Context.General)
 
 let connection: DataSource
@@ -55,7 +56,7 @@ export const connectPg = async (): Promise<void> => {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_DATABASE || 'app',
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -66,7 +67,7 @@ export const connectPg = async (): Promise<void> => {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST_RO || 'localhost',
     database: process.env.DB_DATABASE || 'app',
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -86,7 +87,7 @@ export const connectTestPg = async (): Promise<void> => {
     password: process.env.TEST_DB_PASSWORD || 'password',
     host: process.env.TEST_DB_HOST || 'localhost',
     database: process.env.TEST_DB_DATABASE || 'app',
-    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -97,7 +98,7 @@ export const connectTestPg = async (): Promise<void> => {
     password: process.env.TEST_DB_PASSWORD || 'password',
     host: process.env.TEST_DB_HOST || 'localhost',
     database: process.env.TEST_DB_DATABASE || 'app',
-    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',

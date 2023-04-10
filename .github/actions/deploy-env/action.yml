@@ -69,9 +69,7 @@ runs:
         GIT_SHA: ${{ github.sha }}
         DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
         DB_HOST_RO: ${{ fromJSON(inputs.secrets).DB_HOST_RO }}
-        DB_USE_SSL: ${{ fromJSON(inputs.secrets).DB_USE_SSL }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
-        DB_PORT: ${{ fromJSON(inputs.secrets).DB_PORT }}
         PORT: ${{ fromJSON(inputs.secrets).PORT }}
         REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
         REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
@@ -87,7 +85,6 @@ runs:
         HCS_ENABLED: ${{ fromJSON(inputs.secrets).HCS_ENABLED }}
         HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
         HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
-        ZMOK_API_URL: ${{ fromJSON(inputs.secrets).ZMOK_API_URL }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
         ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
         ALCHEMY_TESTNET_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_TESTNET_KEY }}
@@ -110,9 +107,7 @@ runs:
         TEST_DB_HOST: ${{ fromJSON(inputs.secrets).TEST_DB_HOST }}
         TEST_DB_DATABASE: ${{ fromJSON(inputs.secrets).TEST_DB_DATABASE }}
         TEST_DB_USERNAME: ${{ fromJSON(inputs.secrets).TEST_DB_USERNAME }}
-        TEST_DB_PORT: ${{ fromJSON(inputs.secrets).TEST_DB_PORT }}
         TEST_DB_PASSWORD: ${{ fromJSON(inputs.secrets).TEST_DB_PASSWORD }}
-        TEST_DB_USE_SSL: ${{ fromJSON(inputs.secrets).TEST_DB_USE_SSL }}
         ACTIVITY_ENDPOINTS_ENABLED: ${{ fromJSON(inputs.secrets).ACTIVITY_ENDPOINTS_ENABLED}}
         NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY}}
         REFRESH_NFT_DURATION: ${{ fromJSON(inputs.secrets).REFRESH_NFT_DURATION}}

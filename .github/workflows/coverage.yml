@@ -44,7 +44,6 @@ jobs:
       with:
         envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         envkey_DB_HOST: 'localhost'
-        envkey_DB_PORT: '5432'
         envkey_AUTH_MESSAGE: ${{ secrets.AUTH_MESSAGE }}
         envkey_SG_API_KEY: ${{ secrets.SG_API_KEY }}
         envkey_CONFIRM_EMAIL_URL: ${{ secrets.CONFIRM_EMAIL_URL }}
@@ -59,7 +58,6 @@ jobs:
         envkey_HCS_ENABLED: ${{ secrets.HCS_ENABLED }}
         envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
-        envkey_ZMOK_API_URL: ${{ secrets.ZMOK_API_URL }}
         envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
         envkey_CHAIN_ID: ${{ secrets.CHAIN_ID }}
         envkey_ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
@@ -83,9 +81,7 @@ jobs:
         envkey_TEST_DB_HOST: ${{ secrets.TEST_DB_HOST }}
         envkey_TEST_DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
         envkey_TEST_DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
-        envkey_TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
         envkey_TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-        envkey_TEST_DB_USE_SSL: ${{ secrets.TEST_DB_USE_SSL }}
         envkey_REFRESH_NFT_DURATION: ${{ secrets.REFRESH_NFT_DURATION }}
         envkey_IPFS_WEB_GATEWAY: ${{ secrets.IPFS_WEB_GATEWAY }}
         envkey_DEFAULT_TTL_MINS: ${{ secrets.DEFAULT_TTL_MINS }}
