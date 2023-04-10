@@ -137,6 +137,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.MarketplaceSale,
     entity.MarketSwap,
     entity.NFT,
+    entity.NFTOwner,
     entity.NFTPortTransaction,
     entity.Profile,
     entity.TxActivity,
@@ -239,6 +240,7 @@ export type Repository = {
   marketplaceSale: repo.MarketplaceSaleRepository
   marketSwap: repo.MarketSwapRepository
   nft: repo.NFTRepository
+  nftOwner: repo.NFTOwnerRepository
   nftPortTransaction: repo.NFTPortTransactionRepository
   profile: repo.ProfileRepository
   txActivity: repo.TxActivityRepository
@@ -266,6 +268,7 @@ export const newRepositories = (): Repository => ({
   marketplaceSale: new repo.MarketplaceSaleRepository(),
   marketSwap: new repo.MarketSwapRepository(),
   nft: new repo.NFTRepository(),
+  nftOwner: new repo.NFTOwnerRepository(),
   nftPortTransaction: new repo.NFTPortTransactionRepository(),
   profile: new repo.ProfileRepository(),
   txActivity: new repo.TxActivityRepository(),

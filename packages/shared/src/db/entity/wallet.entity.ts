@@ -1,6 +1,7 @@
-import { Column, Entity, Index, Unique } from 'typeorm'
+import { Column, Entity, Index, OneToMany, Unique } from 'typeorm'
 
 import { BaseEntity } from './base.entity'
+import { NFTOwner } from './nftOwner.entity'
 
 @Index(['chainId', 'address', 'network'], { unique: true })
 @Entity()
@@ -24,4 +25,7 @@ export class Wallet extends BaseEntity {
 
   @Column({ nullable: true })
   profileId: string
+
+  @OneToMany(() => NFTOwner, nftOwner => nftOwner.wallet)
+  nftOwners: NFTOwner[]
 }
