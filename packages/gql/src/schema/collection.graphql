@@ -186,7 +186,7 @@ Basic collection type of `isOfficial=true` only collections.
 """
 type OfficialCollection {
   id: ID!
-  slug: String!
+  slug: String
   contract: Address!
   chainId: String!
   updatedAt: DateTime!
