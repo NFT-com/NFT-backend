@@ -209,7 +209,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
     synchronize: false,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
-    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`],
+    // subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`], // TODO: Add test mocks for subscribers
     ssl: false,
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
