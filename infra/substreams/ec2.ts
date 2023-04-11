@@ -42,11 +42,11 @@ export const createSubstreamInstance = (
             volumeSize: 20,
             volumeType: "gp3",
         },
-        subnetId: getInstanceSubnet( subnetGroups ,config.require('numSubnets')),
+        subnetId: getInstanceSubnet( subnetGroups ,Number(config.require('numSubnets'))),
         tags: {
             Name: `${stage}-sf-substreams`,
         },
-        vpcSecurityGroupIds: [instanceSG],
+        vpcSecurityGroupIds: [instanceSG.id],
     });
 
 }
