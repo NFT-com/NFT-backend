@@ -208,8 +208,16 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
               Value: process.env.DB_HOST_RO,
             },
             {
+              Name: 'DB_USE_SSL',
+              Value: process.env.DB_USE_SSL,
+            },
+            {
               Name: 'DB_PASSWORD',
               Value: process.env.DB_PASSWORD,
+            },
+            {
+              Name: 'DB_PORT',
+              Value: process.env.DB_PORT,
             },
             {
               Name: 'CHAIN_ID',

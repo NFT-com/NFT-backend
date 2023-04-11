@@ -69,6 +69,8 @@ runs:
         GIT_SHA: ${{ github.sha }}
         DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
         DB_HOST_RO: ${{ fromJSON(inputs.secrets).DB_HOST_RO }}
+        DB_PORT: ${{ fromJSON(inputs.secrets).DB_PORT }}
+        DB_USE_SSL: ${{ fromJSON(inputs.secrets).DB_USE_SSL }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
         PORT: ${{ fromJSON(inputs.secrets).PORT }}
         REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
