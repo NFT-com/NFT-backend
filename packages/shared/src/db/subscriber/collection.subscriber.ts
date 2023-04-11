@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { EntitySubscriberInterface, EventSubscriber, ILike, InsertEvent, Repository } from 'typeorm'
+import { EntitySubscriberInterface, EventSubscriber, ILike, InsertEvent } from 'typeorm'
 
 import { generateSlug } from '@nftcom/shared/helper/misc'
 
@@ -10,12 +10,6 @@ import { Collection } from '../entity'
  */
 @EventSubscriber()
 export class CollectionSubscriber implements EntitySubscriberInterface<Collection> {
-  private repository: Repository<Collection>
-
-  constructor(repository: Repository<Collection>) {
-    this.repository = repository
-  }
-
   listenTo() {
     return Collection
   }
