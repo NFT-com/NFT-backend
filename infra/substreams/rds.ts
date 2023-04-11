@@ -32,7 +32,7 @@ const createMain = (
         engine: engineType,
         engineVersion: "14.6",
         availabilityZones: zones,
-        vpcSecurityGroupIds: [securityGroup],
+        vpcSecurityGroupIds: [securityGroup.id],
         dbSubnetGroupName: subnetGroup.name,   
         dbClusterParameterGroupName: "default.aurora-postgresql14",
         storageEncrypted: true, 
@@ -80,7 +80,7 @@ const createMain = (
 export const createSubstreamClusters = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
-    securityGroup: aws.ec2.securityGroup
+    securityGroup: aws.ec2.SecurityGroup,
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
