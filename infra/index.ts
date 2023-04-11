@@ -21,8 +21,6 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
   const privateSubnets = outMap.privateSubnetIds.value
   const vpcId = outMap.vpcId.value
   const typesenseSGId = outMap.typesenseSGId.value
-  const subStreamEc2SGId = outMap.subStreamEc2SGId.value
-  const subStreamRDSSGId = outMap.subStreamRDSSGId.value
   const webSGId = outMap.webSGId.value
   const webEcsSGId = outMap.webEcsSGId.value
   const sharedOutput: SharedInfraOutput = {
