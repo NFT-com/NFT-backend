@@ -27,10 +27,11 @@ export class CollectionSubscriber implements EntitySubscriberInterface<Collectio
    * @returns {Promise<any>} - A promise that resolves when the slug has been generated and assigned to the entity.
    */
   async beforeInsert(event: InsertEvent<Collection>): Promise<any> {
-    const { entity } = event
+    const { entity, manager } = event
     const initialSlug = generateSlug({ value: entity.name })
+
     // Find most recent matching collection slug
-    const match = await this.repository.findOne({
+    const match = await manager.getRepository(Collection).findOne({
       where: {
         slug: ILike(`%${initialSlug}%`),
       },
