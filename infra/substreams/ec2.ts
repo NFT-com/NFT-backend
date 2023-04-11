@@ -1,6 +1,9 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
+import * as process from 'process'
+
+
 import { SharedInfraOutput } from '../defs'
 import { getStage, isProduction } from '../helper'
 
