@@ -34,7 +34,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
     return score
   }
   const indexNFTs = async (nfts: entity.NFT[]): Promise<boolean> => {
-    if (!nfts.length) return true
+    if (!nfts?.length) return true
     try {
       const listingMap: { [k: string]: TxActivityDAO[] } = await listingMapFrom(
         await repos.txActivity.findActivitiesForNFTs(nfts, defs.ActivityType.Listing, { notExpired: true }),
@@ -79,7 +79,7 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
 
         const tokenId = nft.tokenId ? BigNumber.from(nft.tokenId).toString() : 'Unknown'
         let traits = []
-        if (nft.metadata.traits.length < 100) {
+        if (nft?.metadata?.traits?.length < 100) {
           traits = nft.metadata.traits.map(trait => {
             return {
               type: trait.type,
@@ -145,10 +145,10 @@ export const SearchEngineService = (client = SearchEngineClient.create(), repos:
           issuance: collection?.issuanceDate?.getTime() || 0,
           hasListings: listings.length ? 1 : 0,
           listedFloor: 0.0,
-          score: _calculateNFTScore(collection, !!listings.length) || 0,
+          score: _calculateNFTScore(collection, !!listings?.length) || 0,
         })
       }
-      return (nftsToIndex.length && client.insertDocuments('nfts', nftsToIndex)) || true
+      return (nftsToIndex?.length && client.insertDocuments('nfts', nftsToIndex)) || true
     } catch (err) {
       Sentry.captureMessage(`Error in indexNFTs: ${err}`)
       throw err

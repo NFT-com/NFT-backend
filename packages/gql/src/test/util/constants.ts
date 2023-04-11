@@ -360,7 +360,7 @@ export const seaportProtocolData: ProtocolData = {
     salt: '20355692518651699',
     conduitKey: '0x0000007b02230091a7ed01230072f7006a004d60a8d4e71d599b8104250f0000',
     totalOriginalConsiderationItems: 3,
-    counter: 1,
+    counter: '1',
   },
   signature:
     '0x13cb5579ce2c24c79316577862338fca160b85bf49a520c1cb4288ba93d9c0094bca5295861751c76fe847c2ccad572b8e693cbcb94a9146e930243823032f141b',

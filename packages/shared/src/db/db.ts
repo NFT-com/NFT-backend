@@ -7,12 +7,14 @@ import { _logger, helper } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
-const { DB_HOST, DB_HOST_RO, DB_USE_SSL } = process.env
+const { DB_HOST, DB_HOST_RO } = process.env
 
+const DB_USE_SSL = 'true'
 const logger = _logger.Factory(_logger.Context.General)
 
 let connection: DataSource
 let readOnlyConnection: DataSource
+
 export const getDataSource = (isReadOnly?: boolean): DataSource => {
   if (isReadOnly) {
     if (!readOnlyConnection) {
@@ -40,6 +42,7 @@ export const getPgClient = (isReadOnly?: boolean): Pool => {
   }
   return pgClient
 }
+
 export const connectPg = async (): Promise<void> => {
   if (pgClient) return
 
@@ -55,7 +58,7 @@ export const connectPg = async (): Promise<void> => {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_DATABASE || 'app',
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -66,7 +69,7 @@ export const connectPg = async (): Promise<void> => {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST_RO || 'localhost',
     database: process.env.DB_DATABASE || 'app',
-    port: parseInt(process.env.DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -86,7 +89,7 @@ export const connectTestPg = async (): Promise<void> => {
     password: process.env.TEST_DB_PASSWORD || 'password',
     host: process.env.TEST_DB_HOST || 'localhost',
     database: process.env.TEST_DB_DATABASE || 'app',
-    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -97,7 +100,7 @@ export const connectTestPg = async (): Promise<void> => {
     password: process.env.TEST_DB_PASSWORD || 'password',
     host: process.env.TEST_DB_HOST || 'localhost',
     database: process.env.TEST_DB_DATABASE || 'app',
-    port: parseInt(process.env.TEST_DB_PORT) || 5432,
+    port: 5432,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -137,6 +140,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     entity.MarketplaceSale,
     entity.MarketSwap,
     entity.NFT,
+    entity.NFTOwner,
     entity.NFTPortTransaction,
     entity.Profile,
     entity.TxActivity,
@@ -160,6 +164,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     logging: dbConfig.logging,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`],
     ssl,
     subscribers: [`${__dirname}/subscriber/*.subscriber.ts`],
     entities,
@@ -205,6 +210,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
     synchronize: false,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`],
     ssl: false,
     subscribers: [`${__dirname}/subscriber/*.subscriber.ts`],
     entities: [`${__dirname}/entity/*.entity.ts`],
@@ -241,6 +247,7 @@ export type Repository = {
   marketplaceSale: repo.MarketplaceSaleRepository
   marketSwap: repo.MarketSwapRepository
   nft: repo.NFTRepository
+  nftOwner: repo.NFTOwnerRepository
   nftPortTransaction: repo.NFTPortTransactionRepository
   profile: repo.ProfileRepository
   txActivity: repo.TxActivityRepository
@@ -268,6 +275,7 @@ export const newRepositories = (): Repository => ({
   marketplaceSale: new repo.MarketplaceSaleRepository(),
   marketSwap: new repo.MarketSwapRepository(),
   nft: new repo.NFTRepository(),
+  nftOwner: new repo.NFTOwnerRepository(),
   nftPortTransaction: new repo.NFTPortTransactionRepository(),
   profile: new repo.ProfileRepository(),
   txActivity: new repo.TxActivityRepository(),

@@ -10,7 +10,8 @@ jest.mock('@nftcom/cache', () => ({
   createCacheConnection: jest.fn(),
 }))
 
-const REQUEST_URL = process.env.ALCHEMY_API_URL
+// use testnet key
+const REQUEST_URL = `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_TESTNET_KEY}`
 
 describe('alchemy service functions', () => {
   it('should get the latest block', async () => {

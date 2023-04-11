@@ -1076,9 +1076,21 @@ export const fetchDataUsingMulticall = async (
         return undefined
       } else {
         try {
-          return abiInterface.decodeFunctionResult(calls[i].name, result.returnData)
+          let decodedResult
+          try {
+            decodedResult = abiInterface.decodeFunctionResult(calls[i].name, result.returnData)
+
+            // IMPORTANT: this debug line is important for detecting the decodedResult, which only errors when being read/printed out for some reason
+            // DON'T REMOVE THIS LINE
+            logger.debug(`fetchDataUsingMulticall decodedResult: ${JSON.stringify(decodedResult)}`)
+          } catch (innerErr) {
+            // Handle errors that may occur during string decoding
+            logger.error({ innerErr, result }, `fetchDataUsingMulticall unable to decode inner result for ${calls[i].name}`)
+            return undefined
+          }
+          return decodedResult
         } catch (err) {
-          logger.error({ err, result }, `fetchDataUsingMulticall unable to decode result for ${calls[i].name}`)
+          logger.error({ err, result }, `fetchDataUsingMulticall unable to decode outer result for ${calls[i].name}`)
           return undefined
         }
       }
@@ -1590,15 +1602,19 @@ export const processIPFSURL = (image: string): string => {
 }
 
 export const fetchWithTimeout = async (resource: any, options: any): Promise<any> => {
-  const { timeout = 8000 } = options
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeout)
-  const response = await fetch(resource, {
-    ...options,
-    signal: controller.signal,
-  })
-  clearTimeout(id)
-  return response
+  try {
+    const { timeout = 8000 } = options
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeout)
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal,
+    })
+    clearTimeout(id)
+    return response
+  } catch (error) {
+    logger.error(error, `fetchWithTimeout error, resource: ${resource}, options: ${options}`)
+  }
 }
 
 export const generateSVGFromBase64String = (base64String: string): string => {

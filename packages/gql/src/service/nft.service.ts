@@ -1,4 +1,3 @@
-// import { queue } from 'async'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber, utils as ethersUtils } from 'ethers'
@@ -22,7 +21,6 @@ import {
   extensionFromFilename,
   fetchDataUsingMulticall,
   fetchWithTimeout,
-  findDuplicatesByProperty,
   generateWeight,
   getAWSConfig,
   getLastWeight,
@@ -42,7 +40,7 @@ import { paginatedActivitiesBy } from '@nftcom/gql/service/txActivity.service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { nft as nftLoader } from '../dataloader'
+import { clearNftCache, nft as nftLoader } from '../dataloader'
 
 const repositories = db.newRepositories()
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
@@ -53,11 +51,11 @@ const infuraCredentials = [
   { apiKey: '2NvtbGeEmgbJMojDAobTdIUXsTH', secret: '99d5962cdb1b722fc57feb8c0266989c' }
 ]
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
-const ALCHEMY_API_URL = process.env.ALCHEMY_API_URL
-const ALCHEMY_API_URL_GOERLI = process.env.ALCHEMY_API_URL_GOERLI
 const MAX_SAVE_COUNTS = 500
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
+const BATCH_LOG_SIZE = 100
+let logInfoBatch = []
 const exceptionBannerUrlRegex = /https:\/\/cdn.nft.com\/collections\/1\/.*banner\.*/
 const TEST_WALLET_ID = 'test'
 
@@ -183,14 +181,19 @@ type NFTMetaData = {
   traits: defs.Trait[]
 }
 
+export const getAlchemyApiUrl = (chainId: string): string => {
+  const apiKey = chainId === '1' ? process.env.ALCHEMY_API_KEY : process.env.ALCHEMY_TESTNET_KEY
+  return `https://eth-mainnet.alchemyapi.io/v2/${apiKey}`
+}
+
 export const initiateWeb3 = (cid?: string): void => {
   chainId = cid || process.env.CHAIN_ID // attach default value
-  alchemyUrl = Number(chainId) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI
+  alchemyUrl = getAlchemyApiUrl(chainId)
 }
 
 export const getAlchemyInterceptor = (chainId: string, customApiKey?: string): AxiosInstance => {
   const alchemyInstance = axios.create({
-    baseURL: customApiKey ?? Number(chainId || process.env.CHAIN_ID) == 1 ? ALCHEMY_API_URL : ALCHEMY_API_URL_GOERLI,
+    baseURL: customApiKey ?? getAlchemyApiUrl(chainId || process.env.CHAIN_ID),
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -742,11 +745,11 @@ const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
     if (error.response && error.response.status === 429) {
       if (retries < MAX_RETRIES) {
         const delayMs = INITIAL_DELAY_MS * Math.pow(2, retries)
-        logger.info(`Rate-limited. Retrying in ${delayMs} ms...`)
+        logger.debug(`Rate-limited. Retrying in ${delayMs} ms...`)
         await new Promise(resolve => setTimeout(resolve, delayMs))
         return getWithRetry(url, retries + 1)
       }
-      logger.info('Reached maximum retries. Aborting request.')
+      logger.debug('Reached maximum retries. Aborting request.')
       throw error
     }
     throw error
@@ -771,7 +774,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
     // Handle IPFS hash format (e.g., QmUpPCBsGayB41RWVn81NUmscZbmPHNQYzY7fyh2LVLkCV)
     if (/^Qm[a-zA-Z0-9]{44}$/.test(resolvedUriString)) {
       const content = await fetchDataFromIPFS(resolvedUriString);
-      logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${resolvedUriString}, content: ${content}`);
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from IPFS: ${resolvedUriString}, content: ${content}`);
       return formatMetadata(JSON.parse(content?.toString()));
     }
 
@@ -779,7 +782,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       // Remove the 'ipfs://' prefix and also handle cases where 'ipfs/' is present after the prefix
       const cid = resolvedUriString.replace(/^ipfs:\/\/(ipfs\/)?/, '')
       const content = await fetchDataFromIPFS(cid)
-      logger.info(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from IPFS: ${cid}, content: ${content}`)
       return formatMetadata(JSON.parse(content?.toString()))
     }
 
@@ -789,14 +792,14 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       const jsonStr = resolvedUriString.replace('data:application/json;utf8,', '')
       // Parse and format the metadata
       const metadata = JSON.parse(jsonStr)
-      logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`)
       return formatMetadata(metadata)
     }
 
     if (resolvedUriString.startsWith('data:application/json;base64,')) {
       const base64Data = resolvedUriString.replace('data:application/json;base64,', '')
       const jsonStr = Buffer.from(base64Data, 'base64').toString()
-      logger.info(`[parseNFTUriString]: Fetched metadata from base64: ${jsonStr}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from base64: ${jsonStr}`)
       return formatMetadata(JSON.parse(jsonStr))
     }
 
@@ -807,7 +810,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       
       // Parse the JSON string into a metadata object
       const metadata = JSON.parse(jsonStr);
-      logger.info(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`);
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from JSON data: ${jsonStr}`);
       // Use the formatMetadata function to format the metadata object
       return formatMetadata(metadata);
     }
@@ -820,12 +823,12 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
         // Fetch metadata using the OpenSea API
         const openseaInstance = getOpenseaInterceptor(resolvedUriString, chainId, process.env.OPENSEA_ORDERS_API_KEY)
         const response = await openseaInstance.get('')
-        logger.info(`[parseNFTUriString]: Fetched metadata from OpenSea API: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
+        logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from OpenSea API: ${resolvedUriString}, response: ${JSON.stringify(response.data)}`)
         return formatMetadata(response.data)
       } else {
         try {
           const response = await getWithRetry(resolvedUriString)
-          logger.info(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
+          logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from URL: ${resolvedUriString}, response: ${JSON.stringify(response)}`)
           return formatMetadata(response)
         } catch (error) {
           // If fetching from the URL fails, check if it contains an IPFS hash and attempt to fetch from IPFS directly
@@ -837,7 +840,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
             // Construct the IPFS URL with optional token ID
             const ipfsUrl = capturedTokenId ? `${ipfsHash}/${capturedTokenId}` : ipfsHash
             const content = await fetchDataFromIPFS(ipfsUrl)
-            logger.info(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
+            logInfoBatch.push(`Retrying and fetched metadata from IPFS: ${ipfsUrl}, content: ${content}`)
             return formatMetadata(JSON.parse(content?.toString()))
           }
           // If no IPFS hash found, throw the original error.
@@ -855,8 +858,14 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
       const arweaveUrl = `https://arweave.net/${arweaveTxId}/${optionalPath}`
       // Fetch metadata from Arweave
       const response = await axios.get<ApiResponse>(arweaveUrl)
-      logger.info(`[parseNFTUriString]: Fetched metadata from Arweave: ${arweaveUrl}, response: ${JSON.stringify(response.data)}`)
+      logInfoBatch.push(`[parseNFTUriString]: Fetched metadata from Arweave: ${arweaveUrl}, response: ${JSON.stringify(response.data)}`)
       return formatMetadata(response.data)
+    }
+
+    // batched logs
+    if (logInfoBatch.length >= BATCH_LOG_SIZE) {
+      logger.info(logInfoBatch.join('\n'))
+      logInfoBatch = []
     }
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
@@ -1951,8 +1960,8 @@ export const refreshNFTMetadata = async (nft: entity.NFT): Promise<entity.NFT> =
   try {
     // hard refresh for now
     // until Alchemy SDK incorporates this
-    // TODO: remove in future
-    const alchemy_api_url = nft.chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const alchemy_api_url = getAlchemyApiUrl(nft.chainId)
+
     await axios.get(
       `${alchemy_api_url}/getNFTMetadata?contractAddress=${nft.contract}&tokenId=${BigNumber.from(
         nft.tokenId,
@@ -2010,8 +2019,7 @@ export const getOwnersOfGenesisKeys = async (chainId: string): Promise<object> =
       return JSON.parse(cachedData) as object
     }
     // until Alchemy SDK incorporates this
-    // TODO: remove in future
-    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const alchemy_api_url = getAlchemyApiUrl(chainId)
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
     if (res && res?.data && res.data?.ownerAddresses) {
       const gkOwners = res.data.ownerAddresses as string[]
@@ -2064,7 +2072,7 @@ export const getOwnersOfNFTProfile = async (chainId: string): Promise<object> =>
       return JSON.parse(cachedData) as object
     }
 
-    const alchemy_api_url = chainId === '1' ? process.env.ALCHEMY_API_URL : process.env.ALCHEMY_API_URL_GOERLI
+    const alchemy_api_url = getAlchemyApiUrl(chainId)
     const res = await axios.get(`${alchemy_api_url}/getOwnersForCollection?contractAddress=${contract}`)
     if (res && res?.data && res.data?.ownerAddresses) {
       const profileOwners = res.data.ownerAddresses as string[]
@@ -2507,7 +2515,7 @@ export const updateNFTsOrder = async (profileId: string, orders: Array<NFTOrder>
  * @param edges - An array of edges to be processed for potential deletion.
  */
 const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
-  logger.debug(`${edges.length} edges to be synced in syncEdgesWithNFTs`)
+  logger.debug({ edges }, `${edges.length} edges to be synced in syncEdgesWithNFTs`)
 
   const uniqueProfileIds = [...new Set(edges.map(e => e.thisEntityId))]
   logger.debug(`[deleteExtraEdges] uniqueProfileIds: ${JSON.stringify(uniqueProfileIds)}`)
@@ -2536,7 +2544,6 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   logger.debug(`[deleteExtraEdges] profileLookup: ${JSON.stringify(profileLookup)}`)
 
   const disconnectedEdgeIds: string[] = []
-  const duplicatedIds = findDuplicatesByProperty(edges, 'thatEntityId').map(e => e.id)
 
   // Load NFTs for processing
   const nfts = await nftLoader.loadMany(edges.map(e => e.thatEntityId))
@@ -2563,8 +2570,19 @@ const deleteExtraEdges = async (edges: entity.Edge[]): Promise<void> => {
   })
 
   // Delete edges that are duplicate connections on an NFT
-  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds, ...duplicatedIds])]
+  const edgeIdsToDelete = [...new Set([...disconnectedEdgeIds])]
+  logger.debug(`[deleteExtraEdges] Deleting ${edgeIdsToDelete.length} edges, edgeIdsToDelete: ${JSON.stringify(edgeIdsToDelete)}`)
   if (edgeIdsToDelete.length) await repositories.edge.hardDeleteByIds(edgeIdsToDelete)
+}
+
+export const clearDataloaderCache = async (nftIds: string[]): Promise<void> => {
+  try {
+    await clearNftCache(nftIds)
+  } catch (err) {
+    logger.error(err, `Error in clearDataloaderCache: ${err}`)
+    Sentry.captureMessage(`Error in clearDataloaderCache: ${err}`)
+    throw err
+  }
 }
 
 export const syncEdgesWithNFTs = async (profileId: string): Promise<void> => {
