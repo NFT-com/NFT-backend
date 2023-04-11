@@ -13,6 +13,7 @@ export class AddSlugToCollection1680130081817 implements MigrationInterface {
         name: "slug",
         type: "varchar",
         isNullable: true,
+        isUnique: true,
       })
     );
 
