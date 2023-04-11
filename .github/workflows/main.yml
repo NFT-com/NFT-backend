@@ -103,7 +103,7 @@ jobs:
     needs: deployment-triggers
     if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.substreams-changed == 'true' }}
     runs-on: ubuntu-latest
-    environment: nftcom_dev
+    environment: nftcom_dev_streamingfast
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-substreams
