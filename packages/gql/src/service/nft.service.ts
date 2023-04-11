@@ -1398,7 +1398,7 @@ export const getNFTMetaData = async (
         image,
         type,
         traits,
-      }, `nftService.getNFTMetaData(), contract=${contract}, tokenId=${tokenId}, onlyNftPort=${onlyNftPort}, onlyAlchemy=${onlyAlchemy}, nftPortMetadata=${JSON.stringify(nftPortMetadata)}`)
+      }, `====> nftService.getNFTMetaData(), contract=${contract}, tokenId=${tokenId}, onlyNftPort=${onlyNftPort}, onlyAlchemy=${onlyAlchemy}, nftPortMetadata=${JSON.stringify(nftPortMetadata)}`)
 
       return {
         type,
