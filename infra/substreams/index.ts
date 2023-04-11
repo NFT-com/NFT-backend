@@ -28,11 +28,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     const zones = config.require('availabilityZones').split(',');
     const numSubnets = config.require('numSubnets'); 
 
-    //const vpc = sharedInfraOutput.vpcId; 
-    //const subStreamEC2SG = sharedInfraOutput.subStreamEc2SGId; 
-    //const subStreamrdsSG = sharedInfraOutput.subStreamRDSSGId; 
+
     const securityGroups = buildSecurityGroups(config, vpc)
-    createSubstreamInstance();   
+    createSubstreamInstance(config, subnets, securityGroups.ec2SG);   
     createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
     
   }
