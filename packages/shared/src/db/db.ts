@@ -7,9 +7,8 @@ import { _logger, helper } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
-const { DB_HOST, DB_HOST_RO } = process.env
+const { DB_HOST, DB_HOST_RO, DB_USE_SSL } = process.env
 
-const DB_USE_SSL = 'true'
 const logger = _logger.Factory(_logger.Context.General)
 
 let connection: DataSource
