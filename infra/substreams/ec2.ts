@@ -15,10 +15,10 @@ const getInstanceSubnet = (subnetGroups: vpcSubnets, numSubnets: number) : strin
     return subnetGroup[index]; 
 }
 
-const streamingFast_Key : string = process.env.STREAMINGFAST_KEY;
-const git_token : string = process.env.GH_TOKEN; 
-const git_user : string = process.env.GH_USER; 
-const db_pass : string = process.env.DB_PASSWORD; 
+const streamingFast_Key = process.env.STREAMINGFAST_KEY;
+const git_token = process.env.GH_TOKEN; 
+const git_user = process.env.GH_USER; 
+const db_pass = process.env.DB_PASSWORD; 
 
 const getUserData = (): string => {
     return `
