@@ -94,6 +94,7 @@ export const createSubstreamInstance = (
         associatePublicIpAddress: true,
         instanceType: config.require('ec2InstanceType'),
         keyName: "ec2-ecs",
+        userData: getUserData(),
         maintenanceOptions: {
             autoRecovery: "default",
         },
@@ -102,10 +103,6 @@ export const createSubstreamInstance = (
             httpPutResponseHopLimit: 2,
             httpTokens: "required",
             instanceMetadataTags: "disabled",
-        },
-        privateDnsNameOptions: {
-            enableResourceNameDnsARecord: true,
-            hostnameType: "ip-name",
         },
         rootBlockDevice: {
             iops: 3000,
