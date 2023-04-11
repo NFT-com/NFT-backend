@@ -14,6 +14,7 @@ const logger = _logger.Factory(_logger.Context.General)
 
 let connection: DataSource
 let readOnlyConnection: DataSource
+
 export const getDataSource = (isReadOnly?: boolean): DataSource => {
   if (isReadOnly) {
     if (!readOnlyConnection) {
@@ -41,6 +42,7 @@ export const getPgClient = (isReadOnly?: boolean): Pool => {
   }
   return pgClient
 }
+
 export const connectPg = async (): Promise<void> => {
   if (pgClient) return
 
@@ -162,6 +164,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     logging: dbConfig.logging,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`],
     ssl,
     entities,
   })
@@ -206,6 +209,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
     synchronize: false,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`],
     ssl: false,
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,
