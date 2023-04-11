@@ -44,7 +44,7 @@ const createMain = (
         
         databaseName: "app",
         masterUsername: "app",
-        masterPassword: "toTheM00N",
+        masterPassword: process.env.DB_PASSWORD,
         port: 5432,
 
 
