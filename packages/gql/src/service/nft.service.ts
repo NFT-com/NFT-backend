@@ -1384,6 +1384,22 @@ export const getNFTMetaData = async (
 
       const traits: Array<defs.Trait> = getMetadataTraits(alchemyMetadata?.metadata, nftPortMetadata)
 
+      logger.info({
+        alchemyMetadata,
+        nftPortMetadata,
+        contract,
+        tokenId,
+        chainId,
+        refreshMetadata,
+        onlyNftPort,
+        onlyAlchemy,
+        name,
+        description,
+        image,
+        type,
+        traits,
+      }, `nftService.getNFTMetaData(), contract=${contract}, tokenId=${tokenId}, onlyNftPort=${onlyNftPort}, onlyAlchemy=${onlyAlchemy}, nftPortMetadata=${JSON.stringify(nftPortMetadata)}`)
+
       return {
         type,
         name,
