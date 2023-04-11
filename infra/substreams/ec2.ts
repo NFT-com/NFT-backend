@@ -12,6 +12,11 @@ const getInstanceSubnet = (subnetGroups: vpcSubnets, numSubnets: number) : strin
     return subnetGroup[index]; 
 }
 
+const getUserData = (): string => {
+    return ``
+}
+
+
 export const createSubstreamInstance = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
