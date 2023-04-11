@@ -37,4 +37,7 @@ runs:
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD}}
+        GH_TOKEN: ${{ fromJSON(inputs.secrets).GH_TOKEN}}
+        GH_USER: ${{ fromJSON(inputs.secrets).GH_USER}}
+        STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}
       run: npm run deploy:substreams
