@@ -20,9 +20,6 @@ runs:
         aws-access-key-id: ${{ fromJSON(inputs.secrets).AWS_ACCESS_KEY_ID }}
         aws-region: ${{ fromJSON(inputs.secrets).AWS_REGION }}
         aws-secret-access-key: ${{ fromJSON(inputs.secrets).AWS_SECRET_ACCESS_KEY }}
-    - name: Login to AWS ECR
-      id: login_ecr
-      uses: aws-actions/amazon-ecr-login@v1
     - name: Install pulumi
       uses: pulumi/setup-pulumi@v2
     - name: Login to Pulumi backend
