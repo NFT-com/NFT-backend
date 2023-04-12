@@ -20,8 +20,8 @@ const git_token = process.env.GH_TOKEN;
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
 
-const getUserData = (): string => {
-    return `
+const userData = 
+`
     #!/bin/bash
 
         sudo yum groupinstall 'Development Tools' -y 
@@ -79,8 +79,8 @@ const getUserData = (): string => {
 
         #Run the substreams 
         nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
-    `
-}
+    `;
+
 
 //
 export const createSubstreamInstance = (
@@ -94,7 +94,7 @@ export const createSubstreamInstance = (
         associatePublicIpAddress: true,
         instanceType: config.require('ec2InstanceType'),
         keyName: "ec2-ecs",
-        userData: Buffer.from(getUserData()).toString('base64'),
+        userData: userData,
         maintenanceOptions: {
             autoRecovery: "default",
         },
@@ -110,8 +110,8 @@ export const createSubstreamInstance = (
             volumeSize: 20,
             volumeType: "gp3",
         },
-        //subnetId: getInstanceSubnet( subnetGroups ,Number(config.require('numSubnets'))),
-        subnetId: "subnet-05840aae4c820581b",
+        subnetId: getInstanceSubnet( subnetGroups ,Number(config.require('numSubnets'))),
+        //subnetId: "subnet-05840aae4c820581b",
         tags: {
             Name: `${stage}-sf-substreams`,
         },
