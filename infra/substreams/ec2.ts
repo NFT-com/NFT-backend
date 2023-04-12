@@ -112,15 +112,9 @@ export const createSubstreamLaunchTemplate = (
         },
         metadataOptions: {
             httpEndpoint: "enabled",
+            httpProtocolIpv6: "enabled",
             httpPutResponseHopLimit: 2,
             httpTokens: "required",
-            instanceMetadataTags: "disabled",
-        },
-        rootBlockDevice: {
-            iops: 3000,
-            throughput: 125,
-            volumeSize: 20,
-            volumeType: "gp3",
         },
         name: `${stage}-sf-substreams-template`,
         networkInterfaces: [{
