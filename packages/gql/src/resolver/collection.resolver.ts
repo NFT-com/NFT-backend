@@ -68,6 +68,33 @@ const getCollection = async (_: any, args: gql.QueryCollectionArgs, ctx: Context
   }
 }
 
+const getCollections = async (_: any, args: gql.QueryCollectionsArgs, ctx: Context): Promise<gql.Collection[]> => {
+  const schema = Joi.object().keys({
+    input: Joi.array().items(
+      Joi.object()
+        .keys({
+          chainId: Joi.string().trim().optional(),
+          contract: Joi.string().trim(),
+          slug: Joi.string().trim(),
+          network: Joi.string().trim().required(),
+        })
+        .or('contract', 'slug')
+        .nand('contract', 'slug'), // Requires either contract|slug
+      )
+    })
+  joi.validateSchema(schema, args)
+
+  const results = await Promise.allSettled(
+    args.input.map((collectionInput => getCollection(undefined, { input: collectionInput }, ctx)))
+  )
+  return results.map(result => {
+    if (result.status === 'rejected') {
+      return undefined
+    }
+    return result.value.collection
+  })
+}
+
 const getCollectionsByDeployer = async (
   _: any,
   args: gql.QueryCollectionsByDeployerArgs,
@@ -745,6 +772,7 @@ export const refreshCollectionRarity = async (
 export default {
   Query: {
     collection: getCollection,
+    collections: getCollections,
     collectionsByDeployer: getCollectionsByDeployer,
     collectionLeaderboard: getCollectionLeaderboard,
     collectionTraits: getCollectionTraits,

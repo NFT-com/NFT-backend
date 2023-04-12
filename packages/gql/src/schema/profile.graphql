@@ -242,6 +242,11 @@ type ProfileVisibleNFTCount {
   visibleNFTs: Int!
 }
 
+input ProfilesByURLInput {
+  url: String!
+  chainId: String
+}
+
 extend type Query {
   profileFollowers(input: FollowersInput!): FollowersOutput!
   "AUTHENTICATED"
@@ -249,6 +254,7 @@ extend type Query {
   "AUTHENTICATED"
   myProfiles(input: ProfilesInput): ProfilesOutput!
   profile(url: String!, chainId: String): Profile!
+  profiles(input: [ProfilesByURLInput!]!): [Profile!]!
   profilePassive(url: String!, chainId: String): Profile!
   blockedProfileURI(url: String!, blockReserved: Boolean!): Boolean!
   "AUTHENTICATED"

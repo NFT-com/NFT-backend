@@ -365,6 +365,28 @@ const getProfileByURL = (_: any, args: gql.QueryProfileArgs, ctx: Context): Prom
     )
 }
 
+const getProfilesByURL = async (_: any, args: gql.QueryProfilesArgs, ctx: Context): Promise<gql.Profile[]> => {
+  const schema = Joi.object().keys({
+      input: Joi.array().items(
+        Joi.object().keys({
+          url: Joi.string().required(),
+          chainId: Joi.string().optional(),
+        })
+      )
+    })
+  joi.validateSchema(schema, args)
+
+  const results = await Promise.allSettled(
+    args.input.map(profileInput => getProfileByURL(undefined, { ...profileInput }, ctx)),
+  )
+  return results.map(result => {
+    if (result.status === 'rejected') {
+      return undefined
+    }
+    return result.value
+  })
+}
+
 const getWinningBid = (parent: gql.Profile, _: unknown, ctx: Context): Promise<gql.Bid> => {
   const { user, repositories } = ctx
   logger.debug('getWinningBid', { loggedInUserId: user?.id })
@@ -1662,6 +1684,7 @@ export default {
   Upload: GraphQLUpload,
   Query: {
     profile: getProfileByURL,
+    profiles: getProfilesByURL,
     profilePassive: getProfileByURLPassive,
     myProfiles: combineResolvers(auth.isAuthenticated, getMyProfiles),
     profileFollowers: getProfileFollowers,
