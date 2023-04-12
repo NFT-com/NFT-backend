@@ -75,7 +75,7 @@ cd ../..
 nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
 
 
-export const createEC2Resources= (
+export const createEC2Resources = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
     instanceSG: aws.ec2.SecurityGroup
@@ -120,7 +120,7 @@ export const createEC2Resources= (
             httpTokens: "required",
             instanceMetadataTags: "disabled",
         },
-        iamInstanceProfile: instanceProfile,
+        iamInstanceProfile: { name: instanceProfile.name },
         rootBlockDevice: {
             iops: 3000,
             throughput: 125,
