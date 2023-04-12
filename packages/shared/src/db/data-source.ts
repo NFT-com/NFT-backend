@@ -12,7 +12,7 @@ const dbConfig = {
   logging: helper.parseBoolean(process.env.DB_LOGGING) || false,
 }
 
-const ssl = helper.parseBoolean(process.env.DB_USE_SSL)
+const ssl = ['development', 'staging', 'production'].includes(process.env.NODE_ENV)
   ? { ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString() }
   : null
 
