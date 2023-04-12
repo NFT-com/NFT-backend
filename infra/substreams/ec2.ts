@@ -12,7 +12,7 @@ import { vpcSubnets } from "./index";
 const getInstanceSubnet = (subnetGroups: vpcSubnets, numSubnets: number) : string => {
     const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
     const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets; 
-    return subnetGroup[index]; 
+    return subnetGroup[0]; 
 }
 
 const streamingFast_Key = process.env.STREAMINGFAST_KEY;
