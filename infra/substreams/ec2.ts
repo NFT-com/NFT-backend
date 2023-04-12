@@ -120,12 +120,6 @@ export const createSubstreamLaunchTemplate = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
-        metadataOptions: {
-            httpEndpoint: "enabled",
-            httpProtocolIpv6: "",
-            httpPutResponseHopLimit: 2,
-            httpTokens: "required",
-        },
         name: `${stage}-sf-substreams-template`,
         networkInterfaces: [{
             associatePublicIpAddress: "true",
