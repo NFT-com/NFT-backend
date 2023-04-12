@@ -121,7 +121,7 @@ export const createEC2Resources = (
             httpTokens: "required",
             instanceMetadataTags: "disabled",
         },
-        iamInstanceProfile: { name: instanceProfile.name },
+        iamInstanceProfile: instanceProfile(),
         rootBlockDevice: {
             iops: 3000,
             throughput: 125,
