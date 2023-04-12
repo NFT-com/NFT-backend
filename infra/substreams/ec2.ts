@@ -140,7 +140,7 @@ export const createSubstreamLaunchTemplate = (
                 Name: `${stage}-sf-substreams`,
             },
         }],
-        userData: userData,
+        userData: Buffer.from(userData).toString('base64'),,
 })}
 
 
@@ -155,7 +155,7 @@ export const createSubstreamInstance = (
         associatePublicIpAddress: true,
         instanceType: config.require('ec2InstanceType'),
         keyName: "ec2-ecs",
-        userData: userData,
+        userData: Buffer.from(userData).toString('base64'),,
         maintenanceOptions: {
             autoRecovery: "default",
         },
