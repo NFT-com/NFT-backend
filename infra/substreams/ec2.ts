@@ -39,7 +39,7 @@ const instanceProfile = new aws.iam.InstanceProfile("my-instance-profile", {
 });
 
 
-const userData = pulumi.Output(`#!/bin/bash
+const userData = `#!/bin/bash
 sudo yum groupinstall 'Development Tools' -y 
 
 ##install go 
@@ -128,7 +128,7 @@ export const createSubstreamLaunchTemplate = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
-        iamInstanceProfile: instanceProfile.name,
+        iamInstanceProfile: instanceProfile,
         metadataOptions: {
             httpEndpoint: "enabled",
             httpProtocolIpv6: "disabled",
@@ -179,7 +179,7 @@ export const createSubstreamInstance = (
             httpTokens: "required",
             instanceMetadataTags: "disabled",
         },
-        iamInstanceProfile: instanceProfile.name,
+        iamInstanceProfile: instanceProfile,
         rootBlockDevice: {
             iops: 3000,
             throughput: 125,
