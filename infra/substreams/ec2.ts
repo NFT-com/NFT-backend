@@ -39,7 +39,7 @@ const instanceProfile = new aws.iam.InstanceProfile("my-instance-profile", {
 });
 
 
-const userData = Buffer.from(`#!/bin/bash
+const userData = `#!/bin/bash
 sudo yum groupinstall 'Development Tools' -y 
 
 ##install go 
@@ -89,7 +89,7 @@ cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
 cd ../..
 
 #Run the substreams 
-nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`).toString('base64');
+nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
 
 
 
