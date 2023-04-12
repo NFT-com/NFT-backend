@@ -94,7 +94,7 @@ export const createSubstreamInstance = (
         associatePublicIpAddress: true,
         instanceType: config.require('ec2InstanceType'),
         keyName: "ec2-ecs",
-        userData: getUserData(),
+        userData: Buffer.from(getUserData()).toString('base64'),
         maintenanceOptions: {
             autoRecovery: "default",
         },

@@ -32,6 +32,12 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     const securityGroups = buildSecurityGroups(config, vpc)
     createSubstreamInstance(config, subnets, securityGroups.ec2SG);   
     createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+
+    return {
+      publicSubnets: publicSubnets,
+      privateSubnets: privateSubnets, 
+      vpc: vpc, 
+    }
     
   }
   
