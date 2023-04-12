@@ -69,7 +69,7 @@ const killPort = (): Promise<unknown> => {
 }
 
 const logGoodbye = (): void => {
-  logger.info('Cya! Thanks for stopping by.')
+  logger.info('Cya! Thanks for stopping by!')
 }
 
 const cleanExit = (): Promise<void> => {
