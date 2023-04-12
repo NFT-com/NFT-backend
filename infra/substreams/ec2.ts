@@ -19,9 +19,27 @@ const streamingFast_Key = process.env.STREAMINGFAST_KEY;
 const git_token = process.env.GH_TOKEN; 
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
+const stage = getStage();
 
-const userData = 
-`#!/bin/bash
+const role = new aws.iam.Role(`${stage}-substreams-role`, {
+    assumeRolePolicy: JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [{
+            Effect: "Allow",
+            Principal: {
+                Service: "ec2.amazonaws.com",
+            },
+            Action: "sts:AssumeRole",
+        }],
+    }),
+});
+
+const instanceProfile = new aws.iam.InstanceProfile("my-instance-profile", {
+    role: role.name,
+});
+
+
+const userData = pulumi.Output(`#!/bin/bash
 sudo yum groupinstall 'Development Tools' -y 
 
 ##install go 
@@ -70,9 +88,10 @@ sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.si
 cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
 cd ../..
 
-
 #Run the substreams 
-nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`).apply(str => Buffer.from(str).toString("base64"));
+
+
 
 export const createSubstreamLaunchTemplate = (
     config: pulumi.Config,
@@ -80,7 +99,6 @@ export const createSubstreamLaunchTemplate = (
     instanceSG: aws.ec2.SecurityGroup ): 
     aws.ec2.LaunchTemplate =>
     {
-    const stage = getStage();
     return new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
         blockDeviceMappings: [{
             deviceName: "/dev/xvda",
@@ -110,6 +128,7 @@ export const createSubstreamLaunchTemplate = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
+        iamInstanceProfile: instanceProfile.name,
         metadataOptions: {
             httpEndpoint: "enabled",
             httpProtocolIpv6: "disabled",
@@ -136,7 +155,7 @@ export const createSubstreamLaunchTemplate = (
                 Name: `${stage}-sf-substreams`,
             },
         }],
-        userData: Buffer.from(userData).toString('base64'),
+        userData: userData
 })}
 
 
@@ -145,13 +164,12 @@ export const createSubstreamInstance = (
     subnetGroups: vpcSubnets,
     instanceSG: aws.ec2.SecurityGroup, 
     ): aws.ec2.Instance => {
-    const stage = getStage();
     return new aws.ec2.Instance("sf-substream-instance", {
         ami: "ami-02f3f602d23f1659d",
         associatePublicIpAddress: true,
         instanceType: config.require('ec2InstanceType'),
         keyName: "ec2-ecs",
-        userData: Buffer.from(userData).toString('base64'),
+        userData: userData,
         maintenanceOptions: {
             autoRecovery: "default",
         },
@@ -161,6 +179,7 @@ export const createSubstreamInstance = (
             httpTokens: "required",
             instanceMetadataTags: "disabled",
         },
+        iamInstanceProfile: instanceProfile.name,
         rootBlockDevice: {
             iops: 3000,
             throughput: 125,
