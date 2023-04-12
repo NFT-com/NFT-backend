@@ -367,10 +367,12 @@ const getProfileByURL = (_: any, args: gql.QueryProfileArgs, ctx: Context): Prom
 
 const getProfilesByURL = async (_: any, args: gql.QueryProfilesArgs, ctx: Context): Promise<gql.Profile[]> => {
   const schema = Joi.object().keys({
-      input: Joi.object().keys({
-        url: Joi.string().required(),
-        chainId: Joi.string().optional(),
-      })
+      input: Joi.array().items(
+        Joi.object().keys({
+          url: Joi.string().required(),
+          chainId: Joi.string().optional(),
+        })
+      )
     })
   joi.validateSchema(schema, args)
 

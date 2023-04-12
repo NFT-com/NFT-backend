@@ -242,7 +242,7 @@ type ProfileVisibleNFTCount {
   visibleNFTs: Int!
 }
 
-type ProfilesByURLInput {
+input ProfilesByURLInput {
   url: String!
   chainId: String
 }
