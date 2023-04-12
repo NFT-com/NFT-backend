@@ -112,7 +112,7 @@ export const createSubstreamLaunchTemplate = (
         },
         metadataOptions: {
             httpEndpoint: "enabled",
-            httpProtocolIpv6: "enabled",
+            httpProtocolIpv6: "disabled",
             httpPutResponseHopLimit: 2,
             httpTokens: "required",
         },
