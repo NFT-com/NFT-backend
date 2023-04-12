@@ -126,7 +126,7 @@ export const createSubstreamLaunchTemplate = (
             httpPutResponseHopLimit: 2,
             httpTokens: "required",
         },
-        name: "sf-streams-template",
+        name: `${stage}-sf-substreams-template`,
         networkInterfaces: [{
             associatePublicIpAddress: "true",
             deleteOnTermination: "true",
