@@ -19,9 +19,8 @@ const streamingFast_Key = process.env.STREAMINGFAST_KEY;
 const git_token = process.env.GH_TOKEN; 
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
-const stage = getStage();
 
-const role = new aws.iam.Role(`${stage}-substreams-role`, {
+const role = new aws.iam.Role(`substreams-role`, {
     assumeRolePolicy: JSON.stringify({
         Version: "2012-10-17",
         Statement: [{
@@ -34,7 +33,7 @@ const role = new aws.iam.Role(`${stage}-substreams-role`, {
     }),
 });
 
-const instanceProfile = new aws.iam.InstanceProfile("my-instance-profile", {
+const instanceProfile = new aws.iam.InstanceProfile("substreams-instance-profile", {
     role: role.name,
 });
 
@@ -99,6 +98,7 @@ export const createSubstreamLaunchTemplate = (
     instanceSG: aws.ec2.SecurityGroup ): 
     aws.ec2.LaunchTemplate =>
     {
+    const stage = getStage();
     return new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
         blockDeviceMappings: [{
             deviceName: "/dev/xvda",
@@ -164,6 +164,7 @@ export const createSubstreamInstance = (
     subnetGroups: vpcSubnets,
     instanceSG: aws.ec2.SecurityGroup, 
     ): aws.ec2.Instance => {
+    const stage = getStage();
     return new aws.ec2.Instance("sf-substream-instance", {
         ami: "ami-02f3f602d23f1659d",
         associatePublicIpAddress: true,
