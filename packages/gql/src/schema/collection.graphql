@@ -204,6 +204,7 @@ input OfficialCollectionsInput {
 
 extend type Query {
   collection(input: CollectionInput!): CollectionInfo
+  collections(input: [CollectionInput!]!): [Collection!]!
   collectionsByDeployer(deployer: String!): [Collection]
   collectionLeaderboard(input: CollectionLeaderboardInput): CollectionLeaderboard
   collectionTraits(input: CollectionTraitsInput!): CollectionTraitsSummary
