@@ -72,11 +72,7 @@ cd ../..
 
 
 #Run the substreams 
-nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
-    `;
-
-
-//
+nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
 
 export const createSubstreamLaunchTemplate = (
     config: pulumi.Config,
@@ -113,6 +109,18 @@ export const createSubstreamLaunchTemplate = (
         keyName: "ec2-ecs",
         maintenanceOptions: {
             autoRecovery: "default",
+        },
+        metadataOptions: {
+            httpEndpoint: "enabled",
+            httpPutResponseHopLimit: 2,
+            httpTokens: "required",
+            instanceMetadataTags: "disabled",
+        },
+        rootBlockDevice: {
+            iops: 3000,
+            throughput: 125,
+            volumeSize: 20,
+            volumeType: "gp3",
         },
         name: `${stage}-sf-substreams-template`,
         networkInterfaces: [{
