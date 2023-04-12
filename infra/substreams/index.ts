@@ -4,7 +4,7 @@ import * as process from 'process'
 import * as upath from 'upath'
 
 import { deployInfra, getStage, pulumiOutToValue } from '../helper';
-import { createSubstreamInstance } from './ec2';
+import { createSubstreamInstance, createSubstreamLaunchTemplate } from './ec2';
 import { createSubstreamClusters } from './rds';
 import {  buildSecurityGroups } from './securityGroups'
 
@@ -23,14 +23,15 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     const publicSubnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
     const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
 
-    const subnets : vpcSubnets = { publicSubnets, privateSubnets}; 
+    const subnets : vpcSubnets = { publicSubnets : publicSubnets, privateSubnets : privateSubnets}; 
 
     const zones = config.require('availabilityZones').split(',');
     const numSubnets = config.require('numSubnets'); 
 
 
     const securityGroups = buildSecurityGroups(config, vpc)
-    createSubstreamInstance(config, subnets, securityGroups.ec2SG);   
+    createSubstreamInstance(config, subnets, securityGroups.ec2SG);
+    createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
     createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
     return {

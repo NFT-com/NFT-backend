@@ -83,6 +83,73 @@ const userData =
 
 
 //
+
+export const createSubstreamLaunchTemplate = (
+    config: pulumi.Config,
+    subnetGroups: vpcSubnets,
+    instanceSG: aws.ec2.SecurityGroup ): 
+    aws.ec2.LaunchTemplate =>
+    {
+    const stage = getStage();
+    return new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
+        blockDeviceMappings: [{
+            deviceName: "/dev/xvda",
+            ebs: {
+                deleteOnTermination: "true",
+                encrypted: "false",
+                iops: 3000,
+                throughput: 125,
+                volumeSize: 20,
+                volumeType: "gp3",
+            },
+        }],
+        capacityReservationSpecification: {
+            capacityReservationPreference: "open",
+        },
+        creditSpecification: {
+            cpuCredits: "standard",
+        },
+        ebsOptimized: "false",
+        hibernationOptions: {
+            configured: false,
+        },
+        imageId: "ami-02f3f602d23f1659d",
+        instanceInitiatedShutdownBehavior: "stop",
+        instanceType: config.require('ec2InstanceType'),
+        keyName: "ec2-ecs",
+        maintenanceOptions: {
+            autoRecovery: "default",
+        },
+        metadataOptions: {
+            httpEndpoint: "enabled",
+            httpProtocolIpv6: "",
+            httpPutResponseHopLimit: 2,
+            httpTokens: "required",
+        },
+        name: "sf-streams-template",
+        networkInterfaces: [{
+            associatePublicIpAddress: "true",
+            deleteOnTermination: "true",
+            securityGroups: [instanceSG.id],
+            subnetId: getInstanceSubnet( subnetGroups ,Number(config.require('numSubnets'))),
+        }],
+        placement: {
+            tenancy: "default",
+        },
+        privateDnsNameOptions: {
+            enableResourceNameDnsARecord: true,
+            hostnameType: "ip-name",
+        },
+        tagSpecifications: [{
+            resourceType: "instance",
+            tags: {
+                Name: `${stage}-sf-substreams`,
+            },
+        }],
+        userData: userData,
+})}
+
+
 export const createSubstreamInstance = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
