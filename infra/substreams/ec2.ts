@@ -21,64 +21,58 @@ const git_user = process.env.GH_USER;
 const db_pass = process.env.DB_PASSWORD; 
 
 const userData = 
-`
-    #!/bin/bash
+`#!/bin/bash
+sudo yum groupinstall 'Development Tools' -y 
 
-        sudo yum groupinstall 'Development Tools' -y 
+##install go 
 
-        ##install go 
+sudo yum install jq go gcc -y 
 
-        sudo yum install jq go gcc -y 
+go install -v google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
-        go install -v google.golang.org/protobuf/cmd/protoc-gen-go@latest
+sudo GO111MODULE=on GOBIN=/usr/local/bin go install -v github.com/bufbuild/buf/cmd/buf@v1.15.1
 
-        sudo GO111MODULE=on GOBIN=/usr/local/bin go install -v github.com/bufbuild/buf/cmd/buf@v1.15.1
+export PATH="$HOME/go/bin:$PATH"
 
-        export PATH="$HOME/go/bin:$PATH"
+#install rust
+export RUSTUP_HOME=/home/ec2-user/.rustup
+export CARGO_HOME=/home/ec2-user/.cargo
 
-        ##install rust
-        export RUSTUP_HOME=/home/ec2-user/.rustup
-        export CARGO_HOME=/home/ec2-user/.cargo
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "/home/ec2-user/.cargo/env"
 
-        source "/home/ec2-user/.cargo/env"
+#install substreams 
 
-        #install substreams 
+substreams -v 
 
-        #which brew 
+#Create ENV Vars 
 
-        #brew install streamingfast/tap/substreams
+export STREAMINGFAST_KEY=${streamingFast_Key}
 
-        substreams -v 
+export SUBSTREAMS_API_TOKEN=$(curl https://auth.streamingfast.io/v1/auth/issue -s --data-binary '{"api_key":"'$STREAMINGFAST_KEY'"}' | jq -r .token)
 
-        #Create ENV Vars 
+#Download NFT substreams code 
 
-        export STREAMINGFAST_KEY=${streamingFast_Key}
+git clone https://${git_user}:${git_token}@github.com/NFT-com/substreams-sync.git
 
-        export SUBSTREAMS_API_TOKEN=$(curl https://auth.streamingfast.io/v1/auth/issue -s --data-binary '{"api_key":"'$STREAMINGFAST_KEY'"}' | jq -r .token)
+cd substreams-sync
 
-        #Download NFT substreams code 
+#Initialize PG DBs 
 
-        git clone https://${git_user}:${git_token}@github.com/NFT-com/substreams-sync.git
+substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-        cd substreams-sync
+substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
-        #Initialize PG DBs 
+#Change string in substreams.yaml
+sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
 
-        substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./docs/nftLoader/schema.sql
-
-        substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
-
-        #Change string in substreams.yaml
-        sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
-
-        cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
-        cd ../..
+cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
+cd ../..
 
 
-        #Run the substreams 
-        nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+#Run the substreams 
+nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
     `;
 
 
