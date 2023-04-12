@@ -9,33 +9,17 @@ import { getStage, isProduction } from '../helper'
 
 import { vpcSubnets } from "./index";
 
-const getInstanceSubnet = (subnetGroups: vpcSubnets, numSubnets: number) : string => {
-    const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
-    const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets; 
-    return subnetGroup[0]; 
+export type EC2Output = {
+    instance: aws.ec2.Instance,
+    template: aws.ec2.LaunchTemplate,
 }
+
+
 
 const streamingFast_Key = process.env.STREAMINGFAST_KEY;
 const git_token = process.env.GH_TOKEN; 
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
-
-const role = new aws.iam.Role(`substreams-role`, {
-    assumeRolePolicy: JSON.stringify({
-        Version: "2012-10-17",
-        Statement: [{
-            Effect: "Allow",
-            Principal: {
-                Service: "ec2.amazonaws.com",
-            },
-            Action: "sts:AssumeRole",
-        }],
-    }),
-});
-
-const instanceProfile = new aws.iam.InstanceProfile("substreams-instance-profile", {
-    role: role.name,
-});
 
 
 const userData = `#!/bin/bash
@@ -91,15 +75,67 @@ cd ../..
 nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
 
 
-
-export const createSubstreamLaunchTemplate = (
+export const createEC2Resources= (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
-    instanceSG: aws.ec2.SecurityGroup ): 
-    aws.ec2.LaunchTemplate =>
-    {
-    const stage = getStage();
-    return new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
+    instanceSG: aws.ec2.SecurityGroup
+) : EC2Output => {
+
+    const stage = getStage()
+    const getInstanceSubnet = (subnetGroups: vpcSubnets) : string => {
+        //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
+        const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets; 
+        return subnetGroup[0]; 
+    }
+
+    const role = new aws.iam.Role(`substreams-role`, {
+        assumeRolePolicy: JSON.stringify({
+            Version: "2012-10-17",
+            Statement: [{
+                Effect: "Allow",
+                Principal: {
+                    Service: "ec2.amazonaws.com",
+                },
+                Action: "sts:AssumeRole",
+            }],
+        }),
+    });
+    
+    const instanceProfile = new aws.iam.InstanceProfile("substreams-instance-profile", {
+        role: role.name,
+    });
+
+    const SubstreamInstance =  new aws.ec2.Instance("sf-substream-instance", {
+        ami: "ami-02f3f602d23f1659d",
+        associatePublicIpAddress: true,
+        instanceType: config.require('ec2InstanceType'),
+        keyName: "ec2-ecs",
+        userData: userData,
+        maintenanceOptions: {
+            autoRecovery: "default",
+        },
+        metadataOptions: {
+            httpEndpoint: "enabled",
+            httpPutResponseHopLimit: 2,
+            httpTokens: "required",
+            instanceMetadataTags: "disabled",
+        },
+        iamInstanceProfile: instanceProfile,
+        rootBlockDevice: {
+            iops: 3000,
+            throughput: 125,
+            volumeSize: 20,
+            volumeType: "gp3",
+        },
+        subnetId: getInstanceSubnet( subnetGroups ),
+        //subnetId: "subnet-05840aae4c820581b",
+        tags: {
+            Name: `${stage}-sf-substreams`,
+        },
+        vpcSecurityGroupIds: [instanceSG.id],
+    });
+
+    const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
         blockDeviceMappings: [{
             deviceName: "/dev/xvda",
             ebs: {
@@ -140,7 +176,7 @@ export const createSubstreamLaunchTemplate = (
             associatePublicIpAddress: "true",
             deleteOnTermination: "true",
             securityGroups: [instanceSG.id],
-            subnetId: getInstanceSubnet( subnetGroups ,Number(config.require('numSubnets'))),
+            subnetId: getInstanceSubnet( subnetGroups ),
         }],
         placement: {
             tenancy: "default",
@@ -156,43 +192,7 @@ export const createSubstreamLaunchTemplate = (
             },
         }],
         userData: userData
-})}
+});
 
-
-export const createSubstreamInstance = (
-    config: pulumi.Config,
-    subnetGroups: vpcSubnets,
-    instanceSG: aws.ec2.SecurityGroup, 
-    ): aws.ec2.Instance => {
-    const stage = getStage();
-    return new aws.ec2.Instance("sf-substream-instance", {
-        ami: "ami-02f3f602d23f1659d",
-        associatePublicIpAddress: true,
-        instanceType: config.require('ec2InstanceType'),
-        keyName: "ec2-ecs",
-        userData: userData,
-        maintenanceOptions: {
-            autoRecovery: "default",
-        },
-        metadataOptions: {
-            httpEndpoint: "enabled",
-            httpPutResponseHopLimit: 2,
-            httpTokens: "required",
-            instanceMetadataTags: "disabled",
-        },
-        iamInstanceProfile: instanceProfile,
-        rootBlockDevice: {
-            iops: 3000,
-            throughput: 125,
-            volumeSize: 20,
-            volumeType: "gp3",
-        },
-        subnetId: getInstanceSubnet( subnetGroups ,Number(config.require('numSubnets'))),
-        //subnetId: "subnet-05840aae4c820581b",
-        tags: {
-            Name: `${stage}-sf-substreams`,
-        },
-        vpcSecurityGroupIds: [instanceSG.id],
-    });
-
+    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
 }

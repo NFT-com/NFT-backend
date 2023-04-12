@@ -4,7 +4,7 @@ import * as process from 'process'
 import * as upath from 'upath'
 
 import { deployInfra, getStage, pulumiOutToValue } from '../helper';
-import { createSubstreamInstance, createSubstreamLaunchTemplate } from './ec2';
+import { createEC2Resources } from './ec2';
 import { createSubstreamClusters } from './rds';
 import {  buildSecurityGroups } from './securityGroups'
 
@@ -30,8 +30,10 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
 
 
     const securityGroups = buildSecurityGroups(config, vpc)
-    createSubstreamInstance(config, subnets, securityGroups.ec2SG);
-    createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
+
+    //createSubstreamInstance(config, subnets, securityGroups.ec2SG);
+    //createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
+    createEC2Resources(config, subnets, securityGroups.ec2SG );
     createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
 //
