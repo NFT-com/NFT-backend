@@ -1318,6 +1318,15 @@ export const getNFTMetaData = async (
         refreshMetadata,
       )
 
+      logger.info({
+        contract,
+        tokenId,
+        chainId,
+        refreshMetadata,
+        onlyNftPort,
+        onlyAlchemy,
+      }, `====> nftService.getNFTMetaData() nftportonly, contract=${contract}, tokenId=${tokenId}, onlyNftPort=${onlyNftPort}, onlyAlchemy=${onlyAlchemy}, nftPortMetadata=${JSON.stringify(nftPortMetadata)}`)
+
       const contractAlchemyMetadata = await getContractMetaDataFromAlchemy(contract)
 
       const name = getNftName(
