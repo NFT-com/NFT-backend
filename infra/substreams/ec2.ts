@@ -8,6 +8,7 @@ import { SharedInfraOutput } from '../defs'
 import { getStage, isProduction } from '../helper'
 
 import { vpcSubnets } from "./index";
+import { SubstreamRDSOutput } from "./rds"; 
 
 export type EC2Output = {
     instance: aws.ec2.Instance,
@@ -19,7 +20,11 @@ const git_token = process.env.GH_TOKEN;
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
 
-const rawUserData = `#!/bin/bash
+export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
+    const db_user = pgCluster.main.masterUsername; 
+    const db_host = pgCluster.main.endpoint; 
+
+    const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
 
@@ -76,9 +81,9 @@ cd substreams-sync
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Update DB config files..."
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
@@ -90,14 +95,17 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
-
-const userData = Buffer.from(rawUserData).toString("base64");
+nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+    
+return Buffer.from(rawUserData).toString("base64");
+    
+} 
 
 export const createEC2Resources = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
-    instanceSG: aws.ec2.SecurityGroup
+    instanceSG: aws.ec2.SecurityGroup,
+    userData: string 
 ) : EC2Output => {
 
     const stage = getStage()
