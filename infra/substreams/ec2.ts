@@ -79,7 +79,7 @@ export const createEC2Resources = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
     instanceSG: aws.ec2.SecurityGroup
-) : EC2Output => {
+) : aws.ec2.LaunchTemplate => {
 
     const stage = getStage()
     const getInstanceSubnet = (subnetGroups: vpcSubnets) : string => {
@@ -101,9 +101,11 @@ export const createEC2Resources = (
         }),
     });
     
-    const instanceProfile =  new aws.iam.InstanceProfile("substreams-instance-profile", {
+    const instanceProfile = () =>
+    {
+    return new aws.iam.InstanceProfile("substreams-instance-profile", {
         role: role.name,
-    });
+    })};
 /*
     const SubstreamInstance =  new aws.ec2.Instance("sf-substream-instance", {
         ami: "ami-02f3f602d23f1659d",
