@@ -88,7 +88,7 @@ const seaportOrderBuilder = (order: SeaportOrder): Partial<entity.TxOrder> => {
     exchange: defs.ExchangeType.OpenSea,
     makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address) : null,
     takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address) : null,
-    osNonce: order.protocol_data?.parameters?.counter?.toString(), // counter is mapped to nonce for OS
+    hexNonce: order.protocol_data?.parameters?.counter?.toString(), // counter is mapped to nonce for OS
     zone: order.protocol_data?.parameters?.zone, // only mapped for OS
     protocolData: {
       ...order.protocol_data,
@@ -106,7 +106,8 @@ const looksrareOrderBuilder = (order: LooksRareOrderV2): Partial<entity.TxOrder>
     exchange: defs.ExchangeType.LooksRare,
     makerAddress: helper.checkSum(order.signer),
     takerAddress: null,
-    nonce: Number(order.globalNonce),
+    nonce: Number(order.orderNonce),
+    hexNonce: order.globalNonce,
     protocolData: {
       ...order,
       signer: helper.checkSum(order.signer),
