@@ -224,7 +224,7 @@ export const createEC2Resources = (
         new aws.ec2.Instance("sf-substream-instance", {
             launchTemplate: {
                 id: SubstreamLaunchTemplate.id,
-                version: SubstreamLaunchTemplate.latestVersion.toString()
+                version: "$Latest"
         }
 });
 
