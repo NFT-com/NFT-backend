@@ -10,7 +10,7 @@ import { getStage, isProduction } from '../helper'
 import { vpcSubnets } from "./index";
 
 export type EC2Output = {
-//    instance: aws.ec2.Instance,
+    instance: aws.ec2.Instance,
     template: aws.ec2.LaunchTemplate,
 }
 
@@ -192,6 +192,7 @@ export const createEC2Resources = (
             enableResourceNameDnsARecord: true,
             hostnameType: "ip-name",
         },
+        updateDefaultVersion: true, 
         tagSpecifications: [{
             resourceType: "instance",
             tags: {
@@ -201,6 +202,15 @@ export const createEC2Resources = (
         userData: userData
 });
 
-    //return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
-    return SubstreamLaunchTemplate; 
+    const SubstreamInstance =  
+        new aws.ec2.Instance("sf-substream-instance", {
+            instanceType: SubstreamLaunchTemplate.instanceType,
+            launchTemplate: {
+                id: SubstreamLaunchTemplate.id,
+                version: SubstreamLaunchTemplate.latestVersion
+        }
+});
+
+    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
+    //return SubstreamLaunchTemplate; 
 }
