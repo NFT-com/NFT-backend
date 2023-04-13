@@ -23,9 +23,9 @@ const db_pass = process.env.DB_PASSWORD;
 
 export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     let db_user = pgCluster.main.masterUsername; 
-    let db_host = pulumi.interpolate `${pgCluster.main.endpoint}`; 
-
-    let db_string = pulumi.all([db_user, db_host]).apply(([db_user, db_host]) => `psql://${{db_user}}:${db_pass}@${db_host}/app?sslmode=disable`); 
+    //let db_host = pulumi.interpolate `${pgCluster.main.endpoint}`; 
+    const db_host: Promise<string> = pgCluster.main.then(v => v.endpoint); 
+    //let db_string = pulumi.all([db_user, db_host]).apply(([db_user, db_host]) => `psql://${{db_user}}:${db_pass}@${db_host}/app?sslmode=disable`); 
     
 
     //const dbString = pulumi.concat(pgCluster.main.endpoint)
@@ -87,7 +87,7 @@ cd substreams-sync
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "${db_string}" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
 substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
