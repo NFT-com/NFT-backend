@@ -83,7 +83,7 @@ cd substreams-sync
 echo "Initializing Substreams Databases..."
 substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Update DB config files..."
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
