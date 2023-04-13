@@ -85,6 +85,7 @@ export const createSubstreamClusters = (
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
-    return { main : main, host: main.endpoint }
+    const host = pulumi.interpolate`${main.endpoint}`;
+    return { main : main, host: host }
   }
   
