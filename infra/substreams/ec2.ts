@@ -23,11 +23,11 @@ const db_pass = process.env.DB_PASSWORD;
 
 export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     const db_user = pgCluster.main.masterUsername; 
-    const db_host = pgCluster.main.endpoint; 
+    const db_host = pulumi.interpolate `${pgCluster.main.endpoint}`; 
 
     //const dbString = pulumi.concat(pgCluster.main.endpoint)
 
-    const rawUserData = pulumi.interpolate `#!/bin/bash
+    const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
 
