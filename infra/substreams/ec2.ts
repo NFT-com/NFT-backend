@@ -14,18 +14,19 @@ export type EC2Output = {
     template: aws.ec2.LaunchTemplate,
 }
 
-
-
 const streamingFast_Key = process.env.STREAMINGFAST_KEY;
 const git_token = process.env.GH_TOKEN; 
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
 
-
 const rawUserData = `#!/bin/bash
+
+echo "Installing Dev Tools"
+
 sudo yum groupinstall 'Development Tools' -y 
 
 ##install go 
+echo "Installing GO..."
 
 sudo yum install jq go gcc -y 
 
@@ -33,9 +34,14 @@ go install -v google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 sudo GO111MODULE=on GOBIN=/usr/local/bin go install -v github.com/bufbuild/buf/cmd/buf@v1.15.1
 
+export GOPATH="$HOME/go"
+export GOMODCACHE="$HOME/gomodpath"
+export GOCACHE="$HOME/gocache"
 export PATH="$HOME/go/bin:$PATH"
 
-#install rust
+##install rust
+echo "Installing RUST..."
+
 export RUSTUP_HOME=/home/ec2-user/.rustup
 export CARGO_HOME=/home/ec2-user/.cargo
 
@@ -43,15 +49,24 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 source "/home/ec2-user/.cargo/env"
 
-#install substreams 
+echo $HOME 
 
-substreams -v 
+#Install Substreams 
+echo "Installing Substreams..."
+git clone https://github.com/streamingfast/substreams
+cd substreams && go install -v ./cmd/substreams
+
+
+#Install Substream-sink-postgres 
+echo "Installing substream-sink-postgres..."
+go install -v github.com/streamingfast/substreams-sink-postgres/cmd/substreams-sink-postgres@latest
 
 #Create ENV Vars 
 
-export STREAMINGFAST_KEY=${streamingFast_Key}
-
+export STREAMINGFAST_KEY=server_02ac495ea6a467b8688c81b4e37ea538
 export SUBSTREAMS_API_TOKEN=$(curl https://auth.streamingfast.io/v1/auth/issue -s --data-binary '{"api_key":"'$STREAMINGFAST_KEY'"}' | jq -r .token)
+
+echo "Getting Substreams code..."
 
 #Download NFT substreams code 
 
@@ -60,19 +75,22 @@ git clone https://${git_user}:${git_token}@github.com/NFT-com/substreams-sync.gi
 cd substreams-sync
 
 #Initialize PG DBs 
-
+echo "Initializing Substreams Databases..."
 substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
 substreams-sink-postgres setup "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
-#Change string in substreams.yaml
+echo "Update DB config files..."
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
+sed -i 's/12287507/1000000/' docs/nftLoader/substreams.yaml
 
+echo "Build Substreams..." 
 cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
 cd ../..
 
-#Run the substreams 
-nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+echo "Run the Substream..."
+
+nohup substreams-sink-postgres run     "psql://app:${db_pass}@dev-substream-1.clmsk3iud7e0.us-east-1.rds.amazonaws.com/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
 
 const userData = Buffer.from(rawUserData).toString("base64");
 
