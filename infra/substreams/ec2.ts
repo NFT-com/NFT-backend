@@ -166,9 +166,7 @@ export const createEC2Resources = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
-        iamInstanceProfile: {
-            name: instanceProfile.name,
-        },
+        iamInstanceProfile: instanceProfile.name,
         metadataOptions: {
             httpEndpoint: "enabled",
             httpProtocolIpv6: "disabled",
