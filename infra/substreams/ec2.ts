@@ -22,7 +22,7 @@ const db_pass = process.env.DB_PASSWORD;
 
 export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     let db_user = pgCluster.main.masterUsername; 
-    let db_host = pgCluster.host;
+    let db_host = `${pgCluster.host}`;
     
     //const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => `${pgCluster.main.endpoint}`)
     
