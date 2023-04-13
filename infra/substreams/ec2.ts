@@ -24,8 +24,8 @@ export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     let db_user = pgCluster.main.masterUsername; 
     let raw_db_host = pgCluster.main.endpoint;
     
-    const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => {
-        const host : pulumi.Output<string> = `${pgCluster.main.endpoint}`
+    const db_host: string = raw_db_host.apply(raw_db_host => {
+        const host : string = `${pgCluster.main.endpoint}`
         return host; 
     } )
     
