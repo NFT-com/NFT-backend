@@ -89,7 +89,7 @@ cd substreams-sync
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://${db_user}:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
 substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
