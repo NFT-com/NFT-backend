@@ -54,7 +54,8 @@ export const buildSecurityGroups = (config: pulumi.Config, vpc: string): SGOutpu
         name: getResourceName('streams-instance'),
         description: 'Allow SSH and egress traffic',
         vpcId: vpc, 
-        ingress: [buildIngressRule(22)]
+        ingress: [buildIngressRule(22)],
+        egress: [buildEgressRule(0)]
         
     });
 

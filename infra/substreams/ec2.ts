@@ -215,6 +215,7 @@ export const createEC2Resources = (
             resourceType: "instance",
             tags: {
                 Name: `${stage}-sf-substreams`,
+                Pulumi: "true", 
             },
         }],
         userData: userData
