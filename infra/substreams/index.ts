@@ -35,7 +35,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     //createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
     const cluster = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
-    const userData = createUserData(cluster); 
+    const subnetHost = (await pulumiOutToValue(cluster.host)) as string; 
+
+    const userData = createUserData(subnetHost); 
 
     createEC2Resources(config, subnets, securityGroups.ec2SG, userData );
 

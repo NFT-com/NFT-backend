@@ -20,18 +20,8 @@ const git_user = process.env.GH_USER;
 const db_pass = process.env.DB_PASSWORD; 
 
 
-export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
-    let db_user = pgCluster.main.masterUsername; 
-    let db_host = `${pgCluster.host}`;
-    
-    //const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => `${pgCluster.main.endpoint}`)
-    
-    //const db_host: pulumi.Output<string> = pulumi.output(pgCluster.main).endpoint; 
-    //let db_string = pulumi.all([db_user, db_host]).apply(([db_user, db_host]) => `psql://${{db_user}}:${db_pass}@${db_host}/app?sslmode=disable`); 
-    
 
-    //const dbString = pulumi.concat(pgCluster.main.endpoint)
-
+export const createUserData = (dbHost : string) : string => {
     const rawUserData : string = `#!/bin/bash
 
 echo "Installing Dev Tools"
@@ -89,9 +79,9 @@ cd substreams-sync
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://${db_user}:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${dbHost}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${dbHost}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Update DB config files..."
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
@@ -103,7 +93,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+nohup substreams-sink-postgres run     "psql://app:${db_pass}@${dbHost}/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
     
 return Buffer.from(rawUserData).toString("base64");
     
