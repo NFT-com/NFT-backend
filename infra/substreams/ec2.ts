@@ -101,10 +101,9 @@ export const createEC2Resources = (
         }),
     });
     
-    const instanceProfile = () => 
-    {return new aws.iam.InstanceProfile("substreams-instance-profile", {
+    const instanceProfile =  new aws.iam.InstanceProfile("substreams-instance-profile", {
         role: role.name,
-    })};
+    });
 
     const SubstreamInstance =  new aws.ec2.Instance("sf-substream-instance", {
         ami: "ami-02f3f602d23f1659d",
@@ -121,7 +120,9 @@ export const createEC2Resources = (
             httpTokens: "required",
             instanceMetadataTags: "disabled",
         },
-        iamInstanceProfile: instanceProfile(),
+        iamInstanceProfile: {
+            name: instanceProfile.name,
+        },
         rootBlockDevice: {
             iops: 3000,
             throughput: 125,
@@ -165,7 +166,9 @@ export const createEC2Resources = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
-        iamInstanceProfile: instanceProfile(),
+        iamInstanceProfile: {
+            name: instanceProfile.name,
+        },
         metadataOptions: {
             httpEndpoint: "enabled",
             httpProtocolIpv6: "disabled",
