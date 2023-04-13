@@ -39,8 +39,9 @@ export class TxOrder extends BaseEntity {
   protocolData: any
 
   // 3/20/23 -> string due to OS making breaking change to hex strings
+  // 4/13/23 -> rename bc LooksRare are posers
   @Column({ nullable: true })
-  osNonce: string
+  hexNonce: string
 
   @Column({ nullable: true })
   nonce: number
