@@ -220,11 +220,13 @@ export const createEC2Resources = (
         userData: userData
 });
 
+    const lt_instanceType : string = SubstreamLaunchTemplate.instanceType;
+
     const SubstreamInstance =  
         new aws.ec2.Instance("sf-substream-instance", {
             launchTemplate: {
                 id: SubstreamLaunchTemplate.id,
-                version: SubstreamLaunchTemplate.latestVersion
+                version: SubstreamLaunchTemplate.latestVersion.toString()
         }
 });
 
