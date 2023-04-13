@@ -22,7 +22,7 @@ const git_user = process.env.GH_USER;
 const db_pass = process.env.DB_PASSWORD; 
 
 
-const userData = `#!/bin/bash
+const rawUserData = `#!/bin/bash
 sudo yum groupinstall 'Development Tools' -y 
 
 ##install go 
@@ -74,6 +74,7 @@ cd ../..
 #Run the substreams 
 nohup substreams-sink-postgres run     "psql://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"     "mainnet.eth.streamingfast.io:443"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
 
+const userData = Buffer.from(rawUserData).toString("base64");
 
 export const createEC2Resources = (
     config: pulumi.Config,
