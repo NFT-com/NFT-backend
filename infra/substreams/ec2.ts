@@ -100,7 +100,7 @@ export const createEC2Resources = (
             }],
         }),
     });
-    
+/*    
     const instanceProfile = () =>
     {
     return new aws.iam.InstanceProfile("substreams-instance-profile", {
@@ -147,7 +147,7 @@ export const createEC2Resources = (
                 encrypted: "false",
                 iops: 3000,
                 throughput: 125,
-                volumeSize: 20,
+                volumeSize: 50,
                 volumeType: "gp3",
             },
         }],
@@ -168,7 +168,9 @@ export const createEC2Resources = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
-        iamInstanceProfile: instanceProfile(),
+        iamInstanceProfile: {
+            arn: "arn:aws:iam::016437323894:instance-profile/substreams-instance-profile-6e600ab",
+        },
         metadataOptions: {
             httpEndpoint: "enabled",
             httpProtocolIpv6: "disabled",
