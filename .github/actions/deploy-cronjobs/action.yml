@@ -65,7 +65,6 @@ runs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.stage }}-${{ github.sha }}
     - name: Build and Push CollectionStats Images
-      if: ${{ inputs.stage  != 'dev' }}
       shell: bash
       env:
         ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
