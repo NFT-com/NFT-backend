@@ -22,9 +22,9 @@ const db_pass = process.env.DB_PASSWORD;
 
 export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     let db_user = pgCluster.main.masterUsername; 
-    let raw_db_host = pgCluster.main.endpoint;
+    let db_host = pgCluster.host;
     
-    const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => `${pgCluster.main.endpoint}`)
+    //const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => `${pgCluster.main.endpoint}`)
     
     //const db_host: pulumi.Output<string> = pulumi.output(pgCluster.main).endpoint; 
     //let db_string = pulumi.all([db_user, db_host]).apply(([db_user, db_host]) => `psql://${{db_user}}:${db_pass}@${db_host}/app?sslmode=disable`); 

@@ -9,7 +9,8 @@ import { getResourceName, isProduction } from "../helper";
 import { vpcSubnets } from "./index";
 
 export type SubstreamRDSOutput = {
-    main: aws.rds.Cluster
+    main: aws.rds.Cluster,
+    host: string
 }
 
 //should take in an array of subnets 
@@ -84,6 +85,6 @@ export const createSubstreamClusters = (
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
-    return { main }
+    return { main : main, host: main.endpoint }
   }
   
