@@ -24,10 +24,7 @@ export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     let db_user = pgCluster.main.masterUsername; 
     let raw_db_host = pgCluster.main.endpoint;
     
-    const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => {
-        const host : string = `${pgCluster.main.endpoint}`
-        return host; 
-    } )
+    const db_host: pulumi.Output<string> = raw_db_host.apply(raw_db_host => `${pgCluster.main.endpoint}`)
     
     //const db_host: pulumi.Output<string> = pulumi.output(pgCluster.main).endpoint; 
     //let db_string = pulumi.all([db_user, db_host]).apply(([db_user, db_host]) => `psql://${{db_user}}:${db_pass}@${db_host}/app?sslmode=disable`); 
@@ -35,7 +32,7 @@ export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
 
     //const dbString = pulumi.concat(pgCluster.main.endpoint)
 
-    const rawUserData = `#!/bin/bash
+    const rawUserData : string = `#!/bin/bash
 
 echo "Installing Dev Tools"
 
@@ -94,7 +91,7 @@ cd substreams-sync
 echo "Initializing Substreams Databases..."
 substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${pgCluster.main.endpoint}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Update DB config files..."
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
