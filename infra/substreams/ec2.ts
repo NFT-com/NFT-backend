@@ -10,7 +10,7 @@ import { getStage, isProduction } from '../helper'
 import { vpcSubnets } from "./index";
 
 export type EC2Output = {
-    instance: aws.ec2.Instance,
+//    instance: aws.ec2.Instance,
     template: aws.ec2.LaunchTemplate,
 }
 
@@ -104,7 +104,7 @@ export const createEC2Resources = (
     const instanceProfile =  new aws.iam.InstanceProfile("substreams-instance-profile", {
         role: role.name,
     });
-
+/*
     const SubstreamInstance =  new aws.ec2.Instance("sf-substream-instance", {
         ami: "ami-02f3f602d23f1659d",
         associatePublicIpAddress: true,
@@ -136,7 +136,7 @@ export const createEC2Resources = (
         },
         vpcSecurityGroupIds: [instanceSG.id],
     });
-
+*/
     const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
         blockDeviceMappings: [{
             deviceName: "/dev/xvda",
@@ -166,7 +166,7 @@ export const createEC2Resources = (
         maintenanceOptions: {
             autoRecovery: "default",
         },
-        iamInstanceProfile: instanceProfile.name,
+        iamInstanceProfile: instanceProfile(),
         metadataOptions: {
             httpEndpoint: "enabled",
             httpProtocolIpv6: "disabled",
@@ -196,5 +196,6 @@ export const createEC2Resources = (
         userData: userData
 });
 
-    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
+    //return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
+    return SubstreamLaunchTemplate; 
 }
