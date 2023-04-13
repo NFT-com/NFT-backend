@@ -20,11 +20,14 @@ const git_token = process.env.GH_TOKEN;
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
 
+
 export const createUserData = ( pgCluster : SubstreamRDSOutput) : string => {
     const db_user = pgCluster.main.masterUsername; 
     const db_host = pgCluster.main.endpoint; 
 
-    const rawUserData = `#!/bin/bash
+    //const dbString = pulumi.concat(pgCluster.main.endpoint)
+
+    const rawUserData = pulumi.interpolate `#!/bin/bash
 
 echo "Installing Dev Tools"
 
