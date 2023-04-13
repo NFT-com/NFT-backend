@@ -98,7 +98,7 @@ export const createEC2Resources = (
     config: pulumi.Config,
     subnetGroups: vpcSubnets,
     instanceSG: aws.ec2.SecurityGroup
-) : aws.ec2.LaunchTemplate => {
+) : EC2Output => {
 
     const stage = getStage()
     const getInstanceSubnet = (subnetGroups: vpcSubnets) : string => {
