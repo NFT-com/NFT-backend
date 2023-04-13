@@ -5,14 +5,14 @@ import { cache, CacheKeys } from '@nftcom/cache'
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
 import { gql } from '@nftcom/gql/defs'
 import { pagination } from '@nftcom/gql/helper'
-import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
+import { LooksRareOrderV2 } from '@nftcom/gql/service/looksare.service'
 import { SeaportConsideration, SeaportOffer, SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { X2Y2Order } from '@nftcom/gql/service/x2y2.service'
 import { db, defs, entity, helper, repository } from '@nftcom/shared'
 
 import { getSymbolInUsd } from './core.service'
 
-type Order = SeaportOrder | LooksRareOrder | X2Y2Order
+type Order = SeaportOrder | LooksRareOrderV2 | X2Y2Order
 
 interface TxSeaportProtocolData {
   offer: SeaportOffer[]
@@ -101,29 +101,17 @@ const seaportOrderBuilder = (order: SeaportOrder): Partial<entity.TxOrder> => {
  * @param order
  */
 
-const looksrareOrderBuilder = (order: LooksRareOrder): Partial<entity.TxOrder> => {
+const looksrareOrderBuilder = (order: LooksRareOrderV2): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
     makerAddress: helper.checkSum(order.signer),
     takerAddress: null,
-    nonce: Number(order.nonce),
+    nonce: Number(order.globalNonce),
     protocolData: {
-      isOrderAsk: order.isOrderAsk,
+      ...order,
       signer: helper.checkSum(order.signer),
-      collectionAddress: helper.checkSum(order.collectionAddress),
-      price: order.price,
-      tokenId: order.tokenId,
-      amount: order.amount,
-      strategy: helper.checkSum(order.strategy),
-      currencyAddress: helper.checkSum(order.currencyAddress),
-      nonce: order.nonce,
-      startTime: order.startTime,
-      endTime: order.endTime,
-      minPercentageToAsk: order.minPercentageToAsk,
-      params: order.params || '0x',
-      v: order.v,
-      r: order.r,
-      s: order.s,
+      collectionAddress: helper.checkSum(order.collection),
+      currencyAddress: helper.checkSum(order.currency),
     },
   }
 }
@@ -187,7 +175,7 @@ export const orderEntityBuilder = async (
     expirationFromSource: number
 
   let seaportOrder: SeaportOrder
-  let looksrareOrder: LooksRareOrder
+  let looksrareOrder: LooksRareOrderV2
   let x2y2Order: X2Y2Order
   const checksumContract: string = helper.checkSum(contract)
   switch (protocol) {
@@ -204,10 +192,10 @@ export const orderEntityBuilder = async (
       orderEntity = seaportOrderBuilder(seaportOrder)
       break
     case defs.ProtocolType.LooksRare:
-      looksrareOrder = order as LooksRareOrder
+      looksrareOrder = order as LooksRareOrderV2
       orderHash = looksrareOrder.hash
       walletAddress = helper.checkSum(looksrareOrder.signer)
-      tokenId = BigNumber.from(looksrareOrder.tokenId).toHexString()
+      tokenId = BigNumber.from(looksrareOrder.itemIds[0]).toHexString()
       timestampFromSource = Number(looksrareOrder.startTime)
       expirationFromSource = Number(looksrareOrder.endTime)
       nftIds = [`ethereum/${checksumContract}/${tokenId}`]
