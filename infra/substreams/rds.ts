@@ -76,7 +76,6 @@ const createMain = (
     )
    }
 
-   process.env.DB_HOST = sf_cluster.endpoint.toString(); 
    return sf_cluster; 
 }
 

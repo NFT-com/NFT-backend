@@ -21,7 +21,7 @@ const db_pass = process.env.DB_PASSWORD;
 const db_host = process.env.DB_HOST; 
 
 
-export const createUserData = () : string => {
+export const createUserData = (db_host: string) : string => {
     const rawUserData : string = `#!/bin/bash
 
 echo "Installing Dev Tools"
