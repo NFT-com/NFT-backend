@@ -84,6 +84,36 @@ type LooksrareProtocolData {
   s: String
 }
 
+type LooksrareMerkleProof {
+  position: Int
+  value: String
+}
+
+type LooksrareV2ProtocolData {
+  id: String
+  hash: String
+  quoteType: Int
+  globalNonce: String
+  subsetNonce: String
+  orderNonce: String
+  collection: String
+  currency: String
+  signer: String
+  strategy: Int
+  collectionType: Int
+  startTime: Int
+  endTime: Int
+  price: String
+  additionalParameters: String
+  signature: String
+  createdAt: String
+  merkleRoot: String
+  merkleProof: [LooksrareMerkleProof]
+  amounts: [String]
+  itemIds: [String]
+  status: String
+}
+
 type X2Y2ProtocolData {
   side: Int
   type: String
