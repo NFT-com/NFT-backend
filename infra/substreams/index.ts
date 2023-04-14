@@ -76,10 +76,9 @@ export const createSubStreams = (preview?: boolean): Promise<pulumi.automation.O
     return deployInfra(stackName, workDir, rdsStack, preview)
 }
 
-/*
+
 export const createSubStreamInstances = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
   const stackName = `${process.env.STAGE}.substreams_ec2.${process.env.AWS_REGION}`
   const workDir = upath.joinSafe(__dirname, 'stack')
   return deployInfra(stackName, workDir, ec2_stack, preview)
 }
-*/
