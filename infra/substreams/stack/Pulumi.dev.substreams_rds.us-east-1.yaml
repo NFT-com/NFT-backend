@@ -1,5 +1,1 @@
-encryptionsalt: v1:A2+289bSp88=:v1:vsfX1nQJZLnSGm7Q:mTzb44FGvofYxTEcNOh/wuEzd0sGzA==
-config:
-  nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
-  nftcom:numSubnets: 3
-  nftcom:ec2InstanceType: "t2.medium"
+encryptionsalt: v1:QKbtYAIpGWI=:v1:L4UE+1xnNOF841cM:9Iu6Ka4sjlj3KNUZG6MyotUh/mPpLg==
