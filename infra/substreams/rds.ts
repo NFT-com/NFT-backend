@@ -37,7 +37,7 @@ const createMain = (
         dbSubnetGroupName: subnetGroup.name,   
         dbClusterParameterGroupName: "default.aurora-postgresql14",
         storageEncrypted: true, 
-        clusterIdentifier: getResourceName('substreams_v2'),
+        clusterIdentifier: getResourceName('substreams-v2'),
 
         skipFinalSnapshot: true,
         backupRetentionPeriod: isProduction() ? 7 : 1,
