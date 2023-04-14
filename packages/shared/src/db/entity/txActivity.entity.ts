@@ -5,6 +5,7 @@ import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 import { BaseEntity } from '.'
 
 @Index(['walletAddress', 'timestamp'])
+@Index(['activityType', 'status', 'expiration', 'chainId'])
 @Entity()
 export class TxActivity extends BaseEntity {
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
