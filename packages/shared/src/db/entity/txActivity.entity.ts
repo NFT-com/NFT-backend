@@ -5,10 +5,9 @@ import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 import { BaseEntity } from '.'
 
 @Index(['walletAddress', 'timestamp'])
+@Index(['activityType', 'status', 'expiration', 'chainId'])
 @Entity()
 export class TxActivity extends BaseEntity {
-  // Add composite index on activityType, status, expiration, and chainId
-  @Index(['activityType', 'status', 'expiration', 'chainId'])
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   activityType: ActivityType
 
