@@ -18,10 +18,10 @@ const streamingFast_Key = process.env.STREAMINGFAST_KEY;
 const git_token = process.env.GH_TOKEN; 
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
+const db_host = process.env.DB_HOST; 
 
 
-
-export const createUserData = (dbHost : string) : string => {
+export const createUserData = () : string => {
     const rawUserData : string = `#!/bin/bash
 
 echo "Installing Dev Tools"
@@ -79,9 +79,9 @@ cd substreams-sync
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://app:${db_pass}@${dbHost}/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${dbHost}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Update DB config files..."
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
@@ -93,7 +93,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${dbHost}/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
     
 return Buffer.from(rawUserData).toString("base64");
     
