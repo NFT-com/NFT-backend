@@ -1,4 +1,5 @@
 import * as pulumi from '@pulumi/pulumi';
+import * as aws from "@pulumi/aws";
 
 import * as process from 'process'
 import * as upath from 'upath'
@@ -13,7 +14,7 @@ export type vpcSubnets = {
   privateSubnets: string[]
 }
 
-const pulumiProgram = async (): Promise<Record<string, any> | void> => {
+const rdsStack = async (): Promise<Record<string, any> | void> => {
     const config = new pulumi.Config();
     const stage = getStage();
 
@@ -35,22 +36,48 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
     //createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
     const { main : cluster, host: dbhost} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
-    const dbHost = (await pulumi.Output.fromOutput(dbhost)) as string 
-    const userData = createUserData(dbHost); 
-
-    createEC2Resources(config, subnets, securityGroups.ec2SG, userData );
-
     return {
       dbHost: cluster.endpoint,
-      dbSecurityGroup: securityGroups.rdsSG,
       ec2SecurityGroup: securityGroups.ec2SG 
 
     }
     
   }
-  
+
+const ec2_stack = async (): Promise<Record<string, any> | void> => {
+
+  const config = new pulumi.Config();
+  const stage = getStage();
+
+  const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
+  const rdsStack = new pulumi.StackReference(`${stage}.substreams_rds.us-east-1`)
+
+  const vpc = (await pulumiOutToValue(sharedStack.getOutput('vpcId'))) as string 
+  const publicSubnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
+  const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
+
+  const subnets : vpcSubnets = { publicSubnets : publicSubnets, privateSubnets : privateSubnets}; 
+
+  const zones = config.require('availabilityZones').split(',');
+
+  const dbHost = (await pulumiOutToValue(rdsStack.getOutput('dbHost'))) as string 
+  const ec2SG = (await pulumiOutToValue(rdsStack.getOutput('ec2SecurityGroup'))) as aws.ec2.SecurityGroup
+
+  const userData = createUserData(dbHost); 
+
+  createEC2Resources(config, subnets, ec2SG, userData );
+
+
+}
+
 export const createSubStreams = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
-    const stackName = `${process.env.STAGE}.substreams.${process.env.AWS_REGION}`
+    const stackName = `${process.env.STAGE}.substreams_rds.${process.env.AWS_REGION}`
     const workDir = upath.joinSafe(__dirname, 'stack')
-    return deployInfra(stackName, workDir, pulumiProgram, preview)
+    return deployInfra(stackName, workDir, rdsStack, preview)
+}
+
+export const createSubStreamInstances = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
+  const stackName = `${process.env.STAGE}.substreams_ec2.${process.env.AWS_REGION}`
+  const workDir = upath.joinSafe(__dirname, 'stack')
+  return deployInfra(stackName, workDir, ec2_stack, preview)
 }

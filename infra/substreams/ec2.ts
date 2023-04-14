@@ -22,7 +22,8 @@ const db_host = process.env.DB_HOST;
 
 
 export const createUserData = (db_host: string) : string => {
-    const rawUserData : string = `#!/bin/bash
+    
+    const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
 
@@ -125,45 +126,7 @@ export const createEC2Resources = (
             }],
         }),
     });
-/*    
-    const instanceProfile = () =>
-    {
-    return new aws.iam.InstanceProfile("substreams-instance-profile", {
-        role: role.name,
-    })};
-/*
-    const SubstreamInstance =  new aws.ec2.Instance("sf-substream-instance", {
-        ami: "ami-02f3f602d23f1659d",
-        associatePublicIpAddress: true,
-        instanceType: config.require('ec2InstanceType'),
-        keyName: "ec2-ecs",
-        userData: userData,
-        maintenanceOptions: {
-            autoRecovery: "default",
-        },
-        metadataOptions: {
-            httpEndpoint: "enabled",
-            httpPutResponseHopLimit: 2,
-            httpTokens: "required",
-            instanceMetadataTags: "disabled",
-        },
-        iamInstanceProfile: {
-            name: instanceProfile.name,
-        },
-        rootBlockDevice: {
-            iops: 3000,
-            throughput: 125,
-            volumeSize: 20,
-            volumeType: "gp3",
-        },
-        subnetId: getInstanceSubnet( subnetGroups ),
-        //subnetId: "subnet-05840aae4c820581b",
-        tags: {
-            Name: `${stage}-sf-substreams`,
-        },
-        vpcSecurityGroupIds: [instanceSG.id],
-    });
-*/
+
     const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
         blockDeviceMappings: [{
             deviceName: "/dev/xvda",

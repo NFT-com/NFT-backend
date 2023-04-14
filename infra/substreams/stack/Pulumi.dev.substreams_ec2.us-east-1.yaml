@@ -1,0 +1,3 @@
+encryptionsalt: v1:0v0kTIhe3KQ=:v1:Awt4xsQZfvdcS2Hq:yuQ5UChE5TsTbBe+fPINMgkW/c21qQ==
+config: 
+  nftcom:ec2InstanceType: "t2.medium"
