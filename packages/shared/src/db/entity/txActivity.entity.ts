@@ -7,6 +7,8 @@ import { BaseEntity } from '.'
 @Index(['walletAddress', 'timestamp'])
 @Entity()
 export class TxActivity extends BaseEntity {
+  // Add composite index on activityType, status, expiration, and chainId
+  @Index(['activityType', 'status', 'expiration', 'chainId'])
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
   activityType: ActivityType
 
