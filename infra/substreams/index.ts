@@ -14,11 +14,14 @@ export type vpcSubnets = {
   privateSubnets: string[]
 }
 
+
+
 const rdsStack = async (): Promise<Record<string, any> | void> => {
     const config = new pulumi.Config();
     const stage = getStage();
 
     const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
+
 
     const vpc = (await pulumiOutToValue(sharedStack.getOutput('vpcId'))) as string 
     const publicSubnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
@@ -36,7 +39,9 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
 
     return {
       dbHost: cluster.endpoint,
-      ec2SecurityGroup: securityGroups.ec2SG 
+      ec2SecurityGroup: securityGroups.ec2SG, 
+      sharedStack: pulumi.StackReference
+
 
     }
     
@@ -47,9 +52,9 @@ const ec2_stack = async (): Promise<Record<string, any> | void> => {
   const config = new pulumi.Config();
   const stage = getStage();
 
-  const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
+  //const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
   const rdsStack = new pulumi.StackReference(`${stage}.substreams_rds.us-east-1`)
-
+  const sharedStack = rdsStack.sharedStack; 
   const vpc = (await pulumiOutToValue(sharedStack.getOutput('vpcId'))) as string 
   const publicSubnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
   const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
