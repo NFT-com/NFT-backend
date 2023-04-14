@@ -15,7 +15,7 @@ export type SubstreamRDSOutput = {
 
 //should take in an array of subnets 
 const getSubnetGroup = (subnetGroups: vpcSubnets ): aws.rds.SubnetGroup => {
-    return new aws.rds.SubnetGroup('aurora_subnet_group', {
+    return new aws.rds.SubnetGroup('aurora_subnet_group_v2', {
       name: getResourceName('substreams'),
       subnetIds: isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets,
     })
@@ -37,7 +37,7 @@ const createMain = (
         dbSubnetGroupName: subnetGroup.name,   
         dbClusterParameterGroupName: "default.aurora-postgresql14",
         storageEncrypted: true, 
-        clusterIdentifier: getResourceName('substreams'),
+        clusterIdentifier: getResourceName('substreams_v2'),
 
         skipFinalSnapshot: true,
         backupRetentionPeriod: isProduction() ? 7 : 1,
@@ -57,7 +57,7 @@ const createMain = (
     clusterInstances.push(
         new aws.rds.ClusterInstance(`substreams_main_instance_${i + 1}`, 
         {
-            identifier: getResourceName(`substream-${ i + 1}`),
+            identifier: getResourceName(`substream_v2-${ i + 1}`),
             clusterIdentifier: sf_cluster.id,
             instanceClass: "db.t3.medium",
             engine: engineType,

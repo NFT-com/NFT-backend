@@ -51,7 +51,7 @@ const buildEgressRule = (port: number, protocol = 'tcp'): any => ({
 export const buildSecurityGroups = (config: pulumi.Config, vpc: string): SGOutput => {
 
     const substreams : awsEC2.SecurityGroup = new awsEC2.SecurityGroup('substreams-ec2-sg', {
-        name: getResourceName('streams-instance'),
+        name: getResourceName('streams-instance_v2'),
         description: 'Allow SSH and egress traffic',
         vpcId: vpc, 
         ingress: [buildIngressRule(22)],
@@ -60,7 +60,7 @@ export const buildSecurityGroups = (config: pulumi.Config, vpc: string): SGOutpu
     });
 
     const rds = new awsEC2.SecurityGroup('postgres-sg', {
-        name: getResourceName('substreams-postgres'),
+        name: getResourceName('substreams-postgres_v2'),
         description: 'Allow traffic to Substreams (Postgres) main instance',
         vpcId: vpc,
         ingress: isProduction()
