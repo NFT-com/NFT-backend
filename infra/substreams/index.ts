@@ -54,7 +54,7 @@ const ec2_stack = async (): Promise<Record<string, any> | void> => {
 
   //const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
   const rdsStack = new pulumi.StackReference(`${stage}.substreams_rds.us-east-1`)
-  const sharedStack = rdsStack.sharedStack; 
+  const sharedStack = (await pulumiOutToValue(rdsStack.getOutput('sharedStack'))) as pulumi.StackReference
   const vpc = (await pulumiOutToValue(sharedStack.getOutput('vpcId'))) as string 
   const publicSubnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
   const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
