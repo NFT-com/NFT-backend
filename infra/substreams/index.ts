@@ -4,6 +4,8 @@ import * as aws from "@pulumi/aws";
 import * as process from 'process'
 import * as upath from 'upath'
 
+import axios from 'axios'; 
+
 import { deployInfra, getStage, pulumiOutToValue } from '../helper';
 import { createEC2Resources, createUserData } from './ec2';
 import { createSubstreamClusters } from './rds';
@@ -65,7 +67,10 @@ const ec2_stack = async (): Promise<Record<string, any> | void> => {
   const dbHost = (await pulumiOutToValue(rdsStack.getOutput('dbHost'))) as string 
   const ec2SG = (await pulumiOutToValue(rdsStack.getOutput('ec2SecurityGroup'))) as aws.ec2.SecurityGroup
 
-  const userData = createUserData(dbHost); 
+  const response = await axios.get('https://api.blockcypher.com/v1/eth/main')
+  const latestBlock: number = response.data.height
+
+  const userData = createUserData(dbHost, latestBlock); 
 
   createEC2Resources(config, subnets, ec2SG, userData );
 

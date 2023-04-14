@@ -21,7 +21,7 @@ const db_pass = process.env.DB_PASSWORD;
 const eth_endpoint = process.env.ETH_ENDPOINT; 
 
 
-export const createUserData = (db_host: string) : string => {
+export const createUserData = (db_host: string, latestBlock: number) : string => {
     
     const rawUserData = `#!/bin/bash
 
@@ -91,7 +91,7 @@ export START_BLOCK=$(curl https://api.blockcypher.com/v1/eth/main | jq -r .heigh
 echo "Update DB config files..."
 
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
-sed -i 's/12287507/$START_BLOCK/' docs/nftLoader/substreams.yaml
+sed -i 's/12287507/${latestBlock}/' docs/nftLoader/substreams.yaml
 
 echo "Build Substreams..." 
 cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
