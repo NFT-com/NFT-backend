@@ -33,18 +33,17 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
 
     //createSubstreamInstance(config, subnets, securityGroups.ec2SG);
     //createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
-    const cluster = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
-
-    const subnetHost = (await pulumiOutToValue(cluster.host)) as string; 
-
-    const userData = createUserData(subnetHost); 
+    const { main : cluster, host: dbhost} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+   
+    const userData = createUserData(dbhost); 
 
     createEC2Resources(config, subnets, securityGroups.ec2SG, userData );
 
     return {
-      publicSubnets: publicSubnets,
-      privateSubnets: privateSubnets, 
-      vpc: vpc, 
+      dbHost: cluster.endpoint,
+      dbSecurityGroup: securityGroups.rdsSG,
+      ec2SecurityGroup: securityGroups.ec2SG 
+
     }
     
   }
