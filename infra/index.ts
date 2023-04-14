@@ -62,7 +62,8 @@ const main = async (): Promise<any> => {
   }
 
   if (deploySubstreams){
-    return  createSubStreams(), createSubStreamInstances() 
+    createSubStreams()
+    return createSubStreamInstances() 
   }
 }
 
