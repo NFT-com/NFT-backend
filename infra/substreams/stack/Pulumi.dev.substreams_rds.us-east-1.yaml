@@ -1,1 +1,4 @@
 encryptionsalt: v1:M0eEvC4WgiI=:v1:Sp0DgzEEgvTAgbvK:G9E/cX9ZCtxM8OrS7Umyov6PqY77ng==
+config: 
+  nftcom:ec2InstanceType: "t2.medium"
+  nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
