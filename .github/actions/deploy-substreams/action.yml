@@ -52,4 +52,5 @@ runs:
         GH_TOKEN: ${{ fromJSON(inputs.secrets).GH_TOKEN}}
         GH_USER: ${{ fromJSON(inputs.secrets).GH_USER}}
         STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}
+        ETH_ENDPOINT: ${{ fromJSON(inputs.secrets).ETH_ENDPOINT}}
       run: npm run deploy:substreamsInstance

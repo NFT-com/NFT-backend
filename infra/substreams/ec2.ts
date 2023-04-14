@@ -18,7 +18,7 @@ const streamingFast_Key = process.env.STREAMINGFAST_KEY;
 const git_token = process.env.GH_TOKEN; 
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
-const db_host = process.env.DB_HOST; 
+const eth_endpoint = process.env.ETH_ENDPOINT; 
 
 
 export const createUserData = (db_host: string) : string => {
@@ -67,7 +67,7 @@ go install -v github.com/streamingfast/substreams-sink-postgres/cmd/substreams-s
 
 #Create ENV Vars 
 
-export STREAMINGFAST_KEY=server_02ac495ea6a467b8688c81b4e37ea538
+export STREAMINGFAST_KEY=${streamingFast_Key}
 export SUBSTREAMS_API_TOKEN=$(curl https://auth.streamingfast.io/v1/auth/issue -s --data-binary '{"api_key":"'$STREAMINGFAST_KEY'"}' | jq -r .token)
 
 echo "Getting Substreams code..."
@@ -84,9 +84,14 @@ substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=dis
 
 substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
+echo "Getting Latest block..." 
+
+export START_BLOCK=$(curl https://api.blockcypher.com/v1/eth/main | jq -r .height)
+
 echo "Update DB config files..."
+
 sed -i 's/proto:sf.substreams.database.v1.DatabaseChanges/proto:sf.substreams.sink.database.v1.DatabaseChanges/' docs/nftLoader/substreams.yaml
-sed -i 's/12287507/1000000/' docs/nftLoader/substreams.yaml
+sed -i 's/12287507/$START_BLOCK/' docs/nftLoader/substreams.yaml
 
 echo "Build Substreams..." 
 cd docs/nftLoader && cargo build --target wasm32-unknown-unknown --release
@@ -94,7 +99,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "ec2-50-17-67-217.compute-1.amazonaws.com:9545"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
     
 return Buffer.from(rawUserData).toString("base64");
     
