@@ -33,9 +33,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
 
     //createSubstreamInstance(config, subnets, securityGroups.ec2SG);
     //createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
-    const { main : cluster} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+    const { main : cluster, host: dbhost} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
    
-    const userData = createUserData("foo"); 
+    const userData = createUserData(dbhost); 
 
     createEC2Resources(config, subnets, securityGroups.ec2SG, userData );
 

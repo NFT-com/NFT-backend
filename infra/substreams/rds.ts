@@ -10,7 +10,7 @@ import { vpcSubnets } from "./index";
 
 export type SubstreamRDSOutput = {
     main: aws.rds.Cluster,
-    //host: string
+    host: string
 }
 
 //should take in an array of subnets 
@@ -50,8 +50,6 @@ const createMain = (
 
 
    });
-   const endpoint = pulumi.interpolate`${sf_cluster.endpoint}`; 
-   const endpointStr : string = endpoint.toString()
 
    const numInstances = 1; 
    const clusterInstances: aws.rds.ClusterInstance[] = []; 
@@ -87,6 +85,8 @@ export const createSubstreamClusters = (
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
-    return { main }
+    const endpoint = pulumi.interpolate`${main.endpoint}`; 
+    const endpointStr : string = endpoint.toString()
+    return { main: main, host: endpointStr}
   }
   
