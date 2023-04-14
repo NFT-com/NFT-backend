@@ -51,7 +51,8 @@ const createMain = (
 
    });
    const endpoint = pulumi.interpolate`${sf_cluster.endpoint}`; 
-   const endpointStr : string = endpoint.apply((host: string)  => { return host; })
+   const endpointStr = endpoint.toString().then((myString: string) => {return myString})
+
    const numInstances = 1; 
    const clusterInstances: aws.rds.ClusterInstance[] = []; 
    for (let i = 0; i < numInstances; i++){
