@@ -50,7 +50,7 @@ const createMain = (
 
 
    });
-   const testStr = sf_cluster.endpoint; 
+   const testStr: string = sf_cluster.endpoint; 
    const numInstances = 1; 
    const clusterInstances: aws.rds.ClusterInstance[] = []; 
    for (let i = 0; i < numInstances; i++){
