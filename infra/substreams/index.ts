@@ -27,8 +27,6 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
     const subnets : vpcSubnets = { publicSubnets : publicSubnets, privateSubnets : privateSubnets}; 
 
     const zones = config.require('availabilityZones').split(',');
-    const numSubnets = config.require('numSubnets'); 
-
 
     const securityGroups = buildSecurityGroups(config, vpc)
 
