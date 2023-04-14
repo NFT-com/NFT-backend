@@ -10,7 +10,7 @@ import { vpcSubnets } from "./index";
 
 export type SubstreamRDSOutput = {
     main: aws.rds.Cluster,
-    host: string
+    //host: string
 }
 
 //should take in an array of subnets 
@@ -50,7 +50,7 @@ const createMain = (
 
 
    });
-
+   const testStr = sf_cluster.endpoint; 
    const numInstances = 1; 
    const clusterInstances: aws.rds.ClusterInstance[] = []; 
    for (let i = 0; i < numInstances; i++){
@@ -85,6 +85,6 @@ export const createSubstreamClusters = (
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
-    return { main : main, host: main.endpoint }
+    return { main }
   }
   
