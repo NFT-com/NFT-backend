@@ -14,7 +14,7 @@ import {
   User,
   Wallet,
 } from '@nftcom/gql/defs/gql'
-import { LooksRareOrder } from '@nftcom/gql/service/looksare.service'
+import { LooksRareOrderV2 } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared'
 import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
@@ -250,48 +250,56 @@ export const testSeaportOrder: SeaportOrder = {
   criteria_proof: 'test-criteria-proof',
 }
 
-export const testLooksrareOrder: LooksRareOrder = {
-  hash: 'test-order-hash',
-  collectionAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  tokenId: '1234',
-  isOrderAsk: false,
-  signer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  strategy: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  currencyAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  amount: 10,
-  price: '10',
-  nonce: 'test-nonce',
-  startTime: 12345,
-  endTime: 12345,
-  minPercentageToAsk: 1,
-  params: '',
-  status: '',
-  signature: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  v: 1,
-  r: 'test-r',
-  s: 'test-s',
+export const testLooksrareOrder: LooksRareOrderV2 = {
+  id: 'MTE1MjkyMTUwNDYwNzMyMjI3MA==',
+  hash: '0x7f0e255ba6549b7659daab5a7fd53af386201587677578ccf6ed9366b8a21c1f',
+  quoteType: 1,
+  globalNonce: '0',
+  subsetNonce: '0',
+  orderNonce: '1',
+  collection: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
+  currency: '0x0000000000000000000000000000000000000000',
+  signer: '0x1bb40191Ea73981d70a9e34984ffDeE21C9aFb28',
+  strategyId: 0,
+  collectionType: 0,
+  startTime: 1681432478,
+  endTime: 1683701803,
+  price: '999999999000000000000000000',
+  additionalParameters: '0x',
+  signature:
+    '0x22020d94342e95c432626033a6c96c711687a3a45b2e183b474914f913b9126041b434d4c005e7149575ea2735cdcdf1b1e483dab9f44f3d6d2f3d93243689b81c',
+  createdAt: '2023-04-14T00:34:51.075Z',
+  merkleRoot: null,
+  merkleProof: null,
+  amounts: ['1'],
+  itemIds: ['22557914802386024403611408458836253698893818372889048832761638194692316545090'],
+  status: 'VALID',
 }
 
-export const testLooksrareExistingOrder: LooksRareOrder = {
-  hash: 'test-existing-order-hash',
-  collectionAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  tokenId: '123',
-  isOrderAsk: true,
-  signer: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  strategy: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  currencyAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
-  amount: 10,
-  price: '10',
-  nonce: 'test-nonce',
-  startTime: 12345,
-  endTime: 12345,
-  minPercentageToAsk: 1,
-  params: '',
-  status: '',
-  signature: 'test-signature',
-  v: 1,
-  r: 'test-r',
-  s: 'test-s',
+export const testLooksrareExistingOrder: LooksRareOrderV2 = {
+  id: 'MTE1MjkyMTUwNDYwNjkyMTUyNA==',
+  hash: '0xccfa9b67cb6e776a1407c035495abc6dde2c725cf9d3d30b6c1c1a5c4e0f3d5d',
+  quoteType: 1,
+  globalNonce: '0',
+  subsetNonce: '0',
+  orderNonce: '1',
+  collection: '0xa7Eb348c63460a9D34d57cD88eA3533867fE609d',
+  currency: '0x0000000000000000000000000000000000000000',
+  signer: '0x0c86E2236D906306c3285b0007687dEf48dDe6A2',
+  strategyId: 0,
+  collectionType: 0,
+  startTime: 1681293910,
+  endTime: 1683885874,
+  price: '112312321000000000000000000',
+  additionalParameters: '0x',
+  signature:
+    '0xda8dfc46677b806747bb51efe557d1f6bf7f33c81a5ef25c205e66d9b1e9213506de8eae2959f25ca5f46577edc5cbc88fef5efde1116ceaef5b7b2c91feb1291c',
+  createdAt: '2023-04-12T10:05:17.601Z',
+  merkleRoot: null,
+  merkleProof: null,
+  amounts: ['1'],
+  itemIds: ['38093423117196753485157216434360626443062270068588924154749470557563321843713'],
+  status: 'VALID',
 }
 
 export const testExistingActivity: TxActivity = {

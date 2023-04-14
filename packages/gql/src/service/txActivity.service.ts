@@ -27,7 +27,15 @@ interface TxLooksrareProtocolData {
   collection: string
 }
 
-type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData
+interface TxLooksrareV2ProtocolData {
+  taker: string
+  maker: string
+  strategyId: number
+  currency: string
+  collection: string
+}
+
+type TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxLooksrareV2ProtocolData
 
 const repositories = db.newRepositories()
 
@@ -97,11 +105,11 @@ const seaportOrderBuilder = (order: SeaportOrder): Partial<entity.TxOrder> => {
 }
 
 /**
- * looksrareOrderBuilder
+ * looksrareV2OrderBuilder
  * @param order
  */
 
-const looksrareOrderBuilder = (order: LooksRareOrderV2): Partial<entity.TxOrder> => {
+const looksrareV2OrderBuilder = (order: LooksRareOrderV2): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
     makerAddress: helper.checkSum(order.signer),
@@ -111,8 +119,8 @@ const looksrareOrderBuilder = (order: LooksRareOrderV2): Partial<entity.TxOrder>
     protocolData: {
       ...order,
       signer: helper.checkSum(order.signer),
-      collectionAddress: helper.checkSum(order.collection),
-      currencyAddress: helper.checkSum(order.currency),
+      collection: helper.checkSum(order.collection),
+      currency: helper.checkSum(order.currency),
     },
   }
 }
@@ -192,7 +200,7 @@ export const orderEntityBuilder = async (
       })
       orderEntity = seaportOrderBuilder(seaportOrder)
       break
-    case defs.ProtocolType.LooksRare:
+    case defs.ProtocolType.LooksRareV2:
       looksrareOrder = order as LooksRareOrderV2
       orderHash = looksrareOrder.hash
       walletAddress = helper.checkSum(looksrareOrder.signer)
@@ -200,7 +208,7 @@ export const orderEntityBuilder = async (
       timestampFromSource = Number(looksrareOrder.startTime)
       expirationFromSource = Number(looksrareOrder.endTime)
       nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-      orderEntity = looksrareOrderBuilder(looksrareOrder)
+      orderEntity = looksrareV2OrderBuilder(looksrareOrder)
       break
     case defs.ProtocolType.X2Y2:
       x2y2Order = order as X2Y2Order
@@ -501,6 +509,7 @@ export type TxActivityDAO = entity.TxActivity & { order: entity.TxOrder }
 export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
   switch (listing?.order?.protocol) {
     case defs.ProtocolType.LooksRare:
+    case defs.ProtocolType.LooksRareV2:
     case defs.ProtocolType.X2Y2: {
       const order = listing?.order?.protocolData
       return BigNumber.from(order?.price || 0)
@@ -522,6 +531,7 @@ export const getListingPrice = (listing: TxActivityDAO): BigNumber => {
 export const getListingCurrencyAddress = (listing: TxActivityDAO): string => {
   switch (listing?.order?.protocol) {
     case defs.ProtocolType.LooksRare:
+    case defs.ProtocolType.LooksRareV2:
     case defs.ProtocolType.X2Y2: {
       const order = listing?.order?.protocolData
       return order?.currencyAddress ?? order?.['currency']

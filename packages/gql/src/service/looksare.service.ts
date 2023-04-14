@@ -49,7 +49,7 @@ export interface LooksRareOrderV2 {
   collection: string
   currency: string
   signer: string
-  strategy: number
+  strategyId: number
   collectionType: number
   startTime: number
   endTime: number
@@ -141,7 +141,7 @@ const retrieveLooksRareOrdersInBatches = async (
       if (queryUrl.includes('quoteType=1')) {
         listings.push(
           orderEntityBuilder(
-            defs.ProtocolType.LooksRare,
+            defs.ProtocolType.LooksRareV2,
             defs.ActivityType.Listing,
             orders[0],
             chainId,
@@ -151,7 +151,7 @@ const retrieveLooksRareOrdersInBatches = async (
       } else {
         offers.push(
           orderEntityBuilder(
-            defs.ProtocolType.LooksRare,
+            defs.ProtocolType.LooksRareV2,
             defs.ActivityType.Bid,
             orders?.[0],
             chainId,
@@ -231,7 +231,7 @@ export const createLooksrareListing = async (
     const res = await getLooksRareInterceptor(baseUrl, chainId).post('/orders', JSON.parse(order))
     if (res.status === 201 && res.data.data) {
       looksrareOrder = await orderEntityBuilder(
-        defs.ProtocolType.LooksRare,
+        defs.ProtocolType.LooksRareV2,
         defs.ActivityType.Listing,
         res.data.data,
         chainId,
