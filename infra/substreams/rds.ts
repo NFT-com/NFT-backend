@@ -57,7 +57,7 @@ const createMain = (
     clusterInstances.push(
         new aws.rds.ClusterInstance(`substreams_main_instance_${i + 1}`, 
         {
-            identifier: getResourceName(`substream_v2-${ i + 1}`),
+            identifier: getResourceName(`substream-v2-${ i + 1}`),
             clusterIdentifier: sf_cluster.id,
             instanceClass: "db.t3.medium",
             engine: engineType,
