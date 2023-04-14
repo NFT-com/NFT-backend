@@ -29,7 +29,7 @@ runs:
       working-directory: infra
       shell: bash
       run: npm install
-    - name: Deploy Cronjob Infra
+    - name: Deploy Substreams RDS
       shell: bash
       working-directory: infra
       env:
@@ -41,3 +41,15 @@ runs:
         GH_USER: ${{ fromJSON(inputs.secrets).GH_USER}}
         STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}
       run: npm run deploy:substreams
+    - name: Deploy Substreams EC2
+      shell: bash
+      working-directory: infra
+      env:
+        STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+        DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD}}
+        GH_TOKEN: ${{ fromJSON(inputs.secrets).GH_TOKEN}}
+        GH_USER: ${{ fromJSON(inputs.secrets).GH_USER}}
+        STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}
+      run: npm run deploy:substreamsInstance

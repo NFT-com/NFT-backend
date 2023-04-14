@@ -4,7 +4,8 @@
     "deploy:shared": "ts-node index.ts deploy:shared",
     "deploy:gql": "ts-node index.ts deploy:gql",
     "deploy:cronjobs": "ts-node index.ts deploy:cronjobs",
-    "deploy:substreams": "ts-node index.ts deploy:substreams"
+    "deploy:substreams": "ts-node index.ts deploy:substreams",
+    "deploy:substreamsInstance": "ts-node index.ts deploy:substreamsInstance"
   },
   "dependencies": {
     "@actions/core": "^1.6.0",

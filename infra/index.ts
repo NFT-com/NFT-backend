@@ -46,6 +46,7 @@ const main = async (): Promise<any> => {
   const deployGQL = args?.[0] === 'deploy:gql' || false
   const deployCronjobs = args?.[0] === 'deploy:cronjobs' || false
   const deploySubstreams = args?.[0] === 'deploy:substreams' || false
+  const deploySubstreamsInstance = args?.[0] === 'deploy:substreamsInstance' || false
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 
@@ -63,6 +64,9 @@ const main = async (): Promise<any> => {
 
   if (deploySubstreams){
     return createSubStreams()
+  }
+  if (deploySubstreamsInstance){
+    return createSubStreamInstances() 
   }
 }
 
