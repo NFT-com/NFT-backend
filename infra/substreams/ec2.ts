@@ -3,11 +3,8 @@ import * as aws from "@pulumi/aws";
 
 import * as process from 'process'
 
-import { SharedInfraOutput } from '../defs'
 import { getStage, isProduction } from '../helper'
-
 import { vpcSubnets } from "./index";
-import { SubstreamRDSOutput } from "./rds"; 
 
 export type EC2Output = {
     instance: aws.ec2.Instance,
@@ -19,7 +16,7 @@ const git_token = process.env.GH_TOKEN;
 const git_user = process.env.GH_USER; 
 const db_pass = process.env.DB_PASSWORD; 
 const eth_endpoint = process.env.ETH_ENDPOINT; 
-
+const dd_api = process.env.DATADOG_API_KEY; 
 
 export const createUserData = (db_host: string, latestBlock: number) : string => {
     
@@ -99,7 +96,27 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &`;
+nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+
+DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+
+sudo chmod 777 /tmp/substreams.log
+sudo chown dd-agent:dd-agent /tmp/substreams.log
+
+sudo mkdir /etc/datadog-agent/conf.d/substreams.d
+
+cat > 'conf.yaml' <<-EOF
+logs:
+  - type: file
+    path: /tmp/substreams.log
+    service: substreams
+    source: substreams
+EOF
+
+sudo cp conf.yaml /etc/datadog-agent/conf.d/substreams.d
+echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
+
+sudo service datadog-agent restart`;
     
 return Buffer.from(rawUserData).toString("base64");
     
