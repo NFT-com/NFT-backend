@@ -111,3 +111,27 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
+  deploy-staging-substreams:
+    needs: deployment-triggers
+    if: ${{ (github.ref_name == 'main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'staging'))) && needs.deployment-triggers.outputs.substreams-changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_dev_streamingfast
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-substreams
+        name: Deploy Substreams [Staging] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: staging
+  deploy-prod-substreams:
+    needs: deployment-triggers
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'substream') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_dev_streamingfast
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-substreams
+        name: Deploy Substreams [Prod] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: prod
