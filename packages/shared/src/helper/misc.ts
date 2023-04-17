@@ -550,7 +550,8 @@ export const generateSlug = ({
   value,
   options = {
     lower: true,
-    remove: /[*+~.()'"!:@]/g,
+    remove: /[^A-z\s\d][\\^]?/g,
+    strict: true,
   },
 }: {
   value: string
@@ -558,7 +559,7 @@ export const generateSlug = ({
     | {
         /** string to replace the removed characters with (default is '-') */
         replacement?: string
-        /** RegExp to remove characters (default is /[*+~.()'"!:@]/g) */
+        /** RegExp to remove characters (default is /[^A-z\s\d][\\^]?/g) */
         remove?: RegExp
         /** boolean to convert the slug to lowercase (default is true) */
         lower?: boolean

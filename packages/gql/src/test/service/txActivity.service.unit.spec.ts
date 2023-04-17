@@ -54,15 +54,15 @@ describe('txActivity service', () => {
 
     it('it builds looksrare order entity correctly', async () => {
       const order: Partial<entity.TxOrder> = await testActivityService.orderEntityBuilder(
-        ProtocolType.LooksRare,
+        ProtocolType.LooksRareV2,
         ActivityType.Bid,
         testLooksrareOrder,
         '4',
-        testLooksrareOrder.collectionAddress,
+        testLooksrareOrder.collection,
       )
       expect(order.id).toBe(testLooksrareOrder.hash)
       expect(order.activity.activityType).toBe(ActivityType.Bid)
-      expect(order.protocol).toBe(ProtocolType.LooksRare)
+      expect(order.protocol).toBe(ProtocolType.LooksRareV2)
       expect(order.exchange).toBe(ExchangeType.LooksRare)
     })
 
@@ -75,17 +75,17 @@ describe('txActivity service', () => {
       activity.walletAddress = '0x47D3ceD01EF669eF085e041f94820EbE368bF27e'
       activity.chainId = '4'
       activity.nftId = [
-        `ethereum/${testLooksrareExistingOrder.collectionAddress}/${testLooksrareExistingOrder.tokenId}`,
+        `ethereum/${testLooksrareExistingOrder.collection}/${testLooksrareExistingOrder.itemIds[0]}`,
       ]
 
       const savedActivity: entity.TxActivity = await repositories.txActivity.save(activity)
 
       const order: Partial<entity.TxOrder> = await testActivityService.orderEntityBuilder(
-        ProtocolType.LooksRare,
+        ProtocolType.LooksRareV2,
         ActivityType.Listing,
         testLooksrareExistingOrder,
         '4',
-        testLooksrareExistingOrder.collectionAddress,
+        testLooksrareExistingOrder.collection,
       )
 
       expect(order.activity.id).toBe(savedActivity.id)
@@ -105,7 +105,7 @@ describe('txActivity service', () => {
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
         ExchangeType.LooksRare,
-        ProtocolType.LooksRare,
+        ProtocolType.LooksRareV2,
         {
           taker: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
           maker: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',

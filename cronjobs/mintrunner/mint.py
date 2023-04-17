@@ -80,7 +80,7 @@ else:
 
 # update analytics database, mint table with stats
 tableName = os.getenv('MINT_TABLE_NAME') # using 1 db, so diff table name per env
-dbConn = psycopg2.connect(database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), host=os.getenv('DB_HOST'), port='5432')
+dbConn = psycopg2.connect(database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT')))
 dbCur = dbConn.cursor()
 dbCur.execute("INSERT into " + tableName + " (freeMints,usedMints,gkInCirculation,gkUnclaimed,treasuryUnclaimed,insiderUnclaimed,publicmints) VALUES (%s,%s,%s,%s,%s,%s,%s)",(unmintedProfiles,mintedProfiles,gkInCirculation,gkOwned,treasuryOwned,insiderOwned,publicProfileCount))
 dbConn.commit()

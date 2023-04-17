@@ -112,6 +112,7 @@ export enum ExchangeType {
 export enum ProtocolType {
   Seaport = 'Seaport',
   LooksRare = 'LooksRare',
+  LooksRareV2 = 'LooksRareV2',
   X2Y2 = 'X2Y2',
   NFTCOM = 'NFTCOM',
 }

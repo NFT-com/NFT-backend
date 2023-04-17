@@ -3,17 +3,21 @@ import { Pool } from 'pg'
 import { DataSource } from 'typeorm'
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions'
 
-import { _logger, helper } from '../helper'
+import { _logger } from '../helper'
 import * as entity from './entity'
 import * as repo from './repository'
 
 const { DB_HOST, DB_HOST_RO } = process.env
 
-const DB_USE_SSL = 'true'
 const logger = _logger.Factory(_logger.Context.General)
+
+const { DB_PORT, DB_USE_SSL } = ['development', 'staging', 'production'].includes(process.env.NODE_ENV)
+  ? { DB_PORT: 5432, DB_USE_SSL: true }
+  : { DB_PORT: 10030, DB_USE_SSL: false }
 
 let connection: DataSource
 let readOnlyConnection: DataSource
+
 export const getDataSource = (isReadOnly?: boolean): DataSource => {
   if (isReadOnly) {
     if (!readOnlyConnection) {
@@ -41,10 +45,11 @@ export const getPgClient = (isReadOnly?: boolean): Pool => {
   }
   return pgClient
 }
+
 export const connectPg = async (): Promise<void> => {
   if (pgClient) return
 
-  const ssl = helper.parseBoolean(DB_USE_SSL)
+  const ssl = DB_USE_SSL
     ? {
         ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
         rejectUnauthorized: DB_HOST !== 'localhost',
@@ -56,7 +61,7 @@ export const connectPg = async (): Promise<void> => {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_DATABASE || 'app',
-    port: 5432,
+    port: DB_PORT,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -67,7 +72,7 @@ export const connectPg = async (): Promise<void> => {
     password: process.env.DB_PASSWORD || 'password',
     host: process.env.DB_HOST_RO || 'localhost',
     database: process.env.DB_DATABASE || 'app',
-    port: 5432,
+    port: DB_PORT,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -75,7 +80,7 @@ export const connectPg = async (): Promise<void> => {
 }
 
 export const connectTestPg = async (): Promise<void> => {
-  const ssl = helper.parseBoolean(DB_USE_SSL)
+  const ssl = DB_USE_SSL
     ? {
         ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
         rejectUnauthorized: process.env.TEST_DB_HOST !== 'localhost',
@@ -87,7 +92,7 @@ export const connectTestPg = async (): Promise<void> => {
     password: process.env.TEST_DB_PASSWORD || 'password',
     host: process.env.TEST_DB_HOST || 'localhost',
     database: process.env.TEST_DB_DATABASE || 'app',
-    port: 5432,
+    port: DB_PORT,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -98,7 +103,7 @@ export const connectTestPg = async (): Promise<void> => {
     password: process.env.TEST_DB_PASSWORD || 'password',
     host: process.env.TEST_DB_HOST || 'localhost',
     database: process.env.TEST_DB_DATABASE || 'app',
-    port: 5432,
+    port: DB_PORT,
     ssl,
     max: 20,
     application_name: 'gql',
@@ -115,7 +120,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     return
   }
 
-  const ssl = helper.parseBoolean(DB_USE_SSL)
+  const ssl = DB_USE_SSL
     ? {
         ca: fs.readFileSync(`${__dirname}/rds-combined-ca-bundle.cer`).toString(),
         rejectUnauthorized: DB_HOST !== 'localhost',
@@ -162,6 +167,7 @@ export const connect = async (dbConfig: Partial<PostgresConnectionOptions>): Pro
     logging: dbConfig.logging,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
+    subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`],
     ssl,
     entities,
   })
@@ -206,6 +212,7 @@ export const connectTestDB = async (dbConfig: Partial<PostgresConnectionOptions>
     synchronize: false,
     migrationsRun: true,
     migrations: [`${__dirname}/migration/*.ts`, `${__dirname}/migration/*.js`],
+    // subscribers: [`${__dirname}/subscriber/*.subscriber.ts`, `${__dirname}/subscriber/*.subscriber.js`], // TODO: Add test mocks for subscribers
     ssl: false,
     entities: [`${__dirname}/entity/*.entity.ts`],
     dropSchema: true,

@@ -5,8 +5,8 @@ import { delay } from '@nftcom/gql/service/core.service'
 import { orderEntityBuilder } from '@nftcom/gql/service/txActivity.service'
 import { _logger, defs, entity } from '@nftcom/shared'
 
-const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v1'
-const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-goerli.looksrare.org/api/v1'
+const LOOKSRARE_API_BASE_URL = 'https://api.looksrare.org/api/v2'
+const LOOKSRARE_API_TESTNET_BASE_URL = 'https://api-goerli.looksrare.org/api/v2'
 const LOOKSRARE_LISTING_BATCH_SIZE = 4
 const LOOKSRARE_API_KEY = process.env.LOOKSRARE_API_KEY
 
@@ -37,6 +37,34 @@ export interface LooksRareOrder {
   v: number
   r: string
   s: string
+}
+
+export interface LooksRareOrderV2 {
+  id: string
+  hash: string
+  quoteType: number
+  globalNonce: string
+  subsetNonce: string
+  orderNonce: string
+  collection: string
+  currency: string
+  signer: string
+  strategyId: number
+  collectionType: number
+  startTime: number
+  endTime: number
+  price: string
+  additionalParameters: string
+  signature: string
+  createdAt: string
+  merkleRoot: string
+  merkleProof: {
+    position: number
+    value: string
+  }[]
+  amounts: string[]
+  itemIds: string[]
+  status: string
 }
 
 export interface LooksrareExternalOrder {
@@ -110,24 +138,24 @@ const retrieveLooksRareOrdersInBatches = async (
 
     if (response?.data?.data?.length) {
       const orders = response?.data?.data
-      if (queryUrl.includes('isOrderAsk=true')) {
+      if (queryUrl.includes('quoteType=1')) {
         listings.push(
           orderEntityBuilder(
-            defs.ProtocolType.LooksRare,
+            defs.ProtocolType.LooksRareV2,
             defs.ActivityType.Listing,
             orders[0],
             chainId,
-            orders[0]?.collectionAddress,
+            orders[0]?.collection,
           ),
         )
       } else {
         offers.push(
           orderEntityBuilder(
-            defs.ProtocolType.LooksRare,
+            defs.ProtocolType.LooksRareV2,
             defs.ActivityType.Bid,
             orders?.[0],
             chainId,
-            orders[0]?.collectionAddress,
+            orders[0]?.collection,
           ),
         )
       }
@@ -166,11 +194,11 @@ export const retrieveMultipleOrdersLooksrare = async (
       const orderQueries: Array<string> = []
       for (const looksrareReq of looksrareMultiOrderRequest) {
         orderQueries.push(
-          `isOrderAsk=true&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_ASC`,
+          `quoteType=1&collection=${looksrareReq.contract}&itemId=${looksrareReq.tokenId}&status=VALID&sort=PRICE_ASC`,
         )
         if (includeOffers) {
           orderQueries.push(
-            `isOrderAsk=false&collection=${looksrareReq.contract}&tokenId=${looksrareReq.tokenId}&status[]=VALID&sort=PRICE_DESC`,
+            `quoteType=0&collection=${looksrareReq.contract}&itemId=${looksrareReq.tokenId}&status=VALID&sort=PRICE_DESC`,
           )
         }
       }
@@ -203,11 +231,11 @@ export const createLooksrareListing = async (
     const res = await getLooksRareInterceptor(baseUrl, chainId).post('/orders', JSON.parse(order))
     if (res.status === 201 && res.data.data) {
       looksrareOrder = await orderEntityBuilder(
-        defs.ProtocolType.LooksRare,
+        defs.ProtocolType.LooksRareV2,
         defs.ActivityType.Listing,
         res.data.data,
         chainId,
-        res.data.data.collectionAddress,
+        res.data.data.collection,
       )
       return looksrareOrder
     }

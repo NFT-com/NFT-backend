@@ -434,7 +434,7 @@ const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Cont
     sortedActivities.map(activity => {
       indexedActivities.push({
         index,
-        ...activity,
+        ...activity as gql.TxActivity,
       })
       index++
     })
@@ -502,6 +502,10 @@ export default {
   },
   ProtocolData: {
     __resolveType(obj) {
+      if (obj.globalNonce) {
+        return 'LooksrareV2ProtocolData'
+      }
+
       if (obj.signer) {
         return 'LooksrareProtocolData'
       }
@@ -519,6 +523,10 @@ export default {
   },
   TxProtocolData: {
     __resolveType(obj) {
+      if (obj.globalNonce) {
+        return 'TxLooksrareV2ProtocolData'
+      }
+
       if (obj.signer) {
         return 'TxLooksrareProtocolData'
       }
