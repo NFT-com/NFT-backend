@@ -83,6 +83,8 @@ runs:
         MNEMONIC_RINKEBY: ${{ fromJSON(inputs.secrets).MNEMONIC_RINKEBY }}
         HCS_TOPIC_ID: ${{ fromJSON(inputs.secrets).HCS_TOPIC_ID }}
         HCS_ENABLED: ${{ fromJSON(inputs.secrets).HCS_ENABLED }}
+        USE_STREAMING_FAST: ${{ fromJSON(inputs.secrets).USE_STREAMING_FAST }}
+        STREAMING_FAST_CONNECTION_STRING: ${{ fromJSON(inputs.secrets).STREAMING_FAST_CONNECTION_STRING }}
         HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
         HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
         INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
