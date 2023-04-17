@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { BeforeInsert, CreateDateColumn, DeleteDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm'
+import { BeforeInsert, CreateDateColumn, DeleteDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity()
 export class BaseEntity {
@@ -12,6 +12,7 @@ export class BaseEntity {
   @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date
 
+  @Index() // Add index on deletedAt column
   @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt?: Date
 
