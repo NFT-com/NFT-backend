@@ -11,16 +11,16 @@ export type EC2Output = {
     template: aws.ec2.LaunchTemplate,
 }
 
-const streamingFast_Key = process.env.STREAMINGFAST_KEY;
-const git_token = process.env.GH_TOKEN; 
-const git_user = process.env.GH_USER; 
-const db_pass = process.env.DB_PASSWORD; 
-const eth_endpoint = process.env.ETH_ENDPOINT; 
-const dd_api = process.env.DATADOG_API_KEY; 
-const substreams_flags = isProduction() ? "-p" : ""; 
+
 
 export const createUserData = (db_host: string, latestBlock: number) : string => {
-    
+    const streamingFast_Key = process.env.STREAMINGFAST_KEY;
+    const git_token = process.env.GH_TOKEN; 
+    const git_user = process.env.GH_USER; 
+    const db_pass = process.env.DB_PASSWORD; 
+    const eth_endpoint = process.env.ETH_ENDPOINT; 
+    const dd_api = process.env.DATADOG_API_KEY; 
+    const substreams_flags = isProduction() ? "-p" : ""; 
     const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
