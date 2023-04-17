@@ -5,6 +5,7 @@ import genesisKeyABIJSON from '@nftcom/shared/helper/abis/GenesisKey.json'
 import genKeyClaimABIJSON from '@nftcom/shared/helper/abis/GenesisKeyDistributor.json'
 import genKeyStakeABIJSON from '@nftcom/shared/helper/abis/GenesisNftStake.json'
 import looksrareExchangeABIJSON from '@nftcom/shared/helper/abis/LooksrareExchange.json'
+import looksrareProtocolABIJSON from '@nftcom/shared/helper/abis/LooksrareProtocol.json'
 import marketplaceEventABIJSON from '@nftcom/shared/helper/abis/MarketplaceEvent.json'
 import merkleAirdropABIJSON from '@nftcom/shared/helper/abis/MerkleDistributor.json'
 import Multicall2ABIJSON from '@nftcom/shared/helper/abis/Multicall2.json'
@@ -230,6 +231,20 @@ export function looksrareExchangeAddress(chainId: string | number = 'mainnet'): 
   }
 }
 
+// looksrare protocol (v2)
+export function looksrareProtocolAddress(chainId: string | number = 'mainnet'): string {
+  switch (chainId) {
+    case '5':
+    case 'goerli':
+    case 5:
+      return utils.getAddress('0x35C2215F2FFe8917B06454eEEaba189877F200cf')
+    case '1':
+    case 1:
+    case 'mainnet':
+      return utils.getAddress('0x0000000000E655fAe4d56241588680F86E3b2377')
+  }
+}
+
 // opensea seaport 1.1
 export function openseaSeaportAddress(chainId: string | number = 'mainnet'): string {
   switch (chainId) {
@@ -319,6 +334,10 @@ export function genKeyClaimABI(): any {
 
 export function looksrareExchangeABI(): any {
   return looksrareExchangeABIJSON
+}
+
+export function looksrareProtocolABI(): any {
+  return looksrareProtocolABIJSON
 }
 
 export function openseaSeaportABI(): any {

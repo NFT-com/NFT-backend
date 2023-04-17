@@ -2,6 +2,7 @@
 enum ProtocolType {
   Seaport
   LooksRare
+  LooksRareV2
   X2Y2
   NFTCOM
 }
@@ -84,6 +85,36 @@ type LooksrareProtocolData {
   s: String
 }
 
+type LooksrareMerkleProof {
+  position: Int
+  value: String
+}
+
+type LooksrareV2ProtocolData {
+  id: String
+  hash: String
+  quoteType: Int
+  globalNonce: String
+  subsetNonce: String
+  orderNonce: String
+  collection: String
+  currency: String
+  signer: String
+  strategyId: Int
+  collectionType: Int
+  startTime: Int
+  endTime: Int
+  price: String
+  additionalParameters: String
+  signature: String
+  createdAt: String
+  merkleRoot: String
+  merkleProof: [LooksrareMerkleProof]
+  amounts: [String]
+  itemIds: [String]
+  status: String
+}
+
 type X2Y2ProtocolData {
   side: Int
   type: String
@@ -120,7 +151,11 @@ type NFTCOMProtocolData {
   end: Int
 }
 
-union ProtocolData = SeaportProtocolData | LooksrareProtocolData | X2Y2ProtocolData | NFTCOMProtocolData
+union ProtocolData = SeaportProtocolData
+  | LooksrareProtocolData
+  | LooksrareV2ProtocolData
+  | X2Y2ProtocolData
+  | NFTCOMProtocolData
 
 type TxSeaportProtocolData {
   offer: [SeaportOffer]
@@ -144,6 +179,31 @@ type TxLooksrareProtocolData {
   v: String
   r: String
   s: String
+}
+
+type TxLooksrareV2ProtocolData {
+  id: String
+  hash: String
+  quoteType: Int
+  globalNonce: String
+  subsetNonce: String
+  orderNonce: String
+  collection: String
+  currency: String
+  signer: String
+  strategyId: Int
+  collectionType: Int
+  startTime: Int
+  endTime: Int
+  price: String
+  additionalParameters: String
+  signature: String
+  createdAt: String
+  merkleRoot: String
+  merkleProof: [LooksrareMerkleProof]
+  amounts: [String]
+  itemIds: [String]
+  status: String
 }
 
 type TxX2Y2OrderItem {
@@ -201,7 +261,11 @@ type TxNFTCOMProtocolData {
 
 
 
-union TxProtocolData = TxSeaportProtocolData | TxLooksrareProtocolData | TxX2Y2ProtocolData | TxNFTCOMProtocolData
+union TxProtocolData = TxSeaportProtocolData
+  | TxLooksrareProtocolData
+  | TxLooksrareV2ProtocolData
+  | TxX2Y2ProtocolData
+  | TxNFTCOMProtocolData
 
 type TxActivity {
   id: ID!
