@@ -17,7 +17,7 @@ const git_user = process.env.GH_USER;
 const db_pass = process.env.DB_PASSWORD; 
 const eth_endpoint = process.env.ETH_ENDPOINT; 
 const dd_api = process.env.DATADOG_API_KEY; 
-const substreams_flags = "- p"; 
+const substreams_flags = ""; 
 
 export const createUserData = (db_host: string, latestBlock: number) : string => {
     
