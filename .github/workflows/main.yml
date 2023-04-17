@@ -6,6 +6,7 @@ jobs:
     outputs:
       gql-changed: ${{ steps.filter.outputs.gql }}
       cronjobs-changed: ${{ steps.filter.outputs.cronjobs }}
+      substreams-changed: ${{ steps.filter.outputs.substreams }}
     steps:
     - uses: actions/checkout@v3
     - uses: dorny/paths-filter@v2
@@ -26,6 +27,8 @@ jobs:
           cronjobs:
             - 'cronjobs/**'
             - 'infra/cronjobs/**'
+          substreams: 
+            - 'infra/substreams/**'
   deploy-dev:
     needs: deployment-triggers
     if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
@@ -96,3 +99,15 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
+  deploy-dev-substreams:
+    needs: deployment-triggers
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.substreams-changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_dev_streamingfast
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-substreams
+        name: Deploy Substreams [Dev] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: dev
