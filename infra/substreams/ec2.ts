@@ -17,6 +17,7 @@ const git_user = process.env.GH_USER;
 const db_pass = process.env.DB_PASSWORD; 
 const eth_endpoint = process.env.ETH_ENDPOINT; 
 const dd_api = process.env.DATADOG_API_KEY; 
+const substreams_flags = "- p"; 
 
 export const createUserData = (db_host: string, latestBlock: number) : string => {
     
@@ -71,9 +72,9 @@ echo "Getting Substreams code..."
 
 #Download NFT substreams code 
 
-git clone https://${git_user}:${git_token}@github.com/NFT-com/substreams-sync.git
+git clone https://${git_user}:${git_token}@github.com/NFT-com/nft-backend.git
 
-cd substreams-sync
+cd nft-backend/packages/substreams
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
@@ -96,7 +97,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run ${substreams_flags}     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
