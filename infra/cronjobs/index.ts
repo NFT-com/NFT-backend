@@ -43,11 +43,9 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   // END: CRONJOB - SALES PROCESSOR
 
   // START: CRONJOB - COLLECTION STATS
-  if (stage !== 'dev') {
-    const csTask = createCollectionStatsTaskDefinition()
-    const csCluster = createCollectionStatsEcsCluster()
-    createCollectionStatsEventBridgeTarget(csTask, subnets, internalEcsSGId, csCluster)
-  }
+  const csTask = createCollectionStatsTaskDefinition()
+  const csCluster = createCollectionStatsEcsCluster()
+  createCollectionStatsEventBridgeTarget(csTask, subnets, internalEcsSGId, csCluster)
   // END: CRONJOB - COLLECTION STATS
   // START: CRONJOB - MONITOR/HIDDEN NFTS
   if (isProduction()) {
