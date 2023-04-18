@@ -35,12 +35,9 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
 
     const securityGroups = buildSecurityGroups(config, vpc)
 
-    //createSubstreamInstance(config, subnets, securityGroups.ec2SG);
-    //createSubstreamLaunchTemplate(config, subnets, securityGroups.ec2SG);
-    const { main : cluster, host: dbhost} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+    const { main : cluster} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
     return {
-      dbHost: cluster.endpoint,
       ec2SecurityGroup: securityGroups.ec2SG, 
       sharedStack: pulumi.StackReference
 
@@ -56,13 +53,11 @@ const ec2_stack = async (): Promise<Record<string, any> | void> => {
 
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
   const rdsStack = new pulumi.StackReference(`${stage}.substreams_rds.us-east-1`)
-  const vpc = (await pulumiOutToValue(sharedStack.getOutput('vpcId'))) as string 
   const publicSubnets = (await pulumiOutToValue(sharedStack.getOutput('publicSubnetIds'))) as string[]
   const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
 
   const subnets : vpcSubnets = { publicSubnets : publicSubnets, privateSubnets : privateSubnets}; 
 
-  const zones = config.require('availabilityZones').split(',');
 
   const dbHost = (await pulumiOutToValue(rdsStack.getOutput('dbHost'))) as string 
   const ec2SG = (await pulumiOutToValue(rdsStack.getOutput('ec2SecurityGroup'))) as aws.ec2.SecurityGroup
