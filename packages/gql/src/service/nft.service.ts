@@ -117,15 +117,15 @@ export interface AlchemyNFTMetaDataResponse {
     gateway: string
     raw: string
   }
-  media?: {
-    uri?: {
+  media?: [
+    {
       gateway?: string
       thumbnail?: string
       raw?: string
       format?: string
       bytes?: number
     }
-  }
+  ]
   metadata?: {
     name?: string
     image?: string
