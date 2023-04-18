@@ -5,8 +5,8 @@ import * as pulumi from '@pulumi/pulumi'
 import { getResourceName, isNotEmpty, isProduction } from '../helper'
 
 export type SGOutput = {
-    ec2SG: awsEC2.SecurityGroup,
-    rdsSG: awsEC2.SecurityGroup
+  ec2SG: awsEC2.SecurityGroup
+  rdsSG: awsEC2.SecurityGroup
 }
 
 const buildIngressRule = (
@@ -49,30 +49,24 @@ const buildEgressRule = (port: number, protocol = 'tcp'): any => ({
 })
 
 export const buildSecurityGroups = (config: pulumi.Config, vpc: string): SGOutput => {
+  const substreams: awsEC2.SecurityGroup = new awsEC2.SecurityGroup('substreams-ec2-sg', {
+    name: getResourceName('streams-instance_v2'),
+    description: 'Allow SSH and egress traffic',
+    vpcId: vpc,
+    ingress: [buildIngressRule(22)],
+    egress: [buildEgressRule(0, '-1')],
+  })
 
-    const substreams : awsEC2.SecurityGroup = new awsEC2.SecurityGroup('substreams-ec2-sg', {
-        name: getResourceName('streams-instance_v2'),
-        description: 'Allow SSH and egress traffic',
-        vpcId: vpc, 
-        ingress: [buildIngressRule(22)],
-        egress: [buildEgressRule(0, '-1')]
-        
-    });
+  const rds = new awsEC2.SecurityGroup('postgres-sg', {
+    name: getResourceName('substreams-postgres_v2'),
+    description: 'Allow traffic to Substreams (Postgres) main instance',
+    vpcId: vpc,
+    ingress: isProduction() ? [buildIngressRule(5432, 'tcp', [substreams.id])] : [buildIngressRule(5432)],
+    egress: [buildEgressRule(5432)],
+  })
 
-    const rds = new awsEC2.SecurityGroup('postgres-sg', {
-        name: getResourceName('substreams-postgres_v2'),
-        description: 'Allow traffic to Substreams (Postgres) main instance',
-        vpcId: vpc,
-        ingress: isProduction()
-          ? [
-              buildIngressRule(5432, 'tcp', [substreams.id]),
-            ]
-          : [buildIngressRule(5432)],
-        egress: [buildEgressRule(5432)],
-      });
-
-      return {
-        ec2SG: substreams,
-        rdsSG: rds
-      }
+  return {
+    ec2SG: substreams,
+    rdsSG: rds,
+  }
 }
