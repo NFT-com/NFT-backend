@@ -1085,7 +1085,10 @@ export const fetchDataUsingMulticall = async (
             logger.debug(`fetchDataUsingMulticall decodedResult: ${JSON.stringify(decodedResult)}`)
           } catch (innerErr) {
             // Handle errors that may occur during string decoding
-            logger.error({ innerErr, result }, `fetchDataUsingMulticall unable to decode inner result for ${calls[i].name}`)
+            logger.error(
+              { innerErr, result },
+              `fetchDataUsingMulticall unable to decode inner result for ${calls[i].name}`,
+            )
             return undefined
           }
           return decodedResult
