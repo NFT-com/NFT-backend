@@ -31,11 +31,12 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
 
   const securityGroups = buildSecurityGroups(config, vpc)
 
-  createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+  const substream_cluster = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
     return {
       ec2SecurityGroup: securityGroups.ec2SG, 
-      sharedStack: pulumi.StackReference
+      sharedStack: pulumi.StackReference,
+      dbHost: substream_cluster.main.endpoint 
   }
 }
 const ec2_stack = async (): Promise<Record<string, any> | void> => {

@@ -136,21 +136,6 @@ export const createEC2Resources = (
     return subnetGroup[0]
   }
 
-  const role = new aws.iam.Role(`substreams-role`, {
-    assumeRolePolicy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Principal: {
-            Service: 'ec2.amazonaws.com',
-          },
-          Action: 'sts:AssumeRole',
-        },
-      ],
-    }),
-  })
-
   const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate('sf-substream-launch-template', {
     blockDeviceMappings: [
       {
