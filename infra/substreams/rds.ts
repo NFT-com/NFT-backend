@@ -2,15 +2,12 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 import { EngineType } from '@pulumi/aws/types/enums/rds';
-import { ec2 } from '@pulumi/awsx';
 
-import { SharedInfraOutput } from '../defs'
 import { getResourceName, isProduction } from "../helper";
 import { vpcSubnets } from "./index";
 
 export type SubstreamRDSOutput = {
-    main: aws.rds.Cluster,
-    host: string
+    main: aws.rds.Cluster
 }
 
 //should take in an array of subnets 
@@ -59,7 +56,7 @@ const createMain = (
         {
             identifier: getResourceName(`substream-v2-${ i + 1}`),
             clusterIdentifier: sf_cluster.id,
-            instanceClass: "db.t3.medium",
+            instanceClass: config.require('RDSInstanceType'),
             engine: engineType,
             engineVersion: sf_cluster.engineVersion,
             dbParameterGroupName: "default.aurora-postgresql14",
@@ -86,8 +83,6 @@ export const createSubstreamClusters = (
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
-    const endpoint = pulumi.interpolate`${main.endpoint}`; 
-    const endpointStr : string = endpoint.toString()
-    return { main: main, host: endpointStr}
+    return { main: main}
   }
   
