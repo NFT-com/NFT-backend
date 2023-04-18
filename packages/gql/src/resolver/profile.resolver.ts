@@ -367,13 +367,13 @@ const getProfileByURL = (_: any, args: gql.QueryProfileArgs, ctx: Context): Prom
 
 const getProfilesByURL = async (_: any, args: gql.QueryProfilesArgs, ctx: Context): Promise<gql.Profile[]> => {
   const schema = Joi.object().keys({
-      input: Joi.array().items(
-        Joi.object().keys({
-          url: Joi.string().required(),
-          chainId: Joi.string().optional(),
-        })
-      )
-    })
+    input: Joi.array().items(
+      Joi.object().keys({
+        url: Joi.string().required(),
+        chainId: Joi.string().optional(),
+      }),
+    ),
+  })
   joi.validateSchema(schema, args)
 
   const results = await Promise.allSettled(
@@ -470,10 +470,7 @@ const updateProfile = async (_: any, args: gql.MutationUpdateProfileArgs, ctx: C
 
   if (notOwner(profile)) {
     return Promise.reject(
-      appError.buildForbidden(
-        profileError.buildProfileNotOwnedMsg(id),
-        profileError.ErrorType.ProfileNotOwned
-      )
+      appError.buildForbidden(profileError.buildProfileNotOwnedMsg(id), profileError.ErrorType.ProfileNotOwned),
     )
   }
 
@@ -498,9 +495,9 @@ const updateProfile = async (_: any, args: gql.MutationUpdateProfileArgs, ctx: C
         hideNFTIds,
         profile.chainId,
       )
-    } catch(err) {
+    } catch (err) {
       return Promise.reject(new Error(`Something went wrong to change NFT visibility. Error: ${err}`))
-    } 
+    }
   }
 
   try {

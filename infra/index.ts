@@ -9,7 +9,7 @@ import { createCronJobs } from './cronjobs'
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer } from './gql'
 import { createSharedInfra } from './shared'
-import { createSubStreams, createSubStreamInstances } from './substreams'
+import { createSubStreamInstances,createSubStreams } from './substreams'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
   const assetBucket = outMap.assetBucket.value
@@ -62,11 +62,11 @@ const main = async (): Promise<any> => {
     return createCronJobs()
   }
 
-  if (deploySubstreams){
+  if (deploySubstreams) {
     return createSubStreams()
   }
-  if (deploySubstreamsInstance){
-    return createSubStreamInstances() 
+  if (deploySubstreamsInstance) {
+    return createSubStreamInstances()
   }
 }
 
