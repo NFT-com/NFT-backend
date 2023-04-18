@@ -8,7 +8,6 @@ import { vpcSubnets } from "./index";
 
 export type SubstreamRDSOutput = {
     main: aws.rds.Cluster
-
 }
 
 //should take in an array of subnets
@@ -43,7 +42,7 @@ const createMain = (
 
     databaseName: 'app',
     masterUsername: 'app',
-    masterPassword: process.env.DB_PASSWORD,
+    masterPassword: process.env.SUBSTREAMS_DB_PASSWORD,
     port: 5432,
   })
 
