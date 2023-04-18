@@ -35,7 +35,7 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
 
     const securityGroups = buildSecurityGroups(config, vpc)
 
-    const { main : cluster} = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+    createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
     return {
       ec2SecurityGroup: securityGroups.ec2SG, 
