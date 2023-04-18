@@ -668,7 +668,19 @@ export const batchCallTokenURI = async (
 const formatMetadata = (apiResponse: ApiResponse): Metadata => {
   try {
     const { animation_url, name, image, image_url, imageUrl, image_data, attributes, description } = apiResponse
-    const traits = attributes?.map(attr => ({ type: attr.trait_type, value: attr.value })) || []
+
+    // Determine if attributes is an object or an array
+    const isObject = attributes && typeof attributes === 'object' && !Array.isArray(attributes)
+    const isArray = Array.isArray(attributes)
+
+    // Handle attributes based on its type (object, array, or undefined)
+    let traits = []
+    if (isObject) {
+      traits = Object.entries(attributes).map(([trait_type, value]) => ({ type: trait_type, value }))
+    } else if (isArray) {
+      traits = attributes.map(attr => ({ type: attr.trait_type, value: attr.value }))
+    }
+
     return {
       name,
       image: image || image_url || image_data || animation_url || imageUrl || '',
@@ -759,7 +771,7 @@ const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
   }
 }
 
-export const parseNFTUriString = async (uriString: string, tokenId?: string): Promise<Metadata | null> => {
+export const parseNFTUriString = async (uriString: string, tokenId?: string, csContract?: string): Promise<Metadata | null> => {
   try {
     // Handle OpenSea metadata API format with 0x{id} placeholder
     let resolvedUriString = uriString
@@ -886,7 +898,7 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string): Pr
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
   } catch (error) {
-    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}`)
+    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}, csContract=${csContract}`)
     return null
   }
 }
