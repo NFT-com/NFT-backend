@@ -98,7 +98,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run ${substreams_flags}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run ${substreams_flags} --undo-buffer-size=3     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 

@@ -125,7 +125,7 @@ jobs:
           stage: staging
   deploy-prod-substreams:
     needs: deployment-triggers
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'substream') }}
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'substreams-rel') }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_streamingfast
     steps:
