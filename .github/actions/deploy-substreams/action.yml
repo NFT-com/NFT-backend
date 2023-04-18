@@ -54,4 +54,5 @@ runs:
         DATADOG_API_KEY: ${{ fromJSON(inputs.secrets).DATADOG_API_KEY}}
         STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}
         ETH_ENDPOINT: ${{ fromJSON(inputs.secrets).ETH_ENDPOINT}}
+        UNDO_BUFFER_SIZE: ${{ fromJSON(inputs.secrets).UNDO_BUFFER_SIZE}}
       run: npm run deploy:substreamsInstance

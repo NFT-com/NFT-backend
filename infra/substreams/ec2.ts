@@ -21,6 +21,7 @@ export const createUserData = (db_host: string, latestBlock: number) : string =>
     const substreams_db_pass = process.env.SUBSTREAMS_DB_PASSWORD; 
     const eth_endpoint = process.env.ETH_ENDPOINT; 
     const dd_api = process.env.DATADOG_API_KEY; 
+    const buffer_size = process.env.UNDO_BUFFER_SIZE;
     const substreams_flags = isProduction() ? "-p" : ""; 
     const rawUserData = `#!/bin/bash
 
@@ -98,7 +99,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run ${substreams_flags} --undo-buffer-size=3     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run ${substreams_flags} --undo-buffer-size=${buffer_size}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
