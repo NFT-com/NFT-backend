@@ -19,6 +19,7 @@ export type vpcSubnets = {
 const rdsStack = async (): Promise<Record<string, any> | void> => {
   const config = new pulumi.Config()
   const stage = getStage()
+  const zones = config.require('availabilityZones').split(',')
 
   const sharedStack = new pulumi.StackReference(`${stage}.shared.us-east-1`)
 
@@ -28,8 +29,9 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
 
   const subnets: vpcSubnets = { publicSubnets: publicSubnets, privateSubnets: privateSubnets }
 
+  const securityGroups = buildSecurityGroups(config, vpc)
 
-    createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+  createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
 
     return {
       ec2SecurityGroup: securityGroups.ec2SG, 
