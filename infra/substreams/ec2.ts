@@ -12,15 +12,18 @@ export type EC2Output = {
   template: aws.ec2.LaunchTemplate
 }
 
-const streamingFast_Key = process.env.STREAMINGFAST_KEY
-const git_token = process.env.GH_TOKEN
-const git_user = process.env.GH_USER
-const db_pass = process.env.DB_PASSWORD
-const eth_endpoint = process.env.ETH_ENDPOINT
-const dd_api = process.env.DATADOG_API_KEY
 
-export const createUserData = (db_host: string, latestBlock: number): string => {
-  const rawUserData = `#!/bin/bash
+
+export const createUserData = (db_host: string, latestBlock: number) : string => {
+    const streamingFast_Key = process.env.STREAMINGFAST_KEY;
+    const git_token = process.env.GH_TOKEN; 
+    const git_user = process.env.GH_USER; 
+    const substreams_db_pass = process.env.SUBSTREAMS_DB_PASSWORD; 
+    const eth_endpoint = process.env.ETH_ENDPOINT; 
+    const dd_api = process.env.DATADOG_API_KEY; 
+    const buffer_size = process.env.UNDO_BUFFER_SIZE;
+    const substreams_flags = isProduction() ? "-p" : ""; 
+    const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
 
@@ -71,15 +74,15 @@ echo "Getting Substreams code..."
 
 #Download NFT substreams code 
 
-git clone https://${git_user}:${git_token}@github.com/NFT-com/substreams-sync.git
+git clone https://${git_user}:${git_token}@github.com/NFT-com/nft-backend.git
 
-cd substreams-sync
+cd nft-backend/packages/substreams
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Getting Latest block..." 
 
@@ -96,7 +99,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run ${substreams_flags} --undo-buffer-size=${buffer_size}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
@@ -133,21 +136,6 @@ export const createEC2Resources = (
     const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets
     return subnetGroup[0]
   }
-
-  const role = new aws.iam.Role(`substreams-role`, {
-    assumeRolePolicy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Principal: {
-            Service: 'ec2.amazonaws.com',
-          },
-          Action: 'sts:AssumeRole',
-        },
-      ],
-    }),
-  })
 
   const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate('sf-substream-launch-template', {
     blockDeviceMappings: [
@@ -224,7 +212,5 @@ export const createEC2Resources = (
       version: '$Latest',
     },
   })
-
-  return { instance: SubstreamInstance, template: SubstreamLaunchTemplate }
-  //return SubstreamLaunchTemplate;
+    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
 }
