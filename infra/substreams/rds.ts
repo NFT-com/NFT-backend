@@ -2,7 +2,6 @@ import * as aws from '@pulumi/aws'
 import { EngineType } from '@pulumi/aws/types/enums/rds'
 import * as pulumi from '@pulumi/pulumi'
 
-import { EngineType } from '@pulumi/aws/types/enums/rds';
 
 import { getResourceName, isProduction } from "../helper";
 import { vpcSubnets } from "./index";
