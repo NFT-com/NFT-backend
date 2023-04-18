@@ -51,7 +51,7 @@ const infuraCredentials = [
   { apiKey: '2ObT6if8jf8lnsmDOyo3H1FXOuh', secret: 'ca25329ebbd733eacebccfd2fac47674' },
   { apiKey: '2ObTRj74ulJqLhBGuDKZGLoGGQu', secret: '28f76c2f44bbcde2596ad0bc0de8de24' },
   { apiKey: '2ObU0PWa9oJ0hAJNVo5ijChH45x', secret: '2c5348b233829c45fe6406d0cfa0d8ae' },
-  // { apiKey: '2NvtbGeEmgbJMojDAobTdIUXsTH', secret: '99d5962cdb1b722fc57feb8c0266989c' }
+  // { apiKey: '2NvtbGeEmgbJMojDAobTdIUXsTH', secret: '99d5962cdb1b722fc57feb8c0266989c' } // until key limits come back to normal
 ]
 const CRYPTOPUNK = '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb'
 const MAX_SAVE_COUNTS = 500
