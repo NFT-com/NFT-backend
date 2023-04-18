@@ -115,7 +115,7 @@ jobs:
     needs: deployment-triggers
     if: ${{ (github.ref_name == 'main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'staging'))) && needs.deployment-triggers.outputs.substreams-changed == 'true' }}
     runs-on: ubuntu-latest
-    environment: nftcom_dev_streamingfast
+    environment: nftcom_staging_streamingfast
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-substreams
@@ -127,7 +127,7 @@ jobs:
     needs: deployment-triggers
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'substreams-rel') }}
     runs-on: ubuntu-latest
-    environment: nftcom_dev_streamingfast
+    environment: nftcom_prod_streamingfast
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-substreams
