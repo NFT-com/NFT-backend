@@ -36,7 +36,7 @@ runs:
         STAGE: ${{ inputs.stage }}
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
-        DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD}}
+        DB_PASSWORD: ${{ fromJSON(inputs.secrets).SUBSTREAMS_DB_PASSWORD}}
         GH_TOKEN: ${{ fromJSON(inputs.secrets).GH_TOKEN}}
         GH_USER: ${{ fromJSON(inputs.secrets).GH_USER}}
         STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}
@@ -48,7 +48,7 @@ runs:
         STAGE: ${{ inputs.stage }}
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
-        DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD}}
+        DB_PASSWORD: ${{ fromJSON(inputs.secrets).SUBSTREAMS_DB_PASSWORD}}
         GH_TOKEN: ${{ fromJSON(inputs.secrets).GH_TOKEN}}
         GH_USER: ${{ fromJSON(inputs.secrets).GH_USER}}
         STREAMINGFAST_KEY: ${{ fromJSON(inputs.secrets).STREAMINGFAST_KEY}}

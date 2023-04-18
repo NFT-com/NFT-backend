@@ -17,7 +17,7 @@ export const createUserData = (db_host: string, latestBlock: number) : string =>
     const streamingFast_Key = process.env.STREAMINGFAST_KEY;
     const git_token = process.env.GH_TOKEN; 
     const git_user = process.env.GH_USER; 
-    const db_pass = process.env.DB_PASSWORD; 
+    const substreams_db_pass = process.env.SUBSTREAMS_DB_PASSWORD; 
     const eth_endpoint = process.env.ETH_ENDPOINT; 
     const dd_api = process.env.DATADOG_API_KEY; 
     const substreams_flags = isProduction() ? "-p" : ""; 
@@ -78,9 +78,9 @@ cd nft-backend/packages/substreams
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Getting Latest block..." 
 
@@ -97,7 +97,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run ${substreams_flags}     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run ${substreams_flags}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
