@@ -1,14 +1,15 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as process from 'process'
 
+import * as aws from '@pulumi/aws'
+import * as pulumi from '@pulumi/pulumi'
+
 import { getStage, isProduction } from '../helper'
-import { vpcSubnets } from "./index";
+import { vpcSubnets } from './index'
 
 export type EC2Output = {
-    instance: aws.ec2.Instance,
-    template: aws.ec2.LaunchTemplate,
+  instance: aws.ec2.Instance
+  template: aws.ec2.LaunchTemplate
 }
 
 
@@ -117,110 +118,115 @@ EOF
 sudo cp conf.yaml /etc/datadog-agent/conf.d/substreams.d
 echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
 
-sudo service datadog-agent restart`;
-    
-return Buffer.from(rawUserData).toString("base64");
-    
-} 
+sudo service datadog-agent restart`
+
+  return Buffer.from(rawUserData).toString('base64')
+}
 
 export const createEC2Resources = (
-    config: pulumi.Config,
-    subnetGroups: vpcSubnets,
-    instanceSG: aws.ec2.SecurityGroup,
-    userData: string 
-) : EC2Output => {
+  config: pulumi.Config,
+  subnetGroups: vpcSubnets,
+  instanceSG: aws.ec2.SecurityGroup,
+  userData: string,
+): EC2Output => {
+  const stage = getStage()
+  const getInstanceSubnet = (subnetGroups: vpcSubnets): string => {
+    //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
+    const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets
+    return subnetGroup[0]
+  }
 
-    const stage = getStage()
-    const getInstanceSubnet = (subnetGroups: vpcSubnets) : string => {
-        //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
-        const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets; 
-        return subnetGroup[0]; 
-    }
+  const role = new aws.iam.Role(`substreams-role`, {
+    assumeRolePolicy: JSON.stringify({
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: {
+            Service: 'ec2.amazonaws.com',
+          },
+          Action: 'sts:AssumeRole',
+        },
+      ],
+    }),
+  })
 
-    const role = new aws.iam.Role(`substreams-role`, {
-        assumeRolePolicy: JSON.stringify({
-            Version: "2012-10-17",
-            Statement: [{
-                Effect: "Allow",
-                Principal: {
-                    Service: "ec2.amazonaws.com",
-                },
-                Action: "sts:AssumeRole",
-            }],
-        }),
-    });
+  const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate('sf-substream-launch-template', {
+    blockDeviceMappings: [
+      {
+        deviceName: '/dev/xvda',
+        ebs: {
+          deleteOnTermination: 'true',
+          encrypted: 'false',
+          iops: 3000,
+          throughput: 125,
+          volumeSize: 50,
+          volumeType: 'gp3',
+        },
+      },
+    ],
+    capacityReservationSpecification: {
+      capacityReservationPreference: 'open',
+    },
+    creditSpecification: {
+      cpuCredits: 'standard',
+    },
+    ebsOptimized: 'false',
+    hibernationOptions: {
+      configured: false,
+    },
+    imageId: 'ami-02f3f602d23f1659d',
+    instanceInitiatedShutdownBehavior: 'stop',
+    instanceType: config.require('ec2InstanceType'),
+    keyName: 'ec2-ecs',
+    maintenanceOptions: {
+      autoRecovery: 'default',
+    },
+    iamInstanceProfile: {
+      arn: 'arn:aws:iam::016437323894:instance-profile/substreams-instance-profile-6e600ab',
+    },
+    metadataOptions: {
+      httpEndpoint: 'enabled',
+      httpProtocolIpv6: 'disabled',
+      httpPutResponseHopLimit: 2,
+      httpTokens: 'required',
+    },
+    name: `${stage}-sf-substreams-template`,
+    networkInterfaces: [
+      {
+        associatePublicIpAddress: 'true',
+        deleteOnTermination: 'true',
+        securityGroups: [instanceSG.id],
+        subnetId: getInstanceSubnet(subnetGroups),
+      },
+    ],
+    placement: {
+      tenancy: 'default',
+    },
+    privateDnsNameOptions: {
+      enableResourceNameDnsARecord: true,
+      hostnameType: 'ip-name',
+    },
+    updateDefaultVersion: true,
+    tagSpecifications: [
+      {
+        resourceType: 'instance',
+        tags: {
+          Name: `${stage}-sf-substreams`,
+          Pulumi: 'true',
+        },
+      },
+    ],
+    userData: userData,
+  })
 
-    const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
-        blockDeviceMappings: [{
-            deviceName: "/dev/xvda",
-            ebs: {
-                deleteOnTermination: "true",
-                encrypted: "false",
-                iops: 3000,
-                throughput: 125,
-                volumeSize: 50,
-                volumeType: "gp3",
-            },
-        }],
-        capacityReservationSpecification: {
-            capacityReservationPreference: "open",
-        },
-        creditSpecification: {
-            cpuCredits: "standard",
-        },
-        ebsOptimized: "false",
-        hibernationOptions: {
-            configured: false,
-        },
-        imageId: "ami-02f3f602d23f1659d",
-        instanceInitiatedShutdownBehavior: "stop",
-        instanceType: config.require('ec2InstanceType'),
-        keyName: "ec2-ecs",
-        maintenanceOptions: {
-            autoRecovery: "default",
-        },
-        iamInstanceProfile: {
-            arn: "arn:aws:iam::016437323894:instance-profile/substreams-instance-profile-6e600ab",
-        },
-        metadataOptions: {
-            httpEndpoint: "enabled",
-            httpProtocolIpv6: "disabled",
-            httpPutResponseHopLimit: 2,
-            httpTokens: "required",
-        },
-        name: `${stage}-sf-substreams-template`,
-        networkInterfaces: [{
-            associatePublicIpAddress: "true",
-            deleteOnTermination: "true",
-            securityGroups: [instanceSG.id],
-            subnetId: getInstanceSubnet( subnetGroups ),
-        }],
-        placement: {
-            tenancy: "default",
-        },
-        privateDnsNameOptions: {
-            enableResourceNameDnsARecord: true,
-            hostnameType: "ip-name",
-        },
-        updateDefaultVersion: true, 
-        tagSpecifications: [{
-            resourceType: "instance",
-            tags: {
-                Name: `${stage}-sf-substreams`,
-                Pulumi: "true", 
-            },
-        }],
-        userData: userData
-});
+  const SubstreamInstance = new aws.ec2.Instance('sf-substream-instance', {
+    launchTemplate: {
+      id: SubstreamLaunchTemplate.id,
+      version: '$Latest',
+    },
+  })
 
-    const SubstreamInstance =  
-        new aws.ec2.Instance("sf-substream-instance", {
-            launchTemplate: {
-                id: SubstreamLaunchTemplate.id,
-                version: "$Latest"
-        }
-});
-
-    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
-    //return SubstreamLaunchTemplate; 
+  return { instance: SubstreamInstance, template: SubstreamLaunchTemplate }
+  //return SubstreamLaunchTemplate;
 }
