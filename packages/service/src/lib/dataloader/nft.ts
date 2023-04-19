@@ -43,6 +43,6 @@ export const nftsByWalletId = new DataLoader<string, entity.NFT[]>(
 // Function to clear NFT cache for specified NFT IDs
 export const clearNftCache = (nftIdsToRemove: string[]): void => {
   nftIdsToRemove.forEach(nftId => {
-    nft.clear(nftId);
+    nft.clear(nftId)
   })
 }

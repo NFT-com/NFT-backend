@@ -70,11 +70,11 @@ const main = async (): Promise<any> => {
     return createCronJobs()
   }
 
-  if (deploySubstreams){
+  if (deploySubstreams) {
     return createSubStreams()
   }
-  if (deploySubstreamsInstance){
-    return createSubStreamInstances() 
+  if (deploySubstreamsInstance) {
+    return createSubStreamInstances()
   }
 
   if (deployTypesense) {

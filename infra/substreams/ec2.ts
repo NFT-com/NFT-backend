@@ -1,25 +1,28 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as process from 'process'
 
+import * as aws from '@pulumi/aws'
+import * as pulumi from '@pulumi/pulumi'
+
 import { getStage, isProduction } from '../helper'
-import { vpcSubnets } from "./index";
+import { vpcSubnets } from './index'
 
 export type EC2Output = {
-    instance: aws.ec2.Instance,
-    template: aws.ec2.LaunchTemplate,
+  instance: aws.ec2.Instance
+  template: aws.ec2.LaunchTemplate
 }
 
-const streamingFast_Key = process.env.STREAMINGFAST_KEY;
-const git_token = process.env.GH_TOKEN; 
-const git_user = process.env.GH_USER; 
-const db_pass = process.env.DB_PASSWORD; 
-const eth_endpoint = process.env.ETH_ENDPOINT; 
-const dd_api = process.env.DATADOG_API_KEY; 
+
 
 export const createUserData = (db_host: string, latestBlock: number) : string => {
-    
+    const streamingFast_Key = process.env.STREAMINGFAST_KEY;
+    const git_token = process.env.GH_TOKEN; 
+    const git_user = process.env.GH_USER; 
+    const substreams_db_pass = process.env.SUBSTREAMS_DB_PASSWORD; 
+    const eth_endpoint = process.env.ETH_ENDPOINT; 
+    const dd_api = process.env.DATADOG_API_KEY; 
+    const buffer_size = process.env.UNDO_BUFFER_SIZE;
+    const substreams_flags = isProduction() ? "-p" : ""; 
     const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
@@ -71,15 +74,15 @@ echo "Getting Substreams code..."
 
 #Download NFT substreams code 
 
-git clone https://${git_user}:${git_token}@github.com/NFT-com/substreams-sync.git
+git clone https://${git_user}:${git_token}@github.com/NFT-com/nft-backend.git
 
-cd substreams-sync
+cd nft-backend/packages/substreams
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
+substreams-sink-postgres setup "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable" ./docs/nftLoader/schema.sql
 
-substreams-sink-postgres setup "psql://app:${db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
+substreams-sink-postgres setup "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable" ./example_consumer/notifyConsumer.sql
 
 echo "Getting Latest block..." 
 
@@ -96,7 +99,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run     "psql://app:${db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run ${substreams_flags} --undo-buffer-size=${buffer_size}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
@@ -116,110 +119,98 @@ EOF
 sudo cp conf.yaml /etc/datadog-agent/conf.d/substreams.d
 echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
 
-sudo service datadog-agent restart`;
-    
-return Buffer.from(rawUserData).toString("base64");
-    
-} 
+sudo service datadog-agent restart`
+
+  return Buffer.from(rawUserData).toString('base64')
+}
 
 export const createEC2Resources = (
-    config: pulumi.Config,
-    subnetGroups: vpcSubnets,
-    instanceSG: aws.ec2.SecurityGroup,
-    userData: string 
-) : EC2Output => {
+  config: pulumi.Config,
+  subnetGroups: vpcSubnets,
+  instanceSG: aws.ec2.SecurityGroup,
+  userData: string,
+): EC2Output => {
+  const stage = getStage()
+  const getInstanceSubnet = (subnetGroups: vpcSubnets): string => {
+    //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
+    const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets
+    return subnetGroup[0]
+  }
 
-    const stage = getStage()
-    const getInstanceSubnet = (subnetGroups: vpcSubnets) : string => {
-        //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
-        const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets; 
-        return subnetGroup[0]; 
-    }
+  const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate('sf-substream-launch-template', {
+    blockDeviceMappings: [
+      {
+        deviceName: '/dev/xvda',
+        ebs: {
+          deleteOnTermination: 'true',
+          encrypted: 'false',
+          iops: 3000,
+          throughput: 125,
+          volumeSize: 50,
+          volumeType: 'gp3',
+        },
+      },
+    ],
+    capacityReservationSpecification: {
+      capacityReservationPreference: 'open',
+    },
+    creditSpecification: {
+      cpuCredits: 'standard',
+    },
+    ebsOptimized: 'false',
+    hibernationOptions: {
+      configured: false,
+    },
+    imageId: 'ami-02f3f602d23f1659d',
+    instanceInitiatedShutdownBehavior: 'stop',
+    instanceType: config.require('ec2InstanceType'),
+    keyName: 'ec2-ecs',
+    maintenanceOptions: {
+      autoRecovery: 'default',
+    },
+    iamInstanceProfile: {
+      arn: 'arn:aws:iam::016437323894:instance-profile/substreams-instance-profile-6e600ab',
+    },
+    metadataOptions: {
+      httpEndpoint: 'enabled',
+      httpProtocolIpv6: 'disabled',
+      httpPutResponseHopLimit: 2,
+      httpTokens: 'required',
+    },
+    name: `${stage}-sf-substreams-template`,
+    networkInterfaces: [
+      {
+        associatePublicIpAddress: 'true',
+        deleteOnTermination: 'true',
+        securityGroups: [instanceSG.id],
+        subnetId: getInstanceSubnet(subnetGroups),
+      },
+    ],
+    placement: {
+      tenancy: 'default',
+    },
+    privateDnsNameOptions: {
+      enableResourceNameDnsARecord: true,
+      hostnameType: 'ip-name',
+    },
+    updateDefaultVersion: true,
+    tagSpecifications: [
+      {
+        resourceType: 'instance',
+        tags: {
+          Name: `${stage}-sf-substreams`,
+          Pulumi: 'true',
+        },
+      },
+    ],
+    userData: userData,
+  })
 
-    const role = new aws.iam.Role(`substreams-role`, {
-        assumeRolePolicy: JSON.stringify({
-            Version: "2012-10-17",
-            Statement: [{
-                Effect: "Allow",
-                Principal: {
-                    Service: "ec2.amazonaws.com",
-                },
-                Action: "sts:AssumeRole",
-            }],
-        }),
-    });
-
-    const SubstreamLaunchTemplate = new aws.ec2.LaunchTemplate("sf-substream-launch-template", {
-        blockDeviceMappings: [{
-            deviceName: "/dev/xvda",
-            ebs: {
-                deleteOnTermination: "true",
-                encrypted: "false",
-                iops: 3000,
-                throughput: 125,
-                volumeSize: 50,
-                volumeType: "gp3",
-            },
-        }],
-        capacityReservationSpecification: {
-            capacityReservationPreference: "open",
-        },
-        creditSpecification: {
-            cpuCredits: "standard",
-        },
-        ebsOptimized: "false",
-        hibernationOptions: {
-            configured: false,
-        },
-        imageId: "ami-02f3f602d23f1659d",
-        instanceInitiatedShutdownBehavior: "stop",
-        instanceType: config.require('ec2InstanceType'),
-        keyName: "ec2-ecs",
-        maintenanceOptions: {
-            autoRecovery: "default",
-        },
-        iamInstanceProfile: {
-            arn: "arn:aws:iam::016437323894:instance-profile/substreams-instance-profile-6e600ab",
-        },
-        metadataOptions: {
-            httpEndpoint: "enabled",
-            httpProtocolIpv6: "disabled",
-            httpPutResponseHopLimit: 2,
-            httpTokens: "required",
-        },
-        name: `${stage}-sf-substreams-template`,
-        networkInterfaces: [{
-            associatePublicIpAddress: "true",
-            deleteOnTermination: "true",
-            securityGroups: [instanceSG.id],
-            subnetId: getInstanceSubnet( subnetGroups ),
-        }],
-        placement: {
-            tenancy: "default",
-        },
-        privateDnsNameOptions: {
-            enableResourceNameDnsARecord: true,
-            hostnameType: "ip-name",
-        },
-        updateDefaultVersion: true, 
-        tagSpecifications: [{
-            resourceType: "instance",
-            tags: {
-                Name: `${stage}-sf-substreams`,
-                Pulumi: "true", 
-            },
-        }],
-        userData: userData
-});
-
-    const SubstreamInstance =  
-        new aws.ec2.Instance("sf-substream-instance", {
-            launchTemplate: {
-                id: SubstreamLaunchTemplate.id,
-                version: "$Latest"
-        }
-});
-
+  const SubstreamInstance = new aws.ec2.Instance('sf-substream-instance', {
+    launchTemplate: {
+      id: SubstreamLaunchTemplate.id,
+      version: '$Latest',
+    },
+  })
     return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
-    //return SubstreamLaunchTemplate; 
 }

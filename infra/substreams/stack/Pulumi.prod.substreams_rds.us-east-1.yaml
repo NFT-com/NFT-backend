@@ -1,4 +1,4 @@
-encryptionsalt: v1:M0eEvC4WgiI=:v1:Sp0DgzEEgvTAgbvK:G9E/cX9ZCtxM8OrS7Umyov6PqY77ng==
+encryptionsalt: v1:nAv61QA1ewk=:v1:jZKdnbn/9eyYaLFj:lBzASsJtZobOFZB+oqmaRvt1KA6noQ==
 config: 
   nftcom:RDSInstanceType: "db.t3.medium"
   nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c

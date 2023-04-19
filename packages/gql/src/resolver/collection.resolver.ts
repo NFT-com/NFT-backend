@@ -77,12 +77,12 @@ const getCollections = async (_: any, args: gql.QueryCollectionsArgs, ctx: Conte
         })
         .or('contract', 'slug')
         .nand('contract', 'slug'), // Requires either contract|slug
-      )
-    })
+    ),
+  })
   joi.validateSchema(schema, args)
 
   const results = await Promise.allSettled(
-    args.input.map((collectionInput => getCollection(undefined, { input: collectionInput }, ctx)))
+    args.input.map(collectionInput => getCollection(undefined, { input: collectionInput }, ctx)),
   )
   return results.map(result => {
     if (result.status === 'rejected') {

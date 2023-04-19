@@ -1,5 +1,13 @@
 import { nanoid } from 'nanoid'
-import { BeforeInsert, CreateDateColumn, DeleteDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm'
+import {
+  BeforeInsert,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  Index,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 
 @Entity()
 export class BaseEntity {
