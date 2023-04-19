@@ -22,7 +22,12 @@ const ONLY_EXISTING_NFT_FILTER = false    // only listen to existing NFTs
 let latestBlockNumber: number = null
 let interval: NodeJS.Timeout = null
 
-const handleFilter = async (contractAddress: string, tokenId: string): Promise<boolean> => {
+const handleFilter = async (
+  contractAddress: string,
+  tokenId: string,
+  hexFromAddress: string,
+  hexToAddress: string,
+): Promise<boolean> => {
   if (ONLY_OFFICIAL_FILTER) {
     const collection = await repositories.collection.findOne({
       where: { contract: helper.checkSum(contractAddress) },
@@ -45,6 +50,19 @@ const handleFilter = async (contractAddress: string, tokenId: string): Promise<b
       nftDoesNotExist.emit('nft', { contractAddress, tokenId })
       return nftExists
     }
+  }
+
+  if (process.env.STREAMING_FASTS_INTERNAL_USERS_ONLY === 'true') {
+    const walletFrom = await repositories.wallet.findOne({
+      where: { address: hexFromAddress },
+    })
+
+    const walletTo = await repositories.wallet.findOne({
+      where: { address: hexToAddress },
+    })
+
+    // if both are null, then it's not internal
+    if (!walletFrom.userId && !walletTo.userId) return false
   }
 
   return true
@@ -83,7 +101,7 @@ const handleNotification = async (msg: any): Promise<void> => {
   const hexTxHash = ensureHexPrefix(txHash)
 
   if (blockDifference <= blockRange &&
-    await handleFilter(contractAddress, hexTokenId)
+    await handleFilter(contractAddress, hexTokenId, hexFromAddress, hexToAddress)
   ) {
     if (hexFromAddress === '0x0000000000000000000000000000000000000000') {
       const start2 = new Date().getTime()
