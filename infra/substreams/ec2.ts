@@ -133,7 +133,7 @@ export const createEC2Resources = (
   const stage = getStage()
   const getInstanceSubnet = (subnetGroups: vpcSubnets): string => {
     //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
-    const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets
+    const subnetGroup = subnetGroups.publicSubnets
     return subnetGroup[0]
   }
 
