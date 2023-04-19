@@ -1,8 +1,7 @@
 import { BigNumber, utils } from 'ethers'
 
 import { getDecimalsForContract, getSymbolForContract } from '@nftcom/contract-data'
-import { getNftName } from '@nftcom/gql/service/nft.service'
-import { getListingCurrencyAddress, getListingPrice } from '@nftcom/gql/service/txActivity.service'
+import { nftService, txActivityService } from '@nftcom/service'
 import { defs, helper } from '@nftcom/shared'
 
 import { CollectionDao, NFTDao, TxActivityDAO } from './model'
@@ -104,10 +103,13 @@ export const mapCollectionData = async (
             })
             const txActivities = marketplaces.map(m => txActivityListings.find(l => l.order?.exchange === m))
             for (const txActivity of txActivities) {
-              const contractAddress = getListingCurrencyAddress(txActivity)
+              const contractAddress = txActivityService.getListingCurrencyAddress(txActivity)
               listings.push({
                 marketplace: txActivity.order?.exchange,
-                price: +utils.formatUnits(getListingPrice(txActivity), await getDecimalsForContract(contractAddress)),
+                price: +utils.formatUnits(
+                  txActivityService.getListingPrice(txActivity),
+                  await getDecimalsForContract(contractAddress),
+                ),
                 type: undefined,
                 currency: await getSymbolForContract(contractAddress),
               })
@@ -115,10 +117,13 @@ export const mapCollectionData = async (
           } else {
             for (const txActivity of txActivityListings) {
               if (txActivity.walletAddress === ownerAddr && helper.isNotEmpty(txActivity.order.protocolData)) {
-                const contractAddress = getListingCurrencyAddress(txActivity)
+                const contractAddress = txActivityService.getListingCurrencyAddress(txActivity)
                 listings.push({
                   marketplace: txActivity.order?.exchange,
-                  price: +utils.formatUnits(getListingPrice(txActivity), await getDecimalsForContract(contractAddress)),
+                  price: +utils.formatUnits(
+                    txActivityService.getListingPrice(txActivity),
+                    await getDecimalsForContract(contractAddress),
+                  ),
                   type: undefined,
                   currency: await getSymbolForContract(contractAddress),
                 })
@@ -131,7 +136,7 @@ export const mapCollectionData = async (
           id: nft.id,
           nftName:
             nft.metadata?.name ||
-            getNftName(nft.metadata, undefined, { name: nft.collection?.name }, tokenId) ||
+            nftService.getNftName(nft.metadata, undefined, { name: nft.collection?.name }, tokenId) ||
             `#${tokenId}`,
           nftType: nft.type,
           tokenId,

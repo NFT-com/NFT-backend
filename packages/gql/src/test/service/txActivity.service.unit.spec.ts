@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm'
 
 import { cache } from '@nftcom/cache'
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import * as testActivityService from '@nftcom/gql/service/txActivity.service'
 import { db, defs, entity } from '@nftcom/shared'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'

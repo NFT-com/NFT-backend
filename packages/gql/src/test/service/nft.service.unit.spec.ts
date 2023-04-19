@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 
-import { testDBConfig } from '@nftcom/gql/config'
-import { NFTType } from '@nftcom/gql/defs/gql'
+import { testDBConfig } from '@nftcom/misc'
+import { NFTType } from '@nftcom/misc/gql'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import { getCollectionInfo, getOwnersForNFT, updateNFTMetadata } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'

@@ -18,3 +18,4 @@ perftest/**/*.js
 *.test.ts
 *.preset.js
 **/node_modules
+tmp/*

@@ -2,10 +2,11 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { appError, curationError, nftError, profileError } from '@nftcom/error-types'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { auth, Context, joi, pagination } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.Curation, _logger.Context.GraphQL)
 

@@ -6,13 +6,13 @@ import Joi from 'joi'
 import Web3 from 'web3'
 
 import { appError, mintError, profileError, userError } from '@nftcom/error-types'
-import { serverConfigVar } from '@nftcom/gql/config'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core, sendgrid } from '@nftcom/gql/service'
+import { serverConfigVar } from '@nftcom/misc'
+import { Context } from '@nftcom/misc'
+import { auth, joi, pagination } from '@nftcom/misc'
+import { core, sendgrid } from '@nftcom/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 
-import { blacklistBool, OFAC } from '../service/core.service'
+import { gql } from '../defs'
 
 const web3 = new Web3()
 const logger = _logger.Factory(_logger.Context.Bid, _logger.Context.GraphQL)
@@ -73,7 +73,7 @@ const bid = (_: any, args: gql.MutationBidArgs, ctx: Context): Promise<gql.Bid> 
     .then(async ({ profileId, walletId }) => {
       if (input.nftType === gql.NFTType.GenesisKey) {
         const whitelist = helper.getGenesisKeyWhitelist()
-        const ofacBool = OFAC[wallet.address]
+        const ofacBool = core.OFAC[wallet.address]
 
         const lowercasedWhitelist = whitelist.map(address => {
           try {
@@ -296,14 +296,14 @@ const signHashProfile = (_: any, args: gql.MutationSignHashProfileArgs, ctx: Con
         }
       }
 
-      if (blacklistBool(args?.profileUrl?.toLowerCase(), false)) {
+      if (core.blacklistBool(args?.profileUrl?.toLowerCase(), false)) {
         throw appError.buildExists(
           profileError.buildProfileInvalidBlacklistMsg(args?.profileUrl?.toLowerCase()),
           profileError.ErrorType.ProfileInvalid,
         )
       }
 
-      const ofacBool = OFAC[helper.checkSum(wallet[0]?.address)]
+      const ofacBool = core.OFAC[helper.checkSum(wallet[0]?.address)]
 
       if (ofacBool) {
         throw appError.buildForbidden(`${wallet[0]?.address} is on OFAC`)

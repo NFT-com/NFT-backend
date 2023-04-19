@@ -1,9 +1,7 @@
 import { Job } from 'bullmq'
 import { Between, MoreThanOrEqual } from 'typeorm'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { searchEngineService } from '@nftcom/gql/service'
+import { searchEngineService } from '@nftcom/service'
 import { _logger, db, defs, entity, utils } from '@nftcom/shared'
 
 const logger = _logger.Factory('search.handler', _logger.Context.Bull)

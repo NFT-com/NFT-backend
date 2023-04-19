@@ -8,7 +8,7 @@ import { join } from 'path'
 
 import Upload = require('graphql-upload/Upload.js')
 
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db, defs } from '@nftcom/shared'
 import { EdgeType, EntityType } from '@nftcom/shared/defs'
 

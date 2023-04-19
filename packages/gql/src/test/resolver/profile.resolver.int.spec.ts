@@ -3,7 +3,7 @@ import { BigNumber, ethers } from 'ethers'
 // const sharedLibs = jest.requireActual('@nftcom/gql/service')
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db, defs } from '@nftcom/shared/'
 
 import { mockUpdateProfileInput, testMockProfiles, testMockUser, testMockWallet } from '../util/constants'

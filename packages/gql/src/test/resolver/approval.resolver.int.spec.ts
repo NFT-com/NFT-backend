@@ -1,4 +1,4 @@
-import { ApprovalInput } from '@nftcom/gql/defs/gql'
+import { ApprovalInput } from '@nftcom/misc/gql'
 
 import { testMockUser, testMockWallet } from '../util/constants'
 import { getTestApolloServer } from '../util/testApolloServer'

@@ -1,9 +1,7 @@
 import { isString } from 'lodash'
 
 import { Upload } from '@aws-sdk/lib-storage'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { core } from '@nftcom/gql/service'
+import { core } from '@nftcom/service'
 
 const lookupEnvKeyOrThrow = (key: string): string => {
   const value = process.env[key]

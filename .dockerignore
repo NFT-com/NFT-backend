@@ -1,10 +1,27 @@
-node_modules
+.dockerignore
+.git*
+.editorconfig
+.env*
+.eslint*
+.prettier*
+codecov.yml
+jest*
+
+node_modules/
+
+*.log
+coverage/
+.vscode/
+
+*README.md
+
+*Dockerfile
+Dockerfile*
+docker-compose.yml
+
 infra
 
-packages/gql/dist
-packages/gql/node_modules
-packages/gql/tsconfig.tsbuildinfo
+dist/
+*/dist/
 
-packages/shared/dist
-packages/shared/node_modules
-packages/shared/tsconfig.tsbuildinfo
+tmp/

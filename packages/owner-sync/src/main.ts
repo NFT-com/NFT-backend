@@ -6,7 +6,7 @@ import { AbiItem } from 'web3-utils'
 import QueryStream from 'pg-query-stream'
 import { Writable } from 'stream'
 
-import { core } from '@nftcom/gql/service'
+import { core } from '@nftcom/service'
 import { entity } from '@nftcom/shared'
 
 const pgClient = new Pool({

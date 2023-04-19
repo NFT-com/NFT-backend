@@ -1,9 +1,7 @@
 import { BigNumber, ethers, providers, utils } from 'ethers'
 import { In, Not } from 'typeorm'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { core, nftService } from '@nftcom/gql/service'
+import { core, nftService } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
 import { delay } from '../utils'

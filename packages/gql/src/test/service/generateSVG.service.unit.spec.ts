@@ -1,4 +1,4 @@
-import { generateSVG } from '@nftcom/gql/service/generateSVG.service'
+import { generateSVG } from 'packages/service/src/lib/generateSVG.service'
 
 const profileURL = 'testProfile',
   base64String = 'testBase64String'

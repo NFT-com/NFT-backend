@@ -1,9 +1,7 @@
 import { Job } from 'bullmq'
 import { BigNumber, ethers, utils } from 'ethers'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import {  core, HederaConsensusService, nftService } from '@nftcom/gql/service'
+import { core, HederaConsensusService, nftService } from '@nftcom/service'
 import { _logger, contracts, db, defs, helper, provider } from '@nftcom/shared'
 
 import { cache } from '../service/cache'

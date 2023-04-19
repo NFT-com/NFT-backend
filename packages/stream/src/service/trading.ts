@@ -1,9 +1,7 @@
 import { BigNumber, ethers, utils } from 'ethers'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { core } from '@nftcom/gql/service'
+import { core } from '@nftcom/service'
 import { _logger, db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { blockNumberToTimestamp } from '../jobs/trading.handler'

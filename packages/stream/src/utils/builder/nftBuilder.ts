@@ -1,8 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { AlchemyNFTMetaDataResponse, alchemyService, nftService } from '@nftcom/gql/service'
-import { defs, entity, helper } from '@nftcom/shared'
-import { _logger } from '@nftcom/shared'
+import { alchemyService, nftService } from '@nftcom/service'
+import { _logger, defs, entity, helper } from '@nftcom/shared'
 
 import { NFT_NftPort } from '../../interface'
 import { NFTPortRarityAttributes } from '../../service/nftPort'
@@ -73,24 +70,33 @@ export const nftEntityBuilderCryptoPunks = (
 }
 
 export const nftEntityBuilder = async (
-  nft: AlchemyNFTMetaDataResponse & { owner: string },
-  chainId: string,
+  nft: nftService.AlchemyNFTMetaDataResponse & { owner: string },
+  chainId: string
 ): Promise<entity.NFT> => {
-  const csOwner = checkSumOwner(nft.owner)
+  const csOwner = checkSumOwner(nft.owner);
   return {
     contract: helper.checkSum(nft.contract.address),
     tokenId: helper.bigNumberToHex(nft.id.tokenId),
     type: nftService.getNftType(nft),
     owner: csOwner,
     metadata: {
-      name: nftService.getNftName(nft, undefined, nft.contractMetadata, helper.bigNumberToString(nft.id.tokenId)),
-      description: nftService.getNftDescription(nft, undefined, nft.contractMetadata),
+      name: nftService.getNftName(
+        nft,
+        undefined,
+        nft.contractMetadata,
+        helper.bigNumberToString(nft.id.tokenId)
+      ),
+      description: nftService.getNftDescription(
+        nft,
+        undefined,
+        nft.contractMetadata
+      ),
       imageURL: await nftService.getNftImage(nft),
       traits: nftService.getMetadataTraits(nft?.metadata),
     },
     chainId,
-  } as entity.NFT
-}
+  } as entity.NFT;
+};
 
 // traits with rarity
 export const nftTraitBuilder = (

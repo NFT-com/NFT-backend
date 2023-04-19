@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db } from '@nftcom/shared'
 import { TxActivity, TxOrder, TxTransaction } from '@nftcom/shared/db/entity'
 import { ActivityStatus, ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'

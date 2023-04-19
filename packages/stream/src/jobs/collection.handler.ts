@@ -7,9 +7,7 @@ import fetch from 'node-fetch';
 import * as tar from 'tar';
 import { FindOptionsWhere, In, IsNull, Not } from 'typeorm'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { nftService } from '@nftcom/gql/service'
+import { nftService } from '@nftcom/service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 
 import { NFT_NftPort, NFTAlchemy } from '../interface'
@@ -136,10 +134,10 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
           )
             
           const nftPromiseArray: Partial<entity.NFT>[] = []
-          const alchemyNFTs: NFTAlchemy[] = nfts
+          const alchemyNFTs: nftService.AlchemyNFTMetaDataResponse[] = nfts;
           
           for (const nft of alchemyNFTs) {
-            let owner
+            let owner: string
             try {
               const nftOwners = await nftService.getOwnersForNFT(
                 { tokenId: nft.id.tokenId, contract: nft.contract.address, chainId } as entity.NFT)

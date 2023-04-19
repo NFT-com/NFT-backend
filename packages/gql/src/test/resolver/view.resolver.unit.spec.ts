@@ -1,4 +1,4 @@
-import { gql } from '@nftcom/gql/defs'
+import { gql } from '@nftcom/misc'
 import { recordView } from '@nftcom/gql/resolver/view.resolver'
 import { View, ViewableType } from '@nftcom/shared/db/entity'
 

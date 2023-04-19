@@ -16,27 +16,12 @@ import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
 import { cache } from '@nftcom/cache'
 import { appError, profileError, userError } from '@nftcom/error-types'
-import { sendgrid } from '@nftcom/gql/service'
-import { checkAddressIsSanctioned } from '@nftcom/gql/service/core.service'
+import { auth, authExpireDuration, authMessage, Context, serverPort,validate } from '@nftcom/misc'
+import { core, dataloader, sendgrid } from '@nftcom/service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authExpireDuration, authMessage, serverPort } from './config'
-import {
-  listingsByNFT,
-  listingsByNFTCancelled,
-  listingsByNFTExecuted,
-  listingsByNFTExpired,
-  listingsByNFTExpiredAndCancelled,
-  listingsByNFTExpiredAndExecuted,
-  nft,
-  nftsByWalletId,
-  wallet as walletLoader,
-} from './dataloader'
-import { Context } from './defs'
-import { auth, validate } from './helper'
 import { rateLimitedSchema } from './schema'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
@@ -58,15 +43,15 @@ const getAddressFromSignature = (authMsg, signature: string): string => utils.ve
 
 export const createLoaders = (): any => {
   return {
-    listingsByNFT,
-    listingsByNFTExecuted,
-    listingsByNFTCancelled,
-    listingsByNFTExpired,
-    listingsByNFTExpiredAndCancelled,
-    listingsByNFTExpiredAndExecuted,
-    nft,
-    nftsByWalletId,
-    wallet: walletLoader,
+    listingsByNFT: dataloader.listingsByNFT,
+    listingsByNFTExecuted: dataloader.listingsByNFTExecuted,
+    listingsByNFTCancelled: dataloader.listingsByNFTCancelled,
+    listingsByNFTExpired: dataloader.listingsByNFTExpired,
+    listingsByNFTExpiredAndCancelled: dataloader.listingsByNFTExpiredAndCancelled,
+    listingsByNFTExpiredAndExecuted: dataloader.listingsByNFTExpiredAndExecuted,
+    nft: dataloader.nft,
+    nftsByWalletId: dataloader.nftsByWalletId,
+    wallet: dataloader.wallet,
   }
 }
 
@@ -108,14 +93,14 @@ export const createContext = async (ctx): Promise<Context> => {
     const msg = `${authMessage} ${timestamp}`
     const address = getAddressFromSignature(msg, authSignature)
     // check if address is in OFAC list
-    const isSanctioned = await checkAddressIsSanctioned(address)
+    const isSanctioned = await core.checkAddressIsSanctioned(address);
     if (isSanctioned) {
       return Promise.reject(userError.buildAddressSanctioned())
     }
     // TODO fetch from cache
     wallet = await repositories.wallet.findByNetworkChainAddress(network, chainId, address)
     if (wallet && wallet.id) {
-      walletLoader.clear(wallet.id).prime(wallet.id, wallet)
+      dataloader.wallet.clear(wallet.id).prime(wallet.id, wallet)
       user = await repositories.user.findById(wallet?.userId)
     } else {
       logger.warn(

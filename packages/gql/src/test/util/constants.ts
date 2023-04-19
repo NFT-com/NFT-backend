@@ -1,6 +1,6 @@
 import { DeepPartial } from 'typeorm'
 
-import { gql } from '@nftcom/gql/defs'
+import { gql } from '@nftcom/misc'
 import {
   NFT,
   NFTType,
@@ -13,7 +13,7 @@ import {
   UpdateProfileInput,
   User,
   Wallet,
-} from '@nftcom/gql/defs/gql'
+} from '@nftcom/misc/gql'
 import { LooksRareOrderV2 } from '@nftcom/gql/service/looksare.service'
 import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
 import { entity } from '@nftcom/shared'

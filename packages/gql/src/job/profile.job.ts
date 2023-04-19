@@ -1,7 +1,7 @@
 import { Job } from 'bull'
 import { IsNull } from 'typeorm'
 
-import { DEFAULT_NFT_IMAGE, generateCompositeImage } from '@nftcom/gql/service/core.service'
+import { core } from '@nftcom/service'
 import { _logger, db } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -22,7 +22,10 @@ export const generateCompositeImages = async (job: Job): Promise<any> => {
     const slicedProfiles = profiles.slice(0, MAX_PROFILE_COUNTS)
     await Promise.allSettled(
       slicedProfiles.map(async profile => {
-        const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
+        const imageURL = await core.generateCompositeImage(
+          profile.url,
+          core.DEFAULT_NFT_IMAGE
+        );
         await repositories.profile.updateOneById(profile.id, {
           photoURL: imageURL,
         })

@@ -1,10 +1,12 @@
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { Context } from '@nftcom/misc'
+import { auth, joi } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { _logger, defs, entity, helper } from '@nftcom/shared'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.Approval, _logger.Context.GraphQL)
 

@@ -26,3 +26,5 @@ log-debug
 # others
 packages/gql/src/defs/gql.ts
 *.zip
+
+tmp/*

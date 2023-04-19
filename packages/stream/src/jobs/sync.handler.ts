@@ -1,8 +1,6 @@
 import Bull, { Job } from 'bullmq'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { x2y2Service } from '@nftcom/gql/service'
+import { x2y2Service } from '@nftcom/service'
 import { _logger, db, defs,entity, helper } from '@nftcom/shared'
 
 import { retrieveMultipleOrdersLooksrare } from '../service/looksrare'

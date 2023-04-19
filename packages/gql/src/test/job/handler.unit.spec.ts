@@ -1,7 +1,7 @@
 import { Job } from 'bull'
 import { DeepPartial } from 'typeorm'
 
-import { provider } from '@nftcom/gql/helper'
+import { provider } from '@nftcom/misc'
 import {
   chainIdToCacheKeyProfile,
   chainIdToCacheKeyResolverAssociate,

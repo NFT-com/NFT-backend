@@ -7,12 +7,13 @@ import * as _lodash from 'lodash'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { getContractSales } from '@nftcom/contract-data'
-import { Context, gql } from '@nftcom/gql/defs'
-import { coins, joi } from '@nftcom/gql/helper'
-import { getSymbolInUsd, paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
+import { coins, Context, joi } from '@nftcom/misc';
 import { fetchData } from '@nftcom/nftport-client'
+import { core } from '@nftcom/service'
 import { _logger, defs, entity } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.ContractData, _logger.Context.GraphQL)
 
@@ -78,7 +79,7 @@ const parsePriceDetailFromAsset = async (asset: defs.MarketplaceAsset): Promise<
     decimals = 18
   }
 
-  const currentETHPrice = await getSymbolInUsd('ETH')
+  const currentETHPrice = await core.getSymbolInUsd('ETH');
 
   logger.info(`decimals: ${decimals}`)
   const price = new BN(value).shiftedBy(-decimals)
@@ -375,7 +376,7 @@ export const getTxByContract = async (
       )
     }
 
-    return paginatedResultFromIndexedArray(indexedActivities, pageInput)
+    return core.paginatedResultFromIndexedArray(indexedActivities, pageInput);
   } catch (err) {
     logger.error(`Error in getTxByContract: ${err}`)
     Sentry.captureMessage(`Error in getTxByContract: ${err}`)
@@ -566,7 +567,7 @@ export const getTxByNFT = async (_: any, args: gql.QueryGetTxByNFTArgs, _ctx: Co
       )
     }
 
-    return paginatedResultFromIndexedArray(indexedActivities, pageInput)
+    return core.paginatedResultFromIndexedArray(indexedActivities, pageInput);
   } catch (err) {
     logger.error(`Error in getTxByNFT: ${err}`)
     Sentry.captureMessage(`Error in getTxByNFT: ${err}`)

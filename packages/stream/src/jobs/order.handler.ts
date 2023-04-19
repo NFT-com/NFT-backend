@@ -4,9 +4,7 @@ import { ethers } from 'ethers'
 import { In, MoreThanOrEqual } from 'typeorm'
 
 import { Result } from '@ethersproject/abi'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { core, looksrareService, openseaService, x2y2Service } from '@nftcom/gql/service'
+import { core, looksrareService, openseaService, x2y2Service } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { MulticallResponse } from '../interface'

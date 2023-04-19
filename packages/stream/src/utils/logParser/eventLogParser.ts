@@ -1,9 +1,7 @@
 import { BigNumber, ethers, utils } from 'ethers'
 import { In, Not } from 'typeorm'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore:next-line
-import {  nftService } from '@nftcom/gql/service'
+import { nftService } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { delay } from '../'
@@ -209,7 +207,7 @@ export const fulfillOrCancelSeaport = async (
         )
         if (wallet) {
           await nftService.updateNFTOwnershipAndMetadata(
-            obj, wallet.userId, wallet.id, chainId.toString(),
+            obj, wallet.userId, wallet, chainId.toString(),
           )
         }
         logger.debug(`
@@ -424,7 +422,7 @@ export const fulfillOrCancelLooksrareV2 = async (e: ethers.providers.Log, chainI
         const wallet = await nftService.getUserWalletFromNFT(checksumContract, tokenId, chainId.toString())
 
         if (wallet) {
-          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId.toString())
+          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId.toString())
         }
 
         logger.debug(`
@@ -503,7 +501,7 @@ export const fulfillOrCancelLooksrareV2 = async (e: ethers.providers.Log, chainI
         const wallet = await nftService.getUserWalletFromNFT(checksumContract, tokenId, chainId.toString())
 
         if (wallet) {
-          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet.id, chainId.toString())
+          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId.toString())
         }
 
         logger.debug(`
@@ -662,7 +660,7 @@ export const fulfillOrCancelX2Y2 = async (
         )
         if (wallet) {
           await nftService.updateNFTOwnershipAndMetadata(
-            obj, wallet.userId, wallet.id, chainId.toString(),
+            obj, wallet.userId, wallet, chainId.toString(),
           )
         }
 
@@ -783,7 +781,7 @@ export const fulfillOrCancelX2Y2 = async (
         )
         if (wallet) {
           await nftService.updateNFTOwnershipAndMetadata(
-            obj, wallet.userId, wallet.id, chainId.toString(),
+            obj, wallet.userId, wallet, chainId.toString(),
           )
         }
         logger.debug(`

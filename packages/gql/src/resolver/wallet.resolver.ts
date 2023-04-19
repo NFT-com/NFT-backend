@@ -3,11 +3,12 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { appError, profileError } from '@nftcom/error-types'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { auth, Context, joi } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { _logger, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.Wallet, _logger.Context.GraphQL)
 

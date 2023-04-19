@@ -1,4 +1,4 @@
-import { Context } from '@nftcom/gql/defs'
+import { Context } from '@nftcom/misc'
 import { default as collectionResolver } from '@nftcom/gql/resolver/collection.resolver'
 import { fetchData } from '@nftcom/nftport-client'
 import { Repository } from '@nftcom/shared/db/db'

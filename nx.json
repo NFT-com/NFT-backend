@@ -1,5 +1,9 @@
 {
   "extends": "nx/presets/npm.json",
+  "affected": {
+    "defaultBase": "main"
+  },
+  "npmScope": "@nftcom",
   "tasksRunnerOptions": {
     "default": {
       "runner": "nx/tasks-runners/default",
@@ -43,7 +47,9 @@
       "inputs": [ "default", "^default", "{workspaceRoot}/jest.preset.js" ]
     }
   },
-  "affected": {
-    "defaultBase": "main"
+  "pluginsConfig": {
+    "@nrwl/js": {
+      "analyzeSourceFiles": true
+    }
   }
 }

@@ -1,13 +1,6 @@
 import { BigNumber, ethers } from 'ethers'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore:next-line
-import { nftService } from '@nftcom/gql/service'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { core, searchEngineService } from '@nftcom/gql/service'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+import { core, nftService, searchEngineService } from '@nftcom/service';
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
 import { isPhishingURL } from '../jobs/collection.handler'

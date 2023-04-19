@@ -6,7 +6,7 @@ import * as Typesense from 'typesense'
 import { CollectionSchema, CollectionUpdateSchema } from 'typesense/lib/Typesense/Collection'
 import { CollectionCreateSchema } from 'typesense/lib/Typesense/Collections'
 
-import { searchEngineService, txActivityService } from '@nftcom/gql/service'
+import { searchEngineService, txActivityService } from '@nftcom/service'
 import { _logger, defs, utils } from '@nftcom/shared'
 import { db } from '@nftcom/shared'
 

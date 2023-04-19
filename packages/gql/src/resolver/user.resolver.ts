@@ -7,13 +7,13 @@ import Joi from 'joi'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, mintError, userError, walletError } from '@nftcom/error-types'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi } from '@nftcom/gql/helper'
 import { obliterateQueue } from '@nftcom/gql/job/job'
-import { core, sendgrid } from '@nftcom/gql/service'
-import { profileActionType } from '@nftcom/gql/service/core.service'
+import { auth, Context, joi } from '@nftcom/misc'
+import { core, sendgrid } from '@nftcom/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 
@@ -838,7 +838,7 @@ const getProfileActions = async (_: any, args: any, ctx: Context): Promise<Array
   return actions.map(action => {
     return {
       profileUrl: action.profileUrl,
-      action: profileActionType(action),
+      action: core.profileActionType(action),
       point: action.point,
     }
   })
@@ -863,14 +863,14 @@ const getProfilesActionsWithPoints = async (
     if (!seen[action.profileUrl]) {
       profilesActions.push({
         url: action.profileUrl,
-        action: [profileActionType(action)],
+        action: [core.profileActionType(action)],
         totalPoints: action.point,
-      })
+      });
       seen[action.profileUrl] = true
     } else {
       const index = profilesActions.findIndex(profileAction => profileAction.url === action.profileUrl)
       if (index !== -1) {
-        profilesActions[index].action.push(profileActionType(action))
+        profilesActions[index].action.push(core.profileActionType(action));
         profilesActions[index].totalPoints += action.point
       }
     }

@@ -1,4 +1,4 @@
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import {
   fetchTxsFromNFTPort,
   retrieveContractNFTs,

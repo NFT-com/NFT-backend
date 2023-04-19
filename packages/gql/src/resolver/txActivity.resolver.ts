@@ -6,13 +6,13 @@ import { In, Not, UpdateResult } from 'typeorm'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, txActivityError } from '@nftcom/error-types'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core, openseaService } from '@nftcom/gql/service'
-import { paginatedResultFromIndexedArray } from '@nftcom/gql/service/core.service'
+import { auth, Context, joi, pagination } from '@nftcom/misc';
+import { core, openseaService } from '@nftcom/service'
 import { contracts, defs, entity, helper } from '@nftcom/shared'
 import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
+
+import { gql } from '../defs'
 
 type TxActivityDAO = entity.TxActivity & {
   transaction: entity.TxTransaction
@@ -445,7 +445,7 @@ const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Cont
       3 * 60, // 3 min
     )
   }
-  return paginatedResultFromIndexedArray(indexedActivities, pageInput)
+  return core.paginatedResultFromIndexedArray(indexedActivities, pageInput);
 }
 
 const fulfillActivitiesNFTId = async (

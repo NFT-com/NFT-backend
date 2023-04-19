@@ -1,6 +1,6 @@
 import { ApolloServer } from 'apollo-server-express'
 
-import { User, Wallet } from '@nftcom/gql/defs/gql'
+import { User, Wallet } from '@nftcom/misc/gql'
 import { rateLimitedSchema } from '@nftcom/gql/schema'
 import { createLoaders, formatError } from '@nftcom/gql/server'
 import { defs } from '@nftcom/shared'

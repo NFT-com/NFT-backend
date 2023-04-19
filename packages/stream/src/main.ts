@@ -7,7 +7,6 @@ import kill from 'kill-port'
 import multer from 'multer'
 
 import { _logger, db, fp, helper } from '@nftcom/shared'
-import { trace } from '@opentelemetry/api'
 
 import { dbConfig } from './config'
 import { nftOrderSubqueue, QUEUE_TYPES, queues, startAndListen, stopAndDisconnect } from './jobs/jobs'
@@ -688,14 +687,10 @@ process.on('SIGTERM', gracefulShutdown)
 // catches uncaught exceptions
 process.on('uncaughtException', async (err) => {
   logger.error(err, 'Uncaught Exception thrown!')
-  const activeSpan = trace.getActiveSpan()
-  activeSpan && activeSpan.setAttribute('sampling.priority', 1)
   await gracefulShutdown()
 })
 process.on('unhandledRejection', async (reason, p) => {
   logger.error({ p, reason }, `Unhandled Rejection, reason: ${reason}`)
-  const activeSpan = trace.getActiveSpan()
-  activeSpan && activeSpan.setAttribute('sampling.priority', 1)
   await gracefulShutdown()
 })
 

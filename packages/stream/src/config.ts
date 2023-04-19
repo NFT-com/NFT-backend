@@ -10,7 +10,7 @@ export const dbConfig = {
   database: process.env.DB_DATABASE || 'app',
   logging: helper.parseBoolean(process.env.DB_LOGGING) || false,
   useSSL: helper.parseBoolean(process.env.DB_USE_SSL),
-  subscribers: ['../../../NFT-backend/packages/shared/src/db/subscriber/*.subscriber.ts'],
+  subscribers: ['../../shared/src/db/subscriber/*.subscriber.ts'],
 }
 
 export const redisConfig = {

@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/gql/config'
-import { gql } from '@nftcom/gql/defs'
+import { testDBConfig } from '@nftcom/misc'
+import { gql } from '@nftcom/misc'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
 import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'

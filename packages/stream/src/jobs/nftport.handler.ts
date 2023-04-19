@@ -1,9 +1,7 @@
 import { Job } from 'bullmq'
 import { BigNumber } from 'ethers'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { nftPortService } from '@nftcom/gql/service'
+import { nftPortService } from '@nftcom/service'
 import { _logger, helper } from '@nftcom/shared'
 
 import { cache, CacheKeys } from '../service/cache'

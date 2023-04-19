@@ -32,7 +32,9 @@
       "@nftcom/error-types": ["packages/error-types/src/index.ts"],
       "@nftcom/gql/*": ["packages/gql/src/*"],
       "@nftcom/leaderboard": ["packages/leaderboard/src/index.ts"],
+      "@nftcom/misc": ["packages/misc/src/index.ts"],
       "@nftcom/nftport-client": ["packages/nftport-client/src/index.ts"],
+      "@nftcom/service": ["packages/service/src/index.ts"],
       "@nftcom/shared/*": ["packages/shared/src/*"]
     }
   },

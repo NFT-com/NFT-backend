@@ -1,12 +1,9 @@
 import { Job } from 'bull'
 
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '@nftcom/cache'
-import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '@nftcom/gql/service/opensea.service'
-import { _logger, db, entity } from '@nftcom/shared'
-import { helper } from '@nftcom/shared'
+import { looksrareService, openseaService } from '@nftcom/service';
+import { _logger, db, entity, helper } from '@nftcom/shared';
 import * as Sentry from '@sentry/node'
-
-import { retrieveMultipleOrdersLooksrare } from '../service/looksare.service'
 
 // exported for tests
 export const repositories = db.newRepositories()
@@ -165,7 +162,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
     }
 
     if (nfts.length) {
-      const nftRequest: Array<OpenseaOrderRequest> = nfts.map((nft: string) => {
+      const nftRequest: Array<openseaService.OpenseaOrderRequest> = nfts.map((nft: string) => {
         const nftSplit: Array<string> = nft.split(':')
         const contract: string = nftSplit?.[0]
         const tokenId: string = helper.bigNumber(nftSplit?.[1]).toString()
@@ -179,9 +176,13 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       // settlements should not depend on each other
       const [opensea, looksrare] = await Promise.allSettled([
-        retrieveMultipleOrdersOpensea(nftRequest, chainId, true),
-        retrieveMultipleOrdersLooksrare(nftRequest, chainId, true),
-      ])
+        openseaService.retrieveMultipleOrdersOpensea(nftRequest, chainId, true),
+        looksrareService.retrieveMultipleOrdersLooksrare(
+          nftRequest,
+          chainId,
+          true
+        ),
+      ]);
 
       const listings: entity.TxOrder[] = []
       const bids: entity.TxOrder[] = []
