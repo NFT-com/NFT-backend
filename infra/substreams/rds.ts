@@ -2,12 +2,12 @@ import * as aws from '@pulumi/aws'
 import { EngineType } from '@pulumi/aws/types/enums/rds'
 import * as pulumi from '@pulumi/pulumi'
 
-import { getResourceName, isProduction } from '../helper'
-import { vpcSubnets } from './index'
+
+import { getResourceName, isProduction } from "../helper";
+import { vpcSubnets } from "./index";
 
 export type SubstreamRDSOutput = {
-  main: aws.rds.Cluster
-  host: string
+    main: aws.rds.Cluster
 }
 
 //should take in an array of subnets
@@ -42,7 +42,7 @@ const createMain = (
 
     databaseName: 'app',
     masterUsername: 'app',
-    masterPassword: process.env.DB_PASSWORD,
+    masterPassword: process.env.SUBSTREAMS_DB_PASSWORD,
     port: 5432,
   })
 
@@ -50,17 +50,18 @@ const createMain = (
   const clusterInstances: aws.rds.ClusterInstance[] = []
   for (let i = 0; i < numInstances; i++) {
     clusterInstances.push(
-      new aws.rds.ClusterInstance(`substreams_main_instance_${i + 1}`, {
-        identifier: getResourceName(`substream-v2-${i + 1}`),
-        clusterIdentifier: sf_cluster.id,
-        instanceClass: 'db.t3.medium',
-        engine: engineType,
-        engineVersion: sf_cluster.engineVersion,
-        dbParameterGroupName: 'default.aurora-postgresql14',
-        dbSubnetGroupName: subnetGroup.name,
-        availabilityZone: zones[0],
+        new aws.rds.ClusterInstance(`substreams_main_instance_${i + 1}`, 
+        {
+            identifier: getResourceName(`substream-v2-${ i + 1}`),
+            clusterIdentifier: sf_cluster.id,
+            instanceClass: config.require('RDSInstanceType'),
+            engine: engineType,
+            engineVersion: sf_cluster.engineVersion,
+            dbParameterGroupName: "default.aurora-postgresql14",
+            dbSubnetGroupName: subnetGroup.name,
+            availabilityZone: zones[0],
 
-        performanceInsightsEnabled: true,
+            performanceInsightsEnabled: true,
 
         autoMinorVersionUpgrade: true,
         publiclyAccessible: true,
@@ -72,13 +73,14 @@ const createMain = (
 }
 
 export const createSubstreamClusters = (
-  config: pulumi.Config,
-  subnetGroups: vpcSubnets,
-  securityGroup: aws.ec2.SecurityGroup,
-  zones: string[],
-): SubstreamRDSOutput => {
-  const main = createMain(config, subnetGroups, securityGroup, zones)
-  const endpoint = pulumi.interpolate`${main.endpoint}`
-  const endpointStr: string = endpoint.toString()
-  return { main: main, host: endpointStr }
-}
+
+    config: pulumi.Config,
+    subnetGroups: vpcSubnets,
+    securityGroup: aws.ec2.SecurityGroup,
+    zones: string[],
+  ): SubstreamRDSOutput => {
+    const main = createMain(config, subnetGroups, securityGroup, zones)
+    return { main: main}
+  }
+  
+
