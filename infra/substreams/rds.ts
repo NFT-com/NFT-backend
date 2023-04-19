@@ -14,7 +14,7 @@ export type SubstreamRDSOutput = {
 const getSubnetGroup = (subnetGroups: vpcSubnets): aws.rds.SubnetGroup => {
   return new aws.rds.SubnetGroup('aurora_subnet_group', {
     name: getResourceName('substreams_v2'),
-    subnetIds: isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets,
+    subnetIds: subnetGroups.publicSubnets,
   })
 }
 
