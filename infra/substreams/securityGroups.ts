@@ -61,7 +61,7 @@ export const buildSecurityGroups = (config: pulumi.Config, vpc: string): SGOutpu
     name: getResourceName('substreams-postgres_v2'),
     description: 'Allow traffic to Substreams (Postgres) main instance',
     vpcId: vpc,
-    ingress: isProduction() ? [buildIngressRule(5432, 'tcp', [substreams.id])] : [buildIngressRule(5432)],
+    ingress: [buildIngressRule(5432)],
     egress: [buildEgressRule(5432)],
   })
 
