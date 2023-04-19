@@ -273,25 +273,21 @@ export const paginatedEntitiesBy = <T>(
   relations: string[],
   orderKey = 'createdAt',
   orderDirection = 'DESC',
-  select?: FindOptionsSelect<Partial<T>>
+  select?: FindOptionsSelect<Partial<T>>,
 ): Promise<defs.PageableResult<T>> => {
-  const pageableFilters = pagination.toPageableFilters(
-    pageInput,
-    filters,
-    orderKey
-  );
-  const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection };
-  const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC';
+  const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
+  const orderBy = <FindOptionsOrder<any>>{ [orderKey]: orderDirection }
+  const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reversedOrderBy = <FindOptionsOrder<any>>{
     [orderKey]: reversedOrderDirection,
-  };
+  }
   const pageOptions = {
     where: pageableFilters,
     relations: relations,
     order: orderBy,
     take: pageInput.first,
     select,
-  };
+  }
 
   return pagination.resolvePage<T>(pageInput, {
     firstAfter: () => repo.findPageable(pageOptions as FindManyOptions<T>),
@@ -311,8 +307,8 @@ export const paginatedEntitiesBy = <T>(
           take: pageInput.last,
         } as FindManyOptions<T>)
         .then(pagination.reverseResult),
-  });
-};
+  })
+}
 
 /**
  * @summary DB pagination wrapper, returns a page of results from provided db

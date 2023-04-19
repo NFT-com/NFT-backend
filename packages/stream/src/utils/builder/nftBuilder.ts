@@ -13,20 +13,12 @@ export const collectionEntityBuilder = async (
   chainId: string,
 ): Promise<Partial<entity.Collection>> => {
   // get collection info
-  let collectionName = await nftService.getCollectionNameFromContract(
-    contract,
-    chainId,
-    defs.NFTType.ERC721,
-  )
+  let collectionName = await nftService.getCollectionNameFromContract(contract, chainId, defs.NFTType.ERC721)
 
   if (collectionName === 'Unknown Name') {
-    collectionName = await nftService.getCollectionNameFromContract(
-      contract,
-      chainId,
-      defs.NFTType.ERC1155,
-    )
+    collectionName = await nftService.getCollectionNameFromContract(contract, chainId, defs.NFTType.ERC1155)
   }
-    
+
   // check if deployer of associated contract is in associated addresses
   const deployer = await alchemyService.getCollectionDeployer(contract, chainId)
   return {
@@ -49,10 +41,7 @@ const checkSumOwner = (owner: string): string | undefined => {
 }
 
 // for NftPort CryptoPunks specifically
-export const nftEntityBuilderCryptoPunks = (
-  nft: NFT_NftPort,
-  chainId: string,
-): entity.NFT => {
+export const nftEntityBuilderCryptoPunks = (nft: NFT_NftPort, chainId: string): entity.NFT => {
   const csOwner = checkSumOwner(nft.owner)
   return {
     contract: helper.checkSum(nft.contract_address),
@@ -71,32 +60,23 @@ export const nftEntityBuilderCryptoPunks = (
 
 export const nftEntityBuilder = async (
   nft: nftService.AlchemyNFTMetaDataResponse & { owner: string },
-  chainId: string
+  chainId: string,
 ): Promise<entity.NFT> => {
-  const csOwner = checkSumOwner(nft.owner);
+  const csOwner = checkSumOwner(nft.owner)
   return {
     contract: helper.checkSum(nft.contract.address),
     tokenId: helper.bigNumberToHex(nft.id.tokenId),
     type: nftService.getNftType(nft),
     owner: csOwner,
     metadata: {
-      name: nftService.getNftName(
-        nft,
-        undefined,
-        nft.contractMetadata,
-        helper.bigNumberToString(nft.id.tokenId)
-      ),
-      description: nftService.getNftDescription(
-        nft,
-        undefined,
-        nft.contractMetadata
-      ),
+      name: nftService.getNftName(nft, undefined, nft.contractMetadata, helper.bigNumberToString(nft.id.tokenId)),
+      description: nftService.getNftDescription(nft, undefined, nft.contractMetadata),
       imageURL: await nftService.getNftImage(nft),
       traits: nftService.getMetadataTraits(nft?.metadata),
     },
     chainId,
-  } as entity.NFT;
-};
+  } as entity.NFT
+}
 
 // traits with rarity
 export const nftTraitBuilder = (
@@ -106,14 +86,14 @@ export const nftTraitBuilder = (
   const traits: defs.Trait[] = []
   if (nftAttributes.length) {
     for (const attribute of nftAttributes) {
-      const traitExists: NFTPortRarityAttributes = rarityAttributes.find(
-        (rarityAttribute: NFTPortRarityAttributes) => {
-          if (rarityAttribute?.trait_type === attribute?.type
-            && String(rarityAttribute?.value || '').trim() === String(attribute?.value || '').trim()) {
-            return rarityAttribute
-          }
-        },
-      )
+      const traitExists: NFTPortRarityAttributes = rarityAttributes.find((rarityAttribute: NFTPortRarityAttributes) => {
+        if (
+          rarityAttribute?.trait_type === attribute?.type &&
+          String(rarityAttribute?.value || '').trim() === String(attribute?.value || '').trim()
+        ) {
+          return rarityAttribute
+        }
+      })
       let traitsToBePushed: defs.Trait = {
         ...attribute,
       }
@@ -122,7 +102,7 @@ export const nftTraitBuilder = (
         traitsToBePushed = {
           ...traitsToBePushed,
           type: traitExists?.trait_type || attribute?.type || '',
-          value: traitExists?.value || attribute?.value|| '',
+          value: traitExists?.value || attribute?.value || '',
         }
         if (traitExists?.statistics?.prevalence) {
           traitsToBePushed = {
@@ -132,9 +112,7 @@ export const nftTraitBuilder = (
         }
       }
 
-      traits.push(
-        traitsToBePushed,
-      )
+      traits.push(traitsToBePushed)
     }
   }
   return traits

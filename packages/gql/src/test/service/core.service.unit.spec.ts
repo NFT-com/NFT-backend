@@ -1,11 +1,11 @@
 import { BigNumber, ethers } from 'ethers'
 
-import { testDBConfig } from '@nftcom/misc'
-import { Context } from '@nftcom/misc'
-import { WalletInput } from '@nftcom/misc/gql'
 import { createLoaders } from '@nftcom/gql/server'
 import { createProfileFromEvent, fetchDataUsingMulticall, getWallet } from '@nftcom/gql/service/core.service'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
+import { testDBConfig } from '@nftcom/misc'
+import { Context } from '@nftcom/misc'
+import { WalletInput } from '@nftcom/misc/gql'
 import { contracts, db, defs } from '@nftcom/shared'
 import { User, Wallet } from '@nftcom/shared/db/entity'
 

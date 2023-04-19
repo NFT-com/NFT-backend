@@ -14,10 +14,10 @@ const connectionString = process.env.STREAMING_FAST_CONNECTION_STRING
 const logger = _logger.Factory('STREAMINGFAST')
 const client = new Client({ connectionString })
 const nftDoesNotExist = new EventEmitter()
-const blockRange = 200                    // 200 blocks padding for internal of latest block numbers
-const REMOVE_SPAM_FILTER = true           // filter out spam transfers
-const ONLY_OFFICIAL_FILTER = false        // only listen to official contracts
-const ONLY_EXISTING_NFT_FILTER = false    // only listen to existing NFTs
+const blockRange = 200 // 200 blocks padding for internal of latest block numbers
+const REMOVE_SPAM_FILTER = true // filter out spam transfers
+const ONLY_OFFICIAL_FILTER = false // only listen to official contracts
+const ONLY_EXISTING_NFT_FILTER = false // only listen to existing NFTs
 
 let latestBlockNumber: number = null
 let interval: NodeJS.Timeout = null
@@ -31,9 +31,7 @@ const handleFilter = async (contractAddress: string, tokenId: string): Promise<b
   }
 
   if (REMOVE_SPAM_FILTER) {
-    if (await cache.sismember(
-      CacheKeys.SPAM_COLLECTIONS, helper.checkSum(contractAddress),
-    )) return false
+    if (await cache.sismember(CacheKeys.SPAM_COLLECTIONS, helper.checkSum(contractAddress))) return false
   }
 
   if (ONLY_EXISTING_NFT_FILTER) {
@@ -74,7 +72,8 @@ const handleNotification = async (msg: any): Promise<void> => {
     logInfoBatch.push(`[handleNotification] - the latest block number is ${latestBlockNumber}`)
   }
 
-  const [schema, blockNumber, tokenId, contractAddress, quantity, fromAddress, toAddress, txHash, timestamp] = msg.payload.split('|')
+  const [schema, blockNumber, tokenId, contractAddress, quantity, fromAddress, toAddress, txHash, timestamp] =
+    msg.payload.split('|')
   const blockDifference = Math.abs(latestBlockNumber - Number(blockNumber))
   const hexTokenId = ensureHexPrefix(tokenId)
   const hexContractAddress = ensureHexPrefix(contractAddress)
@@ -82,9 +81,7 @@ const handleNotification = async (msg: any): Promise<void> => {
   const hexToAddress = ensureHexPrefix(toAddress)
   const hexTxHash = ensureHexPrefix(txHash)
 
-  if (blockDifference <= blockRange &&
-    await handleFilter(contractAddress, hexTokenId)
-  ) {
+  if (blockDifference <= blockRange && (await handleFilter(contractAddress, hexTokenId))) {
     if (hexFromAddress === '0x0000000000000000000000000000000000000000') {
       const start2 = new Date().getTime()
       await atomicOwnershipUpdate(
@@ -93,9 +90,15 @@ const handleNotification = async (msg: any): Promise<void> => {
         hexFromAddress,
         hexToAddress,
         '1', // mainnet ETH
-        schema
+        schema,
       )
-      logInfoBatch.push(`streamingFast (took ${new Date().getTime() - start2}ms): [MINTED]: ${schema}/${hexContractAddress}/${hexTokenId} to ${hexToAddress}, ${Number(quantity) > 1 ? `quantity=${quantity}, ` : ''}https://etherscan.io/tx/${hexTxHash}`)
+      logInfoBatch.push(
+        `streamingFast (took ${
+          new Date().getTime() - start2
+        }ms): [MINTED]: ${schema}/${hexContractAddress}/${hexTokenId} to ${hexToAddress}, ${
+          Number(quantity) > 1 ? `quantity=${quantity}, ` : ''
+        }https://etherscan.io/tx/${hexTxHash}`,
+      )
     } else if (isLikelyBurnAddress(hexToAddress)) {
       logInfoBatch.push(
         `streamingFast: [BURNED]: ${schema}/${hexContractAddress}/${hexTokenId} from ${hexFromAddress}, ${
@@ -122,7 +125,11 @@ const handleNotification = async (msg: any): Promise<void> => {
       )
     }
   } else {
-    logWarningBatch.push(`Filtered Transfer for ${schema}/${hexContractAddress}/${hexTokenId} from ${hexFromAddress} to ${hexToAddress}, ${Number(quantity) > 1 ? `quantity=${quantity}, ` : ''}https://etherscan.io/tx/${hexTxHash}`)
+    logWarningBatch.push(
+      `Filtered Transfer for ${schema}/${hexContractAddress}/${hexTokenId} from ${hexFromAddress} to ${hexToAddress}, ${
+        Number(quantity) > 1 ? `quantity=${quantity}, ` : ''
+      }https://etherscan.io/tx/${hexTxHash}`,
+    )
   }
 
   if (logInfoBatch.length >= BATCH_LOG_SIZE) {

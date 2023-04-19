@@ -9,14 +9,7 @@ import { ILike, In } from 'typeorm'
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers } from '@nftcom/cache'
 import { appError, collectionError, nftError } from '@nftcom/error-types'
-import {
-  assetBucket,
-  auth,
-  Context,
-  GetCollectionInfoArgs,
-  Pageable,
-pagination,
-} from '@nftcom/misc'
+import { assetBucket, auth, Context, GetCollectionInfoArgs, Pageable, pagination } from '@nftcom/misc'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
@@ -36,7 +29,7 @@ import {
   paginatedOffsetResultsFromEntitiesBy,
   processIPFSURL,
   s3ToCdn,
-  tokenUriAbi
+  tokenUriAbi,
 } from './core.service'
 import { clearNftCache, nft as nftLoader } from './dataloader'
 import { NFTPortRarityAttributes } from './nftport.service'
@@ -130,7 +123,7 @@ export interface AlchemyNFTMetaDataResponse {
       raw?: string
       format?: string
       bytes?: number
-    }
+    },
   ]
   metadata?: {
     name?: string
@@ -774,7 +767,11 @@ const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
   }
 }
 
-export const parseNFTUriString = async (uriString: string, tokenId?: string, csContract?: string): Promise<Metadata | null> => {
+export const parseNFTUriString = async (
+  uriString: string,
+  tokenId?: string,
+  csContract?: string,
+): Promise<Metadata | null> => {
   try {
     // Handle OpenSea metadata API format with 0x{id} placeholder
     let resolvedUriString = uriString
@@ -901,7 +898,10 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string, csC
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
   } catch (error) {
-    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}, csContract=${csContract}`)
+    logger.error(
+      error,
+      `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}, csContract=${csContract}`,
+    )
     return null
   }
 }
@@ -915,7 +915,7 @@ type Scalars = {
   Address: any
   DateTime: any
   Uint256: any
-};
+}
 type OfficialCollectionNFTsInput = {
   chainId?: InputMaybe<Scalars['String']>
   collectionAddress: Scalars['Address']
@@ -3433,7 +3433,6 @@ export const filterNativeOrdersForNFT = async (
   )
   return filteredOrders
 }
-
 
 enum ActivityExpiration {
   Active = 'Active',

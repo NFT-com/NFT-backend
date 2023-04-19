@@ -1,9 +1,9 @@
 import * as typeorm from 'typeorm'
 import { FindManyOptions, FindOneOptions, FindOptionsWhere, IsNull } from 'typeorm'
 
-import { db } from '@nftcom/shared/db'
-import { PageableQuery, PageableResult, UpsertOptions } from '@nftcom/shared/defs'
-import { helper } from '@nftcom/shared/helper'
+import { PageableQuery, PageableResult, UpsertOptions } from '../../defs'
+import { helper } from '../../helper'
+import { db } from '../'
 
 export class BaseRepository<T> {
   private readonly entity: typeorm.EntityTarget<T>

@@ -412,18 +412,14 @@ export const paginatedActivitiesBy = (
   orderKey = 'createdAt',
   orderDirection = 'DESC',
   protocol?: defs.ProtocolType,
-  distinctOn?: defs.DistinctOn<entity.TxActivity>
+  distinctOn?: defs.DistinctOn<entity.TxActivity>,
 ): Promise<defs.PageableResult<entity.TxActivity>> => {
-  const pageableFilters = pagination.toPageableFilters(
-    pageInput,
-    filters,
-    orderKey
-  );
-  const orderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: orderDirection };
-  const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC';
+  const pageableFilters = pagination.toPageableFilters(pageInput, filters, orderKey)
+  const orderBy = <defs.OrderBy>{ [`activity.${orderKey}`]: orderDirection }
+  const reversedOrderDirection = orderDirection === 'DESC' ? 'ASC' : 'DESC'
   const reversedOrderBy = <defs.OrderBy>{
     [`activity.${orderKey}`]: reversedOrderDirection,
-  };
+  }
   return pagination.resolvePage<entity.TxActivity>(pageInput, {
     firstAfter: () =>
       repo.findActivities(
@@ -434,7 +430,7 @@ export const paginatedActivitiesBy = (
           take: pageInput.first,
           distinctOn,
         },
-        protocol
+        protocol,
       ),
     firstBefore: () =>
       repo.findActivities(
@@ -445,7 +441,7 @@ export const paginatedActivitiesBy = (
           take: pageInput.first,
           distinctOn,
         },
-        protocol
+        protocol,
       ),
     lastAfter: () =>
       repo
@@ -457,7 +453,7 @@ export const paginatedActivitiesBy = (
             take: pageInput.last,
             distinctOn,
           },
-          protocol
+          protocol,
         )
         .then(pagination.reverseResult),
     lastBefore: () =>
@@ -470,11 +466,11 @@ export const paginatedActivitiesBy = (
             take: pageInput.last,
             distinctOn,
           },
-          protocol
+          protocol,
         )
         .then(pagination.reverseResult),
-  });
-};
+  })
+}
 
 /**
  * triggerNFTOrderRefreshQueue

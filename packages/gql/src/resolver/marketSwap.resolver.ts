@@ -2,7 +2,7 @@ import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { auth, Context, joi } from '@nftcom/misc';
+import { auth, Context, joi } from '@nftcom/misc'
 import { _logger, contracts, db, defs, entity, helper, provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 

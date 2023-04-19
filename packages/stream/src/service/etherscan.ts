@@ -1,4 +1,3 @@
-
 import axios, { AxiosError, AxiosInstance } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 
@@ -10,7 +9,7 @@ export const getEtherscanInterceptor = (chainId: string): AxiosInstance => {
   const etherscanInstance = axios.create({
     baseURL: authBaseURL,
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/json',
     },
   })
@@ -24,12 +23,10 @@ export const getEtherscanInterceptor = (chainId: string): AxiosInstance => {
     return config
   })
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig = {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-              err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
@@ -41,6 +38,6 @@ export const getEtherscanInterceptor = (chainId: string): AxiosInstance => {
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(etherscanInstance,  retryOptions)
+  axiosRetry(etherscanInstance, retryOptions)
   return etherscanInstance
 }

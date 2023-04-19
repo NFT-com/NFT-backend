@@ -1,10 +1,9 @@
-
 import { AxiosInstance, AxiosResponse } from 'axios'
 import Bull, { Job } from 'bullmq'
 import { BigNumber } from 'ethers'
-import { createWriteStream, unlink } from 'fs';
-import fetch from 'node-fetch';
-import * as tar from 'tar';
+import { createWriteStream, unlink } from 'fs'
+import fetch from 'node-fetch'
+import * as tar from 'tar'
 import { FindOptionsWhere, In, IsNull, Not } from 'typeorm'
 
 import { nftService } from '@nftcom/service'
@@ -15,10 +14,20 @@ import { CollectionType, SyncCollectionInput } from '../middleware/validate'
 import { getAlchemyInterceptor } from '../service/alchemy'
 import { cache, CacheKeys, removeExpiredTimestampedZsetMembers, ttlForTimestampedZsetMembers } from '../service/cache'
 import { getEtherscanInterceptor } from '../service/etherscan'
-import { getNFTPortInterceptor, NFTPortNFT, retrieveContractNFTsNFTPort, retrieveNFTDetailsNFTPort } from '../service/nftPort'
+import {
+  getNFTPortInterceptor,
+  NFTPortNFT,
+  retrieveContractNFTsNFTPort,
+  retrieveNFTDetailsNFTPort,
+} from '../service/nftPort'
 import { fetchCollectionBannerImages } from '../service/opensea'
 import { delay } from '../utils'
-import { collectionEntityBuilder, nftEntityBuilder, nftEntityBuilderCryptoPunks, nftTraitBuilder } from '../utils/builder/nftBuilder'
+import {
+  collectionEntityBuilder,
+  nftEntityBuilder,
+  nftEntityBuilderCryptoPunks,
+  nftTraitBuilder,
+} from '../utils/builder/nftBuilder'
 import { uploadImageToS3 } from '../utils/uploader'
 import { collectionSyncSubqueue } from './jobs'
 
@@ -51,7 +60,7 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
   try {
     const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId, true)
     const nftPortInstance: AxiosInstance = await getNFTPortInterceptor('https://api.nftport.xyz/v0')
-  
+
     // nft port specific sync
     if (contract?.toLowerCase() == CRYPTOPUNK) {
       // process nfts for collection
@@ -59,28 +68,26 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
       let startPage = 1
 
       let queryParams = `chain=ethereum&page_number=${startPage}&page_size=50&include=metadata&refresh_metadata=false`
-      while(processCondition) {
-        const collectionNFTs: AxiosResponse = await nftPortInstance
-          .get(
-            `/nfts/${contract}?${queryParams}`)
+      while (processCondition) {
+        const collectionNFTs: AxiosResponse = await nftPortInstance.get(`/nfts/${contract}?${queryParams}`)
 
         logger.log(`=============== nft sync handler nftport: ${collectionNFTs?.data?.nfts.length}`)
 
         if (collectionNFTs?.data?.nfts.length) {
           const nfts = collectionNFTs?.data?.nfts
-          const nftTokenMap: string[] = nfts.map(
-            (nft: NFT_NftPort) => BigNumber.from(nft.token_id).toHexString())
+          const nftTokenMap: string[] = nfts.map((nft: NFT_NftPort) => BigNumber.from(nft.token_id).toHexString())
 
           logger.log(`=============== nft sync handler nftTokenMap: ${JSON.stringify(nftTokenMap)}`)
 
-          const existingNFTs: entity.NFT[] = await repositories.nft.find(
-            { where: { contract: helper.checkSum(contract), tokenId: In(nftTokenMap), chainId } },
+          const existingNFTs: entity.NFT[] = await repositories.nft.find({
+            where: { contract: helper.checkSum(contract), tokenId: In(nftTokenMap), chainId },
+          })
+          const existingNFTTokenMap: string[] = existingNFTs.map((nft: entity.NFT) =>
+            BigNumber.from(nft.tokenId).toHexString(),
           )
-          const existingNFTTokenMap: string[] = existingNFTs.map(
-            (nft: entity.NFT) => BigNumber.from(nft.tokenId).toHexString())
 
           logger.log(`=============== nft sync handler existingNFTTokenMap: ${JSON.stringify(existingNFTTokenMap)}`)
-            
+
           const nftPromiseArray: entity.NFT[] = []
           const nftPortNfts: NFT_NftPort[] = nfts
 
@@ -99,7 +106,7 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
               await nftService.indexNFTsOnSearchEngine(savedNFTs)
               logger.log(`saved ${queryParams}`)
             }
-    
+
             startPage += 1
             queryParams = `chain=ethereum&page_number=${startPage}&page_size=50&include=metadata&refresh_metadata=false`
           } catch (errSave) {
@@ -120,42 +127,41 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
       let processCondition = true
       let startToken = Number(startTokenParam) || ''
       let queryParams = `contractAddress=${contract}&withMetadata=true&startToken=${startToken}&limit=100`
-      while(processCondition) {
-        const collectionNFTs: AxiosResponse = await alchemyInstance
-          .get(
-            `/getNFTsForCollection?${queryParams}`)
+      while (processCondition) {
+        const collectionNFTs: AxiosResponse = await alchemyInstance.get(`/getNFTsForCollection?${queryParams}`)
 
         if (collectionNFTs?.data?.nfts.length) {
           const nfts = collectionNFTs?.data?.nfts
-          const nftTokenMap: string[] = nfts.map(
-            (nft: NFTAlchemy) => BigNumber.from(nft.id.tokenId).toHexString())
-          const existingNFTs: entity.NFT[] = await repositories.nft.find(
-            { where: { contract: helper.checkSum(contract), tokenId: In(nftTokenMap), chainId } },
-          )
-            
+          const nftTokenMap: string[] = nfts.map((nft: NFTAlchemy) => BigNumber.from(nft.id.tokenId).toHexString())
+          const existingNFTs: entity.NFT[] = await repositories.nft.find({
+            where: { contract: helper.checkSum(contract), tokenId: In(nftTokenMap), chainId },
+          })
+
           const nftPromiseArray: Partial<entity.NFT>[] = []
-          const alchemyNFTs: nftService.AlchemyNFTMetaDataResponse[] = nfts;
-          
+          const alchemyNFTs: nftService.AlchemyNFTMetaDataResponse[] = nfts
+
           for (const nft of alchemyNFTs) {
             let owner: string
             try {
-              const nftOwners = await nftService.getOwnersForNFT(
-                { tokenId: nft.id.tokenId, contract: nft.contract.address, chainId } as entity.NFT)
+              const nftOwners = await nftService.getOwnersForNFT({
+                tokenId: nft.id.tokenId,
+                contract: nft.contract.address,
+                chainId,
+              } as entity.NFT)
               if (nftOwners.length === 1) owner = nftOwners[0]
             } catch (err) {
               logger.error(err)
             }
-            
+
             // create if not exist, update if it does exist
             const nftEntity: entity.NFT = await nftEntityBuilder({ ...nft, owner }, chainId)
-            const processNFT: entity.NFT = existingNFTs.find(
-              (existingNft: entity.NFT) => {
-                if( existingNft.tokenId === BigNumber.from(nft.id.tokenId).toHexString()) {
-                  return {
-                    ...existingNft,
-                  }
+            const processNFT: entity.NFT = existingNFTs.find((existingNft: entity.NFT) => {
+              if (existingNft.tokenId === BigNumber.from(nft.id.tokenId).toHexString()) {
+                return {
+                  ...existingNft,
                 }
-              })
+              }
+            })
 
             if (processNFT?.id) {
               let updatedNFT: Partial<entity.NFT> = { id: processNFT?.id }
@@ -174,7 +180,7 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
               await nftService.indexNFTsOnSearchEngine(savedNFTs)
               logger.log(`saved ${queryParams}`)
             }
-    
+
             if (!collectionNFTs?.data?.nextToken) {
               processCondition = false
             } else {
@@ -201,20 +207,19 @@ export const nftSyncHandler = async (job: Job): Promise<void> => {
     await cache.sadd(`${CacheKeys.RECENTLY_SYNCED}_${chainId}`, contract + `${Number(startTokenParam) || ''}`)
 
     const zscoreOfContractInRefreshCache: string = await cache.zscore(
-      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, contract,
+      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
+      contract,
     )
     const zscoreOfContractInRefreshedCache: string = await cache.zscore(
-      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, contract,
+      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
+      contract,
     )
     const ttl = Number(zscoreOfContractInRefreshedCache)
     const expiredInRefreshedCache: boolean = new Date() > new Date(ttl)
 
-    if(!Number(zscoreOfContractInRefreshCache) && expiredInRefreshedCache) {
+    if (!Number(zscoreOfContractInRefreshCache) && expiredInRefreshedCache) {
       // rarity process
-      await cache.zadd(
-        `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
-        1, contract,
-      )
+      await cache.zadd(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, 1, contract)
     }
     // process subqueues in series, hence concurrency is explicitly set to one for rate limits
     // nftSyncSubqueue.process(1, nftBatchPersistenceHandler)
@@ -244,12 +249,18 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
     for (let i = 0; i < collections.length; i++) {
       const contract: string = collections[i].address
       const startTokenParam: string = collections[i]?.startToken || ''
-      const itemPresentInRefreshedCache: number = await cache.sismember(`${CacheKeys.RECENTLY_SYNCED}_${chainId}`, contract + startTokenParam)
+      const itemPresentInRefreshedCache: number = await cache.sismember(
+        `${CacheKeys.RECENTLY_SYNCED}_${chainId}`,
+        contract + startTokenParam,
+      )
       if (itemPresentInRefreshedCache) {
         continue
       }
 
-      const itemPresentInProgressCache: number = await cache.sismember(`${CacheKeys.SYNC_IN_PROGRESS}_${chainId}`, contract + startTokenParam)
+      const itemPresentInProgressCache: number = await cache.sismember(
+        `${CacheKeys.SYNC_IN_PROGRESS}_${chainId}`,
+        contract + startTokenParam,
+      )
       if (itemPresentInProgressCache) {
         continue
       }
@@ -260,33 +271,28 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
 
       const collectionType: string = collections[i].type
       const isSpamFromInput: boolean = collectionType === CollectionType.SPAM
-      const isSpamFromCache: number = await cache.sismember(
-        CacheKeys.SPAM_COLLECTIONS, contract + startTokenParam,
-      )
+      const isSpamFromCache: number = await cache.sismember(CacheKeys.SPAM_COLLECTIONS, contract + startTokenParam)
       const isOfficial: boolean = collectionType === CollectionType.OFFICIAL
       const isSpam: boolean = Boolean(isSpamFromCache) || isSpamFromInput
       if (!contractExistsInDB) {
-        if(!isSpam) {
+        if (!isSpam) {
           // for v2,  checks for collection type and runs when official; for v1 endpoint, runs for triggered collections
-          if (collectionType && isOfficial || !collectionType) {
+          if ((collectionType && isOfficial) || !collectionType) {
             contractInput.push(collections[i])
             contractsToBeProcessed.push(contract + startTokenParam)
           }
         }
 
-        contractToBeSaved.push(collectionEntityBuilder(
-          contract,
-          isOfficial,
-          isSpam,
-          chainId,
-        ))
+        contractToBeSaved.push(collectionEntityBuilder(contract, isOfficial, isSpam, chainId))
       } else {
         if (isSpam) {
-          await repositories.collection.updateOneById(contractExistsInDB.id,
-            { ...contractExistsInDB, isSpam: true, isOfficial: false },
-          )
+          await repositories.collection.updateOneById(contractExistsInDB.id, {
+            ...contractExistsInDB,
+            isSpam: true,
+            isOfficial: false,
+          })
         } else {
-          if (collectionType && isOfficial || !collectionType) {
+          if ((collectionType && isOfficial) || !collectionType) {
             if (collectionType) {
               if (isOfficial) {
                 const updatedCollection = {
@@ -294,9 +300,7 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
                   isSpam: false,
                   isOfficial: true,
                 } as entity.Collection
-                await repositories.collection.updateOneById(contractExistsInDB.id,
-                  { ...updatedCollection },
-                )
+                await repositories.collection.updateOneById(contractExistsInDB.id, { ...updatedCollection })
                 await nftService.indexCollectionsOnSearchEngine([updatedCollection])
               } else {
                 const updatedCollection = {
@@ -304,13 +308,11 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
                   isSpam: false,
                   isOfficial: false,
                 } as entity.Collection
-                await repositories.collection.updateOneById(contractExistsInDB.id,
-                  { ...updatedCollection },
-                )
+                await repositories.collection.updateOneById(contractExistsInDB.id, { ...updatedCollection })
                 await nftService.indexCollectionsOnSearchEngine([updatedCollection])
               }
             }
-           
+
             contractInput.push(collections[i])
             contractsToBeProcessed.push(contract + startTokenParam) // full resync (for cases where collections already exist, but we want to fetch all the NFTs)
           }
@@ -320,18 +322,12 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
 
     if (contractToBeSaved.length) {
       Promise.all(contractToBeSaved)
-        .then(
-          (collections: entity.Collection[]) =>
-            repositories.collection.saveMany(collections, { chunk: 100 }),
-        )
-        .then(
-          (savedCollections: entity.Collection[]) => {
-            const collections: string[] = savedCollections.map(
-              (savedCollection: entity.Collection) => savedCollection.id,
-            )
-            logger.log(`Collections Saved: ${collections.join(', ')}`)
-            nftService.indexCollectionsOnSearchEngine(savedCollections)
-          })
+        .then((collections: entity.Collection[]) => repositories.collection.saveMany(collections, { chunk: 100 }))
+        .then((savedCollections: entity.Collection[]) => {
+          const collections: string[] = savedCollections.map((savedCollection: entity.Collection) => savedCollection.id)
+          logger.log(`Collections Saved: ${collections.join(', ')}`)
+          nftService.indexCollectionsOnSearchEngine(savedCollections)
+        })
         .then(() => logger.log('Collections Indexed!'))
         .catch(err => logger.error(err, 'Collection Sync error while saving or indexing collections'))
     }
@@ -347,7 +343,8 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
         const job: Bull.Job = await collectionSyncSubqueue.getJob(jobId)
 
         if (!job || !job?.isActive() || !job?.isWaiting()) {
-          collectionSyncSubqueue.add(jobId,
+          collectionSyncSubqueue.add(
+            jobId,
             { contract, chainId, startTokenParam },
             {
               ...subQueueBaseOptions,
@@ -355,14 +352,14 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
             },
           )
         }
-              
+
         if (job) {
           // clean up
           if (job.isWaiting() || job.isWaitingChildren() || job.isDelayed() || job.isCompleted()) {
             logger.log(`Stack trace: ${job.stacktrace}`)
             await job.remove()
           }
-    
+
           if (job.isFailed()) {
             logger.log(`Failed reason for jobId-${job.id}: ${job.failedReason}`)
             logger.log(`Stack trace: ${job.stacktrace}`)
@@ -382,15 +379,15 @@ export const collectionSyncHandler = async (job: Job): Promise<void> => {
 //     logger.log(`nft batch persistence handler process started for: ${contract}, chainId: ${chainId}`)
 
 //     try {
-     
+
 //     } catch (err) {
 //         logger.error(`Error in nft persistence handler for: ${contract}, chainId: ${chainId} --- err: ${err}`)
 //     }
 // }`
 
 const deleteFiles = (filePaths: string[]): void => {
-  filePaths.forEach((filePath) => {
-    unlink(filePath, (err) => {
+  filePaths.forEach(filePath => {
+    unlink(filePath, err => {
       if (err) {
         logger.error(err, `Failed to delete file ${filePath}`)
       } else {
@@ -430,9 +427,9 @@ const downloadAndStorePhishingDatabase = async (url: string, base: string): Prom
           await tar.x({
             file: filePath,
             gzip: true,
-            onentry: async (entry) => {
+            onentry: async entry => {
               const chunks: Buffer[] = []
-              entry.on('data', (chunk) => chunks.push(chunk))
+              entry.on('data', chunk => chunks.push(chunk))
               entry.on('end', async () => {
                 const data = Buffer.concat(chunks).toString()
                 // Split the data by newline to get individual URLs.
@@ -444,7 +441,7 @@ const downloadAndStorePhishingDatabase = async (url: string, base: string): Prom
                   await cache.sadd(CacheKeys.PHISHING_URLS, ...batch)
                 }
               })
-            }
+            },
           })
 
           deleteFiles([filePath, filePathTxt])
@@ -454,7 +451,7 @@ const downloadAndStorePhishingDatabase = async (url: string, base: string): Prom
         }
       })
       tarGzFile.on('error', reject)
-    }).catch((error) => {
+    }).catch(error => {
       logger.error(error, `Failed to download and store phishing database: ${error}`)
       throw error
     })
@@ -467,15 +464,15 @@ const downloadAndStorePhishingDatabase = async (url: string, base: string): Prom
 
 // Helper function to check if a URL exists in the Redis set.
 export const isPhishingURL = async (url: string): Promise<boolean> => {
-  const isMember = await cache.sismember(CacheKeys.PHISHING_URLS, url);
-  return isMember === 1;
+  const isMember = await cache.sismember(CacheKeys.PHISHING_URLS, url)
+  return isMember === 1
 }
 
 export const spamCollectionSyncHandler = async (job: Job): Promise<void> => {
   logger.log('initiated spam collection sync')
   const chainId: string = job.data.chainId || process.env.chainId || '5'
   const alchemyInstance: AxiosInstance = await getAlchemyInterceptor(chainId, true)
-    
+
   try {
     const spamCollectionsResponse: AxiosResponse = await alchemyInstance.get('/getSpamContracts')
     if (spamCollectionsResponse?.data?.length) {
@@ -484,12 +481,13 @@ export const spamCollectionSyncHandler = async (job: Job): Promise<void> => {
     }
 
     // URL of the tar.gz file in the Phishing.Database repository.
-    const phishingDatabaseURL = 'https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/ALL-phishing-links.tar.gz';
+    const phishingDatabaseURL =
+      'https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/ALL-phishing-links.tar.gz'
     // Download, extract, and store the phishing database in Redis.
-    await downloadAndStorePhishingDatabase(phishingDatabaseURL, 'ALL-phishing-links');
+    await downloadAndStorePhishingDatabase(phishingDatabaseURL, 'ALL-phishing-links')
 
     // Test the helper function.
-    logger.info(await isPhishingURL('00000000000000000000000000000000000000000.xyz'));  // Output: true or false
+    logger.info(await isPhishingURL('00000000000000000000000000000000000000000.xyz')) // Output: true or false
 
     logger.log('completed spam collection and phishing database url sync')
   } catch (err) {
@@ -497,17 +495,13 @@ export const spamCollectionSyncHandler = async (job: Job): Promise<void> => {
   }
 }
 
-export const collectionIssuanceDateSync = async (job: Job): Promise<void> => { 
+export const collectionIssuanceDateSync = async (job: Job): Promise<void> => {
   logger.log('initiating collection issuance sync')
   const chainId: string = job?.data?.chainId || process.env.CHAIN_ID || '5'
 
   try {
-    const processedContracts: string[] = await cache.smembers(
-      CacheKeys.COLLECTION_ISSUANCE_DATE,
-    )
-    const progressContracts: string[] = await cache.smembers(
-      CacheKeys.COLLECTION_ISSUANCE_DATE_IN_PROGRESS,
-    )
+    const processedContracts: string[] = await cache.smembers(CacheKeys.COLLECTION_ISSUANCE_DATE)
+    const progressContracts: string[] = await cache.smembers(CacheKeys.COLLECTION_ISSUANCE_DATE_IN_PROGRESS)
     const cachedContracts: string[] = [...processedContracts, ...progressContracts]
     // official collection
     const collections: entity.Collection[] = await repositories.collection.find({
@@ -517,16 +511,15 @@ export const collectionIssuanceDateSync = async (job: Job): Promise<void> => {
         contract: Not(In(cachedContracts)),
       },
     })
-  
+
     let count = 0
     const updatedCollections: entity.Collection[] = []
     const etherscanInterceptor = getEtherscanInterceptor(chainId)
     for (const collection of collections) {
-      const collectionInCache: number = await cache.sismember(
-        CacheKeys.COLLECTION_ISSUANCE_DATE, collection.contract,
-      )
+      const collectionInCache: number = await cache.sismember(CacheKeys.COLLECTION_ISSUANCE_DATE, collection.contract)
       const collectionInProgressCache: number = await cache.sismember(
-        CacheKeys.COLLECTION_ISSUANCE_DATE_IN_PROGRESS, collection.contract,
+        CacheKeys.COLLECTION_ISSUANCE_DATE_IN_PROGRESS,
+        collection.contract,
       )
       // if collection does not have issuance date, process
       if (!collectionInCache && !collectionInProgressCache) {
@@ -541,7 +534,8 @@ export const collectionIssuanceDateSync = async (job: Job): Promise<void> => {
             startblock: '0',
             block: '99999999',
             sort: 'asc',
-          } })
+          },
+        })
         if (response?.data) {
           const issuanceDateTimeStamp: string = response?.data?.result?.[0]?.timeStamp
           if (issuanceDateTimeStamp) {
@@ -555,24 +549,20 @@ export const collectionIssuanceDateSync = async (job: Job): Promise<void> => {
           await delay(1000)
         }
       }
-  
+
       // for efficient memory storage, process persistence in batches of 1000
       if (updatedCollections.length >= 500) {
         await repositories.collection.saveMany(updatedCollections, { chunk: 100 })
         await nftService.indexCollectionsOnSearchEngine(updatedCollections)
-        const cacheContracts: string[] = updatedCollections.map(
-          (item: entity.Collection) => item.contract,
-        )
+        const cacheContracts: string[] = updatedCollections.map((item: entity.Collection) => item.contract)
         await cache.sadd(CacheKeys.COLLECTION_ISSUANCE_DATE, ...cacheContracts)
       }
     }
-  
+
     if (updatedCollections.length) {
       await repositories.collection.saveMany(updatedCollections, { chunk: 100 })
       await nftService.indexCollectionsOnSearchEngine(updatedCollections)
-      const cacheContracts: string[] = updatedCollections.map(
-        (item: entity.Collection) => item.contract,
-      )
+      const cacheContracts: string[] = updatedCollections.map((item: entity.Collection) => item.contract)
       await cache.sadd(CacheKeys.COLLECTION_ISSUANCE_DATE, ...cacheContracts)
     }
   } catch (err) {
@@ -586,7 +576,7 @@ const indexNFTs = async (nfts: Partial<entity.NFT>[]): Promise<void> => {
     try {
       const savedNFTs = await repositories.nft.saveMany(nfts, { chunk: 50 }) // temp chunk
       await nftService.indexNFTsOnSearchEngine(savedNFTs)
-    } catch(err) {
+    } catch (err) {
       logger.error(`Error while indexing nfts: ${err}`)
     }
   }
@@ -602,14 +592,14 @@ export const collectionBannerImageSync = async (job: Job): Promise<void> => {
         bannerUrl: IsNull(),
       },
     })
-    
+
     for (let i = 0; i < collections.length; i++) {
       const collection: Partial<entity.Collection> = collections[i]
       // find collection again and check if bannerUrl is null since cron happens every 15 seconds
       const collectionFromDB: Partial<entity.Collection> = await repositories.collection.findOne({
         where: {
           id: collection.id,
-        }
+        },
       })
 
       if (collectionFromDB.bannerUrl) {
@@ -628,29 +618,28 @@ export const collectionBannerImageSync = async (job: Job): Promise<void> => {
               },
             },
           })
-  
+
           let result
           if (collection?.contract && contractNFT?.tokenId) {
             try {
-              result = await retrieveNFTDetailsNFTPort(
-                collection.contract,
-                contractNFT.tokenId,
-                chainId,
-                false,
-                [],
-              )
+              result = await retrieveNFTDetailsNFTPort(collection.contract, contractNFT.tokenId, chainId, false, [])
             } catch (err) {
-              logger.error(`[collectionBannerImageSync] Error while fetching NFT details from NFT Port for contract: ${collection.contract} and tokenId: ${contractNFT.tokenId}`)
+              logger.error(
+                `[collectionBannerImageSync] Error while fetching NFT details from NFT Port for contract: ${collection.contract} and tokenId: ${contractNFT.tokenId}`,
+              )
             }
           }
-  
+
           let bannerImageUrl: string = null
           let imageUrl: string = null
 
           if (!result) {
-            [bannerImageUrl, imageUrl] = await fetchCollectionBannerImages(collection.contract, process.env.OPENSEA_ORDERS_API_KEY)
+            ;[bannerImageUrl, imageUrl] = await fetchCollectionBannerImages(
+              collection.contract,
+              process.env.OPENSEA_ORDERS_API_KEY,
+            )
           }
-  
+
           let bannerUrl: string = null
           const uploadPath = `collections/${chainId}/`
           //  NFT Port Collection Image
@@ -667,16 +656,12 @@ export const collectionBannerImageSync = async (job: Job): Promise<void> => {
           if (bannerUrl) {
             const filename = bannerUrl.split('/').pop()
             try {
-              const banner = await uploadImageToS3(
-                bannerUrl,
-                filename,
-                chainId,
-                collection.contract,
-                uploadPath,
-              )
+              const banner = await uploadImageToS3(bannerUrl, filename, chainId, collection.contract, uploadPath)
               bannerUrl = banner ? banner : bannerUrl
             } catch (err) {
-              logger.error(`[collectionBannerImageSync] Error while uploading banner image to S3 for collection: ${collection.contract}, bannerUrl: ${bannerUrl}, filename: ${filename}`)
+              logger.error(
+                `[collectionBannerImageSync] Error while uploading banner image to S3 for collection: ${collection.contract}, bannerUrl: ${bannerUrl}, filename: ${filename}`,
+              )
             }
 
             await repositories.collection.updateOneById(collection.id, {
@@ -688,12 +673,16 @@ export const collectionBannerImageSync = async (job: Job): Promise<void> => {
               bannerUrl: 'https://cdn.nft.com/collectionBanner_default.png',
             }
 
-            if (!collection.logoUrl) updateObject['logoUrl'] = imageUrl || 'https://cdn.nft.com/profile-image-default.svg'
+            if (!collection.logoUrl)
+              updateObject['logoUrl'] = imageUrl || 'https://cdn.nft.com/profile-image-default.svg'
 
             await repositories.collection.updateOneById(collection.id, updateObject)
           }
         } catch (err) {
-          logger.error(err, `[collectionBannerImageSync] Error occured while fetching contract NFT for ${collection.contract}`)
+          logger.error(
+            err,
+            `[collectionBannerImageSync] Error occured while fetching contract NFT for ${collection.contract}`,
+          )
         }
       }
     }
@@ -713,15 +702,15 @@ export const collectionNameSync = async (job: Job): Promise<void> => {
       isSpam: false,
       chainId,
     }
-  
+
     if (contract !== undefined && contract !== null) {
       filters = { ...filters, contract: helper.checkSum(contract) }
     }
-  
+
     if (official !== undefined && official !== null) {
       filters = { ...filters, isOfficial: Boolean(official) }
     }
-  
+
     const collections: entity.Collection[] = await repositories.collection.find({
       where: {
         ...filters,
@@ -771,15 +760,19 @@ export const raritySync = async (job: Job): Promise<void> => {
   logger.log('initiated rarity sync')
   const chainId: string = job.data.chainId || process.env.chainId || '5'
   try {
-    await removeExpiredTimestampedZsetMembers(
-      `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
-      Date.now(),
+    await removeExpiredTimestampedZsetMembers(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, Date.now())
+    const cachedContracts = await cache.zrevrangebyscore(
+      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
+      '+inf',
+      '(0',
     )
-    const cachedContracts = await cache.zrevrangebyscore(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, '+inf', '(0')
-    if(cachedContracts?.length) {
+    if (cachedContracts?.length) {
       // loop
       for (const contract of cachedContracts) {
-        const existsInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chainId}`, contract)
+        const existsInRefreshedCache: string = await cache.zscore(
+          `${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chainId}`,
+          contract,
+        )
 
         if (Number(existsInRefreshedCache)) {
           const ttlNotExpired: boolean = Date.now() < Number(existsInRefreshedCache)
@@ -793,45 +786,35 @@ export const raritySync = async (job: Job): Promise<void> => {
         let page = 1
         let rateLimitDelayCounter = 0
         let nftPromiseArray: Partial<entity.NFT>[] = []
-        while(processCondition) {
-          const nftPortResult = await retrieveContractNFTsNFTPort(
-            contract,
-            chainId,
-            false,
-            page,
-            ['rarity'],
-          )
+        while (processCondition) {
+          const nftPortResult = await retrieveContractNFTsNFTPort(contract, chainId, false, page, ['rarity'])
 
           if (nftPortResult?.nfts?.length) {
             const nfts = nftPortResult?.nfts
-            const nftTokenMap: string[] = nfts.map(
-              (nft: NFT_NftPort) => BigNumber.from(nft.token_id).toHexString())
-  
+            const nftTokenMap: string[] = nfts.map((nft: NFT_NftPort) => BigNumber.from(nft.token_id).toHexString())
+
             logger.log(`=============== nft sync handler nftTokenMap: ${JSON.stringify(nftTokenMap)}`)
-  
-            const existingNFTs: entity.NFT[] = await repositories.nft.find(
-              {
-                where: {
-                  contract: helper.checkSum(contract),
-                  tokenId: In(nftTokenMap),
-                  chainId,
-                  rarity: IsNull(),
-                },
+
+            const existingNFTs: entity.NFT[] = await repositories.nft.find({
+              where: {
+                contract: helper.checkSum(contract),
+                tokenId: In(nftTokenMap),
+                chainId,
+                rarity: IsNull(),
               },
-            )
+            })
 
             if (existingNFTs?.length) {
               for (const nft of nfts) {
                 // create if not exist, update if does
-                const processNFT: entity.NFT = existingNFTs.find(
-                  (existingNft: entity.NFT) => {
-                    if( existingNft.tokenId === BigNumber.from(nft.token_id).toHexString()) {
-                      return {
-                        ...existingNft,
-                      }
+                const processNFT: entity.NFT = existingNFTs.find((existingNft: entity.NFT) => {
+                  if (existingNft.tokenId === BigNumber.from(nft.token_id).toHexString()) {
+                    return {
+                      ...existingNft,
                     }
-                  })
-  
+                  }
+                })
+
                 if (processNFT?.id) {
                   const csOwner = checkSumOwner(nft.owner)
                   let updatedNFT: Partial<entity.NFT> = { id: processNFT?.id, ...processNFT }
@@ -858,9 +841,9 @@ export const raritySync = async (job: Job): Promise<void> => {
                   logger.log(`error while saving nftSyncHandler but continuing ${errSave}...${page}`)
                 }
               }
-    
+
               logger.log(`nftPromiseArray?.length: ${nftPromiseArray?.length}`)
-    
+
               try {
                 if (nftPromiseArray?.length) {
                   await indexNFTs(nftPromiseArray)
@@ -898,13 +881,8 @@ export const raritySync = async (job: Job): Promise<void> => {
         date.setHours(date.getHours() + 2) // two hours ttl
         const ttl: number = ttlForTimestampedZsetMembers(date)
         await Promise.all([
-          cache.zadd(
-            `${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chainId}`,
-            ttl, contract,
-          ),
-          cache.zremrangebyscore(
-            `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, 1, '+inf',
-          ),
+          cache.zadd(`${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chainId}`, ttl, contract),
+          cache.zremrangebyscore(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, 1, '+inf'),
         ])
       }
     }
@@ -927,9 +905,7 @@ export const nftRaritySyncHandler = async (job: Job): Promise<void> => {
     if (collection.isOfficial) {
       let filter = { where: { contract, rarity: IsNull() } }
       if (tokenIds.length) {
-        const tokenHexMap: string[] = tokenIds.map(
-          (tokenId: string) => helper.bigNumberToHex(tokenId),
-        )
+        const tokenHexMap: string[] = tokenIds.map((tokenId: string) => helper.bigNumberToHex(tokenId))
         filter = { ...filter, tokenId: In(tokenHexMap) } as any
       }
       const nftsWithNullRarity: entity.NFT[] = await repositories.nft.find(filter)
@@ -943,7 +919,8 @@ export const nftRaritySyncHandler = async (job: Job): Promise<void> => {
             ['rarity', 'attributes'],
           )
 
-          let rarity = '0', traits: defs.Trait[] = nft.metadata.traits
+          let rarity = '0',
+            traits: defs.Trait[] = nft.metadata.traits
 
           if (nftPortNFT?.nft?.rarity?.score) {
             rarity = String(nftPortNFT?.nft?.rarity?.score)
@@ -970,4 +947,3 @@ export const nftRaritySyncHandler = async (job: Job): Promise<void> => {
     logger.log('No contract provided to nft rarity sync')
   }
 }
-

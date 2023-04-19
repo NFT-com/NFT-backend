@@ -1,5 +1,5 @@
 import { appError } from '@nftcom/error-types'
-import { Pageable, pagination } from '@nftcom/misc';
+import { Pageable, pagination } from '@nftcom/misc'
 import { core } from '@nftcom/service'
 import { db, entity, helper } from '@nftcom/shared'
 
@@ -70,7 +70,7 @@ export function getCommentService(repos: db.Repository = db.newRepositories()): 
     }
     const safePageInput = pagination.safeInput(pageInput, {
       beforeCursor: helper.toDateIsoString(),
-    });
+    })
     const pagableComments = await core.paginatedEntitiesBy<entity.Comment>(
       repos.comment,
       safePageInput,
@@ -79,8 +79,8 @@ export function getCommentService(repos: db.Repository = db.newRepositories()): 
           entityId,
         },
       ],
-      []
-    );
+      [],
+    )
     return pagination.toPageable(safePageInput)(pagableComments)
   }
 

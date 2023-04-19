@@ -6,17 +6,13 @@ import { _logger, db, defs, entity, helper, provider } from '@nftcom/shared'
 
 import { blockNumberToTimestamp } from '../jobs/trading.handler'
 import { activityBuilder } from '../utils/builder/orderBuilder'
-import { atomicOwnershipUpdate,checksumAddress } from './ownership'
+import { atomicOwnershipUpdate, checksumAddress } from './ownership'
 
 const logger = _logger.Factory('NFTCOM')
 const repositories = db.newRepositories()
-const abiTransfer = [
-  'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
-]
+const abiTransfer = ['event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)']
 const eventIface = new utils.Interface(abiTransfer)
-export const TOKEN_TRANSFER_TOPIC = ethers.utils.id(
-  'Transfer(address,address,uint256)',
-)
+export const TOKEN_TRANSFER_TOPIC = ethers.utils.id('Transfer(address,address,uint256)')
 
 export const approvalEventHandler = async (
   makerAddress: string,
@@ -47,7 +43,7 @@ export const approvalEventHandler = async (
           chainId,
         },
       })
-      logger.log(`approval tx listing: ${txTransaction.id, txTransaction.transactionHash}`)
+      logger.log(`approval tx listing: ${(txTransaction.id, txTransaction.transactionHash)}`)
       if (!txTransaction) {
         const tx = await repositories.txTransaction.save({
           activity: txOrder.activity,
@@ -62,7 +58,7 @@ export const approvalEventHandler = async (
           taker: '0x',
           chainId,
         })
-        logger.log(`approval tx listing saved: ${tx.id, tx.transactionHash}`)
+        logger.log(`approval tx listing saved: ${(tx.id, tx.transactionHash)}`)
       }
     } else {
       txOrder = await repositories.txOrder.findOne({
@@ -86,7 +82,7 @@ export const approvalEventHandler = async (
             chainId,
           },
         })
-        logger.log(`approval tx bid: ${txTransaction.id, txTransaction.transactionHash}`)
+        logger.log(`approval tx bid: ${(txTransaction.id, txTransaction.transactionHash)}`)
         if (!txTransaction) {
           await repositories.txTransaction.save({
             activity: txOrder.activity,
@@ -101,7 +97,7 @@ export const approvalEventHandler = async (
             taker: '0x',
             chainId,
           })
-          logger.log(`approval tx bid: ${txTransaction.id, txTransaction.transactionHash}`)
+          logger.log(`approval tx bid: ${(txTransaction.id, txTransaction.transactionHash)}`)
         }
       }
     }
@@ -145,7 +141,7 @@ export const cancelEventHandler = async (
         logger.log(`cancellation listing cancel: ${txCancel}`)
         if (!txCancel) {
           try {
-            const timestampFromSource: number = (new Date().getTime())/1000
+            const timestampFromSource: number = new Date().getTime() / 1000
             const expirationFromSource = null
             const cancellationActivity: Partial<entity.TxActivity> = await activityBuilder(
               defs.ActivityType.Cancel,
@@ -206,7 +202,7 @@ export const cancelEventHandler = async (
           })
           logger.log(`cancellation bid cancel: ${txCancel}`)
           if (!txCancel) {
-            const timestampFromSource: number = (new Date().getTime())/1000
+            const timestampFromSource: number = new Date().getTime() / 1000
             const expirationFromSource = null
             const cancelHash = `${transactionHash}:${txOrder.orderHash}`
             try {
@@ -235,7 +231,7 @@ export const cancelEventHandler = async (
               } catch (err) {
                 logger.error(`cancellation err: ${err}`)
               }
-            } catch(err) {
+            } catch (err) {
               logger.error(`cancellation activity err: ${err}`)
             }
           }
@@ -257,28 +253,28 @@ const parseAsset = async (
 ): Promise<defs.MarketplaceAsset[]> => {
   const asset: defs.MarketplaceAsset[] = []
   const promises = assetData.map(async (data, index) => {
-    const parsedAssetData = defaultAbiCoder.decode(['uint256','uint256'], data)
+    const parsedAssetData = defaultAbiCoder.decode(['uint256', 'uint256'], data)
     let assetClassData
     let assetTypeData
     switch (assetClass[index]) {
-    case helper.ETH_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ETH
-      assetTypeData = [helper.AddressZero()]
-      break
-    case helper.ERC20_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ERC20
-      assetTypeData = defaultAbiCoder.decode(['address'], assetType[index])
-      break
-    case helper.ERC721_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ERC721
-      assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
-      break
-    case helper.ERC1155_ASSET_CLASS:
-      assetClassData = defs.AssetClass.ERC1155
-      assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
-      break
-    default:
-      break
+      case helper.ETH_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ETH
+        assetTypeData = [helper.AddressZero()]
+        break
+      case helper.ERC20_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ERC20
+        assetTypeData = defaultAbiCoder.decode(['address'], assetType[index])
+        break
+      case helper.ERC721_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ERC721
+        assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
+        break
+      case helper.ERC1155_ASSET_CLASS:
+        assetClassData = defs.AssetClass.ERC1155
+        assetTypeData = defaultAbiCoder.decode(['address', 'uint256', 'bool'], assetType[index])
+        break
+      default:
+        break
     }
 
     // fetch ID from nft table...
@@ -287,8 +283,9 @@ const parseAsset = async (
         contract: checksumAddress(assetTypeData[0]),
       },
     })
-    const nft = nfts.find((nft) => BigNumber.from(nft.tokenId).toHexString()
-      === (assetTypeData[1] as BigNumber).toHexString())
+    const nft = nfts.find(
+      nft => BigNumber.from(nft.tokenId).toHexString() === (assetTypeData[1] as BigNumber).toHexString(),
+    )
 
     asset.push({
       nftId: nft ? nft.id : '',
@@ -309,19 +306,17 @@ const parseAsset = async (
   return asset
 }
 
-const parseNFTIdsFromNativeAsset = (
-  assets: Array<defs.MarketplaceAsset>,
-): string[] => {
+const parseNFTIdsFromNativeAsset = (assets: Array<defs.MarketplaceAsset>): string[] => {
   const nftIds: string[] = []
   for (const asset of assets) {
-    nftIds.push(`ethereum/${checksumAddress(asset.standard.contractAddress)}/${helper.bigNumberToHex(asset.standard.tokenId)}`)
+    nftIds.push(
+      `ethereum/${checksumAddress(asset.standard.contractAddress)}/${helper.bigNumberToHex(asset.standard.tokenId)}`,
+    )
   }
   return nftIds
 }
 
-const parseContractsFromNativeAsset = (
-  assets: Array<defs.MarketplaceAsset>,
-): string[] => {
+const parseContractsFromNativeAsset = (assets: Array<defs.MarketplaceAsset>): string[] => {
   const contracts: string[] = []
   const seen = {}
   for (const asset of assets) {
@@ -371,16 +366,7 @@ export const matchEventHandler = async (
     })
 
     if (!txListingOrder) {
-      const activity = await activityBuilder(
-        defs.ActivityType.Listing,
-        sellHash,
-        '0x',
-        chainId,
-        [],
-        '0x',
-        0,
-        null,
-      )
+      const activity = await activityBuilder(defs.ActivityType.Listing, sellHash, '0x', chainId, [], '0x', 0, null)
       txListingOrder = await repositories.txOrder.save({
         activity,
         orderHash: sellHash,
@@ -409,16 +395,7 @@ export const matchEventHandler = async (
     }
 
     if (!txBidOrder && buyHash != '0x0000000000000000000000000000000000000000000000000000000000000000') {
-      const activity = await activityBuilder(
-        defs.ActivityType.Bid,
-        buyHash,
-        '0x',
-        chainId,
-        [],
-        '0x',
-        0,
-        null,
-      )
+      const activity = await activityBuilder(defs.ActivityType.Bid, buyHash, '0x', chainId, [], '0x', 0, null)
       txBidOrder = await repositories.txOrder.save({
         activity,
         orderHash: buyHash,
@@ -651,7 +628,7 @@ export const matchTwoAEventHandler = async (
 
       if (!txTransaction) {
         try {
-          const timestampFromSource: number = (new Date().getTime())/1000
+          const timestampFromSource: number = new Date().getTime() / 1000
           const expirationFromSource = null
           const txActivity: Partial<entity.TxActivity> = await activityBuilder(
             defs.ActivityType.Sale,
@@ -837,7 +814,7 @@ export const matchTwoBEventHandler = async (
 
       if (!txTransaction) {
         try {
-          const timestampFromSource: number = (new Date().getTime())/1000
+          const timestampFromSource: number = new Date().getTime() / 1000
           const expirationFromSource = null
           const txActivity: Partial<entity.TxActivity> = await activityBuilder(
             defs.ActivityType.Sale,
@@ -907,11 +884,13 @@ export const matchTwoBEventHandler = async (
           logger.info(`Logs count: ${receipt.logs.length}`)
           const seen = {}
           for (const asset of makeAsset) {
-            const key = `${checksumAddress(txListingOrder.makerAddress)}-${helper.bigNumberToHex(asset.standard.tokenId)}`
+            const key = `${checksumAddress(txListingOrder.makerAddress)}-${helper.bigNumberToHex(
+              asset.standard.tokenId,
+            )}`
             seen[key] = checksumAddress(asset.standard.contractAddress)
           }
           await Promise.allSettled(
-            receipt.logs.map(async (log) => {
+            receipt.logs.map(async log => {
               if (log.topics[0] === TOKEN_TRANSFER_TOPIC) {
                 try {
                   const evt = eventIface.parseLog(log)
@@ -919,7 +898,9 @@ export const matchTwoBEventHandler = async (
                   logger.info(`from ${from} to ${to} tokenId ${BigNumber.from(tokenId).toHexString()}`)
                   const key = `${checksumAddress(from)}-${BigNumber.from(tokenId).toHexString()}`
                   if (seen[key]) {
-                    logger.info(`NFTCOM Transfer: from ${from} to ${to} tokenId ${BigNumber.from(tokenId).toHexString()}`)
+                    logger.info(
+                      `NFTCOM Transfer: from ${from} to ${to} tokenId ${BigNumber.from(tokenId).toHexString()}`,
+                    )
                     await repositories.txTransaction.updateOneById(txTransaction.id, {
                       taker: checksumAddress(to),
                     })
@@ -932,7 +913,11 @@ export const matchTwoBEventHandler = async (
                       checksumAddress(to),
                       chainId,
                     )
-                    logger.info(`Match2B: NFT contract - ${seen[key]} tokenId ${BigNumber.from(tokenId).toHexString()} ownership updated`)
+                    logger.info(
+                      `Match2B: NFT contract - ${seen[key]} tokenId ${BigNumber.from(
+                        tokenId,
+                      ).toHexString()} ownership updated`,
+                    )
                   }
                 } catch (err) {
                   logger.error(`transfer parse error: ${err}`)
@@ -1078,16 +1063,7 @@ export const matchThreeBEventHandler = async (
       },
     })
     if (!txBidOrder) {
-      const activity = await activityBuilder(
-        defs.ActivityType.Bid,
-        takerHash,
-        '0x',
-        chainId,
-        nftIds,
-        contract,
-        0,
-        null,
-      )
+      const activity = await activityBuilder(defs.ActivityType.Bid, takerHash, '0x', chainId, nftIds, contract, 0, null)
       txBidOrder = await repositories.txOrder.save({
         activity,
         orderHash: takerHash,
@@ -1142,10 +1118,7 @@ export const matchThreeBEventHandler = async (
   }
 }
 
-export const buyNowInfoEventHandler = async (
-  makerHash: string,
-  takerAddress: string,
-): Promise<void> => {
+export const buyNowInfoEventHandler = async (makerHash: string, takerAddress: string): Promise<void> => {
   try {
     const txOrder = await repositories.txOrder.findOne({
       where: {

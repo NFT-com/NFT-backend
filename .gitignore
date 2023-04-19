@@ -4,10 +4,12 @@
 Thumbs.db
 .vscode
 .dccache
+.turbo
 
 # compiled / dependencies
 node_modules
-dist
+dist/
+build/
 layers
 tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo

@@ -16,7 +16,7 @@ import { KeyvAdapter } from '@apollo/utils.keyvadapter'
 import KeyvRedis from '@keyv/redis'
 import { cache } from '@nftcom/cache'
 import { appError, profileError, userError } from '@nftcom/error-types'
-import { auth, authExpireDuration, authMessage, Context, serverPort,validate } from '@nftcom/misc'
+import { auth, authExpireDuration, authMessage, Context, serverPort, validate } from '@nftcom/misc'
 import { core, dataloader, sendgrid } from '@nftcom/service'
 import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
@@ -93,7 +93,7 @@ export const createContext = async (ctx): Promise<Context> => {
     const msg = `${authMessage} ${timestamp}`
     const address = getAddressFromSignature(msg, authSignature)
     // check if address is in OFAC list
-    const isSanctioned = await core.checkAddressIsSanctioned(address);
+    const isSanctioned = await core.checkAddressIsSanctioned(address)
     if (isSanctioned) {
       return Promise.reject(userError.buildAddressSanctioned())
     }

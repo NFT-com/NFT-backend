@@ -1,4 +1,4 @@
-import * as cacheService from '@nftcom/cache'
+import * as cacheService from './cache'
 const cacheFunctions = { ...cacheService }
 
 jest.mock('ioredis', () => jest.fn())

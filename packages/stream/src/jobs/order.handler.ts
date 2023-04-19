@@ -1,4 +1,3 @@
-
 import { Job } from 'bullmq'
 import { ethers } from 'ethers'
 import { In, MoreThanOrEqual } from 'typeorm'
@@ -162,8 +161,7 @@ const filterExistingSeaportListings = async (listings): Promise<entity.TxOrder[]
     const existingOrderHashSet = new Set(existingOrderHashes.map(txOrder => txOrder.orderHash))
 
     // Filter out the listings that have an orderHash already in the TxOrder table
-    const filteredListings = listings.filter(
-      listing => !existingOrderHashSet.has(listing.orderHash))
+    const filteredListings = listings.filter(listing => !existingOrderHashSet.has(listing.orderHash))
 
     logger.info('order.handler.filterExistingSeaportListings -> post-filter', JSON.stringify(filteredListings))
     return filteredListings
@@ -175,23 +173,23 @@ const filterExistingSeaportListings = async (listings): Promise<entity.TxOrder[]
 export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
   logger.debug('external orders on demand', job.data)
   try {
-    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
-    await removeExpiredTimestampedZsetMembers(
-      `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
-      Date.now(),
-    )
+    const chainId: string = job.data?.chainId || process.env.CHAIN_ID
+    await removeExpiredTimestampedZsetMembers(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, Date.now())
     const cachedNfts = await cache.zrevrangebyscore(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, '+inf', '(0')
 
     const nfts: Array<string> = []
 
     for (const item of cachedNfts) {
       const itemSplit: string[] = item.split(':')
-      const isItemForced = itemSplit.length === 3 && itemSplit?.[2] === 'force' ? true: false
+      const isItemForced = itemSplit.length === 3 && itemSplit?.[2] === 'force' ? true : false
 
-      const itemPresentInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, item)
+      const itemPresentInRefreshedCache: string = await cache.zscore(
+        `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
+        item,
+      )
 
       // item is not present in refresh cache
-      if(!itemPresentInRefreshedCache || isItemForced) {
+      if (!itemPresentInRefreshedCache || isItemForced) {
         nfts.push(item)
       }
     }
@@ -270,7 +268,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
       await Promise.all(persistActivity)
 
-      const refreshedOrders  = nfts.reduce((acc, curr) => {
+      const refreshedOrders = nfts.reduce((acc, curr) => {
         const nftSplit: Array<string> = curr.split(':')
         const nft: string = nftSplit.slice(0, 2).join(':')
         let ttlCondition = ''
@@ -287,27 +285,24 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
         const currentTime: Date = new Date()
         let date: Date
-        switch(ttlCondition) {
-        case 'manual':
-          currentTime.setMinutes(currentTime.getMinutes() + 5)
-          date = currentTime
-          break
-        case 'automated':
-          date = new Date(Number(nftSplit?.[2]))
-          break
-        case 'force':
-        default:
-          break
+        switch (ttlCondition) {
+          case 'manual':
+            currentTime.setMinutes(currentTime.getMinutes() + 5)
+            date = currentTime
+            break
+          case 'automated':
+            date = new Date(Number(nftSplit?.[2]))
+            break
+          case 'force':
+          default:
+            break
         }
         const ttl: number = ttlForTimestampedZsetMembers(date)
         acc.push(...[ttl, nft])
         return acc
       }, [])
       await Promise.all([
-        cache.zadd(
-          `${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`,
-          ...refreshedOrders,
-        ),
+        cache.zadd(`${CacheKeys.REFRESHED_NFT_ORDERS_EXT}_${chainId}`, ...refreshedOrders),
         cache.zremrangebyscore(`${CacheKeys.REFRESH_NFT_ORDERS_EXT}_${chainId}`, 1, '+inf'),
       ])
     }
@@ -320,7 +315,7 @@ export const nftExternalOrdersOnDemand = async (job: Job): Promise<void> => {
 
 enum OrderStatusCallType {
   OPENSEA = 'getOrderStatus',
-  X2Y2 = 'inventoryStatus'
+  X2Y2 = 'inventoryStatus',
 }
 
 interface OSCallResponse {
@@ -373,9 +368,10 @@ const reconcileInvalidCounterOrdersOpenSea = async (
     const nonceCalls = []
     const makerHighestNonceMap = {}
     for (const listing of opensea1_1) {
-      if ((listing.nonce >= 0)
-            && !makerHighestNonceMap[listing.makerAddress]
-            || (makerHighestNonceMap[listing.makerAddress] < listing.nonce)) {
+      if (
+        (listing.nonce >= 0 && !makerHighestNonceMap[listing.makerAddress]) ||
+        makerHighestNonceMap[listing.makerAddress] < listing.nonce
+      ) {
         makerHighestNonceMap[listing.makerAddress] = listing.nonce
       }
 
@@ -389,7 +385,7 @@ const reconcileInvalidCounterOrdersOpenSea = async (
     const nonceCalls1_4 = []
 
     // get unique maker addresses for seaport 1.4
-    const uniqueMakerAddresses1_4 = [...new Set(opensea1_4.map((listing) => listing.makerAddress))]
+    const uniqueMakerAddresses1_4 = [...new Set(opensea1_4.map(listing => listing.makerAddress))]
 
     // add to nonceCall using Seaport 1.4 address
     for (const makerAddress of uniqueMakerAddresses1_4) {
@@ -411,18 +407,15 @@ const reconcileInvalidCounterOrdersOpenSea = async (
         provider.provider(Number(chainId), true),
       )
 
-      for (let i=0; i < results.length; i++) {
+      for (let i = 0; i < results.length; i++) {
         const result = results?.[i]
         const callName: string = nonceCalls1_4[i]?.name
         const callParams: any = nonceCalls1_4[i].params
         if (result.returnData !== '0x') {
-          const resultDecoded = abiInterface.decodeFunctionResult(
-            callName,
-            result.returnData,
-          )
+          const resultDecoded = abiInterface.decodeFunctionResult(callName, result.returnData)
           const maker: string = checksumAddress(callParams?.[0])
           let currentNonceInString = '0'
-          
+
           if (resultDecoded?.counter) {
             currentNonceInString = resultDecoded?.counter
           }
@@ -463,25 +456,20 @@ const reconcileInvalidCounterOrdersOpenSea = async (
         provider.provider(Number(chainId), true),
       )
 
-      for (let i=0; i < results.length; i++) {
+      for (let i = 0; i < results.length; i++) {
         const result = results?.[i]
         const callName: string = nonceCalls[i]?.name
         const callParams: any = nonceCalls[i].params
         if (result.returnData !== '0x') {
-          const resultDecoded = abiInterface.decodeFunctionResult(
-            callName,
-            result.returnData,
-          )
+          const resultDecoded = abiInterface.decodeFunctionResult(callName, result.returnData)
           const maker: string = checksumAddress(callParams?.[0])
           let currentNonceInNumber = 0
 
           if (resultDecoded?.counter) {
-            currentNonceInNumber = helper.bigNumberToNumber(
-              resultDecoded?.counter,
-            )
+            currentNonceInNumber = helper.bigNumberToNumber(resultDecoded?.counter)
           }
 
-          if (maker && (currentNonceInNumber > makerHighestNonceMap[maker])) {
+          if (maker && currentNonceInNumber > makerHighestNonceMap[maker]) {
             for (const listing of opensea1_1) {
               if (listing.makerAddress === maker) {
                 listing.activity.status = defs.ActivityStatus.Cancelled
@@ -492,7 +480,9 @@ const reconcileInvalidCounterOrdersOpenSea = async (
           }
           if (listingsToBeUpdated.length) {
             await repositories.txOrder.saveMany(listingsToBeUpdated, { chunk: 20 })
-            logger.info(`Successfully cancelled ${listingsToBeUpdated.length} lower counter listings for maker: ${maker}`)
+            logger.info(
+              `Successfully cancelled ${listingsToBeUpdated.length} lower counter listings for maker: ${maker}`,
+            )
             listingsToBeUpdated = []
           }
         }
@@ -512,14 +502,10 @@ const fulfillOrCancelOpenSea = async (
   if (callResponse?.isCancelled) {
     status = defs.ActivityStatus.Cancelled
   } else {
-    if (
-      callResponse?.isValidated
-        && callResponse?.totalFilled
-        && callResponse?.totalSize
-    ) {
+    if (callResponse?.isValidated && callResponse?.totalFilled && callResponse?.totalSize) {
       const totalFilled: number = helper.bigNumberToNumber(callResponse?.totalFilled)
       const totalSize: number = helper.bigNumberToNumber(callResponse?.totalSize)
-      const filledRatio: number = totalFilled/totalSize
+      const filledRatio: number = totalFilled / totalSize
       if (filledRatio === 1) {
         status = defs.ActivityStatus.Executed
       }
@@ -527,14 +513,16 @@ const fulfillOrCancelOpenSea = async (
   }
 
   if (status) {
-    await repositories.txActivity.update({
-      activityType: defs.ActivityType.Listing,
-      status: defs.ActivityStatus.Valid,
-      activityTypeId: orderHash,
-    }
-    , {
-      status,
-    })
+    await repositories.txActivity.update(
+      {
+        activityType: defs.ActivityType.Listing,
+        status: defs.ActivityStatus.Valid,
+        activityTypeId: orderHash,
+      },
+      {
+        status,
+      },
+    )
     logger.debug(`OS order with orderhash: ${orderHash} has been ${status}`)
   } else {
     // collect all
@@ -542,10 +530,7 @@ const fulfillOrCancelOpenSea = async (
   }
 }
 
-const fulfillOrCancelX2Y2 = async (
-  orderHash: string,
-  callResponse: number,
-): Promise<void> => {
+const fulfillOrCancelX2Y2 = async (orderHash: string, callResponse: number): Promise<void> => {
   let status: defs.ActivityStatus
   if (callResponse === 2) {
     status = defs.ActivityStatus.Executed
@@ -554,14 +539,16 @@ const fulfillOrCancelX2Y2 = async (
   }
 
   if (status) {
-    await repositories.txActivity.update({
-      activityType: defs.ActivityType.Listing,
-      status: defs.ActivityStatus.Valid,
-      activityTypeId: orderHash,
-    }
-    , {
-      status,
-    })
+    await repositories.txActivity.update(
+      {
+        activityType: defs.ActivityType.Listing,
+        status: defs.ActivityStatus.Valid,
+        activityTypeId: orderHash,
+      },
+      {
+        status,
+      },
+    )
     logger.debug(`X2Y2 order with orderhash: ${orderHash} has been ${status}`)
   }
 }
@@ -596,39 +583,30 @@ const fetchDataUsingMulticallAndReconcile = async (
       x2y2PromiseArray = [],
       openSeaInvalidCounterArray = []
     // 3. decode bytes array to useful data array...
-    for (let i=0; i < results.length; i++) {
+    for (let i = 0; i < results.length; i++) {
       const result = results?.[i]
       const callContract: string = calls[i]?.contract
       const callName: string = calls[i]?.name
       const callParams: any = calls[i]?.params
       if (result.returnData !== '0x') {
-        const resultDecoded = abiInterface.decodeFunctionResult(
-          callName,
-          result.returnData,
-        )
+        const resultDecoded = abiInterface.decodeFunctionResult(callName, result.returnData)
         switch (callName) {
-        case OrderStatusCallType.OPENSEA:
-          // eslint-disable-next-line
-            const [ isValidated, isCancelled, totalFilled, totalSize ] = resultDecoded
-          openSeaPromiseArray.push(fulfillOrCancelOpenSea(callParams?.[0],
-            { isValidated,
-              isCancelled,
-              totalFilled,
-              totalSize,
-              contractAddress: callContract,
-            },
-            openSeaInvalidCounterArray,
-          ),
-          )
-          break
-        case OrderStatusCallType.X2Y2:
-          x2y2PromiseArray.push(fulfillOrCancelX2Y2(callParams?.[0],
-            resultDecoded?.[0],
-          ),
-          )
-          break
-        default:
-          break
+          case OrderStatusCallType.OPENSEA:
+            // eslint-disable-next-line
+            const [isValidated, isCancelled, totalFilled, totalSize] = resultDecoded
+            openSeaPromiseArray.push(
+              fulfillOrCancelOpenSea(
+                callParams?.[0],
+                { isValidated, isCancelled, totalFilled, totalSize, contractAddress: callContract },
+                openSeaInvalidCounterArray,
+              ),
+            )
+            break
+          case OrderStatusCallType.X2Y2:
+            x2y2PromiseArray.push(fulfillOrCancelX2Y2(callParams?.[0], resultDecoded?.[0]))
+            break
+          default:
+            break
         }
         if (openSeaPromiseArray.length > CALL_BATCH_SIZE) {
           await Promise.all(openSeaPromiseArray)
@@ -639,10 +617,7 @@ const fetchDataUsingMulticallAndReconcile = async (
           x2y2PromiseArray = []
         }
         if (openSeaInvalidCounterArray.length > CALL_BATCH_SIZE) {
-          await reconcileInvalidCounterOrdersOpenSea(
-            openSeaInvalidCounterArray,
-            chainId,
-          )
+          await reconcileInvalidCounterOrdersOpenSea(openSeaInvalidCounterArray, chainId)
           openSeaInvalidCounterArray = []
         }
       }
@@ -656,21 +631,16 @@ const fetchDataUsingMulticallAndReconcile = async (
       x2y2PromiseArray = []
     }
     if (openSeaInvalidCounterArray.length) {
-      await reconcileInvalidCounterOrdersOpenSea(
-        openSeaInvalidCounterArray,
-        chainId,
-      )
+      await reconcileInvalidCounterOrdersOpenSea(openSeaInvalidCounterArray, chainId)
       openSeaInvalidCounterArray = []
     }
   } catch (error) {
-    logger.error(
-      `Failed to fetch data using multicall: ${error}`,
-    )
+    logger.error(`Failed to fetch data using multicall: ${error}`)
     return []
   }
 }
 
-export const orderReconciliationHandler = async (job: Job): Promise<void> =>  {
+export const orderReconciliationHandler = async (job: Job): Promise<void> => {
   logger.log('initiated order reconciliation process')
   try {
     const chainId: string = job.data.chainId || process.env.CHAIN_ID
@@ -689,8 +659,8 @@ export const orderReconciliationHandler = async (job: Job): Promise<void> =>  {
     } as any
     const unexpiredListingsCount: number = await repositories.txOrder.count(countFilter)
     logger.log(`current valid listing count: ${unexpiredListingsCount}`)
-  
-    for (let i=0; i < unexpiredListingsCount; i+= CALL_SAMPLE_BATCH_SIZE) {
+
+    for (let i = 0; i < unexpiredListingsCount; i += CALL_SAMPLE_BATCH_SIZE) {
       const unexpiredListingBatch: Partial<entity.TxOrder>[] = await repositories.txOrder.find({
         relations: ['activity'],
         where: {
@@ -708,12 +678,13 @@ export const orderReconciliationHandler = async (job: Job): Promise<void> =>  {
           makerAddress: true,
         },
       })
-  
+
       if (unexpiredListingBatch?.length) {
-        let seaportCalls = [], x2y2Calls = []
+        let seaportCalls = [],
+          x2y2Calls = []
         const seaportAbi = contracts.openseaSeaportABI()
         const x2y2Abi = contracts.x2y2ABI()
-    
+
         for (const listing of unexpiredListingBatch) {
           switch (listing.exchange) {
             case defs.ExchangeType.OpenSea:
@@ -745,7 +716,7 @@ export const orderReconciliationHandler = async (job: Job): Promise<void> =>  {
             default:
               break
           }
-    
+
           if (seaportCalls.length >= CALL_BATCH_SIZE) {
             await fetchDataUsingMulticallAndReconcile(seaportCalls, seaportAbi, chainId)
             seaportCalls = []
@@ -755,18 +726,18 @@ export const orderReconciliationHandler = async (job: Job): Promise<void> =>  {
             await fetchDataUsingMulticallAndReconcile(seaportCalls, seaportAbi, chainId)
             seaportCalls = []
           }
-    
+
           if (x2y2Calls.length >= CALL_BATCH_SIZE) {
             await fetchDataUsingMulticallAndReconcile(x2y2Calls, x2y2Abi, chainId)
             x2y2Calls = []
           }
         }
-    
+
         if (seaportCalls.length) {
           await fetchDataUsingMulticallAndReconcile(seaportCalls, seaportAbi, chainId)
           seaportCalls = []
         }
-    
+
         if (x2y2Calls.length) {
           await fetchDataUsingMulticallAndReconcile(x2y2Calls, x2y2Abi, chainId)
           x2y2Calls = []
@@ -776,6 +747,6 @@ export const orderReconciliationHandler = async (job: Job): Promise<void> =>  {
   } catch (err) {
     logger.error(err, 'Error in order reconciliation process')
   }
-  
+
   logger.log('completed order reconciliation process')
 }

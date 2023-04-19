@@ -1,4 +1,4 @@
-import  { Job } from 'bullmq'
+import { Job } from 'bullmq'
 
 import { _logger } from '@nftcom/shared'
 
@@ -20,17 +20,13 @@ export const registerStreamHandler = async (job: Job): Promise<any> => {
         const slug = slugSplit?.[1]
         const isSlugRegistered: any = await cache.get(`${CacheKeys.REGISTERED}-${slug}`)
         if (slug && !isSlugRegistered) {
-          slugSubscription = client.onEvents(
-            slug,
-            [
-              ...allowedEvents,
-            ],
-            (event) => {
-              // @TODO: slug based filtering
-              logger.debug('---event---', event.event_type)
-            },
+          slugSubscription = client.onEvents(slug, [...allowedEvents], event => {
+            // @TODO: slug based filtering
+            logger.debug('---event---', event.event_type)
+          })
+          slugSubscriptionCachePromise.push(
+            cache.set(`${CacheKeys.REGISTERED}-${slug}`, JSON.stringify(slugSubscription)),
           )
-          slugSubscriptionCachePromise.push(cache.set(`${CacheKeys.REGISTERED}-${slug}`, JSON.stringify(slugSubscription)))
         }
       }
     }
@@ -47,7 +43,7 @@ export const deregisterStreamHandler = async (job: Job): Promise<any> => {
   try {
     const keyPattern = `${CacheKeys.REGISTERED}-*`
     const keyScan = await cache.scan(0, 'MATCH', keyPattern)
-    for(const key of keyScan) {
+    for (const key of keyScan) {
       // @TODO: deregister
       logger.debug('---deregister key---', key)
     }
@@ -57,7 +53,7 @@ export const deregisterStreamHandler = async (job: Job): Promise<any> => {
   }
 }
 
-export const syncContractsHandler =  async (job: Job): Promise<any> => {
+export const syncContractsHandler = async (job: Job): Promise<any> => {
   logger.debug('sync contracts handler', job.data)
   try {
     const allDistinctContracts: DistinctContract[] = await fetchAllNFTs()

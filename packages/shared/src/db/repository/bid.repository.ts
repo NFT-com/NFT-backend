@@ -1,5 +1,4 @@
-import { Bid } from '@nftcom/shared/db/entity'
-
+import { Bid } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class BidRepository extends BaseRepository<Bid> {

@@ -3,11 +3,7 @@ import SubscriptionHandle from '@hashgraph/sdk/lib/topic/SubscriptionHandle'
 import { isProduction } from '@nftcom/misc'
 import { _logger } from '@nftcom/shared'
 
-const logger = _logger.Factory(
-  _logger.Context.General,
-  _logger.Context.GraphQL
-);
-
+const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 
 export interface IHederaConsensusService {
   HCS: SubscriptionHandle

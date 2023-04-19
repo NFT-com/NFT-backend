@@ -1,10 +1,10 @@
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/misc'
-import { gql } from '@nftcom/misc'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
 import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'
+import { testDBConfig } from '@nftcom/misc'
+import { gql } from '@nftcom/misc'
 import { db, defs, helper } from '@nftcom/shared'
 import { TxActivity, TxOrder } from '@nftcom/shared/db/entity'
 

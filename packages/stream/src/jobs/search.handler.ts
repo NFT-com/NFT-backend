@@ -11,22 +11,18 @@ const repos = db.newRepositories()
 export const searchListingIndexHandler = async (job: Job): Promise<boolean> => {
   logger.log('intiated listing sync')
   try {
-    const listings: entity.TxActivity[] = await repos
-      .txActivity
-      .find({ where: [
+    const listings: entity.TxActivity[] = await repos.txActivity.find({
+      where: [
         {
           activityType: defs.ActivityType.Listing,
           updatedAt: MoreThanOrEqual(new Date(job.timestamp)),
         },
         {
           activityType: defs.ActivityType.Listing,
-          expiration: Between(
-            new Date(job.timestamp),
-            new Date(),
-          ),
+          expiration: Between(new Date(job.timestamp), new Date()),
         },
       ],
-      })
+    })
     logger.log(`total listings in search index sync: ${listings.length}`)
     if (listings) {
       try {

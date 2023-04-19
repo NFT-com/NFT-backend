@@ -865,12 +865,12 @@ const getProfilesActionsWithPoints = async (
         url: action.profileUrl,
         action: [core.profileActionType(action)],
         totalPoints: action.point,
-      });
+      })
       seen[action.profileUrl] = true
     } else {
       const index = profilesActions.findIndex(profileAction => profileAction.url === action.profileUrl)
       if (index !== -1) {
-        profilesActions[index].action.push(core.profileActionType(action));
+        profilesActions[index].action.push(core.profileActionType(action))
         profilesActions[index].totalPoints += action.point
       }
     }

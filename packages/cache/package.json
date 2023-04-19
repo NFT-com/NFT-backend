@@ -1,0 +1,22 @@
+{
+  "name": "@nftcom/cache",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "dev": "tsup src/index.ts --format cjs --watch --onSuccess \"node dist/index.js\"",
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "start": "node dist/index.js",
+    "test": "jest --detectOpenHandles"
+  },
+  "dependencies": {
+    "ioredis": "^5.3.2"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "tsc": "^2.0.4",
+    "tsup": "^6.7.0"
+  }
+}

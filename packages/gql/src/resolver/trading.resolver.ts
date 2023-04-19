@@ -3,23 +3,23 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { appError, marketBidError, marketListingError } from '@nftcom/error-types'
-import {
-  Context,
-} from '@nftcom/misc'
+import { Context } from '@nftcom/misc'
 import { auth, joi, pagination } from '@nftcom/misc'
 import { core, nftService, searchEngineService, sendgrid, txActivityService } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain, utils as dbUtils } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import {  convertAssetInput,
+import {
+  convertAssetInput,
   getAssetList,
   gql,
   parseContractsFromNativeAsset,
-  parseNFTIdsFromNativeAsset } from '../defs'
+  parseNFTIdsFromNativeAsset,
+} from '../defs'
 import * as auctionUtils from '../helper/utils'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
-const seService = searchEngineService.SearchEngineService();
+const seService = searchEngineService.SearchEngineService()
 
 const getListings = (_: any, args: gql.QueryGetListingsArgs, ctx: Context): Promise<gql.GetOrders> => {
   const { repositories } = ctx
@@ -67,14 +67,12 @@ export const validListing = async (
         start: marketListingArgs?.input.start,
         end: marketListingArgs?.input.end,
         nonce: marketListingArgs?.input?.nonce,
-        auctionType: auctionUtils.auctionTypeToInt(
-          marketListingArgs?.input?.auctionType
-        ),
+        auctionType: auctionUtils.auctionTypeToInt(marketListingArgs?.input?.auctionType),
       },
       marketListingArgs?.input.signature.v,
       marketListingArgs?.input.signature.r,
-      marketListingArgs?.input.signature.s
-    );
+      marketListingArgs?.input.signature.s,
+    )
 
     const calculatedStructHash: string = result?.[1]
 
@@ -279,8 +277,8 @@ const createListing = async (
       nftIds,
       contract,
       args?.input.start,
-      args?.input.end
-    );
+      args?.input.end,
+    )
     const listingOrder = await repositories.txOrder.save({
       activity,
       orderHash: args?.input.structHash,
@@ -386,14 +384,12 @@ const validOrderMatch = async (
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
         nonce: marketBidArgs?.input.nonce,
-        auctionType: auctionUtils.auctionTypeToInt(
-          marketBidArgs.input.auctionType
-        ),
+        auctionType: auctionUtils.auctionTypeToInt(marketBidArgs.input.auctionType),
       },
       marketBidArgs?.input.signature.v,
       marketBidArgs?.input.signature.r,
-      marketBidArgs?.input.signature.s
-    );
+      marketBidArgs?.input.signature.s,
+    )
 
     const calculatedStructHash: string = result?.[1]
 
@@ -454,9 +450,7 @@ const validOrderMatch = async (
         start: askStart,
         end: askEnd,
         nonce: listing.nonce,
-        auctionType: auctionUtils.auctionTypeToInt(
-          listing.protocolData.auctionType
-        ),
+        auctionType: auctionUtils.auctionTypeToInt(listing.protocolData.auctionType),
       },
       {
         maker: marketBidArgs?.input.makerAddress,
@@ -467,13 +461,11 @@ const validOrderMatch = async (
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
         nonce: marketBidArgs?.input.nonce,
-        auctionType: auctionUtils.auctionTypeToInt(
-          marketBidArgs?.input.auctionType
-        ),
+        auctionType: auctionUtils.auctionTypeToInt(marketBidArgs?.input.auctionType),
       },
       listing.makerAddress,
-      false
-    );
+      false,
+    )
 
     if (!result) {
       throw Error('Market Bid does not match with Market Listing')
@@ -490,10 +482,10 @@ const validOrderMatch = async (
 
 const ownedProfileOrGK = async (address: string, chainId: string): Promise<boolean> => {
   try {
-    const gkOwners = await nftService.getOwnersOfGenesisKeys(chainId);
+    const gkOwners = await nftService.getOwnersOfGenesisKeys(chainId)
     const exists = gkOwners[ethers.utils.getAddress(address)]
     if (exists) return true
-    const profileOwners = await nftService.getOwnersOfNFTProfile(chainId);
+    const profileOwners = await nftService.getOwnersOfNFTProfile(chainId)
     return profileOwners[ethers.utils.getAddress(address)]
   } catch (err) {
     logger.error('error in ownedProfileOrGK: ', err)
@@ -620,8 +612,8 @@ const createBid = async (_: any, args: gql.MutationCreateMarketBidArgs, ctx: Con
       nftIds,
       contract,
       args?.input.start,
-      args?.input.end
-    );
+      args?.input.end,
+    )
     bidOrder = await repositories.txOrder.save({
       activity,
       orderHash: args?.input.structHash,

@@ -127,7 +127,7 @@ export interface OSEvent {
 export enum OSChainTypes {
   ETHEREUM = 'ethereum',
   POLYGON = 'polygon',
-  SOLANA = 'solana'
+  SOLANA = 'solana',
 }
 
 // Seaport Interfaces
@@ -137,7 +137,6 @@ export interface SeaportOffer {
   identifierOrCriteria: string
   startAmount: string
   endAmount: string
-  
 }
 
 export interface SeaportConsideration extends SeaportOffer {

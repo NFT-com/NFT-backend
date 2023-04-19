@@ -1,5 +1,5 @@
 import tracer from 'dd-trace'
-if (['development','staging','production'].includes(process.env.NODE_ENV)) {
+if (['development', 'staging', 'production'].includes(process.env.NODE_ENV)) {
   tracer.init({
     profiling: true,
     env: process.env.NODE_ENV,
@@ -7,10 +7,7 @@ if (['development','staging','production'].includes(process.env.NODE_ENV)) {
     logInjection: true,
   })
   tracer.use('http', {
-    blocklist: [
-      '/health',
-      '/favicon.ico',
-    ],
+    blocklist: ['/health', '/favicon.ico'],
   })
 }
 export default tracer

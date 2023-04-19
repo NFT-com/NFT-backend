@@ -1,7 +1,4 @@
 {
-  "ts-node": {
-    "require": ["tsconfig-paths/register"]
-  },
   "compileOnSave": false,
   "compilerOptions": {
     "rootDir": ".",
@@ -25,18 +22,7 @@
     "incremental": true,
     "allowSyntheticDefaultImports": true,
     "pretty": true,
-    "baseUrl": ".",
-    "paths": {
-      "@nftcom/cache": ["packages/cache/src/index.ts"],
-      "@nftcom/contract-data": ["packages/contract-data/src/index.ts"],
-      "@nftcom/error-types": ["packages/error-types/src/index.ts"],
-      "@nftcom/gql/*": ["packages/gql/src/*"],
-      "@nftcom/leaderboard": ["packages/leaderboard/src/index.ts"],
-      "@nftcom/misc": ["packages/misc/src/index.ts"],
-      "@nftcom/nftport-client": ["packages/nftport-client/src/index.ts"],
-      "@nftcom/service": ["packages/service/src/index.ts"],
-      "@nftcom/shared/*": ["packages/shared/src/*"]
-    }
+    "baseUrl": "."
   },
   "exclude": ["node_modules", "dist", "script"]
 }

@@ -1,4 +1,3 @@
-import { testDBConfig } from '@nftcom/misc'
 import {
   fetchTxsFromNFTPort,
   retrieveContractNFTs,
@@ -6,6 +5,7 @@ import {
   saveTransactionsToEntity,
 } from '@nftcom/gql/service/nftport.service'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
+import { testDBConfig } from '@nftcom/misc'
 import { db, defs } from '@nftcom/shared/'
 
 jest.setTimeout(150000)

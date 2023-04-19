@@ -1,8 +1,7 @@
 import { FindOneOptions, FindOptionsSelect } from 'typeorm'
 
-import { db } from '@nftcom/shared/db'
-import { Collection } from '@nftcom/shared/db/entity'
-
+import { db } from '../'
+import { Collection } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class CollectionRepository extends BaseRepository<Collection> {

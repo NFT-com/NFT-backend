@@ -2,7 +2,12 @@ import { BigNumber } from 'ethers'
 
 import { db, defs, entity, helper } from '@nftcom/shared'
 
-import { SeaportConsideration, TxLooksrareV2ProtocolData, TxSeaportProtocolData, TxX2Y2ProtocolData } from '../../interface'
+import {
+  SeaportConsideration,
+  TxLooksrareV2ProtocolData,
+  TxSeaportProtocolData,
+  TxX2Y2ProtocolData,
+} from '../../interface'
 import { LooksRareOrderV2 } from '../../service/looksrare'
 import { SeaportOffer, SeaportOrder } from '../../service/opensea'
 
@@ -63,13 +68,11 @@ export const activityBuilder = async (
  * seaportOrderBuilder
  * @param order
  */
-const seaportOrderBuilder = (
-  order: SeaportOrder,
-): Partial<entity.TxOrder> => {
+const seaportOrderBuilder = (order: SeaportOrder): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.OpenSea,
-    makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address): null,
-    takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address): null,
+    makerAddress: order.maker?.address ? helper.checkSum(order.maker?.address) : null,
+    takerAddress: order.taker?.address ? helper.checkSum(order.taker?.address) : null,
     nonce: order.protocol_data?.parameters?.counter, // counter is mapped to nonce for OS
     zone: order.protocol_data?.parameters?.zone, // only mapped for OS
     protocolData: {
@@ -83,9 +86,7 @@ const seaportOrderBuilder = (
  * @param order
  */
 
-const looksrareOrderBuilder = (
-  order: LooksRareOrderV2,
-): Partial<entity.TxOrder> => {
+const looksrareOrderBuilder = (order: LooksRareOrderV2): Partial<entity.TxOrder> => {
   return {
     exchange: defs.ExchangeType.LooksRare,
     makerAddress: helper.checkSum(order.signer),
@@ -116,7 +117,7 @@ export const orderEntityBuilder = async (
   order: Order,
   chainId: string,
   contract: string,
-):  Promise<Partial<entity.TxOrder>> => {
+): Promise<Partial<entity.TxOrder>> => {
   let orderHash: string,
     walletAddress: string,
     tokenId: string,
@@ -129,30 +130,30 @@ export const orderEntityBuilder = async (
   let looksrareOrder: LooksRareOrderV2
   const checksumContract: string = helper.checkSum(contract)
   switch (protocol) {
-  case defs.ProtocolType.Seaport:
-    seaportOrder = order as SeaportOrder
-    orderHash = seaportOrder.order_hash
-    walletAddress = helper.checkSum(seaportOrder?.protocol_data?.parameters?.offerer)
-    timestampFromSource = Number(seaportOrder?.protocol_data?.parameters?.startTime)
-    expirationFromSource = Number(seaportOrder?.protocol_data?.parameters?.endTime)
-    nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
-      tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
-      return `ethereum/${checksumContract}/${tokenId}`
-    })
-    orderEntity = seaportOrderBuilder(seaportOrder)
-    break
-  case defs.ProtocolType.LooksRareV2:
-    looksrareOrder = order as LooksRareOrderV2
-    orderHash = looksrareOrder.hash
-    walletAddress = helper.checkSum(looksrareOrder.signer)
-    tokenId = BigNumber.from(looksrareOrder.itemIds[0]).toHexString()
-    timestampFromSource = Number(looksrareOrder.startTime)
-    expirationFromSource =  Number(looksrareOrder.endTime)
-    nftIds = [`ethereum/${checksumContract}/${tokenId}`]
-    orderEntity = looksrareOrderBuilder(looksrareOrder)
-    break
-  default:
-    break
+    case defs.ProtocolType.Seaport:
+      seaportOrder = order as SeaportOrder
+      orderHash = seaportOrder.order_hash
+      walletAddress = helper.checkSum(seaportOrder?.protocol_data?.parameters?.offerer)
+      timestampFromSource = Number(seaportOrder?.protocol_data?.parameters?.startTime)
+      expirationFromSource = Number(seaportOrder?.protocol_data?.parameters?.endTime)
+      nftIds = seaportOrder?.protocol_data?.parameters?.offer?.map((offer: SeaportOffer) => {
+        tokenId = BigNumber.from(offer.identifierOrCriteria).toHexString()
+        return `ethereum/${checksumContract}/${tokenId}`
+      })
+      orderEntity = seaportOrderBuilder(seaportOrder)
+      break
+    case defs.ProtocolType.LooksRareV2:
+      looksrareOrder = order as LooksRareOrderV2
+      orderHash = looksrareOrder.hash
+      walletAddress = helper.checkSum(looksrareOrder.signer)
+      tokenId = BigNumber.from(looksrareOrder.itemIds[0]).toHexString()
+      timestampFromSource = Number(looksrareOrder.startTime)
+      expirationFromSource = Number(looksrareOrder.endTime)
+      nftIds = [`ethereum/${checksumContract}/${tokenId}`]
+      orderEntity = looksrareOrderBuilder(looksrareOrder)
+      break
+    default:
+      break
   }
 
   const activity: entity.TxActivity = await activityBuilder(
@@ -207,36 +208,24 @@ export const txSeaportProcotolDataParser = (protocolData: any): TxSeaportProtoco
     }
   })
 
-  return  { offer: txOffer, consideration: txConsideration }
+  return { offer: txOffer, consideration: txConsideration }
 }
 
 export const txX2Y2ProtocolDataParser = (protocolData: any): TxX2Y2ProtocolData => {
-  const {
-    data,
-    amount,
-    intent,
-    currency,
-    deadline,
-    orderSalt,
-    settleSalt,
-    delegateType } = protocolData
+  const { data, amount, intent, currency, deadline, orderSalt, settleSalt, delegateType } = protocolData
   return {
     data,
     currency,
-    amount: amount? amount.hex ? String(helper.bigNumberToNumber(amount.hex))
-      : String(helper.bigNumberToNumber(amount))
+    amount: amount
+      ? amount.hex
+        ? String(helper.bigNumberToNumber(amount.hex))
+        : String(helper.bigNumberToNumber(amount))
       : null,
-    intent: intent && intent.hex ? String(helper.bigNumberToNumber(intent.hex))
-      : null,
-    delegateType: delegateType && delegateType.hex
-      ? String(helper.bigNumberToNumber(delegateType.hex))
-      : null,
-    orderSalt:  orderSalt && orderSalt.hex ? String(helper.bigNumberToNumber(orderSalt.hex))
-      : null,
-    settleSalt:  settleSalt && settleSalt.hex ? String(helper.bigNumberToNumber(settleSalt.hex))
-      : null,
-    deadline:  deadline && deadline.hex ? String(helper.bigNumberToNumber(deadline.hex))
-      : null,
+    intent: intent && intent.hex ? String(helper.bigNumberToNumber(intent.hex)) : null,
+    delegateType: delegateType && delegateType.hex ? String(helper.bigNumberToNumber(delegateType.hex)) : null,
+    orderSalt: orderSalt && orderSalt.hex ? String(helper.bigNumberToNumber(orderSalt.hex)) : null,
+    settleSalt: settleSalt && settleSalt.hex ? String(helper.bigNumberToNumber(settleSalt.hex)) : null,
+    deadline: deadline && deadline.hex ? String(helper.bigNumberToNumber(deadline.hex)) : null,
   }
 }
 
@@ -262,11 +251,11 @@ export const txEntityBuilder = async (
   protocol: defs.ProtocolType,
   protocolData: any,
   eventType: string,
-):  Promise<Partial<entity.TxTransaction>> => {
+): Promise<Partial<entity.TxTransaction>> => {
   const checksumContract: string = helper.checkSum(contract)
   const tokenIdHex: string = helper.bigNumberToHex(tokenId)
   const nftIds: string[] = [`ethereum/${checksumContract}/${tokenIdHex}`]
-  const timestampFromSource: number = (new Date().getTime())/1000
+  const timestampFromSource: number = new Date().getTime() / 1000
   const expirationFromSource = null
 
   const activity: entity.TxActivity = await activityBuilder(
@@ -283,7 +272,7 @@ export const txEntityBuilder = async (
   let txProtocolData: TxProtocolData = protocolData
 
   if (protocol === defs.ProtocolType.Seaport) {
-    txProtocolData =  txSeaportProcotolDataParser(protocolData)
+    txProtocolData = txSeaportProcotolDataParser(protocolData)
   } else if (protocol === defs.ProtocolType.X2Y2) {
     txProtocolData = txX2Y2ProtocolDataParser(protocolData)
   }
@@ -329,9 +318,9 @@ export const cancelEntityBuilder = async (
   exchange: defs.ExchangeType,
   orderType: defs.CancelActivityType,
   orderHash: string,
-):  Promise<Partial<entity.TxCancel>> => {
+): Promise<Partial<entity.TxCancel>> => {
   const checksumContract: string = helper.checkSum(contract)
-  const timestampFromSource: number = (new Date().getTime())/1000
+  const timestampFromSource: number = new Date().getTime() / 1000
   const expirationFromSource = null
 
   const activity: entity.TxActivity = await activityBuilder(

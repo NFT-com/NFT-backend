@@ -6,7 +6,7 @@ import { In, Not, UpdateResult } from 'typeorm'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, txActivityError } from '@nftcom/error-types'
-import { auth, Context, joi, pagination } from '@nftcom/misc';
+import { auth, Context, joi, pagination } from '@nftcom/misc'
 import { core, openseaService } from '@nftcom/service'
 import { contracts, defs, entity, helper } from '@nftcom/shared'
 import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
@@ -445,7 +445,7 @@ const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Cont
       3 * 60, // 3 min
     )
   }
-  return core.paginatedResultFromIndexedArray(indexedActivities, pageInput);
+  return core.paginatedResultFromIndexedArray(indexedActivities, pageInput)
 }
 
 const fulfillActivitiesNFTId = async (

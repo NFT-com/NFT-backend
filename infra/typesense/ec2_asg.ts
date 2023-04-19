@@ -20,14 +20,13 @@ interface BuildIngressRuleArgs {
   sourceSecurityGroupId?: string[]
   selfSource?: boolean
 }
-const buildIngressRule = (
-  {
-    protocol,
-    fromPort,
-    toPort,
-    sourceSecurityGroupId,
-    selfSource,
-  }: BuildIngressRuleArgs): any => {
+const buildIngressRule = ({
+  protocol,
+  fromPort,
+  toPort,
+  sourceSecurityGroupId,
+  selfSource,
+}: BuildIngressRuleArgs): any => {
   const rule = {
     protocol,
     fromPort: fromPort,
@@ -64,13 +63,17 @@ const createSecurityGroup = (infraOutput: InfraOutput): aws.ec2.SecurityGroup =>
     description: 'Allow traffic to Typesense service',
     name: getResourceName('typesense-api'),
     vpcId: infraOutput.vpcId,
-    ingress:
-      isProduction() ?
-        [
+    ingress: isProduction()
+      ? [
           ...typesenseIngressRules,
-          buildIngressRule({ fromPort: 0, toPort: 65535, protocol: 'tcp', sourceSecurityGroupId: ['sg-0bad265e467cdec96'] }), // Bastion Host
+          buildIngressRule({
+            fromPort: 0,
+            toPort: 65535,
+            protocol: 'tcp',
+            sourceSecurityGroupId: ['sg-0bad265e467cdec96'],
+          }), // Bastion Host
         ]
-        : typesenseIngressRules,
+      : typesenseIngressRules,
     egress: [buildIngressRule({ fromPort: 0, protocol: '-1' })],
   })
 }
@@ -92,9 +95,7 @@ const createTargetGroup = (infraOutput: InfraOutput): aws.lb.TargetGroup => {
   })
 }
 
-const createLoadBalancer = (
-  infraOutput: InfraOutput,
-): aws.lb.LoadBalancer => {
+const createLoadBalancer = (infraOutput: InfraOutput): aws.lb.LoadBalancer => {
   return new aws.lb.LoadBalancer('lb_typesense', {
     ipAddressType: 'ipv4',
     name: getResourceName('typesense-lb'),
@@ -104,10 +105,7 @@ const createLoadBalancer = (
   })
 }
 
-const attachLBListeners = (
-  lb: aws.lb.LoadBalancer,
-  tg: aws.lb.TargetGroup,
-): void => {
+const attachLBListeners = (lb: aws.lb.LoadBalancer, tg: aws.lb.TargetGroup): void => {
   new aws.lb.Listener('listener_http_typesense', {
     defaultActions: [
       {
@@ -127,8 +125,7 @@ const attachLBListeners = (
   })
 
   new aws.lb.Listener('listener_https_typesense', {
-    certificateArn:
-      'arn:aws:acm:us-east-1:016437323894:certificate/44dc39c0-4231-41f6-8f27-03029bddfa8e',
+    certificateArn: 'arn:aws:acm:us-east-1:016437323894:certificate/44dc39c0-4231-41f6-8f27-03029bddfa8e',
     defaultActions: [
       {
         targetGroupArn: tg.arn,
@@ -145,10 +142,12 @@ const attachLBListeners = (
 
 const getAmi = (): pulumi.Output<aws.ec2.GetAmiResult> => {
   return aws.ec2.getAmiOutput({
-    filters: [{
-      name: 'name',
-      values: ['ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*'],
-    }],
+    filters: [
+      {
+        name: 'name',
+        values: ['ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*'],
+      },
+    ],
     owners: ['099720109477'], // Canonical
     mostRecent: true,
   })
@@ -156,7 +155,7 @@ const getAmi = (): pulumi.Output<aws.ec2.GetAmiResult> => {
 
 const createBlockDevices = (config: pulumi.Config): aws.ebs.Volume[] => {
   const azs = config.require('tsAvailabilityZones').split(',')
-  return azs.map((az) => {
+  return azs.map(az => {
     return new aws.ebs.Volume(getResourceName(`typesense-${az.slice(-2)}`), {
       availabilityZone: az,
       size: config.requireNumber('tsEbsSize'),
@@ -166,13 +165,13 @@ const createBlockDevices = (config: pulumi.Config): aws.ebs.Volume[] => {
       tags: getTags({
         ...tags,
         'availability-zone': az,
-        'Name': getResourceName(`typesense-${az.slice(-2)}`),
+        Name: getResourceName(`typesense-${az.slice(-2)}`),
       }),
     })
   })
 }
 
-const typesenseVersionMap: {[key: string]: string }= {
+const typesenseVersionMap: { [key: string]: string } = {
   dev: '0.24.0',
   staging: '0.24.0',
   'prod-gold': '0.24.0',
@@ -353,10 +352,7 @@ const createInstanceProfile = (): aws.iam.InstanceProfile => {
       Statement: [
         {
           Effect: 'Allow',
-          Action: [
-            'ec2:AttachVolume',
-            'ec2:DetachVolume',
-          ],
+          Action: ['ec2:AttachVolume', 'ec2:DetachVolume'],
           Resource: '*',
           Condition: {
             StringEquals: { 'aws:ResourceTag/service': 'typesense' },
@@ -411,9 +407,7 @@ const createInstanceProfile = (): aws.iam.InstanceProfile => {
   })
 }
 
-const createLaunchTemplate = (
-  config: pulumi.Config, infraOutput: InfraOutput,
-): aws.ec2.LaunchTemplate => {
+const createLaunchTemplate = (config: pulumi.Config, infraOutput: InfraOutput): aws.ec2.LaunchTemplate => {
   const ami = getAmi()
   const typesenseProfile = createInstanceProfile()
 
@@ -429,13 +423,15 @@ const createLaunchTemplate = (
     monitoring: {
       enabled: true,
     },
-    tagSpecifications: [{
-      resourceType: 'instance',
-      tags: getTags({
-        ...tags,
-        Name: getResourceName('typesense'),
-      }),
-    }],
+    tagSpecifications: [
+      {
+        resourceType: 'instance',
+        tags: getTags({
+          ...tags,
+          Name: getResourceName('typesense'),
+        }),
+      },
+    ],
     tags: getTags(tags),
   })
 }
@@ -446,16 +442,23 @@ const createAutoScalingGroup = (
   lt: aws.ec2.LaunchTemplate,
   tg: aws.lb.TargetGroup,
 ): aws.autoscaling.Group => {
-  const subnetIds = config.require('tsAvailabilityZones').split(',').map((az) => {
-    return pulumi.output(aws.ec2.getSubnet({
-      vpcId: infraOutput.vpcId,
-      availabilityZone: az,
-      filters: [{
-        name: 'tag:type',
-        values: [isProduction() ? 'private' : 'public'],
-      }],
-    })).id
-  })
+  const subnetIds = config
+    .require('tsAvailabilityZones')
+    .split(',')
+    .map(az => {
+      return pulumi.output(
+        aws.ec2.getSubnet({
+          vpcId: infraOutput.vpcId,
+          availabilityZone: az,
+          filters: [
+            {
+              name: 'tag:type',
+              values: [isProduction() ? 'private' : 'public'],
+            },
+          ],
+        }),
+      ).id
+    })
 
   return new aws.autoscaling.Group('asg_typesense', {
     name: getResourceName('typesense'),
@@ -474,22 +477,22 @@ const createAutoScalingGroup = (
         minHealthyPercentage: 100,
       },
       strategy: 'Rolling',
-      triggers: [
-        'tag',
-      ],
+      triggers: ['tag'],
     },
     targetGroupArns: [tg.arn],
     vpcZoneIdentifiers: subnetIds,
-    tags: [{
-      key: 'service',
-      propagateAtLaunch: true,
-      value: 'typesense',
-    },
-    {
-      key: 'refreshTime',
-      propagateAtLaunch: true,
-      value: new Date().toISOString(),
-    }],
+    tags: [
+      {
+        key: 'service',
+        propagateAtLaunch: true,
+        value: 'typesense',
+      },
+      {
+        key: 'refreshTime',
+        propagateAtLaunch: true,
+        value: new Date().toISOString(),
+      },
+    ],
   })
 }
 

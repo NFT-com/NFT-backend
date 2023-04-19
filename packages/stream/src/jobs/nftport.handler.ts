@@ -18,8 +18,10 @@ export const syncTxsFromNFTPortHandler = async (job: Job): Promise<void> => {
   const chainId: string = job.data.chainId || process.env.chainId || '5'
   if (!address && !tokenId && !endpoint) return
   try {
-    const key = tokenId ? helper.checkSum(address) + '::' + BigNumber.from(tokenId).toHexString() : helper.checkSum(address)
-    const chain = (chainId === '1' || chainId === '5') ? 'ethereum' : 'goerli'
+    const key = tokenId
+      ? helper.checkSum(address) + '::' + BigNumber.from(tokenId).toHexString()
+      : helper.checkSum(address)
+    const chain = chainId === '1' || chainId === '5' ? 'ethereum' : 'goerli'
     await nftPortService.fetchTxsFromNFTPort(endpoint, chain, ['all'], address, tokenId)
     // Once we fetch transactions for collection or NFT, we cache it to NFTPORT_RECENTLY_SYNCED with expire date
     const now: Date = new Date()
@@ -30,7 +32,9 @@ export const syncTxsFromNFTPortHandler = async (job: Job): Promise<void> => {
       cache.zrem(`${CacheKeys.NFTPORT_SYNC_IN_PROGRESS}_${chainId}`, [key]),
       cache.zrem(`${CacheKeys.NFTPORT_TO_SYNC}_${chainId}`, [key]),
     ])
-    logger.info(`Completed transactions sync from NFTPort for address ${address}, tokenId ${tokenId}, endpoint ${endpoint}`)
+    logger.info(
+      `Completed transactions sync from NFTPort for address ${address}, tokenId ${tokenId}, endpoint ${endpoint}`,
+    )
   } catch (err) {
     logger.error(`Error in syncTxsFromNFTPortHandler: ${err}`)
   }

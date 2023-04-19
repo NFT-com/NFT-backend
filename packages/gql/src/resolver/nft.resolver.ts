@@ -4,24 +4,17 @@ import Joi from 'joi'
 
 import { createAlchemyWeb3 } from '@alch/alchemy-web3'
 import { appError, curationError, nftError, profileError, txActivityError } from '@nftcom/error-types'
+import { auth, Context, joi, Pageable, pagination } from '@nftcom/misc'
 import {
-  auth,
-  Context,
-  joi,
-  Pageable,
-  pagination,
-} from '@nftcom/misc';
-import { core, looksrareService, nftService, openseaService, searchEngineService, txActivityService, x2y2Service } from '@nftcom/service'
-import {
-  _logger,
-  contracts,
-  db,
-  defs,
-  entity,
-  fp,
-  helper,
-  utils as dbUtils,
-} from '@nftcom/shared'
+  core,
+  looksrareService,
+  nftService,
+  openseaService,
+  searchEngineService,
+  txActivityService,
+  x2y2Service,
+} from '@nftcom/service'
+import { _logger, contracts, db, defs, entity, fp, helper, utils as dbUtils } from '@nftcom/shared'
 
 import { gql } from '../defs'
 import { likeService } from '../service/like.service'
@@ -100,7 +93,7 @@ import * as Sentry from '@sentry/node'
 //   },
 // ]
 
-const seService = searchEngineService.SearchEngineService();
+const seService = searchEngineService.SearchEngineService()
 
 const getNFT = (_: unknown, args: gql.QueryNFTByIdArgs, ctx: Context): Promise<gql.NFT> => {
   const { user, repositories } = ctx
@@ -111,7 +104,7 @@ const getNFT = (_: unknown, args: gql.QueryNFTByIdArgs, ctx: Context): Promise<g
   joi.validateSchema(schema, args)
   return repositories.nft.findById(args.id).then((nft: entity.NFT) => {
     // fix (short-term) : trait value
-    return core.stringifyTraits(nft);
+    return core.stringifyTraits(nft)
   })
 }
 
@@ -127,7 +120,7 @@ const getContractNFT = async (_: unknown, args: gql.QueryNFTArgs, ctx: Context):
     joi.validateSchema(schema, args)
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    nftService.initiateWeb3(chainId);
+    nftService.initiateWeb3(chainId)
 
     let nft = await repositories.nft.findOne({
       where: {
@@ -138,7 +131,7 @@ const getContractNFT = async (_: unknown, args: gql.QueryNFTArgs, ctx: Context):
     })
     if (nft) {
       // fix (short-term) : trait value
-      nft = core.stringifyTraits(nft);
+      nft = core.stringifyTraits(nft)
 
       // const now = helper.toUTCDate()
       // let duration
@@ -181,8 +174,8 @@ const getContractNFT = async (_: unknown, args: gql.QueryNFTArgs, ctx: Context):
       const newNFT = await nftService.saveNewNFT(
         utils.getAddress(args.contract),
         ethers.BigNumber.from(args.id).toHexString(),
-        chainId
-      );
+        chainId,
+      )
       if (!newNFT) {
         logger.error(
           `NFT is not valid for contract ${args?.contract} and tokenId ${ethers.BigNumber.from(
@@ -231,7 +224,7 @@ const returnProfileNFTs = async (
     let cachedData = await cache.get(cacheKey)
     if (cachedData) {
       // check profile owner and if owner is changed, we invalidate cached data
-      const owner = await nftService.profileOwner(profile.url, chainId);
+      const owner = await nftService.profileOwner(profile.url, chainId)
       if (owner && !profile.ownerWalletId) {
         await cache.del([cacheKey])
       } else if (owner && profile.ownerWalletId) {
@@ -336,10 +329,7 @@ const returnProfileNFTs = async (
       paginatedNFTs[paginatedNFTs.length - 1],
       'sortIndex',
     )([paginatedNFTs, totalItems])
-    return txActivityService.triggerNFTOrderRefreshQueue(
-      result.items,
-      chainId
-    ).then(() => Promise.resolve(result));
+    return txActivityService.triggerNFTOrderRefreshQueue(result.items, chainId).then(() => Promise.resolve(result))
   } catch (err) {
     logger.error(`Error in returnProfileNFTs: ${err}`)
     throw err
@@ -435,12 +425,9 @@ const getMyNFTs = async (_: unknown, args: gql.QueryMyNFTsArgs, ctx: Context): P
         .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
         .then(result => {
           // refresh order queue trigger
-          return Promise.resolve(
-            txActivityService.triggerNFTOrderRefreshQueue(
-              result?.items,
-              chainId
-            )
-          ).then(() => Promise.resolve(result));
+          return Promise.resolve(txActivityService.triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() =>
+            Promise.resolve(result),
+          )
         }) as Promise<gql.NFTsOutput>
     } else {
       const defaultProfile = await repositories.profile.findOne({
@@ -464,12 +451,9 @@ const getMyNFTs = async (_: unknown, args: gql.QueryMyNFTsArgs, ctx: Context): P
           .then(pagination.toPageable(pageInput, null, null, 'updatedAt'))
           .then(result => {
             // refresh order queue trigger
-            return Promise.resolve(
-              txActivityService.triggerNFTOrderRefreshQueue(
-                result?.items,
-                chainId
-              )
-            ).then(() => Promise.resolve(result));
+            return Promise.resolve(txActivityService.triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() =>
+              Promise.resolve(result),
+            )
           }) as Promise<gql.NFTsOutput>
       } else {
         return await returnProfileNFTs(
@@ -568,7 +552,7 @@ const getCollectionNFTs = (_: unknown, args: gql.QueryCollectionNFTsArgs, ctx: C
               })
               .then(nft => {
                 // fix (short-term) : trait value
-                return core.stringifyTraits(nft);
+                return core.stringifyTraits(nft)
               })
           }),
         ),
@@ -578,15 +562,13 @@ const getCollectionNFTs = (_: unknown, args: gql.QueryCollectionNFTsArgs, ctx: C
     )
     .then(([nfts, pageInfo, count]: [entity.NFT[], gql.PageInfo, number]) => {
       // refresh order queue trigger
-      return Promise.resolve(
-        txActivityService.triggerNFTOrderRefreshQueue(nfts, chainId)
-      ).then(() =>
+      return Promise.resolve(txActivityService.triggerNFTOrderRefreshQueue(nfts, chainId)).then(() =>
         Promise.resolve({
           items: nfts ?? [],
           pageInfo,
           totalItems: count,
-        })
-      );
+        }),
+      )
     })
 }
 
@@ -609,7 +591,7 @@ const getOfficialCollectionNFTs = async (
   joi.validateSchema(schema, input)
 
   try {
-    return await nftService.getNFTsForOfficialCollection(args.input);
+    return await nftService.getNFTsForOfficialCollection(args.input)
   } catch (err) {
     Sentry.captureException(err)
     Sentry.captureMessage(`Error in getOfficialCollectionNFTs: ${err}`)
@@ -622,21 +604,16 @@ const refreshMyNFTs = (_: any, args: any, ctx: Context): Promise<gql.RefreshMyNF
   const { user, repositories } = ctx
   const chainId = ctx.chain.id || process.env.CHAIN_ID
   auth.verifyAndGetNetworkChain('ethereum', chainId)
-  nftService.initiateWeb3(chainId);
+  nftService.initiateWeb3(chainId)
   logger.debug('refreshNFTs', { loggedInUserId: user.id })
   return repositories.wallet
     .findByUserId(user.id)
     .then((wallets: entity.Wallet[]) => {
       return Promise.all(
         wallets.map((wallet: entity.Wallet) => {
-          nftService.checkNFTContractAddresses(
-            user.id,
-            wallet.id,
-            wallet.address,
-            wallet.chainId
-          ).then(() => {
-            nftService.updateWalletNFTs(user.id, wallet, wallet.chainId);
-          });
+          nftService.checkNFTContractAddresses(user.id, wallet.id, wallet.address, wallet.chainId).then(() => {
+            nftService.updateWalletNFTs(user.id, wallet, wallet.chainId)
+          })
         }),
       )
         .then(() => {
@@ -665,7 +642,7 @@ const getGkNFTs = async (_: any, args: gql.QueryGkNFTsArgs, ctx: Context): Promi
   if (cachedData) {
     return JSON.parse(cachedData)
   } else {
-    const ALCHEMY_API_URL = nftService.getAlchemyApiUrl(chainId);
+    const ALCHEMY_API_URL = nftService.getAlchemyApiUrl(chainId)
     const web3 = createAlchemyWeb3(ALCHEMY_API_URL)
 
     try {
@@ -750,7 +727,7 @@ const updateNFTsForProfile = async (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
     const pageInput = args?.input.pageInput
-    nftService.initiateWeb3(chainId);
+    nftService.initiateWeb3(chainId)
 
     const profile = await repositories.profile.findOne({
       where: {
@@ -797,7 +774,7 @@ const updateAssociatedAddresses = async (
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-    nftService.initiateWeb3(chainId);
+    nftService.initiateWeb3(chainId)
     const profile = await repositories.profile.findOne({
       where: {
         url: args?.input.profileUrl,
@@ -807,11 +784,7 @@ const updateAssociatedAddresses = async (
     if (!profile) {
       return { message: `No profile with url ${args?.input.profileUrl}` }
     }
-    const message = await nftService.updateNFTsForAssociatedAddresses(
-      repositories,
-      profile,
-      chainId
-    );
+    const message = await nftService.updateNFTsForAssociatedAddresses(repositories, profile, chainId)
     return { message }
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedAddresses: ${err}`)
@@ -830,7 +803,7 @@ const updateAssociatedContract = async (
     const chainId = args?.input.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-    nftService.initiateWeb3(chainId);
+    nftService.initiateWeb3(chainId)
     const profile = await repositories.profile.findOne({
       where: {
         url: args?.input.profileUrl,
@@ -845,8 +818,8 @@ const updateAssociatedContract = async (
       repositories,
       profile,
       chainId,
-      wallet.address
-    );
+      wallet.address,
+    )
     return { message }
   } catch (err) {
     Sentry.captureMessage(`Error in updateAssociatedContract: ${err}`)
@@ -861,7 +834,7 @@ export const refreshNft = async (_: any, args: gql.MutationRefreshNFTArgs, ctx: 
     const chainId = args?.chainId || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
 
-    nftService.initiateWeb3(chainId);
+    nftService.initiateWeb3(chainId)
 
     let nft = await repositories.nft.findOne({
       where: {
@@ -872,7 +845,7 @@ export const refreshNft = async (_: any, args: gql.MutationRefreshNFTArgs, ctx: 
 
     if (nft) {
       // fix (short-term) : trait value
-      nft = core.stringifyTraits(nft);
+      nft = core.stringifyTraits(nft)
 
       const obj = {
         contract: {
@@ -895,19 +868,9 @@ export const refreshNft = async (_: any, args: gql.MutationRefreshNFTArgs, ctx: 
       if (!wallet) {
         logger.info({ nft, chainId }, 'NFT ownership unavailable or ERC1155')
         const currentWallet = await repositories.wallet.findById(nft.walletId)
-        refreshedNFT = await nftService.updateNFTOwnershipAndMetadata(
-          obj,
-          currentWallet.userId,
-          currentWallet,
-          chainId
-        );
+        refreshedNFT = await nftService.updateNFTOwnershipAndMetadata(obj, currentWallet.userId, currentWallet, chainId)
       } else {
-        refreshedNFT = await nftService.updateNFTOwnershipAndMetadata(
-          obj,
-          wallet.userId,
-          wallet,
-          chainId
-        );
+        refreshedNFT = await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId)
       }
       if (refreshedNFT) {
         await seService.indexNFTs([refreshedNFT])
@@ -930,7 +893,7 @@ export const refreshNft = async (_: any, args: gql.MutationRefreshNFTArgs, ctx: 
 export const refreshNFTOrder = async (_: any, args: gql.MutationRefreshNFTOrderArgs, ctx: Context): Promise<string> => {
   const { repositories, chain } = ctx
   logger.debug('refreshNftOrders', { id: args?.id })
-  nftService.initiateWeb3();
+  nftService.initiateWeb3()
   try {
     const nft = await repositories.nft.findById(args?.id)
     if (!nft) {
@@ -991,7 +954,7 @@ export const updateNFTMemo = async (_: any, args: gql.MutationUpdateNFTMemoArgs,
     }
     nft = await repositories.nft.updateOneById(nft.id, { memo: args?.memo })
     // fix (short-term) : trait value
-    return core.stringifyTraits(nft);
+    return core.stringifyTraits(nft)
   } catch (err) {
     Sentry.captureMessage(`Error in updateNFTMemo: ${err}`)
     return err
@@ -1045,7 +1008,7 @@ export const getNFTsForCollections = async (
                 let nft = await repositories.nft.findById(edge.thatEntityId)
                 if (nft) {
                   // fix (short-term) : trait value
-                  nft = core.stringifyTraits(nft);
+                  nft = core.stringifyTraits(nft)
                   nfts.push(nft)
                 }
               }
@@ -1058,10 +1021,7 @@ export const getNFTsForCollections = async (
           const slicedNfts: entity.NFT[] = nfts.slice(0, length)
 
           // refresh order queue trigger
-          await txActivityService.triggerNFTOrderRefreshQueue(
-            slicedNfts,
-            chainId
-          );
+          await txActivityService.triggerNFTOrderRefreshQueue(slicedNfts, chainId)
           result.push({
             collectionAddress: ethers.utils.getAddress(collectionAddress),
             nfts: slicedNfts,
@@ -1123,7 +1083,7 @@ export const updateNFTProfileId = async (
     profileId: profile.id,
   })
   // fix (short-term) : trait value
-  return core.stringifyTraits(updatedNFT);
+  return core.stringifyTraits(updatedNFT)
 }
 
 const addListNFTsIncentiveAction = async (
@@ -1178,32 +1138,24 @@ export const listNFTSeaport = async (_: any, args: gql.MutationListNFTSeaportArg
 
   logger.debug('listNFTSeaport', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return openseaService.createSeaportListing(
-    seaportSignature,
-    seaportParams,
-    chainId
-  )
+  return openseaService
+    .createSeaportListing(seaportSignature, seaportParams, chainId)
     .then(
       fp.thruIfNotEmpty((order: entity.TxOrder) => {
         return repositories.txOrder.save({
           ...order,
           createdInternally: true,
           memo: args?.input.memo ?? null,
-        });
-      })
+        })
+      }),
     )
-    .then((order) => {
+    .then(order => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
         dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
-      ]).then((results) => results[0]);
+      ]).then(results => results[0])
     })
-    .catch((err) =>
-      appError.buildInvalid(
-        txActivityError.buildOpenSea(err),
-        txActivityError.ErrorType.OpenSea
-      )
-    );
+    .catch(err => appError.buildInvalid(txActivityError.buildOpenSea(err), txActivityError.ErrorType.OpenSea))
 }
 
 export const listNFTLooksrare = async (_: any, args: gql.MutationListNFTLooksrareArgs, ctx: Context): Promise<any> => {
@@ -1214,28 +1166,24 @@ export const listNFTLooksrare = async (_: any, args: gql.MutationListNFTLooksrar
 
   logger.debug('listNFTLooksrare', { input: args?.input, wallet: ctx?.wallet?.id })
 
-  return looksrareService.createLooksrareListing(looksrareOrder, chainId)
+  return looksrareService
+    .createLooksrareListing(looksrareOrder, chainId)
     .then(
       fp.thruIfNotEmpty((order: entity.TxOrder) => {
         return repositories.txOrder.save({
           ...order,
           createdInternally: true,
           memo: args?.input.memo ?? null,
-        });
-      })
+        })
+      }),
     )
-    .then((order) => {
+    .then(order => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
         dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
-      ]).then((results) => results[0]);
+      ]).then(results => results[0])
     })
-    .catch((err) =>
-      appError.buildInvalid(
-        txActivityError.buildLooksRare(err),
-        txActivityError.ErrorType.LooksRare
-      )
-    );
+    .catch(err => appError.buildInvalid(txActivityError.buildLooksRare(err), txActivityError.ErrorType.LooksRare))
 }
 
 export const listNFTX2Y2 = async (_: any, args: gql.MutationListNFTx2Y2Args, ctx: Context): Promise<any> => {
@@ -1260,34 +1208,24 @@ export const listNFTX2Y2 = async (_: any, args: gql.MutationListNFTx2Y2Args, ctx
 
   logger.debug({ input: args?.input, wallet: ctx?.wallet?.id }, 'listNFTX2Y2')
 
-  return x2y2Service.createX2Y2Listing(
-    x2y2Order,
-    maker,
-    contract,
-    tokenId,
-    chainId
-  )
+  return x2y2Service
+    .createX2Y2Listing(x2y2Order, maker, contract, tokenId, chainId)
     .then(
       fp.thruIfNotEmpty((order: entity.TxOrder) => {
         return repositories.txOrder.save({
           ...order,
           createdInternally: true,
           memo: args?.input.memo ?? null,
-        });
-      })
+        })
+      }),
     )
-    .then((order) => {
+    .then(order => {
       return Promise.all([
         addListNFTsIncentiveAction(repositories, profileUrl, chainId, order),
         dbUtils.getNFTsFromTxOrders([order]).then(seService.indexNFTs),
-      ]).then((results) => results[0]);
+      ]).then(results => results[0])
     })
-    .catch((err) =>
-      appError.buildInvalid(
-        txActivityError.buildX2Y2(err),
-        txActivityError.ErrorType.X2Y2
-      )
-    );
+    .catch(err => appError.buildInvalid(txActivityError.buildX2Y2(err), txActivityError.ErrorType.X2Y2))
 }
 
 const updateENSNFTMetadata = async (
@@ -1309,7 +1247,7 @@ const updateENSNFTMetadata = async (
     const slidedNFTs = toUpdate.slice(0, count)
     await Promise.allSettled(
       slidedNFTs.map(async nft => {
-        await nftService.updateNFTMetadata(nft, repositories);
+        await nftService.updateNFTMetadata(nft, repositories)
       }),
     )
     logger.debug('Update image urls of ENS NFTs', { counts: slidedNFTs.length })
@@ -1367,11 +1305,7 @@ export default {
       defs.EntityType.Profile,
     ),
     isGKMinted: async (parent, _args, _ctx) => {
-      return nftService.profileGKNFT(
-        parent.contract,
-        parent.tokenId,
-        parent.chainId || process.env.CHAIN_ID
-      );
+      return nftService.profileGKNFT(parent.contract, parent.tokenId, parent.chainId || process.env.CHAIN_ID)
     },
     listings: async (parent, args, ctx) => {
       const {

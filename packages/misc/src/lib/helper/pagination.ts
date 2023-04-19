@@ -24,13 +24,13 @@ type Scalars = {
   DateTime: any
   Uint256: any
   Upload: any
-};
+}
 export type PageInput = {
   afterCursor?: InputMaybe<Scalars['String']>
   beforeCursor?: InputMaybe<Scalars['String']>
   first?: InputMaybe<Scalars['Int']>
   last?: InputMaybe<Scalars['Int']>
-};
+}
 export type PageInfo = {
   firstCursor?: Maybe<Scalars['String']>
   lastCursor?: Maybe<Scalars['String']>
@@ -43,7 +43,6 @@ export type OffsetPageInput = {
  * End copy from generated gql.ts
  * Would be nice to have a way to import but not depend on gql
  */
-
 
 type PageResolvers<T> = {
   firstAfter: () => Promise<defs.PageableResult<T>>

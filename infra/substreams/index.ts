@@ -31,12 +31,12 @@ const rdsStack = async (): Promise<Record<string, any> | void> => {
 
   const securityGroups = buildSecurityGroups(config, vpc)
 
-  const substream_cluster = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones); 
+  const substream_cluster = createSubstreamClusters(config, subnets, securityGroups.rdsSG, zones)
 
-    return {
-      ec2SecurityGroup: securityGroups.ec2SG, 
-      sharedStack: pulumi.StackReference,
-      dbHost: substream_cluster.main.endpoint 
+  return {
+    ec2SecurityGroup: securityGroups.ec2SG,
+    sharedStack: pulumi.StackReference,
+    dbHost: substream_cluster.main.endpoint,
   }
 }
 const ec2_stack = async (): Promise<Record<string, any> | void> => {
@@ -50,7 +50,6 @@ const ec2_stack = async (): Promise<Record<string, any> | void> => {
   const privateSubnets = (await pulumiOutToValue(sharedStack.getOutput('privateSubnetIds'))) as string[]
 
   const subnets: vpcSubnets = { publicSubnets: publicSubnets, privateSubnets: privateSubnets }
-
 
   const dbHost = (await pulumiOutToValue(rdsStack.getOutput('dbHost'))) as string
   const ec2SG = (await pulumiOutToValue(rdsStack.getOutput('ec2SecurityGroup'))) as aws.ec2.SecurityGroup

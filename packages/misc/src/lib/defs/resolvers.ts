@@ -39,7 +39,10 @@ export type PaginatedResultsFromEntityByArgs<T> = {
   select?: FindOptionsSelect<Partial<T>>
 }
 
-export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<PaginatedResultsFromEntityByArgs<T>, 'pageInput' | 'relations'> &
+export type PaginatedOffsetResultsFromEntityByArgs<T> = Omit<
+  PaginatedResultsFromEntityByArgs<T>,
+  'pageInput' | 'relations'
+> &
   Pick<FindOneOptions<T>, 'cache'> & {
     offsetPageInput: pagination.OffsetPageInput
     relations?: string[]

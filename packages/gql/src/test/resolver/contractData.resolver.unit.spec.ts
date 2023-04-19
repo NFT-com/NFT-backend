@@ -1,11 +1,11 @@
 import axios from 'axios'
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/misc'
 import { getContractSalesStatistics, getNFTDetails } from '@nftcom/gql/resolver/contractData.resolver'
 import { testMockWallet, testMockWatchlistUser } from '@nftcom/gql/test/util/constants'
 import { clearDB } from '@nftcom/gql/test/util/helpers'
 import { getTestApolloServer } from '@nftcom/gql/test/util/testApolloServer'
+import { testDBConfig } from '@nftcom/misc'
 import { db, defs } from '@nftcom/shared'
 
 jest.setTimeout(300000)

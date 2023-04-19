@@ -5,14 +5,14 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nrwl/webpack:webpack",
+      "executor": "@nrwl/esbuild:esbuild",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "target": "node",
-        "compiler": "tsc",
+        "format": ["cjs"],
         "outputPath": "dist/packages/stream",
         "main": "packages/stream/src/main.ts",
-        "tsConfig": "packages/stream/tsconfig.app.json"
+        "tsConfig": "packages/stream/tsconfig.app.json",
+        "external": ["*.json"]
       },
       "configurations": {
         "production": {

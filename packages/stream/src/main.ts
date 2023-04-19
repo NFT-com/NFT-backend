@@ -31,7 +31,8 @@ const logger = _logger.Factory(_logger.Context.General, _logger.Context.Misc)
 const chainId: string = process.env.CHAIN_ID || '5'
 logger.log(`Chain Id for environment: ${chainId}`)
 
-const upload = multer({ storage: multer.memoryStorage(),
+const upload = multer({
+  storage: multer.memoryStorage(),
   limits: {
     fields: 5,
   },
@@ -101,13 +102,22 @@ app.get('/health', async (_req, res) => {
 // force stop external orders sync - authenticated
 app.get('/stopSync', authMiddleWare, async (_req, res) => {
   try {
-    const existingSubQueueJobs: Bull.Job[] = await nftOrderSubqueue.getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
+    const existingSubQueueJobs: Bull.Job[] = await nftOrderSubqueue.getJobs([
+      'active',
+      'completed',
+      'delayed',
+      'failed',
+      'paused',
+      'waiting',
+    ])
     // clear existing sub queue jobs
     if (existingSubQueueJobs.flat().length) {
       nftOrderSubqueue.obliterate({ force: true })
     }
 
-    const existingQueueJobs: Bull.Job[] = await queues.get(QUEUE_TYPES.SYNC_CONTRACTS).getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
+    const existingQueueJobs: Bull.Job[] = await queues
+      .get(QUEUE_TYPES.SYNC_CONTRACTS)
+      .getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
     // clear existing queue jobs
     if (existingQueueJobs.flat().length) {
       queues.get(QUEUE_TYPES.SYNC_CONTRACTS).obliterate({ force: true })
@@ -126,7 +136,9 @@ app.post('/syncTxsFromNFTPort', authMiddleWare, validate(syncTxsFromNFTPortSchem
   try {
     const MAXIMAM_PROCESS_AT_TIME = Number(process.env.MAX_BATCHES_NFTPORT)
     const { address, tokenId } = _req.body
-    const key = tokenId ? helper.checkSum(address) + '::' + BigNumber.from(tokenId).toHexString() : helper.checkSum(address)
+    const key = tokenId
+      ? helper.checkSum(address) + '::' + BigNumber.from(tokenId).toHexString()
+      : helper.checkSum(address)
     const recentlyRefreshed: string = await cache.zscore(`${CacheKeys.NFTPORT_RECENTLY_SYNCED}_${chainId}`, key)
     if (!recentlyRefreshed) {
       // 1. remove expired collections and NFTS from the NFTPORT_RECENTLY_SYNCED cache
@@ -145,25 +157,32 @@ app.post('/syncTxsFromNFTPort', authMiddleWare, validate(syncTxsFromNFTPortSchem
         })
       } else {
         // 5. check NFTPORT_SYNC_IN_PROGRESS cache if it's running more than MAXIMAM_PROCESS_AT_TIME collection or NFTs
-        const processingCalls = await cache.zrevrangebyscore(`${CacheKeys.NFTPORT_SYNC_IN_PROGRESS}_${chainId}`, '+inf', '(0')
+        const processingCalls = await cache.zrevrangebyscore(
+          `${CacheKeys.NFTPORT_SYNC_IN_PROGRESS}_${chainId}`,
+          '+inf',
+          '(0',
+        )
         logger.info(`Number of processing calls for syncing txs from NFTPort : ${processingCalls.length}`)
         if (processingCalls.length < MAXIMAM_PROCESS_AT_TIME) {
           // 6. add collection or NFT to NFTPORT_SYNC_IN_PROGRESS
           await cache.zadd(`${CacheKeys.NFTPORT_SYNC_IN_PROGRESS}_${chainId}`, 'INCR', 1, key)
           // 7. sync txs for collection + timestamp
           const jobId = `sync_txs_nftport:${Date.now()}`
-          queues.get(QUEUE_TYPES.SYNC_TXS_NFTPORT)
-            .add('syncTxsNftport', {
+          queues.get(QUEUE_TYPES.SYNC_TXS_NFTPORT).add(
+            'syncTxsNftport',
+            {
               SYNC_TXS_NFTPORT: QUEUE_TYPES.SYNC_TXS_NFTPORT,
               address,
               tokenId,
               endpoint: tokenId ? 'txByNFT' : 'txByContract',
               chainId: process.env.CHAIN_ID,
-            }, {
+            },
+            {
               removeOnComplete: true,
               removeOnFail: true,
               jobId,
-            })
+            },
+          )
           res.status(200).send({
             message: 'Started syncing transactions.',
           })
@@ -194,7 +213,10 @@ app.post('/collectionSync', authMiddleWare, validate(collectionSyncSchema), asyn
     const recentlyRefreshed: SyncCollectionInput[] = []
     for (let i = 0; i < collections.length; i++) {
       const collection: SyncCollectionRawInput = collections[i]
-      const collecionSynced: number = await cache.sismember(`${CacheKeys.RECENTLY_SYNCED}_${chainId}`, helper.checkSum(collection.address) + (collections[i]?.startToken || ''))
+      const collecionSynced: number = await cache.sismember(
+        `${CacheKeys.RECENTLY_SYNCED}_${chainId}`,
+        helper.checkSum(collection.address) + (collections[i]?.startToken || ''),
+      )
       if (collecionSynced) {
         recentlyRefreshed.push(collection)
       } else {
@@ -222,18 +244,23 @@ app.post('/collectionSync', authMiddleWare, validate(collectionSyncSchema), asyn
     if (validCollections.length) {
       // sync collection + timestamp
       const jobId = `sync_collections:${Date.now()}`
-      queues.get(QUEUE_TYPES.SYNC_COLLECTIONS)
-        .add('syncCollections', {
+      queues.get(QUEUE_TYPES.SYNC_COLLECTIONS).add(
+        'syncCollections',
+        {
           SYNC_CONTRACTS: QUEUE_TYPES.SYNC_COLLECTIONS,
           collections: validCollections,
           chainId: process.env.CHAIN_ID,
-        }, {
+        },
+        {
           removeOnComplete: true,
           removeOnFail: true,
           jobId,
-        })
+        },
+      )
 
-      responseMsg.push(`Sync started for the following collections: ${validCollections.map(i => i.address).join(', ')}.`)
+      responseMsg.push(
+        `Sync started for the following collections: ${validCollections.map(i => i.address).join(', ')}.`,
+      )
     }
 
     if (invalidCollections.length) {
@@ -241,7 +268,9 @@ app.post('/collectionSync', authMiddleWare, validate(collectionSyncSchema), asyn
     }
 
     if (recentlyRefreshed.length) {
-      responseMsg.push(`The following collections are recently refreshed: ${recentlyRefreshed.map(i => i.address).join(', ')}.`)
+      responseMsg.push(
+        `The following collections are recently refreshed: ${recentlyRefreshed.map(i => i.address).join(', ')}.`,
+      )
     }
 
     res.status(200).send({
@@ -272,7 +301,10 @@ app.post('/uploadCollections', authMiddleWare, upload.single('file'), async (_re
           const chainId: string = rowSplit?.[3]?.replace('\r', '')
           try {
             const checksumContract: string = helper.checkSum(contract)
-            const collecionSynced: number = await cache.sismember(`${CacheKeys.RECENTLY_SYNCED}_${chainId}`, helper.checkSum(checksumContract))
+            const collecionSynced: number = await cache.sismember(
+              `${CacheKeys.RECENTLY_SYNCED}_${chainId}`,
+              helper.checkSum(checksumContract),
+            )
             if (collecionSynced) {
               recentlyRefreshed.push({ address: checksumContract })
             } else {
@@ -297,17 +329,22 @@ app.post('/uploadCollections', authMiddleWare, upload.single('file'), async (_re
     if (validCollections.length) {
       // sync collection + timestamp
       const jobId = `sync_collections_from_csv:${Date.now()}`
-      queues.get(QUEUE_TYPES.SYNC_COLLECTIONS)
-        .add('syncCollectionsFromCsv', {
+      queues.get(QUEUE_TYPES.SYNC_COLLECTIONS).add(
+        'syncCollectionsFromCsv',
+        {
           SYNC_CONTRACTS: QUEUE_TYPES.SYNC_COLLECTIONS,
           collections: validCollections,
           chainId: process.env.CHAIN_ID,
-        }, {
+        },
+        {
           removeOnComplete: true,
           removeOnFail: true,
           jobId,
-        })
-      responseMsg.push(`Sync started for the following collections: ${validCollections.map(i => i.address).join(', ')}.`)
+        },
+      )
+      responseMsg.push(
+        `Sync started for the following collections: ${validCollections.map(i => i.address).join(', ')}.`,
+      )
     }
 
     if (invalidCollections.length) {
@@ -315,7 +352,9 @@ app.post('/uploadCollections', authMiddleWare, upload.single('file'), async (_re
     }
 
     if (recentlyRefreshed.length) {
-      responseMsg.push(`The following collections are recently refreshed: ${recentlyRefreshed.map(i => i.address).join(', ')}.`)
+      responseMsg.push(
+        `The following collections are recently refreshed: ${recentlyRefreshed.map(i => i.address).join(', ')}.`,
+      )
     }
 
     // if (recentlyRefreshed.length) {
@@ -332,7 +371,11 @@ app.post('/uploadCollections', authMiddleWare, upload.single('file'), async (_re
 // remove rarity job and cache
 app.get('/raritySyncCollections', authMiddleWare, async (_req, res) => {
   try {
-    const cachedCollections = await cache.zrevrangebyscore(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, '+inf', '(0')
+    const cachedCollections = await cache.zrevrangebyscore(
+      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
+      '+inf',
+      '(0',
+    )
 
     let message = 'No Collections Running!'
     if (cachedCollections.length) {
@@ -358,7 +401,11 @@ app.get('/stopRaritySync', authMiddleWare, async (_req, res) => {
     if (rarityQueue) {
       await rarityQueue.obliterate({ force: true })
     }
-    const cachedCollections = await cache.zrevrangebyscore(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, '+inf', '(0')
+    const cachedCollections = await cache.zrevrangebyscore(
+      `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
+      '+inf',
+      '(0',
+    )
     await cache.del(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`)
 
     let message = 'Successfully stopped rarity sync'
@@ -378,21 +425,24 @@ app.get('/syncCollectionBannerImages', authMiddleWare, async (_req, res) => {
     const jobId = 'sync_collection_images'
     const collectionBannerImageQueue = queues.get(QUEUE_TYPES.SYNC_COLLECTION_IMAGES)
     const job: Bull.Job = await collectionBannerImageQueue.getJob(jobId)
-    if (job && (!['active', 'completed'].includes(await job.getState()))) {
+    if (job && !['active', 'completed'].includes(await job.getState())) {
       await job.remove()
     }
 
-    if(!job) {
-      collectionBannerImageQueue
-        .add('syncCollectionBannerImages', {
+    if (!job) {
+      collectionBannerImageQueue.add(
+        'syncCollectionBannerImages',
+        {
           SYNC_CONTRACTS: QUEUE_TYPES.SYNC_COLLECTION_IMAGES,
           chainId: process.env.CHAIN_ID,
-        }, {
+        },
+        {
           attempts: 1,
           removeOnComplete: true,
           removeOnFail: true,
           jobId: 'sync_collection_images',
-        })
+        },
+      )
       return res.status(200).send({ message: 'Sync Started!' })
     }
 
@@ -431,23 +481,26 @@ app.get('/syncCollectionName', authMiddleWare, validate(collectionNameSyncSchema
     const jobId = 'sync_collection_name'
     const collectionNameQueue = queues.get(QUEUE_TYPES.SYNC_COLLECTION_NAME)
     const job: Bull.Job = await collectionNameQueue.getJob(jobId)
-    if (job && (!['active', 'completed'].includes(await job.getState()))) {
+    if (job && !['active', 'completed'].includes(await job.getState())) {
       await job.remove()
     }
 
-    if(!job) {
-      collectionNameQueue
-        .add('syncCollectionName', {
+    if (!job) {
+      collectionNameQueue.add(
+        'syncCollectionName',
+        {
           SYNC_CONTRACTS: QUEUE_TYPES.SYNC_COLLECTION_NAME,
           chainId: process.env.CHAIN_ID,
           contract,
           official,
-        }, {
+        },
+        {
           attempts: 1,
           removeOnComplete: true,
           removeOnFail: true,
           jobId: 'sync_collection_name',
-        })
+        },
+      )
       return res.status(200).send({ message: 'Collection Name Sync Started!' })
     }
 
@@ -496,13 +549,16 @@ app.post('/syncCollectionRarity', authMiddleWare, validate(collectionSyncSchema)
       let checksumContract = ''
       try {
         checksumContract = helper.checkSum(collection?.address)
-      } catch(err) {
+      } catch (err) {
         invalidCollections.push(collection)
         continue
       }
 
       if (checksumContract) {
-        const contractInRefreshedCache: string = await cache.zscore(`${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chainId}`, checksumContract)
+        const contractInRefreshedCache: string = await cache.zscore(
+          `${CacheKeys.REFRESHED_COLLECTION_RARITY}_${chainId}`,
+          checksumContract,
+        )
 
         if (Number(contractInRefreshedCache)) {
           const ttlNotExpiredCond: boolean = Date.now() < Number(contractInRefreshedCache)
@@ -512,7 +568,10 @@ app.post('/syncCollectionRarity', authMiddleWare, validate(collectionSyncSchema)
           }
         }
 
-        const contractInRefreshCache: string = await cache.zscore(`${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`, checksumContract)
+        const contractInRefreshCache: string = await cache.zscore(
+          `${CacheKeys.REFRESH_COLLECTION_RARITY}_${chainId}`,
+          checksumContract,
+        )
 
         if (Number(contractInRefreshCache)) {
           inprogress.push(collection)
@@ -539,7 +598,9 @@ app.post('/syncCollectionRarity', authMiddleWare, validate(collectionSyncSchema)
     }
 
     if (recentlyRefreshed.length) {
-      message += `The following collections are recently refreshed: ${recentlyRefreshed.map(col => col.address).join(', ')}`
+      message += `The following collections are recently refreshed: ${recentlyRefreshed
+        .map(col => col.address)
+        .join(', ')}`
     }
 
     return res.status(200).send({ message })
@@ -569,23 +630,26 @@ app.post('/syncCollectionNftRarity', authMiddleWare, validate(nftRaritySyncSchem
     const jobId = 'sync_collection_nft_rarity'
     const collectionNullRarityQueue = queues.get(QUEUE_TYPES.SYNC_COLLECTION_NFT_RARITY)
     const job: Bull.Job = await collectionNullRarityQueue.getJob(jobId)
-    if (job && (!['active', 'completed'].includes(await job.getState()))) {
+    if (job && !['active', 'completed'].includes(await job.getState())) {
       await job.remove()
     }
 
-    if(!job) {
-      collectionNullRarityQueue
-        .add('syncCollectionNftRarity', {
+    if (!job) {
+      collectionNullRarityQueue.add(
+        'syncCollectionNftRarity',
+        {
           SYNC_CONTRACTS: QUEUE_TYPES.SYNC_COLLECTION_NAME,
           chainId: process.env.CHAIN_ID,
           contract,
           tokenIds,
-        }, {
+        },
+        {
           attempts: 1,
           removeOnComplete: true,
           removeOnFail: true,
           jobId: 'sync_collection_nft_rarity',
-        })
+        },
+      )
       return res.status(200).send({ message: 'Collection Name Sync Started!' })
     }
 
@@ -643,7 +707,8 @@ const stopServer = async (): Promise<void> => {
 
 const bootstrap = (): Promise<void> => {
   verifyConfiguration()
-  return db.connect(dbConfig)
+  return db
+    .connect(dbConfig)
     .then(db.connectPg)
     .then(startAndListen)
     .then(startServer)
@@ -655,10 +720,12 @@ const bootstrap = (): Promise<void> => {
 }
 
 const killPort = (): Promise<unknown> => {
-  return kill(PORT)
-  // Without this small delay sometimes it's not killed in time -
-    .then(fp.pause(500))
-    .catch((err: any) => logger.error(err))
+  return (
+    kill(PORT)
+      // Without this small delay sometimes it's not killed in time -
+      .then(fp.pause(500))
+      .catch((err: any) => logger.error(err))
+  )
 }
 
 const logExit = (): void => {
@@ -685,7 +752,7 @@ const gracefulShutdown = (): Promise<void> => {
 process.on('SIGINT', gracefulShutdown)
 process.on('SIGTERM', gracefulShutdown)
 // catches uncaught exceptions
-process.on('uncaughtException', async (err) => {
+process.on('uncaughtException', async err => {
   logger.error(err, 'Uncaught Exception thrown!')
   await gracefulShutdown()
 })

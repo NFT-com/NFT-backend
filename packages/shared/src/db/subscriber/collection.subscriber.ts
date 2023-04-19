@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { EntitySubscriberInterface, EventSubscriber, ILike, InsertEvent } from 'typeorm'
 
-import { generateSlug } from '@nftcom/shared/helper/misc'
-
+import { generateSlug } from '../../helper/misc'
 import { Collection } from '../entity'
 
 /**

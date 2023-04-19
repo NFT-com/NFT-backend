@@ -1,7 +1,6 @@
 import { In, SelectQueryBuilder } from 'typeorm'
 
-import { TxOrder } from '@nftcom/shared/db/entity'
-
+import { TxOrder } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class TxOrderRepository extends BaseRepository<TxOrder> {

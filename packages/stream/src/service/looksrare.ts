@@ -1,4 +1,4 @@
-import axios, { AxiosError,AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { BigNumber } from 'ethers'
 
@@ -32,9 +32,9 @@ export interface LooksRareOrder {
   amount: number
   price: string
   nonce: string
-  startTime:number
-  endTime:number
-  minPercentageToAsk:number
+  startTime: number
+  endTime: number
+  minPercentageToAsk: number
   params: string
   status: string
   signature: string
@@ -87,25 +87,20 @@ export interface LookrareResponse {
   status: string
 }
 
-const getLooksRareInterceptor = (
-  baseURL: string,
-  chainId: string,
-): AxiosInstance => {
+const getLooksRareInterceptor = (baseURL: string, chainId: string): AxiosInstance => {
   const looksrareInstance = axios.create({
     baseURL,
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/json',
-      'X-Looks-Api-Key': chainId === '1'? LOOKSRARE_API_KEY : '',
+      'X-Looks-Api-Key': chainId === '1' ? LOOKSRARE_API_KEY : '',
     },
   })
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig = {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
@@ -117,7 +112,7 @@ const getLooksRareInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(looksrareInstance,  retryOptions)
+  axiosRetry(looksrareInstance, retryOptions)
   return looksrareInstance
 }
 
@@ -136,25 +131,19 @@ const retrieveLooksRareOrdersInBatches = async (
   const offers: any[] = []
   let queryUrl
   const listingBaseUrl = chainId === '4' ? LOOKSRARE_API_TESTNET_BASE_URL : LOOKSRARE_API_BASE_URL
-  const listingInterceptorLooksrare = getLooksRareInterceptor(
-    listingBaseUrl,
-    chainId,
-  )
+  const listingInterceptorLooksrare = getLooksRareInterceptor(listingBaseUrl, chainId)
   let delayCounter = 0
   let size: number
-  while(listingQueryParams.length>0) {
+  while (listingQueryParams.length > 0) {
     size = batchSize
     queryUrl = listingQueryParams.pop()
 
-    const response: AxiosResponse = await listingInterceptorLooksrare(
-      `/orders?${queryUrl}`,
-    )
+    const response: AxiosResponse = await listingInterceptorLooksrare(`/orders?${queryUrl}`)
     let orderHash: string, activityId: string
-    if (response?.data?.data?.length)
-    {
+    if (response?.data?.data?.length) {
       const orders = response?.data?.data
       logger.log('looksrare order', orders)
-      if(queryUrl.includes('quoteType=1')){
+      if (queryUrl.includes('quoteType=1')) {
         const listing = await orderEntityBuilder(
           defs.ProtocolType.LooksRareV2,
           defs.ActivityType.Listing,
@@ -166,17 +155,14 @@ const retrieveLooksRareOrdersInBatches = async (
         orderHash = orders?.[0].hash
         activityId = savedListing.activity.id
 
-        const contract: string =  orders[0]?.collection
-        const tokenId: string =  BigNumber.from(
-          orders[0]?.itemIds[0],
-        ).toHexString()
+        const contract: string = orders[0]?.collection
+        const tokenId: string = BigNumber.from(orders[0]?.itemIds[0]).toHexString()
 
         logger.log(`Saved LR listing with hash: ${orderHash} for contract: ${contract} and tokenId: ${tokenId}`)
 
         const cacheKey = `contract-${contract}:tokenId-${tokenId}:orderHash-${orderHash}:activity-${activityId}`
         await cache.sadd(CacheKeys.SYNCED_LR, cacheKey)
-      }
-      else  {
+      } else {
         const offer = await orderEntityBuilder(
           defs.ProtocolType.LooksRareV2,
           defs.ActivityType.Bid,
@@ -188,17 +174,15 @@ const retrieveLooksRareOrdersInBatches = async (
         orderHash = orders?.[0].hash
         activityId = savedOffer.activity.id
 
-        const contract: string =  orders[0]?.collectionAddress
-        const tokenId: string =  BigNumber.from(
-          orders[0]?.tokenId,
-        ).toHexString()
+        const contract: string = orders[0]?.collectionAddress
+        const tokenId: string = BigNumber.from(orders[0]?.tokenId).toHexString()
 
         logger.log(`Saved LR offer with hash: ${orderHash} for contract: ${contract} and tokenId: ${tokenId}`)
         const cacheKey = `contract-${contract}:tokenId-${tokenId}:orderHash-${orderHash}:activity-${activityId}`
         await cache.sadd(CacheKeys.SYNCED_LR, cacheKey)
       }
     }
-    delayCounter = delayCounter +1
+    delayCounter = delayCounter + 1
     if (delayCounter === size) {
       await delay(1000)
       delayCounter = 0
@@ -241,11 +225,7 @@ export const retrieveMultipleOrdersLooksrare = async (
         }
       }
       if (orderQueries.length) {
-        responseAggregator = await retrieveLooksRareOrdersInBatches(
-          orderQueries,
-          chainId,
-          LOOKSRARE_LISTING_BATCH_SIZE,
-        )
+        responseAggregator = await retrieveLooksRareOrdersInBatches(orderQueries, chainId, LOOKSRARE_LISTING_BATCH_SIZE)
       }
     }
   } catch (err) {

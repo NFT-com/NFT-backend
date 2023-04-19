@@ -22,4 +22,3 @@ export const sync = async (): Promise<void> => {
     },
   })
 }
-

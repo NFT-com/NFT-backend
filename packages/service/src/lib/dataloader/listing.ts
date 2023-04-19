@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader'
 
-import { Pageable, pagination } from '@nftcom/misc';
+import { Pageable, pagination } from '@nftcom/misc'
 import { _logger, db, defs, entity } from '@nftcom/shared'
 
 import { wallet } from './wallet'

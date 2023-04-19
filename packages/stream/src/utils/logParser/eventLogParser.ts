@@ -14,19 +14,19 @@ enum LooksrareV2EventName {
   OrderNoncesCancelled = 'OrderNoncesCancelled',
   NewBidAskNonces = 'NewBidAskNonces',
   TakerAsk = 'TakerAsk',
-  TakerBid = 'TakerBid'
+  TakerBid = 'TakerBid',
 }
-  
+
 enum OSSeaportEventName {
   OrderCancelled = 'OrderCancelled',
   CounterIncremented = 'CounterIncremented',
-  OrderFulfilled = 'OrderFulfilled'
+  OrderFulfilled = 'OrderFulfilled',
 }
-  
+
 enum X2Y2EventName {
   EvProfit = 'EvProfit',
   EvInventory = 'EvInventory',
-  EvCancel = 'EvCancel'
+  EvCancel = 'EvCancel',
 }
 const looksrareProtocolInterface = new utils.Interface(contracts.looksrareProtocolABI())
 const openseaSeaportInterface = new utils.Interface(contracts.openseaSeaportABI())
@@ -50,12 +50,9 @@ export const seaportParseLog = (log: any): any => {
   return openseaSeaportInterface.parseLog(log)
 }
 
-export const fulfillOrCancelSeaport = async (
-  e: any,
-  chainId: string,
-): Promise<void> => {
+export const fulfillOrCancelSeaport = async (e: any, chainId: string): Promise<void> => {
   const evt = seaportParseLog(e)
-  if(evt.name === OSSeaportEventName.OrderCancelled) {
+  if (evt.name === OSSeaportEventName.OrderCancelled) {
     const [orderHash, offerer, zone] = evt.args
     try {
       const order: entity.TxOrder = await repositories.txOrder.findOne({
@@ -72,7 +69,7 @@ export const fulfillOrCancelSeaport = async (
           },
         },
       })
-  
+
       if (order) {
         order.activity.status = defs.ActivityStatus.Cancelled
         await repositories.txOrder.save(order)
@@ -101,8 +98,11 @@ export const fulfillOrCancelSeaport = async (
       logger.error(`Evt: ${OSSeaportEventName.OrderCancelled} -- Err: ${err}`)
     }
   } else if (evt.name === OSSeaportEventName.CounterIncremented) {
-    logger.info(`Evt: ${OSSeaportEventName.CounterIncremented}, args: ${JSON.stringify(evt.args)}, typeof newCounter: ${typeof evt.args[0]}, typeof offerer: ${typeof evt.args[1]}`)
-    
+    logger.info(
+      `Evt: ${OSSeaportEventName.CounterIncremented}, args: ${JSON.stringify(evt.args)}, typeof newCounter: ${typeof evt
+        .args[0]}, typeof offerer: ${typeof evt.args[1]}`,
+    )
+
     const [newCounter, offerer] = evt.args
     try {
       const orders: entity.TxOrder[] = await repositories.txOrder.find({
@@ -118,23 +118,25 @@ export const fulfillOrCancelSeaport = async (
           },
         },
       })
-  
+
       if (orders.length) {
         const cancelEntityPromises: Promise<Partial<entity.TxCancel>>[] = []
         for (const order of orders) {
           order.activity.status = defs.ActivityStatus.Cancelled
-          cancelEntityPromises.push(cancelEntityBuilder(
-            defs.ActivityType.Cancel,
-            `${e.transactionHash}:${order.orderHash}`,
-            `${e.blockNumber}`,
-            chainId.toString(),
-            order.activity.nftContract,
-            order.activity.nftId,
-            order.makerAddress,
-            defs.ExchangeType.OpenSea,
-            order.orderType as defs.CancelActivityType,
-            order.id,
-          ))
+          cancelEntityPromises.push(
+            cancelEntityBuilder(
+              defs.ActivityType.Cancel,
+              `${e.transactionHash}:${order.orderHash}`,
+              `${e.blockNumber}`,
+              chainId.toString(),
+              order.activity.nftContract,
+              order.activity.nftId,
+              order.makerAddress,
+              defs.ExchangeType.OpenSea,
+              order.orderType as defs.CancelActivityType,
+              order.id,
+            ),
+          )
         }
         await repositories.txOrder.saveMany(orders)
         const cancelEntities = await Promise.all(cancelEntityPromises)
@@ -190,9 +192,7 @@ export const fulfillOrCancelSeaport = async (
 
         // update NFT ownership
         const contract: string = helper.checkSum(order.activity.nftContract)
-        const tokenId: string = helper.bigNumberToHex(
-          order.protocolData?.parameters?.offer?.[0]?.identifierOrCriteria,
-        )
+        const tokenId: string = helper.bigNumberToHex(order.protocolData?.parameters?.offer?.[0]?.identifierOrCriteria)
         const obj = {
           contract: {
             address: contract,
@@ -202,13 +202,9 @@ export const fulfillOrCancelSeaport = async (
           },
         }
 
-        const wallet = await nftService.getUserWalletFromNFT(
-          contract, tokenId, chainId.toString(),
-        )
+        const wallet = await nftService.getUserWalletFromNFT(contract, tokenId, chainId.toString())
         if (wallet) {
-          await nftService.updateNFTOwnershipAndMetadata(
-            obj, wallet.userId, wallet, chainId.toString(),
-          )
+          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId.toString())
         }
         logger.debug(`
         Evt Saved: ${OSSeaportEventName.OrderFulfilled} for orderHash ${orderHash},
@@ -224,7 +220,7 @@ export const fulfillOrCancelSeaport = async (
     logger.error('topic hash not covered: ', e.transactionHash)
   }
 }
-  
+
 export const seaportEventLogs = async (
   provider: ethers.providers.BaseProvider,
   blockHash: string,
@@ -235,20 +231,15 @@ export const seaportEventLogs = async (
     [
       helper.id('OrderCancelled(bytes32,address,address)'),
       helper.id('CounterIncremented(unint256,address)'),
-      helper.id('OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])'),
+      helper.id(
+        'OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])',
+      ),
     ],
   ]
-  const seaportEventLogs: ethers.providers.Log[] = await txEventLogs(
-    provider,
-    blockHash,
-    openseaTopicFilter,
-  )
+  const seaportEventLogs: ethers.providers.Log[] = await txEventLogs(provider, blockHash, openseaTopicFilter)
 
   for (const e of seaportEventLogs) {
-    await fulfillOrCancelSeaport(
-      e,
-      chainId,
-    )
+    await fulfillOrCancelSeaport(e, chainId)
   }
 }
 
@@ -553,12 +544,9 @@ export const x2y2ParseLog = (log: any): any => {
   return x2y2Interface.parseLog(log)
 }
 
-export const fulfillOrCancelX2Y2 = async (
-  e: any,
-  chainId: string,
-): Promise<void> => {
+export const fulfillOrCancelX2Y2 = async (e: any, chainId: string): Promise<void> => {
   const evt = x2y2Interface.parseLog(e)
-  if(evt.name === X2Y2EventName.EvCancel) {
+  if (evt.name === X2Y2EventName.EvCancel) {
     const [orderHash] = evt.args
     try {
       const order: entity.TxOrder = await repositories.txOrder.findOne({
@@ -573,7 +561,7 @@ export const fulfillOrCancelX2Y2 = async (
           },
         },
       })
-  
+
       if (order) {
         order.activity.status = defs.ActivityStatus.Cancelled
         await repositories.txOrder.save(order)
@@ -643,9 +631,7 @@ export const fulfillOrCancelX2Y2 = async (
 
         // update NFT ownership
         const contract: string = helper.checkSum(order.activity.nftContract)
-        const tokenId: string = helper.bigNumberToHex(
-          order.protocolData?.tokenId,
-        )
+        const tokenId: string = helper.bigNumberToHex(order.protocolData?.tokenId)
         const obj = {
           contract: {
             address: contract,
@@ -655,13 +641,9 @@ export const fulfillOrCancelX2Y2 = async (
           },
         }
 
-        const wallet = await nftService.getUserWalletFromNFT(
-          contract, tokenId, chainId.toString(),
-        )
+        const wallet = await nftService.getUserWalletFromNFT(contract, tokenId, chainId.toString())
         if (wallet) {
-          await nftService.updateNFTOwnershipAndMetadata(
-            obj, wallet.userId, wallet, chainId.toString(),
-          )
+          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId.toString())
         }
 
         logger.debug(`
@@ -676,25 +658,21 @@ export const fulfillOrCancelX2Y2 = async (
       // check for existing tx and update protocol data
       const transactionId = `${e.transactionHash}:${orderHash}`
 
-      const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction
-        .findOne({
-          relations: ['activity'],
-          where: {
-            chainId: String(chainId),
-            id: transactionId,
-            exchange: defs.ExchangeType.X2Y2,
-            protocol: defs.ProtocolType.X2Y2,
-          },
-        })
+      const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction.findOne({
+        relations: ['activity'],
+        where: {
+          chainId: String(chainId),
+          id: transactionId,
+          exchange: defs.ExchangeType.X2Y2,
+          protocol: defs.ProtocolType.X2Y2,
+        },
+      })
 
       if (existingTx) {
         // update protocol data if tx exists
         const updatedProtocolData = { ...existingTx.protocolData, amount }
         const protocolDataFormatted = txX2Y2ProtocolDataParser(updatedProtocolData)
-        await repositories.txTransaction.updateOneById(
-          transactionId,
-          { protocolData: { ...protocolDataFormatted },
-          })
+        await repositories.txTransaction.updateOneById(transactionId, { protocolData: { ...protocolDataFormatted } })
 
         logger.debug(`
               Evt Updated: ${X2Y2EventName.EvProfit} for orderHash ${orderHash}
@@ -704,17 +682,7 @@ export const fulfillOrCancelX2Y2 = async (
       logger.error(`Evt: ${X2Y2EventName.EvProfit} -- Err: ${err}`)
     }
   } else if (evt.name === X2Y2EventName.EvInventory) {
-    const [
-      orderHash,
-      maker,
-      taker,
-      orderSalt,
-      settleSalt,
-      intent,
-      delegateType,
-      deadline,
-      currency,
-      data] = evt.args
+    const [orderHash, maker, taker, orderSalt, settleSalt, intent, delegateType, deadline, currency, data] = evt.args
     try {
       const order: entity.TxOrder = await repositories.txOrder.findOne({
         relations: ['activity'],
@@ -730,7 +698,7 @@ export const fulfillOrCancelX2Y2 = async (
         },
       })
 
-      const protocolData =  {
+      const protocolData = {
         orderSalt,
         settleSalt,
         intent,
@@ -764,9 +732,7 @@ export const fulfillOrCancelX2Y2 = async (
 
         // update NFT ownership
         const contract: string = helper.checkSum(order.activity.nftContract)
-        const tokenId: string = helper.bigNumberToHex(
-          order.protocolData?.tokenId,
-        )
+        const tokenId: string = helper.bigNumberToHex(order.protocolData?.tokenId)
         const obj = {
           contract: {
             address: contract,
@@ -776,13 +742,9 @@ export const fulfillOrCancelX2Y2 = async (
           },
         }
 
-        const wallet = await nftService.getUserWalletFromNFT(
-          contract, tokenId, chainId.toString(),
-        )
+        const wallet = await nftService.getUserWalletFromNFT(contract, tokenId, chainId.toString())
         if (wallet) {
-          await nftService.updateNFTOwnershipAndMetadata(
-            obj, wallet.userId, wallet, chainId.toString(),
-          )
+          await nftService.updateNFTOwnershipAndMetadata(obj, wallet.userId, wallet, chainId.toString())
         }
         logger.debug(`
           Evt Saved: ${X2Y2EventName.EvInventory} for orderHash ${orderHash}
@@ -796,25 +758,21 @@ export const fulfillOrCancelX2Y2 = async (
       // check for existing tx and update protocol data
       const transactionId = `${e.transactionHash}:${orderHash}`
 
-      const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction
-        .findOne({
-          relations: ['activity'],
-          where: {
-            chainId: String(chainId),
-            id: transactionId,
-            exchange: defs.ExchangeType.X2Y2,
-            protocol: defs.ProtocolType.X2Y2,
-          },
-        })
+      const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction.findOne({
+        relations: ['activity'],
+        where: {
+          chainId: String(chainId),
+          id: transactionId,
+          exchange: defs.ExchangeType.X2Y2,
+          protocol: defs.ProtocolType.X2Y2,
+        },
+      })
 
       if (existingTx) {
         // update protocol data if tx exists
         const updatedProtocolData = { ...existingTx.protocolData, ...protocolData }
         const protocolDataFormatted = txX2Y2ProtocolDataParser(updatedProtocolData)
-        await repositories.txTransaction.updateOneById(
-          transactionId,
-          { protocolData: { ...protocolDataFormatted },
-          })
+        await repositories.txTransaction.updateOneById(transactionId, { protocolData: { ...protocolDataFormatted } })
 
         logger.debug(`
               Evt Updated: ${X2Y2EventName.EvInventory} for orderHash ${orderHash}
@@ -829,7 +787,7 @@ export const fulfillOrCancelX2Y2 = async (
   }
 }
 
-export const x2y2EventLogs= async (
+export const x2y2EventLogs = async (
   provider: ethers.providers.BaseProvider,
   blockHash: string,
   chainId: string,
@@ -843,22 +801,17 @@ export const x2y2EventLogs= async (
     [
       helper.id('EvCancel(bytes32)'),
       helper.id('EvProfit(bytes32,address,address,uint256)'),
-      helper.id(`EvInventory(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,address,bytes,${orderItemParamType},${settleDetailParamType})`),
+      helper.id(
+        `EvInventory(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,address,bytes,${orderItemParamType},${settleDetailParamType})`,
+      ),
     ],
   ]
 
-  const x2y2EventLogs = await txEventLogs(
-    provider,
-    blockHash,
-    x2y2TopicFilter,
-  )
+  const x2y2EventLogs = await txEventLogs(provider, blockHash, x2y2TopicFilter)
 
   for (const e of x2y2EventLogs) {
     try {
-      await fulfillOrCancelX2Y2(
-        e,
-        chainId,
-      )
+      await fulfillOrCancelX2Y2(e, chainId)
     } catch (err) {
       logger.error(`Error while fulfilling or cancelling X2Y2: ${err}`)
       continue
@@ -873,25 +826,20 @@ export const reconcileOrders = async (
 ): Promise<void> => {
   const etherProvider = provider.provider(chainId)
   let reconcileExchangeOrders
-  switch(exchange) {
-  case defs.ExchangeType.OpenSea:
-    reconcileExchangeOrders = seaportEventLogs
-    break
-  case defs.ExchangeType.LooksRare:
-    reconcileExchangeOrders = looksrareV2EventLogs
-    break
-  case defs.ExchangeType.X2Y2:
-    reconcileExchangeOrders = x2y2EventLogs
-    break
+  switch (exchange) {
+    case defs.ExchangeType.OpenSea:
+      reconcileExchangeOrders = seaportEventLogs
+      break
+    case defs.ExchangeType.LooksRare:
+      reconcileExchangeOrders = looksrareV2EventLogs
+      break
+    case defs.ExchangeType.X2Y2:
+      reconcileExchangeOrders = x2y2EventLogs
+      break
     // future implementation for NFTCOM reconciliation
-  case defs.ExchangeType.NFTCOM:
-    break
+    case defs.ExchangeType.NFTCOM:
+      break
   }
 
-  await reconcileExchangeOrders(
-    etherProvider,
-    blockHash,
-    chainId,
-  )
+  await reconcileExchangeOrders(etherProvider, blockHash, chainId)
 }
-

@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npm run clean && npm run compile",
     "clean": "rimraf dist tsconfig.tsbuildinfo",
-    "compile": "tsc && tsc-alias",
+    "compile": "tsc -p tsconfig.app.json && tsc-alias -p tsconfig.app.json",
     "dev": "doppler run --preserve-env -- ts-node src/main",
     "start": "npm run dev"
   },
