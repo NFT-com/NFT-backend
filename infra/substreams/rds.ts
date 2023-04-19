@@ -2,7 +2,6 @@ import * as aws from '@pulumi/aws'
 import { EngineType } from '@pulumi/aws/types/enums/rds'
 import * as pulumi from '@pulumi/pulumi'
 
-
 import { getResourceName, isProduction } from "../helper";
 import { vpcSubnets } from "./index";
 
@@ -80,7 +79,7 @@ export const createSubstreamClusters = (
     zones: string[],
   ): SubstreamRDSOutput => {
     const main = createMain(config, subnetGroups, securityGroup, zones)
-    return { main: main}
+    return { main: main }
   }
   
 
