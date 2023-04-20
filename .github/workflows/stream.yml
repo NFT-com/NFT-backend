@@ -12,7 +12,7 @@ jobs:
     environment: nftcom_stream_dev
     steps:
       - uses: actions/checkout@v3
-      - uses: ./stream/.github/actions/deploy-env
+      - uses: ./.github/actions/deploy-stream
         name: Deploy env
         with:
           secrets: ${{ toJSON(secrets) }}
@@ -23,7 +23,7 @@ jobs:
     environment: nftcom_stream_staging
     steps:
       - uses: actions/checkout@v3
-      - uses: ./stream/.github/actions/deploy-env
+      - uses: ./.github/actions/deploy-stream
         name: Deploy Staging Env
         with:
           secrets: ${{ toJSON(secrets) }}
@@ -34,7 +34,7 @@ jobs:
     environment: nftcom_stream_prod
     steps:
       - uses: actions/checkout@v3
-      - uses: ./stream/.github/actions/deploy-env
+      - uses: ./.github/actions/deploy-stream
         name: Deploy Prod Env
         with:
           secrets: ${{ toJSON(secrets) }}

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
+import { ActivityStatus, ActivityType } from '../../defs'
 
 import { BaseEntity } from '.'
 

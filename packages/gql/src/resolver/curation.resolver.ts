@@ -16,13 +16,13 @@ const getMyCurations = (_: any, args: gql.QueryMyCurationsArgs, ctx: Context): P
   const pageInput = args?.input?.pageInput
   const filters = [helper.inputT2SafeK<entity.Curation>(args?.input, { userId: user.id })]
   return core
-    .paginatedEntitiesBy(
+    .paginatedEntitiesBy<entity.Curation>(
       repositories.curation,
       pageInput,
       filters,
       [], // relations
     )
-    .then(pagination.toPageable(pageInput))
+    .then(entities => pagination.toPageable(pageInput)(entities))
 }
 
 const validateNFTOwnership = (ctx: Context, items: defs.CurationItem[], user: entity.User): Promise<boolean> => {

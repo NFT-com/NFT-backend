@@ -1,6 +1,6 @@
 import { Column, Entity, Unique } from 'typeorm'
 
-import { ProfileTask } from '@nftcom/shared/defs'
+import { ProfileTask } from '../../defs'
 
 import { BaseEntity } from '.'
 

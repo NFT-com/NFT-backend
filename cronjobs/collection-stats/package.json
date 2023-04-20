@@ -16,7 +16,8 @@
     "@nftcom/contract-data": "workspace:*",
     "@nftcom/leaderboard": "workspace:*",
     "@nftcom/shared": "workspace:*",
-    "ioredis": "^5.3.2"
+    "axios": "^0.21.4",
+    "typeorm": "^0.3.15"
   },
   "devDependencies": {
     "jest": "^29.5.0",

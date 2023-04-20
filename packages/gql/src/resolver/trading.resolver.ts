@@ -43,7 +43,7 @@ const getListings = (_: any, args: gql.QueryGetListingsArgs, ctx: Context): Prom
       [filter],
       [], // relations
     )
-    .then(pagination.toPageable(pageInput))
+    .then(entities => pagination.toPageable(pageInput)(entities))
 }
 
 export const validListing = async (
@@ -684,7 +684,7 @@ const getBids = (_: any, args: gql.QueryGetBidsArgs, ctx: Context): Promise<gql.
       [filter],
       [], // relations
     )
-    .then(pagination.toPageable(pageInput))
+    .then(entities => pagination.toPageable(pageInput)(entities))
 }
 
 export default {

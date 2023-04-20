@@ -1,6 +1,6 @@
-import { NullClient } from '@nftcom/gql/adapter'
+import { searchEngineClient } from '@nftcom/service'
 
-export class NullTypesenseClient implements NullClient {
+export class NullTypesenseClient implements searchEngineClient.NullClient {
   private _importResponse: any[]
 
   constructor(importResponse: any[]) {

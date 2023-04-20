@@ -2,11 +2,12 @@ import { Job } from 'bull'
 import { BigNumber, ethers, utils } from 'ethers'
 
 import { cache } from '@nftcom/cache'
-import { getPastLogs } from '@nftcom/gql/job/marketplace.job'
 import { provider } from '@nftcom/misc'
 import { core, HederaConsensusService } from '@nftcom/service'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { getPastLogs } from './marketplace.job'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 

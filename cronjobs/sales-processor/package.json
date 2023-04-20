@@ -17,6 +17,7 @@
   "dependencies": {
     "@nftcom/contract-data": "workspace:*",
     "@nftcom/shared": "workspace:*",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "typeorm": "^0.3.15"
   }
 }

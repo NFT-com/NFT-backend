@@ -12,7 +12,9 @@
     "test": "jest --detectOpenHandles"
   },
   "dependencies": {
-    "ioredis": "^5.3.2"
+    "@nftcom/cache": "workspace:*",
+    "@nftcom/nftport-client": "workspace:*",
+    "@nftcom/shared": "workspace:*"
   },
   "devDependencies": {
     "jest": "^29.5.0",

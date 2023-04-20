@@ -2,7 +2,7 @@ import { intersectionBy, toLower } from 'lodash'
 import fetch from 'node-fetch'
 import { Pool } from 'pg'
 
-import { checkSum } from '@nftcom/shared/helper/misc'
+import { helper } from '@nftcom/shared'
 
 const pgClient = new Pool({
   user: process.env.DB_USERNAME || 'app',
@@ -30,7 +30,7 @@ const main = async (): Promise<void> => {
   ).rows.map(r => r.contract)
   const shouldBeSpam = intersectionBy(spamFromAlchemy, notSpamFromDb, toLower)
   for (const contract of shouldBeSpam) {
-    process.stdout.write(checkSum(contract) + '\n')
+    process.stdout.write(helper.checkSum(contract) + '\n')
   }
 }
 

@@ -9,7 +9,6 @@ import { appError, txActivityError } from '@nftcom/error-types'
 import { auth, Context, joi, pagination } from '@nftcom/misc'
 import { core, openseaService } from '@nftcom/service'
 import { contracts, defs, entity, helper } from '@nftcom/shared'
-import { ActivityStatus, ActivityType } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 import { gql } from '../defs'
@@ -406,13 +405,13 @@ const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Cont
       safefilters[0].walletAddress &&
       (!safefilters[0].activityType ||
         (activityType as defs.ActivityType) === gql.ActivityType.Purchase ||
-        safefilters[0].activityType === ActivityType.Transfer ||
-        safefilters[0].activityType === ActivityType.Swap)
+        safefilters[0].activityType === defs.ActivityType.Transfer ||
+        safefilters[0].activityType === defs.ActivityType.Swap)
     ) {
       asRecipientTxs = await repositories.txTransaction.findRecipientTxs(
         safefilters[0].activityType,
         safefilters[0].walletAddress,
-        ActivityStatus.Valid,
+        defs.ActivityStatus.Valid,
       )
     }
 
@@ -422,8 +421,8 @@ const getActivities = async (_: any, args: gql.QueryGetActivitiesArgs, ctx: Cont
       filteredActivities.push(activity)
     })
 
-    if (activityType == ActivityType.Sale) {
-      filteredActivities = filteredActivities.filter(activity => activity.activityType == ActivityType.Sale)
+    if (activityType == defs.ActivityType.Sale) {
+      filteredActivities = filteredActivities.filter(activity => activity.activityType == defs.ActivityType.Sale)
     } else if (activityType == gql.ActivityType.Purchase) {
       filteredActivities = filteredActivities.filter(activity => activity.activityType == gql.ActivityType.Purchase)
     }

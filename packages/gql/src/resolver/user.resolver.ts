@@ -7,13 +7,13 @@ import Joi from 'joi'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, mintError, userError, walletError } from '@nftcom/error-types'
-import { obliterateQueue } from '@nftcom/gql/job/job'
 import { auth, Context, joi } from '@nftcom/misc'
 import { core, sendgrid } from '@nftcom/service'
 import { _logger, contracts, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
 import { gql } from '../defs'
+import { obliterateQueue } from '../job/job'
 
 const logger = _logger.Factory(_logger.Context.User, _logger.Context.GraphQL)
 

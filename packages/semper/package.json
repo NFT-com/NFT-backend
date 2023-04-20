@@ -12,8 +12,14 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "@nftcom/contract-data": "workspace:*",
+    "@nftcom/shared": "workspace:*",
+    "@nftcom/service": "workspace:*",
     "@babel/runtime": "^7.21.0",
+    "async": "^3.2.4",
     "ethers": "^5.7.2",
+    "pg": "^8.10.0",
+    "pg-query-stream": "^4.4.0",
     "typesense": "^1.5.3"
   },
   "devDependencies": {

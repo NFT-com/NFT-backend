@@ -1,8 +1,9 @@
 import { DeepPartial } from 'typeorm'
 
-import { LooksRareOrderV2 } from '@nftcom/gql/service/looksare.service'
-import { SeaportOrder } from '@nftcom/gql/service/opensea.service'
-import { gql } from '@nftcom/misc'
+import { looksrareService, openseaService } from '@nftcom/service'
+import { defs, entity } from '@nftcom/shared'
+
+import { gql } from '../../defs'
 import {
   NFT,
   NFTType,
@@ -15,9 +16,7 @@ import {
   UpdateProfileInput,
   User,
   Wallet,
-} from '@nftcom/misc/gql'
-import { entity } from '@nftcom/shared'
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+} from '../../defs/gql'
 
 export const testMockUser: User = {
   id: 'test-user-id',
@@ -190,7 +189,7 @@ export const mockProfilesData: Array<DeepPartial<Profile>> = [
   },
 ]
 
-export const testSeaportOrder: SeaportOrder = {
+export const testSeaportOrder: openseaService.SeaportOrder = {
   created_date: 'test-created-date',
   closing_date: 'test-closing-date',
   closing_extendable: false,
@@ -250,7 +249,7 @@ export const testSeaportOrder: SeaportOrder = {
   criteria_proof: 'test-criteria-proof',
 }
 
-export const testLooksrareOrder: LooksRareOrderV2 = {
+export const testLooksrareOrder: looksrareService.LooksRareOrderV2 = {
   id: 'MTE1MjkyMTUwNDYwNzMyMjI3MA==',
   hash: '0x7f0e255ba6549b7659daab5a7fd53af386201587677578ccf6ed9366b8a21c1f',
   quoteType: 1,
@@ -276,7 +275,7 @@ export const testLooksrareOrder: LooksRareOrderV2 = {
   status: 'VALID',
 }
 
-export const testLooksrareExistingOrder: LooksRareOrderV2 = {
+export const testLooksrareExistingOrder: looksrareService.LooksRareOrderV2 = {
   id: 'MTE1MjkyMTUwNDYwNjkyMTUyNA==',
   hash: '0xccfa9b67cb6e776a1407c035495abc6dde2c725cf9d3d30b6c1c1a5c4e0f3d5d',
   quoteType: 1,
@@ -314,11 +313,11 @@ export const testExistingActivity: TxActivity = {
   nftId: ['ethereum/0x47D3ceD01EF669eF085e041f94820EbE368bF27e/123'],
   order: {
     id: 'test-existing-order-hash',
-    exchange: ExchangeType.LooksRare,
+    exchange: defs.ExchangeType.LooksRare,
     makerAddress: '0x47D3ceD01EF669eF085e041f94820EbE368bF27e',
     orderHash: 'test-existing-order-hash',
-    orderType: ActivityType.Listing,
-    protocol: ProtocolType.LooksRare,
+    orderType: defs.ActivityType.Listing,
+    protocol: defs.ProtocolType.LooksRare,
   },
 }
 

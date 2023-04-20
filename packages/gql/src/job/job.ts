@@ -1,11 +1,12 @@
 import Bull from 'bull'
 
 import { cache, redisConfig } from '@nftcom/cache'
-import { getEthereumEvents } from '@nftcom/gql/job/handler'
-import { nftExternalOrdersOnDemand } from '@nftcom/gql/job/nft.job'
-import { generateCompositeImages } from '@nftcom/gql/job/profile.job'
 import { _logger } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { getEthereumEvents } from './handler'
+import { nftExternalOrdersOnDemand } from './nft.job'
+import { generateCompositeImages } from './profile.job'
 
 const BULL_MAX_REPEAT_COUNT = parseInt(process.env.BULL_MAX_REPEAT_COUNT) || 250
 // const NFT_EXTERNAL_ORDER_REFRESH_DURATION = Number(
