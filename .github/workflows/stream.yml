@@ -2,8 +2,6 @@ name: Stream github actions
 on:
   push:
     paths:
-      - './.github/workflows/stream.yml'
-      - './.github/actions/deploy-stream/action.yml'
       - 'infra/stream/**.ts'
       - 'infra/stream/**.yaml'
       - 'packages/stream/**.ts'
