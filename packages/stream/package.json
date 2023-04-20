@@ -1,7 +1,7 @@
 {
     "name": "@nftcom/stream",
     "version": "1.0.0",
-    "description": "Streaming/listening/cronjobing",
+    "description": "Streams/listeners/cronjobs",
     "main": "src/main",
     "types": "src/main",
     "scripts": {

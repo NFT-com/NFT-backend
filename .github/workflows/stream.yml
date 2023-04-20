@@ -11,7 +11,7 @@ jobs:
   deploy-dev:
     if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') || github.ref_name == 'main' }}
     runs-on: [self-hosted]
-    environment: nftcom_stream_dev
+    environment: nftcom_dev_streams
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-stream
@@ -22,7 +22,7 @@ jobs:
   deploy-staging:
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'staging') }}
     runs-on: [self-hosted]
-    environment: nftcom_stream_staging
+    environment: nftcom_staging_streams
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-stream
@@ -33,7 +33,7 @@ jobs:
   deploy-prod:
     if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
     runs-on: ubuntu-latest
-    environment: nftcom_stream_prod
+    environment: nftcom_prod_streams
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-stream
