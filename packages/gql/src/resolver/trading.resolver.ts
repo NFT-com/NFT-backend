@@ -3,25 +3,23 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { appError, marketBidError, marketListingError } from '@nftcom/error-types'
+import { Context } from '@nftcom/misc'
+import { auth, joi, pagination } from '@nftcom/misc'
+import { core, nftService, searchEngineService, sendgrid, txActivityService } from '@nftcom/service'
+import { _logger, contracts, db, defs, entity, helper, provider, typechain, utils as dbUtils } from '@nftcom/shared'
+import * as Sentry from '@sentry/node'
+
 import {
-  Context,
   convertAssetInput,
   getAssetList,
   gql,
   parseContractsFromNativeAsset,
   parseNFTIdsFromNativeAsset,
-} from '@nftcom/gql/defs'
-import { getOwnersOfGenesisKeys, getOwnersOfNFTProfile } from '@nftcom/gql/service/nft.service'
-import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import { _logger, contracts, db, defs, entity, helper, provider, typechain, utils as dbUtils } from '@nftcom/shared'
-import * as Sentry from '@sentry/node'
-
-import { auth, joi, pagination, utils } from '../helper'
-import { core, sendgrid } from '../service'
-import { activityBuilder } from '../service/txActivity.service'
+} from '../defs'
+import * as auctionUtils from '../helper/utils'
 
 const logger = _logger.Factory(_logger.Context.MarketAsk, _logger.Context.GraphQL)
-const seService = SearchEngineService()
+const seService = searchEngineService.SearchEngineService()
 
 const getListings = (_: any, args: gql.QueryGetListingsArgs, ctx: Context): Promise<gql.GetOrders> => {
   const { repositories } = ctx
@@ -45,7 +43,7 @@ const getListings = (_: any, args: gql.QueryGetListingsArgs, ctx: Context): Prom
       [filter],
       [], // relations
     )
-    .then(pagination.toPageable(pageInput))
+    .then(entities => pagination.toPageable(pageInput)(entities))
 }
 
 export const validListing = async (
@@ -69,7 +67,7 @@ export const validListing = async (
         start: marketListingArgs?.input.start,
         end: marketListingArgs?.input.end,
         nonce: marketListingArgs?.input?.nonce,
-        auctionType: utils.auctionTypeToInt(marketListingArgs?.input?.auctionType),
+        auctionType: auctionUtils.auctionTypeToInt(marketListingArgs?.input?.auctionType),
       },
       marketListingArgs?.input.signature.v,
       marketListingArgs?.input.signature.r,
@@ -271,7 +269,7 @@ const createListing = async (
     const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
     const contracts = parseContractsFromNativeAsset(makeAssets)
     const contract = contracts.length === 1 ? contracts[0] : '0x'
-    const activity = await activityBuilder(
+    const activity = await txActivityService.activityBuilder(
       defs.ActivityType.Listing,
       args?.input.structHash,
       wallet.address,
@@ -386,7 +384,7 @@ const validOrderMatch = async (
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
         nonce: marketBidArgs?.input.nonce,
-        auctionType: utils.auctionTypeToInt(marketBidArgs.input.auctionType),
+        auctionType: auctionUtils.auctionTypeToInt(marketBidArgs.input.auctionType),
       },
       marketBidArgs?.input.signature.v,
       marketBidArgs?.input.signature.r,
@@ -452,7 +450,7 @@ const validOrderMatch = async (
         start: askStart,
         end: askEnd,
         nonce: listing.nonce,
-        auctionType: utils.auctionTypeToInt(listing.protocolData.auctionType),
+        auctionType: auctionUtils.auctionTypeToInt(listing.protocolData.auctionType),
       },
       {
         maker: marketBidArgs?.input.makerAddress,
@@ -463,7 +461,7 @@ const validOrderMatch = async (
         start: marketBidArgs?.input.start,
         end: marketBidArgs?.input.end,
         nonce: marketBidArgs?.input.nonce,
-        auctionType: utils.auctionTypeToInt(marketBidArgs?.input.auctionType),
+        auctionType: auctionUtils.auctionTypeToInt(marketBidArgs?.input.auctionType),
       },
       listing.makerAddress,
       false,
@@ -484,10 +482,10 @@ const validOrderMatch = async (
 
 const ownedProfileOrGK = async (address: string, chainId: string): Promise<boolean> => {
   try {
-    const gkOwners = await getOwnersOfGenesisKeys(chainId)
+    const gkOwners = await nftService.getOwnersOfGenesisKeys(chainId)
     const exists = gkOwners[ethers.utils.getAddress(address)]
     if (exists) return true
-    const profileOwners = await getOwnersOfNFTProfile(chainId)
+    const profileOwners = await nftService.getOwnersOfNFTProfile(chainId)
     return profileOwners[ethers.utils.getAddress(address)]
   } catch (err) {
     logger.error('error in ownedProfileOrGK: ', err)
@@ -606,7 +604,7 @@ const createBid = async (_: any, args: gql.MutationCreateMarketBidArgs, ctx: Con
     const nftIds = parseNFTIdsFromNativeAsset(makeAssets)
     const contracts = parseContractsFromNativeAsset(makeAssets)
     const contract = contracts.length === 1 ? contracts[0] : '0x'
-    const activity = await activityBuilder(
+    const activity = await txActivityService.activityBuilder(
       defs.ActivityType.Bid,
       args?.input.structHash,
       wallet.address,
@@ -686,7 +684,7 @@ const getBids = (_: any, args: gql.QueryGetBidsArgs, ctx: Context): Promise<gql.
       [filter],
       [], // relations
     )
-    .then(pagination.toPageable(pageInput))
+    .then(entities => pagination.toPageable(pageInput)(entities))
 }
 
 export default {

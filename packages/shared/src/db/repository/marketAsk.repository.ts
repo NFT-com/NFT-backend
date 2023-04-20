@@ -1,5 +1,4 @@
-import { MarketAsk } from '@nftcom/shared/db/entity'
-
+import { MarketAsk } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class MarketAskRepository extends BaseRepository<MarketAsk> {

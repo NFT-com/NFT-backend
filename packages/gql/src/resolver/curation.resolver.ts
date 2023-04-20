@@ -2,10 +2,11 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { appError, curationError, nftError, profileError } from '@nftcom/error-types'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
+import { auth, Context, joi, pagination } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { _logger, defs, entity, fp, helper } from '@nftcom/shared'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.Curation, _logger.Context.GraphQL)
 
@@ -15,13 +16,13 @@ const getMyCurations = (_: any, args: gql.QueryMyCurationsArgs, ctx: Context): P
   const pageInput = args?.input?.pageInput
   const filters = [helper.inputT2SafeK<entity.Curation>(args?.input, { userId: user.id })]
   return core
-    .paginatedEntitiesBy(
+    .paginatedEntitiesBy<entity.Curation>(
       repositories.curation,
       pageInput,
       filters,
       [], // relations
     )
-    .then(pagination.toPageable(pageInput))
+    .then(entities => pagination.toPageable(pageInput)(entities))
 }
 
 const validateNFTOwnership = (ctx: Context, items: defs.CurationItem[], user: entity.User): Promise<boolean> => {

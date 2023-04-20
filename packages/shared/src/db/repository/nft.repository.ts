@@ -1,7 +1,6 @@
-import { db } from '@nftcom/shared/db'
-import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
-import { ProfileSearchNFT } from '@nftcom/shared/defs'
-
+import { ProfileSearchNFT } from '../../defs'
+import { db } from '../'
+import { Collection, NFT, Wallet } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class NFTRepository extends BaseRepository<NFT> {

@@ -2,11 +2,11 @@ import { ethers } from 'ethers'
 import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
-import { Context, gql } from '@nftcom/gql/defs'
+import { auth, Context, joi } from '@nftcom/misc'
 import { _logger, contracts, db, defs, entity, helper, provider } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { auth, joi } from '../helper'
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.MarketSwap, _logger.Context.GraphQL)
 

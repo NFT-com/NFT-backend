@@ -1,10 +1,10 @@
 import { ethers } from 'ethers'
 
-import { testDBConfig } from '@nftcom/gql/config'
-import { NFTType } from '@nftcom/gql/defs/gql'
 import * as nftService from '@nftcom/gql/service/nft.service'
 import { getCollectionInfo, getOwnersForNFT, updateNFTMetadata } from '@nftcom/gql/service/nft.service'
 import { testMockUser, testMockWallet } from '@nftcom/gql/test/util/constants'
+import { testDBConfig } from '@nftcom/misc'
+import { NFTType } from '@nftcom/misc/gql'
 import { db, defs } from '@nftcom/shared'
 import { EdgeType, EntityType } from '@nftcom/shared/defs'
 

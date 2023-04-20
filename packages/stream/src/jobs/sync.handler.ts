@@ -1,9 +1,7 @@
 import Bull, { Job } from 'bullmq'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { x2y2Service } from '@nftcom/gql/service'
-import { _logger, db, defs,entity, helper } from '@nftcom/shared'
+import { x2y2Service } from '@nftcom/service'
+import { _logger, db, defs, entity, helper } from '@nftcom/shared'
 
 import { retrieveMultipleOrdersLooksrare } from '../service/looksrare'
 import { OpenseaOrderRequest, retrieveMultipleOrdersOpensea } from '../service/opensea'
@@ -27,10 +25,12 @@ const subQueueBaseOptions: Bull.JobsOptions = {
 
 // batch processor
 export const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> => {
-  logger.debug(`initiated external orders batch processor for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
+  logger.debug(
+    `initiated external orders batch processor for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`,
+  )
   try {
     const { offset, limit, exchange } = job.data
-    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
+    const chainId: string = job.data?.chainId || process.env.CHAIN_ID
     const nfts: entity.NFT[] = await repositories.nft.find({
       where: { chainId, deletedAt: null },
       select: ['contract', 'tokenId', 'chainId'],
@@ -48,19 +48,21 @@ export const nftExternalOrderBatchProcessor = async (job: Job): Promise<void> =>
       const persistActivity = []
 
       switch (exchange) {
-      case defs.ExchangeType.OpenSea:
-        await retrieveMultipleOrdersOpensea(nftRequest, chainId, false)
-        break
-      case defs.ExchangeType.LooksRare:
-        await retrieveMultipleOrdersLooksrare(nftRequest, chainId, false)
-        break
-      case defs.ExchangeType.X2Y2:
-        await x2y2Service.retrieveMultipleOrdersX2Y2(nftRequest, chainId, false)
+        case defs.ExchangeType.OpenSea:
+          await retrieveMultipleOrdersOpensea(nftRequest, chainId, false)
+          break
+        case defs.ExchangeType.LooksRare:
+          await retrieveMultipleOrdersLooksrare(nftRequest, chainId, false)
+          break
+        case defs.ExchangeType.X2Y2:
+          await x2y2Service.retrieveMultipleOrdersX2Y2(nftRequest, chainId, false)
       }
 
       // settlements should not depend on each other
       await Promise.allSettled(persistActivity)
-      logger.debug(`completed external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`)
+      logger.debug(
+        `completed external orders for ${job.data.exchange} | series: ${job.data.offset} | batch:  ${job.data.limit}`,
+      )
     }
   } catch (err) {
     logger.error(`Error in nftExternalOrders Job: ${err}`)
@@ -74,12 +76,19 @@ export const nftExternalOrders = async (job: Job, token: string): Promise<void> 
       await job.moveToFailed(new Error('nft-cron-queue is not defined!'), token)
     }
 
-    const existingJobs: Bull.Job[] = await nftOrderSubqueue.getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting'])
+    const existingJobs: Bull.Job[] = await nftOrderSubqueue.getJobs([
+      'active',
+      'completed',
+      'delayed',
+      'failed',
+      'paused',
+      'waiting',
+    ])
     // clear existing jobs
     if (existingJobs.flat().length) {
       nftOrderSubqueue.obliterate({ force: true })
     }
-    const chainId: string =  job.data?.chainId || process.env.CHAIN_ID
+    const chainId: string = job.data?.chainId || process.env.CHAIN_ID
     logger.log(`chainId: ${chainId}`)
     const nftCount: number = await repositories.nft.count({ chainId, deletedAt: null })
     logger.log(`nft external order count: ${nftCount}`)
@@ -89,20 +98,28 @@ export const nftExternalOrders = async (job: Job, token: string): Promise<void> 
     // sub-queue assignmemt
 
     // sub-queue job additions
-    for (let i=0; i < nftCount; i+=maxBatchSize) {
+    for (let i = 0; i < nftCount; i += maxBatchSize) {
       offset = i
       if (job.id === 'fetch_os_orders') {
         // opensea
-        nftOrderSubqueue.add('nftOrderSubqueueOS',{ offset, limit, chainId, exchange: defs.ExchangeType.OpenSea }, {
-          ...subQueueBaseOptions,
-          jobId: `nft-batch-processor-opensea|offset:${offset}|limit:${limit}-chainId:${chainId}`,
-        })
+        nftOrderSubqueue.add(
+          'nftOrderSubqueueOS',
+          { offset, limit, chainId, exchange: defs.ExchangeType.OpenSea },
+          {
+            ...subQueueBaseOptions,
+            jobId: `nft-batch-processor-opensea|offset:${offset}|limit:${limit}-chainId:${chainId}`,
+          },
+        )
       } else {
         // looksrare
-        nftOrderSubqueue.add('nftOrderSubqueueLooksrare', { offset, limit, chainId, exchange: defs.ExchangeType.LooksRare  }, {
-          ...subQueueBaseOptions,
-          jobId: `nft-batch-processor-looksrare|offset:${offset}|limit:${limit}-chainId:${chainId}`,
-        })
+        nftOrderSubqueue.add(
+          'nftOrderSubqueueLooksrare',
+          { offset, limit, chainId, exchange: defs.ExchangeType.LooksRare },
+          {
+            ...subQueueBaseOptions,
+            jobId: `nft-batch-processor-looksrare|offset:${offset}|limit:${limit}-chainId:${chainId}`,
+          },
+        )
       }
     }
 

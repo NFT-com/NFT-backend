@@ -1,7 +1,8 @@
 import { ethers } from 'ethers'
 
-import { gql } from '@nftcom/gql/defs'
 import { _logger, defs, helper, provider } from '@nftcom/shared'
+
+import * as gql from './gql'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 

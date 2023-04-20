@@ -1,7 +1,6 @@
 import { Job } from 'bull'
 import { DeepPartial } from 'typeorm'
 
-import { provider } from '@nftcom/gql/helper'
 import {
   chainIdToCacheKeyProfile,
   chainIdToCacheKeyResolverAssociate,
@@ -12,6 +11,7 @@ import {
   repositories,
 } from '@nftcom/gql/job/handler'
 import * as handler from '@nftcom/gql/job/handler'
+import { provider } from '@nftcom/misc'
 import { entity } from '@nftcom/shared'
 
 jest.setTimeout(500000)

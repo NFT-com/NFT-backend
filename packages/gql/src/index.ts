@@ -2,12 +2,12 @@ import './tracer' // must come before importing any instrumented module.
 
 import kill from 'kill-port'
 
+import { HederaConsensusService } from '@nftcom/service'
 import { _logger, db, fp } from '@nftcom/shared'
 
-import { dbConfig, serverPort, verifyConfiguration } from './config'
+import { dbConfig, serverPort, verifyConfiguration } from '../../misc/src/lib/config'
 import { job } from './job'
 import * as server from './server'
-import HederaConsensusService from './service/hedera.service'
 
 const logger = _logger.Factory(_logger.Context.General, _logger.Context.GraphQL)
 

@@ -1,6 +1,5 @@
-import { SearchEngineClient } from '@nftcom/gql/adapter'
-import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
-import { Collection, NFT, Wallet } from '@nftcom/shared/db/entity'
+import { searchEngineClient, searchEngineService } from '@nftcom/service'
+import { entity } from '@nftcom/shared'
 
 import { NullTypesenseClient } from '../__nulls__/NullTypesenseClient'
 
@@ -22,7 +21,7 @@ describe('search engine service', () => {
         },
         walletId: 'KE-GvnbBXXjFjwokLr-lo',
         chainId: '5',
-      } as NFT
+      } as entity.NFT
 
       repos = {
         nft: {
@@ -32,7 +31,7 @@ describe('search engine service', () => {
         },
         collection: {
           findOne: (_: any) => {
-            return Promise.resolve(new Collection())
+            return Promise.resolve(new entity.Collection())
           },
         },
         txActivity: {
@@ -41,7 +40,7 @@ describe('search engine service', () => {
         },
         wallet: {
           findById: (_: string) => {
-            return Promise.resolve(new Wallet())
+            return Promise.resolve(new entity.Wallet())
           },
         },
       }
@@ -52,8 +51,8 @@ describe('search engine service', () => {
     })
 
     it('sends an NFT to the search engine', async () => {
-      const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])),
+      const seService = searchEngineService.SearchEngineService(
+        searchEngineClient.SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }])),
         repos,
       )
 
@@ -63,8 +62,8 @@ describe('search engine service', () => {
     })
 
     it('notifies of an unsuccessful import', async () => {
-      const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])),
+      const seService = searchEngineService.SearchEngineService(
+        searchEngineClient.SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }])),
         repos,
       )
 
@@ -85,7 +84,10 @@ describe('search engine service', () => {
     })
 
     it('calls the search engine client to remove the NFT document', async () => {
-      const seService = SearchEngineService(SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
+      const seService = searchEngineService.SearchEngineService(
+        searchEngineClient.SearchEngineClient.createNull(new NullTypesenseClient([])),
+        repos,
+      )
 
       const result = await seService.deleteNFT('123456abc')
 
@@ -99,7 +101,7 @@ describe('search engine service', () => {
       repos = {
         nft: {
           findOne: (_: any) => {
-            return Promise.resolve({ type: 'ERC721' } as NFT)
+            return Promise.resolve({ type: 'ERC721' } as entity.NFT)
           },
         },
       }
@@ -110,14 +112,16 @@ describe('search engine service', () => {
     })
 
     it('sends collections to the search engine', async () => {
-      const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([{ success: true }, { success: true }])),
+      const seService = searchEngineService.SearchEngineService(
+        searchEngineClient.SearchEngineClient.createNull(
+          new NullTypesenseClient([{ success: true }, { success: true }]),
+        ),
         repos,
       )
 
       const collections = [
-        { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as Collection,
-        { contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' } as Collection,
+        { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as entity.Collection,
+        { contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' } as entity.Collection,
       ]
       const result = await seService.indexCollections(collections)
 
@@ -125,14 +129,16 @@ describe('search engine service', () => {
     })
 
     it('notifies of failed import', async () => {
-      const seService = SearchEngineService(
-        SearchEngineClient.createNull(new NullTypesenseClient([{ success: false }, { success: true }])),
+      const seService = searchEngineService.SearchEngineService(
+        searchEngineClient.SearchEngineClient.createNull(
+          new NullTypesenseClient([{ success: false }, { success: true }]),
+        ),
         repos,
       )
 
       const collections = [
-        { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as Collection,
-        { contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' } as Collection,
+        { contract: '0xe0060010c2c81A817f4c52A9263d4Ce5c5B66D55' } as entity.Collection,
+        { contract: '0x9Ef7A34dcCc32065802B1358129a226B228daB4E' } as entity.Collection,
       ]
       const result = await seService.indexCollections(collections)
 
@@ -151,9 +157,12 @@ describe('search engine service', () => {
     })
 
     it('calls the search engine client to remove the NFT document', async () => {
-      const seService = SearchEngineService(SearchEngineClient.createNull(new NullTypesenseClient([])), repos)
+      const seService = searchEngineService.SearchEngineService(
+        searchEngineClient.SearchEngineClient.createNull(new NullTypesenseClient([])),
+        repos,
+      )
 
-      const collections = [{ id: '123456abc' } as Collection, { id: '789012def' } as Collection]
+      const collections = [{ id: '123456abc' } as entity.Collection, { id: '789012def' } as entity.Collection]
 
       expect.assertions(1)
       await seService.deleteCollections(collections)

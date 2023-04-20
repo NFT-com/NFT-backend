@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db, defs } from '@nftcom/shared'
 import { Profile, User } from '@nftcom/shared/db/entity'
 

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { CurationItem } from '@nftcom/shared/defs'
+import { CurationItem } from '../../defs'
 
 import { BaseEntity } from './base.entity'
 

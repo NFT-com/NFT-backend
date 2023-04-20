@@ -1,6 +1,6 @@
 import { FindManyOptions, FindOperator } from 'typeorm'
 
-import { LikeableType } from '@nftcom/gql/defs/gql'
+import { LikeableType } from '@nftcom/misc/gql'
 import { entity } from '@nftcom/shared'
 
 import { getLikeService } from '../../service/like.service'

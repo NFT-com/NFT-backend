@@ -1,9 +1,7 @@
 import { BigNumber, ethers, providers, utils } from 'ethers'
 import { In, Not } from 'typeorm'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { core, nftService } from '@nftcom/gql/service'
+import { core, nftService } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, helper } from '@nftcom/shared'
 
 import { delay } from '../utils'
@@ -56,13 +54,13 @@ enum LooksrareV2EventName {
 enum OSSeaportEventName {
   OrderCancelled = 'OrderCancelled',
   CounterIncremented = 'CounterIncremented',
-  OrderFulfilled = 'OrderFulfilled'
+  OrderFulfilled = 'OrderFulfilled',
 }
 
 enum X2Y2EventName {
   EvProfit = 'EvProfit',
   EvInventory = 'EvInventory',
-  EvCancel = 'EvCancel'
+  EvCancel = 'EvCancel',
 }
 
 enum NFTCOMEventName {
@@ -111,9 +109,7 @@ const keepAlive = ({
       ],
     ]
 
-    const nftResolverAddress = helper.checkSum(
-      contracts.nftResolverAddress(Number(chainId).toString()),
-    )
+    const nftResolverAddress = helper.checkSum(contracts.nftResolverAddress(Number(chainId).toString()))
     logger.debug(`nftResolverAddress: ${nftResolverAddress}, chainId: ${chainId}`)
 
     const filter = {
@@ -121,12 +117,12 @@ const keepAlive = ({
       topics: topicFilter,
     }
 
-    provider.on(filter, async (e) => {
+    provider.on(filter, async e => {
       const evt = nftResolverInterface.parseLog(e)
       logger.debug('******** wss parsed event: ', evt)
 
       if (evt.name === EventName.AssociateEvmUser) {
-        const [owner,profileUrl,destinationAddress] = evt.args
+        const [owner, profileUrl, destinationAddress] = evt.args
         try {
           const event = await repositories.event.findOne({
             where: {
@@ -141,26 +137,26 @@ const keepAlive = ({
             },
           })
           if (!event) {
-            await repositories.event.save(
-              {
-                chainId: Number(chainId),
-                contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
-                eventName: evt.name,
-                txHash: e.transactionHash,
-                ownerAddress: owner,
-                blockNumber: Number(e.blockNumber),
-                profileUrl: profileUrl,
-                destinationAddress: helper.checkSum(destinationAddress),
-              },
+            await repositories.event.save({
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(destinationAddress),
+            })
+            logger.debug(
+              `New WSS NFT Resolver ${evt.name} event found. ${profileUrl} (owner = ${owner}) is associating ${destinationAddress}. chainId=${chainId}`,
             )
-            logger.debug(`New WSS NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) is associating ${ destinationAddress }. chainId=${chainId}`)
           }
         } catch (err) {
           logger.error(`Evt: ${EventName.AssociateEvmUser} -- Err: ${err}`)
         }
       } else if (evt.name == EventName.CancelledEvmAssociation) {
         try {
-          const [owner,profileUrl,destinationAddress] = evt.args
+          const [owner, profileUrl, destinationAddress] = evt.args
           const event = await repositories.event.findOne({
             where: {
               chainId: Number(chainId),
@@ -174,25 +170,25 @@ const keepAlive = ({
             },
           })
           if (!event) {
-            await repositories.event.save(
-              {
-                chainId: Number(chainId),
-                contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
-                eventName: evt.name,
-                txHash: e.transactionHash,
-                ownerAddress: owner,
-                blockNumber: Number(e.blockNumber),
-                profileUrl: profileUrl,
-                destinationAddress: helper.checkSum(destinationAddress),
-              },
+            await repositories.event.save({
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(destinationAddress),
+            })
+            logger.debug(
+              `New WSS NFT Resolver ${evt.name} event found. ${profileUrl} (owner = ${owner}) is cancelling ${destinationAddress}. chainId=${chainId}`,
             )
-            logger.debug(`New WSS NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) is cancelling ${ destinationAddress }. chainId=${chainId}`)
           }
         } catch (err) {
           logger.error(`Evt: ${EventName.CancelledEvmAssociation} -- Err: ${err}`)
         }
       } else if (evt.name == EventName.ClearAllAssociatedAddresses) {
-        const [owner,profileUrl] = evt.args
+        const [owner, profileUrl] = evt.args
         try {
           const event = await repositories.event.findOne({
             where: {
@@ -206,25 +202,24 @@ const keepAlive = ({
             },
           })
           if (!event) {
-            await repositories.event.save(
-              {
-                chainId: Number(chainId),
-                contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
-                eventName: evt.name,
-                txHash: e.transactionHash,
-                ownerAddress: owner,
-                blockNumber: Number(e.blockNumber),
-                profileUrl: profileUrl,
-              },
+            await repositories.event.save({
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: owner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+            })
+            logger.debug(
+              `New NFT Resolver ${evt.name} event found. ${profileUrl} (owner = ${owner}) cancelled all associations. chainId=${chainId}`,
             )
-            logger.debug(`New NFT Resolver ${evt.name} event found. ${ profileUrl } (owner = ${owner}) cancelled all associations. chainId=${chainId}`)
           }
         } catch (err) {
           logger.error(`Evt: ${EventName.ClearAllAssociatedAddresses} -- Err: ${err}`)
         }
-      } else if (evt.name === EventName.AssociateSelfWithUser ||
-        evt.name === EventName.RemovedAssociateProfile) {
-        const [receiver, profileUrl, profileOwner]  = evt.args
+      } else if (evt.name === EventName.AssociateSelfWithUser || evt.name === EventName.RemovedAssociateProfile) {
+        const [receiver, profileUrl, profileOwner] = evt.args
         try {
           const event = await repositories.event.findOne({
             where: {
@@ -239,19 +234,23 @@ const keepAlive = ({
             },
           })
           if (!event) {
-            await repositories.event.save(
-              {
-                chainId: Number(chainId),
-                contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
-                eventName: evt.name,
-                txHash: e.transactionHash,
-                ownerAddress: profileOwner,
-                blockNumber: Number(e.blockNumber),
-                profileUrl: profileUrl,
-                destinationAddress: helper.checkSum(receiver),
-              },
+            await repositories.event.save({
+              chainId: Number(chainId),
+              contract: helper.checkSum(contracts.nftResolverAddress(Number(chainId))),
+              eventName: evt.name,
+              txHash: e.transactionHash,
+              ownerAddress: profileOwner,
+              blockNumber: Number(e.blockNumber),
+              profileUrl: profileUrl,
+              destinationAddress: helper.checkSum(receiver),
+            })
+            logger.debug(
+              `New NFT Resolver ${
+                evt.name
+              } event found. profileUrl = ${profileUrl} (receiver = ${receiver}) profileOwner = ${[
+                profileOwner,
+              ]}. chainId=${chainId}`,
             )
-            logger.debug(`New NFT Resolver ${evt.name} event found. profileUrl = ${profileUrl} (receiver = ${receiver}) profileOwner = ${[profileOwner]}. chainId=${chainId}`)
           }
         } catch (err) {
           logger.error(`Evt: ${evt.name} -- Err: ${err}`)
@@ -283,7 +282,7 @@ const keepAlive = ({
       topics: looksrareV2TopicFilter,
     }
 
-    provider.on(looksrareV2Filter, async (e) => {
+    provider.on(looksrareV2Filter, async e => {
       const evt = looksrareProtocolInterface.parseLog(e)
       if (evt.name === LooksrareV2EventName.NewBidAskNonces) {
         const [user, bidNonce, askNonce] = evt.args
@@ -549,9 +548,7 @@ const keepAlive = ({
       }
     })
 
-    const openseaSeaportAddress = helper.checkSum(
-      contracts.openseaSeaportAddress(chainId.toString()),
-    )
+    const openseaSeaportAddress = helper.checkSum(contracts.openseaSeaportAddress(chainId.toString()))
 
     logger.debug(`openseaSeaportAddress: ${openseaSeaportAddress}, chainId: ${chainId}`)
 
@@ -560,7 +557,9 @@ const keepAlive = ({
       [
         helper.id('OrderCancelled(bytes32,address,address)'),
         helper.id('CounterIncremented(unint256,address)'),
-        helper.id('OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])'),
+        helper.id(
+          'OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])',
+        ),
       ],
     ]
 
@@ -569,9 +568,9 @@ const keepAlive = ({
       topics: openseaTopicFilter,
     }
 
-    provider.on(openseaFilter, async (e) => {
+    provider.on(openseaFilter, async e => {
       const evt = openseaSeaportInterface.parseLog(e)
-      if(evt.name === OSSeaportEventName.OrderCancelled) {
+      if (evt.name === OSSeaportEventName.OrderCancelled) {
         const [orderHash, offerer, zone] = evt.args
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
@@ -637,18 +636,20 @@ const keepAlive = ({
             const cancelEntityPromises: Promise<Partial<entity.TxCancel>>[] = []
             for (const order of orders) {
               order.activity.status = defs.ActivityStatus.Cancelled
-              cancelEntityPromises.push(cancelEntityBuilder(
-                defs.ActivityType.Cancel,
-                `${e.transactionHash}:${order.orderHash}`,
-                e.blockNumber,
-                chainId.toString(),
-                order.activity.nftContract,
-                order.activity.nftId,
-                order.makerAddress,
-                defs.ExchangeType.OpenSea,
-                order.orderType as defs.CancelActivityType,
-                order.id,
-              ))
+              cancelEntityPromises.push(
+                cancelEntityBuilder(
+                  defs.ActivityType.Cancel,
+                  `${e.transactionHash}:${order.orderHash}`,
+                  e.blockNumber,
+                  chainId.toString(),
+                  order.activity.nftContract,
+                  order.activity.nftId,
+                  order.makerAddress,
+                  defs.ExchangeType.OpenSea,
+                  order.orderType as defs.CancelActivityType,
+                  order.id,
+                ),
+              )
             }
             await repositories.txOrder.saveMany(orders)
             const cancelEntities = await Promise.all(cancelEntityPromises)
@@ -708,13 +709,7 @@ const keepAlive = ({
               order.protocolData?.parameters?.offer?.[0]?.identifierOrCriteria,
             )
 
-            await atomicOwnershipUpdate(
-              contract,
-              tokenId,
-              offerer,
-              recipient,
-              chainId.toString(),
-            )
+            await atomicOwnershipUpdate(contract, tokenId, offerer, recipient, chainId.toString())
 
             if (order.createdInternally) {
               await core.sendSlackMessage(
@@ -737,9 +732,7 @@ const keepAlive = ({
       }
     })
 
-    const x2y2Address = helper.checkSum(
-      contracts.x2y2Address(chainId.toString()),
-    )
+    const x2y2Address = helper.checkSum(contracts.x2y2Address(chainId.toString()))
 
     logger.debug(`x2y2Address: ${x2y2Address}, chainId: ${chainId}`)
     const orderItemParamType = '(uint256,bytes)'
@@ -750,7 +743,9 @@ const keepAlive = ({
       [
         helper.id('EvCancel(bytes32)'),
         helper.id('EvProfit(bytes32,address,address,uint256)'),
-        helper.id(`EvInventory(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,address,bytes,${orderItemParamType},${settleDetailParamType})`),
+        helper.id(
+          `EvInventory(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,address,bytes,${orderItemParamType},${settleDetailParamType})`,
+        ),
       ],
     ]
 
@@ -759,9 +754,9 @@ const keepAlive = ({
       topics: x2y2TopicFilter,
     }
 
-    provider.on(x2y2Filter, async (e) => {
+    provider.on(x2y2Filter, async e => {
       const evt = x2y2Interface.parseLog(e)
-      if(evt.name === X2Y2EventName.EvCancel) {
+      if (evt.name === X2Y2EventName.EvCancel) {
         const [orderHash] = evt.args
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
@@ -846,16 +841,8 @@ const keepAlive = ({
 
             // update NFT ownership
             const contract: string = helper.checkSum(order.activity.nftContract)
-            const tokenId: string = helper.bigNumberToHex(
-              order.protocolData?.tokenId,
-            )
-            await atomicOwnershipUpdate(
-              contract,
-              tokenId,
-              order.makerAddress,
-              to,
-              chainId.toString(),
-            )
+            const tokenId: string = helper.bigNumberToHex(order.protocolData?.tokenId)
+            await atomicOwnershipUpdate(contract, tokenId, order.makerAddress, to, chainId.toString())
 
             if (order.createdInternally) {
               await core.sendSlackMessage(
@@ -876,25 +863,23 @@ const keepAlive = ({
           // check for existing tx and update protocol data
           const transactionId = `${e.transactionHash}:${orderHash}`
 
-          const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction
-            .findOne({
-              relations: ['activity'],
-              where: {
-                chainId: String(chainId),
-                id: transactionId,
-                exchange: defs.ExchangeType.X2Y2,
-                protocol: defs.ProtocolType.X2Y2,
-              },
-            })
+          const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction.findOne({
+            relations: ['activity'],
+            where: {
+              chainId: String(chainId),
+              id: transactionId,
+              exchange: defs.ExchangeType.X2Y2,
+              protocol: defs.ProtocolType.X2Y2,
+            },
+          })
 
           if (existingTx) {
             // update protocol data if tx exists
             const updatedProtocolData = { ...existingTx.protocolData, amount }
             const protocolDataFormatted = txX2Y2ProtocolDataParser(updatedProtocolData)
-            await repositories.txTransaction.updateOneById(
-              transactionId,
-              { protocolData: { ...protocolDataFormatted },
-              })
+            await repositories.txTransaction.updateOneById(transactionId, {
+              protocolData: { ...protocolDataFormatted },
+            })
 
             logger.debug(`
                   Evt Updated: ${X2Y2EventName.EvProfit} for orderHash ${orderHash}
@@ -904,17 +889,8 @@ const keepAlive = ({
           logger.error(`Evt: ${X2Y2EventName.EvProfit} -- Err: ${err}`)
         }
       } else if (evt.name === X2Y2EventName.EvInventory) {
-        const [
-          orderHash,
-          maker,
-          taker,
-          orderSalt,
-          settleSalt,
-          intent,
-          delegateType,
-          deadline,
-          currency,
-          data] = evt.args
+        const [orderHash, maker, taker, orderSalt, settleSalt, intent, delegateType, deadline, currency, data] =
+          evt.args
         try {
           const order: entity.TxOrder = await repositories.txOrder.findOne({
             relations: ['activity'],
@@ -930,7 +906,7 @@ const keepAlive = ({
             },
           })
 
-          const protocolData =  {
+          const protocolData = {
             orderSalt,
             settleSalt,
             intent,
@@ -964,16 +940,8 @@ const keepAlive = ({
 
             // update NFT ownership
             const contract: string = helper.checkSum(order.activity.nftContract)
-            const tokenId: string = helper.bigNumberToHex(
-              order.protocolData?.tokenId,
-            )
-            await atomicOwnershipUpdate(
-              contract,
-              tokenId,
-              maker,
-              taker,
-              chainId.toString(),
-            )
+            const tokenId: string = helper.bigNumberToHex(order.protocolData?.tokenId)
+            await atomicOwnershipUpdate(contract, tokenId, maker, taker, chainId.toString())
 
             if (order.createdInternally) {
               await core.sendSlackMessage(
@@ -994,25 +962,23 @@ const keepAlive = ({
           // check for existing tx and update protocol data
           const transactionId = `${e.transactionHash}:${orderHash}`
 
-          const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction
-            .findOne({
-              relations: ['activity'],
-              where: {
-                chainId: String(chainId),
-                id: transactionId,
-                exchange: defs.ExchangeType.X2Y2,
-                protocol: defs.ProtocolType.X2Y2,
-              },
-            })
+          const existingTx: Partial<entity.TxTransaction> = await repositories.txTransaction.findOne({
+            relations: ['activity'],
+            where: {
+              chainId: String(chainId),
+              id: transactionId,
+              exchange: defs.ExchangeType.X2Y2,
+              protocol: defs.ProtocolType.X2Y2,
+            },
+          })
 
           if (existingTx) {
             // update protocol data if tx exists
             const updatedProtocolData = { ...existingTx.protocolData, ...protocolData }
             const protocolDataFormatted = txX2Y2ProtocolDataParser(updatedProtocolData)
-            await repositories.txTransaction.updateOneById(
-              transactionId,
-              { protocolData: { ...protocolDataFormatted },
-              })
+            await repositories.txTransaction.updateOneById(transactionId, {
+              protocolData: { ...protocolDataFormatted },
+            })
 
             logger.debug(`
                   Evt Updated: ${X2Y2EventName.EvInventory} for orderHash ${orderHash}
@@ -1029,15 +995,10 @@ const keepAlive = ({
 
     // NFTCOM marketplace
 
-    const nftMarketplaceAddress = helper.checkSum(
-      contracts.nftMarketplaceAddress(chainId.toString()),
-    )
+    const nftMarketplaceAddress = helper.checkSum(contracts.nftMarketplaceAddress(chainId.toString()))
 
     const nftMarketplaceTopicFilter = [
-      [
-        helper.id('Approval(bytes32,address,uint256)'),
-        helper.id('Cancel(bytes32,address)'),
-      ],
+      [helper.id('Approval(bytes32,address,uint256)'), helper.id('Cancel(bytes32,address)')],
     ]
 
     const nftMarketplaceFilter = {
@@ -1045,7 +1006,7 @@ const keepAlive = ({
       topics: nftMarketplaceTopicFilter,
     }
 
-    provider.on(nftMarketplaceFilter, async (e) => {
+    provider.on(nftMarketplaceFilter, async e => {
       const evt = nftMarketplaceInterface.parseLog(e)
       if (evt.name === NFTCOMEventName.Approval) {
         try {
@@ -1076,9 +1037,7 @@ const keepAlive = ({
       }
     })
 
-    const nftMarketplaceEventAddress = helper.checkSum(
-      contracts.marketplaceEventAddress(chainId.toString()),
-    )
+    const nftMarketplaceEventAddress = helper.checkSum(contracts.marketplaceEventAddress(chainId.toString()))
 
     const nftMarketplaceEventTopicFilter = [
       [
@@ -1096,17 +1055,18 @@ const keepAlive = ({
       topics: nftMarketplaceEventTopicFilter,
     }
 
-    provider.on(nftMarketplaceEventFilter, async (e) => {
+    provider.on(nftMarketplaceEventFilter, async e => {
       const evt = nftMarketplaceEventInterface.parseLog(e)
       if (evt.name === NFTCOMEventName.Match) {
         try {
           const [sellHash, buyHash, makerSig, takerSig] = evt.args
           const privateSale = evt.args.privateSale
-          const auctionType = evt.args.auctionType == 0 ?
-            defs.AuctionType.FixedPrice :
-            evt.args.auctionType == 1 ?
-              defs.AuctionType.English :
-              defs.AuctionType.Decreasing
+          const auctionType =
+            evt.args.auctionType == 0
+              ? defs.AuctionType.FixedPrice
+              : evt.args.auctionType == 1
+              ? defs.AuctionType.English
+              : defs.AuctionType.Decreasing
           await matchEventHandler(
             sellHash,
             buyHash,
@@ -1233,7 +1193,7 @@ const keepAlive = ({
   })
 
   // ws error
-  provider._websocket.on('error', (err) => logger.debug('Alchemy provider error', err))
+  provider._websocket.on('error', err => logger.debug('Alchemy provider error', err))
 
   return Promise.resolve()
 }
@@ -1251,19 +1211,19 @@ export const startProvider = (
 
     try {
       logger.info(`process.env.USE_INFURA: ${process.env.USE_INFURA} [on-chain]`)
-      provider = process.env.USE_INFURA == 'true' ?
-        new ethers.providers.WebSocketProvider(`wss://mainnet.infura.io/ws/v3/${randomInfuraKey}`) :
-        ethers.providers.AlchemyProvider.getWebSocketProvider(
-          Number(chainId),
-          process.env.ALCHEMY_API_KEY,
-        )
+      provider =
+        process.env.USE_INFURA == 'true'
+          ? new ethers.providers.WebSocketProvider(`wss://mainnet.infura.io/ws/v3/${randomInfuraKey}`)
+          : ethers.providers.AlchemyProvider.getWebSocketProvider(Number(chainId), process.env.ALCHEMY_API_KEY)
 
-      logger.info(`Using ${Number(chainId) == 1 && process.env.USE_INFURA == 'true' ? 'Infura' : 'Alchemy'} provider [on-chain]`)
+      logger.info(
+        `Using ${Number(chainId) == 1 && process.env.USE_INFURA == 'true' ? 'Infura' : 'Alchemy'} provider [on-chain]`,
+      )
 
       keepAlive({
         provider,
         chainId,
-        onDisconnect: (err) => {
+        onDisconnect: err => {
           logger.error({ err }, 'The ws connection was closed')
           startProvider(chainId)
         },

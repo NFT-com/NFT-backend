@@ -1,0 +1,29 @@
+{
+  "name": "@nftcom/misc",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index",
+  "scripts": {
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "test": "jest --detectOpenHandles"
+  },
+  "dependencies": {
+    "@nftcom/error-types": "workspace:*",
+    "@nftcom/shared": "workspace:*",
+    "@sentry/node": "^6.19.7",
+    "dataloader": "^2.1.0",
+    "dotenv": "^10.0.0",
+    "ethers": "^5.5.1",
+    "express": "^4.17.2",
+    "graphql-resolvers": "^0.4.2",
+    "joi": "^17.4.2",
+    "lodash": "^4.17.21",
+    "typeorm": "^0.3.10",
+    "zod": "^3.19.1"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "tsc": "^2.0.4",
+    "tslib": "^2.5.0"
+  }
+}

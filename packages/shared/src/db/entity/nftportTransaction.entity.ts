@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { NFTPortMarketplace, NFTPortNFTType, NFTPortPriceType } from '@nftcom/shared/defs'
+import { NFTPortMarketplace, NFTPortNFTType, NFTPortPriceType } from '../../defs'
 
 import { BaseEntity } from '.'
 

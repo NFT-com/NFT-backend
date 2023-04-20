@@ -5,10 +5,11 @@ import { defaultAbiCoder } from 'ethers/lib/utils'
 import { IsNull, LessThan } from 'typeorm'
 
 import { cache } from '@nftcom/cache'
-import { blockNumberToTimestamp } from '@nftcom/gql/defs'
-import { provider } from '@nftcom/gql/helper'
+import { provider } from '@nftcom/misc'
 import { _logger, contracts, db, defs, helper } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
+
+import { blockNumberToTimestamp } from '../defs/misc'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 const repositories = db.newRepositories()

@@ -10,37 +10,12 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, mintError, nftError, profileError } from '@nftcom/error-types'
-import { assetBucket } from '@nftcom/gql/config'
-import { Context, gql } from '@nftcom/gql/defs'
-import { SaveUserActionForBuyNFTsOutput } from '@nftcom/gql/defs/gql'
-import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { safeInput } from '@nftcom/gql/helper/pagination'
-import { core } from '@nftcom/gql/service'
-import {
-  contentTypeFromExt,
-  DEFAULT_NFT_IMAGE,
-  extensionFromFilename,
-  generateCompositeImage,
-  getAWSConfig,
-  profileActionType,
-  s3ToCdn,
-} from '@nftcom/gql/service/core.service'
-import {
-  changeNFTsVisibility,
-  executeUpdateNFTsForProfile,
-  getCollectionInfo,
-  getOwnersOfGenesisKeys,
-  profileNFTCount,
-  queryNFTsForProfile,
-  saveProfileScore,
-  saveVisibleNFTsForProfile,
-  updateNFTsOrder,
-} from '@nftcom/gql/service/nft.service'
-import { triggerNFTOrderRefreshQueue } from '@nftcom/gql/service/txActivity.service'
+import { assetBucket, auth, Context, joi, pagination } from '@nftcom/misc'
+import { core, nftService, txActivityService } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
-import { blacklistBool } from '../service/core.service'
+import { gql } from '../defs'
 import { likeService } from '../service/like.service'
 import { comments as commentsResolver } from './comment.resolver'
 
@@ -82,7 +57,7 @@ const getProfilesFollowedByMe = (
       thatEntityType: defs.EntityType.Profile,
       edgeType: defs.EdgeType.Follows,
     })
-    .then(fp.filterIfNotEmpty(statuses)(p => statuses.includes(p.status)))
+    .then(fp.filterIfNotEmpty(statuses)((p: entity.Profile) => statuses.includes(p.status)))
     .then(toProfilesOutput)
 }
 
@@ -286,7 +261,7 @@ const maybeUpdateProfileOwnership = (
               }),
             ),
           )
-          .then(fp.tap(() => executeUpdateNFTsForProfile(profile.url, chainId)))
+          .then(fp.tap(() => nftService.executeUpdateNFTsForProfile(profile.url, chainId)))
       })
       .catch(e => {
         logger.log(`[ERROR] maybeUpdateProfileOwnership uncaught error - ${JSON.stringify(e)}`)
@@ -322,7 +297,7 @@ const getProfileByURL = (_: any, args: gql.QueryProfileArgs, ctx: Context): Prom
     .then(profile => {
       if (profile) {
         if (!profile.photoURL) {
-          return generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE).then(imageURL => {
+          return core.generateCompositeImage(profile.url, core.DEFAULT_NFT_IMAGE).then(imageURL => {
             logger.debug(`getProfileByURL: composite Image for Profile ${profile.url} was generated`)
 
             const updateObj = {
@@ -485,7 +460,7 @@ const updateProfile = async (_: any, args: gql.MutationUpdateProfileArgs, ctx: C
 
   if (showAllNFTs || hideAllNFTs || showNFTIds || hideNFTIds) {
     try {
-      changeNFTsVisibility(
+      nftService.changeNFTsVisibility(
         repositories,
         wallet.id,
         profile.id,
@@ -522,7 +497,7 @@ const getFollowersCount = (parent: gql.Profile, _: unknown, ctx: Context): Promi
 
 const getBlockedProfileURI = (_: unknown, args: gql.QueryBlockedProfileUriArgs): Promise<boolean> => {
   logger.debug('getBlockedProfileURI', args.url)
-  return Promise.resolve(blacklistBool(args.url.toLowerCase(), args.blockReserved))
+  return Promise.resolve(core.blacklistBool(args.url.toLowerCase(), args.blockReserved))
 }
 
 const getInsiderReservedProfileURIs = (
@@ -603,8 +578,8 @@ const checkFileSize = async (createReadStream: FileUpload['createReadStream'], m
   })
 
 const createUploadStream = (s3: S3Client, key: string, bucket: string): S3UploadStream => {
-  const ext = extensionFromFilename(key as string)
-  const contentType = contentTypeFromExt(ext)
+  const ext = core.extensionFromFilename(key as string)
+  const contentType = core.contentTypeFromExt(ext)
   const pass = new stream.PassThrough()
 
   const s3Upload = new Upload({
@@ -633,7 +608,7 @@ const uploadStreamToS3 = async (
     const bannerUploadStream = createUploadStream(s3, bannerKey, assetBucket.name)
     stream.pipe(bannerUploadStream.writeStream)
     bannerUploadStream.upload
-    return s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${bannerKey}`)
+    return core.s3ToCdn(`https://${assetBucket.name}.s3.amazonaws.com/${bannerKey}`)
   } catch (e) {
     Sentry.captureException(e)
     Sentry.captureMessage(`Error in uploadStreamToS3: ${e}`)
@@ -705,10 +680,10 @@ const uploadProfileImages = async (
   }
 
   // 3. upload streams to AWS S3
-  const s3config = await getAWSConfig()
+  const s3config = await core.getAWSConfig()
 
   if (bannerResponse && bannerStream) {
-    const ext = extensionFromFilename(bannerResponse.filename as string)
+    const ext = core.extensionFromFilename(bannerResponse.filename as string)
     const fileName = ext ? profile.url + '-banner' + '.' + ext : profile.url + '-banner'
     const bannerUrl = await uploadStreamToS3(fileName, s3config, bannerStream)
     if (bannerUrl) {
@@ -719,7 +694,7 @@ const uploadProfileImages = async (
   }
 
   if (avatarResponse && avatarStream) {
-    const ext = extensionFromFilename(avatarResponse.filename as string)
+    const ext = core.extensionFromFilename(avatarResponse.filename as string)
     const fileName = ext ? profile.url + '.' + ext : profile.url
     const avatarUrl = await uploadStreamToS3(fileName, s3config, avatarStream)
     if (avatarUrl) {
@@ -731,7 +706,7 @@ const uploadProfileImages = async (
       }
       // else, we will create composite image
       else {
-        const compositeUrl = await generateCompositeImage(profile.url, avatarUrl)
+        const compositeUrl = await core.generateCompositeImage(profile.url, avatarUrl)
         if (compositeUrl) {
           await repositories.profile.updateOneById(profileId, {
             photoURL: compositeUrl,
@@ -763,7 +738,7 @@ const createCompositeImage = async (
     )
   }
 
-  const imageURL = await generateCompositeImage(profile.url, DEFAULT_NFT_IMAGE)
+  const imageURL = await core.generateCompositeImage(profile.url, core.DEFAULT_NFT_IMAGE)
   profile = await repositories.profile.updateOneById(profileId, {
     photoURL: imageURL,
   })
@@ -800,7 +775,7 @@ const sortedProfilesByVisibleNFTs = async (
       : { afterCursor: indexedProfiles.length.toString() }
   }
 
-  const safePageInput = safeInput(pageInput, defaultCursor)
+  const safePageInput = pagination.safeInput(pageInput, defaultCursor)
 
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
@@ -872,7 +847,7 @@ const orderingUpdates = (_: any, args: gql.MutationOrderingUpdatesArgs, ctx: Con
         ),
       ),
     )
-    .then(fp.tapWait(profile => updateNFTsOrder(profile.id, updates)))
+    .then(fp.tapWait(profile => nftService.updateNFTsOrder(profile.id, updates)))
 }
 
 const collectInfoFromScore = (score: string): LeaderboardInfo => {
@@ -961,7 +936,7 @@ const leaderboard = async (_: any, args: gql.QueryLeaderboardArgs, ctx: Context)
       : { afterCursor: leaderboard.length.toString() }
   }
 
-  const safePageInput = safeInput(pageInput, defaultCursor)
+  const safePageInput = pagination.safeInput(pageInput, defaultCursor)
 
   let totalItems
   if (pagination.hasFirst(safePageInput)) {
@@ -1009,7 +984,7 @@ const saveScoreForProfiles = async (
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async profile => {
-        await saveProfileScore(repositories, profile)
+        await nftService.saveProfileScore(repositories, profile)
         const now = helper.toUTCDate()
         await repositories.profile.updateOneById(profile.id, {
           lastScored: now,
@@ -1032,7 +1007,7 @@ const clearGKIconVisible = async (_: any, args: any, ctx: Context): Promise<gql.
     const { repositories, chain } = ctx
     const chainId = chain.id || process.env.CHAIN_ID
     auth.verifyAndGetNetworkChain('ethereum', chainId)
-    const owners = await getOwnersOfGenesisKeys(chainId)
+    const owners = await nftService.getOwnersOfGenesisKeys(chainId)
     const ownerWalletIds: string[] = []
     await Promise.allSettled(
       Object.keys(owners).map(async owner => {
@@ -1121,7 +1096,7 @@ const saveNFTVisibility = async (
     const slicedProfiles = profiles.slice(0, count)
     await Promise.allSettled(
       slicedProfiles.map(async profile => {
-        await saveVisibleNFTsForProfile(profile.id, repositories)
+        await nftService.saveVisibleNFTsForProfile(profile.id, repositories)
       }),
     )
     logger.debug('Amount of visible NFTs for profiles are cached', { counts: slicedProfiles.length })
@@ -1240,7 +1215,7 @@ const getAssociatedCollectionForProfile = async (
     }
     if (profile.profileView === defs.ProfileViewType.Collection) {
       if (profile.associatedContract) {
-        return await getCollectionInfo({
+        return await nftService.getCollectionInfo({
           chainId,
           contract: profile.associatedContract,
           repositories,
@@ -1404,14 +1379,14 @@ const getUsersActionsWithPoints = async (
     if (!seen[action.userId]) {
       usersActions.push({
         userId: action.userId,
-        action: [profileActionType(action)],
+        action: [core.profileActionType(action)],
         totalPoints: action.point,
       })
       seen[action.userId] = true
     } else {
       const index = usersActions.findIndex(userAction => userAction.userId === action.userId)
       if (index !== -1) {
-        usersActions[index].action.push(profileActionType(action))
+        usersActions[index].action.push(core.profileActionType(action))
         usersActions[index].totalPoints += action.point
       }
     }
@@ -1423,7 +1398,7 @@ const saveUserActionForBuyNFTs = async (
   _: any,
   args: gql.MutationSaveUserActionForBuyNFTsArgs,
   ctx: Context,
-): Promise<SaveUserActionForBuyNFTsOutput> => {
+): Promise<gql.SaveUserActionForBuyNFTsOutput> => {
   try {
     const { repositories, chain, user } = ctx
     const chainId = chain.id || process.env.CHAIN_ID
@@ -1489,7 +1464,7 @@ const searchVisibleNFTsForProfile = async (
     if (cachedData) {
       nfts = JSON.parse(cachedData) as entity.NFT[]
     } else {
-      nfts = await queryNFTsForProfile(repositories, profile, true, args?.input.query)
+      nfts = await nftService.queryNFTsForProfile(repositories, profile, true, args?.input.query)
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     }
     if (!nfts.length) return Promise.reject(new Error('No NFT found'))
@@ -1516,7 +1491,9 @@ const searchVisibleNFTsForProfile = async (
       )
       .then(result => {
         // refresh order queue trigger
-        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() => Promise.resolve(result))
+        return Promise.resolve(txActivityService.triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() =>
+          Promise.resolve(result),
+        )
       })
   } catch (err) {
     Sentry.captureMessage(`Error in searchVisibleNFTsForProfile: ${err}`)
@@ -1557,7 +1534,7 @@ const searchNFTsForProfile = async (
     if (cachedData) {
       nfts = JSON.parse(cachedData) as entity.NFT[]
     } else {
-      nfts = await queryNFTsForProfile(repositories, profile, false, args?.input.query)
+      nfts = await nftService.queryNFTsForProfile(repositories, profile, false, args?.input.query)
       await cache.set(cacheKey, JSON.stringify(nfts), 'EX', 10 * 60)
     }
     if (!nfts.length) return Promise.reject(new Error('No NFT found'))
@@ -1583,7 +1560,9 @@ const searchNFTsForProfile = async (
       )
       .then(result => {
         // refresh order queue trigger
-        return Promise.resolve(triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() => Promise.resolve(result))
+        return Promise.resolve(txActivityService.triggerNFTOrderRefreshQueue(result?.items, chainId)).then(() =>
+          Promise.resolve(result),
+        )
       })
   } catch (err) {
     Sentry.captureMessage(`Error in searchNFTsForProfile: ${err}`)
@@ -1670,7 +1649,7 @@ const profileVisibleNFTCount = (
     auth.verifyAndGetNetworkChain('ethereum', chainId)
     const { profileIds } = args
     const { repositories } = ctx
-    return profileNFTCount(profileIds, repositories, chainId)
+    return nftService.profileNFTCount(profileIds, repositories, chainId)
   } catch (err) {
     Sentry.captureMessage(`Error in profileVisibleNFTCount: ${err}`)
     return err

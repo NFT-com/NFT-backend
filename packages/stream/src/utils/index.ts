@@ -2,7 +2,7 @@ import { provider } from '@nftcom/shared'
 
 export const ALLOWED_NETWORKS: string[] = ['ethereum', 'goerli']
 
-export const delay = (ms: number) : Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
+export const delay = (ms: number): Promise<any> => new Promise(resolve => setTimeout(resolve, ms))
 
 export const getLatestBlockNumber = async (chainId = 1): Promise<number> => {
   const chainProvider = provider.provider(Number(chainId))
@@ -23,14 +23,14 @@ export const getTimeStamp = (start: number): string => {
 }
 
 export const chainFromId = (chainId: string): string | undefined => {
-  switch(chainId) {
-  case '1':
-    return 'ethereum'
-  case '5':
-    return 'goerli'
-  case '137':
-    return 'polygon'
-  default:
-    return undefined
+  switch (chainId) {
+    case '1':
+      return 'ethereum'
+    case '5':
+      return 'goerli'
+    case '137':
+      return 'polygon'
+    default:
+      return undefined
   }
 }

@@ -1,7 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { Signature } from '@nftcom/shared/defs'
-
+import { Signature } from '../../defs'
 import { BaseEntity } from './base.entity'
 
 @Entity()

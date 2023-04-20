@@ -5,11 +5,26 @@ import { _logger } from '@nftcom/shared'
 
 import { redisConfig } from '../config'
 import { cache, CacheKeys } from '../service/cache'
-import { collectionBannerImageSync, collectionIssuanceDateSync, collectionNameSync, collectionSyncHandler, nftRaritySyncHandler, nftSyncHandler, raritySync, spamCollectionSyncHandler } from './collection.handler'
+import {
+  collectionBannerImageSync,
+  collectionIssuanceDateSync,
+  collectionNameSync,
+  collectionSyncHandler,
+  nftRaritySyncHandler,
+  nftSyncHandler,
+  raritySync,
+  spamCollectionSyncHandler,
+} from './collection.handler'
 import { getEthereumEvents } from './mint.handler'
 import { syncTxsFromNFTPortHandler } from './nftport.handler'
 import { nftExternalOrdersOnDemand, orderReconciliationHandler } from './order.handler'
-import { profileGKOwnersHandler, pullNewNFTsHandler, saveProfileExpireAt, updateNFTsForNonProfilesHandler, updateNFTsOwnershipForProfilesHandler } from './profile.handler'
+import {
+  profileGKOwnersHandler,
+  pullNewNFTsHandler,
+  saveProfileExpireAt,
+  updateNFTsForNonProfilesHandler,
+  updateNFTsOwnershipForProfilesHandler,
+} from './profile.handler'
 import { searchListingIndexHandler } from './search.handler'
 import { nftExternalOrderBatchProcessor, nftExternalOrders } from './sync.handler'
 import { syncTrading } from './trading.handler'
@@ -44,7 +59,7 @@ export enum QUEUE_TYPES {
   SEARCH_ENGINE_LISTINGS_UPDATE = 'SEARCH_ENGINE_LISTINGS_UPDATE',
   SYNC_PROFILE_GK_OWNERS = 'SYNC_PROFILE_GK_OWNERS',
   SYNC_TXS_NFTPORT = 'SYNC_TXS_NFTPORT',
-  RECONCILE_ORDERS = 'RECONCILE_ORDERS'
+  RECONCILE_ORDERS = 'RECONCILE_ORDERS',
 }
 
 /* ------------------------------- Handler Map ------------------------------ */
@@ -56,10 +71,21 @@ const handlerMap: Record<string, { handler: any; repeat?: number; secondaryOptio
   [QUEUE_TYPES.SYNC_COLLECTION_RARITY]: { handler: raritySync, repeat: 5 * 60000 },
   [QUEUE_TYPES.SYNC_COLLECTION_NFT_RARITY]: { handler: nftRaritySyncHandler },
   [QUEUE_TYPES.SYNC_SPAM_COLLECTIONS]: { handler: spamCollectionSyncHandler, repeat: 24 * 60 * 60000 },
-  [QUEUE_TYPES.UPDATE_PROFILES_NFTS_STREAMS]: { handler: updateNFTsOwnershipForProfilesHandler, repeat: Number(process.env.ALCHEMY_NFT_FREQUENCY_MS) },
-  [QUEUE_TYPES.UPDATE_NON_PROFILES_NFTS_STREAMS]: { handler: updateNFTsForNonProfilesHandler, repeat: Number(process.env.ALCHEMY_NFT_FREQUENCY_MS) },
-  [QUEUE_TYPES.UPDATE_PROFILES_WALLET_NFTS_STREAMS]: { handler: pullNewNFTsHandler, repeat: Number(process.env.ALCHEMY_NFT_FREQUENCY_MS) },
-  [QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND]: { handler: nftExternalOrdersOnDemand, repeat: 2 * 60000,
+  [QUEUE_TYPES.UPDATE_PROFILES_NFTS_STREAMS]: {
+    handler: updateNFTsOwnershipForProfilesHandler,
+    repeat: Number(process.env.ALCHEMY_NFT_FREQUENCY_MS),
+  },
+  [QUEUE_TYPES.UPDATE_NON_PROFILES_NFTS_STREAMS]: {
+    handler: updateNFTsForNonProfilesHandler,
+    repeat: Number(process.env.ALCHEMY_NFT_FREQUENCY_MS),
+  },
+  [QUEUE_TYPES.UPDATE_PROFILES_WALLET_NFTS_STREAMS]: {
+    handler: pullNewNFTsHandler,
+    repeat: Number(process.env.ALCHEMY_NFT_FREQUENCY_MS),
+  },
+  [QUEUE_TYPES.FETCH_EXTERNAL_ORDERS_ON_DEMAND]: {
+    handler: nftExternalOrdersOnDemand,
+    repeat: 2 * 60000,
     secondaryOptions: {
       attempts: 5,
       backoff: {
@@ -69,7 +95,9 @@ const handlerMap: Record<string, { handler: any; repeat?: number; secondaryOptio
     },
   },
   [QUEUE_TYPES.GENERATE_COMPOSITE_IMAGE]: { handler: collectionBannerImageSync, repeat: 60000 },
-  [QUEUE_TYPES.FETCH_COLLECTION_ISSUANCE_DATE]: { handler: collectionIssuanceDateSync, repeat: 12 * 60 * 60000,
+  [QUEUE_TYPES.FETCH_COLLECTION_ISSUANCE_DATE]: {
+    handler: collectionIssuanceDateSync,
+    repeat: 12 * 60 * 60000,
     secondaryOptions: {
       attempts: 5,
       backoff: {
@@ -122,11 +150,11 @@ let didPublish: boolean
 const subqueueWorkers = []
 
 /* ---------------------------- Utility Functions --------------------------- */
-const jobHasNotRunRecently = (job: Job<any>): boolean  => {
+const jobHasNotRunRecently = (job: Job<any>): boolean => {
   const currentMillis = Date.now()
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore: @types/bull is outdated
-  return currentMillis > (job.opts.repeat.every * 1.2) + job.opts.prevMillis
+  return currentMillis > job.opts.repeat.every * 1.2 + job.opts.prevMillis
 }
 /* ---------------------------- Queue Management ---------------------------- */
 const createQueue = (queueType: QUEUE_TYPES, options: any = {}): Queue => {
@@ -135,25 +163,22 @@ const createQueue = (queueType: QUEUE_TYPES, options: any = {}): Queue => {
   return queue
 }
 
-const createSubqueue = (
-  subqueueName: string, subqueuePrefix: string, processor: any): Queue => {
+const createSubqueue = (subqueueName: string, subqueuePrefix: string, processor: any): Queue => {
   const subqueue = new Queue(subqueueName, { connection, prefix: subqueuePrefix })
   subqueueWorkers.push(new Worker(subqueue.name, processor, { connection, prefix: subqueuePrefix }))
   return subqueue
 }
 
 const createQueues = (): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     networks.forEach((chainId: string, network: string) => {
       queues.set(network, new Queue(chainId, { prefix: queuePrefix, connection }))
     })
 
-    Object.values(QUEUE_TYPES).forEach((queueType) => createQueue(queueType))
+    Object.values(QUEUE_TYPES).forEach(queueType => createQueue(queueType))
 
-    nftOrderSubqueue = createSubqueue(
-      orderSubqueueName, orderSubqueuePrefix, nftExternalOrderBatchProcessor)
-    collectionSyncSubqueue = createSubqueue(
-      collectionSubqueueName, collectionSubqueuePrefix, nftSyncHandler)
+    nftOrderSubqueue = createSubqueue(orderSubqueueName, orderSubqueuePrefix, nftExternalOrderBatchProcessor)
+    collectionSyncSubqueue = createSubqueue(collectionSubqueueName, collectionSubqueuePrefix, nftSyncHandler)
 
     //nft subqueue
     //  nftSyncSubqueue = new Bull(nftSyncSubqueueName, {
@@ -172,30 +197,47 @@ const createQueues = (): Promise<void> => {
 
 const getExistingJobs = (): Promise<Job[][]> => {
   const values = [...queues.values()]
-  return Promise.all(values.map((queue) => {
-    return queue.getJobs(['active', 'completed', 'delayed', 'failed', 'paused', 'waiting', 'waiting-children', 'repeat', 'wait'])
-  }))
+  return Promise.all(
+    values.map(queue => {
+      return queue.getJobs([
+        'active',
+        'completed',
+        'delayed',
+        'failed',
+        'paused',
+        'waiting',
+        'waiting-children',
+        'repeat',
+        'wait',
+      ])
+    }),
+  )
 }
 
 const checkJobQueues = (jobs: Job[][]): Promise<boolean> => {
   const values = [...queues.values()]
   if (jobs.flat().length < queues.size) {
     logger.info('🐮 fewer bull jobs than queues --- wiping queues for restart')
-    return Promise.all(values.map((queue) => {
-      return queue.obliterate({ force: true })
-    })).then(() => true)
+    return Promise.all(
+      values.map(queue => {
+        return queue.obliterate({ force: true })
+      }),
+    ).then(() => true)
   }
 
   for (const key of queues.keys()) {
     const queue = queues.get(key)
     const job = jobs.flat().find(job => job && job.queueName === queue.name)
-    if ((job?.opts?.repeat
-          && (job.opts.repeat.count >= BULL_MAX_REPEAT_COUNT || jobHasNotRunRecently(job)))
-        || !job?.opts.repeat) {
+    if (
+      (job?.opts?.repeat && (job.opts.repeat.count >= BULL_MAX_REPEAT_COUNT || jobHasNotRunRecently(job))) ||
+      !job?.opts.repeat
+    ) {
       logger.info('🐮 bull job needs to restart -- wiping queues for restart')
-      return Promise.all(values.map((queue) => {
-        return queue.obliterate({ force: true })
-      })).then(() => true)
+      return Promise.all(
+        values.map(queue => {
+          return queue.obliterate({ force: true })
+        }),
+      ).then(() => true)
     }
   }
   return new Promise(resolve => resolve(false))
@@ -232,14 +274,20 @@ const publishJobs = async (shouldPublish: boolean): Promise<void> => {
     })
 
   // Default case
-  jobPromises.push((async () => {
-    await queues.get(chainId).add('default', { chainId: chainId || process.env.CHAIN_ID }, {
-      removeOnComplete: true,
-      removeOnFail: true,
-      repeat: { every: 3 * 60000 }, // repeat every 3 minutes
-      jobId: `chainid_${chainId}_job`,
-    })
-  })())
+  jobPromises.push(
+    (async () => {
+      await queues.get(chainId).add(
+        'default',
+        { chainId: chainId || process.env.CHAIN_ID },
+        {
+          removeOnComplete: true,
+          removeOnFail: true,
+          repeat: { every: 3 * 60000 }, // repeat every 3 minutes
+          jobId: `chainid_${chainId}_job`,
+        },
+      )
+    })(),
+  )
 
   await Promise.all(jobPromises)
 }
@@ -249,15 +297,15 @@ const defaultWorkerOpts = { connection, prefix: queuePrefix }
 
 const getWorkerOptions = (queueName: string): WorkerOptions => {
   switch (queueName) {
-  case QUEUE_TYPES.UPDATE_PROFILES_NFTS_STREAMS:
-  case QUEUE_TYPES.UPDATE_PROFILES_WALLET_NFTS_STREAMS:
-  case QUEUE_TYPES.UPDATE_NON_PROFILES_NFTS_STREAMS:
-    return {
-      ...defaultWorkerOpts,
-      concurrency: 10,
-    }
-  default:
-    return defaultWorkerOpts
+    case QUEUE_TYPES.UPDATE_PROFILES_NFTS_STREAMS:
+    case QUEUE_TYPES.UPDATE_PROFILES_WALLET_NFTS_STREAMS:
+    case QUEUE_TYPES.UPDATE_NON_PROFILES_NFTS_STREAMS:
+      return {
+        ...defaultWorkerOpts,
+        concurrency: 10,
+      }
+    default:
+      return defaultWorkerOpts
   }
 }
 
@@ -310,5 +358,5 @@ export const stopAndDisconnect = (): Promise<any> => {
     // nftSyncSubqueue, // Uncomment if needed
   ].filter(Boolean)
 
-  return Promise.all(values.map((queue) => queue.close()))
+  return Promise.all(values.map(queue => queue.close()))
 }

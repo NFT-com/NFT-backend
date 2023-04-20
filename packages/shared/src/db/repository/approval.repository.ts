@@ -1,6 +1,5 @@
-import { Approval } from '@nftcom/shared/db/entity'
-import { nftTokenAddress } from '@nftcom/shared/helper/contracts'
-
+import { nftTokenAddress } from '../../helper/contracts'
+import { Approval } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class ApprovalRepository extends BaseRepository<Approval> {

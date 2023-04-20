@@ -1,4 +1,4 @@
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db, defs } from '@nftcom/shared'
 
 import { testMockUser, testMockWallet } from '../util/constants'

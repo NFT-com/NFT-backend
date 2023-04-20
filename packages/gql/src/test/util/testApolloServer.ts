@@ -1,9 +1,10 @@
 import { ApolloServer } from 'apollo-server-express'
 
-import { User, Wallet } from '@nftcom/gql/defs/gql'
-import { rateLimitedSchema } from '@nftcom/gql/schema'
-import { createLoaders, formatError } from '@nftcom/gql/server'
 import { defs } from '@nftcom/shared'
+
+import { User, Wallet } from '../../defs/gql'
+import { rateLimitedSchema } from '../../schema'
+import { createLoaders, formatError } from '../../server'
 
 export function getTestApolloServer(
   testDB: any,

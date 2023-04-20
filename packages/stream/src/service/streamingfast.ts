@@ -37,9 +37,7 @@ const handleFilter = async (
   }
 
   if (REMOVE_SPAM_FILTER) {
-    if (await cache.sismember(
-      CacheKeys.SPAM_COLLECTIONS, helper.checkSum(contractAddress),
-    )) return false
+    if (await cache.sismember(CacheKeys.SPAM_COLLECTIONS, helper.checkSum(contractAddress))) return false
   }
 
   if (ONLY_EXISTING_NFT_FILTER) {
@@ -93,7 +91,8 @@ const handleNotification = async (msg: any): Promise<void> => {
     logInfoBatch.push(`[handleNotification] - the latest block number is ${latestBlockNumber}`)
   }
 
-  const [schema, blockNumber, tokenId, contractAddress, quantity, fromAddress, toAddress, txHash, timestamp] = msg.payload.split('|')
+  const [schema, blockNumber, tokenId, contractAddress, quantity, fromAddress, toAddress, txHash, timestamp] =
+    msg.payload.split('|')
   const blockDifference = Math.abs(latestBlockNumber - Number(blockNumber))
   const hexTokenId = ensureHexPrefix(tokenId)
   const hexContractAddress = ensureHexPrefix(contractAddress)
@@ -112,9 +111,15 @@ const handleNotification = async (msg: any): Promise<void> => {
         hexFromAddress,
         hexToAddress,
         '1', // mainnet ETH
-        schema
+        schema,
       )
-      logInfoBatch.push(`streamingFast (took ${new Date().getTime() - start2}ms): [MINTED]: ${schema}/${hexContractAddress}/${hexTokenId} to ${hexToAddress}, ${Number(quantity) > 1 ? `quantity=${quantity}, ` : ''}https://etherscan.io/tx/${hexTxHash}`)
+      logInfoBatch.push(
+        `streamingFast (took ${
+          new Date().getTime() - start2
+        }ms): [MINTED]: ${schema}/${hexContractAddress}/${hexTokenId} to ${hexToAddress}, ${
+          Number(quantity) > 1 ? `quantity=${quantity}, ` : ''
+        }https://etherscan.io/tx/${hexTxHash}`,
+      )
     } else if (isLikelyBurnAddress(hexToAddress)) {
       logInfoBatch.push(
         `streamingFast: [BURNED]: ${schema}/${hexContractAddress}/${hexTokenId} from ${hexFromAddress}, ${
@@ -141,7 +146,11 @@ const handleNotification = async (msg: any): Promise<void> => {
       )
     }
   } else {
-    logWarningBatch.push(`Filtered Transfer for ${schema}/${hexContractAddress}/${hexTokenId} from ${hexFromAddress} to ${hexToAddress}, ${Number(quantity) > 1 ? `quantity=${quantity}, ` : ''}https://etherscan.io/tx/${hexTxHash}`)
+    logWarningBatch.push(
+      `Filtered Transfer for ${schema}/${hexContractAddress}/${hexTokenId} from ${hexFromAddress} to ${hexToAddress}, ${
+        Number(quantity) > 1 ? `quantity=${quantity}, ` : ''
+      }https://etherscan.io/tx/${hexTxHash}`,
+    )
   }
 
   if (logInfoBatch.length >= BATCH_LOG_SIZE) {

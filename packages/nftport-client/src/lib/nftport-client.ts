@@ -1,6 +1,6 @@
 import { snakeCase } from 'lodash'
+import { format } from 'node:util'
 import { stringify } from 'qs'
-import { format } from 'util'
 
 import { cache } from '@nftcom/cache'
 import { appError } from '@nftcom/error-types'

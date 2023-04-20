@@ -12,18 +12,16 @@ export type EC2Output = {
   template: aws.ec2.LaunchTemplate
 }
 
-
-
-export const createUserData = (db_host: string, latestBlock: number) : string => {
-    const streamingFast_Key = process.env.STREAMINGFAST_KEY;
-    const git_token = process.env.GH_TOKEN; 
-    const git_user = process.env.GH_USER; 
-    const substreams_db_pass = process.env.SUBSTREAMS_DB_PASSWORD; 
-    const eth_endpoint = process.env.ETH_ENDPOINT; 
-    const dd_api = process.env.DATADOG_API_KEY; 
-    const buffer_size = process.env.UNDO_BUFFER_SIZE;
-    const substreams_flags = isProduction() ? "-p" : ""; 
-    const rawUserData = `#!/bin/bash
+export const createUserData = (db_host: string, latestBlock: number): string => {
+  const streamingFast_Key = process.env.STREAMINGFAST_KEY
+  const git_token = process.env.GH_TOKEN
+  const git_user = process.env.GH_USER
+  const substreams_db_pass = process.env.SUBSTREAMS_DB_PASSWORD
+  const eth_endpoint = process.env.ETH_ENDPOINT
+  const dd_api = process.env.DATADOG_API_KEY
+  const buffer_size = process.env.UNDO_BUFFER_SIZE
+  const substreams_flags = isProduction() ? '-p' : ''
+  const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
 
@@ -133,7 +131,7 @@ export const createEC2Resources = (
   const stage = getStage()
   const getInstanceSubnet = (subnetGroups: vpcSubnets): string => {
     //const index = (Math.random() * (numSubnets - 1)); // pick a random subnet from correct subnet group
-    const subnetGroup = isProduction() ? subnetGroups.privateSubnets : subnetGroups.publicSubnets
+    const subnetGroup = subnetGroups.publicSubnets
     return subnetGroup[0]
   }
 
@@ -212,5 +210,5 @@ export const createEC2Resources = (
       version: '$Latest',
     },
   })
-    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
+  return { instance: SubstreamInstance, template: SubstreamLaunchTemplate }
 }

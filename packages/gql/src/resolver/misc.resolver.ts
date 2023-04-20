@@ -1,11 +1,11 @@
 import { combineResolvers } from 'graphql-resolvers'
 
 import { AssumeRoleRequest, STS } from '@aws-sdk/client-sts'
-import { assetBucket } from '@nftcom/gql/config'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth } from '@nftcom/gql/helper'
-import { getSymbolInUsd } from '@nftcom/gql/service/core.service'
+import { assetBucket, auth, Context } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { _logger, helper } from '@nftcom/shared'
+
+import { gql } from '../defs'
 
 const logger = _logger.Factory(_logger.Context.Misc, _logger.Context.GraphQL)
 
@@ -37,7 +37,7 @@ const getFileUploadSession = async (_: unknown, args: unknown, ctx: Context): Pr
 }
 
 const fetchEthUsd = async (_: unknown, __: unknown, ___: Context): Promise<number> => {
-  return await getSymbolInUsd('ETH')
+  return await core.getSymbolInUsd('ETH')
 }
 
 export default {

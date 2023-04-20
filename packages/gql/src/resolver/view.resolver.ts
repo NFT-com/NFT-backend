@@ -2,10 +2,11 @@ import { ApolloError } from 'apollo-server-express'
 import Joi from 'joi'
 
 import { appError } from '@nftcom/error-types'
+import { Context } from '@nftcom/misc'
 import { _logger, entity } from '@nftcom/shared'
 
-import { Context, gql } from '../defs'
-import { joi } from '../helper'
+import { joi } from '../../../misc/src/lib/helper'
+import { gql } from '../defs'
 import { viewService } from '../service/view.service'
 
 const logger = _logger.Factory('view.resolver', _logger.Context.GraphQL)

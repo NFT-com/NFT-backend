@@ -1,8 +1,10 @@
 import { FindOptionsWhere, IsNull } from 'typeorm'
 
-import { Context, gql } from '@nftcom/gql/defs'
-import { core } from '@nftcom/gql/service'
+import { Context } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { defs, entity, fp } from '@nftcom/shared'
+
+import { gql } from '../defs'
 
 // const logger = _logger.Factory(_logger.Context.Watchlist, _logger.Context.GraphQL)
 

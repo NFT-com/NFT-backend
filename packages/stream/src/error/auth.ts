@@ -1,6 +1,6 @@
 export enum AuthErrorType {
   Unauthenticated = 'Not Authenticated',
-  Forbidden = 'FORBIDDEN'
+  Forbidden = 'FORBIDDEN',
 }
 
 export interface AuthError {
@@ -8,10 +8,7 @@ export interface AuthError {
   message: string
 }
 
-export const buildError = (
-  errorType: AuthErrorType,
-  message: string,
-): AuthError => {
+export const buildError = (errorType: AuthErrorType, message: string): AuthError => {
   return {
     errorType,
     message,

@@ -1,0 +1,118 @@
+name: Deploy Stream
+description: Deploys the infrastrcuture and apps to an environment
+inputs:
+  stage:
+    description: Environment to deploy on
+    required: true
+    default: dev
+  secrets:
+    description: Secrets
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ fromJSON(inputs.secrets).AWS_ACCESS_KEY_ID }}
+        aws-region: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+        aws-secret-access-key: ${{ fromJSON(inputs.secrets).AWS_SECRET_ACCESS_KEY }}
+    - name: Login to AWS ECR
+      id: login_ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Install pulumi
+      uses: pulumi/setup-pulumi@v2
+    - name: Login to Pulumi backend
+      working-directory: infra
+      shell: bash
+      run: pulumi login s3://nftcom-pulumi-state
+    - name: Install Infra Deps
+      working-directory: infra
+      shell: bash
+      run:  npm ci
+    - name: Build and Push Stream Image
+      shell: bash
+      env:
+        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-st
+      run: |
+        export DOCKER_BUILDKIT=1
+        docker build . -f packages/stream/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from ${{ env.REPO }}:latest -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
+        docker push ${{ env.REPO }}:latest
+        docker push ${{ env.REPO }}:${{ github.sha }}
+    - name: Deploy Stream Infra
+      shell: bash
+      working-directory: infra
+      env:
+        STAGE: ${{ inputs.stage }}
+        NODE_OPTIONS: "--max_old_space_size=7150"
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+        GIT_SHA: ${{ github.sha }}
+        DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
+        DB_HOST_RO: ${{ fromJSON(inputs.secrets).DB_HOST_RO }}
+        DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+        CHAIN_ID: ${{ fromJSON(inputs.secrets).CHAIN_ID }}
+        AUTH_MESSAGE: ${{ fromJSON(inputs.secrets).AUTH_MESSAGE }}
+        SG_API_KEY: ${{ fromJSON(inputs.secrets).SG_API_KEY }}
+        ALCHEMY_NFT_FREQUENCY_MS: ${{ fromJSON(inputs.secrets).ALCHEMY_NFT_FREQUENCY_MS }}
+        USE_STREAMING_FAST: ${{ fromJSON(inputs.secrets).USE_STREAMING_FAST }}
+        STREAMING_FAST_CONNECTION_STRING: ${{ fromJSON(inputs.secrets).STREAMING_FAST_CONNECTION_STRING }}
+        CONFIRM_EMAIL_URL: "tbd"
+        ETH_GAS_STATION_API_KEY: ${{ fromJSON(inputs.secrets).ETH_GAS_STATION_API_KEY }}
+        TEAM_AUTH_TOKEN: ${{ fromJSON(inputs.secrets).TEAM_AUTH_TOKEN }}
+        MNEMONIC: ${{ fromJSON(inputs.secrets).MNEMONIC }}
+        MNEMONIC_RINKEBY: ${{ fromJSON(inputs.secrets).MNEMONIC_RINKEBY }}
+        HCS_TOPIC_ID: ${{ fromJSON(inputs.secrets).HCS_TOPIC_ID }}
+        HCS_ENABLED: ${{ fromJSON(inputs.secrets).HCS_ENABLED }}
+        HCS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).HCS_ACCOUNT_ID }}
+        HCS_PRIVATE_KEY: ${{ fromJSON(inputs.secrets).HCS_PRIVATE_KEY }}
+        INFURA_API_KEY: ${{ fromJSON(inputs.secrets).INFURA_API_KEY }}
+        ALCHEMY_API_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_API_KEY }}
+        ALCHEMY_TESTNET_KEY: ${{ fromJSON(inputs.secrets).ALCHEMY_TESTNET_KEY }}
+        ETHERSCAN_API_KEY: ${{ fromJSON(inputs.secrets).ETHERSCAN_API_KEY }}
+        ASSET_BUCKET: ${{ fromJSON(inputs.secrets).ASSET_BUCKET }}
+        ASSET_BUCKET_ROLE: ${{ fromJSON(inputs.secrets).ASSET_BUCKET_ROLE }}
+        SENTRY_DSN: ${{ fromJSON(inputs.secrets).SENTRY_DSN }}
+        PUBLIC_SALE_KEY: ${{ fromJSON(inputs.secrets).PUBLIC_SALE_KEY }}
+        SERVER_CONFIG: ${{ fromJSON(inputs.secrets).SERVER_CONFIG }}
+        SHARED_MINT_SECRET: ${{ fromJSON(inputs.secrets).SHARED_MINT_SECRET }}
+        SUPPORTED_NETWORKS: ${{ fromJSON(inputs.secrets).SUPPORTED_NETWORKS }}
+        TYPESENSE_HOST: ${{ fromJSON(inputs.secrets).TYPESENSE_HOST }}
+        TYPESENSE_API_KEY: ${{ fromJSON(inputs.secrets).TYPESENSE_API_KEY }}
+        MINTED_PROFILE_EVENTS_MAX_BLOCKS: ${{ fromJSON(inputs.secrets).MINTED_PROFILE_EVENTS_MAX_BLOCKS }}
+        PROFILE_NFTS_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_NFTS_EXPIRE_DURATION }}
+        BULL_MAX_REPEAT_COUNT: ${{ fromJSON(inputs.secrets).BULL_MAX_REPEAT_COUNT }}
+        OPENSEA_API_KEY: ${{ fromJSON(inputs.secrets).OPENSEA_API_KEY }}
+        OPENSEA_ORDERS_API_KEY: ${{ fromJSON(inputs.secrets).OPENSEA_ORDERS_API_KEY }}
+        LOOKSRARE_API_KEY: ${{ fromJSON(inputs.secrets).LOOKSRARE_API_KEY }}
+        X2Y2_API_KEY: ${{ fromJSON(inputs.secrets).X2Y2_API_KEY }}
+        PROFILE_SCORE_EXPIRE_DURATION: ${{ fromJSON(inputs.secrets).PROFILE_SCORE_EXPIRE_DURATION }}
+        NFT_EXTERNAL_ORDER_REFRESH_DURATION: ${{ fromJSON(inputs.secrets).NFT_EXTERNAL_ORDER_REFRESH_DURATION }}
+        TEST_DB_HOST: ${{ fromJSON(inputs.secrets).TEST_DB_HOST }}
+        TEST_DB_DATABASE: ${{ fromJSON(inputs.secrets).TEST_DB_DATABASE }}
+        TEST_DB_USERNAME: ${{ fromJSON(inputs.secrets).TEST_DB_USERNAME }}
+        TEST_DB_PASSWORD: ${{ fromJSON(inputs.secrets).TEST_DB_PASSWORD }}
+        ACTIVITY_ENDPOINTS_ENABLED: ${{ fromJSON(inputs.secrets).ACTIVITY_ENDPOINTS_ENABLED}}
+        NFTPORT_KEY: ${{ fromJSON(inputs.secrets).NFTPORT_KEY}}
+        REFRESH_NFT_DURATION: ${{ fromJSON(inputs.secrets).REFRESH_NFT_DURATION}}
+        IPFS_WEB_GATEWAY: ${{ fromJSON(inputs.secrets).IPFS_WEB_GATEWAY }}
+        DEFAULT_TTL_MINS: ${{ fromJSON(inputs.secrets).DEFAULT_TTL_MINS }}
+        MAX_NFT_BATCH_SIZE: ${{ fromJSON(inputs.secrets).MAX_NFT_BATCH_SIZE }}
+        NFT_CONCURRENCY_NUMBER: ${{ fromJSON(inputs.secrets).NFT_CONCURRENCY_NUMBER }}
+        AUTH_ALLOWED_LIST: ${{ fromJSON(inputs.secrets).AUTH_ALLOWED_LIST }}
+        REDIS_HOST: ${{ fromJSON(inputs.secrets).REDIS_HOST }}
+        REDIS_PORT: ${{ fromJSON(inputs.secrets).REDIS_PORT }}
+        PORT: ${{ fromJSON(inputs.secrets).PORT }}
+        MULTICALL_CONTRACT: ${{ fromJSON(inputs.secrets).MULTICALL_CONTRACT }}
+        ORDER_RECONCILIATION_PERIOD: ${{ fromJSON(inputs.secrets).ORDER_RECONCILIATION_PERIOD }}
+        USE_INFURA: ${{ fromJSON(inputs.secrets).USE_INFURA }}
+        INFURA_KEY_SET: ${{ fromJSON(inputs.secrets).INFURA_KEY_SET }}
+        NODE_ENV: ${{ fromJSON(inputs.secrets).NODE_ENV }}
+        DATADOG_API_KEY: ${{ fromJSON(inputs.secrets).DATADOG_API_KEY }}
+        MAX_BATCHES_NFTPORT: ${{ fromJSON(inputs.secrets).MAX_BATCHES_NFTPORT }}
+        MAX_PROFILE_BATCH_SIZE: ${{ fromJSON(inputs.secrets).MAX_PROFILE_BATCH_SIZE }}
+      run: npm run deploy:stream

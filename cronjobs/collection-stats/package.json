@@ -1,0 +1,27 @@
+{
+  "name": "@nftcom/collection-stats",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/main",
+  "scripts": {
+    "build": "tsup src/main.ts --format cjs",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "dev": "tsup src/main.ts --format cjs --watch --onSuccess \"node dist/main.js\"",
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "start": "node dist/main.js",
+    "test": "jest --detectOpenHandles"
+  },
+  "dependencies": {
+    "@nftcom/cache": "workspace:*",
+    "@nftcom/contract-data": "workspace:*",
+    "@nftcom/leaderboard": "workspace:*",
+    "@nftcom/shared": "workspace:*",
+    "axios": "^0.21.4",
+    "typeorm": "^0.3.15"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "tsc": "^2.0.4",
+    "tsup": "^6.7.0"
+  }
+}

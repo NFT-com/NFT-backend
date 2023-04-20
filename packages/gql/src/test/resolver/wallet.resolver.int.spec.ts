@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm'
 
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db } from '@nftcom/shared/db'
 
 import { nonWhitelistedAddress, testMockUser, testMockWallet, whitelistedAddress } from '../util/constants'

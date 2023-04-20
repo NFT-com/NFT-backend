@@ -1,10 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
+    "outDir": "../../dist/out-tsc",
     "module": "commonjs",
     "types": ["jest", "node"]
   },
-  "include": ["jest.config.ts", "**/*.ts", "**/*.test.ts", "**/*.spec.ts", "**/*.d.ts"],
-  "exclude": ["dist"]
+  "include": ["jest.config.ts", "**/*.ts", "**/*.test.ts", "**/*.spec.ts", "**/*.d.ts", "../service/src/lib/alchemy.service.ts", "../service/src/lib/core.service.ts", "../service/src/lib/looksare.service.ts", "../service/src/lib/nft.service.ts", "../service/src/lib/nftport.service.ts", "../service/src/lib/opensea.service.ts", "../service/src/lib/searchEngine.service.ts", "../service/src/lib/sendgrid.service.ts", "../service/src/lib/txActivity.service.ts", "../service/src/lib/x2y2.service.ts", "../service/src/lib/generateSVG.service.ts", "../service/src/lib/nullPhoto.base64.ts", "../misc/src/lib/config.ts", "../service/src/lib/rubik.base64.ts", "../service/src/lib/rubikBlack.base64.ts"],
 }

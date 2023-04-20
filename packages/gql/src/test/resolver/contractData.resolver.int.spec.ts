@@ -2,7 +2,7 @@ import axios from 'axios'
 import { parseISO } from 'date-fns'
 import { utils } from 'ethers'
 
-import { testDBConfig } from '@nftcom/gql/config'
+import { testDBConfig } from '@nftcom/misc'
 import { db } from '@nftcom/shared'
 
 import { getTestApolloServer } from '../util/testApolloServer'

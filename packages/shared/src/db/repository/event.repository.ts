@@ -1,5 +1,4 @@
-import { Event } from '@nftcom/shared/db/entity'
-
+import { Event } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class EventRepository extends BaseRepository<Event> {

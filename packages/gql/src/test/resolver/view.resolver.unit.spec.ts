@@ -1,5 +1,5 @@
-import { gql } from '@nftcom/gql/defs'
 import { recordView } from '@nftcom/gql/resolver/view.resolver'
+import { gql } from '@nftcom/misc'
 import { View, ViewableType } from '@nftcom/shared/db/entity'
 
 import { viewService } from '../../service/view.service'

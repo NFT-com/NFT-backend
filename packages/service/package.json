@@ -1,0 +1,45 @@
+{
+  "name": "@nftcom/service",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "dev": "tsup src/index.ts --format cjs --watch --onSuccess \"node dist/index.js\"",
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "start": "node dist/index.js",
+    "test": "jest --detectOpenHandles"
+  },
+  "dependencies": {
+    "@aws-sdk/lib-storage": "^3.315.0",
+    "@nftcom/cache": "workspace:*",
+    "@nftcom/contract-data": "workspace:*",
+    "@nftcom/error-types": "workspace:*",
+    "@nftcom/misc": "workspace:*",
+    "@nftcom/nftport-client": "workspace:*",
+    "@nftcom/shared": "workspace:*",
+    "@sendgrid/mail": "^7.7.0",
+    "@sentry/node": "^6.19.7",
+    "@hashgraph/sdk": "^2.24.0",
+    "axios": "^0.21.4",
+    "axios-retry": "^3.4.0",
+    "dataloader": "^2.1.0",
+    "ethers": "^5.5.1",
+    "graphql": "^16.6.0",
+    "isomorphic-unfetch": "^3.1.0",
+    "lodash": "^4.17.21",
+    "lru_map": "^0.4.1",
+    "qs": "^6.11.1",
+    "typeorm": "^0.3.15",
+    "typesense": "^1.5.3",
+    "url-encode-decode": "^1.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "tsc": "^2.0.4",
+    "tsup": "^6.7.0",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4"
+  }
+}

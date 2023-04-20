@@ -3,7 +3,7 @@ import * as _ from 'lodash'
 import slugify from 'slugify'
 import { FindOperator, In, LessThan, MoreThan } from 'typeorm'
 
-import whitelistJSON from '@nftcom/shared/helper/abis/whitelist.json'
+import whitelistJSON from './abis/whitelist.json'
 
 export const stringListToMap = (str: string, listSep = '|', kvSep = ':'): Map<string, string> => {
   const list = str.split(listSep)

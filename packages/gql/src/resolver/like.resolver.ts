@@ -3,10 +3,10 @@ import { combineResolvers } from 'graphql-resolvers'
 import Joi from 'joi'
 
 import { appError } from '@nftcom/error-types'
+import { auth, Context, joi } from '@nftcom/misc'
 import { _logger, entity } from '@nftcom/shared'
 
-import { Context, gql } from '../defs'
-import { auth, joi } from '../helper'
+import { gql } from '../defs'
 import { likeService } from '../service/like.service'
 
 const logger = _logger.Factory('like.resolver', _logger.Context.GraphQL)

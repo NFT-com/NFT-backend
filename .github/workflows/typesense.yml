@@ -1,0 +1,39 @@
+name: Typesense - Deploy
+on:
+  push:
+    paths:
+      - 'infra/typesense/**.ts'
+      - 'infra/typesense/**.yaml'
+      - '.github/typesense.yaml'
+jobs:
+  deploy-dev:
+    if: ${{ startsWith(github.ref_name, 'typesense') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_search_dev
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-typesense
+        name: Deploy env
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: dev
+  deploy-staging:
+    if: ${{ github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_search_staging
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-typesense
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: staging
+  deploy-prod:
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'typesense-rel') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_search_prod
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-typesense
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: prod-gold

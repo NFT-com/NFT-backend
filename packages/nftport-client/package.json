@@ -1,0 +1,25 @@
+{
+  "name": "@nftcom/nftport-client",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index",
+  "scripts": {
+    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
+    "test": "jest --detectOpenHandles"
+  },
+  "dependencies": {
+    "@nftcom/cache": "workspace:*",
+    "@nftcom/error-types": "workspace:*",
+    "@nftcom/nftport-client": "workspace:*",
+    "@nftcom/shared": "workspace:*",
+    "axios": "^0.21.4",
+    "axios-retry": "^3.4.0",
+    "lodash": "^4.17.21",
+    "qs": "^6.11.1"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "tsc": "^2.0.4",
+    "tslib": "^2.5.0"
+  }
+}

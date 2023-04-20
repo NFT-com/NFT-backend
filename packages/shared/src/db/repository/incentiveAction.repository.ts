@@ -1,5 +1,4 @@
-import { IncentiveAction } from '@nftcom/shared/db/entity'
-
+import { IncentiveAction } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class IncentiveActionRepository extends BaseRepository<IncentiveAction> {

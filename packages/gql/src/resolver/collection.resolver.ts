@@ -8,15 +8,12 @@ import { In } from 'typeorm/find-options/operator/In'
 
 import { cache, CacheKeys } from '@nftcom/cache'
 import { appError, collectionError } from '@nftcom/error-types'
-import { Context, gql } from '@nftcom/gql/defs'
-import { auth, joi, pagination } from '@nftcom/gql/helper'
-import { core } from '@nftcom/gql/service'
-import { getCollectionDeployer } from '@nftcom/gql/service/alchemy.service'
-import { getCollectionInfo, getCollectionNameFromDataProvider } from '@nftcom/gql/service/nft.service'
-import { SearchEngineService } from '@nftcom/gql/service/searchEngine.service'
+import { auth, Context, joi, pagination } from '@nftcom/misc'
+import { alchemyService, core, nftService, searchEngineService } from '@nftcom/service'
 import { _logger, contracts, db, defs, entity, helper, provider, typechain } from '@nftcom/shared'
 import * as Sentry from '@sentry/node'
 
+import { gql } from '../defs'
 import {
   CollectionLeaderboardDateRange,
   DEFAULT_COLL_LB_DATE_RANGE,
@@ -26,7 +23,7 @@ import { likeService } from '../service/like.service'
 import { comments as commentsResolver } from './comment.resolver'
 
 const logger = _logger.Factory(_logger.Context.Collection, _logger.Context.GraphQL)
-const seService = SearchEngineService()
+const seService = searchEngineService.SearchEngineService()
 
 const MAX_SAVE_COUNTS = 500
 
@@ -51,7 +48,7 @@ const getCollection = async (_: any, args: gql.QueryCollectionArgs, ctx: Context
 
     joi.validateSchema(schema, input)
 
-    return await getCollectionInfo(
+    return await nftService.getCollectionInfo(
       args?.input?.contract
         ? {
             contract: args?.input?.contract,
@@ -262,7 +259,11 @@ const fetchAndSaveCollectionInfo = async (repositories: db.Repository, contract:
       },
     })
     if (nfts.length) {
-      const collectionName = await getCollectionNameFromDataProvider(nfts[0].contract, nfts[0].chainId, nfts[0].type)
+      const collectionName = await nftService.getCollectionNameFromDataProvider(
+        nfts[0].contract,
+        nfts[0].chainId,
+        nfts[0].type,
+      )
       const collection = await repositories.collection.save({
         contract: helper.checkSum(contract),
         chainId: nfts[0]?.chainId || process.env.CHAIN_ID,
@@ -385,7 +386,8 @@ export const associatedAddressesForContract = async (
 
     // Retrieve collection from database or blockchain
     const collection = await repositories.collection.findOne({ where: { contract: helper.checkSum(args?.contract) } })
-    const collectionDeployer = collection?.deployer || (await getCollectionDeployer(args?.contract, chainId))
+    const collectionDeployer =
+      collection?.deployer || (await alchemyService.getCollectionDeployer(args?.contract, chainId))
 
     // Update collection deployer if defined
     if (collectionDeployer && !collection?.deployer) {
@@ -460,7 +462,7 @@ const updateCollectionImageUrls = async (
     await Promise.allSettled(
       toUpdate.map(async collection => {
         try {
-          await getCollectionInfo({
+          await nftService.getCollectionInfo({
             chainId,
             contract: collection.contract,
             repositories,
@@ -509,7 +511,7 @@ const updateCollectionName = async (
             chainId,
           },
         })
-        const name = await getCollectionNameFromDataProvider(collection.contract, chainId, nft.type)
+        const name = await nftService.getCollectionNameFromDataProvider(collection.contract, chainId, nft.type)
         if (name !== 'Unknown Name') {
           await repositories.collection.updateOneById(collection.id, { name })
         } else {

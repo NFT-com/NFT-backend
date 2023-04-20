@@ -1,10 +1,8 @@
 import { appError } from '@nftcom/error-types'
+import { Pageable, pagination } from '@nftcom/misc'
+import { core } from '@nftcom/service'
 import { db, entity, helper } from '@nftcom/shared'
 
-import { Pageable } from '../defs'
-import { pagination } from '../helper'
-import { safeInput } from '../helper/pagination'
-import { paginatedEntitiesBy } from './core.service'
 import { profileService } from './profile.service'
 
 interface AddCommentArgs {
@@ -70,8 +68,10 @@ export function getCommentService(repos: db.Repository = db.newRepositories()): 
     if (!entityId) {
       throw new Error('entityId is required to get comments')
     }
-    const safePageInput = safeInput(pageInput, { beforeCursor: helper.toDateIsoString() })
-    const pagableComments = await paginatedEntitiesBy<entity.Comment>(
+    const safePageInput = pagination.safeInput(pageInput, {
+      beforeCursor: helper.toDateIsoString(),
+    })
+    const pagableComments = await core.paginatedEntitiesBy<entity.Comment>(
       repos.comment,
       safePageInput,
       [

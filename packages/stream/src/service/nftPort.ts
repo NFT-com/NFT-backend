@@ -61,9 +61,7 @@ export interface NFTPortNFT {
   status_message?: string
 }
 
-export const getNFTPortInterceptor = (
-  baseURL: string,
-): AxiosInstance => {
+export const getNFTPortInterceptor = (baseURL: string): AxiosInstance => {
   const instance = axios.create({
     baseURL,
     headers: {
@@ -73,16 +71,14 @@ export const getNFTPortInterceptor = (
   })
 
   // retry logic with exponential backoff
-  const retryOptions: IAxiosRetryConfig= { retries: 3,
+  const retryOptions: IAxiosRetryConfig = {
+    retries: 3,
     retryCondition: (err: AxiosError<any>) => {
-      return (
-        axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-        err.response.status === 429
-      )
+      return axiosRetry.isNetworkOrIdempotentRequestError(err) || err.response.status === 429
     },
     retryDelay: (retryCount: number, err: AxiosError<any>) => {
       if (err.response) {
-        const retry_after =  Number(err.response.headers['retry-after'])
+        const retry_after = Number(err.response.headers['retry-after'])
         if (retry_after) {
           return retry_after
         }
@@ -90,7 +86,7 @@ export const getNFTPortInterceptor = (
       return axiosRetry.exponentialDelay(retryCount)
     },
   }
-  axiosRetry(instance as any,  retryOptions)
+  axiosRetry(instance as any, retryOptions)
 
   return instance
 }
@@ -114,8 +110,7 @@ export const retrieveNFTDetailsNFTPort = async (
     }
 
     const cachedData = await cache.get(key)
-    if (cachedData)
-      return JSON.parse(cachedData)
+    if (cachedData) return JSON.parse(cachedData)
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
@@ -128,7 +123,7 @@ export const retrieveNFTDetailsNFTPort = async (
         refresh_metadata: refreshMetadata || undefined,
         include: include?.length ? include : [],
       },
-      paramsSerializer: (params) => qs.stringify(params, { arrayFormat: 'repeat' }),
+      paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' }),
     })
     if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
@@ -160,8 +155,7 @@ export const retrieveContractNFTsNFTPort = async (
     logger.debug(`starting retrieveContractNFTsNFTPort: ${checkSumContract} ${chainId} - page: ${page}`)
     const key = `NFTPORT_CONTRACT_NFTS_${chainId}_${checkSumContract}_page_${page}`
     const cachedData = await cache.get(key)
-    if (cachedData)
-      return JSON.parse(cachedData)
+    if (cachedData) return JSON.parse(cachedData)
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
@@ -174,7 +168,7 @@ export const retrieveContractNFTsNFTPort = async (
         page_size: 50,
         page_number: page,
       },
-      paramsSerializer: (params) => qs.stringify(params, { arrayFormat: 'repeat' }),
+      paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' }),
     })
     if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
@@ -200,8 +194,7 @@ export const retrieveContractTxsNFTPort = async (
     logger.debug(`starting retrieveContractTxsNFTPort: ${checkSumContract} ${chainId} - continuation: ${continuation}`)
     const key = `NFTPORT_CONTRACT_TXS_${chainId}_${checkSumContract}_continuation_${continuation}`
     const cachedData = await cache.get(key)
-    if (cachedData)
-      return JSON.parse(cachedData)
+    if (cachedData) return JSON.parse(cachedData)
     const chain = chainFromId(chainId)
     if (!chain) return
     const nftInterceptor = getNFTPortInterceptor(NFTPORT_API_BASE_URL)
@@ -230,7 +223,7 @@ export const retrieveContractTxsNFTPort = async (
     }
     const res = await nftInterceptor.get(url, {
       params,
-      paramsSerializer: (params) => qs.stringify(params, { arrayFormat: 'repeat' }),
+      paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' }),
     })
     if (res && res?.data) {
       await cache.set(key, JSON.stringify(res.data), 'EX', 60 * 10)
@@ -243,4 +236,3 @@ export const retrieveContractTxsNFTPort = async (
     return undefined
   }
 }
-

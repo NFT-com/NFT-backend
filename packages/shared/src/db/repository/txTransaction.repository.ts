@@ -1,8 +1,7 @@
 import { In, SelectQueryBuilder } from 'typeorm'
 
-import { TxTransaction } from '@nftcom/shared/db/entity'
-import { ActivityStatus, ActivityType, ProtocolType } from '@nftcom/shared/defs'
-
+import { ActivityStatus, ActivityType, ProtocolType } from '../../defs'
+import { TxTransaction } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class TxTransactionRepository extends BaseRepository<TxTransaction> {
