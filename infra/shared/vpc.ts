@@ -2,7 +2,6 @@ import { ec2 } from '@pulumi/awsx'
 
 import { getStage } from '../helper'
 
-//create the shared VPC and export it's subnets
 export const createVPC = (): ec2.Vpc => {
   const stage = getStage()
   return new ec2.Vpc('vpc', {
