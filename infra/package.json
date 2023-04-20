@@ -5,7 +5,8 @@
     "deploy:gql": "ts-node index.ts deploy:gql",
     "deploy:cronjobs": "ts-node index.ts deploy:cronjobs",
     "deploy:substreams": "ts-node index.ts deploy:substreams",
-    "deploy:substreamsInstance": "ts-node index.ts deploy:substreamsInstance"
+    "deploy:substreamsInstance": "ts-node index.ts deploy:substreamsInstance",
+    "deploy:crossaccount": "ts-node index.ts deploy:deploy:crossaccount"
   },
   "dependencies": {
     "@actions/core": "^1.6.0",
