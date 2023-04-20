@@ -268,6 +268,10 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
               Value: process.env.STREAMING_FAST_CONNECTION_STRING,
             },
             {
+              Name: 'STREAMING_FASTS_INTERNAL_USERS_ONLY',
+              Value: process.env.STREAMING_FASTS_INTERNAL_USERS_ONLY,
+            },
+            {
               Name: 'HCS_ACCOUNT_ID',
               Value: process.env.HCS_ACCOUNT_ID,
             },

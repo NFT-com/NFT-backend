@@ -14,15 +14,21 @@ const connectionString = process.env.STREAMING_FAST_CONNECTION_STRING
 const logger = _logger.Factory('STREAMINGFAST')
 const client = new Client({ connectionString })
 const nftDoesNotExist = new EventEmitter()
-const blockRange = 200 // 200 blocks padding for internal of latest block numbers
-const REMOVE_SPAM_FILTER = true // filter out spam transfers
-const ONLY_OFFICIAL_FILTER = false // only listen to official contracts
-const ONLY_EXISTING_NFT_FILTER = false // only listen to existing NFTs
+const blockRange = 200                                                                // 200 blocks padding for internal of latest block numbers
+const REMOVE_SPAM_FILTER = true                                                       // filter out spam transfers
+const ONLY_OFFICIAL_FILTER = false                                                    // only listen to official contracts
+const ONLY_EXISTING_NFT_FILTER = false                                                // only listen to existing NFTs
+const ONLY_INTERNAL_USERS = process.env.STREAMING_FASTS_INTERNAL_USERS_ONLY == 'true' // only listen to internal users
 
 let latestBlockNumber: number = null
 let interval: NodeJS.Timeout = null
 
-const handleFilter = async (contractAddress: string, tokenId: string): Promise<boolean> => {
+const handleFilter = async (
+  contractAddress: string,
+  tokenId: string,
+  hexFromAddress: string,
+  hexToAddress: string,
+): Promise<boolean> => {
   if (ONLY_OFFICIAL_FILTER) {
     const collection = await repositories.collection.findOne({
       where: { contract: helper.checkSum(contractAddress) },
@@ -43,6 +49,19 @@ const handleFilter = async (contractAddress: string, tokenId: string): Promise<b
       nftDoesNotExist.emit('nft', { contractAddress, tokenId })
       return nftExists
     }
+  }
+
+  if (ONLY_INTERNAL_USERS) {
+    const walletFrom = await repositories.wallet.findOne({
+      where: { address: hexFromAddress },
+    })
+
+    const walletTo = await repositories.wallet.findOne({
+      where: { address: hexToAddress },
+    })
+
+    // if both are null, then it's not internal
+    if (!walletFrom.userId && !walletTo.userId) return false
   }
 
   return true
@@ -81,7 +100,9 @@ const handleNotification = async (msg: any): Promise<void> => {
   const hexToAddress = ensureHexPrefix(toAddress)
   const hexTxHash = ensureHexPrefix(txHash)
 
-  if (blockDifference <= blockRange && (await handleFilter(contractAddress, hexTokenId))) {
+  if (blockDifference <= blockRange &&
+    await handleFilter(contractAddress, hexTokenId, hexFromAddress, hexToAddress)
+  ) {
     if (hexFromAddress === '0x0000000000000000000000000000000000000000') {
       const start2 = new Date().getTime()
       await atomicOwnershipUpdate(

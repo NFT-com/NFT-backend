@@ -71,11 +71,11 @@ const createMain = (
 }
 
 export const createSubstreamClusters = (
-  config: pulumi.Config,
-  subnetGroups: vpcSubnets,
-  securityGroup: aws.ec2.SecurityGroup,
-  zones: string[],
-): SubstreamRDSOutput => {
-  const main = createMain(config, subnetGroups, securityGroup, zones)
-  return { main: main }
-}
+    config: pulumi.Config,
+    subnetGroups: vpcSubnets,
+    securityGroup: aws.ec2.SecurityGroup,
+    zones: string[],
+  ): SubstreamRDSOutput => {
+    const main = createMain(config, subnetGroups, securityGroup, zones)
+    return { main: main }
+  }
