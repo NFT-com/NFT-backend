@@ -4,7 +4,7 @@ import * as process from 'process'
 import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
-import { getStage, isProduction } from '../helper'
+import { getStage } from '../helper'
 import { vpcSubnets } from './index'
 
 export type EC2Output = {
@@ -22,7 +22,8 @@ export const createUserData = (db_host: string, latestBlock: number) : string =>
     const eth_endpoint = process.env.ETH_ENDPOINT; 
     const dd_api = process.env.DATADOG_API_KEY; 
     const buffer_size = process.env.UNDO_BUFFER_SIZE;
-    const substreams_flags = isProduction() ? "-p" : ""; 
+    const stage = getStage(); 
+    const ec2_host = `${stage}-sf-substreams`
     const rawUserData = `#!/bin/bash
 
 echo "Installing Dev Tools"
@@ -99,7 +100,7 @@ cd ../..
 
 echo "Run the Substream..."
 
-nohup substreams-sink-postgres run ${substreams_flags} --undo-buffer-size=${buffer_size}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
+nohup substreams-sink-postgres run  --undo-buffer-size=${buffer_size}     "psql://app:${substreams_db_pass}@${db_host}/app?sslmode=disable"     "${eth_endpoint}"     "./docs/nftLoader/substreams.yaml"     db_out > /tmp/substreams.log 2>&1 &
 
 DD_API_KEY=${dd_api} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
@@ -118,7 +119,7 @@ EOF
 
 sudo cp conf.yaml /etc/datadog-agent/conf.d/substreams.d
 echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
-
+echo "hostname: ${ec2_host}" >> /etc/datadog-agent/datadog.yaml
 sudo service datadog-agent restart`
 
   return Buffer.from(rawUserData).toString('base64')
