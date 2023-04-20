@@ -18,7 +18,6 @@ const pulumiProgram = async() : Promise<Record<string, any> | void> => {
             sessionName: "pulumi-target-account-session",
         },
         region: "us-east-1",
-        profileName: "source-account-credentials"
     });
     
 
