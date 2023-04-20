@@ -108,7 +108,7 @@ importers:
         version: 0.21.4
       typeorm:
         specifier: ^0.3.15
-        version: 0.3.15(ioredis@5.3.2)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
     devDependencies:
       jest:
         specifier: ^29.5.0
@@ -133,7 +133,7 @@ importers:
         version: 16.0.3
       typeorm:
         specifier: ^0.3.15
-        version: 0.3.15(ioredis@5.3.2)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
     devDependencies:
       rimraf:
         specifier: ^3.0.2
@@ -183,7 +183,7 @@ importers:
         version: 15.0.3
       typeorm:
         specifier: ^0.3.15
-        version: 0.3.15(ioredis@5.3.2)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
     devDependencies:
       jest:
         specifier: ^29.5.0
@@ -390,7 +390,7 @@ importers:
         version: 0.5.21
       typeorm:
         specifier: ^0.3.15
-        version: 0.3.15(ioredis@5.3.2)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
       web3:
         specifier: ^1.9.0
         version: 1.9.0
@@ -512,7 +512,7 @@ importers:
         version: 4.17.21
       typeorm:
         specifier: ^0.3.10
-        version: 0.3.15(ioredis@5.3.2)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
       zod:
         specifier: ^3.19.1
         version: 3.19.1
@@ -705,7 +705,7 @@ importers:
         version: 6.11.1
       typeorm:
         specifier: ^0.3.15
-        version: 0.3.15(ioredis@5.3.2)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
       typesense:
         specifier: ^1.5.3
         version: 1.5.3(@babel/runtime@7.21.0)
@@ -760,7 +760,7 @@ importers:
         version: 1.6.6
       typeorm:
         specifier: ^0.3.15
-        version: 0.3.15(pg@8.10.0)(ts-node@10.9.1)
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
     devDependencies:
       '@typechain/ethers-v5':
         specifier: ^9.0.0
@@ -786,15 +786,12 @@ importers:
 
   packages/stream:
     dependencies:
-      '@alch/alchemy-web3':
-        specifier: ^1.4.6
-        version: 1.4.7
       '@aws-sdk/lib-storage':
         specifier: ^3.135.0
         version: 3.135.0(@aws-sdk/abort-controller@3.310.0)(@aws-sdk/client-s3@3.315.0)
-      '@babel/runtime':
-        specifier: ^7.18.3
-        version: 7.21.0
+      '@ethersproject/abi':
+        specifier: ^5.7.0
+        version: 5.7.0
       '@nftcom/service':
         specifier: workspace:*
         version: link:../service
@@ -804,27 +801,30 @@ importers:
       '@opensea/stream-js':
         specifier: ^0.0.25
         version: 0.0.25
-      aws-sdk:
-        specifier: ^2.1269.0
-        version: 2.1269.0
+      axios:
+        specifier: ^0.21.4
+        version: 0.21.4
       axios-retry:
         specifier: ^3.4.0
         version: 3.4.0
       bullmq:
         specifier: ^3.10.1
         version: 3.10.1
+      dd-trace:
+        specifier: ^3.15.0
+        version: 3.17.1
       dotenv:
         specifier: ^10.0.0
         version: 10.0.0
+      ethers:
+        specifier: ^5.5.1
+        version: 5.7.2
       express:
         specifier: ^4.18.1
         version: 4.18.2
       ioredis:
         specifier: ^5.2.3
         version: 5.3.2
-      keyv:
-        specifier: ^4.3.0
-        version: 4.5.2
       kill-port:
         specifier: ^1.6.1
         version: 1.6.1
@@ -834,12 +834,21 @@ importers:
       multer:
         specifier: ^1.4.5-lts.1
         version: 1.4.5-lts.1
+      node-fetch:
+        specifier: ^2.6.7
+        version: 2.6.9
+      pg:
+        specifier: ^8.8.0
+        version: 8.10.0
       qs:
         specifier: ^6.11.0
         version: 6.11.0
       tar:
         specifier: ^6.1.13
         version: 6.1.13
+      typeorm:
+        specifier: ^0.3.10
+        version: 0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1)
       ws:
         specifier: ^8.12.1
         version: 8.13.0
@@ -6429,6 +6438,7 @@ packages:
 
   /@types/node@16.11.7:
     resolution: {integrity: sha512-QB5D2sqfSjCmTuWcBWyJ+/44bcjO7VbjSbOE0ucoVbAsSNQc4Lt6QkgkVXkTDwkL4z/beecZNDvVX15D4P8Jbw==}
+    dev: true
 
   /@types/node@18.15.11:
     resolution: {integrity: sha512-E5Kwq2n4SbMzQOn6wnmBjuK9ouqlURrcZDVfbo9ftDDTFt3nk7ZKK4GMOzoYgnpQJKcxwQw+lGaBvvlMo0qN/Q==}
@@ -7368,22 +7378,6 @@ packages:
     engines: {node: '>= 0.4'}
     dev: false
 
-  /aws-sdk@2.1269.0:
-    resolution: {integrity: sha512-M8pOxsIjVms3d4o89dcpNTceXTpLU4DahRXH3uddCL9ctfuOmdRKkRvKJIRVMWPQlHWdi8gW1TC+3uCrhDPN8Q==}
-    engines: {node: '>= 10.0.0'}
-    dependencies:
-      buffer: 4.9.2
-      events: 1.1.1
-      ieee754: 1.1.13
-      jmespath: 0.16.0
-      querystring: 0.2.0
-      sax: 1.2.1
-      url: 0.10.3
-      util: 0.12.5
-      uuid: 8.0.0
-      xml2js: 0.4.19
-    dev: false
-
   /aws-sign2@0.7.0:
     resolution: {integrity: sha512-08kcGqnYf/YmjoRhfxyu+CLxBjUtHLXLXX/vUfx9l2LYzG3c1m61nrpyFUZI6zeS+Li/wWMMidD9KgrqtGq3mA==}
     dev: false
@@ -7857,14 +7851,6 @@ packages:
 
   /buffer-xor@1.0.3:
     resolution: {integrity: sha512-571s0T7nZWK6vB67HI5dyUF7wXiNcfaPPPTl6zYCNApANjIvYJTg7hlud/+cJpdAhS7dVzqMLmfhfHR3rAcOjQ==}
-    dev: false
-
-  /buffer@4.9.2:
-    resolution: {integrity: sha512-xq+q3SRMOxGivLhBNaUdC64hDTQwejJ+H0T/NB1XMtTVEwNTrfFF3gAxiyW0Bu/xWEGhjVKgUcMhCrUy2+uCWg==}
-    dependencies:
-      base64-js: 1.5.1
-      ieee754: 1.2.1
-      isarray: 1.0.0
     dev: false
 
   /buffer@5.6.0:
@@ -9829,11 +9815,6 @@ packages:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
     dev: true
 
-  /events@1.1.1:
-    resolution: {integrity: sha512-kEcvvCBByWXGnZy6JUlgAp2gBIUjfCAV6P6TgT1/aaQKcmuAEC4OZTV1I4EWQLz2gxZw76atuVyvHhTxvi0Flw==}
-    engines: {node: '>=0.4.x'}
-    dev: false
-
   /events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
@@ -11078,10 +11059,6 @@ packages:
     engines: {node: '>=4.0.0'}
     dependencies:
       punycode: 2.1.0
-    dev: false
-
-  /ieee754@1.1.13:
-    resolution: {integrity: sha512-4vf7I2LYV/HaWerSo3XmlMkp5eZ83i+/CDluXi/IGTs/O1sejBNhTtnxzmRZfvOUqj7lZjqHkeTvpgSFDlWZTg==}
     dev: false
 
   /ieee754@1.2.1:
@@ -12636,11 +12613,6 @@ packages:
     resolution: {integrity: sha512-NZIITw8uZQFuzQimqjUxIrIcEdxYDFIe/0xYfIlVXTkiBjjyBEvgasj5bb0/cHtPRD/NziPbT312sFrkI5ALpw==}
     hasBin: true
     dev: true
-
-  /jmespath@0.16.0:
-    resolution: {integrity: sha512-9FzQjJ7MATs1tSpnco1K6ayiYE3figslrXA72G2HQ/n76RzvYlofyi5QM+iX4YRs/pu3yzxlVQSST23+dMDknw==}
-    engines: {node: '>= 0.6.0'}
-    dev: false
 
   /joi@17.9.1:
     resolution: {integrity: sha512-FariIi9j6QODKATGBrEX7HZcja8Bsh3rfdGYy/Sb65sGlZWK/QWesU1ghk7aJWDj95knjXlQfSmzFSPPkLVsfw==}
@@ -15121,6 +15093,7 @@ packages:
 
   /punycode@1.3.2:
     resolution: {integrity: sha512-RofWgt/7fL5wP1Y7fxE7/EmTLzQVnB0ycyibJ0OOHIlJqTNzglYFxVwETOcIoJqJmpDXJ9xImDv+Fq34F/d4Dw==}
+    dev: true
 
   /punycode@2.1.0:
     resolution: {integrity: sha512-Yxz2kRwT90aPiWEMHVYnEf4+rhwF1tBmmZ4KepCP+Wkium9JxtWnUm1nqGwpiAHr/tnTSeHqr3wb++jgSkXjhA==}
@@ -15182,12 +15155,6 @@ packages:
       decode-uri-component: 0.2.2
       object-assign: 4.1.1
       strict-uri-encode: 1.1.0
-    dev: false
-
-  /querystring@0.2.0:
-    resolution: {integrity: sha512-X/xY82scca2tau62i9mDyU9K+I+djTMUsvwf7xnUX5GLvVzgJybOJf4Y6o9Zx3oJK/LSXg5tTZBjwzqVPaPO2g==}
-    engines: {node: '>=0.4.x'}
-    deprecated: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
     dev: false
 
   /querystringify@2.2.0:
@@ -15667,12 +15634,9 @@ packages:
       source-map-js: 1.0.2
     dev: true
 
-  /sax@1.2.1:
-    resolution: {integrity: sha512-8I2a3LovHTOpm7NV5yOyO8IHqgVsfK4+UuySrXU8YXkSRX7k6hCV9b3HrkKCr3nMpgj+0bmocaJJWpvp1oc7ZA==}
-    dev: false
-
   /sax@1.2.4:
     resolution: {integrity: sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==}
+    dev: true
 
   /saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
@@ -16870,6 +16834,7 @@ packages:
       typescript: 5.0.4
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
+    dev: true
 
   /ts-node@10.9.1(@types/node@18.15.11)(typescript@5.0.4):
     resolution: {integrity: sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==}
@@ -17099,7 +17064,7 @@ packages:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
     dev: false
 
-  /typeorm@0.3.15(ioredis@5.3.2)(ts-node@10.9.1):
+  /typeorm@0.3.15(ioredis@5.3.2)(pg@8.10.0)(ts-node@10.9.1):
     resolution: {integrity: sha512-R4JSw8QjDP1W+ypeRz/XrCXIqubrLSnNAzJAp9EQSQIPHTv+YmUHZis8g08lOwFpuhqL9m8jkPSz8GWEKlU/ow==}
     engines: {node: '>= 12.9.0'}
     hasBin: true
@@ -17166,83 +17131,6 @@ packages:
       dotenv: 16.0.3
       glob: 8.1.0
       ioredis: 5.3.2
-      mkdirp: 2.1.6
-      reflect-metadata: 0.1.13
-      sha.js: 2.4.11
-      ts-node: 10.9.1(@types/node@16.11.7)(typescript@5.0.4)
-      tslib: 2.5.0
-      uuid: 9.0.0
-      yargs: 17.7.1
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
-
-  /typeorm@0.3.15(pg@8.10.0)(ts-node@10.9.1):
-    resolution: {integrity: sha512-R4JSw8QjDP1W+ypeRz/XrCXIqubrLSnNAzJAp9EQSQIPHTv+YmUHZis8g08lOwFpuhqL9m8jkPSz8GWEKlU/ow==}
-    engines: {node: '>= 12.9.0'}
-    hasBin: true
-    peerDependencies:
-      '@google-cloud/spanner': ^5.18.0
-      '@sap/hana-client': ^2.12.25
-      better-sqlite3: ^7.1.2 || ^8.0.0
-      hdb-pool: ^0.1.6
-      ioredis: ^5.0.4
-      mongodb: ^5.2.0
-      mssql: ^9.1.1
-      mysql2: ^2.2.5 || ^3.0.1
-      oracledb: ^5.1.0
-      pg: ^8.5.1
-      pg-native: ^3.0.0
-      pg-query-stream: ^4.0.0
-      redis: ^3.1.1 || ^4.0.0
-      sql.js: ^1.4.0
-      sqlite3: ^5.0.3
-      ts-node: ^10.7.0
-      typeorm-aurora-data-api-driver: ^2.0.0
-    peerDependenciesMeta:
-      '@google-cloud/spanner':
-        optional: true
-      '@sap/hana-client':
-        optional: true
-      better-sqlite3:
-        optional: true
-      hdb-pool:
-        optional: true
-      ioredis:
-        optional: true
-      mongodb:
-        optional: true
-      mssql:
-        optional: true
-      mysql2:
-        optional: true
-      oracledb:
-        optional: true
-      pg:
-        optional: true
-      pg-native:
-        optional: true
-      pg-query-stream:
-        optional: true
-      redis:
-        optional: true
-      sql.js:
-        optional: true
-      sqlite3:
-        optional: true
-      ts-node:
-        optional: true
-      typeorm-aurora-data-api-driver:
-        optional: true
-    dependencies:
-      '@sqltools/formatter': 1.2.5
-      app-root-path: 3.1.0
-      buffer: 6.0.3
-      chalk: 4.1.2
-      cli-highlight: 2.1.11
-      debug: 4.3.4
-      dotenv: 16.0.3
-      glob: 8.1.0
       mkdirp: 2.1.6
       pg: 8.10.0
       reflect-metadata: 0.1.13
@@ -17444,13 +17332,6 @@ packages:
     resolution: {integrity: sha512-3AChu4NiXquPfeckE5R5cGdiHCMWJx1dwCWOmWIL4KHAziJNOFIYJlpGFeKDvwLPHovZRCxK3cYlwzqI9Vp+Gg==}
     dev: false
 
-  /url@0.10.3:
-    resolution: {integrity: sha512-hzSUW2q06EqL1gKM/a+obYHLIO6ct2hwPuviqTTOcfFVc61UbfJ2Q32+uGL/HCPxKqrdGB5QUwIe7UqlDgwsOQ==}
-    dependencies:
-      punycode: 1.3.2
-      querystring: 0.2.0
-    dev: false
-
   /urlpattern-polyfill@6.0.2:
     resolution: {integrity: sha512-5vZjFlH9ofROmuWmXM9yj2wljYKgWstGwe8YTyiqM7hVum/g9LyCizPZtb3UqsuppVwety9QJmfc42VggLpTgg==}
     dependencies:
@@ -17507,11 +17388,6 @@ packages:
     resolution: {integrity: sha512-DPSke0pXhTZgoF/d+WSt2QaKMCFSfx7QegxEWT+JOuHF5aWrKEn0G+ztjuJg/gG8/ItK+rbPCD/yNv8yyih6Cg==}
     hasBin: true
     dev: true
-
-  /uuid@8.0.0:
-    resolution: {integrity: sha512-jOXGuXZAWdsTH7eZLtyXMqUb9EcWMGZNbL9YcGBJl4MH4nrxHmZJhEHvyLFrkxo+28uLb/NYRcStH48fnD0Vzw==}
-    hasBin: true
-    dev: false
 
   /uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
@@ -18268,18 +18144,6 @@ packages:
     resolution: {integrity: sha512-ICP2e+jsHvAj2E2lIHxa5tjXRlKDJo4IdvPvCXbXQGdzSfmSpNVyIKMvoZHjDY9DP0zV17iI85o90vRFXNccRw==}
     engines: {node: '>=12'}
     dev: true
-
-  /xml2js@0.4.19:
-    resolution: {integrity: sha512-esZnJZJOiJR9wWKMyuvSE1y6Dq5LCuJanqhxslH2bxM6duahNZ+HMpCLhBQGZkbX6xRf8x1Y2eJlgt2q3qo49Q==}
-    dependencies:
-      sax: 1.2.4
-      xmlbuilder: 9.0.7
-    dev: false
-
-  /xmlbuilder@9.0.7:
-    resolution: {integrity: sha512-7YXTQc3P2l9+0rjaUbLwMKRhtmwg1M1eDf6nag7urC7pIPYLD9W/jmzQ4ptRSUbodw5S0jfoGTflLemQibSpeQ==}
-    engines: {node: '>=4.0'}
-    dev: false
 
   /xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
