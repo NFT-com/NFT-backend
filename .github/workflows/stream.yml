@@ -5,6 +5,8 @@ on:
       - 'infra/stream/**.ts'
       - 'infra/stream/**.yaml'
       - 'packages/stream/**.ts'
+      - 'packages/stream/Dockerfile'
+      - 'packages/stream/package.json'
 jobs:
   deploy-dev:
     if: ${{ startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix') || github.ref_name == 'main' }}
