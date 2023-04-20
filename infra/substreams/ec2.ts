@@ -8,8 +8,7 @@ import { getStage } from '../helper'
 import { vpcSubnets } from './index'
 
 export type EC2Output = {
-  instance: aws.ec2.Instance
-  template: aws.ec2.LaunchTemplate
+    template: aws.ec2.LaunchTemplate
 }
 
 
@@ -207,11 +206,6 @@ export const createEC2Resources = (
     userData: userData,
   })
 
-  const SubstreamInstance = new aws.ec2.Instance('sf-substream-instance', {
-    launchTemplate: {
-      id: SubstreamLaunchTemplate.id,
-      version: '$Latest',
-    },
-  })
-    return { instance : SubstreamInstance, template: SubstreamLaunchTemplate }
+
+    return { template: SubstreamLaunchTemplate }
 }
