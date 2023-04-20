@@ -2,13 +2,17 @@
   "name": "@nftcom/leaderboard",
   "version": "0.0.0",
   "private": true,
-  "main": "src/index",
+  "main": "./dist/index.js",
+  "source": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs",
-    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
-    "dev": "tsup src/index.ts --format cjs --watch --onSuccess \"node dist/index.js\"",
-    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
-    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.lib.json",
+    "clean": "rm -rf dist",
+    "dev": "tsc -p tsconfig.lib.json -w",
+    "lint": "eslint \"src/**/*.ts*\"",
     "test": "jest --detectOpenHandles"
   },
   "dependencies": {
@@ -18,7 +22,7 @@
   },
   "devDependencies": {
     "jest": "^29.5.0",
-    "tsc": "^2.0.4",
-    "tsup": "^6.7.0"
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.4"
   }
 }

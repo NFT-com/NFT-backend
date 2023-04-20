@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 
-import { MarketAsk } from '..//entity/marketAsk.entity'
-import { MarketBid } from '..//entity/marketBid.entity'
+import { MarketAsk } from '../entity/marketAsk.entity'
+import { MarketBid } from '../entity/marketBid.entity'
 import { BaseEntity } from './base.entity'
 
 @Entity()

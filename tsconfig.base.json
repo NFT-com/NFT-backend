@@ -1,11 +1,12 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
+    "baseUrl": ".",
+    "outDir": "./dist",
     "target": "es2022",
+    "lib": ["es2022"],
     "module": "commonjs",
     "moduleResolution": "node",
-    "lib": ["es2022"],
     "allowJs": true,
     "checkJs": false,
     "skipLibCheck": true,
@@ -22,7 +23,17 @@
     "incremental": true,
     "allowSyntheticDefaultImports": true,
     "pretty": true,
-    "baseUrl": "."
+    "paths": {
+      "@nftcom/cache": ["packages/cache/src/index.ts"],
+      "@nftcom/contract-data": ["packages/contract-data/src/index.ts"],
+      "@nftcom/error-types": ["packages/error-types/src/index.ts"],
+      "@nftcom/gql/*": ["packages/gql/src/*"],
+      "@nftcom/leaderboard": ["packages/leaderboard/src/index.ts"],
+      "@nftcom/misc": ["packages/misc/src/index.ts"],
+      "@nftcom/nftport-client": ["packages/nftport-client/src/index.ts"],
+      "@nftcom/shared/*": ["packages/shared/src/*"],
+      "@nftcom/service": ["packages/service/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "dist", "script"]
 }

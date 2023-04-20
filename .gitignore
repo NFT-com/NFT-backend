@@ -30,3 +30,5 @@ packages/gql/src/defs/gql.ts
 *.zip
 
 tmp/*
+
+*.tsbuildinfo

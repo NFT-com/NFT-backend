@@ -26,7 +26,6 @@ import {
   pagination,
 } from '@nftcom/misc'
 import { _logger, contracts, db, defs, entity, fp, helper, provider, repository } from '@nftcom/shared'
-import { ProfileTask } from '@nftcom/shared/defs'
 import * as Sentry from '@sentry/node'
 
 import { generateSVG } from './generateSVG.service'
@@ -1137,7 +1136,7 @@ export const getSymbolInUsd = async (symbol: string): Promise<number> => {
       const cgResponse = await fetch(
         `https://api.coingecko.com/api/v3/simple/price?ids=${toCGId(symbol)}&vs_currencies=usd`,
       )
-      const cgResult = await cgResponse.json()
+      const cgResult = await cgResponse.json() as any
       const cgEthUsd = cgResult?.data?.['ethereum']?.['usd']
 
       if (cgEthUsd) {
@@ -1145,7 +1144,7 @@ export const getSymbolInUsd = async (symbol: string): Promise<number> => {
         return Number(cgEthUsd)
       } else {
         const cbResopnse = await fetch(`https://api.coinbase.com/v2/prices/${toCBSymbol(symbol)}-USD/spot`)
-        const cbResult = await cbResopnse.json()
+        const cbResult = (await cbResopnse.json()) as any
         const cbEthUsd = cbResult?.data?.['amount']
         await cache.set(key, cbEthUsd, 'EX', 60 * 10) // 10 min
         return Number(cbEthUsd)
@@ -1647,12 +1646,12 @@ enum ProfileActionType {
   ReferNetwork = 'ReferNetwork',
 }
 export const profileActionType = (action: entity.IncentiveAction): ProfileActionType => {
-  if (action.task === ProfileTask.CREATE_NFT_PROFILE) return ProfileActionType.CreateNFTProfile
-  else if (action.task === ProfileTask.CUSTOMIZE_PROFILE) return ProfileActionType.CustomizeProfile
-  else if (action.task === ProfileTask.REFER_NETWORK) return ProfileActionType.ReferNetwork
-  else if (action.task === ProfileTask.BUY_NFTS) return ProfileActionType.BuyNFTs
-  else if (action.task === ProfileTask.LIST_NFTS) return ProfileActionType.ListNFTs
-  else if (action.task === ProfileTask.ISSUE_NFTS) return ProfileActionType.IssueNFTs
+  if (action.task === defs.ProfileTask.CREATE_NFT_PROFILE) return ProfileActionType.CreateNFTProfile
+  else if (action.task === defs.ProfileTask.CUSTOMIZE_PROFILE) return ProfileActionType.CustomizeProfile
+  else if (action.task === defs.ProfileTask.REFER_NETWORK) return ProfileActionType.ReferNetwork
+  else if (action.task === defs.ProfileTask.BUY_NFTS) return ProfileActionType.BuyNFTs
+  else if (action.task === defs.ProfileTask.LIST_NFTS) return ProfileActionType.ListNFTs
+  else if (action.task === defs.ProfileTask.ISSUE_NFTS) return ProfileActionType.IssueNFTs
 }
 
 const firstEntitiesAfter = async <T>(

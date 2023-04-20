@@ -161,12 +161,12 @@ export const toPageableFilters = <T>(
 
 const parseCursorValue = (v: Date | string | number): string => {
   if (_.isDate(v)) {
-    return helper.toDateIsoString(v)
+    return helper.toDateIsoString(v as Date)
   }
   if (_.isNumber(v)) {
     return v.toString()
   }
-  return v
+  return v as string
 }
 
 export const toPageInfo = <T>(

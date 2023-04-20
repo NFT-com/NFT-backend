@@ -1,37 +1,41 @@
-FROM node:18.16 as deps
-RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
-WORKDIR /usr/src/app
-COPY package*.json /usr/src/app/
-COPY packages/stream/package*.json /usr/src/app/packages/stream/
-RUN npm pkg delete scripts.prepare \
-    && npm set progress=false \
-    && npm ci --omit=dev \
-    && ([ -d "packages/stream/node_modules" ] && cp -R packages/stream/node_modules/. node_modules) || true
+FROM node:18.16 AS builder
+WORKDIR /app
+RUN yarn global add pnpm
+COPY . .
+RUN pnpm dlx turbo prune --scope=@nftcom/stream --docker
 
 
-FROM node:18.16 as build
-WORKDIR /usr/src/app
-COPY . /usr/src/app/
-RUN npm pkg delete scripts.prepare && npm set progress=false && npm ci
-RUN npx nx build stream
+# Add lockfile and package.json's of isolated subworkspace
+FROM node:18.16 AS installer
+WORKDIR /app
+RUN yarn global add pnpm
+
+# First install dependencies (as they change less often)
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install
+
+# Build the project and its dependencies
+COPY --from=builder /app/out/full/ .
+COPY tsconfig.base.json tsconfig.base.json
+COPY turbo.json turbo.json
+
+# Uncomment and use build args to enable remote caching
+# ARG TURBO_TEAM
+# ENV TURBO_TEAM=$TURBO_TEAM
+
+# ARG TURBO_TOKEN
+# ENV TURBO_TOKEN=$TURBO_TOKEN
+
+RUN pnpm dlx turbo run build --filter=@nftcom/stream
 
 
-FROM node:18.16-bullseye-slim
+FROM node:18.16-bullseye-slim AS runner
 RUN apt-get update && apt-get upgrade -y
+WORKDIR /app
 
-ENV NODE_PATH=/usr/src/app/node_modules
-COPY --from=deps /usr/bin/dumb-init /usr/bin/dumb-init
-
+# Don't run production as root
 USER node
-WORKDIR /usr/src/app/packages/stream
+COPY --from=installer /app .
 
-COPY --chown=node:node --from=deps /usr/src/app/node_modules /usr/src/app/node_modules
-COPY --chown=node:node --from=deps /usr/src/app/package.json /usr/src/app/
-COPY --chown=node:node --from=build /usr/src/app/tsconfig.base.json /usr/src/app/
-COPY --chown=node:node --from=build /usr/src/app/packages/stream/tsconfig*.json /usr/src/app/packages/stream/
-COPY --chown=node:node --from=build /usr/src/app/packages/shared/src/db/rds-combined-ca-bundle.cer /usr/src/app/packages/stream/packages/shared/src/db/
-COPY --chown=node:node --from=build /usr/src/app/dist/packages/stream /usr/src/app/packages/stream
-
-EXPOSE 8080
-
-CMD ["dumb-init", "node", "-r", "source-map-support/register", "-r", "tsconfig-paths/register", "main.js"]
+CMD node packages/stream/dist/main.js

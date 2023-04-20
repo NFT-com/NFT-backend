@@ -1,13 +1,17 @@
 .dockerignore
-.git*
+.git/
+.gitattributes
+.github/
 .editorconfig
 .env*
 .eslint*
+.husky/
 .prettier*
 codecov.yml
 jest*
 
 node_modules/
+**/node_modules
 
 *.log
 coverage/
@@ -22,6 +26,8 @@ docker-compose.yml
 infra
 
 dist/
-*/dist/
+**/dist/
 
 tmp/
+*.tsbuildinfo
+**/.turbo/

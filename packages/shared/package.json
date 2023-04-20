@@ -1,19 +1,24 @@
 {
   "name": "@nftcom/shared",
-  "main": "src/index",
-  "types": "src/index",
+  "main": "./src/index",
+  "source": "./src/index",
+  "types": "./src/index",
   "scripts": {
-    "build": "npm run clean && npm run compile && npm run copy:cert",
-    "clean": "rimraf dist tsconfig.tsbuildinfo",
-    "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/packages/shared/src/db/rds-combined-ca-bundle.cer",
+    "prebuild": "pnpm clean",
+    "build": "pnpm compile",
+    "postbuild": "pnpm copy:cert",
+    "clean": "rm -rf dist",
+    "dev": "tsc -w",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/db/rds-combined-ca-bundle.cer",
     "compile": "tsc && tsc-alias",
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ../../node_modules/typeorm/cli",
-    "typeorm:gen": "npm run typeorm:cli -- migration:generate -d ./src/db/data-source.ts",
-    "typeorm:migration:run": "npm run typeorm:cli -- migration:run -d ./src/db/data-source.ts",
-    "typeorm:migration:create": "npm run typeorm:cli -- migration:create -n",
-    "typeorm:revert": "npm run typeorm:cli --  migration:revert -d ./src/db/data-source.ts",
-    "typeorm:show": "npm run typeorm:cli -- migration:show -d ./src/db/data-source.ts",
-    "typeorm:sync": "npm run typeorm:cli -- schema:sync",
+    "typeorm:gen": "pnpm typeorm:cli -- migration:generate -d ./src/db/data-source.ts",
+    "typeorm:migration:run": "pnpm typeorm:cli -- migration:run -d ./src/db/data-source.ts",
+    "typeorm:migration:create": "pnpm typeorm:cli -- migration:create -n",
+    "typeorm:revert": "pnpm typeorm:cli --  migration:revert -d ./src/db/data-source.ts",
+    "typeorm:show": "pnpm typeorm:cli -- migration:show -d ./src/db/data-source.ts",
+    "typeorm:sync": "pnpm typeorm:cli -- schema:sync",
     "typechain": "typechain --target=ethers-v5 ./src/helper/abis/*.json --out-dir ./src/helper/typechain"
   },
   "dependencies": {
@@ -35,6 +40,7 @@
     "rimraf": "^3.0.2",
     "tsc-alias": "^1.8.5",
     "tslib": "^2.5.0",
-    "typechain": "^7.0.1"
+    "typechain": "^7.0.1",
+    "typescript": "^5.0.4"
   }
 }
