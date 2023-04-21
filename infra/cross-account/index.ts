@@ -10,7 +10,6 @@ import { createQueue } from './sqs'
 
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
 
-    const queue = createQueue()
 
     const dev_provider = new aws.Provider("target-account-provider", {
         assumeRole: {
@@ -19,7 +18,11 @@ const pulumiProgram = async() : Promise<Record<string, any> | void> => {
         },
         region: "us-east-1",
     });
+    const prod_provider = pulumi.ProviderResource.get("aws", "")
+
     
+    const queue = createQueue()
+
 
     return {
         queueName: queue.name
