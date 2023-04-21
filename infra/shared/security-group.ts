@@ -51,7 +51,7 @@ const buildEgressRule = (port: number, protocol = 'tcp'): any => ({
   toPort: port,
   cidrBlocks: new ec2.AnyIPv4Location().cidrBlocks,
 })
-//function to create all required security groups, then export each 
+
 export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOutput => {
   const web = new awsEC2.SecurityGroup('sg_web', {
     description: 'Allow traffic from/to web',
