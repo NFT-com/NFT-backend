@@ -33,6 +33,16 @@ runs:
       working-directory: infra
       shell: bash
       run:  npm ci
+    - name: Deploy Shared Infra
+      working-directory: infra
+      shell: bash
+      env:
+        STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
+        DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
+        DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+      run: npm run deploy:shared
     - name: Build and Push Stream Image
       shell: bash
       env:
