@@ -54,11 +54,19 @@ runs:
         docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target deps -t ${{ env.REPO }}:deps
         docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target build --cache-from ${{ env.REPO }}:deps -t ${{ env.REPO }}:build
         docker build . -f gql.Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --target release --cache-from ${{ env.REPO }}:deps --cache-from ${{ env.REPO }}:build -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
-        snyk container test ${{ env.REPO }}:latest --file=gql.Dockerfile
         docker push ${{ env.REPO }}:deps
         docker push ${{ env.REPO }}:build
         docker push ${{ env.REPO }}:latest
         docker push ${{ env.REPO }}:${{ github.sha }}
+        snyk container test ${{ env.REPO }}:build --file=gql.Dockerfile
+    - name: Run monitor if container scan fails 
+      if: ${{ failure() }}
+      shell: bash
+      env: 
+        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-gql
+        SNYK_TOKEN: ${{ fromJSON(inputs.secrets).SNYK_TOKEN }}
+      run: 
+        snyk container monitor ${{ env.REPO }}:build --file=gql.dockerfile 
     - name: Deploy GQL Infra
       shell: bash
       working-directory: infra
