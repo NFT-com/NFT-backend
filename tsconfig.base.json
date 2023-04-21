@@ -7,7 +7,6 @@
     "lib": ["es2022"],
     "module": "commonjs",
     "target": "es2022",
-    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -16,6 +15,8 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
     "paths": {
       "@nftcom/cache": ["packages/cache/src/index.ts"],
       "@nftcom/contract-data": ["packages/contract-data/src/index.ts"],

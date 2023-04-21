@@ -895,6 +895,9 @@ importers:
       '@types/multer':
         specifier: ^1.4.5-lts.1
         version: 1.4.5
+      '@types/node':
+        specifier: 18.15.11
+        version: 18.15.11
       concurrently:
         specifier: ^6.3.0
         version: 6.5.1
