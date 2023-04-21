@@ -100,7 +100,19 @@ impl OrdersMatchedEvent {
 }
 
 impl OrderCancelledEvent {
-    const TOPIC_ID: [u8;
+    const TOPIC_ID: [u8; 32] = [
+        0x51, 0x52, 0xab, 0xf9, 0x59, 0xf6, 0x56, 0x46,
+        0x62, 0x35, 0x8c, 0x2e, 0x52, 0xb7, 0x02, 0x25,
+        0x9b, 0x78, 0xba, 0xc5, 0xee, 0x78, 0x42, 0xa0,
+        0xf0, 0x19, 0x37, 0xe6, 0x70, 0xef, 0xcc, 0x7d,
+    ];
+
+    pub fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> bool {
+        if log.topics.len() != 1usize {
+            return false;
+        }
+        log.topics.get(0).expect("bounds already checked").as_ref() == Self::TOPIC_ID
+    }
 
     pub fn decode(log: &substreams_ethereum::pb::eth::v2::Log) -> Result<Self, String> {
         if !Self::match_log(log) {
