@@ -18,7 +18,7 @@ export const createGQLRepository = (): aws.ecr.Repository => {
 
 export const createStreamRepository = (): aws.ecr.Repository => {
   return new aws.ecr.Repository('ecr_st', {
-    name: getResourceName('st'),
+    name: getResourceName('stream'),
     imageScanningConfiguration: {
       scanOnPush: true,
     },
