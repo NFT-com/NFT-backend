@@ -5,6 +5,7 @@
   "main": "src/index",
   "scripts": {
     "build": "tsup src/index.ts --format cjs",
+    "postbuild": "./scripts/postbuild.sh",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "dev": "tsup src/index.ts --format cjs --watch --onSuccess \"node dist/index.js\"",
     "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",

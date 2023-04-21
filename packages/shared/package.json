@@ -6,11 +6,10 @@
   "scripts": {
     "prebuild": "pnpm clean",
     "build": "pnpm compile",
-    "postbuild": "pnpm copy:cert",
-    "clean": "rm -rf dist",
+    "postbuild": "./scripts/postbuild.sh",
+    "clean": "rm -rf ../../dist/shared",
     "dev": "tsc -w",
     "lint": "eslint \"src/**/*.ts*\"",
-    "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/db/rds-combined-ca-bundle.cer",
     "compile": "tsc && tsc-alias",
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ../../node_modules/typeorm/cli",
     "typeorm:gen": "pnpm typeorm:cli -- migration:generate -d ./src/db/data-source.ts",

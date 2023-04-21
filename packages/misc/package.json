@@ -2,14 +2,12 @@
   "name": "@nftcom/misc",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/index.js",
+  "main": "./src/index",
   "source": "./src/index.ts",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**"
-  ],
+  "types": "./src/index",
   "scripts": {
     "build": "tsc -p tsconfig.lib.json",
+    "postbuild": "./scripts/postbuild.sh",
     "clean": "rm -rf dist",
     "dev": "tsc -p tsconfig.lib.json -w",
     "lint": "eslint \"src/**/*.ts*\"",

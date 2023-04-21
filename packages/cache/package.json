@@ -5,11 +5,9 @@
   "main": "./src/index",
   "source": "./src/index",
   "types": "./src/index",
-  "files": [
-    "dist/**"
-  ],
   "scripts": {
     "build": "tsc -p tsconfig.lib.json",
+    "postbuild": "./scripts/postbuild.sh",
     "clean": "rm -rf dist",
     "dev": "tsc -p tsconfig.lib.json -w",
     "lint": "eslint \"src/**/*.ts*\"",

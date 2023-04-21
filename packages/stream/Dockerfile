@@ -13,7 +13,7 @@ RUN yarn global add pnpm
 # First install dependencies (as they change less often)
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install
+RUN pnpm install --filter=@nftcom/stream...
 
 # Build the project and its dependencies
 COPY --from=builder /app/out/full/ .
@@ -27,7 +27,10 @@ COPY turbo.json turbo.json
 # ARG TURBO_TOKEN
 # ENV TURBO_TOKEN=$TURBO_TOKEN
 
-RUN pnpm dlx turbo run build --filter=@nftcom/stream
+RUN pnpm dlx turbo run build --filter=@nftcom/stream...
+RUN cp pnpm-*.yaml dist/ \
+  && cd dist  \
+  && pnpm install --filter=@nftcom/stream... --prod
 
 
 FROM node:18.16-bullseye-slim AS runner
@@ -36,6 +39,6 @@ WORKDIR /app
 
 # Don't run production as root
 USER node
-COPY --from=installer /app .
+COPY --from=installer /app/dist .
 
-CMD node packages/stream/dist/main.js
+CMD node packages/stream/src/main.js
