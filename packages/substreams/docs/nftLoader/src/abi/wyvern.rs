@@ -37,16 +37,16 @@ impl OrdersMatchedEvent {
 
     // Decode the log into the OrdersMatched event
     pub fn decode(log: &substreams_ethereum::pb::eth::v2::Log) -> Result<Self, String> {
-        let buy_hash = log.topics[1usize].as_ref().to_vec();
-        let sell_hash = log.topics[2usize].as_ref().to_vec();
-        let maker = log.topics[3usize].as_ref().to_vec();
-        let taker = log.topics[4usize].as_ref().to_vec();
+        let buy_hash = log.topics[1usize].clone();
+        let sell_hash = log.topics[2usize].clone();
+        let maker = log.topics[3usize].clone();
+        let taker = log.topics[4usize].clone();
 
         let mut price_bytes = [0u8; 32];
         price_bytes.copy_from_slice(log.topics[5usize].as_ref());
         let price = BigInt::from_signed_bytes_be(&price_bytes);
 
-        let metadata = log.topics[6usize].as_ref().to_vec();
+        let metadata = log.topics[6usize].clone();
 
         Ok(Self {
             buy_hash,

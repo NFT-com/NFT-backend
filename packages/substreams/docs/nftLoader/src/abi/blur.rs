@@ -3,6 +3,12 @@
 use substreams::scalar::BigInt;
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum SignatureVersion {
+    Single,
+    Bulk,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Side {
     Buy,
     Sell,

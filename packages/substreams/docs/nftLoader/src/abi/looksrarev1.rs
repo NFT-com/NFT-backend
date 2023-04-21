@@ -48,7 +48,9 @@ impl TakerEvent {
         0x13, 0x30,
     ];
 
-    pub fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> Option<TakerEventType> {
+    // Add a new method to determine the event type based on the log's topic ID
+    // This helps us identify whether the log is for a TakerBid or TakerAsk event
+    pub fn get_event_type(log: &substreams_ethereum::pb::eth::v2::Log) -> Option<TakerEventType> {
         if log.topics.len() != 4usize {
             return None;
         }
@@ -62,10 +64,16 @@ impl TakerEvent {
         }
     }
 
-    pub fn decode(
-        event_type: TakerEventType,
-        log: &substreams_ethereum::pb::eth::v2::Log,
-    ) -> Result<Self, String> {
+    // The return value is true if the log matches either TakerBid or TakerAsk
+    pub fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> bool {
+        Self::get_event_type(log).is_some()
+    }
+
+    // Use get_event_type to determine the event type from the log's topic ID
+    pub fn decode(log: &substreams_ethereum::pb::eth::v2::Log) -> Result<Self, String> {
+        let event_type = Self::get_event_type(log)
+            .ok_or_else(|| "Log does not match TakerBid or TakerAsk event".to_string())?;
+
         // Decode data bytes
         let data = &log.data;
         // Use ethabi to decode event data
@@ -87,50 +95,51 @@ impl TakerEvent {
         .map_err(|e| format!("unable to decode data: {:?}", e))?;
 
         // Convert decoded_data to event fields
-        Ok(Self {
+         // Convert decoded_data to event fields
+         Ok(Self {
             event_type,
-            order_hash: decoded_data[0].clone().to_fixed_bytes().unwrap(),
+            order_hash: decoded_data[0].clone().into_fixed_bytes().unwrap(),
             order_nonce: BigInt::from_signed_bytes_be(
-                &decoded_data[1].clone().to_uint().unwrap().as_bytes(),
+                &decoded_data[1].clone().into_uint().unwrap().as_bytes(),
             ),
             taker: decoded_data[2]
                 .clone()
-                .to_address()
+                .into_address()
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
             maker: decoded_data[3]
                 .clone()
-                .to_address()
+                .into_address()
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
             strategy: decoded_data[4]
                 .clone()
-                .to_address()
+                .into_address()
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
             currency: decoded_data[5]
                 .clone()
-                .to_address()
+                .into_address()
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
             collection: decoded_data[6]
                 .clone()
-                .to_address()
+                .into_address()
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
             token_id: BigInt::from_signed_bytes_be(
-                &decoded_data[7].clone().to_uint().unwrap().as_bytes(),
+                &decoded_data[7].clone().into_uint().unwrap().as_bytes(),
             ),
             amount: BigInt::from_signed_bytes_be(
-                &decoded_data[8].clone().to_uint().unwrap().as_bytes(),
+                &decoded_data[8].clone().into_uint().unwrap().as_bytes(),
             ),
             price: BigInt::from_signed_bytes_be(
-                &decoded_data[9].clone().to_uint().unwrap().as_bytes(),
+                &decoded_data[9].clone().into_uint().unwrap().as_bytes(),
             ),
         })
     }
@@ -138,14 +147,15 @@ impl TakerEvent {
 
 // Implement the substreams_ethereum::Event trait for TakerEvent
 impl substreams_ethereum::Event for TakerEvent {
-    fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> Option<TakerEventType> {
+    const NAME: &'static str = "TakerEvent";  // Define the NAME constant
+
+    fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> bool {
         Self::match_log(log)
     }
 
-    fn decode(
-        event_type: TakerEventType,
-        log: &substreams_ethereum::pb::eth::v2::Log,
-    ) -> Result<Self, String> {
-        Self::decode(event_type, log)
+    // Update the 'decode' method in the trait implementation to match the trait definition
+    // and the updated 'decode' method signature (with only one parameter 'log')
+    fn decode(log: &substreams_ethereum::pb::eth::v2::Log) -> Result<Self, String> {
+        Self::decode(log)
     }
 }
