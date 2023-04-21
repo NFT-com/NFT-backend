@@ -46,7 +46,7 @@ runs:
     - name: Build and Push Stream Image
       shell: bash
       env:
-        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-st
+        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-stream
       run: |
         export DOCKER_BUILDKIT=1
         docker build . -f packages/stream/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from ${{ env.REPO }}:latest -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
