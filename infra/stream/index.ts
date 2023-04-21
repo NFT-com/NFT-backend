@@ -6,6 +6,7 @@ import * as pulumi from '@pulumi/pulumi'
 import { deployInfra, getSharedInfraOutput } from '../helper'
 import { createEcsService } from './ecs'
 
+// bump
 const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const config = new pulumi.Config()
   const sharedStackOutputs = getSharedInfraOutput()
