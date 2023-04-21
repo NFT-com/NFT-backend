@@ -36,5 +36,12 @@ runs:
         STAGE: ${{ inputs.stage }}
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
-      run: npm run deploy:crossaccount
-    
+      run: npm run deploy:accounts
+    - name: Deploy Cross Account
+      shell: bash
+      working-directory: infra
+      env:
+        STAGE: ${{ inputs.stage }}
+        PULUMI_CONFIG_PASSPHRASE: ""
+        AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
+      run: npm run deploy:queues

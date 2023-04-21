@@ -10,7 +10,8 @@ import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer } from './gql'
 import { createSharedInfra } from './shared'
 import { createSubStreamInstances,createSubStreams } from './substreams'
-import { createQueues } from './cross-account'
+import { createAccounts } from './cross-account-shared'
+import { createQueues } from './cross-account-queues'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
   const assetBucket = outMap.assetBucket.value
@@ -48,7 +49,8 @@ const main = async (): Promise<any> => {
   const deployCronjobs = args?.[0] === 'deploy:cronjobs' || false
   const deploySubstreams = args?.[0] === 'deploy:substreams' || false
   const deploySubstreamsInstance = args?.[0] === 'deploy:substreamsInstance' || false
-  const deployQueues = args?.[0] === 'deploy:crossaccount' || false 
+  const deployAccounts = args?.[0] === 'deploy:accounts' || false
+  const deployQueues = args?.[0] === 'deploy:queues' || false 
   // console.log(process.env.SECRETS)
   // console.log('COMMIT SHA8', process.env.GITHUB_SHA?.substring(0, 8))
 
@@ -70,7 +72,9 @@ const main = async (): Promise<any> => {
   if (deploySubstreamsInstance) {
     return createSubStreamInstances()
   }
-
+  if (deployAccounts) {
+    return createAccounts()
+  }
   if (deployQueues){
     return createQueues() 
   }

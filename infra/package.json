@@ -6,7 +6,8 @@
     "deploy:cronjobs": "ts-node index.ts deploy:cronjobs",
     "deploy:substreams": "ts-node index.ts deploy:substreams",
     "deploy:substreamsInstance": "ts-node index.ts deploy:substreamsInstance",
-    "deploy:crossaccount": "ts-node index.ts deploy:crossaccount"
+    "deploy:accounts": "ts-node index.ts deploy:accounts",
+    "deploy:queues": "ts-node index.ts deploy:queues"
   },
   "dependencies": {
     "@actions/core": "^1.6.0",

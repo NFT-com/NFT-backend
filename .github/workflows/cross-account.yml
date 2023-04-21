@@ -1,0 +1,21 @@
+name: Cross Account github actions 
+on:
+  push: 
+    paths: 
+      - '.github/actions/deploy-crossaccount/action.yml'
+      - '.github/workflows/cross-account.yml'
+      - 'infra/cross-account-*/**'
+jobs: 
+  deploy-immutable-cross-account:
+    needs: deployment-triggers
+    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.crossaccount-changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_dev_streamingfast
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-crossaccount
+        name: Deploy cross account stack [Dev] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: dev
+          account: immutable
