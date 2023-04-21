@@ -65,7 +65,7 @@ runs:
       env: 
         REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-gql
         SNYK_TOKEN: ${{ fromJSON(inputs.secrets).SNYK_TOKEN }}
-      run: snyk container monitor ${{ env.REPO }}:build --file=gql.dockerfile -d 
+      run: snyk container monitor ${{ env.REPO }}:build --file=gql.Dockerfile
     - name: Deploy GQL Infra
       shell: bash
       working-directory: infra
