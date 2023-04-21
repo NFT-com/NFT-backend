@@ -1,5 +1,6 @@
 import { queue } from 'async'
 import { BigNumber } from 'ethers'
+import fetch from 'node-fetch'
 import { toLower } from 'lodash'
 import { Pool } from 'pg'
 import { AbiItem } from 'web3-utils'

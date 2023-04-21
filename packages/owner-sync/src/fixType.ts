@@ -1,6 +1,7 @@
 import { Pool } from 'pg'
+import fetch from 'node-fetch'
 
-import { checkSum } from '@nftcom/shared/helper/misc'
+import { helper } from '@nftcom/shared'
 
 const pgClient = new Pool({
   user: process.env.DB_USERNAME || 'app',
@@ -36,7 +37,7 @@ const main = async (): Promise<void> => {
     ).json()
     if (resp?.contractMetadata?.tokenType === 'ERC1155') {
       await pgClient.query('UPDATE nft SET "type" = \'ERC1155\', "updatedAt" = Now() WHERE "contract" = $1', [
-        checkSum(contract),
+        helper.checkSum(contract),
       ])
     }
     process.stdout.write('.')
