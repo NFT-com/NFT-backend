@@ -37,7 +37,7 @@
     "@nrwl/node": "15.9.2",
     "@salesforce-ux/design-system": "^2.20.1",
     "@types/jest": "29.5.0",
-    "@types/node": "18.15.11",
+    "@types/node": "^18.15.13",
     "@types/sinon": "^10.0.14",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "@typescript-eslint/parser": "^5.59.0",
@@ -58,7 +58,6 @@
     "ts-node": "10.9.1",
     "typescript": "^5.0.4"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=18",
     "pnpm": ">=7"

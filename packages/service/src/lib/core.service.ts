@@ -4,7 +4,6 @@ import { addDays } from 'date-fns'
 import { BigNumber, ethers } from 'ethers'
 import imageToBase64 from 'image-to-base64'
 import { isNil } from 'lodash'
-import fetch from 'node-fetch'
 import { FindManyOptions, FindOptionsOrder, FindOptionsSelect, IsNull, Not } from 'typeorm'
 import { AbiItem } from 'web3-utils'
 

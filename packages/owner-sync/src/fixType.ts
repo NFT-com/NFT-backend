@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import { Pool } from 'pg'
 
 import { checkSum } from '@nftcom/shared/helper/misc'

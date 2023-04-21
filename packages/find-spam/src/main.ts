@@ -1,5 +1,4 @@
 import { intersectionBy, toLower } from 'lodash'
-import fetch from 'node-fetch'
 import { Pool } from 'pg'
 
 import { helper } from '@nftcom/shared'

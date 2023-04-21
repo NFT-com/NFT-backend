@@ -2,7 +2,6 @@ import { AxiosInstance, AxiosResponse } from 'axios'
 import Bull, { Job } from 'bullmq'
 import { BigNumber } from 'ethers'
 import { createWriteStream, unlink } from 'fs'
-import fetch from 'node-fetch'
 import * as tar from 'tar'
 import { FindOptionsWhere, In, IsNull, Not } from 'typeorm'
 

@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "rootDir": ".",
     "outDir": "./dist",
-    "lib": ["es2022"],
+    "lib": ["esnext"],
     "module": "commonjs",
     "target": "es2022",
     "esModuleInterop": true,

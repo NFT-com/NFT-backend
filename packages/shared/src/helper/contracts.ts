@@ -1,5 +1,4 @@
 import { utils } from 'ethers'
-import fetch from 'node-fetch'
 
 import genesisKeyABIJSON from './abis/GenesisKey.json'
 import genKeyClaimABIJSON from './abis/GenesisKeyDistributor.json'
