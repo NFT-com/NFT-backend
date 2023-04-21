@@ -58,7 +58,7 @@ runs:
         docker push ${{ env.REPO }}:build
         docker push ${{ env.REPO }}:latest
         docker push ${{ env.REPO }}:${{ github.sha }}
-        snyk container test ${{ env.REPO }}:build --file=gql.Dockerfile
+        snyk container monitor ${{ env.REPO }}:latest --file=gql.Dockerfile
     - name: Deploy GQL Infra
       shell: bash
       working-directory: infra
