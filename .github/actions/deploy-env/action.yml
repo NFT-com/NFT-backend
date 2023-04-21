@@ -59,13 +59,6 @@ runs:
         docker push ${{ env.REPO }}:latest
         docker push ${{ env.REPO }}:${{ github.sha }}
         snyk container test ${{ env.REPO }}:build --file=gql.Dockerfile
-    - name: Run monitor if container scan fails 
-      if: ${{ failure() }}
-      shell: bash
-      env: 
-        REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-gql
-        SNYK_TOKEN: ${{ fromJSON(inputs.secrets).SNYK_TOKEN }}
-      run: snyk container monitor ${{ env.REPO }}:build --file=gql.Dockerfile
     - name: Deploy GQL Infra
       shell: bash
       working-directory: infra
