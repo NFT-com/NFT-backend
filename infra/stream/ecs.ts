@@ -5,11 +5,11 @@ import { SharedInfraOutput } from '../defs'
 import { getResourceName, getTags } from '../helper'
 
 const tags = {
-  service: 'st',
+  service: 'stream',
 }
 
 const attachLBListeners = (lb: aws.lb.LoadBalancer, tg: aws.lb.TargetGroup): void => {
-  new aws.lb.Listener('listener_http_dev_st_ecs', {
+  new aws.lb.Listener('listener_http_stream_ecs', {
     defaultActions: [
       {
         order: 1,
@@ -27,7 +27,7 @@ const attachLBListeners = (lb: aws.lb.LoadBalancer, tg: aws.lb.TargetGroup): voi
     tags: getTags(tags),
   })
 
-  new aws.lb.Listener('listener_https_dev_st_ecs', {
+  new aws.lb.Listener('listener_https_stream_ecs', {
     certificateArn: 'arn:aws:acm:us-east-1:016437323894:certificate/44dc39c0-4231-41f6-8f27-03029bddfa8e',
     defaultActions: [
       {
@@ -44,7 +44,7 @@ const attachLBListeners = (lb: aws.lb.LoadBalancer, tg: aws.lb.TargetGroup): voi
 }
 
 const createEcsTargetGroup = (infraOutput: SharedInfraOutput): aws.lb.TargetGroup => {
-  return new aws.lb.TargetGroup('tg_st_ecs', {
+  return new aws.lb.TargetGroup('tg_stream_ecs', {
     healthCheck: {
       interval: 60,
       matcher: '200-399',
@@ -52,7 +52,7 @@ const createEcsTargetGroup = (infraOutput: SharedInfraOutput): aws.lb.TargetGrou
       timeout: 30,
       unhealthyThreshold: 5,
     },
-    name: getResourceName('st-ecs'),
+    name: getResourceName('stream-ecs'),
     port: 8080,
     protocol: 'HTTP',
     protocolVersion: 'HTTP1',
@@ -67,9 +67,9 @@ const createEcsTargetGroup = (infraOutput: SharedInfraOutput): aws.lb.TargetGrou
 }
 
 const createEcsLoadBalancer = (infraOutput: SharedInfraOutput): aws.lb.LoadBalancer => {
-  return new aws.lb.LoadBalancer('lb_st_ecs', {
+  return new aws.lb.LoadBalancer('lb_stream_ecs', {
     ipAddressType: 'ipv4',
-    name: getResourceName('st-ecs'),
+    name: getResourceName('stream-ecs'),
     securityGroups: [infraOutput.webSGId],
     subnets: infraOutput.publicSubnets,
     tags: getTags(tags),
@@ -77,8 +77,8 @@ const createEcsLoadBalancer = (infraOutput: SharedInfraOutput): aws.lb.LoadBalan
 }
 
 const createEcsCluster = (): aws.ecs.Cluster => {
-  const cluster = new aws.ecs.Cluster('cluster_st', {
-    name: getResourceName('st'),
+  const cluster = new aws.ecs.Cluster('cluster_stream', {
+    name: getResourceName('stream'),
     settings: [
       {
         name: 'containerInsights',
@@ -88,7 +88,7 @@ const createEcsCluster = (): aws.ecs.Cluster => {
     tags: getTags(tags),
   })
 
-  new aws.ecs.ClusterCapacityProviders('ccp_st', {
+  new aws.ecs.ClusterCapacityProviders('ccp_stream', {
     clusterName: cluster.name,
     capacityProviders: ['FARGATE'],
     defaultCapacityProviderStrategies: [
@@ -103,9 +103,9 @@ const createEcsCluster = (): aws.ecs.Cluster => {
 }
 
 const createEcsTaskRole = (): aws.iam.Role => {
-  const role = new aws.iam.Role('role_st_ecs', {
-    name: getResourceName('st-ar.us-east-1'),
-    description: 'Role for st ECS Task',
+  const role = new aws.iam.Role('role_stream_ecs', {
+    name: getResourceName('stream-ar.us-east-1'),
+    description: 'Role for stream ECS Task',
     assumeRolePolicy: {
       Version: '2012-10-17',
       Statement: [
@@ -121,7 +121,7 @@ const createEcsTaskRole = (): aws.iam.Role => {
     tags: getTags(tags),
   })
 
-  const policy = new aws.iam.Policy('policy_st_ecs_ssm', {
+  const policy = new aws.iam.Policy('policy_stream_ecs_ssm', {
     policy: {
       Version: '2012-10-17',
       Statement: [
@@ -144,7 +144,7 @@ const createEcsTaskRole = (): aws.iam.Role => {
     tags: getTags(tags),
   })
 
-  new aws.iam.RolePolicyAttachment('rpa_st_ecs_ssm', {
+  new aws.iam.RolePolicyAttachment('rpa_stream_ecs_ssm', {
     role: role.name,
     policyArn: policy.arn,
   })
@@ -155,10 +155,10 @@ const createEcsTaskRole = (): aws.iam.Role => {
 const createEcsTaskDefinition = (config: pulumi.Config, stECRRepo: string): aws.ecs.TaskDefinition => {
   const ecrImage = `${process.env.ECR_REGISTRY}/${stECRRepo}:${process.env.GIT_SHA || 'latest'}`
   const role = createEcsTaskRole()
-  const resourceName = getResourceName('st')
+  const resourceName = getResourceName('stream')
 
   return new aws.ecs.TaskDefinition(
-    'st-td',
+    'stream-td',
     {
       containerDefinitions: JSON.stringify([
         {
@@ -170,7 +170,7 @@ const createEcsTaskDefinition = (config: pulumi.Config, stECRRepo: string): aws.
               'awslogs-create-group': 'True',
               'awslogs-group': `/ecs/${resourceName}`,
               'awslogs-region': 'us-east-1',
-              'awslogs-stream-prefix': 'st',
+              'awslogs-stream-prefix': 'stream',
             },
           },
           memoryReservation: config.requireNumber('ecsTaskMemory'),
@@ -511,7 +511,7 @@ const createEcsTaskDefinition = (config: pulumi.Config, stECRRepo: string): aws.
 }
 
 const applyEcsServiceAutoscaling = (config: pulumi.Config, service: aws.ecs.Service): void => {
-  const target = new aws.appautoscaling.Target('target_st_ecs', {
+  const target = new aws.appautoscaling.Target('target_stream_ecs', {
     maxCapacity: config.requireNumber('ecsAutoScaleMax'),
     minCapacity: config.requireNumber('ecsAutoScaleMin'),
     resourceId: service.id.apply(id => id.split(':').pop() || ''),
@@ -519,7 +519,7 @@ const applyEcsServiceAutoscaling = (config: pulumi.Config, service: aws.ecs.Serv
     serviceNamespace: 'ecs',
   })
 
-  new aws.appautoscaling.Policy('policy_st_ecs', {
+  new aws.appautoscaling.Policy('policy_stream_ecs', {
     policyType: 'TargetTrackingScaling',
     resourceId: target.resourceId,
     scalableDimension: target.scalableDimension,
@@ -541,7 +541,7 @@ export const createEcsService = (config: pulumi.Config, infraOutput: SharedInfra
   const loadBalancer = createEcsLoadBalancer(infraOutput)
   attachLBListeners(loadBalancer, targetGroup)
 
-  const service = new aws.ecs.Service('svc_st_ecs', {
+  const service = new aws.ecs.Service('svc_stream_ecs', {
     cluster: cluster.arn,
     deploymentCircuitBreaker: {
       enable: true,
@@ -555,12 +555,12 @@ export const createEcsService = (config: pulumi.Config, infraOutput: SharedInfra
     launchType: 'FARGATE',
     loadBalancers: [
       {
-        containerName: getResourceName('st'),
+        containerName: getResourceName('stream'),
         containerPort: 8080,
         targetGroupArn: targetGroup.arn,
       },
     ],
-    name: getResourceName('st'),
+    name: getResourceName('stream'),
     networkConfiguration: {
       assignPublicIp: true,
       securityGroups: [infraOutput.webSGId],
