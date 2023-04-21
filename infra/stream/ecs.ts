@@ -104,7 +104,7 @@ const createEcsCluster = (): aws.ecs.Cluster => {
 
 const createEcsTaskRole = (): aws.iam.Role => {
   const role = new aws.iam.Role('role_stream_ecs', {
-    name: getResourceName('stream-ar.us-east-1'),
+    name: getResourceName('stream-ecs'),
     description: 'Role for stream ECS Task',
     assumeRolePolicy: {
       Version: '2012-10-17',
