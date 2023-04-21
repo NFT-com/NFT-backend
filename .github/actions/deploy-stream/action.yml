@@ -11,9 +11,9 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v3
       with:
-        node-version: 18.x
+        node-version: 18
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
