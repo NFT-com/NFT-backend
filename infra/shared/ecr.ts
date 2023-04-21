@@ -4,6 +4,7 @@ import { getResourceName } from '../helper'
 
 export type RepositoryOut = {
   gql: aws.ecr.Repository
+  stream: aws.ecr.Repository
 }
 
 export const createGQLRepository = (): aws.ecr.Repository => {
@@ -15,9 +16,21 @@ export const createGQLRepository = (): aws.ecr.Repository => {
   })
 }
 
+export const createStreamRepository = (): aws.ecr.Repository => {
+  return new aws.ecr.Repository('ecr_st', {
+    name: getResourceName('st'),
+    imageScanningConfiguration: {
+      scanOnPush: true,
+    },
+  })
+}
+
 export const createRepositories = (): RepositoryOut => {
   const gqlRepo = createGQLRepository()
+  const streamRepo = createStreamRepository()
   return {
     gql: gqlRepo,
+    stream: streamRepo,
   }
 }
+

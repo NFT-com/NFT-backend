@@ -18,6 +18,7 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
   const assetBucketRole = outMap.assetBucketRole.value
   const dbHost = outMap.dbHost.value
   const gqlECRRepo = outMap.gqlECRRepo.value
+  const streamECRRepo = outMap.streamECRRepo.value
   const redisHost = outMap.redisHost.value
   const publicSubnets = outMap.publicSubnetIds.value
   const privateSubnets = outMap.privateSubnetIds.value
@@ -30,6 +31,7 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
     assetBucketRole,
     dbHost,
     gqlECRRepo,
+    streamECRRepo,
     redisHost,
     publicSubnets,
     privateSubnets,

@@ -12,4 +12,5 @@ export type SharedInfraOutput = {
   webSGId: string
   webEcsSGId: string
   gqlECRRepo: string
+  streamECRRepo: string
 }

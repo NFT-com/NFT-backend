@@ -2,6 +2,9 @@ name: Stream github actions
 on:
   push:
     paths:
+      - 'infra/index.ts'
+      - 'infra/package*.json'
+      - 'infra/shared/**'
       - 'infra/stream/**.ts'
       - 'infra/stream/**.yaml'
       - 'packages/stream/**.ts'
