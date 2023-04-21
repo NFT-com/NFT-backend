@@ -8,6 +8,18 @@ pub enum TakerEventType {
     TakerAsk,
 }
 
+// Define a new trait that includes the desired constants
+pub trait TakerEventTrait {
+    const NAME_BID: &'static str;
+    const NAME_ASK: &'static str;
+}
+
+// Implement the new trait for the TakerEvent struct
+impl TakerEventTrait for TakerEvent {
+    const NAME_BID: &'static str = "TakerBid";
+    const NAME_ASK: &'static str = "TakerAsk";
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TakerEvent {
     pub event_type: TakerEventType,
@@ -124,9 +136,8 @@ impl TakerEvent {
     }
 }
 
+// Implement the substreams_ethereum::Event trait for TakerEvent
 impl substreams_ethereum::Event for TakerEvent {
-    const NAME_BID: &'static str = "TakerBid";
-    const NAME_ASK: &'static str = "TakerAsk";
     fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> Option<TakerEventType> {
         Self::match_log(log)
     }
