@@ -8,7 +8,7 @@ export type sqsOutput = {
     queue: aws.sqs.Queue
 }
 
-export const createQueue = (provider : pulumi.provider ) : aws.sqs.Queue => {
+export const createQueue = (provider: aws.Provider ) : aws.sqs.Queue => {
     return new aws.sqs.Queue("cross-account-queue", {
         name: getResourceName("cross-account-queue"),
         delaySeconds: 90
