@@ -70,6 +70,7 @@ export interface NFTPortNFT {
     type?: string // ERC721, ERC1155, CRYPTO_PUNKS
     metadata?: {
       description?: string
+      banner_url?: string
       cached_thumbnail_url?: string
       cached_banner_url?: string
     }

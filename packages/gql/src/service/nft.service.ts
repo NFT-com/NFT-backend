@@ -771,7 +771,11 @@ const getWithRetry = async (url: string, retries = 0): Promise<ApiResponse> => {
   }
 }
 
-export const parseNFTUriString = async (uriString: string, tokenId?: string, csContract?: string): Promise<Metadata | null> => {
+export const parseNFTUriString = async (
+  uriString: string,
+  tokenId?: string,
+  csContract?: string,
+): Promise<Metadata | null> => {
   try {
     // Handle OpenSea metadata API format with 0x{id} placeholder
     let resolvedUriString = uriString
@@ -898,7 +902,10 @@ export const parseNFTUriString = async (uriString: string, tokenId?: string, csC
 
     throw new Error(`Unrecognized URI string format: ${resolvedUriString}`)
   } catch (error) {
-    logger.error(error, `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}, csContract=${csContract}`)
+    logger.error(
+      error,
+      `Failed to parse URI string: ${error}, ${uriString}, tokenId=${tokenId}, csContract=${csContract}`,
+    )
     return null
   }
 }
@@ -3204,14 +3211,11 @@ export const getCollectionInfo = async (args: GetCollectionInfoArgs): Promise<an
     if (details) {
       if (details.contract) {
         if (details.contract.metadata?.cached_banner_url && details.contract.metadata?.cached_banner_url?.length) {
-          const filename = details.contract.metadata.cached_banner_url.split('/').pop()
-          const banner = await uploadImageToS3(
-            details.contract.metadata.cached_banner_url,
-            filename,
-            chainId,
-            contract,
-            uploadPath,
-          )
+          const metadata = details?.contract?.metadata
+          const detailsBannerUrl = metadata?.banner_url || metadata?.cached_banner_url
+          const filename = detailsBannerUrl.split('/').pop()
+          const imageUrl = detailsBannerUrl.replace('?w=500', '?w=3000') // if low res banner try to upscale format
+          const banner = await uploadImageToS3(imageUrl, filename, chainId, contract, uploadPath)
 
           if (banner) {
             bannerUrl = banner

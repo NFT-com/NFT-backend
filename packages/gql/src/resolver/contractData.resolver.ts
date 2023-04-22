@@ -38,9 +38,11 @@ export const getNFTDetails = async (
   })
   joi.validateSchema(schema, args.input)
   const { contractAddress, tokenId, refreshMetadata } = args.input
+  const cacheSeconds = 14400 // 4hrs in seconds
 
   return await fetchData('nfts', [contractAddress, tokenId], {
     queryParams: { refresh_metadata: !!refreshMetadata },
+    cacheSeconds,
   })
 }
 
