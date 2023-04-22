@@ -28,7 +28,7 @@ const pulumiProgram = async() : Promise<Record<string, any> | void> => {
 }
 
 export const createAccounts = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
-    const stackName = `${process.env.STAGE}.cross-account-shared.${process.env.AWS_REGION}`
+    const stackName = `${process.env.STAGE}.immutable.accounts.${process.env.AWS_REGION}`
     const workDir = upath.joinSafe(__dirname, 'stack')
     return deployInfra(stackName, workDir, pulumiProgram, preview)
 }

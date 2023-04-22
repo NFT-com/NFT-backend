@@ -42,6 +42,7 @@ runs:
       working-directory: infra
       env:
         STAGE: ${{ inputs.stage }}
+        ACCOUNT: ${{ inputs.account }}
         PULUMI_CONFIG_PASSPHRASE: ""
         AWS_REGION: ${{ fromJSON(inputs.secrets).AWS_REGION }}
       run: npm run deploy:queues

@@ -10,7 +10,7 @@ import { createQueue } from './sqs'
 
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
     const stage = getStage(); 
-    const accountsStack = new pulumi.StackReference(`${stage}.cross-account.us-east-1`)
+    const accountsStack = new pulumi.StackReference(`${stage}.immutable.accounts.us-east-1`)
     const dev_provider = (await pulumiOutToValue(accountsStack.getOutput('publicSubnetIds'))) as aws.Provider 
     const queue = createQueue(dev_provider)
 
@@ -20,8 +20,7 @@ const pulumiProgram = async() : Promise<Record<string, any> | void> => {
 }
 
 export const createQueues = (preview?: boolean): Promise<pulumi.automation.OutputMap> => {
-    const stackName = `${process.env.STAGE}.crossacc.${process.env.AWS_REGION}`
+    const stackName = `${process.env.STAGE}.${process.env.ACCOUNT}.queues.${process.env.AWS_REGION}`
     const workDir = upath.joinSafe(__dirname, 'stack')
     return deployInfra(stackName, workDir, pulumiProgram, preview)
 }
-  
