@@ -7,8 +7,6 @@ on:
       - 'infra/cross-account-*/**'
 jobs: 
   deploy-immutable-cross-account:
-    needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.crossaccount-changed == 'true' }}
     runs-on: ubuntu-latest
     environment: nftcom_dev_streamingfast
     steps:
