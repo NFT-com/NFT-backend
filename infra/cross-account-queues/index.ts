@@ -11,7 +11,7 @@ import { createQueue } from './sqs'
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
     const stage = getStage(); 
     const accountsStack = new pulumi.StackReference(`${stage}.immutable.accounts.us-east-1`)
-    const dev_provider = (await pulumiOutToValue(accountsStack.getOutput('publicSubnetIds'))) as aws.Provider 
+    const dev_provider = (await pulumiOutToValue(accountsStack.getOutput('dev_account'))) as aws.Provider 
     const queue = createQueue(dev_provider)
 
     return {
