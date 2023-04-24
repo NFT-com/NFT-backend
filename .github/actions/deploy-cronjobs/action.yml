@@ -78,7 +78,7 @@ runs:
       shell: bash
     - name: Build and Package Monitor Hidden NFTs Lambda
       shell: bash
-      run: npx -y nx package monitors-hidden-nfts
+      run: ./cronjobs/monitors/hidden-nfts/scripts/build_lambda.sh
     - name: Deploy Cronjob Infra
       shell: bash
       working-directory: infra

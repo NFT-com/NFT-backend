@@ -3,6 +3,7 @@
 set -o errexit # Exit on error
 CWD=$(pwd)
 BUILD_PATH_LAYERS=$CWD/layers
+if [ -d "$BUILD_PATH_LAYERS" ]; then rm -Rf $BUILD_PATH_LAYERS; fi
 cd $CWD
 
 # Package typescript code
@@ -23,13 +24,14 @@ mkdir -p $BUILD_PATH_LAYERS/packages/shared
 
 cd $BUILD_PATH_LAYERS
 echo "installing production only dependencies"
-mv $CWD/dist/packages/shared packages
-pnpm install --filter=@nftcom/hidden-nfts... --prod
+cp -r $CWD/dist/packages/shared packages
+pnpm install --filter=@nftcom/hidden-nfts... --prod --shamefully-hoist
 
 echo "zip node_modules directory"
 mkdir -p ./nodejs
-mv ./packages nodejs
-rm -rf packages
+mv cronjobs nodejs/cronjobs
+mv node_modules nodejs/node_modules
+mv packages nodejs/packages
 rm pnpm-lock.yaml
 rm pnpm-workspace.yaml
 
