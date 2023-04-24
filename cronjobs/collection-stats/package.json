@@ -3,13 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "main": "src/main",
+  "types": "src/main",
   "scripts": {
-    "build": "tsup src/main.ts --format cjs",
-    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
-    "dev": "tsup src/main.ts --format cjs --watch --onSuccess \"node dist/main.js\"",
-    "lint": "tsc --noEmit && eslint \"src/**/*.ts*\"",
-    "start": "node dist/main.js",
-    "test": "jest --detectOpenHandles"
+    "build": "npm run clean && npm run compile",
+    "postbuild": "./scripts/postbuild.sh",
+    "clean": "rimraf dist tsconfig.tsbuildinfo",
+    "compile": "tsc -p tsconfig.app.json && tsc-alias -p tsconfig.app.json"
   },
   "dependencies": {
     "@nftcom/cache": "workspace:*",
@@ -21,7 +20,8 @@
   },
   "devDependencies": {
     "jest": "^29.5.0",
-    "tsc": "^2.0.4",
-    "tsup": "^6.7.0"
+    "rimraf": "^3.0.2",
+    "tsc-alias": "^1.8.5",
+    "typescript": "^5.0.4"
   }
 }

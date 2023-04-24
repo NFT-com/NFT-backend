@@ -113,12 +113,15 @@ importers:
       jest:
         specifier: ^29.5.0
         version: 29.5.0(@types/node@18.15.13)(ts-node@10.9.1)
-      tsc:
-        specifier: ^2.0.4
-        version: 2.0.4
-      tsup:
-        specifier: ^6.7.0
-        version: 6.7.0(postcss@8.4.23)(ts-node@10.9.1)(typescript@5.0.4)
+      rimraf:
+        specifier: ^3.0.2
+        version: 3.0.2
+      tsc-alias:
+        specifier: ^1.8.5
+        version: 1.8.5
+      typescript:
+        specifier: ^5.0.4
+        version: 5.0.4
 
   cronjobs/monitors/hidden-nfts:
     dependencies:
@@ -135,12 +138,15 @@ importers:
       jest:
         specifier: ^29.5.0
         version: 29.5.0(@types/node@18.15.13)(ts-node@10.9.1)
-      tsc:
-        specifier: ^2.0.4
-        version: 2.0.4
-      tsup:
-        specifier: ^6.7.0
-        version: 6.7.0(postcss@8.4.23)(ts-node@10.9.1)(typescript@5.0.4)
+      rimraf:
+        specifier: ^3.0.2
+        version: 3.0.2
+      tsc-alias:
+        specifier: ^1.8.5
+        version: 1.8.5
+      typescript:
+        specifier: ^5.0.4
+        version: 5.0.4
 
   cronjobs/sales-processor:
     dependencies:
@@ -163,6 +169,9 @@ importers:
       tsc-alias:
         specifier: ^1.8.5
         version: 1.8.5
+      typescript:
+        specifier: ^5.0.4
+        version: 5.0.4
 
   packages/cache:
     dependencies:
@@ -16999,11 +17008,6 @@ packages:
       mylas: 2.1.13
       normalize-path: 3.0.0
       plimit-lit: 1.5.0
-    dev: true
-
-  /tsc@2.0.4:
-    resolution: {integrity: sha512-fzoSieZI5KKJVBYGvwbVZs/J5za84f2lSTLPYf6AGiIf43tZ3GNrI1QzTLcjtyDDP4aLxd46RTZq1nQxe7+k5Q==}
-    hasBin: true
     dev: true
 
   /tsconfig-paths-webpack-plugin@4.0.0:
