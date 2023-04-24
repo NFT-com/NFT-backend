@@ -1,9 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
+    "module": "commonjs",
     "types":  ["node", "express"]
   },
   "exclude": ["jest.config.ts", "**/*.spec.ts", "**/*.test.ts", "src/test/*"],
-  "include": ["**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

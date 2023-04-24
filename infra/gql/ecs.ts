@@ -167,6 +167,9 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
         {
           essential: true,
           image: ecrImage,
+          linuxParameters: {
+            initProcessEnabled: true,
+          },
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
