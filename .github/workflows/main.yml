@@ -15,7 +15,6 @@ on:
       - 'infra/pacakage**'
 jobs:
   deploy-dev:
-    needs: deployment-triggers
     if: ${{ github.ref_name == 'develop' }}
     runs-on: [self-hosted]
     environment: nftcom_dev
@@ -27,7 +26,6 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: dev
   deploy-staging:
-    needs: deployment-triggers
     if: ${{ startsWith(github.ref_name, 'release') }}
     runs-on: [self-hosted]
     environment: nftcom_staging
