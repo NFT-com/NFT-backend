@@ -68,9 +68,8 @@ export function getCommentService(repos: db.Repository = db.newRepositories()): 
     if (!entityId) {
       throw new Error('entityId is required to get comments')
     }
-    const safePageInput = pagination.safeInput(pageInput, {
-      beforeCursor: helper.toDateIsoString(),
-    })
+
+    const safePageInput = pagination.safeInput(pageInput, { afterCursor: helper.toDateIsoString() })
     const pagableComments = await core.paginatedEntitiesBy<entity.Comment>(
       repos.comment,
       safePageInput,
