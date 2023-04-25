@@ -2,6 +2,8 @@ name: NFT.com github actions
 on: 
   push: 
     paths: 
+      - '.github/actions/deploy-env/action.yml'
+      - '.github/workflows/main.yml'
       - 'packages/**'
       - 'perftest/**'
       - 'gql/**'
