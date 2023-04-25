@@ -3,7 +3,7 @@ import * as pulumi from '@pulumi/pulumi'
 import * as aws from '@pulumi/aws'
 
 
-import { deployInfra, isProduction } from '../helper'
+import { deployInfra } from '../helper'
 
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
 

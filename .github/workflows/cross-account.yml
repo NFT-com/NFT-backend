@@ -4,7 +4,7 @@ on:
     paths: 
       - '.github/actions/deploy-crossaccount/action.yml'
       - '.github/workflows/cross-account.yml'
-      - 'infra/cross-account-*/**'
+      - 'infra/cross-account*/**'
 jobs: 
   deploy-immutable-cross-account:
     runs-on: ubuntu-latest
