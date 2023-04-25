@@ -1,4 +1,4 @@
-name: Deploy Substream Infra
+name: Deploy Substream Infra - TEST ACTION 
 description: Deploys the infrastrcuture and apps to an environment
 inputs:
   stage:
