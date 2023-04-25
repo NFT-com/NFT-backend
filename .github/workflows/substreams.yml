@@ -1,0 +1,33 @@
+name: Substreams github actions 
+on: 
+  push:
+    paths: 
+      - '.github/actions/deploy-substreams/action.yml'
+      - '.github/workflows/substreams.yml'
+      - 'infra/shared/**'
+      - 'infra/index.ts'
+      - 'infra/package*.json'
+      - 'infra/substreams/**'
+jobs: 
+  deploy-staging-substreams:
+    if: ${{ startsWith(github.ref_name, 'release') }}
+    runs-on: ubuntu-latest
+    environment: nftcom_staging_streamingfast
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-substreams
+        name: Deploy Substreams [Staging] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: staging
+  deploy-prod-substreams:
+    if: ${{ github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    environment: nftcom_prod_streamingfast
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-substreams
+        name: Deploy Substreams [Prod] 
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          stage: prod

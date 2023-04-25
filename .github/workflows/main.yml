@@ -1,37 +1,20 @@
 name: NFT.com github actions
-on: [push]
+on: 
+  push: 
+    paths: 
+      - 'packages/**'
+      - 'perftest/**'
+      - 'gql/**'
+      - 'infra/gql/**'
+      - 'infra/shared/**'
+      - 'infra/deps/**'
+      - 'infra/helper/**'
+      - 'infra/index**'
+      - 'infra/pacakage**'
 jobs:
-  deployment-triggers:
-    runs-on: [self-hosted]
-    outputs:
-      gql-changed: ${{ steps.filter.outputs.gql }}
-      cronjobs-changed: ${{ steps.filter.outputs.cronjobs }}
-      substreams-changed: ${{ steps.filter.outputs.substreams }}
-    steps:
-    - uses: actions/checkout@v3
-    - uses: dorny/paths-filter@v2
-      id: filter
-      with:
-        filters: |
-          gql:
-            - 'packages/**'
-            - 'perftest/**'
-            - 'package**'
-            - 'gql**'
-            - 'infra/gql/**'
-            - 'infra/shared/**'
-            - 'infra/defs/**'
-            - 'infra/helper/**'
-            - 'infra/index**'
-            - 'infra/package**'
-          cronjobs:
-            - 'cronjobs/**'
-            - 'infra/cronjobs/**'
-          substreams: 
-            - 'infra/substreams/**'
   deploy-dev:
     needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
+    if: ${{ github.ref_name == 'develop' }}
     runs-on: [self-hosted]
     environment: nftcom_dev
     steps:
@@ -43,7 +26,7 @@ jobs:
           stage: dev
   deploy-staging:
     needs: deployment-triggers
-    if: ${{ (github.ref_name == 'main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'staging'))) && needs.deployment-triggers.outputs.gql-changed == 'true' }}
+    if: ${{ startsWith(github.ref_name, 'release') }}
     runs-on: [self-hosted]
     environment: nftcom_staging
     steps:
@@ -54,72 +37,13 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           stage: staging
   deploy-prod:
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'rel') }}
+    if: ${{ github.ref_name == 'main' }}
     runs-on: [self-hosted]
     environment: nftcom_prod
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-env
         name: Deploy GQL Env [Prod] 
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          stage: prod
-  deploy-dev-cronjobs:
-    needs: deployment-triggers
-    if: ${{ (startsWith(github.ref_name, 'feat') || startsWith(github.ref_name, 'fix')) && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
-    runs-on: ubuntu-latest
-    environment: nftcom_dev_cronjobs
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-cronjobs
-        name: Deploy Cronjobs [Dev] 
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          stage: dev
-  deploy-staging-cronjobs:
-    needs: deployment-triggers
-    if: ${{ github.ref_name == 'main' && needs.deployment-triggers.outputs.cronjobs-changed == 'true' }}
-    runs-on: ubuntu-latest
-    environment: nftcom_staging_cronjobs
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-cronjobs
-        name: Deploy cronjobs [staging]
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          stage: staging
-  deploy-prod-cronjobs:
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'cronjob-rel') }}
-    runs-on: ubuntu-latest
-    environment: nftcom_prod_cronjobs
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-cronjobs
-        name: Deploy cronjobs [prod]
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          stage: prod
-  deploy-staging-substreams:
-    needs: deployment-triggers
-    if: ${{ (github.ref_name == 'main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'staging'))) && needs.deployment-triggers.outputs.substreams-changed == 'true' }}
-    runs-on: ubuntu-latest
-    environment: nftcom_staging_streamingfast
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-substreams
-        name: Deploy Substreams [Staging] 
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          stage: staging
-  deploy-prod-substreams:
-    needs: deployment-triggers
-    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'substreams-rel') }}
-    runs-on: ubuntu-latest
-    environment: nftcom_prod_streamingfast
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-substreams
-        name: Deploy Substreams [Prod] 
         with:
           secrets: ${{ toJSON(secrets) }}
           stage: prod
