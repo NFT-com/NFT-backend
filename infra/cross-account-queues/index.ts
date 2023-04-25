@@ -11,14 +11,14 @@ import { createQueue } from './sqs'
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
     const stage = getStage(); 
     const accountsStack = new pulumi.StackReference(`${stage}.immutable.accounts.us-east-1`)
-    //const dev_provider = (await pulumiOutToValue(accountsStack.getOutput('dev_account'))) as aws.Provider 
-    const dev_provider = new aws.Provider("dev-account-provider", {
+    const dev_provider = (await pulumiOutToValue(accountsStack.getOutput('dev_account'))) as aws.Provider 
+    /*const dev_provider = new aws.Provider("dev-account-provider", {
         assumeRole: {
             roleArn: "arn:aws:iam::135063527524:role/cicd_cross_account",
             sessionName: "pulumi-target-account-session",
     },
         region: "us-east-1",
-    });
+    });*/
     const queue = createQueue(dev_provider)
 
     return {
