@@ -75,7 +75,7 @@ echo "Getting Substreams code..."
 
 git clone https://${git_user}:${git_token}@github.com/NFT-com/nft-backend.git
 
-cd nft-backend/packages/substreams
+cd nft-backend/apps/substreams
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."

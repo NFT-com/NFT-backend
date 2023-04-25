@@ -49,7 +49,7 @@ runs:
         REPO: ${{ steps.login_ecr.outputs.registry }}/${{ inputs.stage }}-stream
       run: |
         export DOCKER_BUILDKIT=1
-        docker build . -f packages/stream/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg CREATED=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg COMMIT=${{ github.sha }} --cache-from ${{ env.REPO }}:latest -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
+        docker build . -f apps/stream/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg CREATED=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg COMMIT=${{ github.sha }} --cache-from ${{ env.REPO }}:latest -t ${{ env.REPO }}:latest -t ${{ env.REPO }}:${{ github.sha }}
         docker push ${{ env.REPO }}:latest
         docker push ${{ env.REPO }}:${{ github.sha }}
     - name: Deploy Stream Infra

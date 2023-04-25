@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-DIST="../../dist/packages/gql"
+DIST="../../dist/apps/gql"
 cp package.json $DIST
 cp -r ./src/schema/*.graphql ${DIST}/src/schema/

@@ -2,7 +2,7 @@ FROM node:18.16 AS pruner
 WORKDIR /app
 RUN yarn global add pnpm
 COPY . .
-RUN pnpm dlx turbo prune --scope=@nftcom/gql --docker
+RUN pnpm dlx turbo prune --scope=@nftcom/stream --docker
 
 
 # Add lockfile and package.json's of isolated subworkspace
@@ -13,7 +13,7 @@ RUN yarn global add pnpm
 # First install dependencies (as they change less often)
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --filter=@nftcom/gql...
+RUN pnpm install --filter=@nftcom/stream...
 
 # Build the project and its dependencies
 COPY --from=pruner /app/out/full/ .
@@ -27,17 +27,17 @@ COPY turbo.json turbo.json
 # ARG TURBO_TOKEN
 # ENV TURBO_TOKEN=$TURBO_TOKEN
 
-RUN pnpm dlx turbo run build --filter=@nftcom/gql...
+RUN pnpm dlx turbo run build --filter=@nftcom/stream...
 RUN cp pnpm-*.yaml dist/ \
-    && cd dist  \
-    && pnpm install --filter=@nftcom/gql... --prod
+  && cd dist  \
+  && pnpm install --filter=@nftcom/stream... --prod
 
 
 FROM node:18.16-bullseye-slim AS runner
-ARG BUILD_DATE
-LABEL com.nft.gql.build-date=$BUILD_DATE
+ARG CREATED
+LABEL org.opencontainers.image.created=$CREATED
 ARG COMMIT
-LABEL com.nft.gql.commit=$COMMIT
+LABEL com.nft.stream.commit=$COMMIT
 RUN apt-get update && apt-get upgrade -y
 WORKDIR /app
 
@@ -45,4 +45,4 @@ WORKDIR /app
 USER node
 COPY --from=builder /app/dist .
 
-CMD node packages/gql/src/index.js
+CMD node apps/stream/src/main.js
