@@ -1,7 +1,6 @@
 import { MoreThan } from 'typeorm'
 
-import { User } from '@nftcom/shared/db/entity'
-
+import { User } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class UserRepository extends BaseRepository<User> {

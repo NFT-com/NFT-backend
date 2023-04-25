@@ -1,8 +1,7 @@
 import { BigNumber, ethers } from 'ethers'
 import { SelectQueryBuilder } from 'typeorm'
 
-import { NFTPortTransaction } from '@nftcom/shared/db/entity'
-
+import { NFTPortTransaction } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class NFTPortTransactionRepository extends BaseRepository<NFTPortTransaction> {

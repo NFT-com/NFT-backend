@@ -1,6 +1,6 @@
 import { Column, Entity, Index, Unique } from 'typeorm'
 
-import { EdgeType, EntityType } from '@nftcom/shared/defs'
+import { EdgeType, EntityType } from '../../defs'
 
 import { BaseEntity } from './base.entity'
 

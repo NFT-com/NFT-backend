@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm'
 
-import { AuctionType, MarketplaceAsset, Signature } from '@nftcom/shared/defs'
+import { AuctionType, MarketplaceAsset, Signature } from '../../defs'
 
 import { BaseEntity } from './base.entity'
 

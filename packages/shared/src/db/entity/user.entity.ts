@@ -1,6 +1,6 @@
 import { Column, Entity, Index, Unique } from 'typeorm'
 
-import { UserPreferences } from '@nftcom/shared/defs'
+import { UserPreferences } from '../../defs'
 
 import { BaseEntity } from './base.entity'
 

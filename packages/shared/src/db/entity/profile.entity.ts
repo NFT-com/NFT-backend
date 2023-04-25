@@ -6,7 +6,7 @@ import {
   ProfileLayoutType,
   ProfileStatus,
   ProfileViewType,
-} from '@nftcom/shared/defs'
+} from '../../defs'
 
 import { BaseEntity } from './base.entity'
 

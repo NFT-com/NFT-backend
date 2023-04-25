@@ -1,11 +1,12 @@
 import { snakeCase } from 'lodash'
+import { format } from 'node:util'
 import { stringify } from 'qs'
-import { format } from 'util'
 
 import { cache } from '@nftcom/cache'
 import { appError } from '@nftcom/error-types'
-import { getNFTPortInterceptor } from '@nftcom/nftport-client'
 import { _logger } from '@nftcom/shared'
+
+import { getNFTPortInterceptor } from './nftport-interceptor'
 
 const logger = _logger.Factory('nftport-client', _logger.Context.GraphQL)
 

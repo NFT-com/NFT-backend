@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm'
 
-import { BidStatus, NFTType, Signature } from '@nftcom/shared/defs'
+import { BidStatus, NFTType, Signature } from '../../defs'
 
 import { BaseEntity } from './base.entity'
 

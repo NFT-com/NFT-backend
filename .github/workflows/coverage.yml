@@ -58,6 +58,7 @@ jobs:
         envkey_HCS_ENABLED: ${{ secrets.HCS_ENABLED }}
         envkey_USE_STREAMING_FAST: ${{ secrets.USE_STREAMING_FAST }}
         envkey_STREAMING_FAST_CONNECTION_STRING: ${{ secrets.STREAMING_FAST_CONNECTION_STRING }}
+        envkey_STREAMING_FASTS_INTERNAL_USERS_ONLY: ${{ secrets.STREAMING_FASTS_INTERNAL_USERS_ONLY }}
         envkey_HCS_ACCOUNT_ID: ${{ secrets.HCS_ACCOUNT_ID }}
         envkey_HCS_PRIVATE_KEY: ${{ secrets.HCS_PRIVATE_KEY }}
         envkey_INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}

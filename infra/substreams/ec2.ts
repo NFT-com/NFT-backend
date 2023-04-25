@@ -12,7 +12,6 @@ export type EC2Output = {
 }
 
 
-
 export const createUserData = (db_host: string, latestBlock: number) : string => {
     const streamingFast_Key = process.env.STREAMINGFAST_KEY;
     const git_token = process.env.GH_TOKEN; 
@@ -76,7 +75,7 @@ echo "Getting Substreams code..."
 
 git clone https://${git_user}:${git_token}@github.com/NFT-com/nft-backend.git
 
-cd nft-backend/packages/substreams
+cd nft-backend/apps/substreams
 
 #Initialize PG DBs 
 echo "Initializing Substreams Databases..."

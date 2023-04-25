@@ -1,16 +1,8 @@
 import * as _lodash from 'lodash'
 import { In, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, SelectQueryBuilder, UpdateResult } from 'typeorm'
 
-import { NFT, TxActivity } from '@nftcom/shared/db/entity'
-import {
-  ActivityFilters,
-  ActivityStatus,
-  ActivityType,
-  PageableQuery,
-  PageableResult,
-  ProtocolType,
-} from '@nftcom/shared/defs'
-
+import { ActivityFilters, ActivityStatus, ActivityType, PageableQuery, PageableResult, ProtocolType } from '../../defs'
+import { NFT, TxActivity } from '../entity'
 import { BaseRepository } from './base.repository'
 
 interface EntityNameAndType {

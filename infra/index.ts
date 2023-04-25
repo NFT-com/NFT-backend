@@ -9,13 +9,15 @@ import { createCronJobs } from './cronjobs'
 import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer } from './gql'
 import { createSharedInfra } from './shared'
-import { createSubStreamInstances,createSubStreams } from './substreams'
+import { createStreamCluster } from './stream'
+import { createSubStreamInstances, createSubStreams } from './substreams'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
   const assetBucket = outMap.assetBucket.value
   const assetBucketRole = outMap.assetBucketRole.value
   const dbHost = outMap.dbHost.value
   const gqlECRRepo = outMap.gqlECRRepo.value
+  const streamECRRepo = outMap.streamECRRepo.value
   const redisHost = outMap.redisHost.value
   const publicSubnets = outMap.publicSubnetIds.value
   const privateSubnets = outMap.privateSubnetIds.value
@@ -28,6 +30,7 @@ export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void =
     assetBucketRole,
     dbHost,
     gqlECRRepo,
+    streamECRRepo,
     redisHost,
     publicSubnets,
     privateSubnets,
@@ -44,6 +47,7 @@ const main = async (): Promise<any> => {
   const args = process.argv.slice(2)
   const deployShared = args?.[0] === 'deploy:shared' || false
   const deployGQL = args?.[0] === 'deploy:gql' || false
+  const deployStream = args?.[0] === 'deploy:stream' || false
   const deployCronjobs = args?.[0] === 'deploy:cronjobs' || false
   const deploySubstreams = args?.[0] === 'deploy:substreams' || false
   const deploySubstreamsInstance = args?.[0] === 'deploy:substreamsInstance' || false
@@ -56,6 +60,10 @@ const main = async (): Promise<any> => {
 
   if (deployGQL) {
     return createGQLServer()
+  }
+
+  if (deployStream) {
+    return createStreamCluster()
   }
 
   if (deployCronjobs) {

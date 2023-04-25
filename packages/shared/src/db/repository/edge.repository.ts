@@ -1,5 +1,4 @@
-import { Edge } from '@nftcom/shared/db/entity'
-
+import { Edge } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class EdgeRepository extends BaseRepository<Edge> {

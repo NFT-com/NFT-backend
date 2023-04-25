@@ -2,6 +2,7 @@
   "name": "nftcom-infra",
   "scripts": {
     "deploy:shared": "ts-node index.ts deploy:shared",
+    "deploy:stream": "ts-node index.ts deploy:stream",
     "deploy:gql": "ts-node index.ts deploy:gql",
     "deploy:cronjobs": "ts-node index.ts deploy:cronjobs",
     "deploy:substreams": "ts-node index.ts deploy:substreams",

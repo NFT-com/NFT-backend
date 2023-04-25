@@ -1,72 +1,48 @@
-######################################################################
-FROM alpine AS utils
-######################################################################
-# ADD TINI FOR SIGNAL HANDLING, staticly linked
-# without tini ctrl-c doesn't work
-ENV TINI_VERSION v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-static /tini
-RUN chmod +x /tini
-# Create the user and group files that will be used in the running container to
-# run the process as an unprivileged user.
-RUN mkdir /user && \
-  echo 'nobody:x:65534:65534:nobody:/:' > /user/passwd && \
-  echo 'nobody:x:65534:' > /user/group
-
-######################################################################
-FROM node:16-alpine as prod-dependencies
-######################################################################
+FROM node:18.16 AS pruner
 WORKDIR /app
-ENV NODE_ENV production
-COPY packages/gql/package*.json ./packages/gql/
-COPY packages/shared/package*.json ./packages/shared/
-COPY package*.json ./
-RUN apk add --no-cache --virtual .gyp python3 make g++
-RUN npm ci
+RUN yarn global add pnpm
+COPY . .
+RUN pnpm dlx turbo prune --scope=@nftcom/sales-processor --docker
 
-######################################################################
-FROM node:16-alpine as dev-dependencies
-######################################################################
+
+# Add lockfile and package.json's of isolated subworkspace
+FROM node:18.16 AS builder
 WORKDIR /app
-COPY packages/gql/package*.json ./packages/gql/
-COPY packages/shared/package*.json ./packages/shared/
-COPY package*.json ./
-RUN apk add --no-cache --virtual .gyp python3 make g++
-RUN npm ci
+RUN yarn global add pnpm
 
-######################################################################
-FROM node:16-alpine as builder
-######################################################################
+# First install dependencies (as they change less often)
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --filter=@nftcom/sales-processor...
+
+# Build the project and its dependencies
+COPY --from=pruner /app/out/full/ .
+COPY tsconfig.base.json tsconfig.base.json
+COPY turbo.json turbo.json
+
+# Uncomment and use build args to enable remote caching
+# ARG TURBO_TEAM
+# ENV TURBO_TEAM=$TURBO_TEAM
+
+# ARG TURBO_TOKEN
+# ENV TURBO_TOKEN=$TURBO_TOKEN
+
+RUN pnpm dlx turbo run build --filter=@nftcom/sales-processor...
+RUN cp pnpm-*.yaml dist/ \
+  && cd dist  \
+  && pnpm install --filter=@nftcom/sales-processor... --prod
+
+
+FROM node:18.16-bullseye-slim AS runner
+ARG CREATED
+LABEL org.opencontainers.image.created=$CREATED
+ARG COMMIT
+LABEL com.nft.sales-processor.commit=$COMMIT
+RUN apt-get update && apt-get upgrade -y
 WORKDIR /app
-COPY --from=dev-dependencies /app /app
-COPY cronjobs/sales-processor cronjobs/sales-processor
-COPY packages/cache packages/cache
-COPY packages/contract-data packages/contract-data
-COPY packages/error-types packages/error-types
-COPY packages/nftport-client packages/nftport-client
-COPY packages/shared packages/shared
-COPY nx.json tsconfig.base.json ./
-ENV NODE_ENV production
-RUN cd packages/shared && npm run build && cd -
-RUN npx nx build ..-cronjobs-sales-processor
 
-######################################################################
-FROM node:16-alpine as final
-######################################################################
-# Import the user and group files from the first stage.
-COPY --from=utils /user/group /user/passwd /etc/
-COPY --from=utils /tini /sbin/tini
+# Don't run production as root
+USER node
+COPY --from=builder /app/dist .
 
-WORKDIR /app
-COPY --from=prod-dependencies /app  .
-COPY --from=builder /app/packages/shared /app/packages/shared
-COPY --from=builder /app/dist/cronjobs/sales-processor .
-
-# Perform any further action as an unprivileged user.
-USER nobody:nobody
-
-# Set tini as entrypoint
-ENTRYPOINT ["tini", "--"]
-
-# Run node app under tini
-# CMD ["/nodejs/bin/node", "main.js"]
-CMD ["node", "main.js"]
+CMD node cronjobs/sales-processor/src/main.js

@@ -1,14 +1,13 @@
-import crypto from 'crypto'
 import { parseISO } from 'date-fns'
 import isBefore from 'date-fns/isBefore'
 import sub from 'date-fns/sub'
 import { utils } from 'ethers'
 import { differenceBy } from 'lodash'
+import crypto from 'node:crypto'
 import { MoreThanOrEqual } from 'typeorm'
 
 import { fetchData } from '@nftcom/nftport-client'
-import { db } from '@nftcom/shared'
-import { MarketplaceSale } from '@nftcom/shared/db/entity'
+import { db, entity } from '@nftcom/shared'
 
 import { getSymbolForContract } from './erc20-util'
 
@@ -49,7 +48,7 @@ const marketplaceSalesFromNFTPortTransactions = async (txns: any[]): Promise<any
       contractAddress: utils.getAddress(tx.nft.contract_address),
       tokenId: tx.nft.token_id,
       transaction: tx,
-    } as MarketplaceSale)
+    } as entity.MarketplaceSale)
   }
   return transformed
 }
@@ -58,7 +57,7 @@ const retrievePersistedSales = async (
   contractAddress: string,
   oldestTransactionDate: Date,
   tokenId: string,
-): Promise<MarketplaceSale[]> => {
+): Promise<entity.MarketplaceSale[]> => {
   let whereOptions: any = {
     contractAddress: utils.getAddress(contractAddress),
     date: MoreThanOrEqual(oldestTransactionDate),
@@ -82,7 +81,7 @@ const retrievePersistedSales = async (
 const determineOldestTransactionDateForCollectionUpdate = (
   now: Date,
   tokenId: string,
-  savedSales: MarketplaceSale[],
+  savedSales: entity.MarketplaceSale[],
 ): Date => {
   const yesterday = sub(now, parseDateRangeForDateFns('1d'))
   if (!tokenId && isBefore(savedSales[0].date, yesterday)) {
@@ -95,7 +94,7 @@ export const getContractSales = async (
   contractAddress: string,
   dateRange = 'all',
   tokenId: string = undefined,
-): Promise<MarketplaceSale[]> => {
+): Promise<entity.MarketplaceSale[]> => {
   const endpoint = tokenId ? 'txByNFT' : 'txByContract'
   const args = [contractAddress, tokenId].filter(x => !!x) // not falsey
   const now = new Date()
@@ -107,7 +106,7 @@ export const getContractSales = async (
 
   let salesData = { transactions: [] } as any,
     filteredTxns = [],
-    result: MarketplaceSale[] = [],
+    result: entity.MarketplaceSale[] = [],
     continuation: string
 
   const savedSales = await retrievePersistedSales(contractAddress, oldestTransactionDate, tokenId)

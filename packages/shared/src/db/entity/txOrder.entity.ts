@@ -1,6 +1,6 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm'
 
-import { ActivityType, ExchangeType, ProtocolType } from '@nftcom/shared/defs'
+import { ActivityType, ExchangeType, ProtocolType } from '../../defs'
 
 import { BaseEntity, TxActivity } from '.'
 

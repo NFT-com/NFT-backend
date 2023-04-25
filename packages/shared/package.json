@@ -1,44 +1,49 @@
 {
   "name": "@nftcom/shared",
-  "main": "src/index",
-  "types": "src/index",
+  "main": "./src/index",
+  "source": "./src/index",
+  "types": "./src/index",
   "scripts": {
-    "prebuild": "npx json -I -f package.json -e \"this.main='dist/packages/shared/src/index'\" -e \"this.types='dist/packages/shared/src/index.d.ts'\"",
-    "build": "npm run clean && npm run compile && npm run copy:cert",
-    "clean": "rimraf dist tsconfig.tsbuildinfo",
-    "copy:cert": "cp -r ./src/db/rds-combined-ca-bundle.cer ./dist/packages/shared/src/db/rds-combined-ca-bundle.cer",
+    "prebuild": "pnpm clean",
+    "build": "pnpm compile",
+    "postbuild": "./scripts/postbuild.sh",
+    "clean": "rm -rf ../../dist/shared",
+    "dev": "tsc -w",
+    "lint": "eslint \"src/**/*.ts*\"",
     "compile": "tsc && tsc-alias",
     "typeorm:cli": "TS_NODE_TRANSPILE_ONLY=true node -r tsconfig-paths/register -r ts-node/register ../../node_modules/typeorm/cli",
-    "typeorm:gen": "npm run typeorm:cli -- migration:generate -d ./src/db/data-source.ts",
-    "typeorm:migration:run": "npm run typeorm:cli -- migration:run -d ./src/db/data-source.ts",
-    "typeorm:migration:create": "npm run typeorm:cli -- migration:create -n",
-    "typeorm:revert": "npm run typeorm:cli --  migration:revert -d ./src/db/data-source.ts",
-    "typeorm:show": "npm run typeorm:cli -- migration:show -d ./src/db/data-source.ts",
-    "typeorm:sync": "npm run typeorm:cli -- schema:sync",
+    "typeorm:gen": "pnpm typeorm:cli -- migration:generate -d ./src/db/data-source.ts",
+    "typeorm:migration:run": "pnpm typeorm:cli -- migration:run -d ./src/db/data-source.ts",
+    "typeorm:migration:create": "pnpm typeorm:cli -- migration:create -n",
+    "typeorm:revert": "pnpm typeorm:cli --  migration:revert -d ./src/db/data-source.ts",
+    "typeorm:show": "pnpm typeorm:cli -- migration:show -d ./src/db/data-source.ts",
+    "typeorm:sync": "pnpm typeorm:cli -- schema:sync",
     "typechain": "typechain --target=ethers-v5 ./src/helper/abis/*.json --out-dir ./src/helper/typechain"
   },
   "dependencies": {
-    "@opentelemetry/api": "1.3.0",
-    "chalk": "^4.1.2",
-    "date-fns": "^2.25.0",
-    "ethers": "^5.5.1",
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/providers": "^5.7.0",
+    "ethers": "^5.7.2",
+    "node-fetch": "^2.6.9",
     "lodash": "^4.17.21",
-    "nanoid": "^3.1.30",
-    "node-fetch": "^2.6.6",
+    "nanoid": "^3.3.6",
     "pg": "^8.10.0",
-    "pino": "^8.4.2",
+    "pino": "^8.11.0",
     "slugify": "^1.6.6",
-    "typeorm": "^0.3.10"
+    "typeorm": "^0.3.15"
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^9.0.0",
-    "@types/lodash": "^4.14.177",
-    "@types/node-fetch": "^2.5.12",
+    "@types/lodash": "^4.14.194",
+    "@types/node": "^18.6.1",
     "rimraf": "^3.0.2",
-    "tsc-alias": "^1.4.1",
-    "tsconfig-paths": "^3.11.0",
-    "typechain": "^7.0.0",
-    "typescript": "^4.5.2"
+    "tsc-alias": "^1.8.5",
+    "tslib": "^2.5.0",
+    "typechain": "^7.0.1",
+    "typescript": "^5.0.4"
   },
-  "packageManager": "yarn@3.1.0"
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=7"
+  }
 }

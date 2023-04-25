@@ -167,6 +167,9 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
         {
           essential: true,
           image: ecrImage,
+          linuxParameters: {
+            initProcessEnabled: true,
+          },
           logConfiguration: {
             logDriver: 'awslogs',
             options: {
@@ -266,6 +269,10 @@ const createEcsTaskDefinition = (config: pulumi.Config, gqlECRRepo: string): aws
             {
               Name: 'STREAMING_FAST_CONNECTION_STRING',
               Value: process.env.STREAMING_FAST_CONNECTION_STRING,
+            },
+            {
+              Name: 'STREAMING_FASTS_INTERNAL_USERS_ONLY',
+              Value: process.env.STREAMING_FASTS_INTERNAL_USERS_ONLY,
             },
             {
               Name: 'HCS_ACCOUNT_ID',

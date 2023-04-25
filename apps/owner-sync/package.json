@@ -1,0 +1,35 @@
+{
+  "name": "@nftcom/owner-sync",
+  "version": "1.0.0",
+  "description": "Owner sync script",
+  "main": "src/main",
+  "types": "src/main",
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "rimraf dist tsconfig.tsbuildinfo",
+    "compile": "tsc && tsc-alias",
+    "dev": "doppler run --preserve-env -- ts-node src/main",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@nftcom/service": "workspace:*",
+    "@nftcom/shared": "workspace:*",
+    "async": "^3.2.4",
+    "ethers": "^5.7.2",
+    "node-fetch": "^2.6.9",
+    "lodash": "^4.17.21",
+    "pg": "^8.10.0",
+    "pg-query-stream": "^4.4.0",
+    "web3-utils": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.18",
+    "@types/node": "^18.6.1",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=7"
+  }
+}

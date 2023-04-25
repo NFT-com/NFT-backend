@@ -1,6 +1,6 @@
 import { Column, Entity, Index, OneToMany, Unique } from 'typeorm'
 
-import { NFTMetadata, NFTType } from '@nftcom/shared/defs'
+import { NFTMetadata, NFTType } from '../../defs'
 
 import { BaseEntity } from './base.entity'
 import { NFTOwner } from './nftOwner.entity'

@@ -1,5 +1,4 @@
-import { Profile, Wallet } from '@nftcom/shared/db/entity'
-
+import { Profile, Wallet } from '../entity'
 import { BaseRepository } from './base.repository'
 
 export class ProfileRepository extends BaseRepository<Profile> {

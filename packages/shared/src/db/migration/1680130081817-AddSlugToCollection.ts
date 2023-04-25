@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from "typeorm"
 import { Collection } from "../entity"
-import { generateSlug } from "@nftcom/shared/helper/misc"
+import { generateSlug } from "../../helper/misc"
 import chunk from "lodash/chunk";
 
 export class AddSlugToCollection1680130081817 implements MigrationInterface {
