@@ -10,7 +10,6 @@ import { SharedInfraOutput, sharedOutputFileName } from './defs'
 import { createGQLServer } from './gql'
 import { createSharedInfra } from './shared'
 import { createSubStreamInstances,createSubStreams } from './substreams'
-import { createAccounts } from './cross-account-shared'
 import { createQueues } from './cross-account-queues'
 
 export const sharedOutToJSONFile = (outMap: pulumi.automation.OutputMap): void => {
