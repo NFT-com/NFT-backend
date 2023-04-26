@@ -43,7 +43,7 @@ const createMain = (
   )
 
   const instance = config.require('redisMainInstance')
-  const subnetGroup = getSubnetGroup(vpc)
+  const subnetGroup = getSubnetGroup(vpc, provider)
   return new aws.elasticache.Cluster('redis_main', {
     clusterId: getResourceName('main'),
     engine: 'redis',
