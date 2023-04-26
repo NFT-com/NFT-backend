@@ -27,6 +27,12 @@ export const getStage = (): string => {
   return stage
 }
 
+export const getAccount = (): string =>{
+    const stackName = pulumi.getStack()
+    const account = stackName.split('.')
+    return account[1]
+}
+
 export const getResourceNameWithPrefix = (service: string, name: string): string => {
   return joinStringsByDash(getStage(), service, name)
 }

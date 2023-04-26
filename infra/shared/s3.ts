@@ -1,6 +1,6 @@
 import * as aws from '@pulumi/aws'
 
-import { getResourceName, getStage, joinStringsByDash } from '../helper'
+import { getResourceName, getStage, getAccount ,joinStringsByDash } from '../helper'
 
 export type S3Output = {
   asset: aws.s3.Bucket
@@ -44,7 +44,7 @@ const createAssetRole = (bucketName: string, provider : aws.Provider): aws.iam.R
 }
 
 const createAsset = (provider : aws.Provider): { bucket: aws.s3.Bucket; role: aws.iam.Role } => {
-  const bucketName = joinStringsByDash('nftcom', getStage(), 'assets')
+  const bucketName = joinStringsByDash('nftcom', getStage(), getAccount() ,'assets')
   const role = createAssetRole(bucketName, provider)
   const bucket = new aws.s3.Bucket('s3_asset', {
     bucket: bucketName,
