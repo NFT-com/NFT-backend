@@ -1,1 +1,6 @@
 encryptionsalt: v1:uDPXlMdQu+A=:v1:f0LWoyK3oyvLIs5D:9P5PCWALmp1SEL/vLgHRTvFxa3Nmew==
+config:
+  nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
+  nftcom:auroraMainInstances: 1
+  nftcom:auroraMainInstance: db.t3.medium
+  nftcom:redisMainInstance: cache.t3.small

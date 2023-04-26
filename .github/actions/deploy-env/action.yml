@@ -41,6 +41,7 @@ runs:
         AWS_ACCOUNT_ID: ${{ fromJSON(inputs.secrets).AWS_ACCOUNT_ID }}
         DB_HOST: ${{ fromJSON(inputs.secrets).DB_HOST }}
         DB_PASSWORD: ${{ fromJSON(inputs.secrets).DB_PASSWORD }}
+        ACCOUNT: ${{ inputs.account }}
       run: npm run deploy:shared
     - name: Build and Push GQL Image
       shell: bash
