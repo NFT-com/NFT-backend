@@ -8,6 +8,7 @@ import { _logger, entity } from '@nftcom/shared'
 import { Context, gql } from '../defs'
 import { auth, joi } from '../helper'
 import { commentService } from '../service/comment.service'
+import { profileService } from '../service/profile.service'
 
 const logger = _logger.Factory('comment.resolver', _logger.Context.GraphQL)
 
@@ -84,5 +85,13 @@ export default {
   },
   Query: {
     comments,
+  },
+  Comment: {
+    author: async (parent: gql.Comment) => {
+      if (!parent?.authorId) {
+        return undefined
+      }
+      return profileService.getProfile(parent.authorId)
+    },
   },
 }
