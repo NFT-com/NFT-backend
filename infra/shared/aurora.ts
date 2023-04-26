@@ -23,6 +23,7 @@ const createMain = (
   vpc: ec2.Vpc,
   sg: aws.ec2.SecurityGroup,
   zones: string[],
+  provider : aws.Provider
 ): aws.rds.Cluster => {
   const paramFamily = 'aurora-postgresql13'
   const clusterParameterGroup = new aws.rds.ClusterParameterGroup('aurora_main_cluster_param_group', {
@@ -55,7 +56,7 @@ const createMain = (
         applyMethod: 'pending-reboot',
       },
     ],
-  })
+  }, { provider: provider })
 
   const subnetGroup = getSubnetGroup(vpc)
   const engineType = EngineType.AuroraPostgresql
@@ -76,7 +77,7 @@ const createMain = (
     skipFinalSnapshot: true,
     backupRetentionPeriod: isProduction() ? 7 : 1,
     preferredBackupWindow: '07:00-09:00',
-  })
+  }, { provider: provider })
 
   const dbParameterGroup = new aws.rds.ParameterGroup('aurora_main_instance_param_group', {
     name: getResourceName('main-instance'),
@@ -95,7 +96,7 @@ const createMain = (
         value: '1',
       },
     ],
-  })
+  }, { provider: provider })
   const instance = config.require('auroraMainInstance')
   const numInstances = parseInt(config.require('auroraMainInstances')) || 1
   const clusterInstances: aws.rds.ClusterInstance[] = []
@@ -112,7 +113,7 @@ const createMain = (
         availabilityZone: zones[0],
         autoMinorVersionUpgrade: true,
         publiclyAccessible: true, //access controlled via security groups
-      }),
+      }, { provider: provider }),
     )
   }
 
@@ -124,7 +125,8 @@ export const createAuroraClusters = (
   vpc: ec2.Vpc,
   sg: aws.ec2.SecurityGroup,
   zones: string[],
+  provider : aws.Provider
 ): AuroraOutput => {
-  const main = createMain(config, vpc, sg, zones)
+  const main = createMain(config, vpc, sg, zones, provider)
   return { main }
 }

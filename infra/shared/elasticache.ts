@@ -8,11 +8,11 @@ export type CacheOutput = {
   main: aws.elasticache.Cluster
 }
 
-const getSubnetGroup = (vpc: ec2.Vpc): aws.elasticache.SubnetGroup => {
+const getSubnetGroup = (vpc: ec2.Vpc, provider : aws.Provider): aws.elasticache.SubnetGroup => {
   return new aws.elasticache.SubnetGroup('cache_subnet_group', {
     name: getResourceName('cache'),
     subnetIds: isProduction() ? vpc.privateSubnetIds : vpc.publicSubnetIds,
-  })
+  }, { provider: provider }  )
 }
 
 const createMain = (
@@ -20,6 +20,7 @@ const createMain = (
   vpc: ec2.Vpc,
   sg: aws.ec2.SecurityGroup,
   zones: string[],
+  provider : aws.Provider
 ): aws.elasticache.Cluster => {
   const parameterGroup = new aws.elasticache.ParameterGroup('redis_main_param_group', {
     name: getResourceName('main'),
@@ -38,7 +39,8 @@ const createMain = (
         value: 'allkeys-lfu',
       },
     ],
-  })
+  }, { provider: provider }
+  )
 
   const instance = config.require('redisMainInstance')
   const subnetGroup = getSubnetGroup(vpc)
@@ -53,7 +55,8 @@ const createMain = (
     subnetGroupName: subnetGroup.name,
     numCacheNodes: 1,
     port: 6379,
-  })
+  }, { provider: provider }
+  )
 }
 
 export const createCacheClusters = (
@@ -61,7 +64,8 @@ export const createCacheClusters = (
   vpc: ec2.Vpc,
   sg: aws.ec2.SecurityGroup,
   zones: string[],
+  provider : aws.Provider
 ): CacheOutput => {
-  const main = createMain(config, vpc, sg, zones)
+  const main = createMain(config, vpc, sg, zones, provider)
   return { main }
 }

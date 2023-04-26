@@ -1,4 +1,5 @@
 import { ec2 as awsEC2 } from '@pulumi/aws'
+import * as aws from '@pulumi/aws'
 import { ec2 } from '@pulumi/awsx'
 import * as pulumi from '@pulumi/pulumi'
 
@@ -52,14 +53,14 @@ const buildEgressRule = (port: number, protocol = 'tcp'): any => ({
   cidrBlocks: new ec2.AnyIPv4Location().cidrBlocks,
 })
 
-export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOutput => {
+export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc, provider : aws.Provider): SGOutput => {
   const web = new awsEC2.SecurityGroup('sg_web', {
     description: 'Allow traffic from/to web',
     name: getResourceName('web'),
     vpcId: vpc.id,
     ingress: [buildIngressRule(443), buildIngressRule(80)],
     egress: [buildEgressRule(0, '-1')],
-  })
+  }, { provider: provider })
 
   const webEcs = new awsEC2.SecurityGroup('sg_webEcs', {
     description: 'Allow traffic to ECS (gql) service',
@@ -67,14 +68,14 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
     vpcId: vpc.id,
     ingress: [buildIngressRule(8080, 'tcp', [web.id])],
     egress: [buildEgressRule(0, '-1')],
-  })
+  }, { provider: provider })
 
   const internalEcs = new awsEC2.SecurityGroup('int_ecs', {
     description: 'ECS access to RDS, Redis, etc...',
     name: getResourceName('intEcs'),
     vpcId: vpc.id,
     egress: [buildEgressRule(0, '-1')],
-  })
+  }, { provider: provider })
 
   const aurora = new awsEC2.SecurityGroup('sg_aurora_main', {
     name: getResourceName('aurora-main'),
@@ -91,7 +92,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
         ]
       : [buildIngressRule(5432)],
     egress: [buildEgressRule(5432)],
-  })
+  }, { provider: provider })
 
   const redis = new awsEC2.SecurityGroup('sg_redis_main', {
     name: getResourceName('redis-main'),
@@ -107,7 +108,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
         ]
       : [buildIngressRule(6379)],
     egress: [buildEgressRule(6379)],
-  })
+  }, { provider: provider })
 
   const typesenseIngressRules = [
     buildIngressRule(8108, 'tcp', [web.id]),
@@ -125,7 +126,7 @@ export const createSecurityGroups = (config: pulumi.Config, vpc: ec2.Vpc): SGOut
         ]
       : typesenseIngressRules,
     egress: [buildEgressRule(0, '-1')],
-  })
+  }, { provider: provider })
 
   return {
     aurora,

@@ -7,7 +7,7 @@ export type S3Output = {
   assetRole: aws.iam.Role
 }
 
-const createAssetRole = (bucketName: string): aws.iam.Role => {
+const createAssetRole = (bucketName: string, provider : aws.Provider): aws.iam.Role => {
   const inlinePolicy = {
     Version: '2012-10-17',
     Statement: [
@@ -39,12 +39,13 @@ const createAssetRole = (bucketName: string): aws.iam.Role => {
         policy: JSON.stringify(inlinePolicy),
       },
     ],
-  })
+  }, { provider: provider }
+  )
 }
 
-const createAsset = (): { bucket: aws.s3.Bucket; role: aws.iam.Role } => {
+const createAsset = (provider : aws.Provider): { bucket: aws.s3.Bucket; role: aws.iam.Role } => {
   const bucketName = joinStringsByDash('nftcom', getStage(), 'assets')
-  const role = createAssetRole(bucketName)
+  const role = createAssetRole(bucketName, provider)
   const bucket = new aws.s3.Bucket('s3_asset', {
     bucket: bucketName,
     acl: 'private',
@@ -86,12 +87,13 @@ const createAsset = (): { bucket: aws.s3.Bucket; role: aws.iam.Role } => {
         maxAgeSeconds: 3000,
       },
     ],
-  })
+  }, { provider: provider }
+  )
 
   return { role, bucket }
 }
 
-export const createBuckets = (): S3Output => {
-  const { bucket: asset, role: assetRole } = createAsset()
+export const createBuckets = (provider : aws.Provider): S3Output => {
+  const { bucket: asset, role: assetRole } = createAsset(provider)
   return { asset, assetRole }
 }
