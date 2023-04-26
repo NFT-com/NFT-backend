@@ -19,6 +19,7 @@ type Comment {
   content: String
   entityId: ID
   entityType: SocialEntityType
+  author: Profile
 }
 
 input CommentsInput {
