@@ -6,7 +6,7 @@ import { deployInfra } from '../helper'
 import { createAuroraClusters } from './aurora'
 import { createRepositories } from './ecr'
 import { createCacheClusters } from './elasticache'
-import { createBuckets } from './s3'
+//import { createBuckets } from './s3'
 import { createSecurityGroups } from './security-group'
 import { createVPC } from './vpc'
 import { create_dev_provider, create_prod_provider } from '../cross-account-shared'
@@ -19,12 +19,12 @@ const pulumiProgram = async (): Promise<Record<string, any> | void> => {
   const sgs = await createSecurityGroups(config, vpc, dev_provider)
   const { main: dbMain } = createAuroraClusters(config, vpc, sgs.aurora, zones, dev_provider)
   const { main: cacheMain } = createCacheClusters(config, vpc, sgs.redis, zones, dev_provider)
-  const { asset, assetRole } = createBuckets(dev_provider)
+  //const { asset, assetRole } = createBuckets(dev_provider)
   const { gql } = createRepositories(dev_provider)
 
   return {
-    assetBucket: asset.bucket,
-    assetBucketRole: assetRole.arn,
+    //assetBucket: asset.bucket,
+    //assetBucketRole: assetRole.arn,
     dbHost: dbMain.endpoint,
     gqlECRRepo: gql.name,
     internalEcsSGId: sgs.internalEcs.id,
