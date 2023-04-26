@@ -2,23 +2,15 @@
 
 import * as upath from 'upath'
 import * as pulumi from '@pulumi/pulumi'
-import * as aws from '@pulumi/aws'
-
 
 import { deployInfra, getStage, pulumiOutToValue } from '../helper'
 import { createQueue } from './sqs'
+import { create_dev_provider } from '../cross-account-shared'
 
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
-    const stage = getStage(); 
-    const accountsStack = new pulumi.StackReference(`${stage}.immutable.accounts.us-east-1`)
-    //const dev_provider = (await pulumiOutToValue(accountsStack.getOutput('dev_account'))) as aws.Provider 
-    const dev_provider = new aws.Provider("dev-account-provider", {
-        assumeRole: {
-            roleArn: "arn:aws:iam::135063527524:role/cicd_cross_account",
-            sessionName: "pulumi-target-account-session",
-    },
-        region: "us-east-1",
-    });
+
+    const dev_provider = create_dev_provider(); 
+
     const queue = createQueue(dev_provider)
 
     return {
