@@ -8,7 +8,7 @@ import { createQueue } from './sqs'
 import { create_dev_provider } from '../cross-account-shared'
 
 const pulumiProgram = async() : Promise<Record<string, any> | void> => {
-
+    //use method from shared accounts 
     const dev_provider = create_dev_provider(); 
 
     const queue = createQueue(dev_provider)
