@@ -1,5 +1,3 @@
-import './tracer' // must come before importing any instrumented module.
-
 import kill from 'kill-port'
 
 import { _logger, db, fp } from '@nftcom/shared'

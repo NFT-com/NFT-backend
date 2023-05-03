@@ -2,7 +2,7 @@ import { ec2 as awsEC2 } from '@pulumi/aws'
 import { ec2 } from '@pulumi/awsx'
 import * as pulumi from '@pulumi/pulumi'
 
-import { getResourceName, isNotEmpty, isProduction } from '../helper'
+import { getResourceName, isNotEmpty } from '../helper'
 
 export type SGOutput = {
   ec2SG: awsEC2.SecurityGroup
