@@ -2,7 +2,7 @@ encryptionsalt: v1:xIdtaFa/9Dw=:v1:8S+jrVg+vndXvmYs:Z1GTbFq1bNaWqhBgPxlyLHDLac3k
 config:
   nftcom:availabilityZones: us-east-1a,us-east-1b,us-east-1c
   nftcom:ecsAutoScaleMin: 2
-  nftcom:ecsAutoScaleMax: 3
+  nftcom:ecsAutoScaleMax: 6
   nftcom:ecsTaskCpu: 1024
   nftcom:ecsTaskMemory: 4096
   nftcom:nodeEnv: production
